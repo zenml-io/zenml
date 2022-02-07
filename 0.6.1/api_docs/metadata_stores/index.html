@@ -1,0 +1,2859 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://apidocs.zenml.io/0.6.1/api_docs/metadata_stores/">
+      
+      <link rel="icon" href="../../_assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.10">
+    
+    
+      
+        <title>Metadata Stores - ZenML API Reference</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.d6be258b.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#metadata-stores" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ZenML API Reference" class="md-header__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ZenML API Reference
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Metadata Stores
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zenml-io/zenml/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ZenML API Reference" class="md-nav__button md-logo" aria-label="ZenML API Reference" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    ZenML API Reference
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zenml-io/zenml/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        ZenML
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        CLI docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Api docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Api docs" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Api docs
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifact_stores/" class="md-nav__link">
+        Artifact Stores
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../artifacts/" class="md-nav__link">
+        Artifacts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../constants/" class="md-nav__link">
+        Constants
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../container_registries/" class="md-nav__link">
+        Container Registries
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../enums/" class="md-nav__link">
+        Enums
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../environment/" class="md-nav__link">
+        Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exceptions/" class="md-nav__link">
+        Exceptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../integrations/" class="md-nav__link">
+        Integrations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../io/" class="md-nav__link">
+        Io
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logger/" class="md-nav__link">
+        Logger
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../materializers/" class="md-nav__link">
+        Materializers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Metadata Stores
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Metadata Stores
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.metadata_stores" class="md-nav__link">
+    metadata_stores
+  </a>
+  
+    <nav class="md-nav" aria-label="metadata_stores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store" class="md-nav__link">
+    base_metadata_store
+  </a>
+  
+    <nav class="md-nav" aria-label="base_metadata_store">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore" class="md-nav__link">
+    BaseMetadataStore
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseMetadataStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.flavor" class="md-nav__link">
+    flavor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.step_type_mapping" class="md-nav__link">
+    step_type_mapping
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.store" class="md-nav__link">
+    store
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.type" class="md-nav__link">
+    type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline" class="md-nav__link">
+    get_pipeline()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline_run" class="md-nav__link">
+    get_pipeline_run()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline_run_steps" class="md-nav__link">
+    get_pipeline_run_steps()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline_runs" class="md-nav__link">
+    get_pipeline_runs()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipelines" class="md-nav__link">
+    get_pipelines()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_producer_step_from_artifact" class="md-nav__link">
+    get_producer_step_from_artifact()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_step_artifacts" class="md-nav__link">
+    get_step_artifacts()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_step_by_id" class="md-nav__link">
+    get_step_by_id()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_step_status" class="md-nav__link">
+    get_step_status()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_tfx_metadata_config" class="md-nav__link">
+    get_tfx_metadata_config()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.mysql_metadata_store" class="md-nav__link">
+    mysql_metadata_store
+  </a>
+  
+    <nav class="md-nav" aria-label="mysql_metadata_store">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore" class="md-nav__link">
+    MySQLMetadataStore
+  </a>
+  
+    <nav class="md-nav" aria-label="MySQLMetadataStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore.flavor" class="md-nav__link">
+    flavor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore.get_tfx_metadata_config" class="md-nav__link">
+    get_tfx_metadata_config()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.sqlite_metadata_store" class="md-nav__link">
+    sqlite_metadata_store
+  </a>
+  
+    <nav class="md-nav" aria-label="sqlite_metadata_store">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore" class="md-nav__link">
+    SQLiteMetadataStore
+  </a>
+  
+    <nav class="md-nav" aria-label="SQLiteMetadataStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore.flavor" class="md-nav__link">
+    flavor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore.ensure_uri_is_local" class="md-nav__link">
+    ensure_uri_is_local()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore.get_tfx_metadata_config" class="md-nav__link">
+    get_tfx_metadata_config()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../orchestrators/" class="md-nav__link">
+        Orchestrators
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pipelines/" class="md-nav__link">
+        Pipelines
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../post_execution/" class="md-nav__link">
+        Post Execution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../repository/" class="md-nav__link">
+        Repository
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime_configuration/" class="md-nav__link">
+        Runtime Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../steps/" class="md-nav__link">
+        Steps
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../visualizers/" class="md-nav__link">
+        Visualizers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_23" type="checkbox" id="__nav_3_23" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3_23">
+          Cli
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Cli" data-md-level="2">
+        <label class="md-nav__title" for="__nav_3_23">
+          <span class="md-nav__icon md-icon"></span>
+          Cli
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/base/" class="md-nav__link">
+        Base
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/cli/" class="md-nav__link">
+        Cli
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/config/" class="md-nav__link">
+        Config
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/example/" class="md-nav__link">
+        Example
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/integration/" class="md-nav__link">
+        Integration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/pipeline/" class="md-nav__link">
+        Pipeline
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/stack/" class="md-nav__link">
+        Stack
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/stack_components/" class="md-nav__link">
+        Stack Components
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/utils/" class="md-nav__link">
+        Utils
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/version/" class="md-nav__link">
+        Version
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#zenml.metadata_stores" class="md-nav__link">
+    metadata_stores
+  </a>
+  
+    <nav class="md-nav" aria-label="metadata_stores">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store" class="md-nav__link">
+    base_metadata_store
+  </a>
+  
+    <nav class="md-nav" aria-label="base_metadata_store">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore" class="md-nav__link">
+    BaseMetadataStore
+  </a>
+  
+    <nav class="md-nav" aria-label="BaseMetadataStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.flavor" class="md-nav__link">
+    flavor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.step_type_mapping" class="md-nav__link">
+    step_type_mapping
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.store" class="md-nav__link">
+    store
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.type" class="md-nav__link">
+    type
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline" class="md-nav__link">
+    get_pipeline()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline_run" class="md-nav__link">
+    get_pipeline_run()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline_run_steps" class="md-nav__link">
+    get_pipeline_run_steps()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline_runs" class="md-nav__link">
+    get_pipeline_runs()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipelines" class="md-nav__link">
+    get_pipelines()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_producer_step_from_artifact" class="md-nav__link">
+    get_producer_step_from_artifact()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_step_artifacts" class="md-nav__link">
+    get_step_artifacts()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_step_by_id" class="md-nav__link">
+    get_step_by_id()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_step_status" class="md-nav__link">
+    get_step_status()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_tfx_metadata_config" class="md-nav__link">
+    get_tfx_metadata_config()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.mysql_metadata_store" class="md-nav__link">
+    mysql_metadata_store
+  </a>
+  
+    <nav class="md-nav" aria-label="mysql_metadata_store">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore" class="md-nav__link">
+    MySQLMetadataStore
+  </a>
+  
+    <nav class="md-nav" aria-label="MySQLMetadataStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore.flavor" class="md-nav__link">
+    flavor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore.get_tfx_metadata_config" class="md-nav__link">
+    get_tfx_metadata_config()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.sqlite_metadata_store" class="md-nav__link">
+    sqlite_metadata_store
+  </a>
+  
+    <nav class="md-nav" aria-label="sqlite_metadata_store">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore" class="md-nav__link">
+    SQLiteMetadataStore
+  </a>
+  
+    <nav class="md-nav" aria-label="SQLiteMetadataStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore.flavor" class="md-nav__link">
+    flavor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore.ensure_uri_is_local" class="md-nav__link">
+    ensure_uri_is_local()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore.get_tfx_metadata_config" class="md-nav__link">
+    get_tfx_metadata_config()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/zenml-io/zenml/docs/api_docs/metadata_stores.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+<h1 id="metadata-stores">Metadata Stores</h1>
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h2 id="zenml.metadata_stores" class="doc doc-heading">
+        <code>zenml.metadata_stores</code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-special"><code>special</code></small>
+  </span>
+
+</h2>
+
+    <div class="doc doc-contents first">
+
+      <p>The configuration of each pipeline, step, backend, and produced artifacts are
+all tracked within the metadata store. The metadata store is an SQL database,
+and can be <code>sqlite</code> or <code>mysql</code>.</p>
+<p>Metadata are the pieces of information tracked about the pipelines, experiments
+and configurations that you are running with ZenML. Metadata are stored
+inside the metadata store.</p>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.metadata_stores.base_metadata_store" class="doc doc-heading">
+        <code>base_metadata_store</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore" class="doc doc-heading">
+        <code>
+BaseMetadataStore            (<a title="zenml.stack.stack_component.StackComponent" href="../stack/#zenml.stack.stack_component.StackComponent">StackComponent</a>, <span title="abc.ABC">ABC</span>)
+        </code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-pydantic-model"><code>pydantic-model</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>Base class for all ZenML metadata stores.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseMetadataStore</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for all ZenML metadata stores.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The component type.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">METADATA_STORE</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">flavor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataStoreFlavor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The metadata store flavor.&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">metadata_store</span><span class="o">.</span><span class="n">MetadataStore</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;General property that hooks into TFX metadata store.&quot;&quot;&quot;</span>
+        <span class="c1"># TODO [ENG-133]: this always gets recreated, is this intended?</span>
+        <span class="k">return</span> <span class="n">metadata_store</span><span class="o">.</span><span class="n">MetadataStore</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_tfx_metadata_config</span><span class="p">(),</span> <span class="n">enable_upgrade_migration</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_tfx_metadata_config</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">ConnectionConfig</span><span class="p">,</span>
+        <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">MetadataStoreClientConfig</span><span class="p">,</span>
+    <span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return tfx metadata config.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">step_type_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Maps type_id&#39;s to step names.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">type_</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">type_</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">type_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_execution_types</span><span class="p">()</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">_check_if_executions_belong_to_pipeline</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">executions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">proto</span><span class="o">.</span><span class="n">Execution</span><span class="p">],</span>
+        <span class="n">pipeline</span><span class="p">:</span> <span class="n">PipelineView</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns `True` if the executions are associated with the pipeline</span>
+<span class="sd">        context.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">execution</span> <span class="ow">in</span> <span class="n">executions</span><span class="p">:</span>
+            <span class="n">associated_contexts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_contexts_by_execution</span><span class="p">(</span>
+                <span class="n">execution</span><span class="o">.</span><span class="n">id</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">context</span> <span class="ow">in</span> <span class="n">associated_contexts</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">context</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">_id</span><span class="p">:</span>  <span class="c1"># noqa</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_get_step_view_from_execution</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">execution</span><span class="p">:</span> <span class="n">proto</span><span class="o">.</span><span class="n">Execution</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepView</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get original StepView from an execution.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            execution: proto.Execution object from mlmd store.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Original `StepView` derived from the proto.Execution.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">impl_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_type_mapping</span><span class="p">[</span><span class="n">execution</span><span class="o">.</span><span class="n">type_id</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">step_name_property</span> <span class="o">=</span> <span class="n">execution</span><span class="o">.</span><span class="n">custom_properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">INTERNAL_EXECUTION_PARAMETER_PREFIX</span> <span class="o">+</span> <span class="n">PARAM_PIPELINE_PARAMETER_NAME</span><span class="p">,</span>
+            <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">step_name_property</span><span class="p">:</span>
+            <span class="n">step_name</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">step_name_property</span><span class="o">.</span><span class="n">string_value</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Step name missing for execution with ID </span><span class="si">{</span><span class="n">execution</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;This error probably occurs because you&#39;re using ZenML &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;version 0.5.4 or newer but your metadata store contains &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;data from previous versions.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">step_parameters</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">execution</span><span class="o">.</span><span class="n">custom_properties</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">INTERNAL_EXECUTION_PARAMETER_PREFIX</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">step_parameters</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">string_value</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">JSONDecodeError</span><span class="p">:</span>
+                    <span class="c1"># this means there is a property in there that is neither</span>
+                    <span class="c1"># an internal one or one created by zenml. Therefore, we can</span>
+                    <span class="c1"># ignore it</span>
+                    <span class="k">pass</span>
+
+        <span class="c1"># TODO [ENG-222]: This is a lot of querying to the metadata store. We</span>
+        <span class="c1">#  should refactor and make it nicer. Probably it makes more sense</span>
+        <span class="c1">#  to first get `executions_ids_for_current_run` and then filter on</span>
+        <span class="c1">#  `event.execution_id in execution_ids_for_current_run`.</span>
+        <span class="c1"># Core logic here is that we get the event of this particular execution</span>
+        <span class="c1"># id that gives us the artifacts of this execution. We then go through</span>
+        <span class="c1"># all `input` artifacts of this execution and get all events related to</span>
+        <span class="c1"># that artifact. This in turn gives us other events for which this</span>
+        <span class="c1"># artifact was an `output` artifact. Then we simply need to sort by</span>
+        <span class="c1"># time to get the most recent execution (i.e. step) that produced that</span>
+        <span class="c1"># particular artifact.</span>
+        <span class="n">events_for_execution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_events_by_execution_ids</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">execution</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">parents_step_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">current_event</span> <span class="ow">in</span> <span class="n">events_for_execution</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">current_event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">current_event</span><span class="o">.</span><span class="n">INPUT</span><span class="p">:</span>
+                <span class="c1"># this means the artifact is an input artifact</span>
+                <span class="n">events_for_input_artifact</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">e</span>
+                    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_events_by_artifact_ids</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">current_event</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">]</span>
+                    <span class="p">)</span>
+                    <span class="c1"># should be output type and should NOT be the same id as</span>
+                    <span class="c1"># the execution we are querying and it should be BEFORE</span>
+                    <span class="c1"># the time of the current event.</span>
+                    <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">e</span><span class="o">.</span><span class="n">OUTPUT</span>
+                    <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">execution_id</span> <span class="o">!=</span> <span class="n">current_event</span><span class="o">.</span><span class="n">execution_id</span>
+                    <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">milliseconds_since_epoch</span>
+                    <span class="o">&lt;</span> <span class="n">current_event</span><span class="o">.</span><span class="n">milliseconds_since_epoch</span>
+                <span class="p">]</span>
+
+                <span class="c1"># sort by time</span>
+                <span class="n">events_for_input_artifact</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span>
+                    <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">milliseconds_since_epoch</span>  <span class="c1"># type: ignore[no-any-return] # noqa</span>
+                <span class="p">)</span>
+                <span class="c1"># take the latest one and add execution to the parents.</span>
+                <span class="n">parents_step_ids</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">events_for_input_artifact</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">execution_id</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">StepView</span><span class="p">(</span>
+            <span class="n">id_</span><span class="o">=</span><span class="n">execution</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">parents_step_ids</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">parents_step_ids</span><span class="p">),</span>
+            <span class="n">entrypoint_name</span><span class="o">=</span><span class="n">impl_name</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">step_name</span><span class="p">,</span>
+            <span class="n">parameters</span><span class="o">=</span><span class="n">step_parameters</span><span class="p">,</span>
+            <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_pipelines</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PipelineView</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns a list of all pipelines stored in this metadata store.&quot;&quot;&quot;</span>
+        <span class="n">pipelines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">pipeline_context</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_contexts_by_type</span><span class="p">(</span>
+            <span class="n">PIPELINE_CONTEXT_TYPE_NAME</span>
+        <span class="p">):</span>
+            <span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipelineView</span><span class="p">(</span>
+                <span class="n">id_</span><span class="o">=</span><span class="n">pipeline_context</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">pipeline_context</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">pipelines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pipeline</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Fetched </span><span class="si">%d</span><span class="s2"> pipelines.&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipelines</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">pipelines</span>
+
+    <span class="k">def</span> <span class="nf">get_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PipelineView</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns a pipeline for the given name.&quot;&quot;&quot;</span>
+        <span class="n">pipeline_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_context_by_type_and_name</span><span class="p">(</span>
+            <span class="n">PIPELINE_CONTEXT_TYPE_NAME</span><span class="p">,</span> <span class="n">pipeline_name</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">pipeline_context</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Fetched pipeline with name &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">pipeline_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">PipelineView</span><span class="p">(</span>
+                <span class="n">id_</span><span class="o">=</span><span class="n">pipeline_context</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">pipeline_context</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No pipelines found for name &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">pipeline_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">get_pipeline_runs</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">:</span> <span class="n">PipelineView</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PipelineRunView</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Gets all runs for the given pipeline.&quot;&quot;&quot;</span>
+        <span class="n">all_pipeline_runs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_contexts_by_type</span><span class="p">(</span>
+            <span class="n">PIPELINE_RUN_CONTEXT_TYPE_NAME</span>
+        <span class="p">)</span>
+        <span class="n">runs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PipelineRunView</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">all_pipeline_runs</span><span class="p">:</span>
+            <span class="n">executions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_executions_by_context</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_if_executions_belong_to_pipeline</span><span class="p">(</span>
+                <span class="n">executions</span><span class="p">,</span> <span class="n">pipeline</span>
+            <span class="p">):</span>
+                <span class="n">run_view</span> <span class="o">=</span> <span class="n">PipelineRunView</span><span class="p">(</span>
+                    <span class="n">id_</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">executions</span><span class="o">=</span><span class="n">executions</span><span class="p">,</span>
+                    <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">runs</span><span class="p">[</span><span class="n">run</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_view</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;Fetched </span><span class="si">%d</span><span class="s2"> pipeline runs for pipeline named &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">runs</span><span class="p">),</span>
+            <span class="n">pipeline</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">runs</span>
+
+    <span class="k">def</span> <span class="nf">get_pipeline_run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">:</span> <span class="n">PipelineView</span><span class="p">,</span> <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PipelineRunView</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Gets a specific run for the given pipeline.&quot;&quot;&quot;</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_context_by_type_and_name</span><span class="p">(</span>
+            <span class="n">PIPELINE_RUN_CONTEXT_TYPE_NAME</span><span class="p">,</span> <span class="n">run_name</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">run</span><span class="p">:</span>
+            <span class="c1"># No context found for the given run name</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">executions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_executions_by_context</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_if_executions_belong_to_pipeline</span><span class="p">(</span><span class="n">executions</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Fetched pipeline run with name &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">run_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">PipelineRunView</span><span class="p">(</span>
+                <span class="n">id_</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">executions</span><span class="o">=</span><span class="n">executions</span><span class="p">,</span>
+                <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No pipeline run found for name &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">run_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">get_pipeline_run_steps</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_run</span><span class="p">:</span> <span class="n">PipelineRunView</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepView</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Gets all steps for the given pipeline run.&quot;&quot;&quot;</span>
+        <span class="n">steps</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepView</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="c1"># reverse the executions as they get returned in reverse chronological</span>
+        <span class="c1"># order from the metadata store</span>
+        <span class="k">for</span> <span class="n">execution</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">_executions</span><span class="p">):</span>  <span class="c1"># noqa</span>
+            <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_step_view_from_execution</span><span class="p">(</span><span class="n">execution</span><span class="p">)</span>
+            <span class="n">steps</span><span class="p">[</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">step</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;Fetched </span><span class="si">%d</span><span class="s2"> steps for pipeline run &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">),</span>
+            <span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">steps</span>
+
+    <span class="k">def</span> <span class="nf">get_step_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepView</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Gets a `StepView` by its ID&quot;&quot;&quot;</span>
+        <span class="n">execution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_executions_by_id</span><span class="p">([</span><span class="n">step_id</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_step_view_from_execution</span><span class="p">(</span><span class="n">execution</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_step_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="n">StepView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Gets the execution status of a single step.&quot;&quot;&quot;</span>
+        <span class="n">proto</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_executions_by_id</span><span class="p">([</span><span class="n">step</span><span class="o">.</span><span class="n">_id</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># noqa</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">proto</span><span class="o">.</span><span class="n">last_known_state</span>
+
+        <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="n">proto</span><span class="o">.</span><span class="n">COMPLETE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">COMPLETED</span>
+        <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="n">proto</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">RUNNING</span>
+        <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="n">proto</span><span class="o">.</span><span class="n">CACHED</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">CACHED</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">FAILED</span>
+
+    <span class="k">def</span> <span class="nf">get_step_artifacts</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="n">StepView</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactView</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactView</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns input and output artifacts for the given step.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            step: The step for which to get the artifacts.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A tuple (inputs, outputs) where inputs and outputs</span>
+<span class="sd">            are both Dicts mapping artifact names</span>
+<span class="sd">            to the input and output artifacts respectively.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># maps artifact types to their string representation</span>
+        <span class="n">artifact_type_mapping</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">type_</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">type_</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">type_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_artifact_types</span><span class="p">()</span>
+        <span class="p">}</span>
+
+        <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_events_by_execution_ids</span><span class="p">([</span><span class="n">step</span><span class="o">.</span><span class="n">_id</span><span class="p">])</span>  <span class="c1"># noqa</span>
+        <span class="n">artifacts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_artifacts_by_id</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">event</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactView</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">outputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactView</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># sort them according to artifact_id&#39;s so that the zip works.</span>
+        <span class="n">events</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">)</span>
+        <span class="n">artifacts</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">event_proto</span><span class="p">,</span> <span class="n">artifact_proto</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">artifacts</span><span class="p">):</span>
+            <span class="n">artifact_type</span> <span class="o">=</span> <span class="n">artifact_type_mapping</span><span class="p">[</span><span class="n">artifact_proto</span><span class="o">.</span><span class="n">type_id</span><span class="p">]</span>
+            <span class="n">artifact_name</span> <span class="o">=</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">key</span>
+
+            <span class="n">materializer</span> <span class="o">=</span> <span class="n">artifact_proto</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span>
+                <span class="n">MATERIALIZER_PROPERTY_KEY</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">string_value</span>
+
+            <span class="n">data_type</span> <span class="o">=</span> <span class="n">artifact_proto</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span>
+                <span class="n">DATATYPE_PROPERTY_KEY</span>
+            <span class="p">]</span><span class="o">.</span><span class="n">string_value</span>
+
+            <span class="n">parent_step_id</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">id</span>
+            <span class="k">if</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">INPUT</span><span class="p">:</span>
+                <span class="c1"># In the case that this is an input event, we actually need</span>
+                <span class="c1"># to resolve it via its parents outputs.</span>
+                <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">parent_steps</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">parent</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">artifact_proto</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">a</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                            <span class="n">parent_step_id</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">id</span>
+
+            <span class="n">artifact</span> <span class="o">=</span> <span class="n">ArtifactView</span><span class="p">(</span>
+                <span class="n">id_</span><span class="o">=</span><span class="n">event_proto</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+                <span class="n">type_</span><span class="o">=</span><span class="n">artifact_type</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="n">artifact_proto</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span>
+                <span class="n">materializer</span><span class="o">=</span><span class="n">materializer</span><span class="p">,</span>
+                <span class="n">data_type</span><span class="o">=</span><span class="n">data_type</span><span class="p">,</span>
+                <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">parent_step_id</span><span class="o">=</span><span class="n">parent_step_id</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">INPUT</span><span class="p">:</span>
+                <span class="n">inputs</span><span class="p">[</span><span class="n">artifact_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">artifact</span>
+            <span class="k">elif</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">OUTPUT</span><span class="p">:</span>
+                <span class="n">outputs</span><span class="p">[</span><span class="n">artifact_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">artifact</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;Fetched </span><span class="si">%d</span><span class="s2"> inputs and </span><span class="si">%d</span><span class="s2"> outputs for step &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">),</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">),</span>
+            <span class="n">step</span><span class="o">.</span><span class="n">entrypoint_name</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+
+    <span class="k">def</span> <span class="nf">get_producer_step_from_artifact</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">artifact</span><span class="p">:</span> <span class="n">ArtifactView</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepView</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns original StepView from an ArtifactView.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            artifact: ArtifactView to be queried.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Original StepView that produced the artifact.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">executions_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+            <span class="n">event</span><span class="o">.</span><span class="n">execution_id</span>
+            <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_events_by_artifact_ids</span><span class="p">([</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">OUTPUT</span>
+        <span class="p">)</span>
+        <span class="n">execution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_executions_by_id</span><span class="p">(</span><span class="n">executions_ids</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_step_view_from_execution</span><span class="p">(</span><span class="n">execution</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.flavor" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">flavor</span><span class="p">:</span> <span class="n">MetadataStoreFlavor</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>The metadata store flavor.</p>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.step_type_mapping" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">step_type_mapping</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Maps type_id's to step names.</p>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.store" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">store</span><span class="p">:</span> <span class="n">MetadataStore</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>General property that hooks into TFX metadata store.</p>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.type" class="doc doc-heading">
+<code class="highlight language-python"><span class="nb">type</span><span class="p">:</span> <span class="n">StackComponentType</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>The component type.</p>
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_name</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns a pipeline for the given name.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PipelineView</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Returns a pipeline for the given name.&quot;&quot;&quot;</span>
+    <span class="n">pipeline_context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_context_by_type_and_name</span><span class="p">(</span>
+        <span class="n">PIPELINE_CONTEXT_TYPE_NAME</span><span class="p">,</span> <span class="n">pipeline_name</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">pipeline_context</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Fetched pipeline with name &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">pipeline_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PipelineView</span><span class="p">(</span>
+            <span class="n">id_</span><span class="o">=</span><span class="n">pipeline_context</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">pipeline_context</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No pipelines found for name &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">pipeline_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline_run" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_pipeline_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">,</span> <span class="n">run_name</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets a specific run for the given pipeline.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline_run</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">:</span> <span class="n">PipelineView</span><span class="p">,</span> <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PipelineRunView</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Gets a specific run for the given pipeline.&quot;&quot;&quot;</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_context_by_type_and_name</span><span class="p">(</span>
+        <span class="n">PIPELINE_RUN_CONTEXT_TYPE_NAME</span><span class="p">,</span> <span class="n">run_name</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">run</span><span class="p">:</span>
+        <span class="c1"># No context found for the given run name</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">executions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_executions_by_context</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_if_executions_belong_to_pipeline</span><span class="p">(</span><span class="n">executions</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Fetched pipeline run with name &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">run_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PipelineRunView</span><span class="p">(</span>
+            <span class="n">id_</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">executions</span><span class="o">=</span><span class="n">executions</span><span class="p">,</span>
+            <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No pipeline run found for name &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="n">run_name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline_run_steps" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_pipeline_run_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_run</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets all steps for the given pipeline run.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline_run_steps</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_run</span><span class="p">:</span> <span class="n">PipelineRunView</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepView</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Gets all steps for the given pipeline run.&quot;&quot;&quot;</span>
+    <span class="n">steps</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepView</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="c1"># reverse the executions as they get returned in reverse chronological</span>
+    <span class="c1"># order from the metadata store</span>
+    <span class="k">for</span> <span class="n">execution</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">_executions</span><span class="p">):</span>  <span class="c1"># noqa</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_step_view_from_execution</span><span class="p">(</span><span class="n">execution</span><span class="p">)</span>
+        <span class="n">steps</span><span class="p">[</span><span class="n">step</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">step</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">&quot;Fetched </span><span class="si">%d</span><span class="s2"> steps for pipeline run &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">steps</span><span class="p">),</span>
+        <span class="n">pipeline_run</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">steps</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipeline_runs" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_pipeline_runs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets all runs for the given pipeline.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline_runs</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">pipeline</span><span class="p">:</span> <span class="n">PipelineView</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PipelineRunView</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Gets all runs for the given pipeline.&quot;&quot;&quot;</span>
+    <span class="n">all_pipeline_runs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_contexts_by_type</span><span class="p">(</span>
+        <span class="n">PIPELINE_RUN_CONTEXT_TYPE_NAME</span>
+    <span class="p">)</span>
+    <span class="n">runs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">PipelineRunView</span><span class="p">]</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">all_pipeline_runs</span><span class="p">:</span>
+        <span class="n">executions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_executions_by_context</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_if_executions_belong_to_pipeline</span><span class="p">(</span>
+            <span class="n">executions</span><span class="p">,</span> <span class="n">pipeline</span>
+        <span class="p">):</span>
+            <span class="n">run_view</span> <span class="o">=</span> <span class="n">PipelineRunView</span><span class="p">(</span>
+                <span class="n">id_</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">executions</span><span class="o">=</span><span class="n">executions</span><span class="p">,</span>
+                <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">runs</span><span class="p">[</span><span class="n">run</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_view</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">&quot;Fetched </span><span class="si">%d</span><span class="s2"> pipeline runs for pipeline named &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">runs</span><span class="p">),</span>
+        <span class="n">pipeline</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">runs</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_pipelines" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_pipelines</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns a list of all pipelines stored in this metadata store.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipelines</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PipelineView</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Returns a list of all pipelines stored in this metadata store.&quot;&quot;&quot;</span>
+    <span class="n">pipelines</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pipeline_context</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_contexts_by_type</span><span class="p">(</span>
+        <span class="n">PIPELINE_CONTEXT_TYPE_NAME</span>
+    <span class="p">):</span>
+        <span class="n">pipeline</span> <span class="o">=</span> <span class="n">PipelineView</span><span class="p">(</span>
+            <span class="n">id_</span><span class="o">=</span><span class="n">pipeline_context</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">pipeline_context</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">pipelines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pipeline</span><span class="p">)</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Fetched </span><span class="si">%d</span><span class="s2"> pipelines.&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">pipelines</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pipelines</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_producer_step_from_artifact" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_producer_step_from_artifact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">artifact</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns original StepView from an ArtifactView.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>artifact</code></td>
+        <td><code>ArtifactView</code></td>
+        <td><p>ArtifactView to be queried.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>StepView</code></td>
+      <td><p>Original StepView that produced the artifact.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_producer_step_from_artifact</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">artifact</span><span class="p">:</span> <span class="n">ArtifactView</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepView</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Returns original StepView from an ArtifactView.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        artifact: ArtifactView to be queried.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Original StepView that produced the artifact.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">executions_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+        <span class="n">event</span><span class="o">.</span><span class="n">execution_id</span>
+        <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_events_by_artifact_ids</span><span class="p">([</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">event</span><span class="o">.</span><span class="n">OUTPUT</span>
+    <span class="p">)</span>
+    <span class="n">execution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_executions_by_id</span><span class="p">(</span><span class="n">executions_ids</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_step_view_from_execution</span><span class="p">(</span><span class="n">execution</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_step_artifacts" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_step_artifacts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Returns input and output artifacts for the given step.</p>
+
+<p><strong>Parameters:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>step</code></td>
+        <td><code>StepView</code></td>
+        <td><p>The step for which to get the artifacts.</p></td>
+        <td><em>required</em></td>
+      </tr>
+  </tbody>
+</table>
+<p><strong>Returns:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>Tuple[Dict[str, zenml.post_execution.artifact.ArtifactView], Dict[str, zenml.post_execution.artifact.ArtifactView]]</code></td>
+      <td><p>A tuple (inputs, outputs) where inputs and outputs
+are both Dicts mapping artifact names
+to the input and output artifacts respectively.</p></td>
+    </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_step_artifacts</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="n">StepView</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactView</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactView</span><span class="p">]]:</span>
+    <span class="sd">&quot;&quot;&quot;Returns input and output artifacts for the given step.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        step: The step for which to get the artifacts.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A tuple (inputs, outputs) where inputs and outputs</span>
+<span class="sd">        are both Dicts mapping artifact names</span>
+<span class="sd">        to the input and output artifacts respectively.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># maps artifact types to their string representation</span>
+    <span class="n">artifact_type_mapping</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">type_</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">type_</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">type_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_artifact_types</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_events_by_execution_ids</span><span class="p">([</span><span class="n">step</span><span class="o">.</span><span class="n">_id</span><span class="p">])</span>  <span class="c1"># noqa</span>
+    <span class="n">artifacts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_artifacts_by_id</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">event</span><span class="o">.</span><span class="n">artifact_id</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactView</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">outputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ArtifactView</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># sort them according to artifact_id&#39;s so that the zip works.</span>
+    <span class="n">events</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">)</span>
+    <span class="n">artifacts</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">event_proto</span><span class="p">,</span> <span class="n">artifact_proto</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">artifacts</span><span class="p">):</span>
+        <span class="n">artifact_type</span> <span class="o">=</span> <span class="n">artifact_type_mapping</span><span class="p">[</span><span class="n">artifact_proto</span><span class="o">.</span><span class="n">type_id</span><span class="p">]</span>
+        <span class="n">artifact_name</span> <span class="o">=</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">steps</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">key</span>
+
+        <span class="n">materializer</span> <span class="o">=</span> <span class="n">artifact_proto</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span>
+            <span class="n">MATERIALIZER_PROPERTY_KEY</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">string_value</span>
+
+        <span class="n">data_type</span> <span class="o">=</span> <span class="n">artifact_proto</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span>
+            <span class="n">DATATYPE_PROPERTY_KEY</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">string_value</span>
+
+        <span class="n">parent_step_id</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">if</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">INPUT</span><span class="p">:</span>
+            <span class="c1"># In the case that this is an input event, we actually need</span>
+            <span class="c1"># to resolve it via its parents outputs.</span>
+            <span class="k">for</span> <span class="n">parent</span> <span class="ow">in</span> <span class="n">step</span><span class="o">.</span><span class="n">parent_steps</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">parent</span><span class="o">.</span><span class="n">outputs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">artifact_proto</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">a</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+                        <span class="n">parent_step_id</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">id</span>
+
+        <span class="n">artifact</span> <span class="o">=</span> <span class="n">ArtifactView</span><span class="p">(</span>
+            <span class="n">id_</span><span class="o">=</span><span class="n">event_proto</span><span class="o">.</span><span class="n">artifact_id</span><span class="p">,</span>
+            <span class="n">type_</span><span class="o">=</span><span class="n">artifact_type</span><span class="p">,</span>
+            <span class="n">uri</span><span class="o">=</span><span class="n">artifact_proto</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span>
+            <span class="n">materializer</span><span class="o">=</span><span class="n">materializer</span><span class="p">,</span>
+            <span class="n">data_type</span><span class="o">=</span><span class="n">data_type</span><span class="p">,</span>
+            <span class="n">metadata_store</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">parent_step_id</span><span class="o">=</span><span class="n">parent_step_id</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">INPUT</span><span class="p">:</span>
+            <span class="n">inputs</span><span class="p">[</span><span class="n">artifact_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">artifact</span>
+        <span class="k">elif</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">event_proto</span><span class="o">.</span><span class="n">OUTPUT</span><span class="p">:</span>
+            <span class="n">outputs</span><span class="p">[</span><span class="n">artifact_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">artifact</span>
+
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">&quot;Fetched </span><span class="si">%d</span><span class="s2"> inputs and </span><span class="si">%d</span><span class="s2"> outputs for step &#39;</span><span class="si">%s</span><span class="s2">&#39;.&quot;</span><span class="p">,</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">inputs</span><span class="p">),</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">),</span>
+        <span class="n">step</span><span class="o">.</span><span class="n">entrypoint_name</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_step_by_id" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_step_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_id</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets a <code>StepView</code> by its ID</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_step_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepView</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Gets a `StepView` by its ID&quot;&quot;&quot;</span>
+    <span class="n">execution</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_executions_by_id</span><span class="p">([</span><span class="n">step_id</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_step_view_from_execution</span><span class="p">(</span><span class="n">execution</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_step_status" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_step_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets the execution status of a single step.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_step_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="n">StepView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Gets the execution status of a single step.&quot;&quot;&quot;</span>
+    <span class="n">proto</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">get_executions_by_id</span><span class="p">([</span><span class="n">step</span><span class="o">.</span><span class="n">_id</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># noqa</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">proto</span><span class="o">.</span><span class="n">last_known_state</span>
+
+    <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="n">proto</span><span class="o">.</span><span class="n">COMPLETE</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">COMPLETED</span>
+    <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="n">proto</span><span class="o">.</span><span class="n">RUNNING</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">RUNNING</span>
+    <span class="k">elif</span> <span class="n">state</span> <span class="o">==</span> <span class="n">proto</span><span class="o">.</span><span class="n">CACHED</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">CACHED</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ExecutionStatus</span><span class="o">.</span><span class="n">FAILED</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.base_metadata_store.BaseMetadataStore.get_tfx_metadata_config" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_tfx_metadata_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Return tfx metadata config.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/base_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span> <span class="nf">get_tfx_metadata_config</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">ConnectionConfig</span><span class="p">,</span>
+    <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">MetadataStoreClientConfig</span><span class="p">,</span>
+<span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Return tfx metadata config.&quot;&quot;&quot;</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.metadata_stores.mysql_metadata_store" class="doc doc-heading">
+        <code>mysql_metadata_store</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore" class="doc doc-heading">
+        <code>
+MySQLMetadataStore            (<a title="zenml.metadata_stores.base_metadata_store.BaseMetadataStore" href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore">BaseMetadataStore</a>)
+        </code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-pydantic-model"><code>pydantic-model</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>MySQL backend for ZenML metadata store.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/mysql_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MySQLMetadataStore</span><span class="p">(</span><span class="n">BaseMetadataStore</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;MySQL backend for ZenML metadata store.&quot;&quot;&quot;</span>
+
+    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">port</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">database</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">supports_local_execution</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">supports_remote_execution</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">flavor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataStoreFlavor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The metadata store flavor.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">MetadataStoreFlavor</span><span class="o">.</span><span class="n">MYSQL</span>
+
+    <span class="k">def</span> <span class="nf">get_tfx_metadata_config</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">ConnectionConfig</span><span class="p">,</span>
+        <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">MetadataStoreClientConfig</span><span class="p">,</span>
+    <span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return tfx metadata config for mysql metadata store.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">metadata</span><span class="o">.</span><span class="n">mysql_metadata_connection_config</span><span class="p">(</span>
+            <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+            <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+            <span class="n">database</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">database</span><span class="p">,</span>
+            <span class="n">username</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+            <span class="n">password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">,</span>
+        <span class="p">)</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore.flavor" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">flavor</span><span class="p">:</span> <span class="n">MetadataStoreFlavor</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>The metadata store flavor.</p>
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore.get_tfx_metadata_config" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_tfx_metadata_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Return tfx metadata config for mysql metadata store.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/mysql_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_tfx_metadata_config</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">ConnectionConfig</span><span class="p">,</span>
+    <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">MetadataStoreClientConfig</span><span class="p">,</span>
+<span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Return tfx metadata config for mysql metadata store.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">metadata</span><span class="o">.</span><span class="n">mysql_metadata_connection_config</span><span class="p">(</span>
+        <span class="n">host</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">host</span><span class="p">,</span>
+        <span class="n">port</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+        <span class="n">database</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">database</span><span class="p">,</span>
+        <span class="n">username</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+        <span class="n">password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-module">
+
+
+
+<h3 id="zenml.metadata_stores.sqlite_metadata_store" class="doc doc-heading">
+        <code>sqlite_metadata_store</code>
+
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-class">
+
+
+
+<h4 id="zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore" class="doc doc-heading">
+        <code>
+SQLiteMetadataStore            (<a title="zenml.metadata_stores.base_metadata_store.BaseMetadataStore" href="#zenml.metadata_stores.base_metadata_store.BaseMetadataStore">BaseMetadataStore</a>)
+        </code>
+
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-pydantic-model"><code>pydantic-model</code></small>
+  </span>
+
+</h4>
+
+    <div class="doc doc-contents ">
+
+      <p>SQLite backend for ZenML metadata store.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/sqlite_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SQLiteMetadataStore</span><span class="p">(</span><span class="n">BaseMetadataStore</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;SQLite backend for ZenML metadata store.&quot;&quot;&quot;</span>
+
+    <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">supports_local_execution</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">supports_remote_execution</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">flavor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataStoreFlavor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;The metadata store flavor.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">MetadataStoreFlavor</span><span class="o">.</span><span class="n">SQLITE</span>
+
+    <span class="k">def</span> <span class="nf">get_tfx_metadata_config</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">ConnectionConfig</span><span class="p">,</span>
+        <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">MetadataStoreClientConfig</span><span class="p">,</span>
+    <span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return tfx metadata config for sqlite metadata store.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">metadata</span><span class="o">.</span><span class="n">sqlite_metadata_connection_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">)</span>
+
+    <span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;uri&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">ensure_uri_is_local</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Ensures that the metadata store uri is local.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">is_remote</span><span class="p">(</span><span class="n">uri</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Uri &#39;</span><span class="si">{</span><span class="n">uri</span><span class="si">}</span><span class="s2">&#39; specified for SQLiteMetadataStore is not a &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;local uri.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">uri</span>
+</code></pre></div>
+        </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-attribute">
+
+
+
+<h5 id="zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore.flavor" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">flavor</span><span class="p">:</span> <span class="n">MetadataStoreFlavor</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-property"><code>property</code></small>
+      <small class="doc doc-property doc-property-readonly"><code>readonly</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>The metadata store flavor.</p>
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore.ensure_uri_is_local" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">ensure_uri_is_local</span><span class="p">(</span><span class="n">uri</span><span class="p">)</span></code>
+
+  <span class="doc doc-properties">
+      <small class="doc doc-property doc-property-classmethod"><code>classmethod</code></small>
+  </span>
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Ensures that the metadata store uri is local.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/sqlite_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="nd">@validator</span><span class="p">(</span><span class="s2">&quot;uri&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">ensure_uri_is_local</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Ensures that the metadata store uri is local.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">fileio</span><span class="o">.</span><span class="n">is_remote</span><span class="p">(</span><span class="n">uri</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Uri &#39;</span><span class="si">{</span><span class="n">uri</span><span class="si">}</span><span class="s2">&#39; specified for SQLiteMetadataStore is not a &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;local uri.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">uri</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h5 id="zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore.get_tfx_metadata_config" class="doc doc-heading">
+<code class="highlight language-python"><span class="n">get_tfx_metadata_config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+
+</h5>
+
+    <div class="doc doc-contents ">
+
+      <p>Return tfx metadata config for sqlite metadata store.</p>
+
+        <details class="quote">
+          <summary>Source code in <code>zenml/metadata_stores/sqlite_metadata_store.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_tfx_metadata_config</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
+    <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">ConnectionConfig</span><span class="p">,</span>
+    <span class="n">metadata_store_pb2</span><span class="o">.</span><span class="n">MetadataStoreClientConfig</span><span class="p">,</span>
+<span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Return tfx metadata config for sqlite metadata store.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">metadata</span><span class="o">.</span><span class="n">sqlite_metadata_connection_config</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+
+
+
+  </div>
+
+    </div>
+
+  </div>
+
+              
+            </article>
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../materializers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Materializers" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Materializers
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../orchestrators/" class="md-footer__link md-footer__link--next" aria-label="Next: Orchestrators" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Orchestrators
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2022 ZenML GmbH
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.092fa1f6.min.js", "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.e3b2bf44.min.js"></script>
+      
+    
+  </body>
+</html>
