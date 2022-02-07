@@ -180,6 +180,5 @@ zenml_examples/
 # Prettier
 .prettierignore
 
-# mutmut / hammet incidental files
-.hammett-db
-.mutmut-cache
+# Docs
+docs/sphinx_docs/_build
