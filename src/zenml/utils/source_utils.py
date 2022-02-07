@@ -40,7 +40,7 @@ from types import (
     ModuleType,
     TracebackType,
 )
-from typing import Any, Callable, Optional, Type, Union, Iterator
+from typing import Any, Callable, Iterator, Optional, Type, Union
 
 from zenml import __version__
 from zenml.constants import APP_NAME
