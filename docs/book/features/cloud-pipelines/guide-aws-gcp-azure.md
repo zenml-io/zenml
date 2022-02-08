@@ -12,41 +12,35 @@ This guide will show how you can run the a pipeline in Kubeflow Pipelines deploy
 ### Orchestrator
 
 {% tabs %}
-
 {% tab title="AWS" %}
+* Have an existing AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html) set up.
+*   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-connection/) it to talk to your EKS cluster using the following command. Make sure you have the `aws` cli set up first.
 
-- Have an existing AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html) set up.
-- Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-connection/) it to talk to your EKS cluster using the following command. Make sure you have the `aws` cli set up first.
-    
     ```powershell
     aws eks --region REGION update-kubeconfig --name CLUSTER_NAME
     ```
-    
-- [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
-    
-    {% hint style="info" %}
-    &#x20;If one or more of the deployments are not in the `Running` state, try increasing the number of nodes in your cluster.
-    {% endhint %}
+* [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
 
-    {% hint style="warning" %}
-    If you are doing a manual install of the Kubeflow Pipelines, make sure that the service name for the ML pipeline is exactly `ml-pipeline` . This will ensure that ZenML can talk to your Kubeflow deployment.
-    {% endhint %}
+{% hint style="info" %}
+&#x20;If one or more of the deployments are not in the `Running` state, try increasing the number of nodes in your cluster.
+{% endhint %}
+
+{% hint style="warning" %}
+If you are doing a manual install of the Kubeflow Pipelines, make sure that the service name for the ML pipeline is exactly `ml-pipeline` . This will ensure that ZenML can talk to your Kubeflow deployment.
+{% endhint %}
 {% endtab %}
 
+{% tab title="GCP" %}
+* Have an existing GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart) set up.
+*   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) it to talk to your GKE cluster using the following command. Make sure you have the Google Cloud CLI set up first.
 
-{% tab title="GCP" %} 
-
-- Have an existing GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart) set up.
-- Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) it to talk to your GKE cluster using the following command. Make sure you have the Google Cloud CLI set up first.
-    
     ```powershell
     gcloud container clusters get-credentials CLUSTER_NAME
     ```
-    
-- [Install](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/) Kubeflow Pipelines onto your cluster.
-    
+*   [Install](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/) Kubeflow Pipelines onto your cluster.
+
     {% hint style="info" %}
-    &#x20;If one or more of the deployments are not in the \`Running\` state, try increasing the number of nodes in your cluster.
+    If one or more of the deployments are not in the \`Running\` state, try increasing the number of nodes in your cluster.
     {% endhint %}
 
     {% hint style="warning" %}
@@ -54,16 +48,10 @@ This guide will show how you can run the a pipeline in Kubeflow Pipelines deploy
     {% endhint %}
 {% endtab %}
 
-
-{% tab title="Azure" %} 
-
+{% tab title="Azure" %}
 Coming soon!
-
-{% endtab %} 
-
-
+{% endtab %}
 {% endtabs %}
-
 
     
 ### Container Registry
