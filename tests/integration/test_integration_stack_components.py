@@ -30,7 +30,9 @@ from zenml.stack.stack_component_class_registry import (
 def test_registration_of_integration_stack_components():
     """Tests that activating the integrations registers all available stack
     components."""
+    logging.error(f"Start")
     integration_registry.activate_integrations()
+    logging.error(f"Activated")
 
     for flavor in OrchestratorFlavor:
         logging.error(f"Orchestrator: {flavor}")
