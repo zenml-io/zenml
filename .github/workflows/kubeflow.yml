@@ -44,13 +44,17 @@ jobs:
           python -m poetry install
           python -m poetry run zenml integration install kubeflow sklearn -f
 
+      - name: Build docker image
+        run: docker build -t localhost:5000/base-image:latest -f docker/ci.Dockerfile .
+
       - name: Setup stack
         run: |
           cd examples/kubeflow
           python -m poetry run zenml init
-          python -m poetry run zenml orchestrator register kubeflow_orchestrator --type=kubeflow
+          python -m poetry run zenml orchestrator register kubeflow_orchestrator --type=kubeflow --custom_docker_base_image_name=localhost:5000/base-image:latest
           python -m poetry run zenml container-registry register local_registry --type=default --uri=localhost:5000
           python -m poetry run zenml stack register local_kubeflow_stack -m local_metadata_store -a local_artifact_store -o kubeflow_orchestrator -c local_registry
           python -m poetry run zenml stack set local_kubeflow_stack
           python -m poetry run zenml stack up
+          docker push localhost:5000/base-image:latest
           python -m poetry run python run.py
