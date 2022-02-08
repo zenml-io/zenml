@@ -37,7 +37,8 @@
 * [Caching](features/caching.md)
 * [Integrations](features/integrations.md)
 * [Standardized Artifacts](features/artifacts.md)
-* [Run Your Pipelines in the Cloud](features/cloud-pipelines.md)
+* [Run Your Pipelines in the Cloud](features/cloud-pipelines/cloud-pipelines.md)
+  * [Cloud-specific guide](features/cloud-pipelines/guide-aws-gcp-azure.md)
 * [Step Fixtures](features/step-fixtures.md)
 
 ## Support
