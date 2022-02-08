@@ -8,7 +8,7 @@
 
 At its core, **ZenML pipelines execute ML-specific workflows** from sourcing data to splitting, preprocessing, training, all the way to the evaluation of results and even serving. There are many built-in batteries to support common ML development tasks. ZenML is not here to replace the great tools that solve these individual problems. Rather, it **integrates natively with popular ML tooling** and gives standard abstraction to write your workflows.
 
-🎉 **Version 0.6.0 out now!** [Check out the release notes here](https://github.com/zenml-io/zenml/releases).
+🎉 **Version 0.6.1 out now!** [Check out the release notes here](https://github.com/zenml-io/zenml/releases).
 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
@@ -52,7 +52,7 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
 | 🗃 **[Functional API Guide]** | Build production ML pipelines with simple functions. |
-| 🚀 **[New in v0.6.0]** | New features, bug fixes. |
+| 🚀 **[New in v0.6.1]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
 | 📒 **[API Reference]** | The detailed reference for ZenML's API. |
@@ -67,7 +67,7 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
 [Functional API Guide]: https://docs.zenml.io/v/docs/guides/functional-api
-[New in v0.6.0]: https://github.com/zenml-io/zenml/releases
+[New in v0.6.1]: https://github.com/zenml-io/zenml/releases
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
 [API Reference]: https://apidocs.zenml.io/

@@ -45,6 +45,7 @@ class StackComponentFlavor(StrEnum):
 class ArtifactStoreFlavor(StackComponentFlavor):
     """All supported artifact store flavors."""
 
+    AZURE = "azure"
     LOCAL = "local"
     GCP = "gcp"
     S3 = "s3"

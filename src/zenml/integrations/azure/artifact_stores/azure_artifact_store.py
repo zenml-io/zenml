@@ -23,10 +23,10 @@ from zenml.stack.stack_component_class_registry import (
 
 @register_stack_component_class(
     component_type=StackComponentType.ARTIFACT_STORE,
-    component_flavor=ArtifactStoreFlavor.S3,
+    component_flavor=ArtifactStoreFlavor.AZURE,
 )
-class S3ArtifactStore(BaseArtifactStore):
-    """Artifact Store for Amazon S3 based artifacts."""
+class AzureArtifactStore(BaseArtifactStore):
+    """Artifact Store for Microsoft Azure based artifacts."""
 
     supports_local_execution = True
     supports_remote_execution = True
@@ -34,14 +34,16 @@ class S3ArtifactStore(BaseArtifactStore):
     @property
     def flavor(self) -> ArtifactStoreFlavor:
         """The artifact store flavor."""
-        return ArtifactStoreFlavor.S3
+        return ArtifactStoreFlavor.AZURE
 
     @validator("path")
-    def ensure_s3_path(cls, path: str) -> str:
-        """Ensures that the path is a valid s3 path."""
-        if not path.startswith("s3://"):
+    def ensure_azure_path(cls, path: str) -> str:
+        """Ensures that the path is a valid azure path."""
+        path_prefixes = ["abfs://", "az://"]
+        if not any(path.startswith(prefix) for prefix in path_prefixes):
             raise ValueError(
-                f"Path '{path}' specified for S3ArtifactStore is not a "
-                f"valid s3 path, i.e., starting with `s3://`."
+                f"Path '{path}' specified for AzureArtifactStore is not a "
+                f"valid Azure Blob Storage path, i.e., starting with one of "
+                f"{path_prefixes}."
             )
         return path
