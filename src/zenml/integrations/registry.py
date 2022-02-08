@@ -61,7 +61,6 @@ class IntegrationRegistry(object):
         import logging
 
         for name, integration in self._integrations.items():
-            logging.error(name)
             if integration.check_installation():
                 integration.activate()
                 logging.error(f"Integration `{name}` is activated.")

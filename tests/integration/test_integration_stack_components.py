@@ -32,31 +32,26 @@ def test_registration_of_integration_stack_components():
     components."""
     logging.error("Start")
     integration_registry.activate_integrations()
-    logging.error("Activated")
 
     for flavor in OrchestratorFlavor:
-        logging.error(f"Orchestrator: {flavor}")
         assert StackComponentClassRegistry.get_class(
             component_type=StackComponentType.ORCHESTRATOR,
             component_flavor=flavor,
         )
 
     for flavor in MetadataStoreFlavor:
-        logging.error(f"MS: {flavor}")
         assert StackComponentClassRegistry.get_class(
             component_type=StackComponentType.METADATA_STORE,
             component_flavor=flavor,
         )
 
     for flavor in ArtifactStoreFlavor:
-        logging.error(f"AS: {flavor}")
         assert StackComponentClassRegistry.get_class(
             component_type=StackComponentType.ARTIFACT_STORE,
             component_flavor=flavor,
         )
 
     for flavor in ContainerRegistryFlavor:
-        logging.error(f"CR: {flavor}")
         assert StackComponentClassRegistry.get_class(
             component_type=StackComponentType.CONTAINER_REGISTRY,
             component_flavor=flavor,
