@@ -24,17 +24,15 @@ This guide will show how you can run the a pipeline in Kubeflow Pipelines deploy
     
 - [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
     
-    <aside>
-    🚧 If one or more of the deployments are not in the `Running` state, try increasing the number of nodes in your cluster.
-    
-    </aside>
-    
-    <aside>
-    📢 If you are doing a manual install of the Kubeflow Pipelines, make sure that the service name for the ML pipeline is exactly `ml-pipeline` . This will ensure that ZenML can talk to your Kubeflow deployment.
-    
-    </aside>
+    {% hint style="info" %}
+    &#x20;If one or more of the deployments are not in the `Running` state, try increasing the number of nodes in your cluster.
+    {% endhint %}
 
+    {% hint style="warning" %}
+    If you are doing a manual install of the Kubeflow Pipelines, make sure that the service name for the ML pipeline is exactly `ml-pipeline` . This will ensure that ZenML can talk to your Kubeflow deployment.
+    {% endhint %}
 {% endtab %}
+
 
 {% tab title="GCP" %} 
 
@@ -47,18 +45,14 @@ This guide will show how you can run the a pipeline in Kubeflow Pipelines deploy
     
 - [Install](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/) Kubeflow Pipelines onto your cluster.
     
-    <aside>
-    🚧 If one or more of the deployments are not in the `Running` state, try increasing the number of nodes in your cluster.
-    
-    </aside>
-    
-    <aside>
-    📢 If you are doing a manual install of the Kubeflow Pipelines, make sure that the service name for the ML pipeline is exactly `ml-pipeline` . This will ensure that ZenML can talk to your Kubeflow deployment.
-    
-    </aside>
+    {% hint style="info" %}
+    &#x20;If one or more of the deployments are not in the \`Running\` state, try increasing the number of nodes in your cluster.
+    {% endhint %}
 
-
-{% endtab %} 
+    {% hint style="warning" %}
+    If you are doing a manual install of the Kubeflow Pipelines, make sure that the service name for the ML pipeline is exactly \`ml-pipeline\` . This will ensure that ZenML can talk to your Kubeflow deployment.
+    {% endhint %}
+{% endtab %}
 
 
 {% tab title="Azure" %} 
@@ -123,7 +117,7 @@ Coming soon!
 
 {% tab title="GCP" %}
 
-- [Create](https://cloud.google.com/storage/docs/creating-buckets) GCP Cloud Storage Bucket in a region of your choice.
+- [Create](https://cloud.google.com/storage/docs/creating-buckets) a GCP Cloud Storage Bucket in a region of your choice.
 - Make sure that your GKE cluster is authorized to access the GCS bucket.
 - The path for your bucket should be in this format `gs://your-bucket`
 
@@ -170,21 +164,6 @@ To run our pipeline on Kubeflow Pipelines deployed to AWS, we will create a new 
     zenml stack register cloud_kubeflow_stack -m kubeflow_metadata_store -a cloud_artifact_store -o cloud_orchestrator -c cloud_registry
     ```
     
-    <aside>
-    💡 The **metadata store** stores metadata inside the Kubeflow Pipelines internal MySQL database.
-    
-    </aside>
-    
-    <aside>
-    💡 You can choose any name for your stack components apart from the ones used in the script above.
-    
-    </aside>
-    
-    <aside>
-    ✅ Make sure to replace `$PATH_TO_YOUR_BUCKET` and `$PATH_TO_YOUR_CONTAINER_REGISTRY`  with the actual URI's of your bucket and container registry.
-    
-    </aside>
-    
 3. Activate the newly created stack.
     
     ```powershell
@@ -192,3 +171,12 @@ To run our pipeline on Kubeflow Pipelines deployed to AWS, we will create a new 
     ```
     
 4. Do a pipeline run and check your Kubeflow UI to see it running there! 🚀
+
+{% hint style="info" %}
+* The **metadata store** stores metadata inside the Kubeflow Pipelines internal MySQL database.
+* You can choose any name for your stack components apart from the ones used in the script above.
+{% endhint %}
+
+{% hint style="warning" %}
+&#x20;Make sure to replace `$PATH_TO_YOUR_BUCKET`and `$PATH_TO_YOUR_CONTAINER_REGISTRY` with the actual URI's of your bucket and container registry.
+{% endhint %}
