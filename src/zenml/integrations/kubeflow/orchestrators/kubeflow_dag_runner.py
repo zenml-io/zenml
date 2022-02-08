@@ -48,6 +48,7 @@ from typing import (
 
 from kfp import compiler, dsl, gcp
 from kubernetes import client as k8s_client
+from pydantic import BaseModel
 from tfx.dsl.compiler import compiler as tfx_compiler
 from tfx.dsl.components.base import base_component as tfx_base_component
 from tfx.dsl.components.base import base_node
@@ -71,6 +72,7 @@ from zenml.orchestrators.utils import create_tfx_pipeline
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
+    from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -291,11 +293,16 @@ class KubeflowDagRunner:
             self._parse_parameter_from_component(component)
 
     def _construct_pipeline_graph(
-        self, pipeline: tfx_pipeline.Pipeline, stack: "Stack"
+        self,
+        pipeline: tfx_pipeline.Pipeline,
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
         """Constructs a Kubeflow Pipeline graph.
         Args:
           pipeline: The logical TFX pipeline to base the construction on.
+          stack: The ZenML stack that the pipeline is running on
+          runtime_configuration: The runtime configuration
         """
         component_to_kfp_op: Dict[base_node.BaseNode, dsl.ContainerOp] = {}
         tfx_ir = self._generate_tfx_ir(pipeline)
@@ -305,6 +312,16 @@ class KubeflowDagRunner:
             context_utils.add_stack_as_metadata_context(
                 context=context, stack=stack
             )
+
+        # Add all pydantic objects from runtime_configuration to the
+        # context
+        for k, v in runtime_configuration.items():
+            if v and issubclass(type(v), BaseModel):
+                context = node.pipeline_node.contexts.contexts.add()
+                logger.debug("Adding %s to context", k)
+                context_utils.add_pydantic_object_as_metadata_context(
+                    context=context, obj=v
+                )
 
         # Assumption: There is a partial ordering of components in the list,
         # i.e. if component A depends on component B and C, then A appears
@@ -390,12 +407,18 @@ class KubeflowDagRunner:
         result = self._tfx_compiler.compile(pipeline)
         return result
 
-    def run(self, pipeline: "BasePipeline", stack: "Stack") -> None:
+    def run(
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> None:
         """Compiles and outputs a Kubeflow Pipeline YAML definition file.
         Args:
           pipeline: The logical TFX pipeline to use when building the Kubeflow
             pipeline.
-          stack: The ZenML stack that the pipeline is running on
+          stack: The ZenML stack that the pipeline is running on.
+          runtime_configuration: The runtime configuration.
         """
         t_pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
@@ -411,7 +434,9 @@ class KubeflowDagRunner:
         def _construct_pipeline() -> None:
             """Creates Kubeflow ContainerOps for each TFX component
             encountered in the pipeline definition."""
-            self._construct_pipeline_graph(t_pipeline, stack)
+            self._construct_pipeline_graph(
+                t_pipeline, stack, runtime_configuration
+            )
 
         # Need to run this first to get self._params populated. Then KFP
         # compiler can correctly match default value with PipelineParam.

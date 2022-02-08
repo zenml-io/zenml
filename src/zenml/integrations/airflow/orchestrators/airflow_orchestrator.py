@@ -53,7 +53,6 @@ class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     airflow_home: str = ""
-    schedule_interval_minutes: int = 1
     supports_local_execution = True
     supports_remote_execution = False
 
@@ -278,13 +277,20 @@ class AirflowOrchestrator(BaseOrchestrator):
         Returns:
             An Airflow DAG object that corresponds to the ZenML pipeline.
         """
-        airflow_config = {
-            "schedule_interval": datetime.timedelta(
-                minutes=self.schedule_interval_minutes
-            ),
-            # We set this in the past and turn catchup off, and then it works
-            "start_date": datetime.datetime(2019, 1, 1),
-        }
+        if runtime_configuration.schedule:
+            airflow_config = {
+                "schedule_interval": datetime.timedelta(
+                    seconds=runtime_configuration.schedule.interval_second
+                ),
+                "start_date": runtime_configuration.schedule.start_time,
+                "end_date": runtime_configuration.schedule.end_time,
+            }
+        else:
+            airflow_config = {
+                "schedule_interval": "@once",
+                # Scheduled in the past to make sure it runs immediately
+                "start_date": datetime.datetime.now() - datetime.timedelta(7),
+            }
 
         runner = AirflowDagRunner(AirflowPipelineConfig(airflow_config))
 
