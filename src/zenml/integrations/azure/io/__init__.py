@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,20 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.constants import TENSORFLOW
-from zenml.integrations.integration import Integration
 
+from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
 
-class TensorflowIntegration(Integration):
-    """Definition of Tensorflow integration for ZenML."""
+from zenml.integrations.azure.io.azure_plugin import ZenAzure
 
-    NAME = TENSORFLOW
-    REQUIREMENTS = ["tensorflow==2.6.2"]
-
-    @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        from zenml.integrations.tensorflow import materializers  # noqa
-
-
-TensorflowIntegration.check_installation()
+DEFAULT_FILESYSTEM_REGISTRY.register(ZenAzure, 15)

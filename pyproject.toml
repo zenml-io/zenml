@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.6.0"
+version = "0.6.1"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -49,7 +49,7 @@ zenml = "zenml.cli.cli:cli"
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<3.9"
-ml-pipelines-sdk = "^1.3.0"
+ml-pipelines-sdk = "~1.3.0"
 pandas = "^1.1.5"
 apache-beam = "^2.30.0"
 pyyaml = "^5.4.1"
@@ -185,6 +185,7 @@ module = [
     "absl.*",
     "gcsfs.*",
     "s3fs.*",
+    "adlfs.*",
     "fsspec.*",
     "torch.*",
     "pytorch_lightning.*",

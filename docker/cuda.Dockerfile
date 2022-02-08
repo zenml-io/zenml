@@ -1,4 +1,4 @@
-ARG TENSORFLOW_VERSION=2.6.0
+ARG TENSORFLOW_VERSION=2.6.1
 FROM tensorflow/tensorflow:${TENSORFLOW_VERSION}-gpu
 
 # python

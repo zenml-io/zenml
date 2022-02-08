@@ -24,6 +24,7 @@ These are the third-party integrations that ZenML currently supports:
 | Apache Airflow | ✅ | Orchestrator | Works for local environment | [airflow_local](https://github.com/zenml-io/zenml/tree/main/examples/airflow_local) |
 | Apache Beam | ✅ | Distributed Processing |   |   |
 | AWS | ✅ | Cloud | Use S3 buckets as ZenML artifact stores |   |
+| Azure | ✅ | Cloud | Use Azure Blob Storage buckets as ZenML artifact stores |   |
 | BentoML | ⛏ | Cloud | Looking for community implementors |   |
 | Dash | ✅ | Visualizer | For Pipeline and PipelineRun visualization objects. | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage) |
 | Evidently | ✅ | Monitoring | Allows for visualization of drift as well as export of a `Profile` object | [drift_detection](https://github.com/zenml-io/zenml/tree/release/0.5.7/examples/drift_detection) |
