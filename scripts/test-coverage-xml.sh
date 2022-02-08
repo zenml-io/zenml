@@ -21,10 +21,10 @@ else
     # tests mess with the dependencies installed inside the main testing
     # environment which causes tests inside test_integration_stack_components.py
     # to fail. Replace the following two calls by
-    # `coverage run -m pytest test/integration --color=yes`
+    # `coverage run -m pytest tests/integration --color=yes`
     # once we fix this.
-    coverage run -m pytest tests/integration/test_integration_stack_components.py --color=yes --verbosity=8 --full-trace --tb=long --log-level=0
-    coverage run -m pytest tests/integration --color=yes --ignore=tests/integration/test_integration_stack_components.py --verbosity=8 --full-trace --tb=long --log-level=0
+    coverage run -m pytest tests/integration/test_integration_stack_components.py --color=yes
+    coverage run -m pytest tests/integration --color=yes --ignore=tests/integration/test_integration_stack_components.py
 fi
 coverage combine
 coverage report --show-missing
