@@ -86,6 +86,8 @@ def create_k3d_cluster(
             "cluster",
             "create",
             cluster_name,
+            "--image",
+            "rancher/k3s:v1.21.7-k3s1",
             "--registry-create",
             registry_name,
             "--registry-config",
