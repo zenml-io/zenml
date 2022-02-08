@@ -13,7 +13,7 @@ or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quic
 
 ## Install and initialize
 
-```python
+```shell
 # Install the dependencies for the quickstart
 pip install zenml tensorflow
 ```
@@ -26,7 +26,7 @@ HuggingFace, PyTorch Lightning etc.
 Once the installation is completed, you can go ahead and create your first ZenML repository for your project. As 
 ZenML repositories are built on top of Git repositories, you can create yours in a desired empty directory through:
 
-```python
+```shell
 # Initialize ZenML
 zenml init
 ```
@@ -34,10 +34,15 @@ zenml init
 Now, the setup is completed. For the next steps, just make sure that you are executing the code within your 
 ZenML repository.
 
-## Define ZenML Steps
+## Run your first pipeline
 
 In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is 
-decorated with `@step`, the main low-level abstraction that is currently available for creating pipeline steps.
+decorated with `@step`. The pipeline in turn is decorated with the `@pipeline` decorator.
+
+{% hint style="success" %}
+Note that type hints are used for inputs and outputs of each step. The routing of step outputs
+to step inputs is handled within the pipeline definition.
+{% endhint %}
 
 ![Quickstart steps](../assets/quickstart-diagram.png)
 
@@ -76,7 +81,6 @@ def trainer(
 
     model.fit(X_train, y_train)
 
-    # write model
     return model
 
 
@@ -85,10 +89,10 @@ def evaluator(
     X_test: np.ndarray,
     y_test: np.ndarray,
     model: tf.keras.Model,
-) -> float:
+) -> Output(loss=float, acc=float):
     """Calculate the accuracy on the test set"""
-    test_acc = model.evaluate(X_test, y_test, verbose=2)
-    return test_acc
+    loss, acc = model.evaluate(X_test, y_test, verbose=1)
+    return loss, acc
 
 
 @pipeline
@@ -123,13 +127,12 @@ If you had a hiccup or you have some suggestions/questions regarding our framewo
 
 ## Wait, how is this useful?
 
-The above code looks like its yet another standard pipeline framework that added to your work, but there is a lot 
+The above code looks like it is yet another standard pipeline framework that added to your work, but there is a lot 
 going on under the hood that is mighty helpful:
 
 - All data is versioned and tracked as it flows through the steps.
 - All parameters and return values are tracked by a central metadata store that you can later query.
 - Individual step outputs are now cached, so you can swap out the trainer for other implementations and iterate fast.
-- Code is versioned with `git`.
 
 With just a little more work, one can:
 
@@ -141,7 +144,7 @@ training loops with automatic deployments.
 
 Best of all: We let you and your infra/ops team decide what the underlying tools are to achieve all this.
 
-Keep reading to learn how all of the above can be achieved.
+Keep reading to learn how all the above can be achieved.
 
 ## Next Steps?
 

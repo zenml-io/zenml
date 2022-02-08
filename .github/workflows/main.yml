@@ -63,7 +63,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m poetry install
-          python -m poetry run zenml integration install airflow pytorch mlflow gcp kubeflow aws -f
+          python -m poetry run zenml integration install airflow pytorch mlflow gcp kubeflow aws azure -f
           python -m poetry run pip install click~=8.0.3
 
       - name: Lint

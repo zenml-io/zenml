@@ -11,17 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from datetime import datetime
-from datetime import datetime, timedelta
+
+import os
 
 import mlflow
 import numpy as np
-import os
 import tensorflow as tf
 
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
-
-from zenml.pipelines import Schedule, pipeline
+from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, Output, step
 
 # Path to a pip requirements file that contains requirements necessary to run

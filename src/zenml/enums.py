@@ -45,6 +45,7 @@ class StackComponentFlavor(StrEnum):
 class ArtifactStoreFlavor(StackComponentFlavor):
     """All supported artifact store flavors."""
 
+    AZURE = "azure"
     LOCAL = "local"
     GCP = "gcp"
     S3 = "s3"
@@ -87,3 +88,9 @@ class StackComponentType(StrEnum):
             return "container_registries"
 
         return f"{self.value}s"
+
+
+class MetadataContextTypes(Enum):
+    """All possible types that contexts can have within pipeline nodes"""
+
+    STACK = "stack"
