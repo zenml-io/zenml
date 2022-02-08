@@ -14,9 +14,12 @@
 import logging
 import os
 import shutil
+import subprocess
 import sys
+from pathlib import Path
 
 import pytest
+from py._builtin import execfile
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
@@ -114,7 +117,6 @@ def generate_empty_steps():
         output = []
 
         for i in range(count):
-
             @step(name=f"step_{i}")
             def _step_function():
                 pass
@@ -198,3 +200,38 @@ def step_context_with_two_outputs():
         output_materializers=materializers,
         output_artifacts=artifacts,
     )
+
+
+@pytest.fixture
+def virtualenv(tmp_path_factory):
+    """ Based on teh underlying virtual environment a copy of the environment is
+    made and used for the test that uses this fixture.
+
+    Yields:
+        Path to the virtual environment
+    """
+    # Remember the old executable
+    original_sys_executable = Path(sys.executable)
+
+    # Create temporary venv
+    tmp_path = tmp_path_factory.mktemp("tmp") /'venv'
+    subprocess.check_output(['virtualenv-clone', original_sys_executable.parent.parent, tmp_path])
+
+    # Activate venv
+    activate_this_file = tmp_path / 'bin' / 'activate_this.py'
+    execfile(activate_this_file, dict(__file__=activate_this_file))
+
+    # Set new system executable
+    sys.executable = tmp_path / 'bin' / 'python'
+
+    yield tmp_path
+    # Reset system executable
+    sys.executable = original_sys_executable
+
+    # Switch back to original venv
+    orig_activate_this_file = Path(
+        original_sys_executable).parent / 'activate_this.py'
+    execfile(orig_activate_this_file, dict(__file__=orig_activate_this_file))
+
+    # Destroy temporary venv
+    shutil.rmtree(tmp_path)

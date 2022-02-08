@@ -54,7 +54,7 @@ def example_runner(examples_dir):
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
-def test_run_quickstart(examples_dir: Path):
+def test_run_quickstart(examples_dir: Path, virtualenv):
     """Testing the functionality of the quickstart example
 
     Args:
@@ -78,7 +78,7 @@ def test_run_quickstart(examples_dir: Path):
         assert step.status == ExecutionStatus.COMPLETED
 
 
-def test_run_not_so_quickstart(examples_dir: Path):
+def test_run_not_so_quickstart(examples_dir: Path, virtualenv):
     """Testing the functionality of the not_so_quickstart example
 
     Args:
@@ -104,7 +104,7 @@ def test_run_not_so_quickstart(examples_dir: Path):
     assert third_run.status == ExecutionStatus.COMPLETED
 
 
-def test_run_drift_detection(examples_dir: Path):
+def test_run_drift_detection(examples_dir: Path, virtualenv):
     """Testing the functionality of the drift_detection example
 
     Args:
@@ -137,7 +137,7 @@ def test_run_drift_detection(examples_dir: Path):
     assert output_obj.get("data_drift") is not None
 
 
-def test_run_caching(examples_dir: Path):
+def test_run_caching(examples_dir: Path, virtualenv):
     """Testing the functionality of the caching example
 
     Args:
@@ -170,7 +170,7 @@ def test_run_caching(examples_dir: Path):
     assert not second_run.steps[3].is_cached
 
 
-def test_run_mlflow(examples_dir: Path):
+def test_run_mlflow(examples_dir: Path, virtualenv):
     """Testing the functionality of the quickstart example
 
     Args:
@@ -243,7 +243,7 @@ def test_run_mlflow(examples_dir: Path):
     assert len(artifacts) == 3
 
 
-def test_whylogs_profiling(examples_dir: Path):
+def test_whylogs_profiling(examples_dir: Path, virtualenv):
     """Testing the functionality of the whylogs example
 
     Args:
@@ -281,7 +281,7 @@ def test_whylogs_profiling(examples_dir: Path):
     assert isinstance(output_obj, DatasetProfile)
 
 
-def test_run_custom_materializer(examples_dir: Path):
+def test_run_custom_materializer(examples_dir: Path, virtualenv):
     """Testing the functionality of the custom materializer example.
 
     Args:
@@ -302,7 +302,7 @@ def test_run_custom_materializer(examples_dir: Path):
     assert first_run.status == ExecutionStatus.COMPLETED
 
 
-def test_run_fetch_historical_runs(examples_dir: Path):
+def test_run_fetch_historical_runs(examples_dir: Path, virtualenv):
     """Testing the functionality of the fetch_historical_runs example.
 
     Args:
