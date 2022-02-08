@@ -59,7 +59,7 @@ configuration to it - it just works out of the box.
 ### MySQL
 
 Using MySQL as a Metadata Store is where ZenML can become really powerful, especially in highly dynamic environments 
-(read: running experiments locally, in the Cloud, and across team members). Some ZenML integrations even require a 
+(read: running experiments locally, in the cloud, and across team members). Some ZenML integrations even require a 
 dedicated MySQL-based Metadata Store to unfold their true potential.
 
 The Metadata Store can be simply configured to use any MySQL server (=>5.6):
@@ -83,8 +83,10 @@ Closely related to the [Metadata Store](https://github.com/zenml-io/zenml/blob/1
 You have the following options to configure the Artifact Store:
 
 * Local (Default)
-* Remote (Google Cloud Storage)
-  * **Soon**: AWS S3-compatible stacks
+* Remote
+  * GCS Bucket
+  * AWS S3 Bucket
+  * Azure Blob Storage
 
 ### Local (Default)
 
@@ -94,7 +96,7 @@ and inputs will be persisted there.
 Using the default Artifact Store can be a limitation to the integrations you might want to use. Please check the 
 documentation of the individual integrations to make sure they are compatible.
 
-### Remote (GCS/S3)
+### Remote (GCS/S3/Azure)
 
 Many experiments and many ZenML integrations require a remote Artifact Store to reliable retrieve and persist pipeline 
 step artifacts. Especially dynamic scenarios with heterogeneous environments will be only possible when using a remote 
@@ -122,9 +124,9 @@ This is the default orchestrator for ZenML pipelines. It runs pipelines sequenti
 local environment. You can use this orchestrator for quick experimentation and work on smaller datasets in your 
 local environment.
 
-#### Airflow
+#### Kubeflow
 
-Coming Soon!
+The Kubeflow orchestrator supports both local and remote execution. In the local case, a `k3d` cluster is spun up and Kubeflow Pipelines is used to run your pipelines. In the remote case, ZenML can work with a Kubeflow installation on your remote Kubernetes cluster. Check this [page](../../guides/functional-api/deploy-to-production.md) for more details. 
 
 #### GCP Orchestrator
 
@@ -150,9 +152,10 @@ Coming Soon!
 
 Coming Soon!
 
-#### Kubeflow
+#### Airflow
 
-Coming soon!
+Coming Soon!
+
 
 ### Creating a custom orchestrator
 
