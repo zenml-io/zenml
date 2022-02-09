@@ -117,7 +117,6 @@ def generate_empty_steps():
         output = []
 
         for i in range(count):
-
             @step(name=f"step_{i}")
             def _step_function():
                 pass
@@ -222,7 +221,7 @@ def virtualenv(tmp_path_factory):
 
     # Activate venv
     activate_this_file = tmp_path / "bin" / "activate_this.py"
-    execfile(activate_this_file, dict(__file__=activate_this_file))
+    execfile(str(activate_this_file), dict(__file__=str(activate_this_file)))
 
     # Set new system executable
     sys.executable = tmp_path / "bin" / "python"
@@ -233,9 +232,10 @@ def virtualenv(tmp_path_factory):
 
     # Switch back to original venv
     orig_activate_this_file = (
-        Path(original_sys_executable).parent / "activate_this.py"
+            Path(original_sys_executable).parent / "activate_this.py"
     )
-    execfile(orig_activate_this_file, dict(__file__=orig_activate_this_file))
+    execfile(str(orig_activate_this_file),
+             dict(__file__=str(orig_activate_this_file)))
 
     # Destroy temporary venv
     shutil.rmtree(tmp_path)
