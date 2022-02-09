@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/ENG-319-integration-tests-with-own-venv
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
