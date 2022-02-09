@@ -250,7 +250,6 @@ def test_whylogs_profiling(examples_dir: Path, virtualenv):
         examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
-    import scipy
 
     local_example = LocalExample(examples_dir / WHYLOGS, name=WHYLOGS)
 
