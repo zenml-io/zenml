@@ -1,7 +1,9 @@
 name: Testing
 
-# Controls when the action will run. Triggers the workflow on push of a tag
 on:
+  push:
+    branches: ['main']
+    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
   pull_request:
     types: [opened, synchronize]
     paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
@@ -43,8 +45,7 @@ jobs:
 
       - name: Install Windows System Dependencies
         if: runner.os=='Windows'
-        run: |
-          choco install graphviz
+        run: choco install graphviz
 
       - name: Install poetry
         run: |
