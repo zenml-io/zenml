@@ -12,12 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import logging
 
-
-import pytest
 from pydantic.main import BaseModel
-
+from tfx.proto.orchestration.pipeline_pb2 import ContextSpec
 
 from zenml.enums import MetadataContextTypes, StackComponentType
 from zenml.orchestrators.context_utils import (
@@ -25,9 +22,6 @@ from zenml.orchestrators.context_utils import (
 )
 from zenml.repository import Repository
 from zenml.steps import step
-
-
-from tfx.proto.orchestration.pipeline_pb2 import ContextSpec
 
 
 def test_pipeline_storing_stack_in_the_metadata_store(
@@ -102,6 +96,6 @@ def test_pydantic_object_to_metadata_context():
     assert ctx2.type.name == "mixedattributes"
     assert ctx2.name.field_value.string_value.startswith("MixedAttributes")
     assert "s" in ctx2.properties.keys()
-    assert ctx2.properties.get("b").field_value.int_value == 1
+    assert ctx2.properties.get("b").field_value.string_value == "true"
     assert ctx2.properties.get("l").field_value.string_value == "[1, 2]"
     assert "u" not in ctx2.properties.keys()

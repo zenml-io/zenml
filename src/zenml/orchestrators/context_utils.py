@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 import json
 import logging
-from typing import TYPE_CHECKING
 import uuid
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
@@ -83,24 +83,14 @@ def add_pydantic_object_as_metadata_context(
 
     # Setting the properties of the context depending on attribute type
     for k, v in obj.dict().items():
-        if isinstance(v, int):
+        try:
+            value = json.dumps(v)
             c_property = context.properties[k]  # type:ignore[attr-defined]
-            c_property.field_value.int_value = v
-        elif isinstance(v, float):
-            c_property = context.properties[k]  # type:ignore[attr-defined]
-            c_property.field_value.double_value = v
-        elif isinstance(v, str):
-            c_property = context.properties[k]  # type:ignore[attr-defined]
-            c_property.field_value.string_value = v
-        else:
-            try:
-                value = json.dumps(v)
-                c_property = context.properties[k]  # type:ignore[attr-defined]
-                c_property.field_value.string_value = value
-            except TypeError as e:
-                logging.info(
-                    "Skipping adding field '%s' to metadata context as "
-                    "it cannot be serialized due to %s.",
-                    k,
-                    e,
-                )
+            c_property.field_value.string_value = value
+        except TypeError as e:
+            logging.info(
+                "Skipping adding field '%s' to metadata context as "
+                "it cannot be serialized due to %s.",
+                k,
+                e,
+            )
