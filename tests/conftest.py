@@ -205,7 +205,7 @@ def step_context_with_two_outputs():
 
 @pytest.fixture
 def virtualenv(tmp_path_factory):
-    """Based on teh underlying virtual environment a copy of the environment is
+    """Based on the underlying virtual environment a copy of the environment is
     made and used for the test that uses this fixture.
 
     Yields:
@@ -217,7 +217,7 @@ def virtualenv(tmp_path_factory):
     # Create temporary venv
     tmp_path = tmp_path_factory.mktemp("tmp") / "venv"
     # TODO[High]: Implement for use outside of a base virtual environment
-    #  If this happens outside of a virtual environmnet the complete
+    #  If this happens outside of a virtual environment the complete
     #  /usr space is cloned
     subprocess.check_output(
         ["virtualenv-clone", orig_sys_executable.parent.parent, tmp_path]
