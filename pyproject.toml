@@ -78,6 +78,7 @@ tox = "^3.24.3"
 hypothesis = "^6.23.0"
 typing-extensions = ">=3.7.4"
 pytest-randomly = "^3.10.1"
+virtualenv-clone = "^0.5.7"
 
 # mkdocs including plugins
 mkdocs="^1.2.3"
