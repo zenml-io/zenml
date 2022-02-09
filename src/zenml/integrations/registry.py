@@ -63,6 +63,7 @@ class IntegrationRegistry(object):
                 logger.error(f"Integration `{name}` is activated.")
             else:
                 logger.error(f"Integration `{name}` could not be activated.")
+                continue
 
     @property
     def list_integration_names(self) -> List[str]:
