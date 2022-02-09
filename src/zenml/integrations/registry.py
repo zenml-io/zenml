@@ -59,6 +59,7 @@ class IntegrationRegistry(object):
         """Method to activate the integrations with are registered in the
         registry"""
         for name, integration in self._integrations.items():
+            logging.error(name)
             if integration.check_installation():
                 integration.activate()
 
