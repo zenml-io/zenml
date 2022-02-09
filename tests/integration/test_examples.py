@@ -252,11 +252,9 @@ def test_whylogs_profiling(examples_dir: Path, virtualenv):
     """
     import scipy
 
-    print("VERSION OF SCIPY:", scipy.__version__)
     local_example = LocalExample(examples_dir / WHYLOGS, name=WHYLOGS)
 
     local_example.run_example(example_runner(examples_dir), force=True)
-    print("VERSION OF SCIPY:", scipy.__version__)
 
     # Verify the example run was successful
     repo = Repository(local_example.path)

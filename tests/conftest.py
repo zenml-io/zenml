@@ -220,7 +220,7 @@ def virtualenv(tmp_path_factory):
     #  If this happens outside of a virtual environment the complete
     #  /usr space is cloned
     subprocess.check_output(
-        ["virtualenv-clone", orig_sys_executable.parent.parent, tmp_path]
+        ["virtualenv-clone", str(orig_sys_executable.parent.parent), tmp_path]
     )
 
     # Activate venv
