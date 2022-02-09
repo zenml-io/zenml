@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import logging
 
 from zenml.enums import (
     ArtifactStoreFlavor,
@@ -30,7 +29,6 @@ from zenml.stack.stack_component_class_registry import (
 def test_registration_of_integration_stack_components():
     """Tests that activating the integrations registers all available stack
     components."""
-    logging.error("Start")
     integration_registry.activate_integrations()
 
     for flavor in OrchestratorFlavor:
