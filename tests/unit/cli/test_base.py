@@ -23,5 +23,5 @@ from zenml.repository import LOCAL_CONFIG_DIRECTORY_NAME
 def test_init_creates_zen_folder(tmp_path: Path) -> None:
     """Check that init command creates a .zen folder."""
     runner = CliRunner()
-    runner.invoke(init, ["--path", str(tmp_path)])
+    runner.invoke(init, ["--path", tmp_path])
     assert (tmp_path / LOCAL_CONFIG_DIRECTORY_NAME).exists()
