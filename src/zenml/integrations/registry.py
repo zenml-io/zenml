@@ -58,10 +58,7 @@ class IntegrationRegistry(object):
     def activate_integrations(self) -> None:
         """Method to activate the integrations with are registered in the
         registry"""
-        logging.error("before")
         for name, integration in self._integrations.items():
-            logging.error("before2")
-
             if integration.check_installation():
                 integration.activate()
                 logging.error(f"Integration `{name}` is activated.")
