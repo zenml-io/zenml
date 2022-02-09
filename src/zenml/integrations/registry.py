@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from zenml.exceptions import IntegrationError
@@ -61,9 +60,9 @@ class IntegrationRegistry(object):
         for name, integration in self._integrations.items():
             if integration.check_installation():
                 integration.activate()
-                logging.error(f"Integration `{name}` is activated.")
+                logger.error(f"Integration `{name}` is activated.")
             else:
-                logging.error(f"Integration `{name}` could not be activated.")
+                logger.error(f"Integration `{name}` could not be activated.")
 
     @property
     def list_integration_names(self) -> List[str]:
