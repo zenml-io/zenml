@@ -117,6 +117,7 @@ def generate_empty_steps():
         output = []
 
         for i in range(count):
+
             @step(name=f"step_{i}")
             def _step_function():
                 pass
@@ -215,6 +216,9 @@ def virtualenv(tmp_path_factory):
 
     # Create temporary venv
     tmp_path = tmp_path_factory.mktemp("tmp") / "venv"
+    # TODO[High]: Implement for use outside of a base virtual environment
+    #  If this happens outside of a virtual environmnet the complete
+    #  /usr space is cloned
     subprocess.check_output(
         ["virtualenv-clone", orig_sys_executable.parent.parent, tmp_path]
     )
@@ -231,7 +235,7 @@ def virtualenv(tmp_path_factory):
     sys.executable = orig_sys_executable
 
     # Switch back to original venv
-    activate_this_f = (Path(orig_sys_executable).parent / "activate_this.py")
+    activate_this_f = Path(orig_sys_executable).parent / "activate_this.py"
     execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
 
     # Destroy temporary venv
