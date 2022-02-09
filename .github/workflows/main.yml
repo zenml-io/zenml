@@ -75,8 +75,14 @@ jobs:
       - name: Lint
         run: python -m poetry run bash scripts/lint.sh
 
+      - name: Check Python Env ahead of tests
+        run: python -m poetry run zenml integration list
+
       - name: Test
         run: python -m poetry run bash scripts/test-coverage-xml.sh
+
+      - name: Verify Python Env unaffected
+        run: python -m poetry run zenml integration list
 
       - name: Upload coverage
         # only do it for python 3.8, we don't need to do it for every version
