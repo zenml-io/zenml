@@ -211,12 +211,12 @@ def virtualenv(tmp_path_factory):
         Path to the virtual environment
     """
     # Remember the old executable
-    original_sys_executable = Path(sys.executable)
+    orig_sys_executable = Path(sys.executable)
 
     # Create temporary venv
     tmp_path = tmp_path_factory.mktemp("tmp") / "venv"
     subprocess.check_output(
-        ["virtualenv-clone", original_sys_executable.parent.parent, tmp_path]
+        ["virtualenv-clone", orig_sys_executable.parent.parent, tmp_path]
     )
 
     # Activate venv
@@ -228,14 +228,11 @@ def virtualenv(tmp_path_factory):
 
     yield tmp_path
     # Reset system executable
-    sys.executable = original_sys_executable
+    sys.executable = orig_sys_executable
 
     # Switch back to original venv
-    orig_activate_this_file = (
-            Path(original_sys_executable).parent / "activate_this.py"
-    )
-    execfile(str(orig_activate_this_file),
-             dict(__file__=str(orig_activate_this_file)))
+    activate_this_f = (Path(orig_sys_executable).parent / "activate_this.py")
+    execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
 
     # Destroy temporary venv
     shutil.rmtree(tmp_path)
