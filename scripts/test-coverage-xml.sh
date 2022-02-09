@@ -16,8 +16,8 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 if [ -n "$1" ]; then
     coverage run -m pytest $TEST_SRC --color=yes
 else
-    coverage run -m pytest tests/unit --color=yes
-    coverage run -m pytest tests/integration --color=yes
+    # coverage run -m pytest tests/unit --color=yes
+    coverage run -m pytest tests/integration/test_examples.py::test_whylogs_profiling --color=yes
 fi
 coverage combine
 coverage report --show-missing

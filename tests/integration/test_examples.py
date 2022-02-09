@@ -20,7 +20,7 @@ import pytest
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.enums import ExecutionStatus
-from zenml.repository import Repository
+from zenml.repository import Repository, logger
 
 QUICKSTART = "quickstart"
 NOT_SO_QUICKSTART = "not_so_quickstart"
@@ -250,6 +250,9 @@ def test_whylogs_profiling(examples_dir: Path, virtualenv):
         examples_dir: Temporary folder containing all examples including the run_examples
         bash script.
     """
+    import scipy
+
+    print("VERSION OF SCIPY:", scipy.__version__)
     local_example = LocalExample(examples_dir / WHYLOGS, name=WHYLOGS)
 
     local_example.run_example(example_runner(examples_dir), force=True)
