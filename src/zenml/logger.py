@@ -153,6 +153,7 @@ def get_logger(logger_name: str) -> logging.Logger:
 def init_logging() -> None:
     """Initialize logging with default levels."""
     # Mute tensorflow cuda warnings
+    logging.error("INITLOG")
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     set_root_verbosity()
 

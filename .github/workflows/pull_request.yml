@@ -20,8 +20,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        python-version: [3.6, 3.7, 3.8]
+        os: [windows-latest] #[macos-latest, ubuntu-latest, windows-latest]
+        python-version: [3.8] #[3.6, 3.7, 3.8]
       fail-fast: false
 
     steps:
@@ -65,8 +65,8 @@ jobs:
           python -m poetry run zenml integration install airflow pytorch mlflow gcp kubeflow aws azure -f
           python -m poetry run pip install click~=8.0.3
 
-      - name: Lint
-        run: python -m poetry run bash scripts/lint.sh
+#      - name: Lint
+#        run: python -m poetry run bash scripts/lint.sh
 
       - name: Test
         run: python -m poetry run bash scripts/test-coverage-xml.sh
