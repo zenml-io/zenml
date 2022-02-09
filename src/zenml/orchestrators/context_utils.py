@@ -70,30 +70,33 @@ def add_pydantic_object_as_metadata_context(
     )
     # Setting the name of the context
     try:
-        hashable = obj.json(sort_keys=True)
+        name = str(hash(obj.json(sort_keys=True)))
     except TypeError as e:
-        name = obj.__class__.__name__
+        class_name = obj.__class__.__name__
         logging.info(
             "Cannot convert %s to json, generating uuid instead. Error: %s",
-            name,
+            class_name,
             e,
         )
-        hashable = f"{name}_{uuid.uuid1()}"
-    name = str(hash(hashable))
+        name = f"{class_name}_{uuid.uuid1()}"
     context.name.field_value.string_value = name  # type:ignore[attr-defined]
 
-    # Setting the properties of the context
+    # Setting the properties of the context depending on attribute type
     for k, v in obj.dict().items():
-        c_property = context.properties[k]  # type:ignore[attr-defined]
         if isinstance(v, int):
+            c_property = context.properties[k]  # type:ignore[attr-defined]
             c_property.field_value.int_value = v
         elif isinstance(v, float):
+            c_property = context.properties[k]  # type:ignore[attr-defined]
             c_property.field_value.double_value = v
         elif isinstance(v, str):
+            c_property = context.properties[k]  # type:ignore[attr-defined]
             c_property.field_value.string_value = v
         else:
             try:
-                c_property.field_value.string_value = json.dumps(v)
+                value = json.dumps(v)
+                c_property = context.properties[k]  # type:ignore[attr-defined]
+                c_property.field_value.string_value = value
             except TypeError as e:
                 logging.info(
                     "Skipping adding field '%s' to metadata context as "

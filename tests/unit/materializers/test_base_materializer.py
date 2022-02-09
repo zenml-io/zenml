@@ -20,6 +20,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 
 
 class TestMaterializer(BaseMaterializer):
+    __test__ = False
     ASSOCIATED_TYPES = (int,)
 
 
