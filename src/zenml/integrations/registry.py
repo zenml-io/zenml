@@ -61,9 +61,6 @@ class IntegrationRegistry(object):
         for name, integration in self._integrations.items():
             if integration.check_installation():
                 integration.activate()
-                logging.error(f"Integration `{name}` is activated.")
-            else:
-                logging.error(f"Integration `{name}` could not be activated.")
 
     @property
     def list_integration_names(self) -> List[str]:
