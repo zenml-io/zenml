@@ -490,8 +490,6 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
 def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     """Find out more about an example."""
     check_for_version_mismatch(git_examples_handler)
-    # TODO [ENG-148]: fix markdown formatting so that it looks nicer (not a
-    #  pure .md dump)
     try:
         example_obj = git_examples_handler.get_examples(example_name)[0]
 
