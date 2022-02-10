@@ -2,7 +2,7 @@ name: Testing
 
 on:
   push:
-    branches: ['main']
+    branches: ['main', 'develop']
     paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
   pull_request:
     types: [opened, synchronize]
