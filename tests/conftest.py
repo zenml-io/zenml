@@ -14,9 +14,12 @@
 import logging
 import os
 import shutil
+import subprocess
 import sys
+from pathlib import Path
 
 import pytest
+from py._builtin import execfile
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
