@@ -71,7 +71,9 @@ jobs:
           python -m poetry run pip install click~=8.0.3
 
       - name: Lint
-        run: python -m poetry run bash scripts/lint.sh
+        if: ${{ matrix.os == 'windows-latest' }} && ${{ matrix.python-version == '3.6' }}
+        run: |
+          python -m poetry run bash scripts/lint.sh
 
       - name: Check Python Env ahead of tests
         run: |
