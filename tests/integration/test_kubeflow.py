@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 import shutil
-from os import environ
 from pathlib import Path
 
 import pytest
@@ -48,17 +48,29 @@ def _wait_for_kubeflow_pipeline():
 
 
 @pytest.fixture(scope="module")
-def shared_kubeflow_repo(clean_repo):
+def shared_kubeflow_repo(base_repo, tmp_path_factory):
     import subprocess
 
     from zenml.container_registries import BaseContainerRegistry
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
     from zenml.stack import Stack
 
-    active_stack = clean_repo.active_stack
+    tmp_path = tmp_path_factory.mktemp("tmp")
+    os.chdir(tmp_path)
+    Repository.initialize(root=tmp_path)
+    repo = Repository(root=tmp_path)
+
+    repo.original_cwd = base_repo.original_cwd
+
     orchestrator = KubeflowOrchestrator(
         name="local_kubeflow_orchestrator",
         custom_docker_base_image_name="localhost:5000/base-image:latest",
+    )
+    metadata_store = repo.active_stack.metadata_store.copy(
+        update={"name": "local_kubeflow_metadata_store"}
+    )
+    artifact_store = repo.active_stack.artifact_store.copy(
+        update={"name": "local_kubeflow_artifact_store"}
     )
     container_registry = BaseContainerRegistry(
         name="local_registry", uri="localhost:5000"
@@ -66,18 +78,22 @@ def shared_kubeflow_repo(clean_repo):
     kubeflow_stack = Stack(
         name="local_kubeflow_stack",
         orchestrator=orchestrator,
-        metadata_store=active_stack.metadata_store,
-        artifact_store=active_stack.artifact_store,
+        metadata_store=metadata_store,
+        artifact_store=artifact_store,
         container_registry=container_registry,
     )
-    clean_repo.register_stack(kubeflow_stack)
-    clean_repo.activate_stack(kubeflow_stack.name)
+    repo.register_stack(kubeflow_stack)
+    repo.activate_stack(kubeflow_stack.name)
     kubeflow_stack.provision()
 
     subprocess.check_call(
         ["docker", "push", "localhost:5000/base-image:latest"]
     )
-    yield clean_repo
+
+    yield repo
+
+    os.chdir(str(base_repo.root))
+    shutil.rmtree(tmp_path)
 
 
 @pytest.fixture
@@ -87,7 +103,8 @@ def clean_kubeflow_repo(shared_kubeflow_repo, clean_repo):
     clean_repo.activate_stack(kubeflow_stack.name)
 
     # Delete the artifact store of previous tests
-    shutil.rmtree(kubeflow_stack.artifact_store.path)
+    if os.path.exists(kubeflow_stack.artifact_store.path):
+        shutil.rmtree(kubeflow_stack.artifact_store.path)
 
     yield clean_repo
 
@@ -110,7 +127,7 @@ def example_runner(examples_dir):
     latter option is needed for windows compatibility.
     """
     return (
-        [environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in environ else []
+        [os.environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in os.environ else []
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
