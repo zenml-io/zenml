@@ -54,7 +54,6 @@ def example_runner(examples_dir):
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
-@pytest.mark.skip("Just debugging")
 def test_run_quickstart(examples_dir: Path, virtualenv):
     """Testing the functionality of the quickstart example
 
@@ -79,7 +78,6 @@ def test_run_quickstart(examples_dir: Path, virtualenv):
         assert step.status == ExecutionStatus.COMPLETED
 
 
-@pytest.mark.skip("Just debugging")
 def test_run_not_so_quickstart(examples_dir: Path, virtualenv):
     """Testing the functionality of the not_so_quickstart example
 
@@ -106,7 +104,6 @@ def test_run_not_so_quickstart(examples_dir: Path, virtualenv):
     assert third_run.status == ExecutionStatus.COMPLETED
 
 
-@pytest.mark.skip("Just debugging")
 def test_run_drift_detection(examples_dir: Path, virtualenv):
     """Testing the functionality of the drift_detection example
 
@@ -140,7 +137,6 @@ def test_run_drift_detection(examples_dir: Path, virtualenv):
     assert output_obj.get("data_drift") is not None
 
 
-@pytest.mark.skip("Just debugging")
 def test_run_caching(examples_dir: Path, virtualenv):
     """Testing the functionality of the caching example
 
@@ -174,7 +170,6 @@ def test_run_caching(examples_dir: Path, virtualenv):
     assert not second_run.steps[3].is_cached
 
 
-@pytest.mark.skip("Just debugging")
 def test_run_mlflow(examples_dir: Path, virtualenv):
     """Testing the functionality of the quickstart example
 
@@ -287,7 +282,6 @@ def test_whylogs_profiling(examples_dir: Path, virtualenv):
     assert isinstance(output_obj, DatasetProfile)
 
 
-@pytest.mark.skip("Just debugging")
 def test_run_custom_materializer(examples_dir: Path, virtualenv):
     """Testing the functionality of the custom materializer example.
 
@@ -309,7 +303,6 @@ def test_run_custom_materializer(examples_dir: Path, virtualenv):
     assert first_run.status == ExecutionStatus.COMPLETED
 
 
-@pytest.mark.skip("Just debugging")
 def test_run_fetch_historical_runs(examples_dir: Path, virtualenv):
     """Testing the functionality of the fetch_historical_runs example.
 
