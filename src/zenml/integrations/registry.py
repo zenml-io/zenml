@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from zenml.exceptions import IntegrationError
@@ -59,7 +58,6 @@ class IntegrationRegistry(object):
         """Method to activate the integrations with are registered in the
         registry"""
         for name, integration in self._integrations.items():
-            logging.error(name)
             if integration.check_installation():
                 integration.activate()
 
