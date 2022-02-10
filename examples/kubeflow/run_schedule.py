@@ -13,22 +13,18 @@
 #  permissions and limitations under the License.
 
 import logging
-import os
 from datetime import datetime, timedelta
 
 import numpy as np
 from sklearn.base import ClassifierMixin
 
+from zenml.integrations.constants import SKLEARN
 from zenml.integrations.sklearn.helpers.digits import (
     get_digits,
     get_digits_model,
 )
 from zenml.pipelines import Schedule, pipeline
 from zenml.steps import Output, step
-
-# Path to a pip requirements file that contains requirements necessary to run
-# the pipeline
-requirements_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
 
 
 @step
@@ -74,7 +70,7 @@ def evaluator(
     return test_acc
 
 
-@pipeline(required_integrations=["sklearn"])
+@pipeline(required_integrations=[SKLEARN])
 def mnist_pipeline(
     importer,
     normalizer,

@@ -16,6 +16,7 @@ from sklearn import datasets
 from sklearn.model_selection import train_test_split
 from whylogs import DatasetProfile  # type: ignore
 
+from zenml.integrations.constants import SKLEARN, WHYLOGS
 from zenml.integrations.whylogs.steps import whylogs_profiler_step
 from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
 from zenml.integrations.whylogs.whylogs_step_decorator import enable_whylogs
@@ -92,7 +93,7 @@ test_data_profiler = whylogs_profiler_step(
 )
 
 
-@pipeline(enable_cache=True, required_integrations=["sklearn", "whylogs"])
+@pipeline(enable_cache=True, required_integrations=[SKLEARN, WHYLOGS])
 def data_profiling_pipeline(
     data_loader,
     data_splitter,

@@ -23,6 +23,7 @@ from sqlalchemy import Column, Float, Integer, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from zenml.integrations.constants import SKLEARN, TENSORFLOW
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
@@ -139,7 +140,7 @@ def sklearn_evaluator(
 
 
 @pipeline(
-    required_integrations=["sklearn", "tensorflow"],
+    required_integrations=[SKLEARN, TENSORFLOW],
     requirements_file=requirements_file,
 )
 def mnist_pipeline(

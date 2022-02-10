@@ -12,19 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
 
 import mlflow
 import numpy as np
 import tensorflow as tf
 
+from zenml.integrations.constants import MLFLOW, TENSORFLOW
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
 from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, Output, step
-
-# Path to a pip requirements file that contains requirements necessary to run
-# the pipeline
-requirements_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
 
 
 class TrainerConfig(BaseStepConfig):
@@ -105,7 +101,7 @@ def tf_evaluator(
     return test_acc
 
 
-@pipeline(enable_cache=False, required_integrations=["mlflow", "tensorflow"])
+@pipeline(enable_cache=False, required_integrations=[MLFLOW, TENSORFLOW])
 def mlflow_example_pipeline(
     importer,
     normalizer,
