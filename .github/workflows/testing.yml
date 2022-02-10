@@ -2,7 +2,7 @@ name: Testing
 
 on:
   push:
-    branches: ['main', 'develop']
+    branches: ['main', 'develop', 'feature/ENG-319-integration-tests-with-own-venv']
     paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
   pull_request:
     types: [opened, synchronize]
