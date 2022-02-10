@@ -118,6 +118,7 @@ def examples_dir(clean_kubeflow_repo):
     examples_path = Path(clean_kubeflow_repo.root) / "zenml_examples"
     source_path = Path(clean_kubeflow_repo.original_cwd) / "examples"
     shutil.copytree(source_path, examples_path)
+    shutil.copytree(clean_kubeflow_repo.root / ".zen", examples_path / "kubeflow" / ".zen")
     yield examples_path
 
 
