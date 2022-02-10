@@ -248,46 +248,6 @@ def test_run_mlflow(examples_dir: Path, virtualenv):
     assert len(artifacts) == 3
 
 
-def test_whylogs_profiling_without_venv(examples_dir: Path):
-    """Testing the functionality of the whylogs example
-
-    Args:
-        examples_dir: Temporary folder containing all examples including the run_examples
-        bash script.
-    """
-
-    local_example = LocalExample(examples_dir / WHYLOGS, name=WHYLOGS)
-
-    local_example.run_example(example_runner(examples_dir), force=True)
-
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    assert pipeline.name == "data_profiling_pipeline"
-
-    run = pipeline.runs[0]
-
-    # Run should be completed
-    assert run.status == ExecutionStatus.COMPLETED
-
-    # The first run should not have any cached steps
-    for step in run.steps:
-        assert not step.is_cached
-
-    from whylogs import DatasetProfile
-
-    # First step should have output a whylogs dataset profile
-    output_obj = run.get_step("data_loader").outputs["profile"].read()
-    assert isinstance(output_obj, DatasetProfile)
-
-    # Second and third step should also have output a whylogs dataset profile
-    output_obj = run.get_step("train_data_profiler").output.read()
-    assert isinstance(output_obj, DatasetProfile)
-    output_obj = run.get_step("test_data_profiler").output.read()
-    assert isinstance(output_obj, DatasetProfile)
-
-
-@pytest.mark.skip("Just debugging")
 def test_whylogs_profiling(examples_dir: Path, virtualenv):
     """Testing the functionality of the whylogs example
 
