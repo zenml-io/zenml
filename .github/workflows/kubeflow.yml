@@ -47,4 +47,4 @@ jobs:
         run: docker build -t localhost:5000/base-image:latest -f docker/ci.Dockerfile .
 
       - name: Run tests
-        run: python -m poetry run pytest tests/integration/test_kubeflow.py
+        run: python -m poetry run pytest tests/integration/test_kubeflow.py -s
