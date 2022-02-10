@@ -71,37 +71,37 @@ jobs:
 
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: python -m poetry install
+        run: poetry install
 
       - name: Lint
         # only do it for python 3.8, we don't need to do it for every version
         if: ${{ matrix.python-version == '3.8' && matrix.os == 'ubuntu-latest' }}
         run: |
           source $VENV
-          python -m poetry run zenml integration install airflow -f
-          python -m poetry run zenml integration install pytorch -f
-          python -m poetry run zenml integration install mlflow -f
-          python -m poetry run zenml integration install gcp -f
-          python -m poetry run zenml integration install kubeflow -f
-          python -m poetry run zenml integration install azure -f
-          python -m poetry run pip install click~=8.0.3
-          python -m poetry run bash scripts/lint.sh
+          poetry run zenml integration install airflow -f
+          poetry run zenml integration install pytorch -f
+          poetry run zenml integration install mlflow -f
+          poetry run zenml integration install gcp -f
+          poetry run zenml integration install kubeflow -f
+          poetry run zenml integration install azure -f
+          poetry run pip install click~=8.0.3
+          poetry run bash scripts/lint.sh
 
       - name: Check Python Env ahead of tests
         run: |
           source $VENV
-          python -m poetry run zenml integration list
-          python -m poetry run pip list
+          zenml integration list
+          pip list
 
       - name: Test
         run: |
           source $VENV
-          python -m poetry run bash scripts/test-coverage-xml.sh
+          bash scripts/test-coverage-xml.sh
 
       - name: Verify Python Env unaffected
         run: |
           source $VENV
-          python -m poetry run zenml integration list
+          zenml integration list
 
       - name: Upload coverage
         # only do it for python 3.8, we don't need to do it for every version
