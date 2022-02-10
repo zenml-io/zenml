@@ -13,13 +13,17 @@
 #  permissions and limitations under the License.
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
+from zenml.container_registries import BaseContainerRegistry
 from zenml.enums import ExecutionStatus
+from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.repository import Repository
+from zenml.stack import Stack
 
 QUICKSTART = "quickstart"
 NOT_SO_QUICKSTART = "not_so_quickstart"
@@ -48,12 +52,11 @@ def _wait_for_kubeflow_pipeline():
 
 
 @pytest.fixture(scope="module")
-def shared_kubeflow_repo(base_repo, tmp_path_factory):
-    import subprocess
-
-    from zenml.container_registries import BaseContainerRegistry
-    from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
-    from zenml.stack import Stack
+def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
+    # patch the ui daemon as forking doesn't work well with pytest
+    module_mocker.patch(
+        "zenml.integrations.kubeflow.orchestrators.local_deployment_utils.start_kfp_ui_daemon"
+    )
 
     tmp_path = tmp_path_factory.mktemp("tmp")
     os.chdir(tmp_path)
@@ -139,7 +142,7 @@ def test_run_kubeflow(examples_dir: Path):
         bash script.
     """
     local_example = LocalExample(examples_dir / KUBEFLOW, name=KUBEFLOW)
-    local_example.run_example(example_runner(examples_dir), force=True)
+    local_example.run_example(example_runner(examples_dir), force=False)
     _wait_for_kubeflow_pipeline()
 
     # Verify the example run was successful
