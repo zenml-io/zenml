@@ -104,6 +104,7 @@ def pretty_print(obj: Any) -> None:
     Args:
       obj: Any object with a __str__ method defined.
     # TODO: [LOW] check whether this needs to be converted to a string first
+    # TODO: [LOW] use rich prettyprint for this instead
     """
     console.print(obj)
 
@@ -220,11 +221,6 @@ def print_stack_component_configuration(
         component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
     ]
     console.print(rich_table)
-
-    # title(f"{display_name}:")
-    # declare("**ACTIVE**\n" if active_status else "")
-    # for key, value in component.dict().items():
-    #     declare(f"{key.upper()}: {value}")
 
 
 def format_date(
