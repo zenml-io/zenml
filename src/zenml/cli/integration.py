@@ -48,6 +48,10 @@ def list_integrations() -> None:
         list(integration_registry.integrations.items())
     )
     print_table(formatted_table)
+    warning(
+        "\n" + "To install the dependencies of a specific integration, type: "
+    )
+    warning("zenml integration install EXAMPLE_NAME")
 
 
 @integration.command(
