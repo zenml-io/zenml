@@ -1,6 +1,5 @@
-name: Testing
+name: Kubeflow
 
-# Controls when the action will run. Triggers the workflow on push of a tag
 on:
   push:
     branches:
@@ -47,14 +46,5 @@ jobs:
       - name: Build docker image
         run: docker build -t localhost:5000/base-image:latest -f docker/ci.Dockerfile .
 
-      - name: Setup stack
-        run: |
-          cd examples/kubeflow
-          python -m poetry run zenml init
-          python -m poetry run zenml orchestrator register kubeflow_orchestrator --type=kubeflow --custom_docker_base_image_name=localhost:5000/base-image:latest
-          python -m poetry run zenml container-registry register local_registry --type=default --uri=localhost:5000
-          python -m poetry run zenml stack register local_kubeflow_stack -m local_metadata_store -a local_artifact_store -o kubeflow_orchestrator -c local_registry
-          python -m poetry run zenml stack set local_kubeflow_stack
-          python -m poetry run zenml stack up
-          docker push localhost:5000/base-image:latest
-          python -m poetry run python run.py
+      - name: Run tests
+        run: python -m poetry run pytest tests/integration/test_kubeflow.py
