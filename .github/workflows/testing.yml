@@ -71,38 +71,38 @@ jobs:
 
       - name: Install Dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install
+        run: python -m poetry install
 
       - name: Lint
         # only do it for python 3.8, we don't need to do it for every version
         if: ${{ matrix.python-version == '3.8' && matrix.os == 'ubuntu-latest' }}
         run: |
           source $VENV
-          zenml integration install airflow -f
-          zenml integration install pytorch -f
-          zenml integration install mlflow -f
-          zenml integration install gcp -f
-          zenml integration install kubeflow -f
-          zenml integration install azure -f
-          pip install click~=8.0.3
-          bash scripts/lint.sh
+          python -m poetry run zenml integration install airflow -f
+          python -m poetry run zenml integration install pytorch -f
+          python -m poetry run zenml integration install mlflow -f
+          python -m poetry run zenml integration install gcp -f
+          python -m poetry run zenml integration install kubeflow -f
+          python -m poetry run zenml integration install azure -f
+          python -m poetry run pip install click~=8.0.3
+          python -m poetry run bash scripts/lint.sh
 
       - name: Check Python Env ahead of tests
         run: |
           source $VENV
-          zenml integration list
-          pip list
+          python -m poetry run zenml integration list
+          python -m poetry run pip list
 
       - name: Test
         run: |
           source $VENV
-          zenml integration install kubeflow -f
-          bash scripts/test-coverage-xml.sh
+          python -m poetry run zenml integration install kubeflow -f
+          python -m poetry run bash scripts/test-coverage-xml.sh
 
       - name: Verify Python Env unaffected
         run: |
           source $VENV
-          zenml integration list
+          python -m poetry run zenml integration list
 
       - name: Upload coverage
         # only do it for python 3.8, we don't need to do it for every version
