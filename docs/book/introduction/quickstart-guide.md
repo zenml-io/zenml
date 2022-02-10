@@ -32,8 +32,8 @@ zenml integration install sklearn -f
 ```
 
 {% hint style="success" %}
-We are just using sklearn for the purposes of illustration; ZenML works with any ML library such as PyTorch, 
-HuggingFace, PyTorch Lightning etc. See our [full list of integrations](../features/integrations.md) for a complete overview.
+We are just using sklearn for the purposes of illustration; ZenML works with any ML library such as PyTorch, Tensorflow, 
+HuggingFace, PyTorch Lightning, etc. See our [full list of integrations](../features/integrations.md) for a complete overview.
 {% endhint %}
 
 
@@ -136,7 +136,7 @@ going on under the hood that is mighty helpful:
 With just a little more work, one can:
 
 - Deploy this pipeline [in production on the cloud](../features/cloud-pipelines) with a production ready orchestrator like Kubeflow.
-- Useful metadata like [statistics, schemas and drifts](../guides/common-usecases/visualizers.md) can be inferred from model and data flowing through these steps.
+- Useful metadata like [statistics, schemas and drifts](../guides/common-usecases/visualizers.md) can be inferred from the model and data flowing through these steps.
 - Models trained this way can be set up to be easily deployed, run batch inference on, or set up in continuous 
 training loops with automatic deployments.
 
