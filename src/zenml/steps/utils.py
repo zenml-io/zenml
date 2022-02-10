@@ -439,13 +439,22 @@ class _FunctionExecutor(BaseExecutor):
             if len(output_annotations) == 1:
                 return_values = [return_values]
             elif not isinstance(return_values, Sequence):
-                # if the user defined multiple outputs, they return value must
+                # if the user defined multiple outputs, the return value must
                 # be a sequence
                 raise StepInterfaceError(
                     f"Wrong step function output type for step '{step_name}: "
                     f"Expected multiple outputs ({output_annotations}) but "
                     f"the function did not return a sequence-like object "
                     f"(actual return value: {return_values})."
+                )
+            elif len(output_annotations) != len(return_values):
+                # if the user defined multiple outputs, the amount of actual
+                # outputs must be the same
+                raise StepInterfaceError(
+                    f"Wrong amount of step function outputs for step "
+                    f"'{step_name}: Expected {len(output_annotations)} outputs "
+                    f"but the function returned {len(return_values)} outputs"
+                    f"(return values: {return_values})."
                 )
 
             for return_value, (output_name, output_type) in zip(
