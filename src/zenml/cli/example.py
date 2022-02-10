@@ -19,8 +19,6 @@ from pathlib import Path
 from typing import List, Optional, cast
 
 import click
-from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
-from git.repo.base import Repo
 from packaging.version import Version, parse
 from rich.console import Console
 from rich.markdown import Markdown
@@ -30,6 +28,7 @@ from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.constants import GIT_REPO_URL
+from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -192,6 +191,17 @@ class ExamplesRepo:
     def __init__(self, cloning_path: Path) -> None:
         """Create a new ExamplesRepo instance."""
         self.cloning_path = cloning_path
+
+        try:
+            from git.exc import InvalidGitRepositoryError, NoSuchPathError
+            from git.repo.base import Repo
+        except ImportError as e:
+            logger.error(
+                "In order to use the CLI tool to interact with our examples, "
+                "you need to have an installation of Git on your machine."
+            )
+            raise GitNotFoundError(e)
+
         try:
             self.repo = Repo(self.cloning_path)
         except NoSuchPathError or InvalidGitRepositoryError:
@@ -254,6 +264,8 @@ class ExamplesRepo:
         downloaded from your system."""
         self.cloning_path.mkdir(parents=True, exist_ok=False)
         try:
+            from git.repo.base import Repo
+
             logger.info(f"Cloning repo {GIT_REPO_URL} to {self.cloning_path}")
             self.repo = Repo.clone_from(
                 GIT_REPO_URL, self.cloning_path, branch="main"
@@ -352,6 +364,8 @@ class GitExamplesHandler(object):
         branch: str,
         force: bool = False,
     ) -> None:
+        from git.exc import GitCommandError
+
         """Pulls the examples from the main git examples repository."""
         if not self.examples_repo.is_cloned:
             self.examples_repo.clone()
