@@ -67,7 +67,7 @@ jobs:
         uses: actions/cache@v2.1.6
         with:
           path: .venv
-          key: ${{ runner.os }}-python-${{ .venv }}-${{ hashFiles('pyproject.toml') }}-publish
+          key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('pyproject.toml') }}-publish
 
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
