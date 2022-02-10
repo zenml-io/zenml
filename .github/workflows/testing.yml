@@ -78,14 +78,14 @@ jobs:
         if: ${{ matrix.python-version == '3.8' && matrix.os == 'ubuntu-latest' }}
         run: |
           source $VENV
-          poetry run zenml integration install airflow -f
-          poetry run zenml integration install pytorch -f
-          poetry run zenml integration install mlflow -f
-          poetry run zenml integration install gcp -f
-          poetry run zenml integration install kubeflow -f
-          poetry run zenml integration install azure -f
-          poetry run pip install click~=8.0.3
-          poetry run bash scripts/lint.sh
+          zenml integration install airflow -f
+          zenml integration install pytorch -f
+          zenml integration install mlflow -f
+          zenml integration install gcp -f
+          zenml integration install kubeflow -f
+          zenml integration install azure -f
+          pip install click~=8.0.3
+          bash scripts/lint.sh
 
       - name: Check Python Env ahead of tests
         run: |
@@ -96,6 +96,7 @@ jobs:
       - name: Test
         run: |
           source $VENV
+          zenml integration install kubeflow -f
           bash scripts/test-coverage-xml.sh
 
       - name: Verify Python Env unaffected
