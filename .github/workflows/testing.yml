@@ -66,14 +66,12 @@ jobs:
         id: cached-poetry-dependencies
         uses: actions/cache@v2.1.6
         with:
-          path: .venv
+          path: ~/.cache
           key: ${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('pyproject.toml') }}-publish
 
       - name: Install Dependencies
         if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          source $VENV
-          python -m poetry install
+        run: python -m poetry install
 
       - name: Lint
         # only do it for python 3.8, we don't need to do it for every version
