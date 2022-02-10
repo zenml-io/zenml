@@ -477,9 +477,7 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
 @pass_git_examples_handler
 @click.argument("example_name")
 def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
-    """Find out more about an example.
-
-    Outputs a pager view of the example's README.md file."""
+    """Find out more about an example. Outputs a pager view of the example's README.md file."""
     check_for_version_mismatch(git_examples_handler)
     try:
         example_obj = git_examples_handler.get_examples(example_name)[0]
