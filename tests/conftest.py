@@ -203,44 +203,44 @@ def step_context_with_two_outputs():
     )
 
 
-@pytest.fixture
-def virtualenv(tmp_path_factory):
-    """Based on the underlying virtual environment a copy of the environment is
-    made and used for the test that uses this fixture.
-
-    Yields:
-        Path to the virtual environment
-    """
-    # Remember the old executable
-    orig_sys_executable = Path(sys.executable)
-
-    # Create temporary venv
-    tmp_path = tmp_path_factory.mktemp("tmp") / "venv"
-    # TODO[High]: Implement for use outside of a base virtual environment
-    #  If this happens outside of a virtual environment the complete
-    #  /usr space is cloned
-    subprocess.check_output(
-        [
-            "virtualenv-clone",
-            str(orig_sys_executable.parent.parent),
-            str(tmp_path),
-        ]
-    )
-
-    # Activate venv
-    activate_this_file = tmp_path / "bin" / "activate_this.py"
-    execfile(str(activate_this_file), dict(__file__=str(activate_this_file)))
-
-    # Set new system executable
-    sys.executable = tmp_path / "bin" / "python"
-
-    yield tmp_path
-    # Reset system executable
-    sys.executable = orig_sys_executable
-
-    # Switch back to original venv
-    activate_this_f = Path(orig_sys_executable).parent / "activate_this.py"
-    execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
-
-    # Destroy temporary venv
-    shutil.rmtree(tmp_path)
+# @pytest.fixture
+# def virtualenv(tmp_path_factory):
+#     """Based on the underlying virtual environment a copy of the environment is
+#     made and used for the test that uses this fixture.
+#
+#     Yields:
+#         Path to the virtual environment
+#     """
+#     # Remember the old executable
+#     orig_sys_executable = Path(sys.executable)
+#
+#     # Create temporary venv
+#     tmp_path = tmp_path_factory.mktemp("tmp") / "venv"
+#     # TODO[High]: Implement for use outside of a base virtual environment
+#     #  If this happens outside of a virtual environment the complete
+#     #  /usr space is cloned
+#     subprocess.check_output(
+#         [
+#             "virtualenv-clone",
+#             str(orig_sys_executable.parent.parent),
+#             str(tmp_path),
+#         ]
+#     )
+#
+#     # Activate venv
+#     activate_this_file = tmp_path / "bin" / "activate_this.py"
+#     execfile(str(activate_this_file), dict(__file__=str(activate_this_file)))
+#
+#     # Set new system executable
+#     sys.executable = tmp_path / "bin" / "python"
+#
+#     yield tmp_path
+#     # Reset system executable
+#     sys.executable = orig_sys_executable
+#
+#     # Switch back to original venv
+#     activate_this_f = Path(orig_sys_executable).parent / "activate_this.py"
+#     execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
+#
+#     # Destroy temporary venv
+#     shutil.rmtree(tmp_path)
