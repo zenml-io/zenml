@@ -105,7 +105,7 @@ def tf_evaluator(
     return test_acc
 
 
-@pipeline(enable_cache=False, requirements_file=requirements_file)
+@pipeline(enable_cache=False, required_integrations=["mlflow", "tensorflow"])
 def mlflow_example_pipeline(
     importer,
     normalizer,

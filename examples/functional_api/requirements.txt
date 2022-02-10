@@ -1,4 +1,1 @@
-pandas
-numpy
 requests
-

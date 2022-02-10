@@ -28,6 +28,12 @@ from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, Output, step
 
+# Path to a pip requirements file that contains requirements necessary to run
+# the pipeline
+requirements_file = os.path.join(
+    os.path.dirname(__file__), "chapter_5_requirements.txt"
+)
+
 Base = declarative_base()
 
 
@@ -132,7 +138,10 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline
+@pipeline(
+    required_integrations=["sklearn", "tensorflow"],
+    requirements_file=requirements_file,
+)
 def mnist_pipeline(
     importer,
     normalizer,

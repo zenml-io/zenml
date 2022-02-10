@@ -94,7 +94,7 @@ def tf_evaluator(
     return test_acc
 
 
-@pipeline
+@pipeline(required_integrations=["tensorflow"])
 def mnist_pipeline(
     importer,
     normalizer,

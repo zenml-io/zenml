@@ -48,7 +48,7 @@ def normalizer(
 
 
 # Define the pipeline
-@pipeline
+@pipeline(required_integrations=["pytorch", "sklearn", "tensorflow"])
 def mnist_pipeline(
     importer,
     normalizer,

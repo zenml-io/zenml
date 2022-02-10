@@ -87,7 +87,7 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline(enable_cache=False)
+@pipeline(enable_cache=False, required_integrations=["sklearn"])
 def mnist_pipeline(
     importer,
     normalizer,

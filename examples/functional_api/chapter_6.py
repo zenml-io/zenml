@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,10 @@ from sklearn.linear_model import LogisticRegression
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, Output, step
+
+# Path to a pip requirements file that contains requirements necessary to run
+# the pipeline
+requirements_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
 
 
 class ImporterConfig(BaseStepConfig):
@@ -87,7 +92,11 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline(enable_cache=False)
+@pipeline(
+    enable_cache=False,
+    required_integrations=["sklearn"],
+    requirements_file=requirements_file,
+)
 def mnist_pipeline(
     importer,
     normalizer,

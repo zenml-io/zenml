@@ -120,7 +120,7 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline
+@pipeline(required_integrations=["sklearn", "tensorflow"])
 def mnist_pipeline(
     importer,
     normalizer,

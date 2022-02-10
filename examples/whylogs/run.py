@@ -92,7 +92,7 @@ test_data_profiler = whylogs_profiler_step(
 )
 
 
-@pipeline(enable_cache=True)
+@pipeline(enable_cache=True, required_integrations=["sklearn", "whylogs"])
 def data_profiling_pipeline(
     data_loader,
     data_splitter,

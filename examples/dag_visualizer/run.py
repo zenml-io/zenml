@@ -97,7 +97,7 @@ def evaluator(
     return test_acc
 
 
-@pipeline
+@pipeline(required_integrations=["tensorflow", "graphviz"])
 def boston_housing_pipeline(
     importer,
     trainer,

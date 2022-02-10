@@ -68,6 +68,7 @@ class Chapter2Pipeline(BasePipeline):
 
 # Create an instance of the pipeline and run it
 pipeline_instance = Chapter2Pipeline(
+    required_integrations=["sklearn"],
     datasource=builtin_steps.PandasDatasource(
         config=builtin_steps.PandasDatasourceConfig(path=DATASET_PATH)
     ),

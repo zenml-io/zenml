@@ -32,7 +32,7 @@ def importer_mnist() -> Output(
     return X_train, y_train, X_test, y_test
 
 
-@pipeline
+@pipeline(required_integrations=["tensorflow"])
 def load_mnist_pipeline(
     importer,
 ):

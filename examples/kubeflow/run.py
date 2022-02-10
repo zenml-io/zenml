@@ -73,7 +73,7 @@ def evaluator(
     return test_acc
 
 
-@pipeline(requirements_file=requirements_file)
+@pipeline(required_integrations=["sklearn"])
 def mnist_pipeline(
     importer,
     normalizer,

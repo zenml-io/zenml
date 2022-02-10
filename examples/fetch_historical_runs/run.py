@@ -69,7 +69,7 @@ def evaluate_and_store_best_model(
     return best_model
 
 
-@pipeline
+@pipeline(required_integrations=["sklearn"])
 def mnist_pipeline(
     importer,
     trainer,

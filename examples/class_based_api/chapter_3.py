@@ -75,6 +75,7 @@ evaluator = sklearn_steps.SklearnEvaluator(
 
 # Create the pipeline and run it
 pipeline_instance = TrainingPipeline(
+    required_integrations=["sklearn", "tensorflow"],
     datasource=datasource,
     splitter=splitter,
     analyzer=analyzer,

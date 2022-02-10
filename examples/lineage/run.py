@@ -108,7 +108,7 @@ def deployer(
     return True
 
 
-@pipeline
+@pipeline(required_integrations=["tensorflow", "dash"])
 def boston_housing_pipeline(importer, trainer, evaluator, deployer):
     """Links all the steps together in a pipeline"""
     train_df, test_df = importer()

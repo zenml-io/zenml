@@ -74,7 +74,7 @@ def analyze_drift(
     return input["data_drift"]["data"]["metrics"]["dataset_drift"]
 
 
-@pipeline
+@pipeline(required_integrations=["evidently", "sklearn"])
 def drift_detection_pipeline(
     data_loader,
     full_data,

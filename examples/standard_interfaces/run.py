@@ -77,5 +77,6 @@ pipeline_instance = TrainingPipeline(
     trainer=trainer,
     evaluator=evaluator,
     enable_cache=False,
+    required_integrations=["sklearn", "tensorflow"],
 )
 pipeline_instance.run()
