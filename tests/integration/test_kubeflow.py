@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 import os
 import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -67,7 +66,7 @@ def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
 
     orchestrator = KubeflowOrchestrator(
         name="local_kubeflow_orchestrator",
-        custom_docker_base_image_name="localhost:5000/base-image:latest",
+        custom_docker_base_image_name="zenml-base-image:latest",
     )
     metadata_store = repo.active_stack.metadata_store.copy(
         update={"name": "local_kubeflow_metadata_store"}
@@ -88,10 +87,6 @@ def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
     repo.register_stack(kubeflow_stack)
     repo.activate_stack(kubeflow_stack.name)
     kubeflow_stack.provision()
-
-    subprocess.check_call(
-        ["docker", "push", "localhost:5000/base-image:latest"]
-    )
 
     yield repo
 
