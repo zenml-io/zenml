@@ -69,13 +69,12 @@ jobs:
           path: .venv
           key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('.github/workflows/testing.yml') }}
 
-      - name: Install Dependencies
+      - name: Install Project
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install
 
-      - name: Lint
-        # only do it for python 3.8, we don't need to do it for every version
-        if: ${{ matrix.python-version == '3.8' && matrix.os == 'ubuntu-latest' }}
+      - name: Install Dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
           zenml integration install airflow -f
@@ -85,7 +84,9 @@ jobs:
           zenml integration install kubeflow -f
           zenml integration install azure -f
           pip install click~=8.0.3
-          bash scripts/lint.sh
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Check Python Env ahead of tests
         run: |
