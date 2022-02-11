@@ -224,7 +224,8 @@ def virtualenv(tmp_path_factory):
             "virtualenv-clone",
             str(orig_sys_executable.parent.parent),
             str(tmp_path),
-        ]
+        ],
+        env=os.environ.copy()
     )
 
     # Activate venv

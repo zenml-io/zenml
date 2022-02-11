@@ -115,15 +115,16 @@ class LocalExample:
         """
         if all(map(fileio.file_exists, example_runner)):
             call = (
-                example_runner
-                + ["--executable", self.executable_python_example]
-                + ["-f"] * force
+                    example_runner
+                    + ["--executable", self.executable_python_example]
+                    + ["-f"] * force
             )
             try:
                 # TODO [ENG-271]: Catch errors that might be thrown
                 #  in subprocess
                 subprocess.check_call(
-                    call, cwd=str(self.path), shell=click._compat.WIN
+                    call, cwd=str(self.path), shell=click._compat.WIN,
+                    env=os.environ.copy()
                 )
             except RuntimeError:
                 raise NotImplementedError(
@@ -172,7 +173,7 @@ class Example:
             return readme_content
         except FileNotFoundError:
             if fileio.file_exists(str(self.path_in_repo)) and fileio.is_dir(
-                str(self.path_in_repo)
+                    str(self.path_in_repo)
             ):
                 raise ValueError(
                     f"No README.md file found in " f"{self.path_in_repo}"
@@ -210,10 +211,10 @@ class ExamplesRepo:
         for branch in self.repo.heads:
             branch_name = cast(str, branch.name)
             if (
-                branch_name.startswith("release/")
-                and branch.commit == self.repo.head.commit
+                    branch_name.startswith("release/")
+                    and branch.commit == self.repo.head.commit
             ):
-                return branch_name[len("release/") :]
+                return branch_name[len("release/"):]
 
         return None
 
@@ -306,10 +307,10 @@ class GitExamplesHandler(object):
             )
             for name in sorted(os.listdir(self.examples_repo.examples_dir))
             if (
-                not name.startswith(".")
-                and not name.startswith("__")
-                and not name.startswith("README")
-                and not name.endswith(".sh")
+                    not name.startswith(".")
+                    and not name.startswith("__")
+                    and not name.startswith("README")
+                    and not name.endswith(".sh")
             )
         ]
 
@@ -348,9 +349,9 @@ class GitExamplesHandler(object):
             return self.examples
 
     def pull(
-        self,
-        branch: str,
-        force: bool = False,
+            self,
+            branch: str,
+            force: bool = False,
     ) -> None:
         """Pulls the examples from the main git examples repository."""
         if not self.examples_repo.is_cloned:
@@ -392,7 +393,7 @@ pass_git_examples_handler = click.make_pass_decorator(
 
 
 def check_for_version_mismatch(
-    git_examples_handler: GitExamplesHandler,
+        git_examples_handler: GitExamplesHandler,
 ) -> None:
     """Prints a warning if the example version and ZenML version don't match."""
     if git_examples_handler.is_matching_versions:
@@ -448,12 +449,12 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
     directory."""
     examples_directory = os.path.join(os.getcwd(), path)
     if (
-        fileio.file_exists(examples_directory)
-        and fileio.is_dir(examples_directory)
-        and confirmation(
-            "Do you wish to delete the ZenML examples directory? \n"
-            f"{examples_directory}"
-        )
+            fileio.file_exists(examples_directory)
+            and fileio.is_dir(examples_directory)
+            and confirmation(
+        "Do you wish to delete the ZenML examples directory? \n"
+        f"{examples_directory}"
+    )
     ):
         git_examples_handler.clean_current_examples()
         declare(
@@ -461,7 +462,7 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
             "directory."
         )
     elif not fileio.file_exists(examples_directory) and not fileio.is_dir(
-        examples_directory
+            examples_directory
     ):
         logger.error(
             f"Unable to delete the ZenML examples directory - "
@@ -498,7 +499,7 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     "-f",
     is_flag=True,
     help="Force the redownload of the examples folder to the ZenML config "
-    "folder.",
+         "folder.",
 )
 @click.option(
     "--version",
@@ -514,7 +515,7 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     default=None,
     hidden=True,
     help="The branch of the ZenML repo to use for the force-redownloaded "
-    "examples.",
+         "examples.",
 )
 @click.option(
     "--path",
@@ -524,12 +525,12 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     help="Relative path at which you want to install the example(s)",
 )
 def pull(
-    git_examples_handler: GitExamplesHandler,
-    example_name: str,
-    force: bool,
-    version: str,
-    path: str,
-    branch: Optional[str],
+        git_examples_handler: GitExamplesHandler,
+        example_name: str,
+        force: bool,
+        version: str,
+        path: str,
+        branch: Optional[str],
 ) -> None:
     """Pull examples straight into your current working directory.
     Add the flag --force or -f to redownload all the examples afresh.
@@ -552,9 +553,9 @@ def pull(
 
             if LocalExample(Path(example.name), destination_dir).is_present():
                 if force or confirmation(
-                    f"Example {example.name} is already pulled. "
-                    "Do you wish to overwrite the directory at "
-                    f"{destination_dir}?"
+                        f"Example {example.name} is already pulled. "
+                        "Do you wish to overwrite the directory at "
+                        f"{destination_dir}?"
                 ):
                     fileio.rm_dir(destination_dir)
                 else:
@@ -573,7 +574,7 @@ def pull(
 
 @example.command(
     help="Run the example that you previously installed with "
-    "`zenml example pull`"
+         "`zenml example pull`"
 )
 @click.argument("example_name", required=True)
 @click.option(
@@ -588,8 +589,8 @@ def pull(
     "-f",
     is_flag=True,
     help="Force the run of the example. This deletes the .zen folder from the "
-    "example folder and force installs all necessary integration "
-    "requirements.",
+         "example folder and force installs all necessary integration "
+         "requirements.",
 )
 @click.option(
     "--shell-executable",
@@ -598,18 +599,18 @@ def pull(
     required=False,
     envvar=SHELL_EXECUTABLE,
     help="Manually specify the path to the executable that runs .sh files. "
-    "Can be helpful for compatibility with Windows or minimal linux "
-    "distros without bash.",
+         "Can be helpful for compatibility with Windows or minimal linux "
+         "distros without bash.",
 )
 @pass_git_examples_handler
 @click.pass_context
 def run(
-    ctx: click.Context,
-    git_examples_handler: GitExamplesHandler,
-    example_name: str,
-    path: str,
-    force: bool,
-    shell_executable: Optional[str],
+        ctx: click.Context,
+        git_examples_handler: GitExamplesHandler,
+        example_name: str,
+        path: str,
+        force: bool,
+        shell_executable: Optional[str],
 ) -> None:
     """Run the example at the specified relative path.
     `zenml example pull EXAMPLE_NAME` has to be called with the same relative
@@ -632,8 +633,10 @@ def run(
             ctx.invoke(pull, example_name=example_name, path=path, force=force)
 
         example_runner = (
-            [] if shell_executable is None else [shell_executable]
-        ) + [git_examples_handler.examples_repo.examples_run_bash_script]
+                             [] if shell_executable is None else [
+                                 shell_executable]
+                         ) + [
+                             git_examples_handler.examples_repo.examples_run_bash_script]
         try:
             local_example.run_example(
                 example_runner=example_runner, force=force
