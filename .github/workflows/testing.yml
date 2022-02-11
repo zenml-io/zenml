@@ -86,9 +86,6 @@ jobs:
           zenml integration install azure -f
           pip install click~=8.0.3
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       - name: Check Python Env ahead of tests
         run: |
           source $VENV
