@@ -31,6 +31,7 @@ import pathlib
 import site
 import sys
 import types
+from contextlib import contextmanager
 from types import (
     CodeType,
     FrameType,
@@ -39,7 +40,7 @@ from types import (
     ModuleType,
     TracebackType,
 )
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Iterator, Optional, Type, Union
 
 from zenml import __version__
 from zenml.constants import APP_NAME
@@ -314,20 +315,37 @@ def import_class_by_path(class_path: str) -> Type[Any]:
     return getattr(mod, classname)  # type: ignore[no-any-return]
 
 
+@contextmanager
+def prepend_python_path(path: str) -> Iterator[None]:
+    """Simple context manager to help import module within the repo"""
+    try:
+        # Entering the with statement
+        sys.path.insert(0, path)
+        yield
+    finally:
+        # Exiting the with statement
+        sys.path.remove(path)
+
+
 def load_source_path_class(source: str) -> Type[Any]:
     """Loads a Python class from the source.
 
     Args:
         source: class_source e.g. this.module.Class[@sha]
     """
+    from zenml.repository import Repository
+
+    repo_path = str(Repository.find_repository())
+
     if "@" in source:
         source = source.split("@")[0]
     logger.debug(
         "Unpinned step found with no git sha. Attempting to "
         "load class from current repository state."
     )
-    class_ = import_class_by_path(source)
-    return class_
+
+    with prepend_python_path(repo_path):
+        return import_class_by_path(source)
 
 
 def import_python_file(file_path: str) -> types.ModuleType:
