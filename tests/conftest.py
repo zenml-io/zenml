@@ -483,7 +483,7 @@ def fixup_link(filename, old_dir, new_dir, target=None):
 def _replace_symlink(filename, newtarget):
     tmpfn = "%s.new" % filename
     os.symlink(newtarget, tmpfn)
-    os.rename(tmpfn, filename)
+    shutil.move(tmpfn, filename)
 
 
 def fixup_syspath_items(syspath, old_dir, new_dir):
