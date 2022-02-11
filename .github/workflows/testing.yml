@@ -68,7 +68,7 @@ jobs:
         uses: actions/cache@v2.1.6
         with:
           path: .venv
-          key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('.github/workflows/testing.yml') }}
+          key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
 
       - name: Install Project
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
@@ -87,7 +87,6 @@ jobs:
           pip install click~=8.0.3
 
       - name: Setup tmate session
-        if: ${{ matrix.os == 'macos-latest' }}
         uses: mxschmitt/action-tmate@v3
 
       - name: Check Python Env ahead of tests
