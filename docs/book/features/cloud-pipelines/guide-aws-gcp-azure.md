@@ -95,7 +95,7 @@ If you are doing a manual install of the Kubeflow Pipelines, make sure that the 
 * [Create](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html) an Amazon S3 bucket in a region of your choice.
 * Make sure that your EKS cluster is authorized to access the S3 bucket. This can be done in one of the following ways:
   * A simple way is to add an [`AmazonS3FullAccess`](https://console.aws.amazon.com/iam/home#/policies/arn:aws:iam::aws:policy/AmazonS3FullAccess) policy to your cluster node group's IAM role.
-  * A complex way would be to create `ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` environment variables in your EKS cluster. This can be done by extending the `zenmldocker/zenml` image and [adding](https://docs.docker.com/engine/reference/builder/#env) these variables in a Dockerfile. This image can then be used by modifying the `custom_docker_base_image_name` field inside your orchestrator’s YAML configuration at `.zen/orchestrators/*.yaml` .
+  * A complex way would be to create `ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` environment variables in your EKS cluster. This can be done by extending the `zenmldocker/zenml` image and [adding](https://docs.docker.com/engine/reference/builder/#env) these variables in a Dockerfile. 
 * The path for your bucket should be in this format `s3:\\your-bucket`.
 {% endtab %}
 
@@ -111,7 +111,7 @@ If you are doing a manual install of the Kubeflow Pipelines, make sure that the 
   * Keep the name of the storage account handy - it will be required in a later step.
   * From the navigation panel on the left, select **Access Keys** under **Security + networking**. Note any of the keys available there for future use.
 * Make sure to set a combination of the following environment variables:`AZURE_STORAGE_CONNECTION_STRING` or `AZURE_STORAGE_ACCOUNT_NAME` and one of \[`AZURE_STORAGE_ACCOUNT_KEY`, `AZURE_STORAGE_SAS_TOKEN`]. \
-  This can be done by extending the `zenmldocker/zenml` image and [adding](https://docs.docker.com/engine/reference/builder/#env) these variables in a Dockerfile. This image can then be used by modifying the `custom_docker_base_image_name` field inside your orchestrator’s YAML configuration at `.zen/orchestrators/*.yaml` .
+  This can be done by extending the `zenmldocker/zenml` image and [adding](https://docs.docker.com/engine/reference/builder/#env) these variables in a Dockerfile.
 * The path for your bucket should be in this format `az://<CONTAINER-NAME>`.
 {% endtab %}
 {% endtabs %}
@@ -131,7 +131,7 @@ To run our pipeline on Kubeflow Pipelines deployed to cloud, we will create a ne
 
     ```powershell
     zenml container-registry register cloud-registry --type=default --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
-    zenml orchestrator register cloud_orchestrator --type=kubeflow
+    zenml orchestrator register cloud_orchestrator --type=kubeflow --custom_docker_base_image_name=YOUR_IMAGE
     zenml metadata-store register kubeflow_metadata_store --type=kubeflow
     zenml artifact-store register cloud_artifact_store --type=<s3/gcp/azure> --path=$PATH_TO_YOUR_BUCKET
 
