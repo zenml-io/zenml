@@ -57,6 +57,12 @@ main() {
         pre_run
       fi
     fi
+
+    if [ -n "$FORCE" ]; then
+      if [[ $(type -t setup_stack) == function ]]; then
+          setup_stack
+      fi
+    fi
   fi
 
   # Run the script
@@ -77,11 +83,13 @@ die() {
 parse_params() {
   # default values of variables
   FORCE=""
+  SETUP_STACK="true"
 
   while :; do
     case "${1-}" in
     -h | --help) usage ;;
     -f | --force) FORCE="true";;
+    --no-stack-setup) SETUP_STACK="";;
     -e | --executable)
       executable="${2-}"
       shift

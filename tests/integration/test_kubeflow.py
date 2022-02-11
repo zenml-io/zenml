@@ -118,7 +118,9 @@ def examples_dir(clean_kubeflow_repo):
     examples_path = Path(clean_kubeflow_repo.root) / "zenml_examples"
     source_path = Path(clean_kubeflow_repo.original_cwd) / "examples"
     shutil.copytree(source_path, examples_path)
-    shutil.copytree(clean_kubeflow_repo.root / ".zen", examples_path / "kubeflow" / ".zen")
+    shutil.copytree(
+        clean_kubeflow_repo.root / ".zen", examples_path / "kubeflow" / ".zen"
+    )
     yield examples_path
 
 
@@ -143,7 +145,9 @@ def test_run_kubeflow(examples_dir: Path):
         bash script.
     """
     local_example = LocalExample(examples_dir / KUBEFLOW, name=KUBEFLOW)
-    local_example.run_example(example_runner(examples_dir), force=False)
+    local_example.run_example(
+        example_runner(examples_dir), force=False, prevent_stack_setup=True
+    )
     _wait_for_kubeflow_pipeline()
 
     # Verify the example run was successful

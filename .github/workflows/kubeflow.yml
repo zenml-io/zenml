@@ -26,13 +26,6 @@ jobs:
           curl -LO "https://dl.k8s.io/release/v1.22.4/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
-#      - name: Install kfp
-#        run: |
-#          k3d cluster create test-cluster --image rancher/k3s:v1.21.7-k3s1
-#          kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref=1.7.1"
-#          kubectl wait --timeout=60s --for condition=established crd/applications.app.k8s.io
-#          kubectl apply -k "github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref=1.7.1"
-
       - name: Install poetry
         run: |
           python -m pip install --upgrade pip
@@ -41,7 +34,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m poetry install
-          python -m poetry run zenml integration install kubeflow sklearn -f
+          python -m poetry run zenml integration install kubeflow -f
 
       - name: Build docker image
         run: docker build -t localhost:5000/base-image:latest -f docker/ci.Dockerfile .
