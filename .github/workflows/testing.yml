@@ -86,6 +86,7 @@ jobs:
           pip install click~=8.0.3
 
       - name: Setup tmate session
+        if: ${{ matrix.os == 'macos-latest' }}
         uses: mxschmitt/action-tmate@v3
 
       - name: Check Python Env ahead of tests
