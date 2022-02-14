@@ -275,15 +275,6 @@ def clean_kubeflow_repo(shared_kubeflow_repo, clean_repo):
     yield clean_repo
 
 
-@pytest.fixture
-def examples_dir(clean_kubeflow_repo):
-    # TODO [high]: tests should store zenml artifacts in a new temp directory
-    examples_path = Path(clean_kubeflow_repo.root) / "zenml_examples"
-    source_path = Path(clean_kubeflow_repo.original_cwd) / "examples"
-    shutil.copytree(source_path, examples_path)
-    yield examples_path
-
-
 def example_runner(examples_dir):
     """Get the executable that runs examples.
 
@@ -297,15 +288,31 @@ def example_runner(examples_dir):
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
-@pytest.mark.parametrize("example", examples)
+@pytest.mark.parametrize("example_configuration", examples)
 def test_run_example_on_kfp(
-    example: ExampleIntegrationTestConfiguration, examples_dir: Path
+    example_configuration: ExampleIntegrationTestConfiguration,
+    clean_kubeflow_repo,
 ):
-    local_example = LocalExample(examples_dir / example.name, name=example.name)
-    # copy the shared kubeflow .zen directory
-    shutil.copytree(examples_dir.parent / ".zen", local_example.path / ".zen")
-    local_example.run_example(
-        example_runner(examples_dir), force=False, prevent_stack_setup=True
+    # root directory of all checked out examples
+    examples_directory = Path(clean_kubeflow_repo.original_cwd) / "examples"
+
+    # copy all example files into the repository directory
+    shutil.copytree(
+        examples_directory / example_configuration.name,
+        clean_kubeflow_repo.root,
+        dirs_exist_ok=True
+    )
+
+    # run the example
+    example = LocalExample(
+        name=example_configuration.name, path=clean_kubeflow_repo.root
+    )
+    example.run_example(
+        example_runner(examples_directory),
+        force=False,
+        prevent_stack_setup=True,
     )
     _wait_for_kubeflow_pipeline()
-    example.validation_function(Repository(root=local_example.path))
+
+    # validate the result
+    example_configuration.validation_function(clean_kubeflow_repo)
