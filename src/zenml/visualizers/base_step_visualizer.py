@@ -13,17 +13,17 @@
 #  permissions and limitations under the License.
 
 from abc import abstractmethod
-from importlib.util import find_spec
 from typing import Any
 
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
+from zenml.utils.package_utils import is_installed
 from zenml.visualizers.base_visualizer import BaseVisualizer
 
 logger = get_logger(__name__)
 
 # If IPython is available, check that we're not in an IPython terminal
-if find_spec("IPython") is not None:
+if is_installed("IPython"):
     from IPython import get_ipython  # type: ignore
 
     if get_ipython().__class__.__name__ == "TerminalInteractiveShell":
