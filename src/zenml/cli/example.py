@@ -15,6 +15,7 @@
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import List, Optional, cast
 
@@ -624,6 +625,15 @@ def run(
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh
     #  to inform user how to clean up
     examples_dir = Path(os.getcwd()) / path
+
+    if sys.platform == "win32":
+        logger.info(
+            "If you are working on Windows, make sure that you have an "
+            "associated application with executing .sh files. If you don't "
+            "have any and see a pop-up during the 'zenml pipeline run', we "
+            "suggest to use the GitBash."
+        )
+
     try:
         _ = git_examples_handler.get_examples(example_name)[0]
     except KeyError as e:
