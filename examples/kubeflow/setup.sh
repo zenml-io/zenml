@@ -22,7 +22,6 @@ setup_stack () {
 pre_run () {
   zenml integration install kubeflow
   zenml integration install sklearn
-  zenml integration install tensorflow
 
   setup_stack
 }
@@ -30,7 +29,6 @@ pre_run () {
 pre_run_forced () {
   zenml integration install kubeflow -f
   zenml integration install sklearn -f
-  zenml integration install tensorflow -f
 
   setup_stack
 }

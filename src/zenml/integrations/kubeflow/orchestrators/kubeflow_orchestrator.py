@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import TYPE_CHECKING, Any, Optional, Set
+from typing import TYPE_CHECKING, Any, Optional
 
 import kfp
 import urllib3
@@ -120,10 +120,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         image_name = self.get_docker_image_name(pipeline.name)
 
-        requirements = {
-            *stack.requirements(),
-            *self._get_pipeline_requirements(pipeline),
-        }
+        requirements = {*stack.requirements(), *pipeline.requirements}
 
         logger.debug("Kubeflow docker container requirements: %s", requirements)
 
@@ -250,21 +247,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "current context is set correctly.",
                 error,
             )
-
-    def _get_pipeline_requirements(self, pipeline: "BasePipeline") -> Set[str]:
-        """Gets list of requirements for a pipeline."""
-        if pipeline.requirements_file and fileio.file_exists(
-            pipeline.requirements_file
-        ):
-            logger.debug(
-                "Using requirements from file %s.", pipeline.requirements_file
-            )
-            with fileio.open(pipeline.requirements_file, "r") as f:
-                return {
-                    requirement.strip() for requirement in f.read().split("\n")
-                }
-        else:
-            return set()
 
     @property
     def _pid_file_path(self) -> str:

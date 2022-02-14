@@ -19,6 +19,7 @@ import requests
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
+from zenml.integrations.constants import SKLEARN
 from zenml.pipelines import Schedule, pipeline
 from zenml.steps import BaseStepConfig, Output, step
 
@@ -87,7 +88,7 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline(enable_cache=False)
+@pipeline(enable_cache=False, required_integrations=[SKLEARN])
 def mnist_pipeline(
     importer,
     normalizer,
