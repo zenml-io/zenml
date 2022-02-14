@@ -58,7 +58,7 @@ main() {
       fi
     fi
 
-    if [ -n "$FORCE" ]; then
+    if [ -n "$SETUP_STACK" ]; then
       if [[ $(type -t setup_stack) == function ]]; then
           setup_stack
       fi
