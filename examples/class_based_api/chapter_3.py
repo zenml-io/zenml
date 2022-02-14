@@ -15,6 +15,7 @@
 import os
 from urllib.request import urlopen
 
+from zenml.integrations.constants import SKLEARN, TENSORFLOW
 from zenml.integrations.sklearn import steps as sklearn_steps
 from zenml.integrations.tensorflow import steps as tf_steps
 from zenml.logger import get_logger
@@ -75,6 +76,7 @@ evaluator = sklearn_steps.SklearnEvaluator(
 
 # Create the pipeline and run it
 pipeline_instance = TrainingPipeline(
+    required_integrations=[SKLEARN, TENSORFLOW],
     datasource=datasource,
     splitter=splitter,
     analyzer=analyzer,
