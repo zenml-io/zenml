@@ -16,6 +16,7 @@
 import pandas as pd
 import tensorflow as tf
 
+from zenml.integrations.constants import FACETS, TENSORFLOW
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
@@ -97,7 +98,7 @@ def evaluator(
     return test_acc
 
 
-@pipeline
+@pipeline(required_integrations=[FACETS, TENSORFLOW])
 def boston_housing_pipeline(
     importer,
     trainer,

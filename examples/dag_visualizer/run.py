@@ -16,6 +16,7 @@
 import pandas as pd
 import tensorflow as tf
 
+from zenml.integrations.constants import GRAPHVIZ, TENSORFLOW
 from zenml.integrations.graphviz.visualizers.pipeline_run_dag_visualizer import (
     PipelineRunDagVisualizer,
 )
@@ -97,7 +98,7 @@ def evaluator(
     return test_acc
 
 
-@pipeline
+@pipeline(required_integrations=[GRAPHVIZ, TENSORFLOW])
 def boston_housing_pipeline(
     importer,
     trainer,
