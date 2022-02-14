@@ -164,10 +164,10 @@ examples = [
             pipeline_name="mnist_pipeline"
         ),
     ),
-    ExampleIntegrationTestConfiguration(
-        name="not_so_quickstart",
-        validation_function=not_so_quickstart_example_validation,
-    ),
+    # ExampleIntegrationTestConfiguration(
+    #     name="not_so_quickstart",
+    #     validation_function=not_so_quickstart_example_validation,
+    # ),
     ExampleIntegrationTestConfiguration(
         name="caching", validation_function=caching_example_validation
     ),
