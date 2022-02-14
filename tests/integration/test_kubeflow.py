@@ -315,7 +315,7 @@ def test_run_example_on_kfp(
     )
     example.run_example(
         example_runner(examples_directory),
-        force=False,
+        force=True,
         prevent_stack_setup=True,
     )
 
