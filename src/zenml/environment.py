@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 import distro
 
 from zenml.logger import get_logger
+from zenml.utils.package_utils import is_installed
 from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
@@ -117,6 +118,17 @@ class Environment(metaclass=SingletonMetaClass):
         except ImportError:
             # We do not even have IPython installed
             return False
+
+    @staticmethod
+    def in_ipython_terminal() -> bool:  # type: ignore [return]
+        """If the current Python process is running in an IPython terminal."""
+        if is_installed("IPython"):
+            from IPython import get_ipython
+
+            if get_ipython().__class__.__name__ == "TerminalInteractiveShell":
+                return True
+            else:
+                return False
 
     @staticmethod
     def in_paperspace_gradient() -> bool:
