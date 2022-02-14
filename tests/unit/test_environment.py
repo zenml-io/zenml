@@ -79,3 +79,30 @@ def test_environment_component_activation():
     assert not Environment().has_component("foo")
     with pytest.raises(KeyError):
         Environment()["foo"]
+
+
+def test_ipython_terminal_detection_when_not_installed():
+    """Tests that we detect if the Python process is running in an IPython
+    terminal."""
+    try:
+        pass
+    except ImportError:
+        assert Environment.in_ipython_terminal() is False
+
+
+@pytest.mark.xfail()
+def test_ipython_terminal_detection_when_installed(mocker):
+    """Tests whether the Python process is running in an IPython terminal."""
+    try:
+
+        class MockIPythonClass:
+            __name__ = "TerminalInteractiveShell"
+
+        class MockIPython:
+            __class__ = MockIPythonClass()
+
+        mocker.patch("IPython.get_ipython", return_value=MockIPython)
+
+        assert Environment.in_ipython_terminal() is True
+    except ImportError:
+        pass
