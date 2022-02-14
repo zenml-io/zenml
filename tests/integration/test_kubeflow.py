@@ -165,7 +165,8 @@ examples = [
         ),
     ),
     ExampleIntegrationTestConfiguration(
-        name="not_so_quickstart", validation_function=not_so_quickstart_example_validation
+        name="not_so_quickstart",
+        validation_function=not_so_quickstart_example_validation,
     ),
     ExampleIntegrationTestConfiguration(
         name="caching", validation_function=caching_example_validation
@@ -202,19 +203,23 @@ examples = [
 ]
 
 
-def _wait_for_kubeflow_pipeline():
-    import time
+@pytest.fixture
+def synchronous_kubeflow_orchestrator(mocker):
+    original_method = KubeflowOrchestrator._upload_and_run_pipeline
 
-    import kfp
-    from kubernetes import config as k8s_config
+    def _upload_and_run_pipeline(*args, **kwargs):
+        # call the original method to get the run id/recurring run id
+        run_id = original_method(*args, **kwargs)
+        import kfp
 
-    # wait for 10 seconds so the run can start
-    time.sleep(10)
+        client = kfp.Client()
+        client.wait_for_run_completion(run_id=run_id, timeout=300)
 
-    k8s_config.load_config()
-    client = kfp.Client()
-    latest_run_id = client.list_runs().runs[-1].id
-    client.wait_for_run_completion(run_id=latest_run_id, timeout=300)
+    mocker.patch(
+        "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator._upload_and_run_pipeline",
+        autospec=True,
+        side_effect=_upload_and_run_pipeline,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -292,6 +297,7 @@ def example_runner(examples_dir):
 def test_run_example_on_kfp(
     example_configuration: ExampleIntegrationTestConfiguration,
     clean_kubeflow_repo,
+    synchronous_kubeflow_orchestrator,
 ):
     # root directory of all checked out examples
     examples_directory = Path(clean_kubeflow_repo.original_cwd) / "examples"
@@ -300,7 +306,7 @@ def test_run_example_on_kfp(
     shutil.copytree(
         examples_directory / example_configuration.name,
         clean_kubeflow_repo.root,
-        dirs_exist_ok=True
+        dirs_exist_ok=True,
     )
 
     # run the example
@@ -312,7 +318,6 @@ def test_run_example_on_kfp(
         force=False,
         prevent_stack_setup=True,
     )
-    _wait_for_kubeflow_pipeline()
 
     # validate the result
     example_configuration.validation_function(clean_kubeflow_repo)
