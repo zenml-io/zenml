@@ -18,12 +18,12 @@ EOF
 
 zenml_init() {
 
-  if [ -n "$FORCE" ]; then
-    if [ -d ".zen" ]; then
-      msg "${ERROR}Existing .zen repo will be cleared before reinitializing."
-      rm -rf ".zen"
-    fi
-  fi
+#  if [ -n "$FORCE" ]; then
+#    if [ -d ".zen" ]; then
+#      msg "${ERROR}Existing .zen repo will be cleared before reinitializing."
+#      rm -rf ".zen"
+#    fi
+#  fi
 
   if [ -d ".zen" ]; then
     msg "${WARNING}Zenml already initialized, ${NOFORMAT}zenml init${WARNING} will not be executed."
