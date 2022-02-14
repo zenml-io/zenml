@@ -249,9 +249,6 @@ def virtualenv(tmp_path_factory):
     activate_this_f = Path(orig_sys_executable).parent / "activate_this.py"
     execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
 
-    # Destroy temporary venv
-    shutil.rmtree(tmp_path)
-
 
 class UserError(Exception):
     pass
