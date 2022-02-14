@@ -158,30 +158,30 @@ ExampleIntegrationTestConfiguration = namedtuple(
     "ExampleIntegrationTestConfiguration", ["name", "validation_function"]
 )
 examples = [
-    # ExampleIntegrationTestConfiguration(
-    #     name="quickstart",
-    #     validation_function=generate_basic_validation_function(
-    #         pipeline_name="mnist_pipeline"
-    #     ),
-    # ),
-    # ExampleIntegrationTestConfiguration(
-    #     name="not_so_quickstart", validation_function=not_so_quickstart_example_validation
-    # ),
-    # ExampleIntegrationTestConfiguration(
-    #     name="caching", validation_function=caching_example_validation
-    # ),
+    ExampleIntegrationTestConfiguration(
+        name="quickstart",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline"
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="not_so_quickstart", validation_function=not_so_quickstart_example_validation
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="caching", validation_function=caching_example_validation
+    ),
     ExampleIntegrationTestConfiguration(
         name="custom_materializer",
         validation_function=generate_basic_validation_function(
             pipeline_name="pipe"
         ),
     ),
-    # ExampleIntegrationTestConfiguration(
-    #     name="fetch_historical_runs",
-    #     validation_function=generate_basic_validation_function(
-    #         pipeline_name="mnist_pipeline"
-    #     ),
-    # ),
+    ExampleIntegrationTestConfiguration(
+        name="fetch_historical_runs",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline"
+        ),
+    ),
     ExampleIntegrationTestConfiguration(
         name="kubeflow",
         validation_function=generate_basic_validation_function(
