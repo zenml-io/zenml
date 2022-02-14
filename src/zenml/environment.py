@@ -101,12 +101,12 @@ class Environment(metaclass=SingletonMetaClass):
 
     @staticmethod
     def in_google_colab() -> bool:
-        """If the current python process is running in a Google Colab."""
+        """If the current Python process is running in a Google Colab."""
         return "COLAB_GPU" in os.environ
 
     @staticmethod
     def in_notebook() -> bool:
-        """If the current python process is running in a notebook."""
+        """If the current Python process is running in a notebook."""
         try:
             from IPython import get_ipython  # type: ignore
 
@@ -120,19 +120,18 @@ class Environment(metaclass=SingletonMetaClass):
             return False
 
     @staticmethod
-    def in_ipython_terminal() -> bool:  # type: ignore [return]
+    def in_ipython_terminal() -> bool:
         """If the current Python process is running in an IPython terminal."""
         if is_installed("IPython"):
             from IPython import get_ipython
 
             if get_ipython().__class__.__name__ == "TerminalInteractiveShell":
                 return True
-            else:
-                return False
+        return False
 
     @staticmethod
     def in_paperspace_gradient() -> bool:
-        """If the current python process is running in Paperspace Gradient."""
+        """If the current Python process is running in Paperspace Gradient."""
         return "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ
 
     def register_component(
