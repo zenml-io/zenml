@@ -120,7 +120,6 @@ def generate_empty_steps():
         output = []
 
         for i in range(count):
-
             @step(name=f"step_{i}")
             def _step_function():
                 pass
@@ -206,6 +205,15 @@ def step_context_with_two_outputs():
     )
 
 
+import itertools
+import os.path
+import re
+
+env_bin_dir = "bin"
+if sys.platform == "win32":
+    env_bin_dir = "Scripts"
+
+
 @pytest.fixture
 def virtualenv(tmp_path_factory):
     """Based on the underlying virtual environment a copy of the environment is
@@ -227,11 +235,11 @@ def virtualenv(tmp_path_factory):
     )
 
     # Activate venv
-    activate_this_file = tmp_path / "bin" / "activate_this.py"
+    activate_this_file = tmp_path / env_bin_dir / "activate_this.py"
     execfile(str(activate_this_file), dict(__file__=str(activate_this_file)))
 
     # Set new system executable
-    sys.executable = tmp_path / "bin" / "python"
+    sys.executable = tmp_path / env_bin_dir / "python"
 
     yield tmp_path
     # Reset system executable
@@ -243,15 +251,6 @@ def virtualenv(tmp_path_factory):
 
     # Destroy temporary venv
     shutil.rmtree(tmp_path)
-
-
-import itertools
-import os.path
-import re
-
-env_bin_dir = "bin"
-if sys.platform == "win32":
-    env_bin_dir = "Scripts"
 
 
 class UserError(Exception):
@@ -272,7 +271,7 @@ def _dirmatch(path, matchwith):
     False
     """
     matchlen = len(matchwith)
-    if path.startswith(matchwith) and path[matchlen : matchlen + 1] in [
+    if path.startswith(matchwith) and path[matchlen: matchlen + 1] in [
         os.sep,
         "",
     ]:
@@ -382,7 +381,7 @@ def fixup_scripts(old_dir, new_dir, version, rewrite_env_python=False):
 
 
 def fixup_script_(
-    root, file_, old_dir, new_dir, version, rewrite_env_python=False
+        root, file_, old_dir, new_dir, version, rewrite_env_python=False
 ):
     old_shebang = "#!%s/bin/python" % os.path.normcase(os.path.abspath(old_dir))
     new_shebang = "#!%s/bin/python" % os.path.normcase(os.path.abspath(new_dir))
@@ -419,24 +418,24 @@ def fixup_script_(
     # This takes care of the scheme in which shebang is of type
     # '#!/venv/bin/python3' while the version of system python
     # is of type 3.x e.g. 3.5.
-    short_version = bang[len(old_shebang) :]
+    short_version = bang[len(old_shebang):]
 
     if not bang.startswith("#!"):
         return
     elif bang == old_shebang:
         rewrite_shebang()
-    elif bang.startswith(old_shebang) and bang[len(old_shebang) :] == version:
+    elif bang.startswith(old_shebang) and bang[len(old_shebang):] == version:
         rewrite_shebang(version)
     elif (
-        bang.startswith(old_shebang)
-        and short_version
-        and bang[len(old_shebang) :] == short_version
+            bang.startswith(old_shebang)
+            and short_version
+            and bang[len(old_shebang):] == short_version
     ):
         rewrite_shebang(short_version)
     elif rewrite_env_python and bang.startswith(env_shebang):
         if bang == env_shebang:
             rewrite_shebang()
-        elif bang[len(env_shebang) :] == version:
+        elif bang[len(env_shebang):] == version:
             rewrite_shebang(version)
     else:
         # can't do anything
@@ -472,7 +471,7 @@ def fixup_link(filename, old_dir, new_dir, target=None):
             # keep relative links, but don't keep original in case it
             # traversed up out of, then back into the venv.
             # so, recreate a relative link from absolute.
-            target = target[len(origdir) :].lstrip(os.sep)
+            target = target[len(origdir):].lstrip(os.sep)
         else:
             target = target.replace(old_dir, new_dir, 1)
 
@@ -483,7 +482,11 @@ def fixup_link(filename, old_dir, new_dir, target=None):
 def _replace_symlink(filename, newtarget):
     tmpfn = "%s.new" % filename
     os.symlink(newtarget, tmpfn)
-    shutil.move(tmpfn, filename)
+    try:
+        shutil.move(tmpfn, filename)
+    except OSError:
+        os.remove(filename)
+        shutil.move(tmpfn, filename)
 
 
 def fixup_syspath_items(syspath, old_dir, new_dir):
