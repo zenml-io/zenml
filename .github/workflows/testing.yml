@@ -95,7 +95,7 @@ jobs:
       - name: Test
         run: |
           source $VENV
-          run bash scripts/test-coverage-xml.sh
+          bash scripts/test-coverage-xml.sh
 
       - name: Upload coverage
         # only do it for python 3.8, we don't need to do it for every version
