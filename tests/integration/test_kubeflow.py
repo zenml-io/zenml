@@ -203,23 +203,16 @@ examples = [
 ]
 
 
-@pytest.fixture
-def synchronous_kubeflow_orchestrator(mocker):
-    original_method = KubeflowOrchestrator._upload_and_run_pipeline
+def _wait_for_kfp_completion():
+    import kfp
+    from kubernetes import config as k8s_config
 
-    def _upload_and_run_pipeline(*args, **kwargs):
-        # call the original method to get the run id/recurring run id
-        run_id = original_method(*args, **kwargs)
-        import kfp
+    k8s_config.load_config()
+    client = kfp.Client()
 
-        client = kfp.Client()
-        client.wait_for_run_completion(run_id=run_id, timeout=300)
-
-    mocker.patch(
-        "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator._upload_and_run_pipeline",
-        autospec=True,
-        side_effect=_upload_and_run_pipeline,
-    )
+    runs = client.list_runs().runs
+    for run in runs:
+        client.wait_for_run_completion(run_id=run.id, timeout=300)
 
 
 @pytest.fixture(scope="module")
@@ -293,11 +286,13 @@ def example_runner(examples_dir):
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
-@pytest.mark.parametrize("example_configuration", examples)
+@pytest.mark.parametrize(
+    "example_configuration",
+    [pytest.param(example, id=example.name) for example in examples],
+)
 def test_run_example_on_kfp(
     example_configuration: ExampleIntegrationTestConfiguration,
     clean_kubeflow_repo,
-    synchronous_kubeflow_orchestrator,
 ):
     # root directory of all checked out examples
     examples_directory = Path(clean_kubeflow_repo.original_cwd) / "examples"
@@ -318,6 +313,7 @@ def test_run_example_on_kfp(
         force=True,
         prevent_stack_setup=True,
     )
+    _wait_for_kfp_completion()
 
     # validate the result
     example_configuration.validation_function(clean_kubeflow_repo)
