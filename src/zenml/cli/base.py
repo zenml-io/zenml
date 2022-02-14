@@ -20,6 +20,7 @@ import click
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.console import console
 from zenml.exceptions import InitializationException
 from zenml.repository import Repository
 
@@ -51,13 +52,12 @@ def init(
     if path is None:
         path = Path.cwd()
 
-    declare(f"Initializing ZenML repository at {path}.")
-
-    try:
-        Repository.initialize(root=path)
-        declare(f"ZenML repository initialized at {path}.")
-    except InitializationException as e:
-        error(f"{e}")
+    with console.status(f"Initializing ZenML repository at {path}.\n"):
+        try:
+            Repository.initialize(root=path)
+            declare(f"ZenML repository initialized at {path}.")
+        except InitializationException as e:
+            error(f"{e}")
 
 
 @cli.command("clean")

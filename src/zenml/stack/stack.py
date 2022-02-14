@@ -395,7 +395,7 @@ class Stack:
             ProvisioningError: If any stack component is missing provisioned
                 resources.
         """
-        logger.info("Resuming provisioned resources for stack '%s'.", self.name)
+        logger.info("Resuming provisioned resources for stack %s.", self.name)
         for component in self.components.values():
             if component.is_running:
                 # the component is already running, no need to resume anything

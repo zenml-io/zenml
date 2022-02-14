@@ -12,17 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
 
-from rich.traceback import install
+from rich.console import Console
+from rich.theme import Theme
 
-install(show_locals=True)
-
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
-    __version__: str = version_file.read().strip()
-
-from zenml.logger import init_logging  # noqa
-
-init_logging()
+zenml_custom_theme = Theme(
+    {
+        "info": "dim cyan",
+        "warning": "magenta",
+        "danger": "bold red",
+        "title": "bold cyan underline",
+        "error": "red",
+    }
+)
+console = Console(theme=zenml_custom_theme, markup=True)
