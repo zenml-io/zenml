@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import shutil
+from collections import namedtuple
 from pathlib import Path
 
 import pytest
@@ -24,15 +25,81 @@ from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.repository import Repository
 from zenml.stack import Stack
 
-QUICKSTART = "quickstart"
-NOT_SO_QUICKSTART = "not_so_quickstart"
-CACHING = "caching"
-DRIFT_DETECTION = "drift_detection"
-MLFLOW = "mlflow_tracking"
-CUSTOM_MATERIALIZER = "custom_materializer"
-WHYLOGS = "whylogs"
-FETCH_HISTORICAL_RUNS = "fetch_historical_runs"
-KUBEFLOW = "kubeflow"
+
+def generate_basic_validation_function(pipeline_name: str):
+    def _validation_function(repository: Repository):
+        pipeline = repository.get_pipeline(pipeline_name)
+        assert pipeline
+        run = pipeline.runs[-1]
+        assert run.status == ExecutionStatus.COMPLETED
+
+    return _validation_function
+
+
+def not_so_quickstart_example_validation(repository: Repository):
+    pipeline = repository.get_pipeline("mnist_pipeline")
+    assert pipeline
+
+    for run in pipeline.runs[-3:]:
+        assert run.status == ExecutionStatus.COMPLETED
+
+
+def caching_example_validation(repository: Repository):
+    pipeline = repository.get_pipeline("mnist_pipeline")
+    assert pipeline
+
+    first_run, second_run = pipeline.runs[-2:]
+
+    # Both runs should be completed
+    assert first_run.status == ExecutionStatus.COMPLETED
+    assert second_run.status == ExecutionStatus.COMPLETED
+
+    # The first run should not have any cached steps
+    for step in first_run.steps:
+        assert not step.is_cached
+
+    # The second run should have two cached steps (chronologically first 2)
+    assert second_run.steps[0].is_cached
+    assert second_run.steps[1].is_cached
+    assert not second_run.steps[2].is_cached
+    assert not second_run.steps[3].is_cached
+
+
+ExampleIntegrationTestConfiguration = namedtuple(
+    "ExampleIntegrationTestConfiguration", ["name", "validation_function"]
+)
+examples = [
+    # ExampleIntegrationTestConfiguration(
+    #     name="quickstart",
+    #     validation_function=generate_basic_validation_function(
+    #         pipeline_name="mnist_pipeline"
+    #     ),
+    # ),
+    # ExampleIntegrationTestConfiguration(
+    #     name="not_so_quickstart", validation_function=not_so_quickstart_example_validation
+    # ),
+    # ExampleIntegrationTestConfiguration(
+    #     name="caching", validation_function=caching_example_validation
+    # ),
+    ExampleIntegrationTestConfiguration(
+        name="custom_materializer",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="pipe"
+        ),
+    ),
+    # ExampleIntegrationTestConfiguration(
+    #     name="fetch_historical_runs",
+    #     validation_function=generate_basic_validation_function(
+    #         pipeline_name="mnist_pipeline"
+    #     ),
+    # ),
+    ExampleIntegrationTestConfiguration(
+        name="kubeflow",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline"
+        ),
+    ),
+]
 
 
 def _wait_for_kubeflow_pipeline():
@@ -129,56 +196,71 @@ def example_runner(examples_dir):
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
-def test_run_kubeflow(examples_dir: Path):
-    """Testing the functionality of the kubeflow example
-
-    Args:
-        examples_dir: Temporary folder containing all examples including the run_examples
-        bash script.
-    """
-    local_example = LocalExample(examples_dir / KUBEFLOW, name=KUBEFLOW)
+@pytest.mark.parametrize("example", examples)
+def test_run_example_on_kfp(
+    example: ExampleIntegrationTestConfiguration, examples_dir: Path
+):
+    local_example = LocalExample(examples_dir / example.name, name=example.name)
+    # copy the shared kubeflow .zen directory
     shutil.copytree(examples_dir.parent / ".zen", local_example.path / ".zen")
     local_example.run_example(
         example_runner(examples_dir), force=False, prevent_stack_setup=True
     )
     _wait_for_kubeflow_pipeline()
-
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    assert pipeline.name == "mnist_pipeline"
-
-    pipeline_run = pipeline.runs[-1]
-
-    assert pipeline_run.status == ExecutionStatus.COMPLETED
-
-    for step in pipeline_run.steps:
-        assert step.status == ExecutionStatus.COMPLETED
+    example.validation_function(Repository(root=local_example.path))
 
 
-def test_run_custom_materializer(examples_dir: Path):
-    """Testing the functionality of the custom materializer example.
+# def test_run_kubeflow(examples_dir: Path):
+#     """Testing the functionality of the kubeflow example
+#
+#     Args:
+#         examples_dir: Temporary folder containing all examples including the run_examples
+#         bash script.
+#     """
+#     local_example = LocalExample(examples_dir / KUBEFLOW, name=KUBEFLOW)
+#     shutil.copytree(examples_dir.parent / ".zen", local_example.path / ".zen")
+#     local_example.run_example(
+#         example_runner(examples_dir), force=False, prevent_stack_setup=True
+#     )
+#     _wait_for_kubeflow_pipeline()
+#
+#     # Verify the example run was successful
+#     repo = Repository(local_example.path)
+#     pipeline = repo.get_pipelines()[0]
+#     assert pipeline.name == "mnist_pipeline"
+#
+#     pipeline_run = pipeline.runs[-1]
+#
+#     assert pipeline_run.status == ExecutionStatus.COMPLETED
+#
+#     for step in pipeline_run.steps:
+#         assert step.status == ExecutionStatus.COMPLETED
+#
+#
+# def test_run_custom_materializer(examples_dir: Path):
+#     """Testing the functionality of the custom materializer example.
+#
+#     Args:
+#         examples_dir: Temporary folder containing all examples including the
+#                       run_examples bash script.
+#     """
+#     local_example = LocalExample(
+#         examples_dir / CUSTOM_MATERIALIZER, name=CUSTOM_MATERIALIZER
+#     )
+#     shutil.copytree(examples_dir.parent / ".zen", local_example.path / ".zen")
+#     local_example.run_example(
+#         example_runner(examples_dir), force=False, prevent_stack_setup=True
+#     )
+#     _wait_for_kubeflow_pipeline()
+#
+#     # Verify the example run was successful
+#     repo = Repository(local_example.path)
+#     pipeline = repo.get_pipelines()[0]
+#     first_run = pipeline.runs[-1]
+#
+#     # Both runs should be completed
+#     assert first_run.status == ExecutionStatus.COMPLETED
 
-    Args:
-        examples_dir: Temporary folder containing all examples including the
-                      run_examples bash script.
-    """
-    local_example = LocalExample(
-        examples_dir / CUSTOM_MATERIALIZER, name=CUSTOM_MATERIALIZER
-    )
-    shutil.copytree(examples_dir.parent / ".zen", local_example.path / ".zen")
-    local_example.run_example(
-        example_runner(examples_dir), force=False, prevent_stack_setup=True
-    )
-    _wait_for_kubeflow_pipeline()
-
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    first_run = pipeline.runs[-1]
-
-    # Both runs should be completed
-    assert first_run.status == ExecutionStatus.COMPLETED
 
 # def test_run_mlflow(examples_dir: Path):
 #     """Testing the functionality of the quickstart example
