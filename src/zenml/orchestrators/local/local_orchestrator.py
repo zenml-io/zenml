@@ -65,13 +65,12 @@ class LocalOrchestrator(BaseOrchestrator):
 
     def run_pipeline(
         self,
-        pipeline_proto: "BasePipeline",
+        pipeline: "BasePipeline",
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline locally"""
-
-        tfx_pipeline = create_tfx_pipeline(pipeline_proto, stack=stack)
+        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
         if runtime_configuration is None:
             runtime_configuration = RuntimeConfiguration()
@@ -112,7 +111,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
         # Run each component. Note that the pipeline.components list is in
         # topological order.
-        for node in pipeline_proto.nodes:
+        for node in pipeline_proto.nodes:  # type: ignore[attr-defined]
             context = node.pipeline_node.contexts.contexts.add()
             context_utils.add_stack_as_metadata_context(
                 context=context, stack=stack
@@ -137,8 +136,8 @@ class LocalOrchestrator(BaseOrchestrator):
                 deployment_config, node_id
             )
 
-            p_info = pipeline_proto.pipeline_info
-            r_spec = pipeline_proto.runtime_spec
+            p_info = pipeline_proto.pipeline_info  # type: ignore[attr-defined]
+            r_spec = pipeline_proto.runtime_spec  # type: ignore[attr-defined]
 
             component_launcher = launcher.Launcher(
                 pipeline_node=pipeline_node,
