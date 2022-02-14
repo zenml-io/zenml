@@ -203,18 +203,6 @@ examples = [
 ]
 
 
-def _wait_for_kfp_completion():
-    import kfp
-    from kubernetes import config as k8s_config
-
-    k8s_config.load_config()
-    client = kfp.Client()
-
-    runs = client.list_runs().runs
-    for run in runs:
-        client.wait_for_run_completion(run_id=run.id, timeout=300)
-
-
 @pytest.fixture(scope="module")
 def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
     # patch the ui daemon as forking doesn't work well with pytest
@@ -232,6 +220,7 @@ def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
     orchestrator = KubeflowOrchestrator(
         name="local_kubeflow_orchestrator",
         custom_docker_base_image_name="zenml-base-image:latest",
+        synchronous=True,
     )
     metadata_store = repo.active_stack.metadata_store.copy(
         update={"name": "local_kubeflow_metadata_store"}
@@ -313,7 +302,6 @@ def test_run_example_on_kfp(
         force=True,
         prevent_stack_setup=True,
     )
-    _wait_for_kfp_completion()
 
     # validate the result
     example_configuration.validation_function(clean_kubeflow_repo)

@@ -61,6 +61,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubernetes_context: Optional[str] = None
+    synchronous = False
     supports_local_execution = True
     supports_remote_execution = True
 
@@ -240,6 +241,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 logger.info(
                     "Started one-off pipeline run with ID '%s'.", result.run_id
                 )
+
+                if self.synchronous:
+                    client.wait_for_run_completion(
+                        run_id=result.run_id, timeout=300
+                    )
         except urllib3.exceptions.HTTPError as error:
             logger.warning(
                 "Failed to upload Kubeflow pipeline: %s. "
