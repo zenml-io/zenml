@@ -27,22 +27,18 @@ from zenml.repository import Repository
 from zenml.stack import Stack
 
 
-def generate_basic_validation_function(pipeline_name: str):
+def generate_basic_validation_function(
+    pipeline_name: str, step_count: int, run_count: int = 1
+):
     def _validation_function(repository: Repository):
         pipeline = repository.get_pipeline(pipeline_name)
         assert pipeline
-        run = pipeline.runs[-1]
-        assert run.status == ExecutionStatus.COMPLETED
+
+        for run in pipeline.runs[-run_count:]:
+            assert run.status == ExecutionStatus.COMPLETED
+            assert len(run.steps) == step_count
 
     return _validation_function
-
-
-def not_so_quickstart_example_validation(repository: Repository):
-    pipeline = repository.get_pipeline("mnist_pipeline")
-    assert pipeline
-
-    for run in pipeline.runs[-3:]:
-        assert run.status == ExecutionStatus.COMPLETED
 
 
 def caching_example_validation(repository: Repository):
@@ -158,37 +154,39 @@ ExampleIntegrationTestConfiguration = namedtuple(
     "ExampleIntegrationTestConfiguration", ["name", "validation_function"]
 )
 examples = [
+    # ExampleIntegrationTestConfiguration(
+    #     name="quickstart",
+    #     validation_function=generate_basic_validation_function(
+    #         pipeline_name="mnist_pipeline", step_count=3
+    #     ),
+    # ),
     ExampleIntegrationTestConfiguration(
-        name="quickstart",
+        name="not_so_quickstart",
         validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline"
+            pipeline_name="mnist_pipeline", step_count=4, run_count=3
         ),
     ),
     # ExampleIntegrationTestConfiguration(
-    #     name="not_so_quickstart",
-    #     validation_function=not_so_quickstart_example_validation,
+    #     name="caching", validation_function=caching_example_validation
     # ),
-    ExampleIntegrationTestConfiguration(
-        name="caching", validation_function=caching_example_validation
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="custom_materializer",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="pipe"
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="fetch_historical_runs",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline"
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="kubeflow",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline"
-        ),
-    ),
+    # ExampleIntegrationTestConfiguration(
+    #     name="custom_materializer",
+    #     validation_function=generate_basic_validation_function(
+    #         pipeline_name="pipe", step_count=2
+    #     ),
+    # ),
+    # ExampleIntegrationTestConfiguration(
+    #     name="fetch_historical_runs",
+    #     validation_function=generate_basic_validation_function(
+    #         pipeline_name="mnist_pipeline", step_count=3
+    #     ),
+    # ),
+    # ExampleIntegrationTestConfiguration(
+    #     name="kubeflow",
+    #     validation_function=generate_basic_validation_function(
+    #         pipeline_name="mnist_pipeline", step_count=4
+    #     ),
+    # ),
     # ExampleIntegrationTestConfiguration(
     #     name="drift_detection",
     #     validation_function=drift_detection_example_validation,
