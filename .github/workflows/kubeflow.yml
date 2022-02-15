@@ -41,6 +41,8 @@ jobs:
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
 
       - name: Run tests
         run: python -m poetry run pytest tests/integration/test_kubeflow.py -s
