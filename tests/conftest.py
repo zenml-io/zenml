@@ -213,6 +213,10 @@ env_bin_dir = "bin"
 if sys.platform == "win32":
     env_bin_dir = "Scripts"
 
+python_exe = "python"
+if sys.platform == "win32":
+    python_exe = "python.exe"
+
 
 @pytest.fixture
 def virtualenv(tmp_path_factory):
@@ -332,7 +336,8 @@ def fix_symlink_if_necessary(src_dir, dst_dir):
     # one example is $OLD_VIRTUAL_ENV/local/lib points to $OLD_VIRTUAL_ENV/lib
     # this function makes sure
     # $NEW_VIRTUAL_ENV/local/lib will point to $NEW_VIRTUAL_ENV/lib
-    # usually this goes unnoticed unless one tries to upgrade a package though pip, so this bug is hard to find.
+    # usually this goes unnoticed unless one tries to upgrade a package though
+    # pip, so this bug is hard to find.
     logger.info(
         "scanning for internal symlinks that point to the original virtual env"
     )
@@ -380,8 +385,8 @@ def fixup_scripts(old_dir, new_dir, version, rewrite_env_python=False):
 def fixup_script_(
         root, file_, old_dir, new_dir, version, rewrite_env_python=False
 ):
-    old_shebang = "#!%s/bin/python" % os.path.normcase(os.path.abspath(old_dir))
-    new_shebang = "#!%s/bin/python" % os.path.normcase(os.path.abspath(new_dir))
+    old_shebang = f"#!{os.path.abspath(old_dir)}{os.sep}{env_bin_dir}{os.sep}{python_exe}"
+    new_shebang = f"#!{os.path.abspath(new_dir)}{os.sep}{env_bin_dir}{os.sep}{python_exe}"
     env_shebang = "#!/usr/bin/env python"
 
     filename = os.path.join(root, file_)
