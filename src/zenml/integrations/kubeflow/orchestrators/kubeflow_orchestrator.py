@@ -56,7 +56,25 @@ DEFAULT_KFP_UI_PORT = 8080
     component_flavor=OrchestratorFlavor.KUBEFLOW,
 )
 class KubeflowOrchestrator(BaseOrchestrator):
-    """Orchestrator responsible for running pipelines using Kubeflow."""
+    """Orchestrator responsible for running pipelines using Kubeflow.
+
+    Attributes:
+        custom_docker_base_image_name: Name of a docker image that should be
+            used as the base for the image that will be run on KFP pods. If no
+            custom image is given, a basic image of the active ZenML version
+            will be used. **Note**: This image needs to have ZenML installed,
+            otherwise the pipeline execution will fail. For that reason, you
+            might want to extend the ZenML docker images found here:
+            https://hub.docker.com/r/zenmldocker/zenml/
+        kubeflow_pipelines_ui_port: A local port to which the KFP UI will be
+            forwarded.
+        kubernetes_context: Optional name of a kubernetes context to run
+            pipelines in. If not set, the current active context will be used.
+            You can find the active context by running `kubectl config
+            current-context`.
+        synchronous: If `True`, running a pipeline using this orchestrator will
+            block until all steps finished running on KFP.
+    """
 
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT

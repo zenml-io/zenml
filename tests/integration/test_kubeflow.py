@@ -30,7 +30,22 @@ from zenml.stack import Stack
 def generate_basic_validation_function(
     pipeline_name: str, step_count: int, run_count: int = 1
 ):
+    """Generates a basic example validation function.
+
+    This function will make sure the runs of a specific pipeline succeeded by
+    checking the run status as well as making sure all steps were executed.
+
+    Args:
+        pipeline_name: The name of the pipeline to verify.
+        step_count: The amount of steps inside the pipeline.
+        run_count: The amount of pipeline runs to verify.
+
+    Raises:
+        AssertionError: If the validation failed.
+    """
+
     def _validation_function(repository: Repository):
+        """Basic validation of pipeline runs inside the metadata store."""
         pipeline = repository.get_pipeline(pipeline_name)
         assert pipeline
 
@@ -42,6 +57,7 @@ def generate_basic_validation_function(
 
 
 def caching_example_validation(repository: Repository):
+    """Validates the metadata store after running the caching example."""
     pipeline = repository.get_pipeline("mnist_pipeline")
     assert pipeline
 
@@ -63,6 +79,8 @@ def caching_example_validation(repository: Repository):
 
 
 def drift_detection_example_validation(repository: Repository):
+    """Validates the metadata store after running the drift detection
+    example."""
     pipeline = repository.get_pipeline("drift_detection_pipeline")
     assert pipeline
 
@@ -77,6 +95,8 @@ def drift_detection_example_validation(repository: Repository):
 
 
 def mlflow_tracking_example_validation(repository: Repository):
+    """Validates the metadata store after running the mlflow tracking
+    example."""
     pipeline = repository.get_pipeline("mlflow_example_pipeline")
     assert pipeline
 
@@ -132,6 +152,7 @@ def mlflow_tracking_example_validation(repository: Repository):
 
 
 def whylogs_example_validation(repository: Repository):
+    """Validates the metadata store after running the whylogs example."""
     pipeline = repository.get_pipeline("data_profiling_pipeline")
     assert pipeline
 
@@ -191,6 +212,7 @@ examples = [
     #     name="drift_detection",
     #     validation_function=drift_detection_example_validation,
     # ),
+    # The mlflow_tracking and whylogs example currently do not work on kubeflow
     # ExampleIntegrationTestConfiguration(
     #     name="mlflow_tracking",
     #     validation_function=mlflow_tracking_example_validation,
@@ -203,7 +225,17 @@ examples = [
 
 @pytest.fixture(scope="module")
 def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
-    # patch the ui daemon as forking doesn't work well with pytest
+    """Creates a repo with a locally provisioned kubeflow stack.
+
+    As the resource provisioning for the local kubeflow deployment takes quite
+    a while, this fixture has a module scope and will therefore only run once.
+
+    **Note**: The fixture should not be used directly. Use the
+    `clean_kubeflow_repo` fixture instead that builds on top of this and
+    provides the  test with a clean working directory and artifact/metadata
+    store.
+    """
+    # Patch the ui daemon as forking doesn't work well with pytest
     module_mocker.patch(
         "zenml.integrations.kubeflow.orchestrators.local_deployment_utils.start_kfp_ui_daemon"
     )
@@ -215,6 +247,7 @@ def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
 
     repo.original_cwd = base_repo.original_cwd
 
+    # Register and activate the kubeflow stack
     orchestrator = KubeflowOrchestrator(
         name="local_kubeflow_orchestrator",
         custom_docker_base_image_name="zenml-base-image:latest",
@@ -238,10 +271,13 @@ def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
     )
     repo.register_stack(kubeflow_stack)
     repo.activate_stack(kubeflow_stack.name)
+
+    # Provision resources for the kubeflow stack
     kubeflow_stack.provision()
 
     yield repo
 
+    # Deprovision the resources after all tests in this module are finished
     kubeflow_stack.deprovision()
     os.chdir(str(base_repo.root))
     shutil.rmtree(tmp_path)
@@ -249,6 +285,9 @@ def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
 
 @pytest.fixture
 def clean_kubeflow_repo(shared_kubeflow_repo, clean_repo):
+    """Creates a clean repo with a provisioned local kubeflow stack."""
+    # Copy the stack configuration from the shared kubeflow repo. At this point
+    # the stack resources are already provisioned by the module-scoped fixture.
     kubeflow_stack = shared_kubeflow_repo.active_stack
     clean_repo.register_stack(kubeflow_stack)
     clean_repo.activate_stack(kubeflow_stack.name)
@@ -281,17 +320,18 @@ def test_run_example_on_kfp(
     example_configuration: ExampleIntegrationTestConfiguration,
     clean_kubeflow_repo,
 ):
-    # root directory of all checked out examples
+    """Runs the given examples on KFP and validates they ran correctly."""
+    # Root directory of all checked out examples
     examples_directory = Path(clean_kubeflow_repo.original_cwd) / "examples"
 
-    # copy all example files into the repository directory
+    # Copy all example files into the repository directory
     shutil.copytree(
         examples_directory / example_configuration.name,
         clean_kubeflow_repo.root,
         dirs_exist_ok=True,
     )
 
-    # run the example
+    # Run the example
     example = LocalExample(
         name=example_configuration.name, path=clean_kubeflow_repo.root
     )
@@ -301,5 +341,5 @@ def test_run_example_on_kfp(
         prevent_stack_setup=True,
     )
 
-    # validate the result
+    # Validate the result
     example_configuration.validation_function(clean_kubeflow_repo)
