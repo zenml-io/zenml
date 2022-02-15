@@ -18,8 +18,8 @@ from datetime import datetime, timedelta
 import numpy as np
 from sklearn.base import ClassifierMixin
 
-from zenml.integrations.constants import SKLEARN
-from zenml.integrations.sklearn.helpers.digits import (
+from zenml.integrations.constants import SCIKIT_LEARN
+from zenml.integrations.scikit_learn.helpers.digits import (
     get_digits,
     get_digits_model,
 )
@@ -51,7 +51,7 @@ def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """Train a simple sklearn classifier for the digits dataset."""
+    """Train a simple scikit_learn classifier for the digits dataset."""
     model = get_digits_model()
 
     model.fit(X_train, y_train)
@@ -70,7 +70,7 @@ def evaluator(
     return test_acc
 
 
-@pipeline(required_integrations=[SKLEARN])
+@pipeline(required_integrations=[SCIKIT_LEARN])
 def mnist_pipeline(
     importer,
     normalizer,

@@ -37,7 +37,7 @@ DEFAULT_FILENAME = "model"
 
 
 class SklearnMaterializer(BaseMaterializer):
-    """Materializer to read data to and from sklearn."""
+    """Materializer to read data to and from scikit_learn."""
 
     ASSOCIATED_TYPES = (
         BaseEstimator,
@@ -67,7 +67,7 @@ class SklearnMaterializer(BaseMaterializer):
         DensityMixin,
         TransformerMixin,
     ]:
-        """Reads a base sklearn model from a pickle file."""
+        """Reads a base scikit_learn model from a pickle file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "rb") as fid:
@@ -89,10 +89,10 @@ class SklearnMaterializer(BaseMaterializer):
             TransformerMixin,
         ],
     ) -> None:
-        """Creates a pickle for a sklearn model.
+        """Creates a pickle for a scikit_learn model.
 
         Args:
-            clf: A sklearn model.
+            clf: A scikit_learn model.
         """
         super().handle_return(clf)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)

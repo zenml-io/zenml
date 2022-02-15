@@ -116,7 +116,7 @@ pip install zenml
 
 # install ZenML integrations
 zenml integration install evidently
-zenml integration install sklearn
+zenml integration install scikit_learn
 
 # pull example
 zenml example pull drift_detection

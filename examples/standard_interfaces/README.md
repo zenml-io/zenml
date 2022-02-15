@@ -36,7 +36,7 @@ pip install zenml
 
 # install ZenML integrations
 zenml integration install tensorflow
-zenml integration install sklearn
+zenml integration install scikit_learn
 
 # pull example
 zenml example pull standard_interfaces

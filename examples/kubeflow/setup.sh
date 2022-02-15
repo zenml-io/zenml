@@ -21,14 +21,14 @@ setup_stack () {
 
 pre_run () {
   zenml integration install kubeflow
-  zenml integration install sklearn
+  zenml integration install scikit-learn
 
   setup_stack
 }
 
 pre_run_forced () {
   zenml integration install kubeflow -f
-  zenml integration install sklearn -f
+  zenml integration install scikit-learn -f
 
   setup_stack
 }

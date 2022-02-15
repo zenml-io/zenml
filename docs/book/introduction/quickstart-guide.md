@@ -28,7 +28,7 @@ zenml init
 We are building a [sklearn model](https://scikit-learn.org/stable/) in this example, so we need to install that integration:
 
 ```shell
-zenml integration install sklearn -f
+zenml integration install scikit_learn -f
 ```
 
 {% hint style="success" %}
@@ -56,7 +56,7 @@ to step inputs is handled within the pipeline definition.
 import numpy as np
 from sklearn.base import ClassifierMixin
 
-from zenml.integrations.sklearn.helpers.digits import (
+from zenml.integrations.scikit_learn.helpers.digits import (
     get_digits,
     get_digits_model,
 )
@@ -78,7 +78,7 @@ def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """Train a simple sklearn classifier for the digits dataset."""
+    """Train a simple scikit_learn classifier for the digits dataset."""
     model = get_digits_model()
     model.fit(X_train, y_train)
     return model

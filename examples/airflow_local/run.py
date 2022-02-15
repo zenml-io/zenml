@@ -19,7 +19,7 @@ import requests
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
-from zenml.integrations.constants import SKLEARN
+from zenml.integrations.constants import SCIKIT_LEARN
 from zenml.pipelines import Schedule, pipeline
 from zenml.steps import BaseStepConfig, Output, step
 
@@ -70,7 +70,7 @@ def sklearn_trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """Train SVC from sklearn."""
+    """Train SVC from scikit_learn."""
     clf = LogisticRegression(penalty="l1", solver="saga", tol=0.1)
     clf.fit(X_train.reshape((X_train.shape[0], -1)), y_train)
     return clf
@@ -88,7 +88,7 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline(enable_cache=False, required_integrations=[SKLEARN])
+@pipeline(enable_cache=False, required_integrations=[SCIKIT_LEARN])
 def mnist_pipeline(
     importer,
     normalizer,

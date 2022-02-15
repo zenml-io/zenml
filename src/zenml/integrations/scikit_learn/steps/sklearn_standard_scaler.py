@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 
 
 class SklearnStandardScalerConfig(BasePreprocessorConfig):
-    """Config class for the sklearn standard scaler
+    """Config class for the scikit_learn standard scaler
 
     ignore_columns: a list of column names which should not be scaled
     exclude_columns: a list of column names to be excluded from the dataset
@@ -38,7 +38,7 @@ class SklearnStandardScalerConfig(BasePreprocessorConfig):
 
 
 class SklearnStandardScaler(BasePreprocessorStep):
-    """Simple step implementation which utilizes the StandardScaler from sklearn
+    """Simple step implementation which utilizes the StandardScaler from scikit_learn
     to transform the numeric columns of a pd.DataFrame"""
 
     def entrypoint(  # type: ignore[override]

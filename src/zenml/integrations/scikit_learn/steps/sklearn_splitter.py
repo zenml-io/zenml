@@ -24,13 +24,13 @@ from zenml.steps.step_interfaces.base_split_step import (
 
 
 class SklearnSplitterConfig(BaseSplitStepConfig):
-    """Config class for the sklearn splitter"""
+    """Config class for the scikit_learn splitter"""
 
     ratios: Dict[str, float]
 
 
 class SklearnSplitter(BaseSplitStep):
-    """A simple step implementation which utilizes sklearn to split a given
+    """A simple step implementation which utilizes scikit_learn to split a given
     dataset into train, test and validation splits"""
 
     def entrypoint(  # type: ignore[override]

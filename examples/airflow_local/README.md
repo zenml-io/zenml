@@ -16,7 +16,7 @@ In order to run this example, you need to install and initialize ZenML and Airfl
 pip install zenml
 
 # install ZenML integrations
-zenml integration install airflow sklearn
+zenml integration install airflow scikit_learn
 
 # pull example
 zenml example pull airflow_local

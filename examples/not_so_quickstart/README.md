@@ -28,7 +28,7 @@ pip install zenml
 # install ZenML integrations
 zenml integration install tensorflow
 zenml integration install torch
-zenml integration install sklearn
+zenml integration install scikit_learn
 
 # pull example
 zenml example pull not_so_quickstart

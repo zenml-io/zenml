@@ -182,7 +182,7 @@ The quickest way to get started is to create a simple pipeline.
 
 ```bash
 zenml init
-zenml integration install sklearn # we use scikit-learn for this example
+zenml integration install scikit_learn # we use scikit-learn for this example
 ```
 
 #### Step 2: Assemble, run, and evaluate your pipeline locally
@@ -191,7 +191,7 @@ zenml integration install sklearn # we use scikit-learn for this example
 import numpy as np
 from sklearn.base import ClassifierMixin
 
-from zenml.integrations.sklearn.helpers.digits import get_digits, get_digits_model
+from zenml.integrations.scikit_learn.helpers.digits import get_digits, get_digits_model
 from zenml.pipelines import pipeline
 from zenml.steps import step, Output
 
@@ -209,7 +209,7 @@ def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """Train a simple sklearn classifier for the digits dataset."""
+    """Train a simple scikit_learn classifier for the digits dataset."""
     model = get_digits_model()
     model.fit(X_train, y_train)
     return model

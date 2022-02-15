@@ -23,7 +23,7 @@ from sqlalchemy import Column, Float, Integer, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from zenml.integrations.constants import SKLEARN, TENSORFLOW
+from zenml.integrations.constants import SCIKIT_LEARN, TENSORFLOW
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
@@ -121,7 +121,7 @@ def sklearn_trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
-    """Train SVC from sklearn."""
+    """Train SVC from scikit_learn."""
     clf = LogisticRegression(penalty="l1", solver="saga", tol=0.1)
     clf.fit(X_train.reshape((X_train.shape[0], -1)), y_train)
     return clf
@@ -140,7 +140,7 @@ def sklearn_evaluator(
 
 
 @pipeline(
-    required_integrations=[SKLEARN, TENSORFLOW],
+    required_integrations=[SCIKIT_LEARN, TENSORFLOW],
     requirements_file=requirements_file,
 )
 def mnist_pipeline(

@@ -20,7 +20,7 @@ from steps.sklearn_trainer import sklearn_evaluator, sklearn_trainer
 from steps.tf_steps import tf_evaluator, tf_trainer
 from steps.torch_steps import torch_evaluator, torch_trainer
 
-from zenml.integrations.constants import PYTORCH, SKLEARN, TENSORFLOW
+from zenml.integrations.constants import PYTORCH, SCIKIT_LEARN, TENSORFLOW
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import Output, step
@@ -49,7 +49,7 @@ def normalizer(
 
 
 # Define the pipeline
-@pipeline(required_integrations=[PYTORCH, SKLEARN, TENSORFLOW])
+@pipeline(required_integrations=[PYTORCH, SCIKIT_LEARN, TENSORFLOW])
 def mnist_pipeline(
     importer,
     normalizer,

@@ -20,7 +20,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install sklearn
+zenml integration install scikit_learn
 
 # pull example
 zenml example pull quickstart

@@ -259,16 +259,18 @@ def test_pipeline_requirements(tmp_path):
     """Tests that the pipeline requirements are a combination of the
     requirements of integrations and requirements of the specified
     requirements file."""
-    from zenml.integrations.sklearn import SklearnIntegration
+    from zenml.integrations.scikit_learn import ScikitLearnIntegration
 
     requirements_file = tmp_path / "requirements.txt"
     requirements_file.write_text("any_requirement")
 
-    @pipeline(required_integrations=[SklearnIntegration.NAME])
+    @pipeline(required_integrations=[ScikitLearnIntegration.NAME])
     def my_pipeline():
         pass
 
-    assert my_pipeline().requirements == set(SklearnIntegration.REQUIREMENTS)
+    assert my_pipeline().requirements == set(
+        ScikitLearnIntegration.REQUIREMENTS
+    )
 
     @pipeline(requirements_file=str(requirements_file))
     def my_pipeline():
@@ -277,7 +279,7 @@ def test_pipeline_requirements(tmp_path):
     assert my_pipeline().requirements == {"any_requirement"}
 
     @pipeline(
-        required_integrations=[SklearnIntegration.NAME],
+        required_integrations=[ScikitLearnIntegration.NAME],
         requirements_file=str(requirements_file),
     )
     def my_pipeline():
@@ -285,5 +287,5 @@ def test_pipeline_requirements(tmp_path):
 
     assert my_pipeline().requirements == {
         "any_requirement",
-        *SklearnIntegration.REQUIREMENTS,
+        *ScikitLearnIntegration.REQUIREMENTS,
     }

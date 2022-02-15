@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The ZenML integrations module contains sub-modules for each integration that we
+The ZenML integrations module contains submodules for each integration that we
 support. This includes orchestrators like Apache Airflow, visualization tools
 like the ``facets`` library, as well as deep learning libraries like PyTorch.
 """
@@ -32,6 +32,6 @@ from zenml.integrations.pytorch import PytorchIntegration  # noqa
 from zenml.integrations.pytorch_lightning import (  # noqa
     PytorchLightningIntegration,
 )
-from zenml.integrations.sklearn import SklearnIntegration  # noqa
+from zenml.integrations.scikit_learn import ScikitLearnIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa

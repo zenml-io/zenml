@@ -23,13 +23,13 @@ from zenml.steps.step_interfaces.base_evaluator_step import (
 
 
 class SklearnEvaluatorConfig(BaseEvaluatorConfig):
-    """Config class for the sklearn evaluator"""
+    """Config class for the scikit_learn evaluator"""
 
     label_class_column: str
 
 
 class SklearnEvaluator(BaseEvaluatorStep):
-    """A simple step implementation which utilizes sklearn to evaluate the
+    """A simple step implementation which utilizes scikit_learn to evaluate the
     performance of a given model on a given test dataset"""
 
     def entrypoint(  # type: ignore[override]

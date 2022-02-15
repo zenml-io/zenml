@@ -29,7 +29,7 @@ pip install zenml
 
 # Install ZenML integrations
 zenml integration install kubeflow  
-zenml integration install sklearn  
+zenml integration install scikit_learn  
 
 # Pull the kubeflow example
 zenml example pull kubeflow

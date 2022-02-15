@@ -26,7 +26,7 @@ In order to run the chapters of the guide, you need to install and initialize Ze
 ```bash
 pip install zenml 
 zenml integration install tensorflow
-zenml integration install sklearn
+zenml integration install scikit_learn
 
 # pull example
 zenml example pull class_based_api

@@ -14,8 +14,8 @@
 import os
 from urllib.request import urlopen
 
-from zenml.integrations.constants import SKLEARN
-from zenml.integrations.sklearn import steps as sklearn_steps
+from zenml.integrations.constants import SCIKIT_LEARN
+from zenml.integrations.scikit_learn import steps as sklearn_steps
 from zenml.logger import get_logger
 from zenml.pipelines import BasePipeline
 from zenml.repository import Repository
@@ -69,7 +69,7 @@ class Chapter2Pipeline(BasePipeline):
 
 # Create an instance of the pipeline and run it
 pipeline_instance = Chapter2Pipeline(
-    required_integrations=[SKLEARN],
+    required_integrations=[SCIKIT_LEARN],
     datasource=builtin_steps.PandasDatasource(
         config=builtin_steps.PandasDatasourceConfig(path=DATASET_PATH)
     ),

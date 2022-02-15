@@ -11,20 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.integrations.constants import SCIKIT_LEARN
+from zenml.integrations.integration import Integration
 
-AIRFLOW = "airflow"
-AWS = "aws"
-AZURE = "azure"
-DASH = "dash"
-EVIDENTLY = "evidently"
-FACETS = "facets"
-GCP = "gcp"
-GRAPHVIZ = "graphviz"
-KUBEFLOW = "kubeflow"
-MLFLOW = "mlflow"
-PLOTLY = "plotly"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-SCIKIT_LEARN = "scikit-learn"
-TENSORFLOW = "tensorflow"
-WHYLOGS = "whylogs"
+
+class ScikitLearnIntegration(Integration):
+    """Definition of scikit_learn integration for ZenML."""
+
+    NAME = SCIKIT_LEARN
+    REQUIREMENTS = ["scikit-learn"]
+
+    @classmethod
+    def activate(cls) -> None:
+        """Activates the integration."""
+        from zenml.integrations.scikit_learn import materializers  # noqa
+
+
+ScikitLearnIntegration.check_installation()

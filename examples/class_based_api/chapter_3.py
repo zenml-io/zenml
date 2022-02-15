@@ -15,8 +15,8 @@
 import os
 from urllib.request import urlopen
 
-from zenml.integrations.constants import SKLEARN, TENSORFLOW
-from zenml.integrations.sklearn import steps as sklearn_steps
+from zenml.integrations.constants import SCIKIT_LEARN, TENSORFLOW
+from zenml.integrations.scikit_learn import steps as sklearn_steps
 from zenml.integrations.tensorflow import steps as tf_steps
 from zenml.logger import get_logger
 from zenml.pipelines.builtin_pipelines import TrainingPipeline
@@ -76,7 +76,7 @@ evaluator = sklearn_steps.SklearnEvaluator(
 
 # Create the pipeline and run it
 pipeline_instance = TrainingPipeline(
-    required_integrations=[SKLEARN, TENSORFLOW],
+    required_integrations=[SCIKIT_LEARN, TENSORFLOW],
     datasource=datasource,
     splitter=splitter,
     analyzer=analyzer,

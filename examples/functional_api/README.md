@@ -33,7 +33,7 @@ pip install zenml
 zenml integration install tensorflow
 zenml integration install airflow
 pip install sqlalchemy 
-zenml integration install sklearn
+zenml integration install scikit_learn
 
 # pull example
 zenml example pull functional_api

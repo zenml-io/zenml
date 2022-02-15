@@ -4,7 +4,8 @@ Data logging and profiling is an important part of any production ML
 pipeline. [whylogs](https://whylabs.ai/whylogs) is an open source library
 that analyzes your data and creates statistical summaries called whylogs
 profiles. whylogs profiles can be visualized locally or uploaded to the
-[WhyLabs](https://whylabs.ai/) platform where more comprehensive analyses can be carried out.
+[WhyLabs](https://whylabs.ai/) platform where more comprehensive analyzes 
+can be carried out.
 
 ZenML integrates seamlessly with whylogs and WhyLabs. This example shows
 how easy it is to enhance steps in an existing ML pipeline with whylogs
@@ -118,7 +119,7 @@ pip install zenml
 
 # install ZenML integrations
 zenml integration install whylogs
-zenml integration install sklearn
+zenml integration install scikit_learn
 
 # pull example
 zenml example pull whylogs
