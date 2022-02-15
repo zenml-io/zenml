@@ -244,7 +244,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
                 if self.synchronous:
                     client.wait_for_run_completion(
-                        run_id=result.run_id, timeout=300
+                        run_id=result.run_id, timeout=600
                     )
         except urllib3.exceptions.HTTPError as error:
             logger.warning(
