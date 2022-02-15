@@ -642,10 +642,10 @@ def run(
 
     if sys.platform == "win32":
         logger.info(
-            "If you are working on Windows, make sure that you have an "
+            "If you are running examples on Windows, make sure that you have an "
             "associated application with executing .sh files. If you don't "
-            "have any and you see a pop-up during 'zenml pipeline run', we "
-            "suggest to use the GitBash."
+            "have any and you see a pop-up during 'zenml example run', we "
+            "suggest to use the Git BASH: https://gitforwindows.org/"
         )
 
     try:
