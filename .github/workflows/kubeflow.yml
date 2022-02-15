@@ -13,6 +13,21 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
 
     steps:
+      - name: Free disk space
+        run: |
+          echo "Available storage:"
+          df -h
+          echo
+          echo -n "  Removing: .NET (frees ~22GB)"
+          sudo rm -rf /usr/share/dotnet
+          echo "... done"
+          echo -n "  Removing: Android"
+          sudo rm -rf /usr/local/lib/android
+          echo "... done"
+          echo
+          echo "Available storage:"
+          df -h
+
       - uses: actions/checkout@v2
 
       - name: Set up Python
