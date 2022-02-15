@@ -88,21 +88,3 @@ def test_ipython_terminal_detection_when_not_installed():
         pass
     except ImportError:
         assert Environment.in_ipython_terminal() is False
-
-
-@pytest.mark.xfail()
-def test_ipython_terminal_detection_when_installed(mocker):
-    """Tests whether the Python process is running in an IPython terminal."""
-    try:
-
-        class MockIPythonClass:
-            __name__ = "TerminalInteractiveShell"
-
-        class MockIPython:
-            __class__ = MockIPythonClass()
-
-        mocker.patch("IPython.get_ipython", return_value=MockIPython)
-
-        assert Environment.in_ipython_terminal() is True
-    except ImportError:
-        pass
