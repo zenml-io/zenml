@@ -630,7 +630,7 @@ def run(
         logger.info(
             "If you are working on Windows, make sure that you have an "
             "associated application with executing .sh files. If you don't "
-            "have any and see a pop-up during the 'zenml pipeline run', we "
+            "have any and you see a pop-up during 'zenml pipeline run', we "
             "suggest to use the GitBash."
         )
 
