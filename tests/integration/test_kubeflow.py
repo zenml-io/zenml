@@ -175,48 +175,48 @@ ExampleIntegrationTestConfiguration = namedtuple(
     "ExampleIntegrationTestConfiguration", ["name", "validation_function"]
 )
 examples = [
-    # ExampleIntegrationTestConfiguration(
-    #     name="quickstart",
-    #     validation_function=generate_basic_validation_function(
-    #         pipeline_name="mnist_pipeline", step_count=3
-    #     ),
-    # ),
+    ExampleIntegrationTestConfiguration(
+        name="quickstart",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline", step_count=3
+        ),
+    ),
     ExampleIntegrationTestConfiguration(
         name="not_so_quickstart",
         validation_function=generate_basic_validation_function(
             pipeline_name="mnist_pipeline", step_count=4, run_count=3
         ),
     ),
-    # ExampleIntegrationTestConfiguration(
-    #     name="caching", validation_function=caching_example_validation
-    # ),
-    # ExampleIntegrationTestConfiguration(
-    #     name="custom_materializer",
-    #     validation_function=generate_basic_validation_function(
-    #         pipeline_name="pipe", step_count=2
-    #     ),
-    # ),
-    # ExampleIntegrationTestConfiguration(
-    #     name="fetch_historical_runs",
-    #     validation_function=generate_basic_validation_function(
-    #         pipeline_name="mnist_pipeline", step_count=3
-    #     ),
-    # ),
-    # ExampleIntegrationTestConfiguration(
-    #     name="kubeflow",
-    #     validation_function=generate_basic_validation_function(
-    #         pipeline_name="mnist_pipeline", step_count=4
-    #     ),
-    # ),
-    # ExampleIntegrationTestConfiguration(
-    #     name="drift_detection",
-    #     validation_function=drift_detection_example_validation,
-    # ),
-    # The mlflow_tracking and whylogs example currently do not work on kubeflow
-    # ExampleIntegrationTestConfiguration(
-    #     name="mlflow_tracking",
-    #     validation_function=mlflow_tracking_example_validation,
-    # ),
+    ExampleIntegrationTestConfiguration(
+        name="caching", validation_function=caching_example_validation
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="custom_materializer",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="pipe", step_count=2
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="fetch_historical_runs",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline", step_count=3
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="kubeflow",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline", step_count=4
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="drift_detection",
+        validation_function=drift_detection_example_validation,
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="mlflow_tracking",
+        validation_function=mlflow_tracking_example_validation,
+    ),
+    # TODO [HIGH]: Enable running the whylogs example on kubeflow
     # ExampleIntegrationTestConfiguration(
     #     name="whylogs", validation_function=whylogs_example_validation
     # ),
