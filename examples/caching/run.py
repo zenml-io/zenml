@@ -16,6 +16,7 @@
 import numpy as np
 import tensorflow as tf
 
+from zenml.integrations.constants import TENSORFLOW
 from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, Output, step
 
@@ -95,7 +96,7 @@ def tf_evaluator(
 
 
 # Define the pipeline
-@pipeline
+@pipeline(required_integrations=[TENSORFLOW])
 def mnist_pipeline(
     importer,
     normalizer,
