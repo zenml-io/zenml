@@ -96,7 +96,7 @@ class KubeflowComponent:
         step_module: str,
         step_function_name: str,
         runtime_parameters: List[data_types.RuntimeParameter],
-        metadata_ui_path: str = "/tmp/mlpipeline-ui-metadata.json",
+        metadata_ui_path: str = "/outputs/mlpipeline-ui-metadata.json",
     ):
         """Creates a new Kubeflow-based component.
         This class essentially wraps a dsl.ContainerOp construct in Kubeflow
@@ -142,7 +142,11 @@ class KubeflowComponent:
         artifact_store = stack.artifact_store
         metadata_store = stack.metadata_store
 
-        volumes: Dict[str, k8s_client.V1Volume] = {}
+        volumes: Dict[str, k8s_client.V1Volume] = {
+            "/outputs": k8s_client.V1Volume(
+                name="outputs", empty_dir=k8s_client.V1EmptyDirVolumeSource()
+            ),
+        }
         has_local_repos = False
 
         if isinstance(artifact_store, LocalArtifactStore):
