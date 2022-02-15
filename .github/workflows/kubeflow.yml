@@ -54,10 +54,10 @@ jobs:
       - name: Build docker image
         run: docker build -t zenml-base-image:latest -f docker/ci.Dockerfile .
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        with:
-          limit-access-to-actor: true
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
+#        with:
+#          limit-access-to-actor: true
 
       - name: Run tests
         run: python -m poetry run pytest tests/integration/test_kubeflow.py -s
