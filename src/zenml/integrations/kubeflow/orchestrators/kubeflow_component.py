@@ -96,7 +96,6 @@ class KubeflowComponent:
         step_module: str,
         step_function_name: str,
         runtime_parameters: List[data_types.RuntimeParameter],
-        metadata_ui_path: str = "/outputs/mlpipeline-ui-metadata.json",
     ):
         """Creates a new Kubeflow-based component.
         This class essentially wraps a dsl.ContainerOp construct in Kubeflow
@@ -109,8 +108,23 @@ class KubeflowComponent:
           tfx_ir: The TFX intermedia representation of the pipeline.
           pod_labels_to_attach: Dict of pod labels to attach to the GKE pod.
           runtime_parameters: Runtime parameters of the pipeline.
-          metadata_ui_path: File location for metadata-ui-metadata.json file.
         """
+        # Path to a metadata file that will be displayed in the KFP UI
+        # This metadata file needs to be in a mounted emptyDir to avoid
+        # sporadic failures with the (not mature) PNS executor
+        # See these links for more information about limitations of PNS +
+        # security context:
+        # https://www.kubeflow.org/docs/components/pipelines/installation/localcluster-deployment/#deploying-kubeflow-pipelines
+        # https://argoproj.github.io/argo-workflows/empty-dir/
+        # KFP will switch to the Emissary executor (soon), when this emptyDir
+        # mount will not be necessary anymore, but for now it's still in alpha
+        # status (https://www.kubeflow.org/docs/components/pipelines/installation/choose-executor/#emissary-executor)
+        metadata_ui_path = "/outputs/mlpipeline-ui-metadata.json"
+        volumes: Dict[str, k8s_client.V1Volume] = {
+            "/outputs": k8s_client.V1Volume(
+                name="outputs", empty_dir=k8s_client.V1EmptyDirVolumeSource()
+            ),
+        }
 
         utils.replace_placeholder(component)
         input_artifact_type_mapping = _get_input_artifact_type_mapping(
@@ -142,11 +156,6 @@ class KubeflowComponent:
         artifact_store = stack.artifact_store
         metadata_store = stack.metadata_store
 
-        volumes: Dict[str, k8s_client.V1Volume] = {
-            "/outputs": k8s_client.V1Volume(
-                name="outputs", empty_dir=k8s_client.V1EmptyDirVolumeSource()
-            ),
-        }
         has_local_repos = False
 
         if isinstance(artifact_store, LocalArtifactStore):

@@ -172,7 +172,6 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
         supported_launcher_classes: Optional[
             List[Type[base_component_launcher.BaseComponentLauncher]]
         ] = None,
-        metadata_ui_path: str = "/outputs/mlpipeline-ui-metadata.json",
         **kwargs: Any
     ):
         """Creates a KubeflowDagRunnerConfig object.
@@ -196,7 +195,6 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
           supported_launcher_classes: A list of component launcher classes that
             are supported by the current pipeline. List sequence determines the
             order in which launchers are chosen for each component being run.
-          metadata_ui_path: File location for metadata-ui-metadata.json file.
           **kwargs: keyword args for PipelineConfig.
         """
         supported_launcher_classes = supported_launcher_classes or [
@@ -210,7 +208,6 @@ class KubeflowDagRunnerConfig(pipeline_config.PipelineConfig):
             pipeline_operator_funcs or get_default_pipeline_operator_funcs()
         )
         self.image = image
-        self.metadata_ui_path = metadata_ui_path
 
 
 class KubeflowDagRunner:
@@ -359,7 +356,6 @@ class KubeflowDagRunner:
                 image=self._kubeflow_config.image,
                 pod_labels_to_attach=self._pod_labels_to_attach,
                 tfx_ir=tfx_node_ir,
-                metadata_ui_path=self._kubeflow_config.metadata_ui_path,
                 runtime_parameters=self._params_by_component_id[component.id],
             )
 
