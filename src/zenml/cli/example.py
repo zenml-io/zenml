@@ -147,6 +147,7 @@ class LocalExample:
                         "has no implementation for the "
                         "run method"
                     )
+                raise
         else:
             raise FileNotFoundError(
                 "Bash File(s) to run Examples not found at" f"{example_runner}"
