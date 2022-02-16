@@ -1,0 +1,26 @@
+name: Testing
+
+on:
+  push:
+    branches: ['main', 'develop']
+    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
+  pull_request:
+    types: [opened, synchronize]
+    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
+
+jobs:
+  call-peotry-install:
+    uses: ./.github/workflows/poetry-install.yml
+
+  call-lint-code:
+    needs: call-peotry-install
+    uses: ./.github/workflows/lint.yml
+
+  call-unit-test:
+    needs: call-peotry-install
+    uses: ./.github/workflows/unit-test.yml
+
+  call-integration-test:
+    needs: call-peotry-install
+    uses: ./.github/workflows/integration-test.yml
+

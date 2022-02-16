@@ -1,0 +1,48 @@
+name: Integration Test the Examples
+
+on: workflow_call
+
+jobs:
+
+  integrationtest:
+    name: integrationtest
+    runs-on: ${{ matrix.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        python-version: [ 3.6, 3.7, 3.8 ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup environment with Poetry
+        uses: ./.github/actions/setup_environment
+
+      - name: Install Linux System Dependencies
+        if: runner.os=='Linux'
+        run: sudo apt install graphviz
+
+      - name: Install MacOS System Dependencies
+        if: runner.os=='macOS'
+        run: brew install graphviz
+
+      - name: Install Windows System Dependencies
+        if: runner.os=='Windows'
+        run: choco install graphviz
+
+      - name: Test
+        run: |
+          source $VENV
+          bash scripts/test-coverage-xml.sh integration
