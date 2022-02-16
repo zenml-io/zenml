@@ -15,21 +15,22 @@
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import List, Optional, cast
 
 import click
-from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
-from git.repo.base import Repo
 from packaging.version import Version, parse
-from rich.console import Console
 from rich.markdown import Markdown
+from rich.text import Text
 
 import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.cli.utils import confirmation, declare, error, print_table, warning
+from zenml.console import console
 from zenml.constants import GIT_REPO_URL
+from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -83,7 +84,7 @@ class LocalExample:
 
     @property
     def executable_python_example(self) -> str:
-        """Return the python file for the example"""
+        """Return the Python file for the example"""
         if self.has_single_python_file:
             return self.python_files_in_dir[0]
         elif self.has_any_python_file:
@@ -99,7 +100,7 @@ class LocalExample:
             )
 
     def is_present(self) -> bool:
-        """Checks if the example is installed at the given path."""
+        """Checks if the example exists at the given path."""
         return fileio.file_exists(str(self.path)) and fileio.is_dir(
             str(self.path)
         )
@@ -192,6 +193,17 @@ class ExamplesRepo:
     def __init__(self, cloning_path: Path) -> None:
         """Create a new ExamplesRepo instance."""
         self.cloning_path = cloning_path
+
+        try:
+            from git.exc import InvalidGitRepositoryError, NoSuchPathError
+            from git.repo.base import Repo
+        except ImportError as e:
+            logger.error(
+                "In order to use the CLI tool to interact with our examples, "
+                "you need to have an installation of Git on your machine."
+            )
+            raise GitNotFoundError(e)
+
         try:
             self.repo = Repo(self.cloning_path)
         except NoSuchPathError or InvalidGitRepositoryError:
@@ -206,7 +218,7 @@ class ExamplesRepo:
     @property
     def active_version(self) -> Optional[str]:
         """In case a release branch is checked out, this property returns
-        that version, else None is returned"""
+        that version, else `None` is returned"""
         for branch in self.repo.heads:
             branch_name = cast(str, branch.name)
             if (
@@ -247,13 +259,15 @@ class ExamplesRepo:
         return os.path.join(self.examples_dir, EXAMPLES_RUN_SCRIPT)
 
     def clone(self) -> None:
-        """Clones repo to cloning_path.
+        """Clones repo to `cloning_path`.
 
         If you break off the operation with a `KeyBoardInterrupt` before the
         cloning is completed, this method will delete whatever was partially
         downloaded from your system."""
         self.cloning_path.mkdir(parents=True, exist_ok=False)
         try:
+            from git.repo.base import Repo
+
             logger.info(f"Cloning repo {GIT_REPO_URL} to {self.cloning_path}")
             self.repo = Repo.clone_from(
                 GIT_REPO_URL, self.cloning_path, branch="main"
@@ -273,7 +287,7 @@ class ExamplesRepo:
             )
 
     def checkout(self, branch: str) -> None:
-        """Checks out a specific branch or tag of the examples repository
+        """Checks out a specific branch or tag of the examples repository.
 
         Raises:
             GitCommandError: if branch doesn't exist.
@@ -287,7 +301,7 @@ class ExamplesRepo:
 
 
 class GitExamplesHandler(object):
-    """Class for the GitExamplesHandler that interfaces with the CLI tool."""
+    """Class for the `GitExamplesHandler` that interfaces with the CLI tool."""
 
     def __init__(self) -> None:
         """Create a new GitExamplesHandler instance."""
@@ -299,7 +313,7 @@ class GitExamplesHandler(object):
 
     @property
     def examples(self) -> List[Example]:
-        """Property that contains a list of examples"""
+        """Property that contains a list of examples."""
         return [
             Example(
                 name, Path(os.path.join(self.examples_repo.examples_dir, name))
@@ -352,6 +366,8 @@ class GitExamplesHandler(object):
         branch: str,
         force: bool = False,
     ) -> None:
+        from git.exc import GitCommandError
+
         """Pulls the examples from the main git examples repository."""
         if not self.examples_repo.is_cloned:
             self.examples_repo.clone()
@@ -425,13 +441,15 @@ def example() -> None:
 def list(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
     check_for_version_mismatch(git_examples_handler)
-    declare("Listing examples: \n")
-
-    for example in git_examples_handler.get_examples():
-        declare(f"{example.name}")
+    examples = [
+        {"example_name": example.name}
+        for example in git_examples_handler.get_examples()
+    ]
+    print_table(examples)
 
     declare("\n" + "To pull the examples, type: ")
-    declare("zenml example pull EXAMPLE_NAME")
+    text = Text("zenml example pull EXAMPLE_NAME", style="markdown.code_block")
+    declare(text)
 
 
 @click.option(
@@ -474,8 +492,9 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
 @pass_git_examples_handler
 @click.argument("example_name")
 def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
-    """Find out more about an example."""
+    """Find out more about an example. Outputs a pager view of the example's README.md file."""
     check_for_version_mismatch(git_examples_handler)
+
     try:
         example_obj = git_examples_handler.get_examples(example_name)[0]
 
@@ -483,9 +502,9 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
         error(str(e))
 
     else:
-        console = Console()
         md = Markdown(example_obj.readme_content)
-        console.print(md)
+        with console.pager(styles=True):
+            console.print(md)
 
 
 @example.command(
@@ -620,6 +639,15 @@ def run(
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh
     #  to inform user how to clean up
     examples_dir = Path(os.getcwd()) / path
+
+    if sys.platform == "win32":
+        logger.info(
+            "If you are running examples on Windows, make sure that you have an "
+            "associated application with executing .sh files. If you don't "
+            "have any and you see a pop-up during 'zenml example run', we "
+            "suggest to use the Git BASH: https://gitforwindows.org/"
+        )
+
     try:
         _ = git_examples_handler.get_examples(example_name)[0]
     except KeyError as e:
