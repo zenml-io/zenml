@@ -2,19 +2,19 @@ name: Testing
 
 on:
   push:
-    branches: [ 'main', 'develop' ]
-    paths-ignore: [ 'docs/**', 'docker/**', '*', '!pyproject.toml' ]
+    branches: ['main', 'develop']
+    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
   pull_request:
-    types: [ opened, synchronize ]
-    paths-ignore: [ 'docs/**', 'docker/**', '*', '!pyproject.toml' ]
+    types: [opened, synchronize]
+    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
 
 jobs:
-  testing:
+  setup:
+    name: setup
     runs-on: ${{ matrix.os }}
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
-      PYTHONIOENCODING: 'utf-8'
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
@@ -24,8 +24,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ macos-latest, ubuntu-latest, windows-latest ]
-        python-version: [ 3.6, 3.7, 3.8 ]
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python-version: [3.6, 3.7, 3.8]
       fail-fast: false
 
     steps:
@@ -75,6 +75,17 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install
 
+  lint:
+    name: lint
+    needs: setup
+    runs-on: ${{ matrix.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
+    steps:
       - name: Install Dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
@@ -88,16 +99,46 @@ jobs:
           pip install click~=8.0.3
 
       - name: Lint
-        run: |
-          source $VENV
-          bash scripts/lint.sh
+        run: bash scripts/lint.sh
+
+  unittest:
+    name: unittest
+    needs: setup
+    runs-on: ${{ matrix.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
+    steps:
+      - name: Install Prerequisites
+        run: zenml integration install kubeflow -f
 
       - name: Test
-        run: |
-          source $VENV
-          bash scripts/test-coverage-xml.sh
+        run: bash scripts/test-coverage-xml.sh unit
 
       - name: Upload coverage
         # only do it for python 3.8, we don't need to do it for every version
         if: ${{ matrix.python-version == '3.8' && matrix.os == 'ubuntu-latest' }}
         uses: codecov/codecov-action@v2
+
+  integrationtest:
+    name: integrationtest
+    needs: setup
+    runs-on: ${{ matrix.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
+    steps:
+      - name: Test
+        run: bash scripts/test-coverage-xml.sh integration
+
+      - name: Upload coverage
+        # only do it for python 3.8, we don't need to do it for every version
+        if: ${{ matrix.python-version == '3.8' && matrix.os == 'ubuntu-latest' }}
+        uses: codecov/codecov-action@v2
+
