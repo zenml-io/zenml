@@ -66,7 +66,7 @@ class ZenAzure(Filesystem):
         for potential_prefix in cls.SUPPORTED_SCHEMES:
             if path.startswith(potential_prefix):
                 prefix = potential_prefix
-                path = path[len(potential_prefix):]
+                path = path[len(potential_prefix) :]
                 break
 
         return prefix, path
@@ -156,7 +156,7 @@ class ZenAzure(Filesystem):
             """Extracts the basename from a file info dict returned by the Azure
             filesystem."""
             file_path = cast(str, file_dict["name"])
-            base_name = file_path[len(path):]
+            base_name = file_path[len(path) :]
             return base_name.lstrip("/")
 
         try:
