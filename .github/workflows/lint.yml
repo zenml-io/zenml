@@ -33,7 +33,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
-          zenml integration install airflow -f
+          zenml integration install airflow -f || poetry install && zenml integration install airflow -f
           zenml integration install pytorch -f
           zenml integration install mlflow -f
           zenml integration install gcp -f

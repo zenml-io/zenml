@@ -36,7 +36,7 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install kubeflow -f || which zenml && pip list
+          zenml integration install kubeflow -f || poetry install && zenml integration install kubeflow -f
 
       - name: Test
         run: |
