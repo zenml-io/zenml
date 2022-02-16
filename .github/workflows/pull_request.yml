@@ -1,4 +1,4 @@
-name: Testing
+name: Build, Lint, Unit & Integration Test
 
 on:
   push:
@@ -14,20 +14,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  call-peotry-install:
+  poetry-install:
     uses: ./.github/workflows/poetry-install.yml
 
-  call-lint-code:
-    needs: call-peotry-install
-    if: always()
+  lint-code:
+    needs: poetry-install
     uses: ./.github/workflows/lint.yml
 
-  call-unit-test:
-    needs: call-peotry-install
-    if: always()
+  unit-test:
+    needs: poetry-install
     uses: ./.github/workflows/unit-test.yml
 
-  call-integration-test:
-    needs: [call-lint-code, call-unit-test]
+  integration-test:
+    needs: [lint-code, unit-test]
     uses: ./.github/workflows/integration-test.yml
 

@@ -29,9 +29,13 @@ jobs:
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
 
+      - name: Setup tmate session
+        if: ${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
+        uses: mxschmitt/action-tmate@v3
+
       - name: Install Prerequisites
         run: |
-          source $VENV
+          source $VENV || source <(echo "set -euxo pipefail"; cat $VENV; echo "set +x")
           zenml integration install kubeflow -f
 
       - name: Test
