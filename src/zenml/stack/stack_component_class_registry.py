@@ -92,8 +92,6 @@ class StackComponentClassRegistry:
             KeyError: If no component class is registered for the given type
                 and flavor.
         """
-        # TODO [ENG-374]: Think about activating the integrations here to make
-        #  sure all potential StackComponent classes are registered
         if isinstance(component_flavor, StackComponentFlavor):
             component_flavor = component_flavor.value
 
@@ -101,14 +99,23 @@ class StackComponentClassRegistry:
         try:
             return available_flavors[component_flavor]
         except KeyError:
-            raise KeyError(
-                f"No stack component class found for type {component_type} "
-                f"and flavor {component_flavor}. Registered flavors for this "
-                f"type: {set(available_flavors)}. If your stack component "
-                f"class is part of a ZenML integration, make sure to active "
-                f"them by calling "
-                f"`IntegrationRegistry.activate_integrations()`."
-            ) from None
+            # The stack component might be part of an integration
+            # -> Activate the integrations and try again
+            from zenml.integrations.registry import integration_registry
+
+            integration_registry.activate_integrations()
+
+            try:
+                return available_flavors[component_flavor]
+            except KeyError:
+                raise KeyError(
+                    f"No stack component class found for type {component_type} "
+                    f"and flavor {component_flavor}. Registered flavors for "
+                    f"this type: {set(available_flavors)}. If your stack "
+                    f"component class is part of a ZenML integration, make "
+                    f"sure the corresponding integration is installed by "
+                    f"running `zenml integration install INTEGRATION_NAME`."
+                ) from None
 
 
 C = TypeVar("C", bound=StackComponent)
