@@ -282,9 +282,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         for step in self.steps.values():
             step._has_been_called = False
 
-    # TODO [ENG-376]: Enable specifying runtime configuration options either
-    #  using **kwargs here or by passing a `RuntimeConfiguration` object or a
-    #  path to a config file.
     def run(
         self,
         *,
