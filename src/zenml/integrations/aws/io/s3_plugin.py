@@ -129,7 +129,7 @@ class ZenS3(Filesystem):
             """Extracts the basename from a file info dict returned by the S3
             filesystem."""
             file_path = cast(str, file_dict["Key"])
-            base_name = file_path[len(path) :]
+            base_name = file_path[len(path):]
             return base_name.lstrip("/")
 
         try:
