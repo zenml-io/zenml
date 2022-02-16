@@ -110,8 +110,7 @@ class Environment(metaclass=SingletonMetaClass):
         if find_spec("IPython") is not None:
             from IPython import get_ipython  # type: ignore
 
-            ipython_status = get_ipython().__class__.__name__
-            if ipython_status in [
+            if get_ipython().__class__.__name__ in [
                 "TerminalInteractiveShell",
                 "ZMQInteractiveShell",
             ]:
