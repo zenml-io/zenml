@@ -15,7 +15,7 @@ import os
 from urllib.request import urlopen
 
 from zenml.integrations.constants import SCIKIT_LEARN
-from zenml.integrations.scikit_learn import steps as sklearn_steps
+from zenml.integrations.scikit_learn import steps as scikit_learn_steps
 from zenml.logger import get_logger
 from zenml.pipelines import BasePipeline
 from zenml.repository import Repository
@@ -73,8 +73,8 @@ pipeline_instance = Chapter2Pipeline(
     datasource=builtin_steps.PandasDatasource(
         config=builtin_steps.PandasDatasourceConfig(path=DATASET_PATH)
     ),
-    splitter=sklearn_steps.SklearnSplitter(
-        config=sklearn_steps.SklearnSplitterConfig(
+    splitter=scikit_learn_steps.ScikitLearnSplitter(
+        config=scikit_learn_steps.ScikitLearnSplitterConfig(
             ratios={"train": 0.7, "test": 0.15, "validation": 0.15}
         )
     ),
@@ -83,8 +83,8 @@ pipeline_instance = Chapter2Pipeline(
             percentiles=[0.2, 0.4, 0.6, 0.8, 1.0]
         )
     ),
-    preprocessor=sklearn_steps.SklearnStandardScaler(
-        config=sklearn_steps.SklearnStandardScalerConfig(
+    preprocessor=scikit_learn_steps.ScikitLearnStandardScaler(
+        config=scikit_learn_steps.ScikitLearnStandardScalerConfig(
             ignore_columns=["has_diabetes"]
         )
     ),

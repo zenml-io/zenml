@@ -16,7 +16,7 @@ import os
 from urllib.request import urlopen
 
 from zenml.integrations.constants import SCIKIT_LEARN, TENSORFLOW
-from zenml.integrations.scikit_learn import steps as sklearn_steps
+from zenml.integrations.scikit_learn import steps as scikit_learn_steps
 from zenml.integrations.tensorflow import steps as tf_steps
 from zenml.logger import get_logger
 from zenml.pipelines.builtin_pipelines import TrainingPipeline
@@ -46,8 +46,8 @@ datasource = builtin_steps.PandasDatasource(
 )
 
 # Configuring the split step
-splitter = sklearn_steps.SklearnSplitter(
-    sklearn_steps.SklearnSplitterConfig(
+splitter = scikit_learn_steps.ScikitLearnSplitter(
+    scikit_learn_steps.ScikitLearnSplitterConfig(
         ratios={"train": 0.7, "test": 0.15, "validation": 0.15}
     )
 )
@@ -58,8 +58,8 @@ analyzer = builtin_steps.PandasAnalyzer(
 )
 
 # Configuring the preprocessing step
-preprocessor = sklearn_steps.SklearnStandardScaler(
-    sklearn_steps.SklearnStandardScalerConfig(ignore_columns=["has_diabetes"])
+preprocessor = scikit_learn_steps.ScikitLearnStandardScaler(
+    scikit_learn_steps.ScikitLearnStandardScalerConfig(ignore_columns=["has_diabetes"])
 )
 
 # Configuring the training step
@@ -70,8 +70,8 @@ trainer = tf_steps.TensorflowBinaryClassifier(
 )
 
 # Configuring the evaluation step
-evaluator = sklearn_steps.SklearnEvaluator(
-    sklearn_steps.SklearnEvaluatorConfig(label_class_column="has_diabetes")
+evaluator = scikit_learn_steps.ScikitLearnEvaluator(
+    scikit_learn_steps.ScikitLearnEvaluatorConfig(label_class_column="has_diabetes")
 )
 
 # Create the pipeline and run it

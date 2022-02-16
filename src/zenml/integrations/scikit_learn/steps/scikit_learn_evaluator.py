@@ -22,13 +22,13 @@ from zenml.steps.step_interfaces.base_evaluator_step import (
 )
 
 
-class SklearnEvaluatorConfig(BaseEvaluatorConfig):
+class ScikitLearnEvaluatorConfig(BaseEvaluatorConfig):
     """Config class for the scikit_learn evaluator"""
 
     label_class_column: str
 
 
-class SklearnEvaluator(BaseEvaluatorStep):
+class ScikitLearnEvaluator(BaseEvaluatorStep):
     """A simple step implementation which utilizes scikit_learn to evaluate the
     performance of a given model on a given test dataset"""
 
@@ -36,7 +36,7 @@ class SklearnEvaluator(BaseEvaluatorStep):
         self,
         dataset: pd.DataFrame,
         model: tf.keras.Model,
-        config: SklearnEvaluatorConfig,
+        config: ScikitLearnEvaluatorConfig,
     ) -> dict:  # type: ignore[type-arg]
         """Method which is responsible for the computation of the evaluation
 

@@ -36,7 +36,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 DEFAULT_FILENAME = "model"
 
 
-class SklearnMaterializer(BaseMaterializer):
+class ScikitLearnMaterializer(BaseMaterializer):
     """Materializer to read data to and from scikit_learn."""
 
     ASSOCIATED_TYPES = (

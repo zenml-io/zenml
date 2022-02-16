@@ -88,16 +88,16 @@ from zenml.steps.step_interfaces.base_evaluator_step import (
 )
 
 
-class SklearnEvaluatorConfig(BaseEvaluatorConfig):
+class ScikitLearnEvaluatorConfig(BaseEvaluatorConfig):
     label_class_column: str
 
 
-class SklearnEvaluator(BaseEvaluatorStep):
+class ScikitLearnEvaluator(BaseEvaluatorStep):
     def entrypoint( 
         self,
         dataset: pd.DataFrame,
         model: tf.keras.Model,
-        config: SklearnEvaluatorConfig,
+        config: ScikitLearnEvaluatorConfig,
     ) -> Dict[str, Any]:
         
         labels = dataset.pop(config.label_class_column)
@@ -166,11 +166,11 @@ import os
 
 pipeline_instance = TrainingPipeline(
     datasource=PandasDatasource(PandasDatasourceConfig(path=os.getenv("data"))),
-    splitter=SklearnSplitter(SklearnSplitterConfig(ratios={"train": 0.7, "test": 0.15, "validation": 0.15})),
+    splitter=ScikitLlearnSplitter(ScikitLlearnSplitterConfig(ratios={"train": 0.7, "test": 0.15, "validation": 0.15})),
     analyzer=PandasAnalyzer(PandasAnalyzerConfig(percentiles=[0.2, 0.4, 0.6, 0.8, 1.0])),
-    preprocessor=SklearnStandardScaler(SklearnStandardScalerConfig(ignore_columns=["has_diabetes"])),
+    preprocessor=ScikitLlearnStandardScaler(ScikitLlearnStandardScalerConfig(ignore_columns=["has_diabetes"])),
     trainer=TensorflowBinaryClassifier(TensorflowBinaryClassifierConfig(target_column="has_diabetes")),
-    evaluator=SklearnEvaluator(SklearnEvaluatorConfig(label_class_column="has_diabetes"))
+    evaluator=ScikitLlearnEvaluator(ScikitLlearnEvaluatorConfig(label_class_column="has_diabetes"))
 )
 
 pipeline_instance.run()
@@ -194,12 +194,12 @@ Cache enabled for pipeline `TrainingPipeline`
 Using orchestrator `local_orchestrator` for pipeline `TrainingPipeline`. Running pipeline..
 Step `PandasDatasource` has started.
 Step `PandasDatasource` has finished in 0.017s.
-Step `SklearnSplitter` has started.
-Step `SklearnSplitter` has finished in 0.013s.
+Step `ScikitLearnSplitter` has started.
+Step `ScikitLearnSplitter` has finished in 0.013s.
 Step `PandasAnalyzer` has started.
 Step `PandasAnalyzer` has finished in 0.013s.
-Step `SklearnStandardScaler` has started.
-Step `SklearnStandardScaler` has finished in 0.021s.
+Step `ScikitLearnStandardScaler` has started.
+Step `ScikitLearnStandardScaler` has finished in 0.021s.
 Step `TensorflowBinaryClassifier` has started.
 67/67 [==============================] - 0s 2ms/step - loss: 0.5448 - accuracy: 0.7444 - val_loss: 0.4539 - val_accuracy: 0.7500
 Model: "sequential"
@@ -219,8 +219,8 @@ Trainable params: 18,817
 Non-trainable params: 0
 _________________________________________________________________
 Step `TensorflowBinaryClassifier` has finished in 1.232s.
-Step `SklearnEvaluator` has started.
-Step `SklearnEvaluator` has finished in 0.289s.
+Step `ScikitLearnEvaluator` has started.
+Step `ScikitLearnEvaluator` has finished in 0.289s.
 ```
 
 ### Inspect

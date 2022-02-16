@@ -23,20 +23,20 @@ from zenml.steps.step_interfaces.base_split_step import (
 )
 
 
-class SklearnSplitterConfig(BaseSplitStepConfig):
+class ScikitLearnSplitterConfig(BaseSplitStepConfig):
     """Config class for the scikit_learn splitter"""
 
     ratios: Dict[str, float]
 
 
-class SklearnSplitter(BaseSplitStep):
+class ScikitLearnSplitter(BaseSplitStep):
     """A simple step implementation which utilizes scikit_learn to split a given
     dataset into train, test and validation splits"""
 
     def entrypoint(  # type: ignore[override]
         self,
         dataset: pd.DataFrame,
-        config: SklearnSplitterConfig,
+        config: ScikitLearnSplitterConfig,
     ) -> Output(  # type:ignore[valid-type]
         train=pd.DataFrame, test=pd.DataFrame, validation=pd.DataFrame
     ):

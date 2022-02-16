@@ -43,8 +43,8 @@ datasource = builtin_steps.PandasDatasource(
 )
 
 # Configuring the split step
-splitter = sklearn_steps.SklearnSplitter(
-    sklearn_steps.SklearnSplitterConfig(
+splitter = sklearn_steps.ScikitLearnSplitter(
+    sklearn_steps.ScikitLearnSplitterConfig(
         ratios={"train": 0.7, "test": 0.15, "validation": 0.15}
     )
 )
@@ -55,8 +55,8 @@ analyzer = builtin_steps.PandasAnalyzer(
 )
 
 # Configuring the preprocessing step
-preprocessor = sklearn_steps.SklearnStandardScaler(
-    sklearn_steps.SklearnStandardScalerConfig(ignore_columns=["has_diabetes"])
+preprocessor = sklearn_steps.ScikitLearnStandardScaler(
+    sklearn_steps.ScikitLearnStandardScalerConfig(ignore_columns=["has_diabetes"])
 )
 
 # Configuring the training step
@@ -65,8 +65,8 @@ trainer = tf_steps.TensorflowBinaryClassifier(
 )
 
 # Configuring the evaluation step
-evaluator = sklearn_steps.SklearnEvaluator(
-    sklearn_steps.SklearnEvaluatorConfig(label_class_column="has_diabetes")
+evaluator = sklearn_steps.ScikitLearnEvaluator(
+    sklearn_steps.ScikitLearnEvaluatorConfig(label_class_column="has_diabetes")
 )
 
 # Create the pipeline and run it

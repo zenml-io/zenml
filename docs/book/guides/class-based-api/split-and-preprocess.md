@@ -28,21 +28,23 @@ from zenml.steps.step_interfaces.base_split_step import (
 from zenml.steps import Output
 
 
-class SklearnSplitterConfig(BaseSplitStepConfig):
+class ScikitLearnSplitterConfig(BaseSplitStepConfig):
     ratios: Dict[str, float]
-    
-class SklearnSplitter(BaseSplitStep):
+
+
+class ScikitLearnSplitter(BaseSplitStep):
     def entrypoint(self,
                    dataset: pd.DataFrame,
-                   config: SklearnSplitterConfig
-                   ) -> Output(train=pd.DataFrame, 
-                               test=pd.DataFrame, 
+                   config: ScikitLearnSplitterConfig
+                   ) -> Output(train=pd.DataFrame,
+                               test=pd.DataFrame,
                                validation=pd.DataFrame):
-        
-        train_dataset, test_dataset = train_test_split(dataset, 
-                                                       test_size=config.ratios["test"])
+        train_dataset, test_dataset = train_test_split(dataset,
+                                                       test_size=config.ratios[
+                                                           "test"])
 
-        test_size = config.ratios["validation"] / (config.ratios["validation"] + config.ratios["train"])
+        test_size = config.ratios["validation"] / (
+                config.ratios["validation"] + config.ratios["train"])
         train_dataset, val_dataset = train_test_split(train_dataset,
                                                       test_size=test_size)
 
@@ -108,23 +110,24 @@ from zenml.steps.step_interfaces.base_preprocessor_step import (
     BasePreprocessorStep,
 )
 
-class SklearnStandardScalerConfig(BasePreprocessorConfig):
+
+class ScikitLearnStandardScalerConfig(BasePreprocessorConfig):
     ignore_columns: List[str] = []
     exclude_columns: List[str] = []
 
 
-class SklearnStandardScaler(BasePreprocessorStep):
+class ScikitLearnStandardScaler(BasePreprocessorStep):
     def entrypoint(self,
                    train_dataset: pd.DataFrame,
                    test_dataset: pd.DataFrame,
                    validation_dataset: pd.DataFrame,
                    statistics: pd.DataFrame,
                    schema: pd.DataFrame,
-                   config: SklearnStandardScalerConfig,
+                   config: ScikitLearnStandardScalerConfig,
                    ) -> Output(train_transformed=pd.DataFrame,
                                test_transformed=pd.DataFrame,
                                validation_transformed=pd.DataFrame):
-        
+
         schema_dict = {k: v[0] for k, v in schema.to_dict().items()}
 
         feature_set = set(train_dataset.columns) - set(config.exclude_columns)
@@ -133,7 +136,7 @@ class SklearnStandardScaler(BasePreprocessorStep):
                 feature_set.remove(feature)
 
         transform_feature_set = feature_set - set(config.ignore_columns)
-        
+
         scaler = StandardScaler()
         scaler.mean_ = statistics["mean"][transform_feature_set]
         scaler.scale_ = statistics["std"][transform_feature_set]
@@ -196,9 +199,9 @@ import os
 
 pipeline_instance = Chapter2Pipeline(
     datasource=PandasDatasource(PandasDatasourceConfig(path=os.getenv("data"))),
-    splitter=SklearnSplitter(SklearnSplitterConfig(ratios={"train": 0.7, "test": 0.15, "validation": 0.15})),
+    splitter=ScikitLearnSplitter(ScikitLearnSplitterConfig(ratios={"train": 0.7, "test": 0.15, "validation": 0.15})),
     analyzer=PandasAnalyzer(PandasAnalyzerConfig(percentiles=[0.2, 0.4, 0.6, 0.8, 1.0])),
-    preprocessor=SklearnStandardScaler(SklearnStandardScalerConfig(ignore_columns=["has_diabetes"]))
+    preprocessor=ScikitLearnStandardScaler(ScikitLearnStandardScalerConfig(ignore_columns=["has_diabetes"]))
 )
 
 pipeline_instance.run()
@@ -220,12 +223,12 @@ Cache enabled for pipeline `Chapter2Pipeline`
 Using orchestrator `local_orchestrator` for pipeline `Chapter2Pipeline`. Running pipeline..
 Step `PandasDatasource` has started.
 Step `PandasDatasource` has finished in 0.045s.
-Step `SklearnSplitter` has started.
-Step `SklearnSplitter` has finished in 0.432s.
+Step `ScikitLearnSplitter` has started.
+Step `ScikitLearnSplitter` has finished in 0.432s.
 Step `PandasAnalyzer` has started.
 Step `PandasAnalyzer` has finished in 0.092s.
-Step `SklearnStandardScaler` has started.
-Step `SklearnStandardScaler` has finished in 0.151s.
+Step `ScikitLearnStandardScaler` has started.
+Step `ScikitLearnStandardScaler` has finished in 0.151s.
 ```
 
 ## Inspect

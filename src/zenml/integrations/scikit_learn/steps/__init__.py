@@ -12,15 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.scikit_learn.steps.sklearn_evaluator import (
-    SklearnEvaluator,
-    SklearnEvaluatorConfig,
+from zenml.integrations.scikit_learn.steps.scikit_learn_evaluator import (
+    ScikitLearnEvaluator,
+    ScikitLearnEvaluatorConfig,
 )
-from zenml.integrations.scikit_learn.steps.sklearn_splitter import (
-    SklearnSplitter,
-    SklearnSplitterConfig,
+from zenml.integrations.scikit_learn.steps.scikit_learn_splitter import (
+    ScikitLearnSplitter,
+    ScikitLearnSplitterConfig,
 )
-from zenml.integrations.scikit_learn.steps.sklearn_standard_scaler import (
-    SklearnStandardScaler,
-    SklearnStandardScalerConfig,
+from zenml.integrations.scikit_learn.steps.scikit_learn_standard_scaler import (
+    ScikitLearnStandardScaler,
+    ScikitLearnStandardScalerConfig,
 )

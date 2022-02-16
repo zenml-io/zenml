@@ -26,7 +26,7 @@ from zenml.steps.step_interfaces.base_preprocessor_step import (
 logger = get_logger(__name__)
 
 
-class SklearnStandardScalerConfig(BasePreprocessorConfig):
+class ScikitLearnStandardScalerConfig(BasePreprocessorConfig):
     """Config class for the scikit_learn standard scaler
 
     ignore_columns: a list of column names which should not be scaled
@@ -37,7 +37,7 @@ class SklearnStandardScalerConfig(BasePreprocessorConfig):
     exclude_columns: List[str] = []
 
 
-class SklearnStandardScaler(BasePreprocessorStep):
+class ScikitLearnStandardScaler(BasePreprocessorStep):
     """Simple step implementation which utilizes the StandardScaler from scikit_learn
     to transform the numeric columns of a pd.DataFrame"""
 
@@ -48,7 +48,7 @@ class SklearnStandardScaler(BasePreprocessorStep):
         validation_dataset: pd.DataFrame,
         statistics: pd.DataFrame,
         schema: pd.DataFrame,
-        config: SklearnStandardScalerConfig,
+        config: ScikitLearnStandardScalerConfig,
     ) -> Output(  # type:ignore[valid-type]
         train_transformed=pd.DataFrame,
         test_transformed=pd.DataFrame,
