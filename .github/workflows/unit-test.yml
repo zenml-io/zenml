@@ -29,9 +29,9 @@ jobs:
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
 
-      - name: Setup tmate session
-        if: ${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
-        uses: mxschmitt/action-tmate@v3
+#      - name: Setup tmate session
+#        if: ${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
+#        uses: mxschmitt/action-tmate@v3
 
       - name: Install Prerequisites
         run: |
