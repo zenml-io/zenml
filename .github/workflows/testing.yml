@@ -15,6 +15,7 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
@@ -73,7 +74,7 @@ jobs:
 
       - name: Install Project
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install
+        run: poetry install  -vv || { rm -rf .poetry_cache/virtualenvs/*; poetry install -vv; }
 
   lint:
     name: lint
@@ -82,10 +83,30 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        python-version: [ 3.6, 3.7, 3.8 ]
+      fail-fast: false
+
     steps:
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2.1.6
+        with:
+          path: .venv
+          # Cache the complete venv dir for a given os, python version, pyproject.toml and testing.yml
+          key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('.github/workflows/testing.yml') }}
+          restore-keys: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-
+
       - name: Install Dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
@@ -99,7 +120,9 @@ jobs:
           pip install click~=8.0.3
 
       - name: Lint
-        run: bash scripts/lint.sh
+        run: |
+          source $VENV
+          bash scripts/lint.sh
 
   unittest:
     name: unittest
@@ -108,15 +131,39 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        python-version: [ 3.6, 3.7, 3.8 ]
+      fail-fast: false
+
     steps:
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2.1.6
+        with:
+          path: .venv
+          # Cache the complete venv dir for a given os, python version, pyproject.toml and testing.yml
+          key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('.github/workflows/testing.yml') }}
+          restore-keys: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-
+
       - name: Install Prerequisites
-        run: zenml integration install kubeflow -f
+        run: |
+          source $VENV
+          zenml integration install kubeflow -f
 
       - name: Test
-        run: bash scripts/test-coverage-xml.sh unit
+        run: |
+          source $VENV
+          bash scripts/test-coverage-xml.sh unit
 
       - name: Upload coverage
         # only do it for python 3.8, we don't need to do it for every version
@@ -130,12 +177,34 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
     # Exit if its a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        python-version: [ 3.6, 3.7, 3.8 ]
+      fail-fast: false
+
     steps:
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v2.1.6
+        with:
+          path: .venv
+          # Cache the complete venv dir for a given os, python version, pyproject.toml and testing.yml
+          key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('.github/workflows/testing.yml') }}
+          restore-keys: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-
+
       - name: Test
-        run: bash scripts/test-coverage-xml.sh integration
+        run: |
+          source $VENV
+          bash scripts/test-coverage-xml.sh integration
 
       - name: Upload coverage
         # only do it for python 3.8, we don't need to do it for every version
