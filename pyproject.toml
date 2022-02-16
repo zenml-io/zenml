@@ -224,6 +224,7 @@ exclude = '''
 '''
 
 [tool.interrogate]
+color = true
 ignore-init-method = true
 ignore-init-module = true
 ignore-magic = false
@@ -240,4 +241,3 @@ ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
 verbose = 1
 quiet = false
 whitelist-regex = []
-color = true

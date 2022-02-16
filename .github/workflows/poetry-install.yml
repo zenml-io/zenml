@@ -28,3 +28,12 @@ jobs:
 
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
+
+      - name: Export venv location
+        run: |
+          # use bash variable expression to get the substring
+          export GIT_PR_SHA="${{ github.sha }}"
+          export GIT_PR_SHA_SHORT="${GIT_PR_SHA:0:10}"
+
+          echo "::set-output name=git_pr_sha::${GIT_PR_SHA}"
+          echo "::set-output name=git_pr_sha_short::${GIT_PR_SHA_SHORT}"

@@ -8,19 +8,26 @@ on:
     types: [opened, synchronize]
     paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
 
+concurrency:
+  group: ci-tests-${{ github.ref }}-1
+  # New commit on branch cancels running workflows of the same branch
+  cancel-in-progress: true
+
 jobs:
-#  call-peotry-install:
-#    uses: ./.github/workflows/poetry-install.yml
+  call-peotry-install:
+    uses: ./.github/workflows/poetry-install.yml
 
   call-lint-code:
-    # needs: call-peotry-install
+    needs: call-peotry-install
+    if: always()
     uses: ./.github/workflows/lint.yml
 
   call-unit-test:
-    # needs: call-peotry-install
+    needs: call-peotry-install
+    if: always()
     uses: ./.github/workflows/unit-test.yml
 
   call-integration-test:
-    # needs: call-peotry-install
+    needs: [call-lint-code, call-unit-test]
     uses: ./.github/workflows/integration-test.yml
 
