@@ -32,7 +32,6 @@ jobs:
       - name: Install Dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-          source $VENV
           zenml integration install airflow -f
           zenml integration install pytorch -f
           zenml integration install mlflow -f
@@ -42,6 +41,4 @@ jobs:
           pip install click~=8.0.3
 
       - name: Lint
-        run: |
-          source $VENV 
-          bash scripts/lint.sh
+        run: bash scripts/lint.sh

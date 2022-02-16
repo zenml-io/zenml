@@ -38,3 +38,8 @@ runs:
       shell: bash
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install
+
+    - name: Activate the Environment
+      shell: bash
+      if: steps.cached-poetry-dependencies.outputs.cache-hit == 'true'
+      run: source $VENV

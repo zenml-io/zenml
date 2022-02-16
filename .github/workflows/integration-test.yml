@@ -43,6 +43,4 @@ jobs:
         run: choco install graphviz
 
       - name: Test
-        run: |
-          source $VENV
-          bash scripts/test-coverage-xml.sh integration
+        run: bash scripts/test-coverage-xml.sh integration
