@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 import os
 import platform
+from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
 import distro
 
 from zenml.logger import get_logger
-from zenml.utils.package_utils import is_installed
 from zenml.utils.singleton import SingletonMetaClass
 
 if TYPE_CHECKING:
@@ -107,7 +107,7 @@ class Environment(metaclass=SingletonMetaClass):
     @staticmethod
     def in_notebook() -> bool:
         """If the current Python process is running in a notebook."""
-        if is_installed("IPython"):
+        if find_spec("IPython") is not None:
             from IPython import get_ipython  # type: ignore
 
             ipython_status = get_ipython().__class__.__name__
