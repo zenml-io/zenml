@@ -34,10 +34,14 @@ jobs:
 #        uses: mxschmitt/action-tmate@v3
 
       - name: Install Prerequisites
-        run: zenml integration install kubeflow -f
+        run: |
+          source $VENV
+          zenml integration install kubeflow -f || which zenml && pip list
 
       - name: Test
-        run: bash scripts/test-coverage-xml.sh unit
+        run: |
+          source $VENV
+          bash scripts/test-coverage-xml.sh unit
 
       - name: Upload coverage
         # only do it for python 3.8, we don't need to do it for every version
