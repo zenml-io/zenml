@@ -107,25 +107,14 @@ class Environment(metaclass=SingletonMetaClass):
     @staticmethod
     def in_notebook() -> bool:
         """If the current Python process is running in a notebook."""
-        try:
+        if is_installed("IPython"):
             from IPython import get_ipython  # type: ignore
 
-            if get_ipython() is None:
-                # IPython is installed but not running from a notebook
-                return False
-            else:
-                return True
-        except ImportError:
-            # We do not even have IPython installed
-            return False
-
-    @staticmethod
-    def in_ipython_terminal() -> bool:
-        """If the current Python process is running in an IPython terminal."""
-        if is_installed("IPython"):
-            from IPython import get_ipython
-
-            if get_ipython().__class__.__name__ == "TerminalInteractiveShell":
+            ipython_status = get_ipython().__class__.__name__
+            if ipython_status in [
+                "TerminalInteractiveShell",
+                "ZMQInteractiveShell",
+            ]:
                 return True
         return False
 

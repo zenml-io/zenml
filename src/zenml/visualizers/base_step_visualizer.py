@@ -15,17 +15,11 @@
 from abc import abstractmethod
 from typing import Any
 
-from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
 from zenml.visualizers.base_visualizer import BaseVisualizer
 
 logger = get_logger(__name__)
-
-if Environment.in_ipython_terminal():
-    raise RuntimeError(
-        "Step visualization is not supported in IPython running on the terminal."
-    )
 
 
 class BaseStepVisualizer(BaseVisualizer):

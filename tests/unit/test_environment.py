@@ -85,6 +85,6 @@ def test_ipython_terminal_detection_when_not_installed():
     """Tests that we detect if the Python process is running in an IPython
     terminal when not installed."""
     try:
-        pass
+        import IPython  # noqa
     except ImportError:
-        assert Environment.in_ipython_terminal() is False
+        assert Environment.in_notebook() is False
