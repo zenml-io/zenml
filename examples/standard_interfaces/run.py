@@ -56,7 +56,9 @@ analyzer = builtin_steps.PandasAnalyzer(
 
 # Configuring the preprocessing step
 preprocessor = sklearn_steps.ScikitLearnStandardScaler(
-    sklearn_steps.ScikitLearnStandardScalerConfig(ignore_columns=["has_diabetes"])
+    sklearn_steps.ScikitLearnStandardScalerConfig(
+        ignore_columns=["has_diabetes"]
+    )
 )
 
 # Configuring the training step

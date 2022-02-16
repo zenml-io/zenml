@@ -59,7 +59,9 @@ analyzer = builtin_steps.PandasAnalyzer(
 
 # Configuring the preprocessing step
 preprocessor = scikit_learn_steps.ScikitLearnStandardScaler(
-    scikit_learn_steps.ScikitLearnStandardScalerConfig(ignore_columns=["has_diabetes"])
+    scikit_learn_steps.ScikitLearnStandardScalerConfig(
+        ignore_columns=["has_diabetes"]
+    )
 )
 
 # Configuring the training step
@@ -71,7 +73,9 @@ trainer = tf_steps.TensorflowBinaryClassifier(
 
 # Configuring the evaluation step
 evaluator = scikit_learn_steps.ScikitLearnEvaluator(
-    scikit_learn_steps.ScikitLearnEvaluatorConfig(label_class_column="has_diabetes")
+    scikit_learn_steps.ScikitLearnEvaluatorConfig(
+        label_class_column="has_diabetes"
+    )
 )
 
 # Create the pipeline and run it
