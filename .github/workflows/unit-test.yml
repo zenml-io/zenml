@@ -35,7 +35,7 @@ jobs:
 
       - name: Install Prerequisites
         run: |
-          source $VENV || source <(echo "set -euxo pipefail"; cat $VENV; echo "set +x")
+          source $VENV
           zenml integration install kubeflow -f
 
       - name: Test

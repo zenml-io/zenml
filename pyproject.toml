@@ -225,6 +225,7 @@ exclude = '''
 
 [tool.interrogate]
 color = true
+exclude = ["setup.py", "docs", "build"]
 ignore-init-method = true
 ignore-init-module = true
 ignore-magic = false
@@ -236,7 +237,6 @@ ignore-nested-functions = false
 ignore-nested-classes = true
 ignore-setters = false
 fail-under = 95
-exclude = ["setup.py", "docs", "build"]
 ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
 verbose = 1
 quiet = false

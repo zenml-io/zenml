@@ -32,7 +32,7 @@ jobs:
       - name: Install Dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-          source $VENV || source <(echo "set -x"; cat $VENV; echo "set +x")
+          source $VENV
           zenml integration install airflow -f
           zenml integration install pytorch -f
           zenml integration install mlflow -f
