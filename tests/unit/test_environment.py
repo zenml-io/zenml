@@ -79,3 +79,12 @@ def test_environment_component_activation():
     assert not Environment().has_component("foo")
     with pytest.raises(KeyError):
         Environment()["foo"]
+
+
+def test_ipython_terminal_detection_when_not_installed():
+    """Tests that we detect if the Python process is running in an IPython
+    terminal when not installed."""
+    try:
+        import IPython  # noqa
+    except ImportError:
+        assert Environment.in_notebook() is False
