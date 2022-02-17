@@ -66,7 +66,6 @@ def stack() -> None:
     type=str,
     required=False,
 )
-@cli_utils.activate_integrations
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
@@ -191,7 +190,6 @@ def get_active_stack() -> None:
 
 
 @stack.command("up")
-@cli_utils.activate_integrations
 def up_stack() -> None:
     """Provisions resources for the stack."""
     stack_ = Repository().active_stack
@@ -207,7 +205,6 @@ def up_stack() -> None:
     is_flag=True,
     help="Deprovisions local resources instead of suspending them.",
 )
-@cli_utils.activate_integrations
 def down_stack(force: bool = False) -> None:
     """Suspends resources of the local stack deployment."""
     stack_ = Repository().active_stack
