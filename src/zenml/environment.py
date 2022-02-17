@@ -128,7 +128,6 @@ class Environment(metaclass=SingletonMetaClass):
         """Registers an environment component.
 
         Args:
-            name: the environment component name.
             component: a BaseEnvironmentComponent instance.
 
         Returns:

@@ -30,7 +30,7 @@ parameters. So then I can do the following:
 def my_pipeline(
     step_1,
     step_2
-)
+):
     # connect the two together
     step_2(step_1())
     
