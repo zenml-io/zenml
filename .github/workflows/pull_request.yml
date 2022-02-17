@@ -26,6 +26,6 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
 
   integration-test:
-    needs: [lint-code, unit-test]
+    needs: poetry-install
     uses: ./.github/workflows/integration-test.yml
 
