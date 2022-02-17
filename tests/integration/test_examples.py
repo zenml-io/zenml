@@ -11,149 +11,57 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 import shutil
-from os import environ
+from collections import namedtuple
 from pathlib import Path
 from typing import Dict
 
 import pytest
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
+from zenml.container_registries import BaseContainerRegistry
 from zenml.enums import ExecutionStatus
+from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.repository import Repository
-
-QUICKSTART = "quickstart"
-NOT_SO_QUICKSTART = "not_so_quickstart"
-CACHING = "caching"
-DRIFT_DETECTION = "drift_detection"
-MLFLOW = "mlflow_tracking"
-CUSTOM_MATERIALIZER = "custom_materializer"
-WHYLOGS = "whylogs"
-FETCH_HISTORICAL_RUNS = "fetch_historical_runs"
+from zenml.stack import Stack
 
 
-@pytest.fixture
-def examples_dir(clean_repo):
-    # TODO [high]: tests should store zenml artifacts in a new temp directory
-    examples_path = Path(clean_repo.root) / "zenml_examples"
-    source_path = Path(clean_repo.original_cwd) / "examples"
-    shutil.copytree(source_path, examples_path)
-    yield examples_path
+def generate_basic_validation_function(
+    pipeline_name: str, step_count: int, run_count: int = 1
+):
+    """Generates a basic example validation function.
 
-
-def example_runner(examples_dir):
-    """Get the executable that runs examples.
-
-    By default returns the path to an executable .sh file in the
-    repository, but can also prefix that with the path to a shell
-    / interpreter when the file is not executable on its own. The
-    latter option is needed for windows compatibility.
-    """
-    return (
-        [environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in environ else []
-    ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
-
-
-def test_run_quickstart(examples_dir: Path):
-    """Testing the functionality of the quickstart example
+    This function will make sure the runs of a specific pipeline succeeded by
+    checking the run status as well as making sure all steps were executed.
 
     Args:
-        examples_dir: Temporary folder containing all examples including the run_examples
-        bash script.
+        pipeline_name: The name of the pipeline to verify.
+        step_count: The amount of steps inside the pipeline.
+        run_count: The amount of pipeline runs to verify.
+
+    Raises:
+        AssertionError: If the validation failed.
     """
-    local_example = LocalExample(examples_dir / QUICKSTART, name=QUICKSTART)
 
-    local_example.run_example(example_runner(examples_dir), force=True)
+    def _validation_function(repository: Repository):
+        """Basic validation of pipeline runs inside the metadata store."""
+        pipeline = repository.get_pipeline(pipeline_name)
+        assert pipeline
 
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    assert pipeline.name == "mnist_pipeline"
+        for run in pipeline.runs[-run_count:]:
+            assert run.status == ExecutionStatus.COMPLETED
+            assert len(run.steps) == step_count
 
-    pipeline_run = pipeline.runs[-1]
-
-    assert pipeline_run.status == ExecutionStatus.COMPLETED
-
-    for step in pipeline_run.steps:
-        assert step.status == ExecutionStatus.COMPLETED
+    return _validation_function
 
 
-def test_run_not_so_quickstart(examples_dir: Path):
-    """Testing the functionality of the not_so_quickstart example
+def caching_example_validation(repository: Repository):
+    """Validates the metadata store after running the caching example."""
+    pipeline = repository.get_pipeline("mnist_pipeline")
+    assert pipeline
 
-    Args:
-        examples_dir: Temporary folder containing all examples including the run_examples
-        bash script.
-    """
-    local_example = LocalExample(
-        examples_dir / NOT_SO_QUICKSTART, name=NOT_SO_QUICKSTART
-    )
-    local_example.run_example(example_runner(examples_dir), force=True)
-
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    assert pipeline.name == "mnist_pipeline"
-
-    first_run = pipeline.runs[-3]
-    second_run = pipeline.runs[-2]
-    third_run = pipeline.runs[-1]
-
-    assert first_run.status == ExecutionStatus.COMPLETED
-    assert second_run.status == ExecutionStatus.COMPLETED
-    assert third_run.status == ExecutionStatus.COMPLETED
-
-
-def test_run_drift_detection(examples_dir: Path):
-    """Testing the functionality of the drift_detection example
-
-    Args:
-        examples_dir: Temporary folder containing all examples including the run_examples
-        bash script.
-    """
-    local_example = LocalExample(
-        examples_dir / DRIFT_DETECTION, name=DRIFT_DETECTION
-    )
-
-    local_example.run_example(example_runner(examples_dir), force=True)
-
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    assert pipeline.name == "drift_detection_pipeline"
-
-    run = pipeline.runs[0]
-
-    # Run should be completed
-    assert run.status == ExecutionStatus.COMPLETED
-
-    # The first run should not have any cached steps
-    for step in run.steps:
-        assert not step.is_cached
-
-    # Final step should have output a data drift report
-    output_obj = run.steps[3].outputs["profile"].read()
-    assert isinstance(output_obj, Dict)
-    assert output_obj.get("data_drift") is not None
-
-
-def test_run_caching(examples_dir: Path):
-    """Testing the functionality of the caching example
-
-    Args:
-        examples_dir: Temporary folder containing all examples including the run_examples
-        bash script.
-    """
-    local_example = LocalExample(examples_dir / CACHING, name=CACHING)
-    local_example.run_example(example_runner(examples_dir), force=True)
-
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    assert pipeline.name == "mnist_pipeline"
-
-    first_run = pipeline.runs[-2]
-    second_run = pipeline.runs[-1]
+    first_run, second_run = pipeline.runs[-2:]
 
     # Both runs should be completed
     assert first_run.status == ExecutionStatus.COMPLETED
@@ -170,32 +78,32 @@ def test_run_caching(examples_dir: Path):
     assert not second_run.steps[3].is_cached
 
 
-def test_run_mlflow(examples_dir: Path):
-    """Testing the functionality of the quickstart example
+def drift_detection_example_validation(repository: Repository):
+    """Validates the metadata store after running the drift detection
+    example."""
+    pipeline = repository.get_pipeline("drift_detection_pipeline")
+    assert pipeline
 
-    Args:
-        examples_dir: Temporary folder containing all examples including the run_examples
-        bash script.
-    """
-    local_example = LocalExample(examples_dir / MLFLOW, name=MLFLOW)
-    local_example.run_example(example_runner(examples_dir), force=True)
+    run = pipeline.runs[-1]
+    assert run.status == ExecutionStatus.COMPLETED
 
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    assert pipeline.name == "mlflow_example_pipeline"
+    # Final step should have output a data drift report
+    drift_detection_step = run.get_step("drift_detector")
+    output = drift_detection_step.outputs["profile"].read()
+    assert isinstance(output, Dict)
+    assert output.get("data_drift") is not None
 
-    first_run = pipeline.runs[-2]
-    second_run = pipeline.runs[-1]
 
-    # Both runs should be completed
+def mlflow_tracking_example_validation(repository: Repository):
+    """Validates the metadata store after running the mlflow tracking
+    example."""
+    pipeline = repository.get_pipeline("mlflow_example_pipeline")
+    assert pipeline
+
+    first_run, second_run = pipeline.runs[-2:]
+
     assert first_run.status == ExecutionStatus.COMPLETED
     assert second_run.status == ExecutionStatus.COMPLETED
-
-    for step in first_run.steps:
-        assert step.status == ExecutionStatus.COMPLETED
-    for step in second_run.steps:
-        assert step.status == ExecutionStatus.COMPLETED
 
     import mlflow
     from mlflow.tracking import MlflowClient
@@ -203,7 +111,7 @@ def test_run_mlflow(examples_dir: Path):
     from zenml.integrations.mlflow.mlflow_environment import MLFlowEnvironment
 
     # Create and activate the global MLflow environment
-    MLFlowEnvironment(local_example.path).activate()
+    MLFlowEnvironment(repo_root=repository.root).activate()
 
     # fetch the MLflow experiment created for the pipeline runs
     mlflow_experiment = mlflow.get_experiment_by_name(pipeline.name)
@@ -243,86 +151,200 @@ def test_run_mlflow(examples_dir: Path):
     assert len(artifacts) == 3
 
 
-def test_whylogs_profiling(examples_dir: Path):
-    """Testing the functionality of the whylogs example
+def whylogs_example_validation(repository: Repository):
+    """Validates the metadata store after running the whylogs example."""
+    pipeline = repository.get_pipeline("data_profiling_pipeline")
+    assert pipeline
 
-    Args:
-        examples_dir: Temporary folder containing all examples including the run_examples
-        bash script.
-    """
-    local_example = LocalExample(examples_dir / WHYLOGS, name=WHYLOGS)
-
-    local_example.run_example(example_runner(examples_dir), force=True)
-
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    assert pipeline.name == "data_profiling_pipeline"
-
-    run = pipeline.runs[0]
-
-    # Run should be completed
+    run = pipeline.runs[-1]
     assert run.status == ExecutionStatus.COMPLETED
-
-    # The first run should not have any cached steps
-    for step in run.steps:
-        assert not step.is_cached
 
     from whylogs import DatasetProfile
 
-    # First step should have output a whylogs dataset profile
-    output_obj = run.get_step("data_loader").outputs["profile"].read()
-    assert isinstance(output_obj, DatasetProfile)
+    profiles = [
+        run.get_step("data_loader").outputs["profile"].read(),
+        run.get_step("train_data_profiler").output.read(),
+        run.get_step("test_data_profiler").output.read(),
+    ]
 
-    # Second and third step should also have output a whylogs dataset profile
-    output_obj = run.get_step("train_data_profiler").output.read()
-    assert isinstance(output_obj, DatasetProfile)
-    output_obj = run.get_step("test_data_profiler").output.read()
-    assert isinstance(output_obj, DatasetProfile)
+    for profile in profiles:
+        assert isinstance(profile, DatasetProfile)
 
 
-def test_run_custom_materializer(examples_dir: Path):
-    """Testing the functionality of the custom materializer example.
+ExampleIntegrationTestConfiguration = namedtuple(
+    "ExampleIntegrationTestConfiguration", ["name", "validation_function"]
+)
+examples = [
+    ExampleIntegrationTestConfiguration(
+        name="quickstart",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline", step_count=3
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="not_so_quickstart",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline", step_count=4, run_count=3
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="caching", validation_function=caching_example_validation
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="custom_materializer",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="pipe", step_count=2
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="fetch_historical_runs",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline", step_count=3
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="kubeflow",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline", step_count=4
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="drift_detection",
+        validation_function=drift_detection_example_validation,
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="mlflow_tracking",
+        validation_function=mlflow_tracking_example_validation,
+    ),
+    # TODO [HIGH]: Enable running the whylogs example on kubeflow
+    # ExampleIntegrationTestConfiguration(
+    #     name="whylogs", validation_function=whylogs_example_validation
+    # ),
+]
 
-    Args:
-        examples_dir: Temporary folder containing all examples including the
-                      run_examples bash script.
+
+@pytest.fixture(scope="module")
+def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
+    """Creates a repo with a locally provisioned kubeflow stack.
+
+    As the resource provisioning for the local kubeflow deployment takes quite
+    a while, this fixture has a module scope and will therefore only run once.
+
+    **Note**: The fixture should not be used directly. Use the
+    `clean_kubeflow_repo` fixture instead that builds on top of this and
+    provides the  test with a clean working directory and artifact/metadata
+    store.
     """
-    local_example = LocalExample(
-        examples_dir / CUSTOM_MATERIALIZER, name=CUSTOM_MATERIALIZER
+    # Patch the ui daemon as forking doesn't work well with pytest
+    module_mocker.patch(
+        "zenml.integrations.kubeflow.orchestrators.local_deployment_utils.start_kfp_ui_daemon"
     )
-    local_example.run_example(example_runner(examples_dir), force=True)
 
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    first_run = pipeline.runs[-1]
+    tmp_path = tmp_path_factory.mktemp("tmp")
+    os.chdir(tmp_path)
+    Repository.initialize(root=tmp_path)
+    repo = Repository(root=tmp_path)
 
-    # Both runs should be completed
-    assert first_run.status == ExecutionStatus.COMPLETED
+    repo.original_cwd = base_repo.original_cwd
+
+    # Register and activate the kubeflow stack
+    orchestrator = KubeflowOrchestrator(
+        name="local_kubeflow_orchestrator",
+        custom_docker_base_image_name="zenml-base-image:latest",
+        synchronous=True,
+    )
+    metadata_store = repo.active_stack.metadata_store.copy(
+        update={"name": "local_kubeflow_metadata_store"}
+    )
+    artifact_store = repo.active_stack.artifact_store.copy(
+        update={"name": "local_kubeflow_artifact_store"}
+    )
+    container_registry = BaseContainerRegistry(
+        name="local_registry", uri="localhost:5000"
+    )
+    kubeflow_stack = Stack(
+        name="local_kubeflow_stack",
+        orchestrator=orchestrator,
+        metadata_store=metadata_store,
+        artifact_store=artifact_store,
+        container_registry=container_registry,
+    )
+    repo.register_stack(kubeflow_stack)
+    repo.activate_stack(kubeflow_stack.name)
+
+    # Provision resources for the kubeflow stack
+    kubeflow_stack.provision()
+
+    yield repo
+
+    # Deprovision the resources after all tests in this module are finished
+    kubeflow_stack.deprovision()
+    os.chdir(str(base_repo.root))
+    shutil.rmtree(tmp_path)
 
 
-def test_run_fetch_historical_runs(examples_dir: Path):
-    """Testing the functionality of the fetch_historical_runs example.
+@pytest.fixture
+def clean_kubeflow_repo(shared_kubeflow_repo, clean_repo):
+    """Creates a clean repo with a provisioned local kubeflow stack."""
+    # Copy the stack configuration from the shared kubeflow repo. At this point
+    # the stack resources are already provisioned by the module-scoped fixture.
+    kubeflow_stack = shared_kubeflow_repo.active_stack
+    clean_repo.register_stack(kubeflow_stack)
+    clean_repo.activate_stack(kubeflow_stack.name)
 
-    Args:
-        examples_dir: Temporary folder containing all examples including the
-                      run_examples bash script.
+    # Delete the artifact store of previous tests
+    if os.path.exists(kubeflow_stack.artifact_store.path):
+        shutil.rmtree(kubeflow_stack.artifact_store.path)
+
+    yield clean_repo
+
+
+def example_runner(examples_dir):
+    """Get the executable that runs examples.
+
+    By default returns the path to an executable .sh file in the
+    repository, but can also prefix that with the path to a shell
+    / interpreter when the file is not executable on its own. The
+    latter option is needed for windows compatibility.
     """
-    local_example = LocalExample(
-        examples_dir / FETCH_HISTORICAL_RUNS, name=FETCH_HISTORICAL_RUNS
+    return (
+        [os.environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in os.environ else []
+    ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
+
+
+@pytest.mark.parametrize(
+    "example_configuration",
+    [pytest.param(example, id=example.name) for example in examples],
+)
+@pytest.mark.parametrize(
+    "repo_fixture_name", ["clean_repo"]  # , "clean_kubeflow_repo"]
+)
+def test_run_example(
+    example_configuration: ExampleIntegrationTestConfiguration,
+    repo_fixture_name,
+    request,
+):
+    """Runs the given examples and validates they ran correctly."""
+    # run the fixture given by repo_fixture_name
+    repo = request.getfixturevalue(repo_fixture_name)
+
+    # Root directory of all checked out examples
+    examples_directory = Path(repo.original_cwd) / "examples"
+
+    # Copy all example files into the repository directory
+    shutil.copytree(
+        examples_directory / example_configuration.name,
+        repo.root,
+        dirs_exist_ok=True,
     )
 
-    local_example.run_example(example_runner(examples_dir), force=True)
+    # Run the example
+    example = LocalExample(name=example_configuration.name, path=repo.root)
+    example.run_example(
+        example_runner(examples_directory),
+        force=True,
+        prevent_stack_setup=True,
+    )
 
-    # Verify the example run was successful
-    repo = Repository(local_example.path)
-    pipeline = repo.get_pipelines()[0]
-    assert pipeline.name == "mnist_pipeline"
-
-    pipeline_run = pipeline.runs[-1]
-
-    assert pipeline_run.status == ExecutionStatus.COMPLETED
-
-    for step in pipeline_run.steps:
-        assert step.status == ExecutionStatus.COMPLETED
+    # Validate the result
+    example_configuration.validation_function(repo)
