@@ -28,6 +28,7 @@ runs:
 
    - name: Load cached poetry.lock
       id: cached-poetry-lock
+      if: ${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
       uses: actions/cache@v2.1.6
       with:
         path: poetry.lock
