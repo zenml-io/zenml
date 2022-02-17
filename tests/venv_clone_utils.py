@@ -42,7 +42,7 @@ import re
 import shutil
 import sys
 import subprocess
-from typing import Optional
+from typing import Optional, Tuple, List
 
 from zenml.logger import get_logger
 
@@ -61,8 +61,15 @@ class UserError(Exception):
     pass
 
 
-def _dirmatch(path, matchwith):
+def _dirmatch(path: str, matchwith: str) -> bool:
     """Check if path is within matchwith's tree.
+
+    Args:
+        path: Path to be checked
+        matchwith: Path to be matched with
+
+    Returns:
+        Boolean, true if matched, false else
     >>> _dirmatch('/home/foo/bar', '/home/foo/bar')
     True
     >>> _dirmatch('/home/foo/bar/', '/home/foo/bar')
@@ -83,12 +90,16 @@ def _dirmatch(path, matchwith):
     return False
 
 
-def _virtualenv_sys(venv_path):
-    """Obtain version and path info from a virtualenv.
+def _virtualenv_sys(venv_path: str) -> Tuple[str, list]:
+    """Obtain python version and path info from a virtualenv.
 
     Args:
         venv_path: Location of the virtual environment
-        """
+
+    Returns:
+        tuple with two entries, python version and a list of paths in the
+        sys path of the virtual environment
+    """
     executable = os.path.join(venv_path, env_bin_dir, "python")
     # Must use "executable" as the first argument rather than as the
     # keyword argument "executable" to get correct value from sys.path
@@ -110,7 +121,7 @@ def _virtualenv_sys(venv_path):
     return lines[0], list(filter(bool, lines[1:]))
 
 
-def clone_virtualenv(src_dir, dst_dir):
+def clone_virtualenv(src_dir: str, dst_dir: str) -> None:
     """Clone virtual environment from src_dir into new dst_dir.
 
     Args:
@@ -145,7 +156,7 @@ def clone_virtualenv(src_dir, dst_dir):
     fix_symlink_if_necessary(src_dir, dst_dir)
 
 
-def fix_symlink_if_necessary(src_dir, dst_dir):
+def fix_symlink_if_necessary(src_dir: str, dst_dir: str) -> None:
     """Sometimes the source virtual environment has symlinks that point to
     itself. One example is $OLD_VIRTUAL_ENV/local/lib points to
     $OLD_VIRTUAL_ENV/lib. Tis function makes sure $NEW_VIRTUAL_ENV/local/lib
@@ -172,7 +183,12 @@ def fix_symlink_if_necessary(src_dir, dst_dir):
                     os.symlink(new_target, full_file_path)
 
 
-def fixup_scripts(old_dir, new_dir, version, rewrite_env_python=False):
+def fixup_scripts(
+        old_dir: str,
+        new_dir: str,
+        version: str,
+        rewrite_env_python: bool = False
+) -> None:
     """Fix paths and links within files of the environments so that
     they point at the right locations.
 
@@ -213,8 +229,13 @@ def fixup_scripts(old_dir, new_dir, version, rewrite_env_python=False):
 
 
 def fixup_script_(
-        root, file_, old_dir, new_dir, version, rewrite_env_python=False
-):
+        root: str,
+        file_: str,
+        old_dir: str,
+        new_dir: str,
+        py_version: str,
+        rewrite_env_python: bool = False
+) -> None:
     """This is meant to rewrite the shebang of files in teh destination
     venv that still point at the python executable of the original venv
     or even the system python executable.
@@ -224,6 +245,7 @@ def fixup_script_(
         file_: Filename
         old_dir: Directory location of the old virtual environment
         new_dir: Directory location of the new virtual environment
+        py_version: Python version
         rewrite_env_python: Boolean to declare if standard python env
             shebang like `#!/usr/bin/env python` should be rewritten to point at
             the python executable of the new virtual environment
@@ -246,16 +268,16 @@ def fixup_script_(
         # warn: empty script
         return
 
-    def rewrite_shebang(py_version: Optional[str] = None):
+    def rewrite_shebang(python_version: Optional[str] = None):
         """Overwrite shebang of a given file with new_shebang
 
         Args:
-            py_version:
+            python_version: Python version
         """
         logger.debug("Fixing shebang within %s" % filename)
         shebang = new_shebang
-        if py_version:
-            shebang = shebang + py_version
+        if python_version:
+            shebang = shebang + python_version
         shebang = (shebang + "\n").encode("utf-8")
         with open(filename, "wb") as f:
             f.write(shebang)
@@ -276,8 +298,8 @@ def fixup_script_(
         return
     elif bang == old_shebang:
         rewrite_shebang()
-    elif bang.startswith(old_shebang) and bang[len(old_shebang):] == version:
-        rewrite_shebang(version)
+    elif bang.startswith(old_shebang) and bang[len(old_shebang):] == py_version:
+        rewrite_shebang(py_version)
     elif (
             bang.startswith(old_shebang)
             and short_version
@@ -287,14 +309,14 @@ def fixup_script_(
     elif rewrite_env_python and bang.startswith(env_shebang):
         if bang == env_shebang:
             rewrite_shebang()
-        elif bang[len(env_shebang):] == version:
-            rewrite_shebang(version)
+        elif bang[len(env_shebang):] == py_version:
+            rewrite_shebang(py_version)
     else:
         # Nothing to do here
         return
 
 
-def fixup_activate(filename, old_dir, new_dir):
+def fixup_activate(filename: str, old_dir: str, new_dir: str) -> None:
     """Within activate file, replace all mentions of the old venv with the path
     of the new venv.
 
@@ -312,7 +334,12 @@ def fixup_activate(filename, old_dir, new_dir):
         f.write(data.encode("utf-8"))
 
 
-def fixup_link(filename, old_dir, new_dir, target=None):
+def fixup_link(
+        filename: str,
+        old_dir: str,
+        new_dir: str,
+        target: Optional[str] = None
+) -> None:
     """Within a given file, replace all mentions of the old venv with the path
     of the new venv.
 
@@ -348,7 +375,15 @@ def fixup_link(filename, old_dir, new_dir, target=None):
     _replace_symlink(filename, target)
 
 
-def _replace_symlink(filename, newtarget):
+def _replace_symlink(filename: str, newtarget: str) -> None:
+    """ Replace any symlinks with absolute path target
+
+    Args:
+        filename: Name of the file
+        newtarget: Symlink target
+    """
+    logger.debug("Replacing links outside of path for %s" % filename)
+
     tmpfn = "%s.new" % filename
     os.symlink(newtarget, tmpfn)
     try:
@@ -358,7 +393,14 @@ def _replace_symlink(filename, newtarget):
         shutil.move(tmpfn, filename)
 
 
-def fixup_syspath_items(syspath, old_dir, new_dir):
+def fixup_syspath_items(syspath: List[str], old_dir: str, new_dir: str) -> None:
+    """ Replace mentions of the old venv in sys path with the new venv.
+
+    Args:
+        syspath: List of paths in sys path
+        old_dir: Directory location of the old virtual environment
+        new_dir: Directory location of the new virtual environment
+    """
     for path in syspath:
         if not os.path.isdir(path):
             continue
@@ -378,8 +420,16 @@ def fixup_syspath_items(syspath, old_dir, new_dir):
                 fixup_egglink_file(filename, old_dir, new_dir)
 
 
-def fixup_pth_file(filename, old_dir, new_dir):
-    logger.debug("fixup_pth_file %s" % filename)
+def fixup_pth_file(filename: str, old_dir: str, new_dir: str) -> None:
+    """Within a given file, replace all mentions of the old venv with the path
+    of the new venv.
+
+    Args:
+        filename: Name of the file
+        old_dir: Directory location of the old virtual environment
+        new_dir: Directory location of the new virtual environment
+    """
+    logger.debug("Replacing paths within .pth file: %s" % filename)
 
     with open(filename, "r") as f:
         lines = f.readlines()
@@ -403,8 +453,16 @@ def fixup_pth_file(filename, old_dir, new_dir):
             f.write(payload)
 
 
-def fixup_egglink_file(filename, old_dir, new_dir):
-    logger.debug("fixing %s" % filename)
+def fixup_egglink_file(filename: str, old_dir: str, new_dir: str) -> None:
+    """Within a given file, replace all mentions of the old venv with the path
+    of the new venv.
+
+    Args:
+        filename: Name of the file
+        old_dir: Directory location of the old virtual environment
+        new_dir: Directory location of the new virtual environment
+    """
+    logger.debug("Replacing paths within .egg-link file: %s" % filename)
     with open(filename, "rb") as f:
         link = f.read().decode("utf-8").strip()
     if _dirmatch(link, old_dir):
