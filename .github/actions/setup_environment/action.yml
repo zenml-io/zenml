@@ -33,10 +33,19 @@ runs:
         path: |
           .venv
           poetry.lock
-        # Cache the complete venv dir for a given os, python version, pyproject.toml and testing.yml
+        # Cache the complete venv dir for a given os, python version, pyproject.toml
         key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
 
     - name: Install Project
       shell: bash
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      if: |
+        steps.cached-poetry-dependencies.outputs.cache-hit != 'true' &&
+        !${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
       run: poetry install
+      
+    - name: Install Project Windows with Python 3.6
+      shell: bash
+      if: ${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
+      run: |
+        rm -rf .venv
+        poetry install
