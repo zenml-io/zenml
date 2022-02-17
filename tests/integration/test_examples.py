@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import shutil
 from collections import namedtuple
-from distutils.dir_util import copy_tree
 from pathlib import Path
 
 import pytest
@@ -26,6 +26,18 @@ from .example_validations import (
     generate_basic_validation_function,
     mlflow_tracking_example_validation,
 )
+
+
+# shtutil.copytree on python 3.6/3.7 doesn't allow copying to an existing
+# directory
+def copytree(src, dst):
+    for item in os.listdir(src):
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if os.path.isdir(s):
+            shutil.copytree(s, d)
+        else:
+            shutil.copy2(s, d)
 
 
 def example_runner(examples_dir):
@@ -72,12 +84,12 @@ examples = [
             pipeline_name="mnist_pipeline", step_count=3
         ),
     ),
-    # ExampleIntegrationTestConfiguration(
-    #     name="kubeflow",
-    #     validation_function=generate_basic_validation_function(
-    #         pipeline_name="mnist_pipeline", step_count=4
-    #     ),
-    # ),
+    ExampleIntegrationTestConfiguration(
+        name="kubeflow",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline", step_count=4
+        ),
+    ),
     ExampleIntegrationTestConfiguration(
         name="drift_detection",
         validation_function=drift_detection_example_validation,
@@ -113,9 +125,7 @@ def test_run_example(
     examples_directory = Path(repo.original_cwd) / "examples"
 
     # Copy all example files into the repository directory
-    # this uses a distutil method as shutil.copytree only has a dirs_exist_ok
-    # parameter only since python 3.8
-    copy_tree(
+    copytree(
         str(examples_directory / example_configuration.name), str(repo.root)
     )
 
