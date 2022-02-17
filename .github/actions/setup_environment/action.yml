@@ -20,6 +20,25 @@ runs:
       run: |
         echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
 
+    # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
+    # as the TF images are too large for the GH action runner disk
+    - name: Free disk space
+      shell: bash
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        echo "Available storage:"
+        df -h
+        echo
+        echo -n "  Removing: .NET (frees ~22GB)"
+        sudo rm -rf /usr/share/dotnet
+        echo "... done"
+        echo -n "  Removing: Android"
+        sudo rm -rf /usr/local/lib/android
+        echo "... done"
+        echo
+        echo "Available storage:"
+        df -h
+
     - name: Install Poetry
       uses: snok/install-poetry@v1
       with:
