@@ -14,6 +14,7 @@
 import os
 import shutil
 from collections import namedtuple
+from distutils.dir_util import copy_tree
 from pathlib import Path
 from typing import Dict
 
@@ -332,10 +333,10 @@ def test_run_example(
     examples_directory = Path(repo.original_cwd) / "examples"
 
     # Copy all example files into the repository directory
-    shutil.copytree(
-        examples_directory / example_configuration.name,
-        repo.root,
-        dirs_exist_ok=True,
+    # this uses a distutil method as shutil.copytree only has a dirs_exist_ok
+    # parameter only since python 3.8
+    copy_tree(
+        str(examples_directory / example_configuration.name), str(repo.root)
     )
 
     # Run the example
