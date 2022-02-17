@@ -32,7 +32,6 @@ def _component_display_name(
     return name.replace("_", " ")
 
 
-@cli_utils.activate_integrations
 def _get_stack_component(
     component_type: StackComponentType,
     component_name: Optional[str] = None,
@@ -67,7 +66,6 @@ def generate_stack_component_get_command(
 ) -> Callable[[], None]:
     """Generates a `get` command for the specific stack component type."""
 
-    @cli_utils.activate_integrations
     def get_stack_component_command() -> None:
         """Prints the name of the active component."""
         active_stack = Repository().active_stack
@@ -94,7 +92,6 @@ def generate_stack_component_describe_command(
         type=str,
         required=False,
     )
-    @cli_utils.activate_integrations
     def describe_stack_component_command(name: Optional[str]) -> None:
         """Prints details about the active/specified component."""
         singular_display_name = _component_display_name(component_type)
@@ -128,7 +125,6 @@ def generate_stack_component_list_command(
 ) -> Callable[[], None]:
     """Generates a `list` command for the specific stack component type."""
 
-    @cli_utils.activate_integrations
     def list_stack_components_command() -> None:
         """Prints a table of stack components."""
         repo = Repository()
@@ -171,7 +167,6 @@ def generate_stack_component_register_command(
         type=str,
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-    @cli_utils.activate_integrations
     def register_stack_component_command(
         name: str, flavor: str, args: List[str]
     ) -> None:

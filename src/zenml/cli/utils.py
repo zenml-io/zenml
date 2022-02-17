@@ -12,20 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import datetime
-import functools
 import subprocess
 import sys
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 import click
 from dateutil import tz
@@ -277,23 +266,6 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     assert len(p_args) == len(r_args), "Replicated arguments!"
 
     return r_args
-
-
-F = TypeVar("F", bound=Callable[..., Any])
-
-
-def activate_integrations(func: F) -> F:
-    """Decorator that activates all ZenML integrations."""
-
-    @functools.wraps(func)
-    def _wrapper(*args: Any, **kwargs: Any) -> Any:
-        """Inner decorator function"""
-        from zenml.integrations.registry import integration_registry
-
-        integration_registry.activate_integrations()
-        return func(*args, **kwargs)
-
-    return cast(F, _wrapper)
 
 
 def install_package(package: str) -> None:
