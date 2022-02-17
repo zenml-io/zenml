@@ -37,7 +37,7 @@ runs:
 
     - name: Load cached venv
       id: cached-poetry-dependencies
-      if: !${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
+      if: steps.cached-poetry-lock.outputs.cache-hit != 'true'
       uses: actions/cache@v2.1.6
       with:
         path: |
