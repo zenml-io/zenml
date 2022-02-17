@@ -33,6 +33,7 @@ from rich import box, table
 from rich.text import Text
 
 from zenml.console import console
+from zenml.constants import IS_DEBUG_ENV
 from zenml.logger import get_logger
 from zenml.repository import StackConfiguration
 from zenml.stack import StackComponent
@@ -297,17 +298,21 @@ def activate_integrations(func: F) -> F:
 
 def install_package(package: str) -> None:
     """Installs pypi package into the current environment with pip"""
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
+    command = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        package,
+    ]
+
+    if not IS_DEBUG_ENV:
+        command += [
             "-qqq",
             "--no-warn-conflicts",
-            package,
         ]
-    )
+
+    subprocess.check_call(command)
 
 
 def uninstall_package(package: str) -> None:
