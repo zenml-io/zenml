@@ -229,8 +229,9 @@ def build_docker_image(
     # latest version of that image (if it isn't a locally built image).
     # If no base image is provided, we use the static default ZenML image so
     # there is no need to constantly pull
-    custom_base_image = bool(base_image)
-    pull_base_image = custom_base_image and not is_local_image(base_image)
+    pull_base_image = False
+    if base_image:
+        pull_base_image = not is_local_image(base_image)
 
     logger.info(
         "Building docker image '%s', this might take a while...", image_name

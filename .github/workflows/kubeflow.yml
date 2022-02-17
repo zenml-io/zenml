@@ -1,10 +1,5 @@
 name: Kubeflow
 
-on:
-  push:
-    branches:
-      - feature/ENG-455-kubeflow-integration-tests
-
 jobs:
   integration_tests:
     runs-on: ubuntu-latest
@@ -13,6 +8,8 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
 
     steps:
+      # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
+      # as the TF images are too large for the GH action runner disk
       - name: Free disk space
         run: |
           echo "Available storage:"
@@ -52,12 +49,9 @@ jobs:
           python -m poetry run zenml integration install kubeflow -f
 
       - name: Build docker image
-        run: docker build -t zenml-base-image:latest -f docker/ci.Dockerfile .
-
-#      - name: Setup tmate session
-#        uses: mxschmitt/action-tmate@v3
-#        with:
-#          limit-access-to-actor: true
+        # this step can be much faster if we use an image that copies the
+        # lockfile that was generated in the previous step
+        run: docker build -t zenml-base-image:latest -f docker/base-dev.Dockerfile .
 
       - name: Run tests
-        run: python -m poetry run pytest tests/integration/test_kubeflow.py -s
+        run: python -m poetry run pytest tests/integration/test_examples_on_kubeflow.py -s

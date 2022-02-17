@@ -149,7 +149,7 @@ __pycache__
 *.env
 
 # poetry
-#*poetry.lock*
+*poetry.lock*
 
 # pre-commit
 !*.pre-commit-config.yaml
@@ -179,6 +179,3 @@ zenml_examples/
 
 # Prettier
 .prettierignore
-
-# Docs
-docs/sphinx_docs/_build
