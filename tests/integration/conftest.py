@@ -17,7 +17,6 @@ import shutil
 import pytest
 
 from zenml.container_registries import BaseContainerRegistry
-from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.repository import Repository
 from zenml.stack import Stack
 
@@ -34,6 +33,8 @@ def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
     provides the  test with a clean working directory and artifact/metadata
     store.
     """
+    from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
+
     # Patch the ui daemon as forking doesn't work well with pytest
     module_mocker.patch(
         "zenml.integrations.kubeflow.orchestrators.local_deployment_utils.start_kfp_ui_daemon"
