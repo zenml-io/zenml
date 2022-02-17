@@ -26,8 +26,17 @@ runs:
         virtualenvs-create: true
         virtualenvs-in-project: true
 
+   - name: Load cached poetry.lock
+      id: cached-poetry-lock
+      uses: actions/cache@v2.1.6
+      with:
+        path: poetry.lock
+        # Cache the poetry lock for a given os, python version, pyproject.toml
+        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+
     - name: Load cached venv
       id: cached-poetry-dependencies
+      if: !${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
       uses: actions/cache@v2.1.6
       with:
         path: |
@@ -38,14 +47,5 @@ runs:
 
     - name: Install Project
       shell: bash
-      if: |
-        steps.cached-poetry-dependencies.outputs.cache-hit != 'true' &&
-        !${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install
-      
-    - name: Install Project Windows with Python 3.6
-      shell: bash
-      if: ${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
-      run: |
-        rm -rf .venv
-        poetry install
