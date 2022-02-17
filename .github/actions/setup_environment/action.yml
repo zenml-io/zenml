@@ -1,0 +1,71 @@
+name: "Setup Matrix and Poetry"
+description: "Install Poetry, loads cached venv if applicable, and performs miscellaneous other operations"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Delete error-causing bash
+      shell: bash
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: rm.exe "C:/WINDOWS/system32/bash.EXE"
+
+    - name: Set path to bash for example runner
+      shell: bash
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
+
+    # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
+    # as the TF images are too large for the GH action runner disk
+    - name: Free disk space
+      shell: bash
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        echo "Available storage:"
+        df -h
+        echo
+        echo -n "  Removing: .NET (frees ~22GB)"
+        sudo rm -rf /usr/share/dotnet
+        echo "... done"
+        echo -n "  Removing: Android"
+        sudo rm -rf /usr/local/lib/android
+        echo "... done"
+        echo
+        echo "Available storage:"
+        df -h
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached poetry.lock
+      id: cached-poetry-lock
+      if: ${{ matrix.python-version == '3.6' && matrix.os == 'windows-latest' }}
+      uses: actions/cache@v2.1.6
+      with:
+        path: poetry.lock
+        # Cache the poetry lock for a given os, python version, pyproject.toml
+        key: lock-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      if: steps.cached-poetry-lock.outputs.cache-hit != 'true'
+      uses: actions/cache@v2.1.6
+      with:
+        path: |
+          .venv
+          poetry.lock
+        # Cache the complete venv dir for a given os, python version, pyproject.toml
+        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+
+    - name: Install Project
+      shell: bash
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install

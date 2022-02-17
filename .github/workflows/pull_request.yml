@@ -1,0 +1,31 @@
+name: Build, Lint, Unit & Integration Test
+
+on:
+  push:
+    branches: ['main', 'develop']
+    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
+  pull_request:
+    types: [opened, synchronize]
+    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
+
+concurrency:
+  group: ci-tests-${{ github.ref }}-1
+  # New commit on branch cancels running workflows of the same branch
+  cancel-in-progress: true
+
+jobs:
+  poetry-install:
+    uses: ./.github/workflows/poetry-install.yml
+
+#  lint-code:
+#    needs: poetry-install
+#    uses: ./.github/workflows/lint.yml
+#
+#  unit-test:
+#    needs: poetry-install
+#    uses: ./.github/workflows/unit-test.yml
+
+  integration-test:
+    needs: poetry-install
+    uses: ./.github/workflows/integration-test.yml
+
