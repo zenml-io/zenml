@@ -12,6 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import datetime as dt
+from typing import Optional
+
 import pytest
 from pydantic.main import BaseModel
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
@@ -65,6 +68,10 @@ def test_pydantic_object_to_metadata_context():
         b: str
         a: str
 
+    class DateTimeAttributes(BaseModel):
+        t: dt.datetime
+        d: Optional[dt.date]
+
     class MixedAttributes(BaseModel):
         class Config:
             arbitrary_types_allowed = True
@@ -108,3 +115,18 @@ def test_pydantic_object_to_metadata_context():
     node3 = PipelineNode()
     with pytest.raises(TypeError):
         add_runtime_configuration_to_node(node3, {"k": obj2})
+
+    # use pydantics serialization magic
+
+    obj4 = DateTimeAttributes(
+        t=dt.datetime(2022, 10, 20, 16, 42, 5), d=dt.date(2012, 12, 20)
+    )
+    node4 = PipelineNode()
+    add_runtime_configuration_to_node(node4, dict(k=obj4))
+    ctx4 = node4.contexts.contexts[0]
+    assert ctx4.type.name == "datetimeattributes"
+    assert ctx4.properties.get("d").field_value.string_value == '"2012-12-20"'
+    assert (
+        ctx4.properties.get("t").field_value.string_value
+        == '"2022-10-20T16:42:05"'
+    )

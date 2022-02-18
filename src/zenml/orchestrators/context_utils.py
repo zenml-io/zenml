@@ -14,7 +14,7 @@
 import json
 import logging
 import uuid
-from typing import TYPE_CHECKING, Any, Dict, Iterator, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, Tuple, cast
 
 from pydantic import BaseModel
 
@@ -47,7 +47,6 @@ def add_context_to_node(
     context: "pipeline_pb2.ContextSpec" = (  # type: ignore[valid-type]
         pipeline_node.contexts.contexts.add()  # type: ignore[attr-defined]
     )
-    print(f"type(context) = {type(context)}")
     # Adding the type of context
     context.type.name = type_  # type: ignore[attr-defined]
     # Setting the name of the context
@@ -63,13 +62,20 @@ def serialize_pydantic_object(
 ) -> Dict[str, str]:
     """Convert a pydantic object to a dict of strings"""
 
+    class PydanticEncoder(json.JSONEncoder):
+        def default(self, o: Any) -> Any:
+            try:
+                return cast(Callable[[Any], str], obj.__json_encoder__)(o)
+            except TypeError:
+                return super().default(o)
+
     def _inner_generator(
         dictionary: Dict[str, Any]
     ) -> Iterator[Tuple[str, str]]:
         """Itemwise serialize each element in a dictionary."""
         for key, item in dictionary.items():
             try:
-                yield key, json.dumps(item)
+                yield key, json.dumps(item, cls=PydanticEncoder)
             except TypeError as e:
                 if skip_errors:
                     logging.info(
