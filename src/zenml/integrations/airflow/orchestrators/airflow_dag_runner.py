@@ -27,6 +27,7 @@ from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import runtime_parameter_utils
 from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 
+from zenml.enums import MetadataContextTypes
 from zenml.logger import get_logger
 from zenml.orchestrators import context_utils
 from zenml.orchestrators.utils import create_tfx_pipeline
@@ -161,20 +162,19 @@ class AirflowDagRunner:
         component_impl_map = {}
 
         for node in pb2_pipeline.nodes:
-            print(f"type(node): {type(node)}, {node.__class__}")
-            pipeline_node: PipelineNode = node.pipeline_node
-            print(
-                f"type(pipeline_node): {type(pipeline_node)}, {pipeline_node.__class__}"
-            )
+            pipeline_node: PipelineNode = node.pipeline_node  # type: ignore[valid-type]
 
-            context = pipeline_node.contexts.contexts.add()
-            context_utils.add_stack_as_metadata_context(
-                context=context, stack=stack
+            # Add the stack as context to each pipeline node:
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.STACK.value,
+                name=str(hash(json.dumps(stack.dict(), sort_keys=True))),
+                properties=stack.dict(),
             )
 
             # Add all pydantic objects from runtime_configuration to the context
             context_utils.add_runtime_configuration_to_node(
-                runtime_configuration, pipeline_node
+                pipeline_node, runtime_configuration
             )
 
             node_id = pipeline_node.node_info.id

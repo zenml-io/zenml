@@ -30,6 +30,7 @@ All credits go to the TFX team for the core implementation"""
 
 import collections
 import copy
+import json
 import os
 import sys
 from typing import (
@@ -67,6 +68,7 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as PbPipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 from tfx.utils import telemetry_utils
 
+from zenml.enums import MetadataContextTypes
 from zenml.integrations.kubeflow.orchestrators.kubeflow_component import (
     KubeflowComponent,
 )
@@ -315,17 +317,19 @@ class KubeflowDagRunner:
             pipeline_node: PipelineNode = (  # type:ignore[valid-type]
                 node.pipeline_node
             )
-            context = (
-                pipeline_node.contexts.contexts.add()  # type:ignore[attr-defined]
-            )
-            context_utils.add_stack_as_metadata_context(
-                context=context, stack=stack
+
+            # Add the stack as context to each pipeline node:
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.STACK.value,
+                name=str(hash(json.dumps(stack.dict(), sort_keys=True))),
+                properties=stack.dict(),
             )
 
             # Add all pydantic objects from runtime_configuration to the
             # context
             context_utils.add_runtime_configuration_to_node(
-                runtime_configuration, pipeline_node
+                pipeline_node, runtime_configuration
             )
 
         # Assumption: There is a partial ordering of components in the list,

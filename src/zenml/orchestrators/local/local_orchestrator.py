@@ -28,6 +28,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 from typing import TYPE_CHECKING, Any
 
 from tfx.dsl.compiler.compiler import Compiler
@@ -40,7 +41,7 @@ from tfx.orchestration.portable import launcher, runtime_parameter_utils
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
-from zenml.enums import OrchestratorFlavor
+from zenml.enums import MetadataContextTypes, OrchestratorFlavor
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator, context_utils
 from zenml.orchestrators.utils import create_tfx_pipeline, execute_step
@@ -116,16 +117,18 @@ class LocalOrchestrator(BaseOrchestrator):
         # topological order.
         for node in pb2_pipeline.nodes:  # type: ignore[attr-defined]
             pipeline_node: PipelineNode = node.pipeline_node  # type: ignore[valid-type]
-            context = (
-                pipeline_node.contexts.contexts.add()  # type: ignore[attr-defined]
-            )
-            context_utils.add_stack_as_metadata_context(
-                context=context, stack=stack
+
+            # fill out that context
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.STACK.value,
+                name=str(hash(json.dumps(stack.dict(), sort_keys=True))),
+                properties=stack.dict(),
             )
 
             # Add all pydantic objects from runtime_configuration to the context
             context_utils.add_runtime_configuration_to_node(
-                runtime_configuration, pipeline_node
+                pipeline_node, runtime_configuration
             )
 
             node_id = pipeline_node.node_info.id  # type:ignore[attr-defined]

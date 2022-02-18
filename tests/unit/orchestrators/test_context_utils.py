@@ -12,14 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
+import pytest
 from pydantic.main import BaseModel
-from tfx.proto.orchestration.pipeline_pb2 import ContextSpec
+from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.enums import MetadataContextTypes, StackComponentType
-from zenml.orchestrators.context_utils import (
-    add_pydantic_object_as_metadata_context,
-)
+from zenml.orchestrators.context_utils import add_runtime_configuration_to_node
 from zenml.repository import Repository
 from zenml.steps import step
 
@@ -79,23 +77,34 @@ def test_pydantic_object_to_metadata_context():
         u: Unjsonable
 
     # straight-forward fully serializable object
-    ctx1 = ContextSpec()
+
+    node1 = PipelineNode()
     obj1 = StringAttributes(b="bob", a="alice")
-    add_pydantic_object_as_metadata_context(obj1, ctx1)
+    add_runtime_configuration_to_node(node1, {"key": obj1})
+    print(f"methods: {dir(node1.contexts.contexts)}")
+    ctx1 = node1.contexts.contexts[0]
     assert ctx1.type.name == "stringattributes"
     assert ctx1.name.field_value.string_value == str(
         hash('{"a": "alice", "b": "bob"}')
     )
 
     # object with serialization difficulties
-    ctx2 = ContextSpec()
     obj2 = MixedAttributes(
         s="steve", f=3.14, i=42, b=True, l=[1, 2], u=Unjsonable()
     )
-    add_pydantic_object_as_metadata_context(obj2, ctx2)
+
+    node2 = PipelineNode()
+    add_runtime_configuration_to_node(
+        node2, dict(k=obj2, ignore_unserializable_fields=True)
+    )
+    ctx2 = node2.contexts.contexts[0]
     assert ctx2.type.name == "mixedattributes"
     assert ctx2.name.field_value.string_value.startswith("MixedAttributes")
     assert "s" in ctx2.properties.keys()
     assert ctx2.properties.get("b").field_value.string_value == "true"
     assert ctx2.properties.get("l").field_value.string_value == "[1, 2]"
     assert "u" not in ctx2.properties.keys()
+
+    node3 = PipelineNode()
+    with pytest.raises(TypeError):
+        add_runtime_configuration_to_node(node3, {"k": obj2})
