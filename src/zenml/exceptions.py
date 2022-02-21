@@ -204,3 +204,8 @@ class StackValidationError(ZenMLBaseException):
 class ProvisioningError(ZenMLBaseException):
     """Raised when an error occurs when provisioning resources for a
     StackComponent."""
+
+
+class GitNotFoundError(ImportError):
+    """Raised when ZenML CLI is used to interact with examples on a machine
+    with no git installation"""

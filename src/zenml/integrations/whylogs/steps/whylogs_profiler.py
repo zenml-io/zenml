@@ -65,6 +65,7 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
         Args:
             dataset: pd.DataFrame, the given dataset
             config: the configuration of the step
+            context: the context of the step
         Returns:
             whylogs profile with statistics generated for the input dataset
         """

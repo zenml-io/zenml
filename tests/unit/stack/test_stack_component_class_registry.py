@@ -24,6 +24,7 @@ from zenml.enums import (
     OrchestratorFlavor,
     StackComponentType,
 )
+from zenml.integrations.registry import integration_registry
 from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack.stack_component_class_registry import (
@@ -106,6 +107,46 @@ def test_stack_component_class_registration_decorator(stub_component):
             component_type=stub_component.type,
             component_flavor=stub_component.flavor,
         )
+
+    # remove the registered component class so other tests aren't affected
+    StackComponentClassRegistry.component_classes[stub_component.type].pop(
+        stub_component.flavor.value
+    )
+
+
+def test_stack_component_class_registry_activates_integrations_if_necessary(
+    stub_component, mocker
+):
+    """Tests that the stack component class registry tries activating
+    integrations as a fallback if no registered class can be found."""
+
+    def _activate_integrations():
+        StackComponentClassRegistry.register_class(
+            component_type=stub_component.type,
+            component_flavor=stub_component.flavor,
+            component_class=type(stub_component),
+        )
+
+    mocker.patch.object(
+        integration_registry,
+        "activate_integrations",
+        side_effect=_activate_integrations,
+    )
+
+    # getting the local orchestrator should not require activating integrations
+    StackComponentClassRegistry.get_class(
+        component_type=StackComponentType.ORCHESTRATOR,
+        component_flavor=OrchestratorFlavor.LOCAL,
+    )
+    integration_registry.activate_integrations.assert_not_called()
+
+    # trying to get an unregistered component should activate the integrations
+    stub_compononent_class = StackComponentClassRegistry.get_class(
+        component_type=stub_component.type,
+        component_flavor=stub_component.flavor,
+    )
+    assert stub_compononent_class is type(stub_component)
+    integration_registry.activate_integrations.assert_called_once()
 
     # remove the registered component class so other tests aren't affected
     StackComponentClassRegistry.component_classes[stub_component.type].pop(
