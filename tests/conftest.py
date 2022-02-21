@@ -119,6 +119,7 @@ def generate_empty_steps():
         output = []
 
         for i in range(count):
+
             @step(name=f"step_{i}")
             def _step_function():
                 pass
@@ -228,19 +229,16 @@ def virtualenv(tmp_path_factory):
     if sys.platform == "win32":
         env_bin_dir = "Scripts"
 
-    env_lib_dir = f"../lib/python{sys.version_info.major}." \
-                  f"{sys.version_info.minor}/site-packages"
-    if sys.platform == "win32":
-        raise NotImplementedError("Replace this with the relevant Windows path")
-
     # Activate venv
     activate_this_file = tmp_path / env_bin_dir / "activate_this.py"
 
     if not activate_this_file.is_file():
-        raise FileNotFoundError("Integration tests don't for some local"
-                                "virtual environments. Use virtualenv for"
-                                "your virtual environment to use integration "
-                                "tests")
+        raise FileNotFoundError(
+            "Integration tests don't work for some local "
+            "virtual environments. Use virtualenv for "
+            "your virtual environment to run integration "
+            "tests"
+        )
 
     execfile(str(activate_this_file), dict(__file__=str(activate_this_file)))
 
@@ -254,9 +252,11 @@ def virtualenv(tmp_path_factory):
     # Switch back to original venv
     activate_this_f = Path(orig_sys_executable).parent / "activate_this.py"
 
-    if True:
-        raise FileNotFoundError("Integration tests don't for some local"
-                                "virtual environments. Use virtualenv for"
-                                "your virtual environment to use integration "
-                                "tests")
+    if not activate_this_f.is_file():
+        raise FileNotFoundError(
+            "Integration tests don't work for some local "
+            "virtual environments. Use virtualenv for "
+            "your virtual environment to run integration "
+            "tests"
+        )
     execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))

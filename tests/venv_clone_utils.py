@@ -40,9 +40,9 @@ import itertools
 import os.path
 import re
 import shutil
-import sys
 import subprocess
-from typing import Optional, Tuple, List
+import sys
+from typing import List, Optional, Tuple
 
 from zenml.logger import get_logger
 
@@ -82,7 +82,7 @@ def _dirmatch(path: str, matchwith: str) -> bool:
     False
     """
     matchlen = len(matchwith)
-    if path.startswith(matchwith) and path[matchlen: matchlen + 1] in [
+    if path.startswith(matchwith) and path[matchlen : matchlen + 1] in [
         os.sep,
         "",
     ]:
@@ -109,7 +109,7 @@ def _virtualenv_sys(venv_path: str) -> Tuple[str, list]:
             "-c",
             "import sys;"
             'print ("%d.%d" % (sys.version_info.major,'
-            ' sys.version_info.minor));'
+            " sys.version_info.minor));"
             'print ("\\n".join(sys.path));',
         ],
         env=os.environ.copy(),
@@ -143,17 +143,25 @@ def clone_virtualenv(src_dir: str, dst_dir: str) -> None:
     logger.info("Fixing scripts in bin...")
     fixup_scripts(src_dir, dst_dir, version)
 
-    has_old = lambda s: any(i for i in s if _dirmatch(i, src_dir))
-
-    if has_old(sys_path):
+    if old_path_in_sys_path(sys_path, src_dir):
         # only need to fix stuff in sys.path if we have old
         # paths in the sys.path of new python env. right?
         logger.info("Fixing paths in sys.path...")
         fixup_syspath_items(sys_path, src_dir, dst_dir)
     v_sys = _virtualenv_sys(dst_dir)
-    remaining = has_old(v_sys[1])
+    remaining = old_path_in_sys_path(v_sys[1], src_dir)
     assert not remaining, v_sys
     fix_symlink_if_necessary(src_dir, dst_dir)
+
+
+def old_path_in_sys_path(sys_path: List[str], src_dir: str) -> bool:
+    """Checks if sys path contains reference to the old venv
+
+    Args:
+        sys_path: Contents of the sys path as list
+        src_dir: Path to the old virtualenv
+    """
+    return any(i for i in sys_path if _dirmatch(i, src_dir))
 
 
 def fix_symlink_if_necessary(src_dir: str, dst_dir: str) -> None:
@@ -184,10 +192,7 @@ def fix_symlink_if_necessary(src_dir: str, dst_dir: str) -> None:
 
 
 def fixup_scripts(
-        old_dir: str,
-        new_dir: str,
-        version: str,
-        rewrite_env_python: bool = False
+    old_dir: str, new_dir: str, version: str, rewrite_env_python: bool = False
 ) -> None:
     """Fix paths and links within files of the environments so that
     they point at the right locations.
@@ -229,12 +234,12 @@ def fixup_scripts(
 
 
 def fixup_script_(
-        root: str,
-        file_: str,
-        old_dir: str,
-        new_dir: str,
-        py_version: str,
-        rewrite_env_python: bool = False
+    root: str,
+    file_: str,
+    old_dir: str,
+    new_dir: str,
+    py_version: str,
+    rewrite_env_python: bool = False,
 ) -> None:
     """This is meant to rewrite the shebang of files in teh destination
     venv that still point at the python executable of the original venv
@@ -249,11 +254,15 @@ def fixup_script_(
         rewrite_env_python: Boolean to declare if standard python env
             shebang like `#!/usr/bin/env python` should be rewritten to point at
             the python executable of the new virtual environment
-        """
-    old_shebang = f"#!{os.path.abspath(old_dir)}{os.sep}{env_bin_dir}" \
-                  f"{os.sep}{python_exe}"
-    new_shebang = f"#!{os.path.abspath(new_dir)}{os.sep}{env_bin_dir}" \
-                  f"{os.sep}{python_exe}"
+    """
+    old_shebang = (
+        f"#!{os.path.abspath(old_dir)}{os.sep}{env_bin_dir}"
+        f"{os.sep}{python_exe}"
+    )
+    new_shebang = (
+        f"#!{os.path.abspath(new_dir)}{os.sep}{env_bin_dir}"
+        f"{os.sep}{python_exe}"
+    )
     env_shebang = "#!/usr/bin/env python"
 
     filename = os.path.join(root, file_)
@@ -292,24 +301,26 @@ def fixup_script_(
     # This takes care of the scheme in which shebang is of type
     # '#!/venv/bin/python3' while the version of system python
     # is of type 3.x e.g. 3.5.
-    short_version = bang[len(old_shebang):]
+    short_version = bang[len(old_shebang) :]
 
     if not bang.startswith("#!"):
         return
     elif bang == old_shebang:
         rewrite_shebang()
-    elif bang.startswith(old_shebang) and bang[len(old_shebang):] == py_version:
+    elif (
+        bang.startswith(old_shebang) and bang[len(old_shebang) :] == py_version
+    ):
         rewrite_shebang(py_version)
     elif (
-            bang.startswith(old_shebang)
-            and short_version
-            and bang[len(old_shebang):] == short_version
+        bang.startswith(old_shebang)
+        and short_version
+        and bang[len(old_shebang) :] == short_version
     ):
         rewrite_shebang(short_version)
     elif rewrite_env_python and bang.startswith(env_shebang):
         if bang == env_shebang:
             rewrite_shebang()
-        elif bang[len(env_shebang):] == py_version:
+        elif bang[len(env_shebang) :] == py_version:
             rewrite_shebang(py_version)
     else:
         # Nothing to do here
@@ -335,10 +346,7 @@ def fixup_activate(filename: str, old_dir: str, new_dir: str) -> None:
 
 
 def fixup_link(
-        filename: str,
-        old_dir: str,
-        new_dir: str,
-        target: Optional[str] = None
+    filename: str, old_dir: str, new_dir: str, target: Optional[str] = None
 ) -> None:
     """Within a given file, replace all mentions of the old venv with the path
     of the new venv.
@@ -367,7 +375,7 @@ def fixup_link(
             # keep relative links, but don't keep original in case it
             # traversed up out of, then back into the venv.
             # so, recreate a relative link from absolute.
-            target = target[len(origdir):].lstrip(os.sep)
+            target = target[len(origdir) :].lstrip(os.sep)
         else:
             target = target.replace(old_dir, new_dir, 1)
 
@@ -376,7 +384,7 @@ def fixup_link(
 
 
 def _replace_symlink(filename: str, newtarget: str) -> None:
-    """ Replace any symlinks with absolute path target
+    """Replace any symlinks with absolute path target
 
     Args:
         filename: Name of the file
@@ -394,7 +402,7 @@ def _replace_symlink(filename: str, newtarget: str) -> None:
 
 
 def fixup_syspath_items(syspath: List[str], old_dir: str, new_dir: str) -> None:
-    """ Replace mentions of the old venv in sys path with the new venv.
+    """Replace mentions of the old venv in sys path with the new venv.
 
     Args:
         syspath: List of paths in sys path
@@ -449,7 +457,9 @@ def fixup_pth_file(filename: str, old_dir: str, new_dir: str) -> None:
 
     if has_change:
         with open(filename, "w") as f:
-            payload = os.linesep.join([l.strip() for l in lines]) + os.linesep
+            payload = (
+                os.linesep.join([line.strip() for line in lines]) + os.linesep
+            )
             f.write(payload)
 
 
