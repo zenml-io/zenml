@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 import os
 import shutil
+from typing import Generator
 
 import pytest
+from pytest_mock import MockerFixture
 
 from zenml.container_registries import BaseContainerRegistry
 from zenml.repository import Repository
@@ -22,7 +24,11 @@ from zenml.stack import Stack
 
 
 @pytest.fixture(scope="module")
-def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
+def shared_kubeflow_repo(
+    base_repo: Repository,
+    tmp_path_factory: pytest.TempPathFactory,
+    module_mocker: MockerFixture,
+) -> Generator[Repository, None, None]:
     """Creates a repo with a locally provisioned kubeflow stack.
 
     As the resource provisioning for the local kubeflow deployment takes quite
@@ -84,8 +90,19 @@ def shared_kubeflow_repo(base_repo, tmp_path_factory, module_mocker):
 
 
 @pytest.fixture
-def clean_kubeflow_repo(shared_kubeflow_repo, clean_repo):
-    """Creates a clean repo with a provisioned local kubeflow stack."""
+def clean_kubeflow_repo(
+    shared_kubeflow_repo: Repository, clean_repo: Repository
+) -> Generator[Repository, None, None]:
+    """Creates a clean repo with a provisioned local kubeflow stack.
+
+    Args:
+        shared_kubeflow_repo: A repository with a provisioned local kubeflow
+            stack
+        clean_repo: An empty repository
+
+    Yields:
+        An empty repository with a provisioned local kubeflow stack.
+    """
     # Copy the stack configuration from the shared kubeflow repo. At this point
     # the stack resources are already provisioned by the module-scoped fixture.
     kubeflow_stack = shared_kubeflow_repo.active_stack

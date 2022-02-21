@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 import os
 import shutil
-from collections import namedtuple
 from pathlib import Path
+from typing import Callable, NamedTuple, TypeVar
 
 import pytest
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
+from zenml.repository import Repository
 
 from .example_validations import (
     caching_example_validation,
@@ -30,7 +31,7 @@ from .example_validations import (
 
 # shtutil.copytree on python 3.6/3.7 doesn't allow copying to an existing
 # directory
-def copytree(src, dst):
+def copytree(src: str, dst: str) -> None:
     for item in os.listdir(src):
         s = os.path.join(src, item)
         d = os.path.join(dst, item)
@@ -53,9 +54,24 @@ def example_runner(examples_dir):
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
-ExampleIntegrationTestConfiguration = namedtuple(
-    "ExampleIntegrationTestConfiguration", ["name", "validation_function"]
+ExampleValidationFunction = TypeVar(
+    "ExampleValidationFunction", bound=Callable[[Repository], None]
 )
+
+
+class ExampleIntegrationTestConfiguration(NamedTuple):
+    """Configuration options for testing a ZenML example.
+
+    Attributes:
+        name: The name (=directory name) of the example
+        validation_function: A function that validates that this example ran
+            correctly.
+    """
+
+    name: str
+    validation_function: ExampleValidationFunction
+
+
 examples = [
     ExampleIntegrationTestConfiguration(
         name="quickstart",
@@ -114,10 +130,19 @@ examples = [
 )
 def test_run_example(
     example_configuration: ExampleIntegrationTestConfiguration,
-    repo_fixture_name,
-    request,
-):
-    """Runs the given examples and validates they ran correctly."""
+    repo_fixture_name: str,
+    request: pytest.FixtureRequest,
+) -> None:
+    """Runs the given examples and validates they ran correctly.
+
+    Args:
+        example_configuration: Configuration of the example to run.
+        repo_fixture_name: Name of a fixture that returns a ZenML repository.
+            This fixture will be executed and the example will run on the
+            active stack of the repository given by the fixture.
+        request: Pytest fixture needed to run the fixture given in the
+            `repo_fixture_name` argument
+    """
     # run the fixture given by repo_fixture_name
     repo = request.getfixturevalue(repo_fixture_name)
 
