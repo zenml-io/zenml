@@ -17,13 +17,13 @@ jobs:
   poetry-install:
     uses: ./.github/workflows/poetry-install.yml
 
-#  lint-code:
-#    needs: poetry-install
-#    uses: ./.github/workflows/lint.yml
-#
-#  unit-test:
-#    needs: poetry-install
-#    uses: ./.github/workflows/unit-test.yml
+  lint-code:
+    needs: poetry-install
+    uses: ./.github/workflows/lint.yml
+
+  unit-test:
+    needs: poetry-install
+    uses: ./.github/workflows/unit-test.yml
 
   integration-test:
     needs: poetry-install
