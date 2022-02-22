@@ -26,6 +26,7 @@ from .example_validations import (
     drift_detection_example_validation,
     generate_basic_validation_function,
     mlflow_tracking_example_validation,
+    whylogs_example_validation,
 )
 
 
@@ -115,9 +116,9 @@ examples = [
         validation_function=mlflow_tracking_example_validation,
     ),
     # TODO [HIGH]: Enable running the whylogs example on kubeflow
-    # ExampleIntegrationTestConfiguration(
-    #     name="whylogs", validation_function=whylogs_example_validation
-    # ),
+    ExampleIntegrationTestConfiguration(
+        name="whylogs", validation_function=whylogs_example_validation
+    ),
 ]
 
 
@@ -125,9 +126,7 @@ examples = [
     "example_configuration",
     [pytest.param(example, id=example.name) for example in examples],
 )
-@pytest.mark.parametrize(
-    "repo_fixture_name", ["clean_repo"]  # , "clean_kubeflow_repo"]
-)
+@pytest.mark.parametrize("repo_fixture_name", ["clean_repo"])
 def test_run_example(
     example_configuration: ExampleIntegrationTestConfiguration,
     repo_fixture_name: str,

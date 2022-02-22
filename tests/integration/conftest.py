@@ -38,6 +38,14 @@ def shared_kubeflow_repo(
     `clean_kubeflow_repo` fixture instead that builds on top of this and
     provides the  test with a clean working directory and artifact/metadata
     store.
+
+     Args:
+        base_repo: The base ZenML repository for tests.
+        tmp_path_factory: Factory to generate temporary test paths.
+        module_mocker: Mocker fixture
+
+    Yields:
+        A repository with a provisioned local kubeflow stack.
     """
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 
