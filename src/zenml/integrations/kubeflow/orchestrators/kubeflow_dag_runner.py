@@ -64,7 +64,7 @@ from tfx.orchestration.pipeline import (
 )
 from tfx.orchestration.pipeline import Pipeline as TfxPipeline
 from tfx.proto.orchestration.pipeline_pb2 import IntermediateDeploymentConfig
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as PbPipeline
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 from tfx.utils import telemetry_utils
 
@@ -309,7 +309,7 @@ class KubeflowDagRunner:
           runtime_configuration: The runtime configuration
         """
         component_to_kfp_op: Dict[base_node.BaseNode, dsl.ContainerOp] = {}
-        tfx_ir: PbPipeline = self._generate_tfx_ir(  # type:ignore[valid-type]
+        tfx_ir: Pb2Pipeline = self._generate_tfx_ir(  # type:ignore[valid-type]
             pipeline
         )
 
@@ -386,8 +386,8 @@ class KubeflowDagRunner:
                 del message_dict[item]
 
     def _dehydrate_tfx_ir(
-        self, original_pipeline: PbPipeline, node_id: str  # type: ignore[valid-type] # noqa
-    ) -> PbPipeline:  # type: ignore[valid-type]
+        self, original_pipeline: Pb2Pipeline, node_id: str  # type: ignore[valid-type] # noqa
+    ) -> Pb2Pipeline:  # type: ignore[valid-type]
         """Dehydrate the TFX IR to remove unused fields."""
         pipeline = copy.deepcopy(original_pipeline)
         for node in pipeline.nodes:  # type: ignore[attr-defined]
@@ -411,7 +411,7 @@ class KubeflowDagRunner:
 
     def _generate_tfx_ir(
         self, pipeline: TfxPipeline
-    ) -> PbPipeline:  # type: ignore[valid-type]
+    ) -> Pb2Pipeline:  # type: ignore[valid-type]
         """Generate the TFX IR from the logical TFX pipeline."""
         result = self._tfx_compiler.compile(pipeline)
         return result
