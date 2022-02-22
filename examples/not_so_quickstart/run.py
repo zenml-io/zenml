@@ -63,46 +63,47 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialize a pipeline run
-tf_p = mnist_pipeline(
-    importer=importer_mnist(),
-    normalizer=normalizer(),
-    trainer=tf_trainer(config=TrainerConfig(epochs=1)),
-    evaluator=tf_evaluator(),
-)
-
-# Run the pipeline
-tf_p.run()
-
-# Initialize a new pipeline run
-torch_p = mnist_pipeline(
-    importer=importer_mnist(),
-    normalizer=normalizer(),
-    trainer=torch_trainer(config=TrainerConfig(epochs=1)),
-    evaluator=torch_evaluator(),
-)
-
-# Run the new pipeline
-torch_p.run()
-
-# Initialize a new pipeline run
-scikit_p = mnist_pipeline(
-    importer=importer_mnist(),
-    normalizer=normalizer(),
-    trainer=sklearn_trainer(config=TrainerConfig()),
-    evaluator=sklearn_evaluator(),
-)
-
-# Run the new pipeline
-scikit_p.run()
-
-# Post-execution flow
-repo = Repository()
-pipeline = repo.get_pipelines()[0]
-print("***********************OUTPUT************************")
-for r in pipeline.runs[-3:]:
-    eval_step = r.get_step("evaluator")
-    print(
-        f"For {eval_step.entrypoint_name}, the accuracy is: "
-        f"{eval_step.output.read():.2f}"
+if __name__ == "__main__":
+    # Initialize a pipeline run
+    tf_p = mnist_pipeline(
+        importer=importer_mnist(),
+        normalizer=normalizer(),
+        trainer=tf_trainer(config=TrainerConfig(epochs=1)),
+        evaluator=tf_evaluator(),
     )
+
+    # Run the pipeline
+    tf_p.run()
+
+    # Initialize a new pipeline run
+    torch_p = mnist_pipeline(
+        importer=importer_mnist(),
+        normalizer=normalizer(),
+        trainer=torch_trainer(config=TrainerConfig(epochs=1)),
+        evaluator=torch_evaluator(),
+    )
+
+    # Run the new pipeline
+    torch_p.run()
+
+    # Initialize a new pipeline run
+    scikit_p = mnist_pipeline(
+        importer=importer_mnist(),
+        normalizer=normalizer(),
+        trainer=sklearn_trainer(config=TrainerConfig()),
+        evaluator=sklearn_evaluator(),
+    )
+
+    # Run the new pipeline
+    scikit_p.run()
+
+    # Post-execution flow
+    repo = Repository()
+    pipeline = repo.get_pipelines()[0]
+    print("***********************OUTPUT************************")
+    for r in pipeline.runs[-3:]:
+        eval_step = r.get_step("evaluator")
+        print(
+            f"For {eval_step.entrypoint_name}, the accuracy is: "
+            f"{eval_step.output.read():.2f}"
+        )

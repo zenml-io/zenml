@@ -17,7 +17,6 @@ import webbrowser
 from abc import abstractmethod
 from typing import Any
 
-import zenml.io.utils
 from zenml.artifacts import DataAnalysisArtifact
 from zenml.environment import Environment
 from zenml.logger import get_logger
@@ -57,11 +56,13 @@ class EvidentlyVisualizer(BaseStepVisualizer):
 
             display(HTML(html_))
         else:
-            logger.warn(
+            logger.warning(
                 "The magic functions are only usable in a Jupyter notebook."
             )
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
-                zenml.io.utils.write_file_contents_as_string(f.name, html_)
+            with tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".html", encoding="utf-8"
+            ) as f:
+                f.write(html_)
                 url = f"file:///{f.name}"
                 logger.info("Opening %s in a new browser.." % f.name)
                 webbrowser.open(url, new=2)
