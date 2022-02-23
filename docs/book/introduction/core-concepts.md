@@ -31,8 +31,7 @@ orchestrator environment.
 Within your repository, you will have one or more pipelines as part of your experimentation workflow. A ZenML 
 pipeline is a sequence of tasks that execute in a specific order and yield artifacts. The artifacts are stored 
 within the artifact store and indexed via the metadata store. Each individual task within a pipeline is known as a 
-step. The standard pipelines (like `TrainingPipeline`) within ZenML are designed to have easy interfaces to add 
-pre-decided steps, with the order also pre-decided. Other sorts of pipelines can be created as well from scratch.
+step.
 
 ```python
 @pipeline
@@ -171,6 +170,10 @@ deployment to the cluster, the ZenML base image would be downloaded (from a clou
 the basis for the deployed 'run'. When you are running a local Kubeflow stack, you would therefore have a local 
 container registry which stores the container images you create that bundle up your pipeline code. These images 
 would in turn be built on top of a base image or custom image of your choice.
+
+## Service
+
+A service 
 
 ## Stack
 
