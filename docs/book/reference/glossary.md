@@ -53,6 +53,15 @@ ZenML follows this paradigm and it is a useful mental model to have in your head
 when thinking about how the pieces of your pipeline get executed and how
 dependencies between the different stages are managed.
 
+## Integrations
+
+An integration is a third-party tool or platform that implements a ZenML abstraction. 
+A tool can implement many abstractions and therefore an integration can have different 
+entrypoints for the user. We have a consistently updated integrations page which shows all 
+current integrations supported by the ZenML core team [here](../features/integrations.md). 
+However, as ZenML is a framework users are encouraged to use these as a guideline and implement 
+their own integrations by extending the various ZenML abstractions.
+
 ## Materializers
 
 A materializer defines how and where Artifacts live in between steps. It is used
