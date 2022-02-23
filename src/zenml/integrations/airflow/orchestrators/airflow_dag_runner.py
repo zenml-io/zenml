@@ -19,7 +19,6 @@ import typing
 import warnings
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
 
-from pydantic import BaseModel
 from tfx.dsl.compiler import compiler
 from tfx.dsl.components.base import base_component, base_node
 from tfx.orchestration.config import pipeline_config
@@ -28,6 +27,7 @@ from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import runtime_parameter_utils
 from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 
+from zenml.enums import MetadataContextTypes
 from zenml.logger import get_logger
 from zenml.orchestrators import context_utils
 from zenml.orchestrators.utils import create_tfx_pipeline
@@ -35,6 +35,8 @@ from zenml.repository import Repository
 
 if TYPE_CHECKING:
     import airflow
+    from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
+    from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
@@ -111,7 +113,7 @@ class AirflowDagRunner:
         from zenml.integrations.airflow.orchestrators import airflow_component
 
         # Merge airflow-specific configs with pipeline args
-        pipeline = create_tfx_pipeline(pipeline, stack=stack)
+        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
         if runtime_configuration.schedule:
             catchup = runtime_configuration.schedule.catchup
@@ -119,7 +121,7 @@ class AirflowDagRunner:
             catchup = False
 
         airflow_dag = airflow.DAG(
-            dag_id=pipeline.pipeline_info.pipeline_name,
+            dag_id=tfx_pipeline.pipeline_info.pipeline_name,
             **(
                 typing.cast(
                     AirflowPipelineConfig, self._config
@@ -128,31 +130,30 @@ class AirflowDagRunner:
             is_paused_upon_creation=False,
             catchup=catchup,
         )
-        if "tmp_dir" not in pipeline.additional_pipeline_args:
+        if "tmp_dir" not in tfx_pipeline.additional_pipeline_args:
             tmp_dir = os.path.join(
-                pipeline.pipeline_info.pipeline_root, ".temp", ""
+                tfx_pipeline.pipeline_info.pipeline_root, ".temp", ""
             )
-            pipeline.additional_pipeline_args["tmp_dir"] = tmp_dir
+            tfx_pipeline.additional_pipeline_args["tmp_dir"] = tmp_dir
 
-        for component in pipeline.components:
+        for component in tfx_pipeline.components:
             if isinstance(component, base_component.BaseComponent):
                 component._resolve_pip_dependencies(
-                    pipeline.pipeline_info.pipeline_root
+                    tfx_pipeline.pipeline_info.pipeline_root
                 )
             self._replace_runtime_params(component)
 
-        c = compiler.Compiler()
-        pipeline = c.compile(pipeline)
+        pb2_pipeline: Pb2Pipeline = compiler.Compiler().compile(tfx_pipeline)
 
         # Substitute the runtime parameter to be a concrete run_id
         runtime_parameter_utils.substitute_runtime_parameter(
-            pipeline,
+            pb2_pipeline,
             {
                 "pipeline-run-id": runtime_configuration.run_name,
             },
         )
         deployment_config = runner_utils.extract_local_deployment_config(
-            pipeline
+            pb2_pipeline
         )
         connection_config = (
             Repository().active_stack.metadata_store.get_tfx_metadata_config()
@@ -160,23 +161,22 @@ class AirflowDagRunner:
 
         component_impl_map = {}
 
-        for node in pipeline.nodes:
-            context = node.pipeline_node.contexts.contexts.add()
-            context_utils.add_stack_as_metadata_context(
-                context=context, stack=stack
+        for node in pb2_pipeline.nodes:
+            pipeline_node: PipelineNode = node.pipeline_node  # type: ignore[valid-type]
+
+            # Add the stack as context to each pipeline node:
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.STACK.value,
+                name=str(hash(json.dumps(stack.dict(), sort_keys=True))),
+                properties=stack.dict(),
             )
 
-            # Add all pydantic objects from runtime_configuration to the
-            # context
-            for k, v in runtime_configuration.items():
-                if v and issubclass(type(v), BaseModel):
-                    context = node.pipeline_node.contexts.contexts.add()
-                    logger.debug("Adding %s to context", k)
-                    context_utils.add_pydantic_object_as_metadata_context(
-                        context=context, obj=v
-                    )
+            # Add all pydantic objects from runtime_configuration to the context
+            context_utils.add_runtime_configuration_to_node(
+                pipeline_node, runtime_configuration
+            )
 
-            pipeline_node = node.pipeline_node
             node_id = pipeline_node.node_info.id
             executor_spec = runner_utils.extract_executor_spec(
                 deployment_config, node_id
