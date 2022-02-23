@@ -146,12 +146,7 @@ zenml stack register STACK_NAME \
 
 A step is a single piece or stage of a ZenML pipeline. Think of each step as
 being one of the nodes of the DAG. Steps are responsible for one aspect of
-processing or interacting with the data / artifacts in the pipeline. ZenML
-currently implements a basic `step` interface, but there will be other more
-customized interfaces (layered in a hierarchy) for specialized implementations.
-For example, broad steps like `@trainer`, `@split` and so on. Conceptually, a
-`Step` is a discrete and independent part of a pipeline that is responsible for
-one particular aspect of data manipulation inside a ZenML pipeline.
+processing or interacting with the data / artifacts in the pipeline.
 
 ## Visualizer
 
