@@ -65,7 +65,7 @@ If you are doing a manual install of the Kubeflow Pipelines, make sure that the 
 
 {% tabs %}
 {% tab title="AWS" %}
-* [Set up](https://docs.aws.amazon.com/AmazonECR/latest/userguide/get-set-up-for-amazon-ecr.html) an Elastic Container Registry (ECR) and create a repository (either public or private) with the name `zenml-kubeflow` . This is the repository to which ZenML will push your pipeline images to. 
+* [Set up](https://docs.aws.amazon.com/AmazonECR/latest/userguide/get-set-up-for-amazon-ecr.html) an Elastic Container Registry (ECR) and create a repository (either public or private) with the name `zenml-kubeflow`. This is the repository to which ZenML will push your pipeline images.
 * The path value to register with ZenML should be in the format `ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com`
 * Authenticate your local `docker` cli with your ECR registry using the following command. Replace the capitalized words with your values.
 
