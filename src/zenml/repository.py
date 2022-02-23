@@ -311,7 +311,6 @@ class Repository:
 
         return Stack.from_components(name=name, components=stack_components)
 
-    @track(event=AnalyticsEvent.REGISTERED_STACK)
     def register_stack(self, stack: Stack) -> None:
         """Registers a stack and it's components.
 
@@ -334,6 +333,7 @@ class Repository:
             )
 
         components = {}
+        metadata = {}
         for component_type, component in stack.components.items():
             try:
                 existing_component = self.get_stack_component(
@@ -350,11 +350,13 @@ class Repository:
                 self.register_stack_component(component)
 
             components[component_type.value] = component.name
+            metadata[component_type.value] = component.flavor.value
 
         stack_configuration = StackConfiguration(**components)
         self.__config.stacks[stack.name] = stack_configuration
         self._write_config()
         logger.info("Registered stack with name '%s'.", stack.name)
+        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack.

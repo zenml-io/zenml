@@ -40,6 +40,7 @@
 * [Run Your Pipelines in the Cloud](features/cloud-pipelines/cloud-pipelines.md)
   * [Cloud-specific guide](features/cloud-pipelines/guide-aws-gcp-azure.md)
 * [Step Fixtures](features/step-fixtures.md)
+* [Continuous Training and Deployment](features/continous-training-and-deployment.md)
 
 ## Support
 

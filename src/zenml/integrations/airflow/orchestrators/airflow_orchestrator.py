@@ -261,7 +261,7 @@ class AirflowOrchestrator(BaseOrchestrator):
     def deprovision(self) -> None:
         """Stops the airflow daemon if necessary and tears down resources."""
         if self.is_running:
-            daemon.stop_daemon(self.pid_file, kill_children=True)
+            daemon.stop_daemon(self.pid_file)
 
         fileio.rm_dir(self.airflow_home)
         logger.info("Airflow spun down.")

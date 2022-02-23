@@ -30,6 +30,7 @@ All credits go to the TFX team for the core implementation"""
 
 import collections
 import copy
+import json
 import os
 import sys
 from typing import (
@@ -48,21 +49,26 @@ from typing import (
 
 from kfp import compiler, dsl, gcp
 from kubernetes import client as k8s_client
-from pydantic import BaseModel
 from tfx.dsl.compiler import compiler as tfx_compiler
 from tfx.dsl.components.base import base_component as tfx_base_component
 from tfx.dsl.components.base import base_node
 from tfx.orchestration import data_types
-from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration.config import pipeline_config
 from tfx.orchestration.launcher import (
     base_component_launcher,
     in_process_component_launcher,
     kubernetes_component_launcher,
 )
-from tfx.proto.orchestration import pipeline_pb2
+from tfx.orchestration.pipeline import (
+    ROOT_PARAMETER as TFX_PIPELINE_ROOT_PARAMETER,
+)
+from tfx.orchestration.pipeline import Pipeline as TfxPipeline
+from tfx.proto.orchestration.pipeline_pb2 import IntermediateDeploymentConfig
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
+from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 from tfx.utils import telemetry_utils
 
+from zenml.enums import MetadataContextTypes
 from zenml.integrations.kubeflow.orchestrators.kubeflow_component import (
     KubeflowComponent,
 )
@@ -267,7 +273,7 @@ class KubeflowDagRunner:
             if not isinstance(parameter, data_types.RuntimeParameter):
                 continue
             # Ignore pipeline root because it will be added later.
-            if parameter.name == tfx_pipeline.ROOT_PARAMETER.name:
+            if parameter.name == TFX_PIPELINE_ROOT_PARAMETER.name:
                 continue
             if parameter.name in deduped_parameter_names_for_component:
                 continue
@@ -281,9 +287,7 @@ class KubeflowDagRunner:
                 )
                 self._params.append(dsl_parameter)
 
-    def _parse_parameter_from_pipeline(
-        self, pipeline: tfx_pipeline.Pipeline
-    ) -> None:
+    def _parse_parameter_from_pipeline(self, pipeline: TfxPipeline) -> None:
         """Extract all the RuntimeParameter placeholders from the pipeline."""
 
         for component in pipeline.components:
@@ -291,7 +295,7 @@ class KubeflowDagRunner:
 
     def _construct_pipeline_graph(
         self,
-        pipeline: tfx_pipeline.Pipeline,
+        pipeline: TfxPipeline,
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
@@ -302,23 +306,28 @@ class KubeflowDagRunner:
           runtime_configuration: The runtime configuration
         """
         component_to_kfp_op: Dict[base_node.BaseNode, dsl.ContainerOp] = {}
-        tfx_ir = self._generate_tfx_ir(pipeline)
+        tfx_ir: Pb2Pipeline = self._generate_tfx_ir(  # type:ignore[valid-type]
+            pipeline
+        )
 
         for node in tfx_ir.nodes:  # type:ignore[attr-defined]
-            context = node.pipeline_node.contexts.contexts.add()
-            context_utils.add_stack_as_metadata_context(
-                context=context, stack=stack
+            pipeline_node: PipelineNode = (  # type:ignore[valid-type]
+                node.pipeline_node
             )
 
-        # Add all pydantic objects from runtime_configuration to the
-        # context
-        for k, v in runtime_configuration.items():
-            if v and issubclass(type(v), BaseModel):
-                context = node.pipeline_node.contexts.contexts.add()
-                logger.debug("Adding %s to context", k)
-                context_utils.add_pydantic_object_as_metadata_context(
-                    context=context, obj=v
-                )
+            # Add the stack as context to each pipeline node:
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.STACK.value,
+                name=str(hash(json.dumps(stack.dict(), sort_keys=True))),
+                properties=stack.dict(),
+            )
+
+            # Add all pydantic objects from runtime_configuration to the
+            # context
+            context_utils.add_runtime_configuration_to_node(
+                pipeline_node, runtime_configuration
+            )
 
         # Assumption: There is a partial ordering of components in the list,
         # i.e. if component A depends on component B and C, then A appears
@@ -373,8 +382,8 @@ class KubeflowDagRunner:
                 del message_dict[item]
 
     def _dehydrate_tfx_ir(
-        self, original_pipeline: pipeline_pb2.Pipeline, node_id: str  # type: ignore[valid-type] # noqa
-    ) -> pipeline_pb2.Pipeline:  # type: ignore[valid-type]
+        self, original_pipeline: Pb2Pipeline, node_id: str  # type: ignore[valid-type] # noqa
+    ) -> Pb2Pipeline:  # type: ignore[valid-type]
         """Dehydrate the TFX IR to remove unused fields."""
         pipeline = copy.deepcopy(original_pipeline)
         for node in pipeline.nodes:  # type: ignore[attr-defined]
@@ -386,7 +395,7 @@ class KubeflowDagRunner:
                 pipeline.nodes.extend([node])  # type: ignore[attr-defined]
                 break
 
-        deployment_config = pipeline_pb2.IntermediateDeploymentConfig()
+        deployment_config = IntermediateDeploymentConfig()
         pipeline.deployment_config.Unpack(deployment_config)  # type: ignore[attr-defined] # noqa
         self._del_unused_field(node_id, deployment_config.executor_specs)
         self._del_unused_field(node_id, deployment_config.custom_driver_specs)
@@ -397,8 +406,8 @@ class KubeflowDagRunner:
         return pipeline
 
     def _generate_tfx_ir(
-        self, pipeline: tfx_pipeline.Pipeline
-    ) -> pipeline_pb2.Pipeline:  # type: ignore[valid-type]
+        self, pipeline: TfxPipeline
+    ) -> Pb2Pipeline:  # type: ignore[valid-type]
         """Generate the TFX IR from the logical TFX pipeline."""
         result = self._tfx_compiler.compile(pipeline)
         return result
@@ -416,32 +425,32 @@ class KubeflowDagRunner:
           stack: The ZenML stack that the pipeline is running on.
           runtime_configuration: The runtime configuration.
         """
-        t_pipeline = create_tfx_pipeline(pipeline, stack=stack)
+        tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
-        for component in t_pipeline.components:
+        for component in tfx_pipeline.components:
             # TODO(b/187122662): Pass through pip dependencies as a first-class
             # component flag.
             if isinstance(component, tfx_base_component.BaseComponent):
                 component._resolve_pip_dependencies(
                     # pylint: disable=protected-access
-                    t_pipeline.pipeline_info.pipeline_root
+                    tfx_pipeline.pipeline_info.pipeline_root
                 )
 
         def _construct_pipeline() -> None:
             """Creates Kubeflow ContainerOps for each TFX component
             encountered in the pipeline definition."""
             self._construct_pipeline_graph(
-                t_pipeline, stack, runtime_configuration
+                tfx_pipeline, stack, runtime_configuration
             )
 
         # Need to run this first to get self._params populated. Then KFP
         # compiler can correctly match default value with PipelineParam.
-        self._parse_parameter_from_pipeline(t_pipeline)
+        self._parse_parameter_from_pipeline(tfx_pipeline)
         # Create workflow spec and write out to package.
         self._compiler._create_and_write_workflow(
             # pylint: disable=protected-access
             pipeline_func=_construct_pipeline,
-            pipeline_name=t_pipeline.pipeline_info.pipeline_name,
+            pipeline_name=tfx_pipeline.pipeline_info.pipeline_name,
             params_list=self._params,
             package_path=self._output_path,
         )
