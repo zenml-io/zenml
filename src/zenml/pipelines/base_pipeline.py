@@ -328,10 +328,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         stack = Repository().active_stack
 
+        stack_metadata = {
+            component_type.value: component.flavor.value
+            for component_type, component in stack.components.items()
+        }
         track_event(
             event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
+                **stack_metadata,
                 "total_steps": len(self.steps),
+                "schedule": bool(schedule),
             },
         )
 
