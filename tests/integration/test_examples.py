@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import shutil
+import sys
 from pathlib import Path
 from typing import Callable, NamedTuple, TypeVar
 
@@ -116,15 +117,21 @@ examples = [
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
     ),
-    ExampleIntegrationTestConfiguration(
-        name="mlflow_deployment",
-        validation_function=mlflow_deployment_example_validation,
-    ),
     # TODO [HIGH]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(
         name="whylogs", validation_function=whylogs_example_validation
     ),
 ]
+
+# flake8: noqa: C901
+if sys.platform != "win32":
+    # daemon functionality is currently not supported on Windows."
+    examples.append(
+        ExampleIntegrationTestConfiguration(
+            name="mlflow_deployment",
+            validation_function=mlflow_deployment_example_validation,
+        )
+    )
 
 
 @pytest.mark.parametrize(

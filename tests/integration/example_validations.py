@@ -146,11 +146,6 @@ def mlflow_deployment_example_validation(repository: Repository):
     """Validates the metadata store after running the MLflow deployment
     example."""
 
-    # flake8: noqa: C901
-    if sys.platform == "win32":
-        # daemon functionality is currently not supported on Windows."
-        return
-
     # Verify the example run was successful
     deployment_pipeline = repository.get_pipeline(
         "continuous_deployment_pipeline"
