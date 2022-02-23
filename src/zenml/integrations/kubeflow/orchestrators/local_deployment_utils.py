@@ -304,5 +304,5 @@ def stop_kfp_ui_daemon(pid_file_path: str) -> None:
         else:
             from zenml.utils import daemon
 
-            daemon.stop_daemon(pid_file_path, kill_children=True)
+            daemon.stop_daemon(pid_file_path)
             fileio.remove(pid_file_path)

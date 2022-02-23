@@ -69,6 +69,12 @@ main() {
 
   # Run the script
   python "$executable"
+
+  if [ -f "setup.sh" ]; then
+    if [[ $(type -t post_run) == function ]]; then
+      post_run
+    fi
+  fi
 }
 
 msg() {

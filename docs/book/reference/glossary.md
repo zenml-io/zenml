@@ -53,6 +53,15 @@ ZenML follows this paradigm and it is a useful mental model to have in your head
 when thinking about how the pieces of your pipeline get executed and how
 dependencies between the different stages are managed.
 
+## Integrations
+
+An integration is a third-party tool or platform that implements a ZenML abstraction. 
+A tool can implement many abstractions and therefore an integration can have different 
+entrypoints for the user. We have a consistently updated integrations page which shows all 
+current integrations supported by the ZenML core team [here](../features/integrations.md). 
+However, as ZenML is a framework users are encouraged to use these as a guideline and implement 
+their own integrations by extending the various ZenML abstractions.
+
 ## Materializers
 
 A materializer defines how and where Artifacts live in between steps. It is used
@@ -109,10 +118,7 @@ Within your repository, you will have one or more pipelines as part of your
 experimentation workflow. A ZenML pipeline is a sequence of tasks that execute
 in a specific order and yield artifacts. The artifacts are stored within the
 artifact store and indexed via the metadata store. Each individual task within a
-pipeline is known as a step. The standard pipelines (like `TrainingPipeline`)
-within ZenML are designed to have easy interfaces to add pre-decided steps, with
-the order also pre-decided. Other sorts of pipelines can be created as well from
-scratch.
+pipeline is known as a step.
 
 ## Repository
 
@@ -146,12 +152,7 @@ zenml stack register STACK_NAME \
 
 A step is a single piece or stage of a ZenML pipeline. Think of each step as
 being one of the nodes of the DAG. Steps are responsible for one aspect of
-processing or interacting with the data / artifacts in the pipeline. ZenML
-currently implements a basic `step` interface, but there will be other more
-customized interfaces (layered in a hierarchy) for specialized implementations.
-For example, broad steps like `@trainer`, `@split` and so on. Conceptually, a
-`Step` is a discrete and independent part of a pipeline that is responsible for
-one particular aspect of data manipulation inside a ZenML pipeline.
+processing or interacting with the data / artifacts in the pipeline.
 
 ## Visualizer
 

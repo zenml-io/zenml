@@ -15,7 +15,7 @@ import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
 from zenml.environment import Environment
-from zenml.integrations.mlflow.mlflow_utils import get_or_create_mlflow_run
+from zenml.integrations.mlflow.mlflow_environment import MLFlowStepEnvironment
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
 from zenml.steps.utils import STEP_INNER_FUNC_NAME
@@ -95,7 +95,11 @@ def enable_mlflow(
         logger.debug(
             "Applying 'enable_mlflow' decorator to step %s", _step.__name__
         )
-
+        if not issubclass(_step, BaseStep):
+            raise RuntimeError(
+                "The `enable_mlflow` decorator can only be applied to a ZenML "
+                "`step` decorated function or a BaseStep subclass."
+            )
         source_fn = getattr(_step, STEP_INNER_FUNC_NAME)
         return cast(
             S,
@@ -146,10 +150,16 @@ def mlflow_step_entrypoint(
             )
             step_env = Environment().step_environment
             experiment = experiment_name or step_env.pipeline_name
-            with get_or_create_mlflow_run(
+            step_mlflow_env = MLFlowStepEnvironment(
                 experiment_name=experiment, run_name=step_env.pipeline_run_id
-            ):
-                return func(*args, **kwargs)
+            )
+            with step_mlflow_env:
+
+                # should never happen, but just in case
+                assert step_mlflow_env.mlflow_run is not None
+
+                with step_mlflow_env.mlflow_run:
+                    return func(*args, **kwargs)
 
         return cast(F, wrapper)
 
