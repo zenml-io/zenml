@@ -15,10 +15,13 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from typing import Callable
 
 import pytest
+import pytest_mock
 from py._builtin import execfile
 
+import zenml.steps
 from tests.venv_clone_utils import clone_virtualenv
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
@@ -73,8 +76,18 @@ def base_repo(tmp_path_factory, session_mocker):
 
 
 @pytest.fixture
-def clean_repo(tmp_path_factory, mocker, base_repo: Repository):
-    """Fixture to get a clean repository for an individual test."""
+def clean_repo(tmp_path_factory: pytest.TempPathFactory,
+               mocker: pytest_mock.MockerFixture,
+               base_repo: Repository) -> Repository:
+    """Fixture to get a clean repository for an individual test.
+
+    Args:
+        tmp_path_factory: Pytest TempPathFactory in order to create a new
+                          temporary directory
+        mocker: Pytest mocker to patch away the
+                zenml.io.utils.get_global_config_directory
+        base_repo: Fixture that returns the base_repo that all tests use
+    """
     # change the working directory to a fresh temp path
     tmp_path = tmp_path_factory.mktemp("tmp")
     os.chdir(tmp_path)
@@ -206,7 +219,7 @@ def step_context_with_two_outputs():
 
 
 @pytest.fixture
-def virtualenv(tmp_path_factory):
+def virtualenv(tmp_path_factory: pytest.TempPathFactory) -> str:
     """Based on the underlying virtual environment a copy of the environment is
     made and used for the test that uses this fixture.
 
