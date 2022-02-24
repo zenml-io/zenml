@@ -8,6 +8,8 @@ on:
   pull_request:
     types: [opened, synchronize]
     paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
+  issue_comment:
+    types: [created]
 
 concurrency:
   group: ci-tests-${{ github.ref }}-1
