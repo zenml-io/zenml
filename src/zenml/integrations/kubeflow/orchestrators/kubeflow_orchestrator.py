@@ -56,11 +56,30 @@ DEFAULT_KFP_UI_PORT = 8080
     component_flavor=OrchestratorFlavor.KUBEFLOW,
 )
 class KubeflowOrchestrator(BaseOrchestrator):
-    """Orchestrator responsible for running pipelines using Kubeflow."""
+    """Orchestrator responsible for running pipelines using Kubeflow.
+
+    Attributes:
+        custom_docker_base_image_name: Name of a docker image that should be
+            used as the base for the image that will be run on KFP pods. If no
+            custom image is given, a basic image of the active ZenML version
+            will be used. **Note**: This image needs to have ZenML installed,
+            otherwise the pipeline execution will fail. For that reason, you
+            might want to extend the ZenML docker images found here:
+            https://hub.docker.com/r/zenmldocker/zenml/
+        kubeflow_pipelines_ui_port: A local port to which the KFP UI will be
+            forwarded.
+        kubernetes_context: Optional name of a kubernetes context to run
+            pipelines in. If not set, the current active context will be used.
+            You can find the active context by running `kubectl config
+            current-context`.
+        synchronous: If `True`, running a pipeline using this orchestrator will
+            block until all steps finished running on KFP.
+    """
 
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubernetes_context: Optional[str] = None
+    synchronous = False
     supports_local_execution = True
     supports_remote_execution = True
 
@@ -240,6 +259,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 logger.info(
                     "Started one-off pipeline run with ID '%s'.", result.run_id
                 )
+
+                if self.synchronous:
+                    # TODO [MEDIUM]: Allow configuration of the timeout as a
+                    #  runtime option
+                    client.wait_for_run_completion(
+                        run_id=result.run_id, timeout=1200
+                    )
         except urllib3.exceptions.HTTPError as error:
             logger.warning(
                 "Failed to upload Kubeflow pipeline: %s. "
@@ -291,7 +317,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Logs manual steps needed to setup the Kubeflow local orchestrator."""
         global_config_dir_path = zenml.io.utils.get_global_config_directory()
         kubeflow_commands = [
-            f"> k3d cluster create CLUSTER_NAME --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}\n",
+            f"> k3d cluster create CLUSTER_NAME --image {local_deployment_utils.K3S_IMAGE_NAME} --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}\n",
             f"> kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}&timeout=1m",
             "> kubectl --context CLUSTER_NAME wait --timeout=60s --for condition=established crd/applications.app.k8s.io",
             f"> kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}&timeout=1m",

@@ -105,7 +105,12 @@ class LocalExample:
             str(self.path)
         )
 
-    def run_example(self, example_runner: List[str], force: bool) -> None:
+    def run_example(
+        self,
+        example_runner: List[str],
+        force: bool,
+        prevent_stack_setup: bool = False,
+    ) -> None:
         """Run the local example using the bash script at the supplied
         location
 
@@ -113,12 +118,15 @@ class LocalExample:
             example_runner: Sequence of locations of executable file(s)
                             to run the example
             force: Whether to force the install
+            prevent_stack_setup: Prevents the example from setting up a custom
+                stack.
         """
         if all(map(fileio.file_exists, example_runner)):
             call = (
                 example_runner
                 + ["--executable", self.executable_python_example]
                 + ["-f"] * force
+                + ["--no-stack-setup"] * prevent_stack_setup
             )
             try:
                 # TODO [ENG-271]: Catch errors that might be thrown
@@ -142,6 +150,7 @@ class LocalExample:
                         "has no implementation for the "
                         "run method"
                     )
+                raise
         else:
             raise FileNotFoundError(
                 "Bash File(s) to run Examples not found at" f"{example_runner}"

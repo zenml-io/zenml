@@ -15,6 +15,7 @@
 import json
 from pathlib import Path
 from typing import Any, Dict
+from uuid import UUID
 
 import yaml
 
@@ -106,3 +107,11 @@ def read_json(file_path: str) -> Any:
         return json.loads(contents)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")
+
+
+class UUIDEncoder(json.JSONEncoder):
+    def default(self, obj: Any) -> Any:
+        if isinstance(obj, UUID):
+            # if the obj is uuid, we simply return the value of uuid
+            return obj.hex
+        return json.JSONEncoder.default(self, obj)

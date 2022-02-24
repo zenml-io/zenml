@@ -226,9 +226,12 @@ def build_docker_image(
         dockerignore_path=dockerignore_path,
     )
     # If a custom base image is provided, make sure to always pull the
-    # latest version of that image. If no base image is provided, we use
-    # the static default ZenML image so there is no need to constantly pull
-    always_pull_base_image = bool(base_image)
+    # latest version of that image (if it isn't a locally built image).
+    # If no base image is provided, we use the static default ZenML image so
+    # there is no need to constantly pull
+    pull_base_image = False
+    if base_image:
+        pull_base_image = not is_local_image(base_image)
 
     logger.info(
         "Building docker image '%s', this might take a while...", image_name
@@ -239,7 +242,7 @@ def build_docker_image(
         fileobj=build_context,
         custom_context=True,
         tag=image_name,
-        pull=always_pull_base_image,
+        pull=pull_base_image,
         rm=False,  # don't remove intermediate containers
     )
     _process_stream(output_stream)
@@ -281,6 +284,20 @@ def get_image_digest(image_name: str) -> Optional[str]:
             repo_digests,
         )
         return None
+
+
+def is_local_image(image_name: str) -> bool:
+    """Returns whether an image was pulled from a registry or not."""
+    docker_client = DockerClient.from_env()
+    images = docker_client.images.list(name=image_name)
+    if images:
+        # An image with this name is available locally -> now check whether it
+        # was pulled from a repo or built locally (in which case the repo
+        # digest is empty)
+        return get_image_digest(image_name) is None
+    else:
+        # no image with this name found locally
+        return False
 
 
 def _process_stream(stream: Iterable[bytes]) -> None:

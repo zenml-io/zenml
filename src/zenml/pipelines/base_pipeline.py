@@ -328,10 +328,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
         stack = Repository().active_stack
 
+        stack_metadata = {
+            component_type.value: component.flavor.value
+            for component_type, component in stack.components.items()
+        }
         track_event(
             event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
+                **stack_metadata,
                 "total_steps": len(self.steps),
+                "schedule": bool(schedule),
             },
         )
 
@@ -349,8 +355,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             config_file: Path to a yaml file which contains configuration
                 options for running this pipeline. See
-                https://docs.zenml.io/features/pipeline-configuration#setting-step-parameters-using-a-config-file for details
-                regarding the specification of this file.
+                https://docs.zenml.io/features/pipeline-configuration#setting-step-parameters-using-a-config-file
+                for details regarding the specification of this file.
             overwrite_step_parameters: If set to `True`, values from the
                 configuration file will overwrite configuration parameters
                 passed in code.

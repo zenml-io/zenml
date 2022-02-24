@@ -65,11 +65,12 @@ If you are doing a manual install of the Kubeflow Pipelines, make sure that the 
 
 {% tabs %}
 {% tab title="AWS" %}
-* [Set up](https://docs.aws.amazon.com/AmazonECR/latest/userguide/get-set-up-for-amazon-ecr.html) an Elastic Container Registry (ECR) and create a repository (either public or private) with the name `zenml-kubeflow` . This is the repository to which ZenML will push your pipeline images to.
-* Authenticate your local `docker` cli with your ECR registry using the following command.
+* [Set up](https://docs.aws.amazon.com/AmazonECR/latest/userguide/get-set-up-for-amazon-ecr.html) an Elastic Container Registry (ECR) and create a repository (either public or private) with the name `zenml-kubeflow`. This is the repository to which ZenML will push your pipeline images.
+* The path value to register with ZenML should be in the format `ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com`
+* Authenticate your local `docker` CLI with your ECR registry using the following command. Replace the capitalized words with your values.
 
     ```powershell
-    aws ecr get-login-password --region REGION | docker login --username AWS --password-stdin ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com
+    aws ecr get-login-password --region REGION | docker login --username aws --password-stdin ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com
     ```
 {% endtab %}
 
@@ -130,7 +131,7 @@ To run our pipeline on Kubeflow Pipelines deployed to cloud, we will create a ne
 2. Register the stack components
 
     ```powershell
-    zenml container-registry register cloud-registry --type=default --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
+    zenml container-registry register cloud_registry --type=default --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
     zenml orchestrator register cloud_orchestrator --type=kubeflow --custom_docker_base_image_name=YOUR_IMAGE
     zenml metadata-store register kubeflow_metadata_store --type=kubeflow
     zenml artifact-store register cloud_artifact_store --type=<s3/gcp/azure> --path=$PATH_TO_YOUR_BUCKET
