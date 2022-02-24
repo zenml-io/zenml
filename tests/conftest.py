@@ -15,13 +15,11 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Callable
 
 import pytest
 import pytest_mock
 from py._builtin import execfile
 
-import zenml.steps
 from tests.venv_clone_utils import clone_virtualenv
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
@@ -76,9 +74,11 @@ def base_repo(tmp_path_factory, session_mocker):
 
 
 @pytest.fixture
-def clean_repo(tmp_path_factory: pytest.TempPathFactory,
-               mocker: pytest_mock.MockerFixture,
-               base_repo: Repository) -> Repository:
+def clean_repo(
+    tmp_path_factory: pytest.TempPathFactory,
+    mocker: pytest_mock.MockerFixture,
+    base_repo: Repository,
+) -> Repository:
     """Fixture to get a clean repository for an individual test.
 
     Args:
@@ -280,7 +280,7 @@ def pytest_addoption(parser):
         "--with-kubeflow",
         action="store_true",
         default=False,
-        help="Only run Kubeflow"
+        help="Only run Kubeflow",
     )
 
 

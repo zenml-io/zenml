@@ -142,7 +142,7 @@ def test_run_example(
     example_configuration: ExampleIntegrationTestConfiguration,
     repo_fixture_name: str,
     request: pytest.FixtureRequest,
-    virtualenv
+    virtualenv,
 ) -> None:
     """Runs the given examples and validates they ran correctly.
 
