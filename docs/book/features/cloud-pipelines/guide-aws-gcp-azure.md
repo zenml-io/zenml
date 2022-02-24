@@ -131,7 +131,7 @@ To run our pipeline on Kubeflow Pipelines deployed to cloud, we will create a ne
 2. Register the stack components
 
     ```powershell
-    zenml container-registry register cloud-registry --type=default --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
+    zenml container-registry register cloud_registry --type=default --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
     zenml orchestrator register cloud_orchestrator --type=kubeflow --custom_docker_base_image_name=YOUR_IMAGE
     zenml metadata-store register kubeflow_metadata_store --type=kubeflow
     zenml artifact-store register cloud_artifact_store --type=<s3/gcp/azure> --path=$PATH_TO_YOUR_BUCKET
