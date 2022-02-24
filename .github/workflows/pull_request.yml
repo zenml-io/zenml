@@ -27,5 +27,5 @@ jobs:
 
   integration-test:
     needs: poetry-install
-    uses: ./.github/workflows/integration-test.yml
+    uses: ./.github/workflows/kubeflow.yml
 

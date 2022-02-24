@@ -1,5 +1,7 @@
 name: Kubeflow
-on: workflow_dispatch
+on:
+  - workflow_dispatch
+  - workflow_call
 
 jobs:
   integration_tests:
@@ -26,28 +28,29 @@ jobs:
           echo "Available storage:"
           df -h
 
-      - uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
+      - name: Setup environment with Poetry
+        uses: ./.github/actions/setup_environment
 
       - name: Install K3D and kubectl
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          source $VENV
+          zenml integration install kubeflow -f
 
-      - name: Install poetry
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install "poetry"
 
-      - name: Install Dependencies
-        run: |
-          python -m poetry install
-          python -m poetry run zenml integration install kubeflow -f
+      - name: Install Linux System Dependencies
+        if: runner.os=='Linux'
+        run: sudo apt install graphviz
+
+      - name: Install MacOS System Dependencies
+        if: runner.os=='macOS'
+        run: brew install graphviz
+
+      - name: Install Windows System Dependencies
+        if: runner.os=='Windows'
+        run: choco install graphviz
 
       - name: Build docker image
         # this step can be much faster if we use an image that copies the
@@ -55,4 +58,6 @@ jobs:
         run: docker build -t zenml-base-image:latest -f docker/base-dev.Dockerfile .
 
       - name: Run tests
-        run: python -m poetry run pytest tests/integration/test_examples_on_kubeflow.py -s
+        run: |
+          source $VENV
+          pytest tests/integration/test_examples_on_kubeflow.py -s
