@@ -273,3 +273,21 @@ def virtualenv(tmp_path_factory: pytest.TempPathFactory) -> str:
             "tests"
         )
     execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--with-kubeflow",
+        action="store_true",
+        default=False,
+        help="Only run Kubeflow"
+    )
+
+
+def pytest_generate_tests(metafunc):
+    if "repo_fixture_name" in metafunc.fixturenames:
+        if metafunc.config.getoption("with_kubeflow"):
+            repos = ["clean_repo", "clean_kubeflow_repo"]
+        else:
+            repos = ["clean_repo"]
+        metafunc.parametrize("repo_fixture_name", repos)

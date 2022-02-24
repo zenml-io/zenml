@@ -138,8 +138,6 @@ if sys.platform != "win32":
     "example_configuration",
     [pytest.param(example, id=example.name) for example in examples],
 )
-@pytest.mark.parametrize("repo_fixture_name",
-                         ["clean_repo", "clean_kubeflow_repo"])
 def test_run_example(
     example_configuration: ExampleIntegrationTestConfiguration,
     repo_fixture_name: str,

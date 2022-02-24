@@ -11,6 +11,8 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
 
     steps:
+      - uses: actions/checkout@v2
+
       # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
       # as the TF images are too large for the GH action runner disk
       - name: Free disk space
@@ -20,9 +22,6 @@ jobs:
           echo
           echo -n "  Removing: .NET (frees ~22GB)"
           sudo rm -rf /usr/share/dotnet
-          echo "... done"
-          echo -n "  Removing: Android"
-          sudo rm -rf /usr/local/lib/android
           echo "... done"
           echo
           echo "Available storage:"
@@ -60,4 +59,4 @@ jobs:
       - name: Run tests
         run: |
           source $VENV
-          pytest tests/integration/test_examples.py -s
+          pytest tests/integration/test_examples.py -s --with-kubeflow
