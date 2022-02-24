@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Callable, Optional, Type, TypeVar, Union, overload
+from typing import Callable, Optional, Sequence, Type, TypeVar, Union, overload
 
 from zenml.pipelines.base_pipeline import (
     INSTANCE_CONFIGURATION,
     PARAM_DOCKERIGNORE_FILE,
     PARAM_ENABLE_CACHE,
+    PARAM_REQUIRED_INTEGRATIONS,
     PARAM_REQUIREMENTS_FILE,
     PIPELINE_INNER_FUNC_NAME,
     BasePipeline,
@@ -36,6 +37,7 @@ def pipeline(
     *,
     name: Optional[str] = None,
     enable_cache: bool = True,
+    required_integrations: Sequence[str] = (),
     requirements_file: Optional[str] = None,
     dockerignore_file: Optional[str] = None,
 ) -> Callable[[F], Type[BasePipeline]]:
@@ -48,6 +50,7 @@ def pipeline(
     *,
     name: Optional[str] = None,
     enable_cache: bool = True,
+    required_integrations: Sequence[str] = (),
     requirements_file: Optional[str] = None,
     dockerignore_file: Optional[str] = None,
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
@@ -61,6 +64,9 @@ def pipeline(
         name: The name of the pipeline. If left empty, the name of the
             decorated function will be used as a fallback.
         enable_cache: Whether to use caching or not.
+        required_integrations: Optional list of ZenML integrations that are
+            required to run this pipeline. Run `zenml integration list` for
+            a full list of available integrations.
         requirements_file: Optional path to a pip requirements file that
             contains requirements to run the pipeline.
         dockerignore_file: Optional path to a dockerignore file to use when
@@ -91,6 +97,7 @@ def pipeline(
                 PIPELINE_INNER_FUNC_NAME: staticmethod(func),  # type: ignore[arg-type] # noqa
                 INSTANCE_CONFIGURATION: {
                     PARAM_ENABLE_CACHE: enable_cache,
+                    PARAM_REQUIRED_INTEGRATIONS: required_integrations,
                     PARAM_REQUIREMENTS_FILE: requirements_file,
                     PARAM_DOCKERIGNORE_FILE: dockerignore_file,
                 },

@@ -19,6 +19,7 @@ from typing import (
     Dict,
     NoReturn,
     Optional,
+    Set,
     Text,
     Tuple,
     Type,
@@ -35,6 +36,7 @@ from zenml.constants import (
     SHOULD_PREVENT_PIPELINE_EXECUTION,
 )
 from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
+from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
@@ -47,6 +49,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
 PARAM_ENABLE_CACHE: str = "enable_cache"
+PARAM_REQUIRED_INTEGRATIONS: str = "required_integrations"
 PARAM_REQUIREMENTS_FILE: str = "requirements_file"
 PARAM_DOCKERIGNORE_FILE: str = "dockerignore_file"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
@@ -98,6 +101,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
     def __init__(self, *args: BaseStep, **kwargs: Any) -> None:
         kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
         self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
+        self.required_integrations = kwargs.pop(PARAM_REQUIRED_INTEGRATIONS, ())
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
         self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
 
@@ -224,6 +228,43 @@ class BasePipeline(metaclass=BasePipelineMeta):
         raise NotImplementedError
 
     @property
+    def requirements(self) -> Set[str]:
+        """Set of python requirements of this pipeline.
+
+        This property is a combination of the requirements of
+        - required integrations for this pipeline
+        - the `requirements_file` specified for this pipeline
+        """
+        requirements = set()
+
+        for integration_name in self.required_integrations:
+            try:
+                integration_requirements = (
+                    integration_registry.select_integration_requirements(
+                        integration_name
+                    )
+                )
+                requirements.update(integration_requirements)
+            except KeyError as e:
+                raise KeyError(
+                    f"Unable to find requirements for integration "
+                    f"'{integration_name}'."
+                ) from e
+
+        if self.requirements_file and fileio.file_exists(
+            self.requirements_file
+        ):
+            with fileio.open(self.requirements_file, "r") as f:
+                requirements.update(
+                    {
+                        requirement.strip()
+                        for requirement in f.read().split("\n")
+                    }
+                )
+
+        return requirements
+
+    @property
     def steps(self) -> Dict[str, BaseStep]:
         """Returns a dictionary of pipeline steps."""
         return self.__steps
@@ -241,9 +282,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         for step in self.steps.values():
             step._has_been_called = False
 
-    # TODO [ENG-376]: Enable specifying runtime configuration options either
-    #  using **kwargs here or by passing a `RuntimeConfiguration` object or a
-    #  path to a config file.
     def run(
         self,
         *,

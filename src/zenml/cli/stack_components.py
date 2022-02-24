@@ -106,17 +106,19 @@ def generate_stack_component_describe_command(
         if len(components) == 0:
             cli_utils.warning(f"No {plural_display_name} registered.")
             return
+        try:
+            active_component_name = repo.active_stack.components[
+                component_type
+            ].name
+        except KeyError:
+            cli_utils.error(f"No available {component_type}.")
+            return
 
-        active_component_name = repo.active_stack.components[
-            component_type
-        ].name
         component = _get_stack_component(component_type, component_name=name)
         is_active = active_component_name == component.name
-
-        cli_utils.title(f"{singular_display_name}:")
-        cli_utils.declare("**ACTIVE**\n" if is_active else "")
-
-        cli_utils.print_stack_component_configuration(component)
+        cli_utils.print_stack_component_configuration(
+            component, singular_display_name, is_active
+        )
 
     return describe_stack_component_command
 
@@ -135,15 +137,16 @@ def generate_stack_component_list_command(
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
             return
+        try:
+            active_component_name = repo.active_stack.components[
+                component_type
+            ].name
 
-        active_component_name = repo.active_stack.components[
-            component_type
-        ].name
-
-        cli_utils.title(f"{display_name}:")
-        cli_utils.print_stack_component_list(
-            components, active_component_name=active_component_name
-        )
+            cli_utils.print_stack_component_list(
+                components, active_component_name=active_component_name
+            )
+        except KeyError:
+            cli_utils.error(f"No available {component_type}.")
 
     return list_stack_components_command
 

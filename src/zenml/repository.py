@@ -138,8 +138,6 @@ class Repository:
             self.__config = RepositoryConfiguration.empty_configuration()
 
         if self.version != zenml.__version__:
-            # TODO [ENG-366]: Create compatibility table so we don't have to
-            #  warn about mismatching repository and ZenML version each time
             logger.warning(
                 "This ZenML repository was created with a different version "
                 "of ZenML (Repository version: %s, current ZenML version: %s). "
@@ -262,12 +260,6 @@ class Repository:
             )
         return self.__config.active_stack_name
 
-    # TODO [ENG-367]: Should we replace the stack name by the actual stack
-    #  object? It would be more consistent with the rest of the API but
-    #  requires some additional care (checking if the stack + components are
-    #  actually registered in this repository). Downside: We would need to
-    #  load all the integrations to create the stack object which makes the CLI
-    #  command to set the active stack much slower.
     @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, name: str) -> None:
         """Activates the stack for the given name.
@@ -527,7 +519,6 @@ class Repository:
         if fileio.file_exists(component_config_path):
             fileio.remove(component_config_path)
 
-    # TODO [ENG-368]: Discuss whether we want to unify these two methods.
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(
         self, stack_name: Optional[str] = None

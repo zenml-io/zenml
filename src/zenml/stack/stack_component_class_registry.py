@@ -92,8 +92,6 @@ class StackComponentClassRegistry:
             KeyError: If no component class is registered for the given type
                 and flavor.
         """
-        # TODO [ENG-374]: Think about activating the integrations here to make
-        #  sure all potential StackComponent classes are registered
         if isinstance(component_flavor, StackComponentFlavor):
             component_flavor = component_flavor.value
 
@@ -140,10 +138,6 @@ def register_stack_component_class(
     return decorator_function
 
 
-# TODO [ENG-375]: Find a better place to register these local classes using
-#  the @register_stack_component_class decorator. All the local stack
-#  components should be imported anytime the registry gets imported, but the
-#  registry needs to be imported first for the decorator to work.
 StackComponentClassRegistry.register_class(
     StackComponentType.ORCHESTRATOR, OrchestratorFlavor.LOCAL, LocalOrchestrator
 )
