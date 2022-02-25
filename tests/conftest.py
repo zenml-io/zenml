@@ -274,6 +274,8 @@ def virtualenv(tmp_path_factory: pytest.TempPathFactory) -> str:
         )
     execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
 
+    shutil.rmtree(tmp_path, ignore_errors=True)
+
 
 def pytest_addoption(parser):
     parser.addoption(
