@@ -23,6 +23,9 @@ jobs:
           echo -n "  Removing: .NET (frees ~22GB)"
           sudo rm -rf /usr/share/dotnet
           echo "... done"
+          echo -n "  Removing: Android"
+          sudo rm -rf /usr/local/lib/android
+          echo "... done"
           echo
           echo "Available storage:"
           df -h
