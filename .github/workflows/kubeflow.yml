@@ -62,4 +62,4 @@ jobs:
       - name: Run tests
         run: |
           source $VENV
-          pytest tests/integration/test_examples.py -s --with-kubeflow
+          pytest tests/integration/test_examples.py -s --on-kubeflow

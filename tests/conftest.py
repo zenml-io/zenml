@@ -278,12 +278,10 @@ def virtualenv(request: pytest.FixtureRequest,
         )
     execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
 
-    shutil.rmtree(tmp_path, ignore_errors=True)
-
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--with-kubeflow",
+        "--on-kubeflow",
         action="store_true",
         default=False,
         help="Only run Kubeflow",
@@ -292,8 +290,8 @@ def pytest_addoption(parser):
 
 def pytest_generate_tests(metafunc):
     if "repo_fixture_name" in metafunc.fixturenames:
-        if metafunc.config.getoption("with_kubeflow"):
-            repos = ["clean_repo", "clean_kubeflow_repo"]
+        if metafunc.config.getoption("on_kubeflow"):
+            repos = ["clean_kubeflow_repo"]
         else:
             repos = ["clean_repo"]
         metafunc.parametrize("repo_fixture_name", repos)
