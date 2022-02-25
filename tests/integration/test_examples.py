@@ -28,6 +28,7 @@ from .example_validations import (
     generate_basic_validation_function,
     mlflow_deployment_example_validation,
     mlflow_tracking_example_validation,
+    statistics_example_validation,
     whylogs_example_validation,
 )
 
@@ -120,6 +121,10 @@ examples = [
     # TODO [HIGH]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(
         name="whylogs", validation_function=whylogs_example_validation
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="statistics",
+        validation_function=statistics_example_validation,
     ),
 ]
 

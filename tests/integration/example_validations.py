@@ -232,3 +232,7 @@ def whylogs_example_validation(repository: Repository):
 
     for profile in profiles:
         assert isinstance(profile, DatasetProfile)
+
+
+def statistics_example_validation(repository: Repository):
+    """Validates the metadata store after running the statistics example."""
