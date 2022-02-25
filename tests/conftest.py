@@ -219,7 +219,8 @@ def step_context_with_two_outputs():
 
 
 @pytest.fixture
-def virtualenv(tmp_path_factory: pytest.TempPathFactory) -> str:
+def virtualenv(request: pytest.FixtureRequest,
+               tmp_path_factory: pytest.TempPathFactory) -> str:
     """Based on the underlying virtual environment a copy of the environment is
     made and used for the test that uses this fixture.
 
@@ -229,8 +230,11 @@ def virtualenv(tmp_path_factory: pytest.TempPathFactory) -> str:
     # Remember the old executable
     orig_sys_executable = Path(sys.executable)
 
+    test_name = request.node.name
+    test_name = test_name.replace("[", "-").replace("]", "-")
+
     # Create temporary venv
-    tmp_path = tmp_path_factory.mktemp("tmp") / "venv"
+    tmp_path = tmp_path_factory.mktemp(test_name) / "venv"
     # TODO[High]: Implement for use outside of a base virtual environment
     #  If this happens outside of a virtual environment the complete
     #  /usr space is cloned
