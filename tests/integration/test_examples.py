@@ -32,7 +32,7 @@ from .example_validations import (
 )
 
 
-# shtutil.copytree on python 3.6/3.7 doesn't allow copying to an existing
+# shtutil.copytree on python 3.7 doesn't allow copying to an existing
 # directory
 def copytree(src: str, dst: str) -> None:
     for item in os.listdir(src):

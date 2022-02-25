@@ -20,7 +20,7 @@ git clone git@github.com:zenml-io/zenml.git
 ## Create a virtualenv
 To install with poetry, first create a virtualenv. Poetry can help with this, but you 
 can also use your own virtualenv management tool. Please make sure the Python version is 
-between the supported types (currently >=3.6 <9)
+between the supported types (currently >=3.7 <9)
 
 ```bash
 poetry shell
