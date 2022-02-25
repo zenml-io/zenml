@@ -113,7 +113,17 @@ def clean_repo(
 
     # remove all traces, and change working directory back to base path
     os.chdir(str(base_repo.root))
-    shutil.rmtree(tmp_path)
+    try:
+        shutil.rmtree(tmp_path)
+    except PermissionError:
+        # Windows does not have the concept of unlinking a file and deleting
+        #  once all processes that are accessing the resource are done
+        #  instead windows tries to delete immediately and fails with a
+        #  PermissionError: [WinError 32] The process cannot access the
+        #  file because it is being used by another process
+        logger.debug('Skipping deletion of temp dir at teardown, due to '
+                     'Windows Permission error')
+        pass
 
 
 @pytest.fixture
