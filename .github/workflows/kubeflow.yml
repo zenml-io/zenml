@@ -41,18 +41,9 @@ jobs:
           source $VENV
           zenml integration install kubeflow -f
 
-
       - name: Install Linux System Dependencies
         if: runner.os=='Linux'
         run: sudo apt install graphviz
-
-      - name: Install MacOS System Dependencies
-        if: runner.os=='macOS'
-        run: brew install graphviz
-
-      - name: Install Windows System Dependencies
-        if: runner.os=='Windows'
-        run: choco install graphviz
 
       - name: Build docker image
         # this step can be much faster if we use an image that copies the

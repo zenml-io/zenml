@@ -92,7 +92,7 @@ class LocalExample:
                 if Path(file).name == "run.py":
                     return file
 
-        return ''
+        return ""
 
     @property
     def executable_python_example(self) -> str:

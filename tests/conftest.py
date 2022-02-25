@@ -75,6 +75,7 @@ def base_repo(tmp_path_factory, session_mocker):
 
 @pytest.fixture
 def clean_repo(
+    request: pytest.FixtureRequest,
     tmp_path_factory: pytest.TempPathFactory,
     mocker: pytest_mock.MockerFixture,
     base_repo: Repository,
@@ -82,6 +83,7 @@ def clean_repo(
     """Fixture to get a clean repository for an individual test.
 
     Args:
+        request: Pytest FixtureRequest object
         tmp_path_factory: Pytest TempPathFactory in order to create a new
                           temporary directory
         mocker: Pytest mocker to patch away the
@@ -89,7 +91,9 @@ def clean_repo(
         base_repo: Fixture that returns the base_repo that all tests use
     """
     # change the working directory to a fresh temp path
-    tmp_path = tmp_path_factory.mktemp("tmp")
+    test_name = request.node.name
+    test_name = test_name.replace("[", "-").replace("]", "-")
+    tmp_path = tmp_path_factory.mktemp(test_name)
     os.chdir(tmp_path)
 
     # patch the global dir just within the scope of this function
@@ -219,10 +223,16 @@ def step_context_with_two_outputs():
 
 
 @pytest.fixture
-def virtualenv(request: pytest.FixtureRequest,
-               tmp_path_factory: pytest.TempPathFactory) -> str:
+def virtualenv(
+    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
+) -> str:
     """Based on the underlying virtual environment a copy of the environment is
     made and used for the test that uses this fixture.
+
+    Args:
+        request: Pytest FixtureRequest object
+        tmp_path_factory: Pytest TempPathFactory in order to create a new
+                          temporary directory
 
     Yields:
         Path to the virtual environment
