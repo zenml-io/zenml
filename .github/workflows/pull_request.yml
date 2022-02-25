@@ -2,6 +2,7 @@ name: Build, Lint, Unit & Integration Test
 
 on:
   workflow_dispatch:
+  workflow_call:
   push:
     branches: ['main', 'develop']
     paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
