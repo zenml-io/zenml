@@ -28,7 +28,6 @@ from .example_validations import (
     generate_basic_validation_function,
     mlflow_deployment_example_validation,
     mlflow_tracking_example_validation,
-    statistics_example_validation,
     whylogs_example_validation,
 )
 
@@ -124,7 +123,17 @@ examples = [
     ),
     ExampleIntegrationTestConfiguration(
         name="statistics",
-        validation_function=statistics_example_validation,
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=3,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="lineage",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=4,
+        ),
     ),
 ]
 
