@@ -128,7 +128,8 @@ def execute_step(
                     execution_info.exec_properties[step_name_param]
                 )
                 logger.info(
-                    f"Using cached version of `{pipeline_step_name}` [`{step_name}`] from pipeline_run_id `{pipeline_run_id}`."
+                    f"Using cached version of `{pipeline_step_name}` [`{step_name}`] "
+                    f"from pipeline_run_id `{pipeline_run_id}`.",
                 )
             else:
                 logger.error(
