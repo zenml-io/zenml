@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import platform
+from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
 import distro
@@ -100,27 +101,25 @@ class Environment(metaclass=SingletonMetaClass):
 
     @staticmethod
     def in_google_colab() -> bool:
-        """If the current python process is running in a Google Colab."""
+        """If the current Python process is running in a Google Colab."""
         return "COLAB_GPU" in os.environ
 
     @staticmethod
     def in_notebook() -> bool:
-        """If the current python process is running in a notebook."""
-        try:
+        """If the current Python process is running in a notebook."""
+        if find_spec("IPython") is not None:
             from IPython import get_ipython  # type: ignore
 
-            if get_ipython() is None:
-                # IPython is installed but not running from a notebook
-                return False
-            else:
+            if get_ipython().__class__.__name__ in [
+                "TerminalInteractiveShell",
+                "ZMQInteractiveShell",
+            ]:
                 return True
-        except ImportError:
-            # We do not even have IPython installed
-            return False
+        return False
 
     @staticmethod
     def in_paperspace_gradient() -> bool:
-        """If the current python process is running in Paperspace Gradient."""
+        """If the current Python process is running in Paperspace Gradient."""
         return "PAPERSPACE_NOTEBOOK_REPO_ID" in os.environ
 
     def register_component(
@@ -129,7 +128,6 @@ class Environment(metaclass=SingletonMetaClass):
         """Registers an environment component.
 
         Args:
-            name: the environment component name.
             component: a BaseEnvironmentComponent instance.
 
         Returns:
@@ -216,8 +214,11 @@ class Environment(metaclass=SingletonMetaClass):
         else:
             raise KeyError(
                 f"No environment component with name {name} is currently "
-                f"registered. Make sure you're calling this in the context of a "
-                f"step function that has all relevant integrations enabled."
+                f"registered. This could happen for example if you're trying "
+                f"to access an environment component that is only available "
+                f"in the context of a step function, or, in the case of "
+                f"globally available environment components, if a relevant "
+                f"integration has not been activated yet."
             )
 
     @property

@@ -339,10 +339,12 @@ def load_source_path_class(source: str) -> Type[Any]:
 
     if "@" in source:
         source = source.split("@")[0]
-    logger.debug(
-        "Unpinned step found with no git sha. Attempting to "
-        "load class from current repository state."
-    )
+    else:
+        logger.debug(
+            "Unpinned source path found with no git sha: %s. Attempting to "
+            "load class from current repository state.",
+            source,
+        )
 
     with prepend_python_path(repo_path):
         return import_class_by_path(source)

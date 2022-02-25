@@ -15,6 +15,7 @@
 import numpy as np
 from sklearn.base import ClassifierMixin
 
+from zenml.integrations.constants import SKLEARN
 from zenml.integrations.sklearn.helpers.digits import (
     get_digits,
     get_digits_model,
@@ -69,7 +70,7 @@ def evaluate_and_store_best_model(
     return best_model
 
 
-@pipeline
+@pipeline(required_integrations=[SKLEARN])
 def mnist_pipeline(
     importer,
     trainer,

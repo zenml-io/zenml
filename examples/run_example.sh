@@ -10,15 +10,17 @@ Script description here.
 
 Available options:
 
--h, --help      When you use -h, this function is called and then script is exited
--f, --force     Force the run including the removal of the old .zen folder and all old runs
+-h, --help        When you use -h, this function is called and then script is exited
+-f, --force       Force the run including the removal of the old .zen folder and all old runs
+--no-stack-setup  Don't setup a specific ZenML stack for this example.
+-e, --executable  The python file that contains the code to run this example.
 EOF
   exit
 }
 
 zenml_init() {
 
-  if [ -n "$FORCE" ]; then
+  if [ -n "$FORCE" ] && [ -n "$SETUP_STACK" ]; then
     if [ -d ".zen" ]; then
       msg "${ERROR}Existing .zen repo will be cleared before reinitializing."
       rm -rf ".zen"
@@ -57,10 +59,22 @@ main() {
         pre_run
       fi
     fi
+
+    if [ -n "$SETUP_STACK" ]; then
+      if [[ $(type -t setup_stack) == function ]]; then
+          setup_stack
+      fi
+    fi
   fi
 
   # Run the script
   python "$executable"
+
+  if [ -f "setup.sh" ]; then
+    if [[ $(type -t post_run) == function ]]; then
+      post_run
+    fi
+  fi
 }
 
 msg() {
@@ -77,11 +91,13 @@ die() {
 parse_params() {
   # default values of variables
   FORCE=""
+  SETUP_STACK="true"
 
   while :; do
     case "${1-}" in
     -h | --help) usage ;;
     -f | --force) FORCE="true";;
+    --no-stack-setup) SETUP_STACK="";;
     -e | --executable)
       executable="${2-}"
       shift

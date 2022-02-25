@@ -16,6 +16,7 @@
 import pandas as pd
 import tensorflow as tf
 
+from zenml.integrations.constants import DASH, TENSORFLOW
 from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
     PipelineRunLineageVisualizer,
 )
@@ -108,7 +109,7 @@ def deployer(
     return True
 
 
-@pipeline
+@pipeline(required_integrations=[DASH, TENSORFLOW])
 def boston_housing_pipeline(importer, trainer, evaluator, deployer):
     """Links all the steps together in a pipeline"""
     train_df, test_df = importer()

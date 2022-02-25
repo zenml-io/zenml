@@ -15,6 +15,7 @@
 import numpy as np
 import tensorflow as tf
 
+from zenml.integrations.constants import TENSORFLOW
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import Output, step
@@ -42,7 +43,7 @@ def normalize_mnist(
     return X_train_normed, X_test_normed
 
 
-@pipeline
+@pipeline(required_integrations=[TENSORFLOW])
 def load_and_normalize_pipeline(
     importer,
     normalizer,

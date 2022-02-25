@@ -17,6 +17,7 @@ import tensorflow as tf
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
+from zenml.integrations.constants import SKLEARN, TENSORFLOW
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, Output, step
@@ -120,7 +121,7 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline
+@pipeline(required_integrations=[SKLEARN, TENSORFLOW])
 def mnist_pipeline(
     importer,
     normalizer,

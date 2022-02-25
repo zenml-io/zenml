@@ -15,12 +15,11 @@
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import List, Optional, cast
 
 import click
-from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
-from git.repo.base import Repo
 from packaging.version import Version, parse
 from rich.markdown import Markdown
 from rich.text import Text
@@ -31,6 +30,7 @@ from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, print_table, warning
 from zenml.console import console
 from zenml.constants import GIT_REPO_URL
+from zenml.exceptions import GitNotFoundError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -105,7 +105,12 @@ class LocalExample:
             str(self.path)
         )
 
-    def run_example(self, example_runner: List[str], force: bool) -> None:
+    def run_example(
+        self,
+        example_runner: List[str],
+        force: bool,
+        prevent_stack_setup: bool = False,
+    ) -> None:
         """Run the local example using the bash script at the supplied
         location
 
@@ -113,12 +118,15 @@ class LocalExample:
             example_runner: Sequence of locations of executable file(s)
                             to run the example
             force: Whether to force the install
+            prevent_stack_setup: Prevents the example from setting up a custom
+                stack.
         """
         if all(map(fileio.file_exists, example_runner)):
             call = (
                 example_runner
                 + ["--executable", self.executable_python_example]
                 + ["-f"] * force
+                + ["--no-stack-setup"] * prevent_stack_setup
             )
             try:
                 # TODO [ENG-271]: Catch errors that might be thrown
@@ -139,6 +147,7 @@ class LocalExample:
                         "has no implementation for the "
                         "run method"
                     )
+                raise
         else:
             raise FileNotFoundError(
                 "Bash File(s) to run Examples not found at" f"{example_runner}"
@@ -193,6 +202,17 @@ class ExamplesRepo:
     def __init__(self, cloning_path: Path) -> None:
         """Create a new ExamplesRepo instance."""
         self.cloning_path = cloning_path
+
+        try:
+            from git.exc import InvalidGitRepositoryError, NoSuchPathError
+            from git.repo.base import Repo
+        except ImportError as e:
+            logger.error(
+                "In order to use the CLI tool to interact with our examples, "
+                "you need to have an installation of Git on your machine."
+            )
+            raise GitNotFoundError(e)
+
         try:
             self.repo = Repo(self.cloning_path)
         except NoSuchPathError or InvalidGitRepositoryError:
@@ -255,6 +275,8 @@ class ExamplesRepo:
         downloaded from your system."""
         self.cloning_path.mkdir(parents=True, exist_ok=False)
         try:
+            from git.repo.base import Repo
+
             logger.info(f"Cloning repo {GIT_REPO_URL} to {self.cloning_path}")
             self.repo = Repo.clone_from(
                 GIT_REPO_URL, self.cloning_path, branch="main"
@@ -353,6 +375,8 @@ class GitExamplesHandler(object):
         branch: str,
         force: bool = False,
     ) -> None:
+        from git.exc import GitCommandError
+
         """Pulls the examples from the main git examples repository."""
         if not self.examples_repo.is_cloned:
             self.examples_repo.clone()
@@ -624,6 +648,15 @@ def run(
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh
     #  to inform user how to clean up
     examples_dir = Path(os.getcwd()) / path
+
+    if sys.platform == "win32":
+        logger.info(
+            "If you are running examples on Windows, make sure that you have an "
+            "associated application with executing .sh files. If you don't "
+            "have any and you see a pop-up during 'zenml example run', we "
+            "suggest to use the Git BASH: https://gitforwindows.org/"
+        )
+
     try:
         _ = git_examples_handler.get_examples(example_name)[0]
     except KeyError as e:
