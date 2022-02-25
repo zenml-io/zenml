@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional, Union
 import numpy as np
 import requests  # type: ignore [import]
 from mlflow.pyfunc.backend import PyFuncBackend  # type: ignore [import]
+from numpy.typing import NDArray
 
 from zenml.logger import get_logger
 from zenml.services import (
@@ -167,7 +168,7 @@ class MLFlowDeploymentService(LocalDaemonService):
             return None
         return self.endpoint.prediction_uri
 
-    def predict(self, request: np.ndarray) -> np.ndarray:
+    def predict(self, request: NDArray[Any]) -> NDArray[Any]:
         """Make a prediction using the service.
 
         Args:

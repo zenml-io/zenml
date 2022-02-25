@@ -18,6 +18,7 @@ from typing import Any, Type
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+from numpy.typing import NDArray
 
 from zenml.artifacts import DataArtifact
 from zenml.io import fileio
@@ -35,7 +36,7 @@ class NumpyMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (np.ndarray,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> np.ndarray:
+    def handle_input(self, data_type: Type[Any]) -> NDArray[Any]:
         """Reads numpy array from parquet file."""
         super().handle_input(data_type)
         shape_dict = yaml_utils.read_json(
@@ -50,7 +51,7 @@ class NumpyMaterializer(BaseMaterializer):
         vals = getattr(data.to_pandas(), DATA_VAR).values
         return np.reshape(vals, shape_tuple)
 
-    def handle_return(self, arr: np.ndarray) -> None:
+    def handle_return(self, arr: NDArray[Any]) -> None:
         """Writes a np.ndarray to the artifact store as a parquet file.
 
         Args:
