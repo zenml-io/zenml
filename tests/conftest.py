@@ -121,9 +121,10 @@ def clean_repo(
         #  instead windows tries to delete immediately and fails with a
         #  PermissionError: [WinError 32] The process cannot access the
         #  file because it is being used by another process
-        logger.debug('Skipping deletion of temp dir at teardown, due to '
-                     'Windows Permission error')
-        pass
+        logger.debug(
+            "Skipping deletion of temp dir at teardown, due to "
+            "Windows Permission error"
+        )
 
 
 @pytest.fixture
