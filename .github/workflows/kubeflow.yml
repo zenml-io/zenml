@@ -1,10 +1,11 @@
 name: Kubeflow
 on:
   workflow_dispatch:
-    tags:
-      description: 'Use tmate session for debugging'
-      required: false
-      type: boolean
+    inputs:
+      tags:
+        description: 'Use tmate session for debugging'
+        required: false
+        type: boolean
   workflow_call:
 
 jobs:
