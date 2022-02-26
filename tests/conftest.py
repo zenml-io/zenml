@@ -241,7 +241,8 @@ def virtualenv(
     made and used for the test that uses this fixture.
 
     Args:
-        request: Pytest FixtureRequest object
+        request: Pytest FixtureRequest object used to create unique tmp dir
+                 based on the name of the test
         tmp_path_factory: Pytest TempPathFactory in order to create a new
                           temporary directory
 
@@ -301,6 +302,12 @@ def virtualenv(
 
 
 def pytest_addoption(parser):
+    """Fixture that gets called by pytest ahead of tests. Adds cli option to
+    enable kubeflow for integration tests
+
+    How to use this option:
+        ```pytest tests/integration/test_examples.py --on-kubeflow```
+    """
     parser.addoption(
         "--on-kubeflow",
         action="store_true",
@@ -310,6 +317,8 @@ def pytest_addoption(parser):
 
 
 def pytest_generate_tests(metafunc):
+    """Parametrizes the repo_fixture_name wherever it is imported by a step
+    with the cli options."""
     if "repo_fixture_name" in metafunc.fixturenames:
         if metafunc.config.getoption("on_kubeflow"):
             repos = ["clean_kubeflow_repo"]
