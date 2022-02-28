@@ -365,28 +365,24 @@ class KubeflowOrchestrator(BaseOrchestrator):
             return
 
         if not local_deployment_utils.check_prerequisites():
-            logger.error(
+            raise ProvisioningError(
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Please install 'k3d' and 'kubectl' and try again."
             )
-            return
 
         container_registry = Repository().active_stack.container_registry
         if not container_registry:
-            logger.error(
+            raise ProvisioningError(
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Missing container registry in current stack."
             )
-            return
 
         if not re.fullmatch(r"localhost:[0-9]{4,5}", container_registry.uri):
-            logger.error(
-                "Unable to provision local Kubeflow Pipelines deployment: "
-                "Container registry URI '%s' does not match the expected "
-                "format 'localhost:$PORT'.",
-                container_registry.uri,
+            raise ProvisioningError(
+                f"Unable to provision local Kubeflow Pipelines deployment: "
+                f"Container registry URI '{container_registry.uri}' does not "
+                f"match the expected format 'localhost:$PORT'.",
             )
-            return
 
         logger.info("Provisioning local Kubeflow Pipelines deployment...")
         fileio.make_dirs(self.root_directory)
