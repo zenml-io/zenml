@@ -1,4 +1,5 @@
 name: Kubeflow
+
 on:
   workflow_dispatch:
     inputs:
@@ -9,11 +10,13 @@ on:
   workflow_call:
 
 jobs:
-  integration_tests:
+  kubeflow_tests:
+    name: kubeflow_tests
     runs-on: ubuntu-latest
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
 
     steps:
       - uses: actions/checkout@v2
