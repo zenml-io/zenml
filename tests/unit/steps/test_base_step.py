@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
-from typing import Optional
+from typing import Dict, List, Optional
 
 import pytest
 
@@ -21,6 +21,7 @@ from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, Output, StepContext, step
 
 
@@ -786,3 +787,40 @@ def test_returning_wrong_amount_of_objects_raises_an_error(
 
         with pytest.raises(StepInterfaceError):
             pipeline_.run()
+
+
+def test_step_can_output_generic_types(clean_repo, one_step_pipeline):
+    """Tests that a step can output generic typing classes."""
+
+    @step
+    def some_step_1() -> Dict:
+        return {}
+
+    @step
+    def some_step_2() -> List:
+        return []
+
+    for step_function in [some_step_1, some_step_2]:
+        pipeline_ = one_step_pipeline(step_function())
+
+        with does_not_raise():
+            pipeline_.run()
+
+
+def test_step_can_have_generic_input_types(clean_repo):
+    """Tests that a step can have generic typing classes as input."""
+
+    @step
+    def step_1() -> Output(dict_output=Dict, list_output=List):
+        return {}, []
+
+    @step
+    def step_2(dict_input: Dict, list_input: List) -> None:
+        pass
+
+    @pipeline
+    def p(s1, s2):
+        s2(*s1())
+
+    with does_not_raise():
+        p(step_1(), step_2()).run()
