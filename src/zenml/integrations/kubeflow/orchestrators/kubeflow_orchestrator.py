@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import re
 from typing import TYPE_CHECKING, Any, Optional
 
 import kfp
@@ -359,7 +360,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             logger.info(
                 "Found already existing local Kubeflow Pipelines deployment. "
                 "If there are any issues with the existing deployment, please "
-                "run 'zenml orchestrator down' to delete it."
+                "run 'zenml stack down --force' to delete it."
             )
             return
 
@@ -375,6 +376,15 @@ class KubeflowOrchestrator(BaseOrchestrator):
             logger.error(
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Missing container registry in current stack."
+            )
+            return
+
+        if not re.fullmatch(r"localhost:[0-9]{4,5}", container_registry.uri):
+            logger.error(
+                "Unable to provision local Kubeflow Pipelines deployment: "
+                "Container registry URI '%s' does not match the expected "
+                "format 'localhost:$PORT'.",
+                container_registry.uri,
             )
             return
 
