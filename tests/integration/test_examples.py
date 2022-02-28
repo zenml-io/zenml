@@ -135,6 +135,41 @@ examples = [
             step_count=4,
         ),
     ),
+    ExampleIntegrationTestConfiguration(
+        name="dag_visualizer",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=3,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="standard_interfaces",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="TrainingPipeline",
+            step_count=6,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="airflow_local",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline",
+            step_count=4,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="class_based_api",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="TrainingPipeline",
+            step_count=6,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="functional_api",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline",
+            step_count=4,
+        ),
+    ),
 ]
 
 # flake8: noqa: C901
