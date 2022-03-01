@@ -43,6 +43,8 @@ if TYPE_CHECKING:
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
     from zenml.stack import StackComponent
+    from zenml.training_resources import BaseTrainingResource
+
 
 logger = get_logger(__name__)
 
@@ -65,6 +67,7 @@ class Stack:
         metadata_store: "BaseMetadataStore",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
+        training_resource: Optional["BaseTrainingResource"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -76,6 +79,7 @@ class Stack:
         self._metadata_store = metadata_store
         self._artifact_store = artifact_store
         self._container_registry = container_registry
+        self._training_resource = training_resource
 
         self.validate()
 
@@ -100,6 +104,7 @@ class Stack:
         from zenml.container_registries import BaseContainerRegistry
         from zenml.metadata_stores import BaseMetadataStore
         from zenml.orchestrators import BaseOrchestrator
+        from zenml.training_resources import BaseTrainingResource
 
         def _raise_type_error(
             component: Optional["StackComponent"], expected_class: Type[Any]
@@ -131,12 +136,19 @@ class Stack:
         ):
             _raise_type_error(container_registry, BaseContainerRegistry)
 
+        training_resource = components.get(StackComponentType.TRAINING_RESOURCE)
+        if training_resource is not None and not isinstance(
+            training_resource, BaseTrainingResource
+        ):
+            _raise_type_error(training_resource, BaseContainerRegistry)
+
         return Stack(
             name=name,
             orchestrator=orchestrator,
             metadata_store=metadata_store,
             artifact_store=artifact_store,
             container_registry=container_registry,
+            training_resource=training_resource,
         )
 
     @classmethod
@@ -182,6 +194,7 @@ class Stack:
                 self.metadata_store,
                 self.artifact_store,
                 self.container_registry,
+                self.training_resource,
             ]
             if component is not None
         }
@@ -210,6 +223,11 @@ class Stack:
     def container_registry(self) -> Optional["BaseContainerRegistry"]:
         """The container registry of the stack."""
         return self._container_registry
+
+    @property
+    def training_resource(self) -> Optional["BaseTrainingResource"]:
+        """The training resource of the stack."""
+        return self._training_resource
 
     @property
     def runtime_options(self) -> Dict[str, Any]:

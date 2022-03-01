@@ -48,6 +48,7 @@ class StackConfiguration(BaseModel):
     metadata_store: str
     artifact_store: str
     container_registry: Optional[str]
+    training_resource: Optional[str]
 
     def contains_component(
         self, component_type: StackComponentType, name: str
