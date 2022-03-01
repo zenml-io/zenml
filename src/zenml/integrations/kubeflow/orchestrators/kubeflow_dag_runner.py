@@ -427,14 +427,18 @@ class KubeflowDagRunner:
         """
         tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
+        pipeline_root = tfx_pipeline.pipeline_info.pipeline_root
+        if not isinstance(pipeline_root, str):
+            raise TypeError(
+                "TFX Pipeline root may not be a Placeholder, "
+                "but must be a specific string."
+            )
+
         for component in tfx_pipeline.components:
             # TODO(b/187122662): Pass through pip dependencies as a first-class
             # component flag.
             if isinstance(component, tfx_base_component.BaseComponent):
-                component._resolve_pip_dependencies(
-                    # pylint: disable=protected-access
-                    tfx_pipeline.pipeline_info.pipeline_root
-                )
+                component._resolve_pip_dependencies(pipeline_root)
 
         def _construct_pipeline() -> None:
             """Creates Kubeflow ContainerOps for each TFX component
