@@ -68,10 +68,12 @@ def base_repo(tmp_path_factory, session_mocker):
 
 
 @pytest.fixture
-def clean_repo(tmp_path_factory, mocker, base_repo: Repository):
+def clean_repo(request, tmp_path_factory, mocker, base_repo: Repository):
     """Fixture to get a clean repository for an individual test."""
     # change the working directory to a fresh temp path
-    tmp_path = tmp_path_factory.mktemp("tmp")
+    test_name = request.node.name
+    test_name = test_name.replace("[", "-").replace("]", "-")
+    tmp_path = tmp_path_factory.mktemp(test_name)
     os.chdir(tmp_path)
 
     # patch the global dir just within the scope of this function
