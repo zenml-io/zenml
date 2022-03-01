@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import logging
 import os
 import shutil
 import sys
@@ -23,13 +24,10 @@ from py._builtin import execfile
 from tests.venv_clone_utils import clone_virtualenv
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.constants import ENV_ZENML_DEBUG
-from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import StepContext, step
-
-logger = get_logger(__name__)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -47,7 +45,7 @@ def base_repo(tmp_path_factory, session_mocker):
     os.chdir(tmp_path)
 
     # patch the global dir just within the scope of this function
-    logger.info(f"Tests are running in repo path: {tmp_path}")
+    logging.info(f"Tests are running in repo path: {tmp_path}")
     session_mocker.patch.object(
         sys.modules["zenml.io.utils"],
         "get_global_config_directory",
@@ -121,7 +119,7 @@ def clean_repo(
         #  instead windows tries to delete immediately and fails with a
         #  PermissionError: [WinError 32] The process cannot access the
         #  file because it is being used by another process
-        logger.debug(
+        logging.debug(
             "Skipping deletion of temp dir at teardown, due to "
             "Windows Permission error"
         )
