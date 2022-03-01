@@ -216,7 +216,7 @@ def continuous_deployment_pipeline(
     model = trainer(x_train=x_trained_normed, y_train=y_train)
     accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
     deployment_decision = deployment_trigger(accuracy=accuracy)
-    model_deployment_service = model_deployer(deployment_decision)
+    model_deployer(deployment_decision)
 
 
 @pipeline(enable_cache=True, requirements_file=requirements_file)
@@ -228,4 +228,4 @@ def inference_pipeline(
     # Link all the steps artifacts together
     batch_data = dynamic_importer()
     model_deployment_service = prediction_service_loader()
-    prediction = predictor(model_deployment_service, batch_data)
+    predictor(model_deployment_service, batch_data)

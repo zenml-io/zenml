@@ -20,7 +20,7 @@ git clone git@github.com:zenml-io/zenml.git
 ## Create a virtualenv
 To install with poetry, first create a virtualenv. Poetry can help with this, but you 
 can also use your own virtualenv management tool. Please make sure the Python version is 
-between the supported types (currently >=3.6 <9)
+between the supported types (currently >=3.7 <3.9)
 
 ```bash
 poetry shell
@@ -30,18 +30,6 @@ poetry shell
 Then from the root of the package:
 ```bash
 poetry install
-```
-
-This will only install non-optional dependencies (i.e. NO integrations). To install all integrations:
-
-```bash
-poetry install --extras all
-```
-
-If you would like to install the base package and only a few optional dependencies:
-
-```bash
-poetry install --extras airflow  # pass in here whatever you'd like
 ```
 
 Poetry will install the ZenML package as an editable source (including all dev-dependencies), so now you should be good to go with 
