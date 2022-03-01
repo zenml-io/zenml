@@ -38,6 +38,7 @@ from tfx.types import artifact, channel, standard_artifacts
 from tfx.types.channel import Property
 
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.exceptions import RepositoryNotFoundError
 from zenml.integrations.registry import integration_registry
@@ -277,6 +278,7 @@ def _dump_ui_metadata(
         if (
             spec.artifact_spec.type.name
             == standard_artifacts.ModelRun.TYPE_NAME
+            or spec.artifact_spec.type.name == ModelArtifact.TYPE_NAME
         ):
             output_model = execution_info.output_dict[name][0]
 
