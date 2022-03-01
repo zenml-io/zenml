@@ -152,7 +152,7 @@ steps:
 
 ## 💾 Install ZenML
 
-*Requirements*: ZenML supports Python 3.6, 3.7 and 3.8.
+*Requirements*: ZenML supports Python 3.7 and 3.8.
 
 ZenML is available for easy installation into your environment via PyPI:
 
