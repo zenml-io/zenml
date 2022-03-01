@@ -280,7 +280,7 @@ class BaseStep(metaclass=BaseStepMeta):
                 to it and there is no default materializer registered for
                 the output type.
         """
-        materializers = self._explicit_materializers
+        materializers = self._explicit_materializers.copy()
 
         for output_name, output_type in self.OUTPUT_SIGNATURE.items():
             if output_name in materializers:
