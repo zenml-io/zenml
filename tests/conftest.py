@@ -123,6 +123,7 @@ def clean_repo(
             "Skipping deletion of temp dir at teardown, due to "
             "Windows Permission error"
         )
+        pass
 
 
 @pytest.fixture
