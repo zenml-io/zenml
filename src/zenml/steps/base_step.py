@@ -49,6 +49,7 @@ from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CREATED_BY_FUNCTIONAL_API,
     PARAM_ENABLE_CACHE,
+    PARAM_ENABLE_TRAINING_RESOURCE,
     PARAM_PIPELINE_PARAMETER_NAME,
     SINGLE_RETURN_OUT_NAME,
     _ZenMLSimpleComponent,
@@ -220,6 +221,9 @@ class BaseStep(metaclass=BaseStepMeta):
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
         self._created_by_functional_api = kwargs.pop(
             PARAM_CREATED_BY_FUNCTIONAL_API, False
+        )
+        self.enable_training_resource = kwargs.pop(
+            PARAM_ENABLE_TRAINING_RESOURCE, False
         )
 
         enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)
