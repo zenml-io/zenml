@@ -379,9 +379,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         if not re.fullmatch(r"localhost:[0-9]{4,5}", container_registry.uri):
             raise ProvisioningError(
-                f"Unable to provision local Kubeflow Pipelines deployment: "
-                f"Container registry URI '{container_registry.uri}' does not "
-                f"match the expected format 'localhost:$PORT'.",
+                f"Container registry URI '{container_registry.uri}' doesn't "
+                f"match the expected format 'localhost:$PORT'. Provisioning "
+                f"stack resources only works for local container registries."
             )
 
         logger.info("Provisioning local Kubeflow Pipelines deployment...")
