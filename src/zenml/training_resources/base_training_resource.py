@@ -13,18 +13,22 @@
 #  permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional, List
 
 from zenml.enums import StackComponentType, TrainingResourceFlavor
 from zenml.stack import StackComponent
 
 if TYPE_CHECKING:
+    from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.steps import BaseStep
+    from zenml.stack import Stack
 
 
 class BaseTrainingResource(StackComponent, ABC):
     """Base class for all ZenML training resources."""
+
+    _pipeline: Optional["BasePipeline"] = None
+    _runtime_configuration: Optional["RuntimeConfiguration"] = None
 
     @property
     def type(self) -> StackComponentType:
@@ -36,9 +40,21 @@ class BaseTrainingResource(StackComponent, ABC):
     def flavor(self) -> TrainingResourceFlavor:
         """The training resource flavor."""
 
+    def prepare_pipeline_deployment(
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> None:
+        self._pipeline = pipeline
+        self._runtime_configuration = runtime_configuration
+
     @abstractmethod
     def launch(
-        self, runtime_configuration: "RuntimeConfiguration", step: "BaseStep"
+        self,
+        pipeline_name: str,
+        run_name: str,
+        entrypoint_args: List[str]
     ) -> Any:
         """Launches a step on the training resource."""
         raise NotImplementedError

@@ -31,6 +31,12 @@ from typing import (
     cast,
 )
 
+from tfx.orchestration.portable.base_executor_operator import (
+    BaseExecutorOperator,
+)
+from tfx.orchestration.portable.python_executor_operator import (
+    PythonExecutorOperator,
+)
 from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
@@ -54,6 +60,9 @@ from zenml.steps.utils import (
     SINGLE_RETURN_OUT_NAME,
     _ZenMLSimpleComponent,
     generate_component_class,
+)
+from zenml.training_resources.training_resource_executor_operator import (
+    TrainingResourceExecutorOperator,
 )
 from zenml.utils.source_utils import get_hashed_source
 
@@ -638,6 +647,13 @@ class BaseStep(metaclass=BaseStepMeta):
                 "before creating it via calling the step."
             )
         return self._component
+
+    @property
+    def executor_operator(self) -> Type[BaseExecutorOperator]:
+        if self.enable_training_resource:
+            return TrainingResourceExecutorOperator
+        else:
+            return PythonExecutorOperator
 
     def with_return_materializers(
         self: T,

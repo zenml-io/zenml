@@ -12,17 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
+
+from azureml.core import (
+    ComputeTarget,
+    Environment,
+    Experiment,
+    ScriptRunConfig,
+    Workspace,
+)
+from azureml.core.authentication import AzureCliAuthentication
 
 from zenml.enums import StackComponentType, TrainingResourceFlavor
+from zenml.repository import Repository
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.training_resources import BaseTrainingResource
 
 if TYPE_CHECKING:
-    from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.steps import BaseStep
+    pass
 
 
 @register_stack_component_class(
@@ -34,6 +43,10 @@ class AzureMLTrainingResource(BaseTrainingResource):
 
     supports_local_execution = True
     supports_remote_execution = True
+    subscription_id: str
+    resource_group: str
+    workspace_name: str
+    compute_target_name: str
 
     @property
     def flavor(self) -> TrainingResourceFlavor:
@@ -41,6 +54,39 @@ class AzureMLTrainingResource(BaseTrainingResource):
         return TrainingResourceFlavor.AZUREML
 
     def launch(
-        self, runtime_configuration: "RuntimeConfiguration", step: "BaseStep"
+            self,
+            pipeline_name: str,
+            run_name: str,
+            entrypoint_args: List[str]
     ) -> Any:
         """Launches a step on the training resource."""
+
+        auth = AzureCliAuthentication()
+
+        ws = Workspace.get(
+            subscription_id=self.subscription_id,
+            resource_group=self.resource_group,
+            name=self.workspace_name,
+            auth=auth,
+        )
+
+        env = Environment.from_pip_requirements(
+            name="pip-env", file_path="requirements.txt"
+        )
+
+        experiment = Experiment(workspace=ws, name=pipeline_name)
+        compute_target = ComputeTarget(
+            workspace=ws, name=self.compute_target_name
+        )
+
+        src = ScriptRunConfig(
+            source_directory=str(Repository().root),
+            script="hello.py",
+            compute_target=compute_target,
+            environment=env,
+        )
+
+        # submit a run
+        run = experiment.submit(config=src)
+        run.display_name = run_name
+        run.wait_for_completion(show_output=True)
