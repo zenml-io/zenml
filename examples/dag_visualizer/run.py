@@ -92,8 +92,10 @@ def evaluator(
     model: tf.keras.Model,
 ) -> float:
     """Calculate the accuracy on the test set"""
-    test_acc = model.evaluate(
-        test_df[FEATURE_COLS].values, test_df[TARGET_COL_NAME].values, verbose=2
+    _, test_acc = model.evaluate(
+        test_df[FEATURE_COLS].values,
+        test_df[TARGET_COL_NAME].values,
+        verbose=2,
     )
     return test_acc
 
