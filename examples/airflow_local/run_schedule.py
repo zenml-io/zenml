@@ -102,14 +102,20 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-if __name__ == "__main__":
-    # Initialize a new pipeline run
-    scikit_p = mnist_pipeline(
-        importer=dynamic_importer(),
-        normalizer=normalize_mnist(),
-        trainer=sklearn_trainer(),
-        evaluator=sklearn_evaluator(),
-    )
+# Initialize a new pipeline run
+scikit_p = mnist_pipeline(
+    importer=dynamic_importer(),
+    normalizer=normalize_mnist(),
+    trainer=sklearn_trainer(),
+    evaluator=sklearn_evaluator(),
+)
 
-    # Run the new pipeline
-    scikit_p.run()
+# Run the new pipeline on a Schedule
+DAG = scikit_p.run(
+    schedule=Schedule(
+        start_time=datetime.now(),
+        end_time=datetime.now() + timedelta(minutes=9),
+        interval_second=180,
+        catchup=False,
+    )
+)
