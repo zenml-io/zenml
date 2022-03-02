@@ -111,18 +111,7 @@ def clean_repo(
 
     # remove all traces, and change working directory back to base path
     os.chdir(str(base_repo.root))
-    try:
-        shutil.rmtree(tmp_path)
-    except PermissionError:
-        # Windows does not have the concept of unlinking a file and deleting
-        #  once all processes that are accessing the resource are done
-        #  instead windows tries to delete immediately and fails with a
-        #  PermissionError: [WinError 32] The process cannot access the
-        #  file because it is being used by another process
-        logging.debug(
-            "Skipping deletion of temp dir at teardown, due to "
-            "Windows Permission error"
-        )
+    shutil.rmtree(tmp_path)
 
 
 @pytest.fixture
@@ -255,7 +244,7 @@ def virtualenv(
 
     # Create temporary venv
     tmp_path = tmp_path_factory.mktemp(test_name) / "venv"
-    # TODO[High]: Implement for use outside of a base virtual environment
+    # TODO[HIGH]: Implement for use outside of a base virtual environment
     #  If this happens outside of a virtual environment the complete
     #  /usr space is cloned
     clone_virtualenv(

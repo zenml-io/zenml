@@ -83,7 +83,7 @@ class LocalExample:
         return len(self.python_files_in_dir) > 0
 
     @property
-    def run_dot_py_file(self) -> str:
+    def run_dot_py_file(self) -> Optional[str]:
         """Returns the path to the run.py file in case one exists"""
         for file in self.python_files_in_dir:
             # Make sure only files directly in dir are considered, not files
@@ -91,8 +91,6 @@ class LocalExample:
             if self.path == Path(file).parent:
                 if Path(file).name == "run.py":
                     return file
-
-        return ""
 
     @property
     def executable_python_example(self) -> str:

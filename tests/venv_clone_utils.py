@@ -34,7 +34,7 @@
 #  permissions and limitations under the License.
 """The below code is copied from the virtualenv-clone source repo with minor
 changes to make it work for the specific usecase of zenml. All credits go to
-the https://github.com/edwardgeorge for the core implementation"""
+ https://github.com/edwardgeorge for the core implementation"""
 
 import itertools
 import os.path
