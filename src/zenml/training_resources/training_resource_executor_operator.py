@@ -53,7 +53,7 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         #     raise RuntimeError("missing resources")
 
 
-        execution_info_proto = execution_info.to_proto().SerializeToString().decode("utf-8")
+        execution_info_proto = execution_info.to_proto().SerializeToString().decode("latin8")
         from zenml.utils import source_utils
         from typing import cast
         import os

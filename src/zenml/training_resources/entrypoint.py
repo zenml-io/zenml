@@ -141,7 +141,7 @@ def main() -> None:
         # input_artifact_type_mapping=json.loads(args.input_artifact_types),
     )
 
-    execution_info_proto = ExecutionInvocation.FromString(args.execution_info.encode("utf-8"))
+    execution_info_proto = ExecutionInvocation.FromString(args.execution_info.encode("latin8"))
     execution_info = ExecutionInfo.from_proto(execution_info_proto)
     context = BaseExecutor.Context(
         tmp_dir=execution_info.tmp_dir,
