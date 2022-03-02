@@ -153,8 +153,12 @@ def main() -> None:
         pipeline_run_id=execution_info.pipeline_run_id)
 
     executor = executor_class(context=context)
+    logging.warning("Starting to run step")
     run_with_executor(execution_info=execution_info, executor=executor)
+    logging.warning("Finished step")
 
+
+print("inside entrypoint")
 
 if __name__ == "__main__":
     main()
