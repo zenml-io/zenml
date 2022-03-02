@@ -92,7 +92,6 @@ class AzureMLTrainingResource(BaseTrainingResource):
             # script="hello.py"
             command=["python", "-m", "zenml.training_resources.entrypoint"] + entrypoint_args
         )
-
         # submit a run
         run = experiment.submit(config=src)
         # run.display_name = run_name
