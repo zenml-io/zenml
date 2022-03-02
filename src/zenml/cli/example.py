@@ -91,6 +91,7 @@ class LocalExample:
             if self.path == Path(file).parent:
                 if Path(file).name == "run.py":
                     return file
+        return None
 
     @property
     def executable_python_example(self) -> str:
