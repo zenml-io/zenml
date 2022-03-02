@@ -95,9 +95,7 @@ def evaluator(
 ) -> float:
     """Calculate the accuracy on the test set"""
     _, test_acc = model.evaluate(
-        test_df[FEATURE_COLS].values,
-        test_df[TARGET_COL_NAME].values,
-        verbose=2,
+        test_df[FEATURE_COLS].values, test_df[TARGET_COL_NAME].values, verbose=2
     )
     return test_acc
 
@@ -157,3 +155,5 @@ if __name__ == "__main__":
         deployer=deployer(),
     )
     p.run()
+
+    visualize_lineage()
