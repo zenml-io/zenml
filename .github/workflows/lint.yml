@@ -34,7 +34,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
-          zenml integration install airflow pytorch mlflow gcp kubeflow azure -f
+          zenml integration install -f
           pip install click~=8.0.3
 
       - name: Lint
