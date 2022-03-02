@@ -127,3 +127,5 @@ if __name__ == "__main__":
         evaluator=evaluator(),
     )
     p.run()
+
+    visualizer_graph()
