@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -20,7 +19,7 @@ from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
 
 from zenml.integrations.constants import SKLEARN
-from zenml.pipelines import Schedule, pipeline
+from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, Output, step
 
 
