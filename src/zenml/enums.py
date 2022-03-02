@@ -73,6 +73,12 @@ class OrchestratorFlavor(StackComponentFlavor):
     AIRFLOW = "airflow"
 
 
+class TrainingResourceFlavor(StackComponentFlavor):
+    """All supported training resource flavors."""
+
+    AZUREML = "azureml"
+
+
 class StackComponentType(StrEnum):
     """All possible types a `StackComponent` can have."""
 
@@ -80,6 +86,7 @@ class StackComponentType(StrEnum):
     METADATA_STORE = "metadata_store"
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
+    TRAINING_RESOURCE = "training_resource"
 
     @property
     def plural(self) -> str:
