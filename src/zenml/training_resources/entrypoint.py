@@ -14,40 +14,20 @@
 
 import argparse
 import importlib
-import json
 import logging
-import os
 import sys
-import textwrap
-from typing import Dict, List, MutableMapping, Optional, Tuple, Type
+from typing import Type
 
-from google.protobuf import json_format
-from kubernetes import config as k8s_config
-from tfx.dsl.compiler import constants
-from tfx.orchestration import metadata
-from tfx.orchestration.local import runner_utils
-from tfx.orchestration.portable import (
-    data_types,
-    kubernetes_executor_operator,
-    launcher,
-    runtime_parameter_utils,
-)
-from tfx.proto.orchestration import executable_spec_pb2, pipeline_pb2
-from tfx.types import artifact, channel, standard_artifacts
-from tfx.types.channel import Property
+from tfx.dsl.components.base.base_executor import BaseExecutor
+from tfx.orchestration.portable.data_types import ExecutionInfo
+from tfx.orchestration.portable.python_executor_operator import \
+    run_with_executor
+from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
-from zenml.exceptions import RepositoryNotFoundError
 from zenml.integrations.registry import integration_registry
-from zenml.orchestrators.utils import execute_step
-from zenml.repository import Repository
 from zenml.steps.utils import generate_component_class, _FunctionExecutor
-from zenml.utils import source_utils
-from tfx.orchestration.portable.data_types import ExecutionInfo
-from tfx.dsl.components.base.base_executor import BaseExecutor
-from tfx.orchestration.portable.python_executor_operator import run_with_executor
-from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 
 
 def _create_executor_class(

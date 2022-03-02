@@ -52,8 +52,10 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         # ):
         #     raise RuntimeError("missing resources")
 
+        execution_info_proto = execution_info.to_proto().SerializeToString()
+        with open("exc.info", "wb") as f:
+            f.write(execution_info_proto)
 
-        execution_info_proto = execution_info.to_proto().SerializeToString().decode("latin8")
         from zenml.utils import source_utils
         from typing import cast
         import os
@@ -71,7 +73,7 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
 
         step_function_name = execution_info.pipeline_node.node_info.id
 
-        entrypoint_args = ["--main_module", main_module, "--step_module", step_module, "--step_function_name", step_function_name, "--execution_info", execution_info_proto]
+        entrypoint_args = ["--main_module", main_module, "--step_module", step_module, "--step_function_name", step_function_name, "--execution_info", "exc.info"]
 
         training_resource.launch(
             pipeline_name="pipeline",
