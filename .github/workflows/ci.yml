@@ -35,6 +35,7 @@ jobs:
 
   check_comments:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     outputs:
       kf_trigger: ${{ steps.check.outputs.triggered }}
     steps:
