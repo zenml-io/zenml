@@ -140,7 +140,7 @@ class Stack:
         if training_resource is not None and not isinstance(
             training_resource, BaseTrainingResource
         ):
-            _raise_type_error(training_resource, BaseContainerRegistry)
+            _raise_type_error(training_resource, BaseTrainingResource)
 
         return Stack(
             name=name,
