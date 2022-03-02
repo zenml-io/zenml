@@ -12,14 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import sys
 from pathlib import Path
 from typing import Optional
 
 import click
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error, warning
+from zenml.cli.utils import confirmation, declare, error
 from zenml.console import console
 from zenml.exceptions import InitializationException
 from zenml.repository import Repository
@@ -43,12 +42,6 @@ def init(
     Raises:
         InitializationException: If the repo is already initialized.
     """
-    if sys.version_info.minor == 6:
-        warning(
-            "ZenML support for Python 3.6 will be deprecated soon. Please "
-            "consider upgrading your Python version to ensure ZenML works "
-            "properly in the future."
-        )
     if path is None:
         path = Path.cwd()
 

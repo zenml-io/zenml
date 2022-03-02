@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
 import requests  # type: ignore [import]
@@ -15,6 +15,9 @@ from zenml.services import (
     ServiceEndpointProtocol,
     ServiceType,
 )
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
 logger = get_logger(__name__)
 
@@ -167,7 +170,7 @@ class MLFlowDeploymentService(LocalDaemonService):
             return None
         return self.endpoint.prediction_uri
 
-    def predict(self, request: np.ndarray) -> np.ndarray:
+    def predict(self, request: "NDArray[Any]") -> "NDArray[Any]":
         """Make a prediction using the service.
 
         Args:
