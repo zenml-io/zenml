@@ -32,12 +32,14 @@ from .example_validations import (
 )
 
 
-# shtutil.copytree on python 3.6/3.7 doesn't allow copying to an existing
-# directory
-def copytree(src: str, dst: str) -> None:
-    for item in os.listdir(src):
-        s = os.path.join(src, item)
-        d = os.path.join(dst, item)
+def copy_example_files(example_dir: str, dst_dir: str) -> None:
+    for item in os.listdir(example_dir):
+        if item == ".zen":
+            # don't copy any existing ZenML repository
+            continue
+
+        s = os.path.join(example_dir, item)
+        d = os.path.join(dst_dir, item)
         if os.path.isdir(s):
             shutil.copytree(s, d)
         else:
@@ -161,7 +163,7 @@ def test_run_example(
     examples_directory = Path(repo.original_cwd) / "examples"
 
     # Copy all example files into the repository directory
-    copytree(
+    copy_example_files(
         str(examples_directory / example_configuration.name), str(repo.root)
     )
 
