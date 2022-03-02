@@ -81,9 +81,9 @@ class AzureMLTrainingResource(BaseTrainingResource):
 
         src = ScriptRunConfig(
             source_directory=str(Repository().root),
-            script="hello.py",
             compute_target=compute_target,
             environment=env,
+            command=["python", "-m", "zenml.training_resources.entrypoint"] + entrypoint_args
         )
 
         # submit a run

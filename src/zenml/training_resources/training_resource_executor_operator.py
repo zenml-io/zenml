@@ -53,7 +53,7 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         #     raise RuntimeError("missing resources")
 
 
-        execution_info_proto = execution_info.to_proto().SerializeToString()
+        execution_info_proto = execution_info.to_proto().SerializeToString().decode("utf-8")
         from zenml.utils import source_utils
         from typing import cast
         import os
@@ -74,8 +74,9 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         entrypoint_args = ["--main_module", main_module, "--step_module", step_module, "--step_function_name", step_function_name, "--execution_info", execution_info_proto]
 
         training_resource.launch(
-            pipeline=training_resource._pipeline,
-            runtime_configuration=training_resource._runtime_configuration,
+            pipeline_name="pipeline",
+            run_name="run",
+            entrypoint_args=entrypoint_args
         )
 
         # TODO: Populate output artifact
