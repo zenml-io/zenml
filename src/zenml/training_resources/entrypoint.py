@@ -15,6 +15,7 @@
 import argparse
 import importlib
 import logging
+import os
 import sys
 from typing import Type
 
@@ -139,6 +140,8 @@ def main() -> None:
 
 
 print("inside entrypoint")
+print(os.getcwd())
+print(os.listdir("."))
 
 if __name__ == "__main__":
     main()
