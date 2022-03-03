@@ -13,12 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from pipeline import (
-    boston_housing_pipeline,
-    evaluator,
-    importer,
-    trainer,
-)
+from pipeline import boston_housing_pipeline, evaluator, importer, trainer
 
 if __name__ == "__main__":
     # Run the pipeline
