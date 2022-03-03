@@ -24,8 +24,8 @@ from rich.text import Text
 from zenml.console import console
 from zenml.constants import IS_DEBUG_ENV
 from zenml.logger import get_logger
-from zenml.repository import StackConfiguration
 from zenml.stack import StackComponent
+from zenml.stack_stores.models import StackConfiguration
 
 logger = get_logger(__name__)
 

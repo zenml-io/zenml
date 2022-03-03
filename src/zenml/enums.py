@@ -94,3 +94,10 @@ class MetadataContextTypes(Enum):
     """All possible types that contexts can have within pipeline nodes"""
 
     STACK = "stack"
+
+
+class StorageType(StrEnum):
+    """Storage Backend Types"""
+
+    YAML_STORAGE = "yaml_storage"
+    SQL_STORAGE = "sql_storage"

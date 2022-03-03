@@ -148,7 +148,9 @@ def register_stack_component_class(
 
 
 StackComponentClassRegistry.register_class(
-    StackComponentType.ORCHESTRATOR, OrchestratorFlavor.LOCAL, LocalOrchestrator
+    StackComponentType.ORCHESTRATOR,
+    OrchestratorFlavor.LOCAL,
+    LocalOrchestrator,
 )
 StackComponentClassRegistry.register_class(
     StackComponentType.METADATA_STORE,
