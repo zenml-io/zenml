@@ -12,18 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+import sys
+from typing import cast
+
 from tfx.orchestration.portable import data_types
 from tfx.orchestration.portable.base_executor_operator import (
     BaseExecutorOperator,
 )
 from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
-from zenml.utils import source_utils
-from typing import cast
-import os
-import sys
-from zenml.repository import Repository
+
 from zenml.io import fileio
-from tfx.orchestration.portable import outputs_utils
+from zenml.repository import Repository
+from zenml.utils import source_utils
 
 
 class TrainingResourceExecutorOperator(BaseExecutorOperator):
@@ -53,7 +54,9 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
 
         execution_info_proto = execution_info.to_proto().SerializeToString()
         execution_info_file_name = "zenml-execution-info"
-        execution_info_path = os.path.join(Repository().root, execution_info_file_name)
+        execution_info_path = os.path.join(
+            Repository().root, execution_info_file_name
+        )
         with open(execution_info_path, "wb") as f:
             f.write(execution_info_proto)
 
@@ -62,7 +65,9 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
             os.path.abspath(main_module_file)
         )
 
-        step_module = execution_info.pipeline_node.node_info.type.name.split(".")[:-1]
+        step_module = execution_info.pipeline_node.node_info.type.name.split(
+            "."
+        )[:-1]
         if step_module[0] == "__main__":
             step_module = main_module
         else:
@@ -70,17 +75,30 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
 
         step_function_name = execution_info.pipeline_node.node_info.id
 
-        entrypoint_command = ["python", "-m", "zenml.training_resources.entrypoint", "--main_module", main_module, "--step_module", step_module, "--step_function_name", step_function_name, "--execution_info", execution_info_file_name]
+        entrypoint_command = [
+            "python",
+            "-m",
+            "zenml.training_resources.entrypoint",
+            "--main_module",
+            main_module,
+            "--step_module",
+            step_module,
+            "--step_function_name",
+            step_function_name,
+            "--execution_info",
+            execution_info_file_name,
+        ]
 
         training_resource.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,
-            entrypoint_command=entrypoint_command
+            entrypoint_command=entrypoint_command,
         )
 
         if fileio.file_exists(execution_info.execution_output_uri):
             result = execution_result_pb2.ExecutorOutput.FromString(
-                fileio.open(execution_info.execution_output_uri, 'rb').read())
+                fileio.open(execution_info.execution_output_uri, "rb").read()
+            )
         else:
             raise ValueError("missing file")
 

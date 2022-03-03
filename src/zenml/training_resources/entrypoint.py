@@ -21,14 +21,15 @@ from typing import Type
 
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.orchestration.portable.data_types import ExecutionInfo
-from tfx.orchestration.portable.python_executor_operator import \
-    run_with_executor
+from tfx.orchestration.portable.python_executor_operator import (
+    run_with_executor,
+)
 from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.integrations.registry import integration_registry
-from zenml.steps.utils import generate_component_class, _FunctionExecutor
+from zenml.steps.utils import _FunctionExecutor, generate_component_class
 
 
 def _create_executor_class(
@@ -118,7 +119,7 @@ def main() -> None:
     executor_class = _create_executor_class(
         step_source_module_name=args.step_module,
         step_function_name=args.step_function_name,
-        #executor_class_target_module_name=executor_class_target_module_name,
+        # executor_class_target_module_name=executor_class_target_module_name,
         # input_artifact_type_mapping=json.loads(args.input_artifact_types),
     )
 
@@ -132,7 +133,8 @@ def main() -> None:
         stateful_working_dir=execution_info.stateful_working_dir,
         pipeline_node=execution_info.pipeline_node,
         pipeline_info=execution_info.pipeline_info,
-        pipeline_run_id=execution_info.pipeline_run_id)
+        pipeline_run_id=execution_info.pipeline_run_id,
+    )
 
     executor = executor_class(context=context)
     logging.warning("Starting to run step")

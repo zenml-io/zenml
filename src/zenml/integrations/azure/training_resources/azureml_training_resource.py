@@ -54,10 +54,7 @@ class AzureMLTrainingResource(BaseTrainingResource):
         return TrainingResourceFlavor.AZUREML
 
     def launch(
-            self,
-            pipeline_name: str,
-            run_name: str,
-            entrypoint_command: List[str]
+        self, pipeline_name: str, run_name: str, entrypoint_command: List[str]
     ) -> Any:
         """Launches a step on the training resource."""
 
@@ -80,7 +77,7 @@ class AzureMLTrainingResource(BaseTrainingResource):
             source_directory=str(Repository().root),
             compute_target=compute_target,
             environment=env,
-            command=entrypoint_command
+            command=entrypoint_command,
         )
         # submit a run
         run = experiment.submit(config=src)

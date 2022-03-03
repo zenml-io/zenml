@@ -14,14 +14,12 @@
 
 from typing import TYPE_CHECKING, Any, List
 
+import sagemaker
 
 from zenml.enums import StackComponentType, TrainingResourceFlavor
-from zenml.repository import Repository
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
-import sagemaker
-
 from zenml.training_resources import BaseTrainingResource
 
 if TYPE_CHECKING:
@@ -44,10 +42,7 @@ class SagemakerTrainingResource(BaseTrainingResource):
         return TrainingResourceFlavor.SAGEMAKER
 
     def launch(
-            self,
-            pipeline_name: str,
-            run_name: str,
-            entrypoint_command: List[str]
+        self, pipeline_name: str, run_name: str, entrypoint_command: List[str]
     ) -> Any:
         """Launches a step on the training resource."""
 
@@ -55,7 +50,8 @@ class SagemakerTrainingResource(BaseTrainingResource):
 
         sess = sagemaker.Session()
         account = sess.boto_session.client("sts").get_caller_identity()[
-            "Account"]
+            "Account"
+        ]
         region = sess.boto_session.region_name
 
         image_name = "zenml-sagemaker"

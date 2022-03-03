@@ -472,8 +472,9 @@ class _FunctionExecutor(BaseExecutor):
                     output_name, output_dict[output_name][0], return_value
                 )
 
-        from tfx.proto.orchestration import execution_result_pb2
         from tfx.orchestration.portable import outputs_utils
+        from tfx.proto.orchestration import execution_result_pb2
+
         from zenml.io import fileio
 
         result = execution_result_pb2.ExecutorOutput()
