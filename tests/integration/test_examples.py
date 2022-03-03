@@ -189,11 +189,11 @@ if sys.platform != "win32":
     "example_configuration",
     [pytest.param(example, id=example.name) for example in examples],
 )
-@pytest.mark.parametrize("repo_fixture_name", ["clean_repo"])
 def test_run_example(
     example_configuration: ExampleIntegrationTestConfiguration,
     repo_fixture_name: str,
     request: pytest.FixtureRequest,
+    virtualenv,
 ) -> None:
     """Runs the given examples and validates they ran correctly.
 
