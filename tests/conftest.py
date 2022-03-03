@@ -73,10 +73,10 @@ def base_repo(tmp_path_factory, session_mocker):
 
 @pytest.fixture
 def clean_repo(
-        request: pytest.FixtureRequest,
-        tmp_path_factory: pytest.TempPathFactory,
-        mocker: pytest_mock.MockerFixture,
-        base_repo: Repository,
+    request: pytest.FixtureRequest,
+    tmp_path_factory: pytest.TempPathFactory,
+    mocker: pytest_mock.MockerFixture,
+    base_repo: Repository,
 ) -> Repository:
     """Fixture to get a clean repository for an individual test.
 
@@ -234,8 +234,8 @@ def step_context_with_two_outputs():
 
 @pytest.fixture
 def virtualenv(
-        request: pytest.FixtureRequest,
-        tmp_path_factory: pytest.TempPathFactory
+    request: pytest.FixtureRequest,
+    tmp_path_factory: pytest.TempPathFactory
 ) -> str:
     """Based on the underlying virtual environment a copy of the environment is
     made and used for the test that uses this fixture.
@@ -249,9 +249,7 @@ def virtualenv(
     Yields:
         Path to the virtual environment
     """
-    if request.config.getoption("no_virtualenv"):
-        yield ''
-    else:
+    if request.config.getoption("use_virtualenv"):
         # Remember the old executable
         orig_sys_executable = Path(sys.executable)
 
@@ -303,6 +301,9 @@ def virtualenv(
             )
         execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
 
+    else:
+        yield ''
+
 
 def pytest_addoption(parser):
     """Fixture that gets called by pytest ahead of tests. Adds cli option to
@@ -320,10 +321,10 @@ def pytest_addoption(parser):
         help="Only run Kubeflow",
     )
     parser.addoption(
-        "--no-virtualenv",
+        "--use-virtualenv",
         action="store_true",
         default=False,
-        help="Run Integration tests in base env",
+        help="Run Integration tests in cloned env",
     )
 
 
