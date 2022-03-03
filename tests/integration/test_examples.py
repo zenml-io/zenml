@@ -144,7 +144,7 @@ def test_run_example(
     example_configuration: ExampleIntegrationTestConfiguration,
     repo_fixture_name: str,
     request: pytest.FixtureRequest,
-    virtualenv,
+    virtualenv: str,
 ) -> None:
     """Runs the given examples and validates they ran correctly.
 
@@ -155,6 +155,8 @@ def test_run_example(
             active stack of the repository given by the fixture.
         request: Pytest fixture needed to run the fixture given in the
             `repo_fixture_name` argument
+        virtualenv: Either a separate cloned environment for each test, or an
+                    empty string.
     """
     # run the fixture given by repo_fixture_name
     repo = request.getfixturevalue(repo_fixture_name)
