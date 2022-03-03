@@ -57,7 +57,7 @@ class AzureMLTrainingResource(BaseTrainingResource):
             self,
             pipeline_name: str,
             run_name: str,
-            entrypoint_args: List[str]
+            entrypoint_command: List[str]
     ) -> Any:
         """Launches a step on the training resource."""
 
@@ -70,29 +70,19 @@ class AzureMLTrainingResource(BaseTrainingResource):
             auth=auth,
         )
 
-        # env = Environment.from_pip_requirements(
-        #     name="pip-env", file_path="requirements.txt"
-        # )
-        # tmp = Environment.get(workspace=ws, name="AzureML-tensorflow-1.15-ubuntu18.04-py37-cpu-inference")
-        # details = tmp.get_image_details(ws)
-        #env = Environment.from_docker_image("zenenv-base", "python:3.8.12-slim", pip_requirements="requirements.txt")
-        # tmp = Environment.get(workspace=ws, name="AzureML-tensorflow-1.15-ubuntu18.04-py37-cpu-inference")
         env = Environment.from_dockerfile("dockerzenml", "Dockerfile")
-        # env = Environment.get(ws, name="zenml-training-base")
         experiment = Experiment(workspace=ws, name=pipeline_name)
         compute_target = ComputeTarget(
             workspace=ws, name=self.compute_target_name
         )
-        # with open("Dockerfile", "w") as f:
-        #     f.write("FROM python:3.8.12-slim\nRUN apt-get update && apt-get install --no-install-recommends -q -y git\nRUN pip install git+https://github.com/zenml-io/zenml.git@wip/azureml\nENTRYPOINT ")
+
         src = ScriptRunConfig(
             source_directory=str(Repository().root),
             compute_target=compute_target,
             environment=env,
-            # script="hello.py"
-            command=["python", "-m", "zenml.training_resources.entrypoint"] + entrypoint_args
+            command=entrypoint_command
         )
         # submit a run
         run = experiment.submit(config=src)
-        # run.display_name = run_name
+        run.display_name = run_name
         run.wait_for_completion(show_output=True)

@@ -17,7 +17,10 @@ from tfx.orchestration.portable.base_executor_operator import (
     BaseExecutorOperator,
 )
 from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
-
+from zenml.utils import source_utils
+from typing import cast
+import os
+import sys
 from zenml.repository import Repository
 
 
@@ -46,20 +49,12 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
                 f"No training resource specified for active stack '{stack.name}'."
             )
 
-        # if (
-        #     not training_resource._pipeline
-        #     or not training_resource._runtime_configuration
-        # ):
-        #     raise RuntimeError("missing resources")
-
         execution_info_proto = execution_info.to_proto().SerializeToString()
-        with open("exc.info", "wb") as f:
+        execution_info_file_name = "zenml-execution-info"
+        execution_info_path = os.path.join(Repository().root, execution_info_file_name)
+        with open(execution_info_path, "wb") as f:
             f.write(execution_info_proto)
 
-        from zenml.utils import source_utils
-        from typing import cast
-        import os
-        import sys
         main_module_file = cast(str, sys.modules["__main__"].__file__)
         main_module = source_utils.get_module_source_from_file_path(
             os.path.abspath(main_module_file)
@@ -73,13 +68,25 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
 
         step_function_name = execution_info.pipeline_node.node_info.id
 
-        entrypoint_args = ["--main_module", main_module, "--step_module", step_module, "--step_function_name", step_function_name, "--execution_info", "exc.info"]
+        entrypoint_command = ["python", "-m", "zenml.training_resources.entrypoint", "--main_module", main_module, "--step_module", step_module, "--step_function_name", step_function_name, "--execution_info", execution_info_file_name]
 
         training_resource.launch(
-            pipeline_name="pipeline",
-            run_name="run",
-            entrypoint_args=entrypoint_args
+            pipeline_name=execution_info.pipeline_info.id,
+            run_name=execution_info.pipeline_run_id,
+            entrypoint_command=entrypoint_command
         )
 
         # TODO: Populate output artifact
+
+        # if fileio.exists(execution_info.execution_output_uri):
+        #     result = execution_result_pb2.ExecutorOutput.FromString(
+        #         fileio.open(execution_info.execution_output_uri, 'rb').read())
+        # else:
+        #     # Old style TFX executor doesn't return executor_output, but modify
+        #     # output_dict and exec_properties in place. For backward compatibility,
+        #     # we use their executor_output and exec_properties to construct
+        #     # ExecutorOutput.
+        #     result = execution_result_pb2.ExecutorOutput()
+        #     outputs_utils.populate_output_artifact(result, output_dict)
+
         return execution_result_pb2.ExecutorOutput()

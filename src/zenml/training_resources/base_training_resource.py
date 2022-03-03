@@ -54,7 +54,7 @@ class BaseTrainingResource(StackComponent, ABC):
         self,
         pipeline_name: str,
         run_name: str,
-        entrypoint_args: List[str]
+        entrypoint_command: List[str]
     ) -> Any:
         """Launches a step on the training resource."""
         raise NotImplementedError
