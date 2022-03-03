@@ -147,6 +147,7 @@ def generate_empty_steps():
         output = []
 
         for i in range(count):
+
             @step(name=f"step_{i}")
             def _step_function():
                 pass
@@ -234,8 +235,7 @@ def step_context_with_two_outputs():
 
 @pytest.fixture
 def virtualenv(
-    request: pytest.FixtureRequest,
-    tmp_path_factory: pytest.TempPathFactory
+    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
 ) -> str:
     """Based on the underlying virtual environment a copy of the environment is
     made and used for the test that uses this fixture.
@@ -262,7 +262,8 @@ def virtualenv(
         #  If this happens outside of a virtual environment the complete
         #  /usr space is cloned
         clone_virtualenv(
-            src_dir=str(orig_sys_executable.parent.parent), dst_dir=str(tmp_path)
+            src_dir=str(orig_sys_executable.parent.parent),
+            dst_dir=str(tmp_path),
         )
 
         env_bin_dir = "bin"
@@ -280,7 +281,9 @@ def virtualenv(
                 "tests"
             )
 
-        execfile(str(activate_this_file), dict(__file__=str(activate_this_file)))
+        execfile(
+            str(activate_this_file), dict(__file__=str(activate_this_file))
+        )
 
         # Set new system executable
         sys.executable = tmp_path / env_bin_dir / "python"
@@ -302,7 +305,7 @@ def virtualenv(
         execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
 
     else:
-        yield ''
+        yield ""
 
 
 def pytest_addoption(parser):
