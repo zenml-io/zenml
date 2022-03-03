@@ -45,32 +45,29 @@ class SagemakerTrainingResource(BaseTrainingResource):
         self, pipeline_name: str, run_name: str, entrypoint_command: List[str]
     ) -> Any:
         """Launches a step on the training resource."""
-
-        role = sagemaker.get_execution_role()
-
-        sess = sagemaker.Session()
-        account = sess.boto_session.client("sts").get_caller_identity()[
-            "Account"
-        ]
-        region = sess.boto_session.region_name
-
-        image_name = "zenml-sagemaker"
-        image = f"{account}.dkr.ecr.{region}.amazonaws.com/{image_name}:latest"
-
-        # build and push the docker image
-        # should contain an entrypoint that runs the training
-
-        # sagemaker mounts the inputs at /opt/ml/input/data/
-        # write outputs to /opt/ml/model/, sagemaker will copy them to a specified S3 bucket
-
-        estimator = sagemaker.estimator.Estimator(
-            image,
-            role,
-            1,  # instance count
-            "ml.c4.2xlarge",
-            output_path="s3://zenfiles/whatever",
-            sagemaker_session=sess,
-        )
-
-        # synchronous, waits until the job is finished
-        estimator.fit()
+        raise NotImplementedError
+        # role = sagemaker.get_execution_role()
+        #
+        # sess = sagemaker.Session()
+        # account = sess.boto_session.client("sts").get_caller_identity()[
+        #     "Account"
+        # ]
+        # region = sess.boto_session.region_name
+        #
+        # image_name = "zenml-sagemaker"
+        # image = f"{account}.dkr.ecr.{region}.amazonaws.com/{image_name}:latest"
+        #
+        # estimator = sagemaker.estimator.Estimator(
+        #     image,
+        #     role,
+        #     1,  # instance count
+        #     "ml.c4.2xlarge",
+        #     output_path="s3://zenfiles/whatever",
+        #     sagemaker_session=sess,
+        # )
+        #
+        # experiment_config = {
+        #     "ExperimentName": pipeline_name,
+        #     "TrialName": run_name
+        # }
+        # estimator.fit(wait=True, experiment_config=experiment_config)
