@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from azureml.core import (
     ComputeTarget,
@@ -21,7 +21,7 @@ from azureml.core import (
     ScriptRunConfig,
     Workspace,
 )
-from azureml.core.authentication import AzureCliAuthentication
+from azureml.core.authentication import AzureCliAuthentication, AbstractAuthentication, ServicePrincipalAuthentication
 
 from zenml.enums import StackComponentType, TrainingResourceFlavor
 from zenml.repository import Repository
@@ -48,29 +48,39 @@ class AzureMLTrainingResource(BaseTrainingResource):
     workspace_name: str
     compute_target_name: str
 
+    # Service principal authentication https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
+    tenant_id: Optional[str] = None
+    service_principal_id: Optional[str] = None
+    service_principal_password: Optional[str] = None
+
     @property
     def flavor(self) -> TrainingResourceFlavor:
         """The training resource flavor."""
         return TrainingResourceFlavor.AZUREML
 
+    def _get_authentication(self) -> Optional[AbstractAuthentication]:
+        if self.tenant_id and self.service_principal_id and self.service_principal_password:
+            return ServicePrincipalAuthentication(
+                tenant_id=self.tenant_id,
+                service_principal_id=self.service_principal_id,
+                service_principal_password=self.service_principal_password)
+        return None
+
     def launch(
-        self, pipeline_name: str, run_name: str, entrypoint_command: List[str]
+        self, pipeline_name: str, run_name: str, entrypoint_command: List[str], requirements: List[str]
     ) -> Any:
         """Launches a step on the training resource."""
-
-        auth = AzureCliAuthentication()
-
-        ws = Workspace.get(
+        workspace = Workspace.get(
             subscription_id=self.subscription_id,
             resource_group=self.resource_group,
             name=self.workspace_name,
-            auth=auth,
+            auth=self._get_authentication(),
         )
 
         env = Environment.from_dockerfile("dockerzenml", "Dockerfile")
         experiment = Experiment(workspace=ws, name=pipeline_name)
         compute_target = ComputeTarget(
-            workspace=ws, name=self.compute_target_name
+            workspace=workspace, name=self.compute_target_name
         )
 
         src = ScriptRunConfig(
