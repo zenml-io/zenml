@@ -53,5 +53,5 @@ jobs:
   kubeflow-tests:
     needs: [poetry-install, check_comments]
     # Run this one automatically for pull requests onto main
-    if: ${{ needs.check_comments.outputs.kf_trigger }}
+    if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
     uses: ./.github/workflows/kubeflow.yml
