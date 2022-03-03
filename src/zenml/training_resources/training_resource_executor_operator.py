@@ -25,7 +25,6 @@ from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.utils import source_utils
-from zenml.enums import MetadataContextTypes
 
 
 class TrainingResourceExecutorOperator(BaseExecutorOperator):
@@ -94,15 +93,18 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
 
         for context in execution_info.pipeline_node.contexts.contexts:
             if context.type.name == "pipeline_requirements":
-                pipeline_requirements = set(context.properties[
-                          "pipeline_requirements"].field_value.string_value.split(" "))
+                pipeline_requirements = set(
+                    context.properties[
+                        "pipeline_requirements"
+                    ].field_value.string_value.split(" ")
+                )
                 requirements |= pipeline_requirements
 
         training_resource.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,
             entrypoint_command=entrypoint_command,
-            requirements=sorted(requirements)
+            requirements=sorted(requirements),
         )
 
         if fileio.file_exists(execution_info.execution_output_uri):

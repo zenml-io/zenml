@@ -21,9 +21,14 @@ from azureml.core import (
     ScriptRunConfig,
     Workspace,
 )
-from azureml.core.authentication import AzureCliAuthentication, AbstractAuthentication, ServicePrincipalAuthentication
+from azureml.core.authentication import (
+    AbstractAuthentication,
+    ServicePrincipalAuthentication,
+)
+from azureml.core.conda_dependencies import CondaDependencies
 
 from zenml.enums import StackComponentType, TrainingResourceFlavor
+from zenml.environment import Environment as ZenMLEnvironment
 from zenml.repository import Repository
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
@@ -47,6 +52,7 @@ class AzureMLTrainingResource(BaseTrainingResource):
     resource_group: str
     workspace_name: str
     compute_target_name: str
+    environment_name: str
 
     # Service principal authentication https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
     tenant_id: Optional[str] = None
@@ -59,15 +65,24 @@ class AzureMLTrainingResource(BaseTrainingResource):
         return TrainingResourceFlavor.AZUREML
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:
-        if self.tenant_id and self.service_principal_id and self.service_principal_password:
+        if (
+            self.tenant_id
+            and self.service_principal_id
+            and self.service_principal_password
+        ):
             return ServicePrincipalAuthentication(
                 tenant_id=self.tenant_id,
                 service_principal_id=self.service_principal_id,
-                service_principal_password=self.service_principal_password)
+                service_principal_password=self.service_principal_password,
+            )
         return None
 
     def launch(
-        self, pipeline_name: str, run_name: str, entrypoint_command: List[str], requirements: List[str]
+        self,
+        pipeline_name: str,
+        run_name: str,
+        entrypoint_command: List[str],
+        requirements: List[str],
     ) -> Any:
         """Launches a step on the training resource."""
         workspace = Workspace.get(
@@ -77,19 +92,42 @@ class AzureMLTrainingResource(BaseTrainingResource):
             auth=self._get_authentication(),
         )
 
-        env = Environment.from_dockerfile("dockerzenml", "Dockerfile")
-        experiment = Experiment(workspace=ws, name=pipeline_name)
+        requirements.append(
+            "git+https://github.com/zenml-io/zenml.git@wip/azureml"
+        )
+        environment = Environment.get(
+            workspace=workspace, name=self.environment_name
+        )
+
+        if environment.python.conda_dependencies:
+            for requirement in requirements:
+                environment.python.conda_dependencies.add_pip_package(
+                    requirement
+                )
+        else:
+            environment.python.conda_dependencies = CondaDependencies.create(
+                pip_packages=requirements,
+                python_version=ZenMLEnvironment.python_version(),
+            )
+
+        environment.environment_variables = {
+            "AZURE_STORAGE_ACCOUNT_KEY": "",
+            "AZURE_STORAGE_ACCOUNT_NAME": "",
+            "ENV_ZENML_PREVENT_PIPELINE_EXECUTION": "True",
+        }
+
+        experiment = Experiment(workspace=workspace, name=pipeline_name)
         compute_target = ComputeTarget(
             workspace=workspace, name=self.compute_target_name
         )
 
-        src = ScriptRunConfig(
+        run_config = ScriptRunConfig(
             source_directory=str(Repository().root),
             compute_target=compute_target,
-            environment=env,
+            environment=environment,
             command=entrypoint_command,
         )
-        # submit a run
-        run = experiment.submit(config=src)
+
+        run = experiment.submit(config=run_config)
         run.display_name = run_name
         run.wait_for_completion(show_output=True)

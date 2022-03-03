@@ -14,8 +14,6 @@
 
 from typing import TYPE_CHECKING, Any, List
 
-import sagemaker
-
 from zenml.enums import StackComponentType, TrainingResourceFlavor
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
@@ -42,7 +40,11 @@ class SagemakerTrainingResource(BaseTrainingResource):
         return TrainingResourceFlavor.SAGEMAKER
 
     def launch(
-        self, pipeline_name: str, run_name: str, entrypoint_command: List[str], requirements: List[str]
+        self,
+        pipeline_name: str,
+        run_name: str,
+        entrypoint_command: List[str],
+        requirements: List[str],
     ) -> Any:
         """Launches a step on the training resource."""
         raise NotImplementedError

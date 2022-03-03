@@ -51,7 +51,11 @@ class BaseTrainingResource(StackComponent, ABC):
 
     @abstractmethod
     def launch(
-        self, pipeline_name: str, run_name: str, entrypoint_command: List[str], requirements: List[str]
+        self,
+        pipeline_name: str,
+        run_name: str,
+        entrypoint_command: List[str],
+        requirements: List[str],
     ) -> Any:
         """Launches a step on the training resource."""
         raise NotImplementedError
