@@ -83,10 +83,23 @@ class LocalExample:
         return len(self.python_files_in_dir) > 0
 
     @property
+    def run_dot_py_file(self) -> Optional[str]:
+        """Returns the path to the run.py file in case one exists"""
+        for file in self.python_files_in_dir:
+            # Make sure only files directly in dir are considered, not files
+            # in sub dirs
+            if self.path == Path(file).parent:
+                if Path(file).name == "run.py":
+                    return file
+        return None
+
+    @property
     def executable_python_example(self) -> str:
         """Return the Python file for the example"""
         if self.has_single_python_file:
             return self.python_files_in_dir[0]
+        elif self.run_dot_py_file:
+            return self.run_dot_py_file
         elif self.has_any_python_file:
             logger.warning(
                 "This example has multiple executable python files. "
@@ -132,7 +145,10 @@ class LocalExample:
                 # TODO [ENG-271]: Catch errors that might be thrown
                 #  in subprocess
                 subprocess.check_call(
-                    call, cwd=str(self.path), shell=click._compat.WIN
+                    call,
+                    cwd=str(self.path),
+                    shell=click._compat.WIN,
+                    env=os.environ.copy(),
                 )
             except RuntimeError:
                 raise NotImplementedError(

@@ -1,0 +1,43 @@
+name: Linting the Code
+
+on: workflow_call
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ${{ matrix.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
+
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        python-version: [ 3.7, 3.8 ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup environment with Poetry
+        uses: ./.github/actions/setup_environment
+
+      - name: Install Dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: |
+          source $VENV
+          zenml integration install -f
+          pip install click~=8.0.3
+
+      - name: Lint
+        run: |
+          source $VENV 
+          bash scripts/lint.sh

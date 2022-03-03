@@ -1,0 +1,57 @@
+name: Build, Lint, Unit & Integration Test
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches: ['main', 'develop']
+    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
+  pull_request:
+    types: [opened, synchronize]
+    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: ci-tests-${{ github.ref }}-1
+  # New commit on branch cancels running workflows of the same branch
+  cancel-in-progress: true
+
+jobs:
+  poetry-install:
+    uses: ./.github/workflows/poetry-install.yml
+
+  lint-code:
+    needs: poetry-install
+    uses: ./.github/workflows/lint.yml
+
+  unit-test:
+    needs: poetry-install
+    uses: ./.github/workflows/unit-test.yml
+
+  integration-test:
+    needs: poetry-install
+    uses: ./.github/workflows/integration-test.yml
+
+  check_comments:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    outputs:
+      kf_trigger: ${{ steps.check.outputs.triggered }}
+    steps:
+      - uses: khan/pull-request-comment-trigger@master
+        id: check
+        with:
+          trigger: 'LTKF!'
+          reaction: rocket
+        env:
+          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      - run: 'echo Found LTKF! in the comments!'
+        if: steps.check.outputs.triggered == 'true'
+
+
+  kubeflow-tests:
+    needs: [poetry-install, check_comments]
+    # Run this one automatically for pull requests onto main
+    if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
+    uses: ./.github/workflows/kubeflow.yml
