@@ -10,6 +10,11 @@ from zenml.logger import get_logger
 from zenml.utils import networking_utils, yaml_utils
 
 KFP_VERSION = "1.7.1"
+# Name of the K3S image to use for the local K3D cluster.
+# The version (e.g. v1.21.9) refers to a specific kubernetes release and is
+# fixed as KFP doesn't support the newest releases immediately.
+K3S_IMAGE_NAME = "rancher/k3s:v1.21.9-k3s1"
+
 logger = get_logger(__name__)
 
 
@@ -86,6 +91,8 @@ def create_k3d_cluster(
             "cluster",
             "create",
             cluster_name,
+            "--image",
+            K3S_IMAGE_NAME,
             "--registry-create",
             registry_name,
             "--registry-config",
@@ -297,5 +304,5 @@ def stop_kfp_ui_daemon(pid_file_path: str) -> None:
         else:
             from zenml.utils import daemon
 
-            daemon.stop_daemon(pid_file_path, kill_children=True)
+            daemon.stop_daemon(pid_file_path)
             fileio.remove(pid_file_path)

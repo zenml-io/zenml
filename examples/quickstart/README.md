@@ -8,7 +8,7 @@ If you want to run this notebook in an interactive environment, feel free to run
 or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) directly.
 
 ## Overview
-Here we train a simple `tensorflow.keras` classifier on the MNIST dataset.
+Here we train a simple sklearn classifier on the MNIST dataset.
 
 ## Run it locally
 
@@ -20,7 +20,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow
+zenml integration install sklearn
 
 # pull example
 zenml example pull quickstart

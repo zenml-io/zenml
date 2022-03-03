@@ -14,6 +14,7 @@
 
 AIRFLOW = "airflow"
 AWS = "aws"
+AZURE = "azure"
 DASH = "dash"
 EVIDENTLY = "evidently"
 FACETS = "facets"

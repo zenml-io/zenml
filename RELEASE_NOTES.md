@@ -1,3 +1,82 @@
+# 0.6.2
+
+ZenML 0.6.2 brings you the ability to serve models using MLflow deployments as well as an updated CLI interface! For a real continuous deployment cycle, we know that ZenML pipelines should be able to handle everything — from pre-processing to training to serving to monitoring and then potentially re-training and re-serving. The interfaces we created in this release are the foundation on which all of this will build.
+
+We also improved how you interact with ZenML through the CLI. Everything looks so much smarter and readable now with the popular `rich` library integrated into our dependencies.
+
+Smaller changes that you'll notice include updates to our cloud integrations and bug fixes for Windows users. For a detailed look at what's changed, see below.
+
+## What's Changed
+
+* Updated notebook for quickstart by @htahir1 in https://github.com/zenml-io/zenml/pull/398
+* Update tensorflow base image by @schustmi in https://github.com/zenml-io/zenml/pull/396
+* Add cloud specific deployment guide + refactoring by @wjayesh in https://github.com/zenml-io/zenml/pull/400
+* add cloud sub page to toc.md by @wjayesh in https://github.com/zenml-io/zenml/pull/401
+* fix tab indent by @wjayesh in https://github.com/zenml-io/zenml/pull/402
+* Bugfix for workflows failing due to modules not being found by @bcdurak in https://github.com/zenml-io/zenml/pull/390
+* Improve github workflows by @schustmi in https://github.com/zenml-io/zenml/pull/406
+* Add plausible script to docs.zenml.io pages by @alex-zenml in https://github.com/zenml-io/zenml/pull/414
+* Add orchestrator and ECR docs by @wjayesh in https://github.com/zenml-io/zenml/pull/413
+* Richify the CLI by @alex-zenml in https://github.com/zenml-io/zenml/pull/392
+* Allow specification of required integrations for a pipeline by @schustmi in https://github.com/zenml-io/zenml/pull/408
+* Update quickstart in docs to conform to examples by @htahir1 in https://github.com/zenml-io/zenml/pull/410
+* Updated PR template with some more details by @htahir1 in https://github.com/zenml-io/zenml/pull/411
+* Bugfix on the CLI to work without a git installation by @bcdurak in https://github.com/zenml-io/zenml/pull/412
+* Added Ayush's Handle by @ayush714 in https://github.com/zenml-io/zenml/pull/417
+* Adding an info message on Windows if there is no application associated to .sh files by @bcdurak in https://github.com/zenml-io/zenml/pull/419
+* Catch `matplotlib` crash when running IPython in terminal by @strickvl in https://github.com/zenml-io/zenml/pull/416
+* Automatically activate integrations when unable to find stack component by @schustmi in https://github.com/zenml-io/zenml/pull/420
+* Fix some code inspections by @halvgaard in https://github.com/zenml-io/zenml/pull/422
+* Prepare integration tests on kubeflow by @schustmi in https://github.com/zenml-io/zenml/pull/423
+* Add concepts back into glossary by @strickvl in https://github.com/zenml-io/zenml/pull/425
+* Make guide easier to follow by @wjayesh in https://github.com/zenml-io/zenml/pull/427
+* Fix httplib to 0.19 and pyparsing to 2.4 by @jwwwb in https://github.com/zenml-io/zenml/pull/426
+* Wrap context serialization in try blocks by @jwwwb in https://github.com/zenml-io/zenml/pull/397
+* Track stack configuration when registering and running a pipeline by @schustmi in https://github.com/zenml-io/zenml/pull/429
+* MLflow deployment integration by @stefannica in https://github.com/zenml-io/zenml/pull/415
+
+# 0.6.1
+
+ZenML 0.6.1 is out and it's all about the cloud ☁️! We have improved AWS integration and a brand-new [Azure](https://github.com/zenml-io/zenml/tree/0.6.1/src/zenml/integrations/azure) integration! Run your pipelines on AWS and Azure now and let us know how it went on our [Slack](https://zenml.io/slack-invite).
+
+Smaller changes that you'll notice include much-awaited updates and fixes, including the first iterations of scheduling pipelines and tracking more reproducibility-relevant data in the metadata store.
+
+For a detailed look at what's changed, see below.
+
+## Whats changed
+
+* Add MVP for scheduling by @htahir1 in https://github.com/zenml-io/zenml/pull/354
+* Add S3 artifact store and filesystem by @schustmi in https://github.com/zenml-io/zenml/pull/359
+* Update 0.6.0 release notes by @alex-zenml in https://github.com/zenml-io/zenml/pull/362
+* Fix cuda-dev base container image by @stefannica in https://github.com/zenml-io/zenml/pull/361
+* Mark ZenML as typed package by @schustmi in https://github.com/zenml-io/zenml/pull/360
+* Improve error message if ZenML repo is missing inside kubeflow container entrypoint by @schustmi in https://github.com/zenml-io/zenml/pull/363
+* Spell whylogs and WhyLabs correctly in our docs by @stefannica in https://github.com/zenml-io/zenml/pull/369
+* Feature/add readme for mkdocs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/372
+* Cleaning up the assets pushed by gitbook automatically by @bcdurak in https://github.com/zenml-io/zenml/pull/371
+* Turn codecov off for patch updates by @htahir1 in https://github.com/zenml-io/zenml/pull/376
+* Minor changes and fixes by @schustmi in https://github.com/zenml-io/zenml/pull/365
+* Only include python files when building local docs by @schustmi in https://github.com/zenml-io/zenml/pull/377
+* Prevent access to repo during step execution by @schustmi in https://github.com/zenml-io/zenml/pull/370
+* Removed duplicated Section within docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/379
+* Fixing the materializer registry to spot sub-classes of defined types by @bcdurak in https://github.com/zenml-io/zenml/pull/368
+* Computing hash of step and materializer works in notebooks by @htahir1 in https://github.com/zenml-io/zenml/pull/375
+* Sort requirements to improve docker build caching by @schustmi in https://github.com/zenml-io/zenml/pull/383
+* Make sure the s3 artifact store is registered when the integration is activated by @schustmi in https://github.com/zenml-io/zenml/pull/382
+* Make MLflow integration work with kubeflow and scheduled pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/374
+* Reset _has_been_called to False ahead of pipeline.connect by @AlexejPenner in https://github.com/zenml-io/zenml/pull/385
+* Fix local airflow example by @schustmi in https://github.com/zenml-io/zenml/pull/366
+* Improve and extend base materializer error messages by @schustmi in https://github.com/zenml-io/zenml/pull/380
+* Windows CI issue by @schustmi in https://github.com/zenml-io/zenml/pull/389
+* Add the ability to attach custom properties to the Metadata Store by @bcdurak in https://github.com/zenml-io/zenml/pull/355
+* Handle case when return values do not match output by @AlexejPenner in https://github.com/zenml-io/zenml/pull/386
+* Quickstart code in docs fixed by @AlexejPenner in https://github.com/zenml-io/zenml/pull/387
+* Fix mlflow tracking example by @stefannica in https://github.com/zenml-io/zenml/pull/393
+* Implement azure artifact store and fileio plugin by @schustmi in https://github.com/zenml-io/zenml/pull/388
+* Create todo issues with separate issue type by @schustmi in https://github.com/zenml-io/zenml/pull/394
+* Log that steps are cached while running pipeline by @alex-zenml in https://github.com/zenml-io/zenml/pull/381
+* Schedule added to context for all orchestrators by @AlexejPenner in https://github.com/zenml-io/zenml/pull/391
+
 # 0.6.0
 
 ZenML 0.6.0 is out now. We've made some big changes under the hood, but our biggest public-facing addition is our new integration to support all your data logging needs: [`whylogs`](https://github.com/whylabs/whylogs). Our core architecture was [thoroughly reworked](https://github.com/zenml-io/zenml/pull/305) and is now in a much better place to support our ongoing development needs.

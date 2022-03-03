@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 from typing import List, Optional, Sequence, Tuple
 
+import pandas as pd
 from evidently.dashboard import Dashboard  # type: ignore
 from evidently.dashboard.tabs import (  # type: ignore
     CatTargetDriftTab,
@@ -37,7 +38,7 @@ from evidently.model_profile.sections.base_profile_section import (  # type: ign
 )
 from evidently.pipeline.column_mapping import ColumnMapping  # type: ignore
 
-from zenml.artifacts import DataAnalysisArtifact, DataArtifact
+from zenml.artifacts import DataAnalysisArtifact
 from zenml.steps import Output
 from zenml.steps.step_interfaces.base_drift_detection_step import (
     BaseDriftDetectionConfig,
@@ -114,8 +115,8 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
 
     def entrypoint(  # type: ignore[override]
         self,
-        reference_dataset: DataArtifact,
-        comparison_dataset: DataArtifact,
+        reference_dataset: pd.DataFrame,
+        comparison_dataset: pd.DataFrame,
         config: EvidentlyProfileConfig,
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str

@@ -17,6 +17,7 @@ import pandas as pd
 from rich import print
 from sklearn import datasets
 
+from zenml.integrations.constants import EVIDENTLY, SKLEARN
 from zenml.integrations.evidently.steps import (
     EvidentlyProfileConfig,
     EvidentlyProfileStep,
@@ -74,7 +75,7 @@ def analyze_drift(
     return input["data_drift"]["data"]["metrics"]["dataset_drift"]
 
 
-@pipeline
+@pipeline(required_integrations=[EVIDENTLY, SKLEARN])
 def drift_detection_pipeline(
     data_loader,
     full_data,
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     pipeline.run()
 
     repo = Repository()
-    pipeline = repo.get_pipelines()[0]
+    pipeline = repo.get_pipeline("drift_detection_pipeline")
     last_run = pipeline.runs[-1]
     drift_analysis_step = last_run.get_step(name="drift_analyzer")
     print(f"Data drift detected: {drift_analysis_step.output.read()}")

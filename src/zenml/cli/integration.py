@@ -15,12 +15,14 @@
 from typing import Optional, Tuple
 
 import click
+from rich.progress import track
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import (
     confirmation,
     declare,
     error,
+    format_integration_list,
     install_package,
     print_table,
     title,
@@ -42,25 +44,10 @@ def integration() -> None:
 @integration.command(name="list", help="List the available integrations.")
 def list_integrations() -> None:
     """List all available integrations with their installation status."""
-    title("Integrations:\n")
-
-    table_rows = []
-    for name, integration_impl in integration_registry.integrations.items():
-        is_installed = integration_impl.check_installation()
-        # TODO [ENG-253]: Make the installed column right-aligned once we
-        #  add rich or some other similar dependency
-        table_rows.append(
-            {
-                "INSTALLED": "*" if is_installed else "",
-                "INTEGRATION": name,
-                "PYTHON REQUIREMENTS": integration_impl.REQUIREMENTS,
-                "SYSTEM REQUIREMENTS": list(
-                    integration_impl.SYSTEM_REQUIREMENTS.keys()
-                ),
-            }
-        )
-    print_table(table_rows)
-
+    formatted_table = format_integration_list(
+        list(integration_registry.integrations.items())
+    )
+    print_table(formatted_table)
     warning(
         "\n" + "To install the dependencies of a specific integration, type: "
     )
@@ -82,9 +69,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     else:
         if requirements:
             title(
-                f"Requirements for "
-                f"{integration_name if integration_name else 'all integrations'}"
-                f":\n"
+                f'Requirements for {integration_name or "all integrations"}:\n'
             )
             declare(f"{requirements}")
             warning(
@@ -132,20 +117,25 @@ def install(integrations: Tuple[str], force: bool = False) -> None:
         except KeyError:
             warning(f"Unable to find integration '{integration_name}'.")
 
-    if requirements:
-        if force or confirmation(
+    if requirements and (
+        force
+        or confirmation(
             "Are you sure you want to install the following "
             "packages to the current environment?\n"
             f"{requirements}"
+        )
+    ):
+        for n in track(
+            range(len(requirements)),
+            description="Installing integrations...\n",
         ):
-            for requirement in requirements:
-                install_package(requirement)
+            install_package(requirements[n])
 
-            for integration_name in integrations_to_install:
-                track_event(
-                    AnalyticsEvent.INSTALL_INTEGRATION,
-                    {"integration_name": integration_name},
-                )
+        for integration_name in integrations_to_install:
+            track_event(
+                AnalyticsEvent.INSTALL_INTEGRATION,
+                {"integration_name": integration_name},
+            )
 
 
 @integration.command(
@@ -184,11 +174,16 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
         except KeyError:
             warning(f"Unable to find integration '{integration_name}'.")
 
-    if requirements:
-        if force or confirmation(
+    if requirements and (
+        force
+        or confirmation(
             "Are you sure you want to uninstall the following "
             "packages from the current environment?\n"
             f"{requirements}"
+        )
+    ):
+        for n in track(
+            range(len(requirements)),
+            description="Uninstalling integrations...",
         ):
-            for requirement in requirements:
-                uninstall_package(requirement)
+            uninstall_package(requirements[n])

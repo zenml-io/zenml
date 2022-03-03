@@ -1,0 +1,77 @@
+name: Integration Test the Examples
+
+on: workflow_call
+
+jobs:
+
+  integrationtest:
+    name: integrationtest
+    runs-on: ${{ matrix.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        python-version: [ 3.7, 3.8 ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
+      # as the TF images are too large for the GH action runner disk
+      - name: Free disk space
+        shell: bash
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          echo "Available storage:"
+          df -h
+          echo
+          echo -n "  Removing: .NET (frees ~22GB)"
+          sudo rm -rf /usr/share/dotnet
+          echo "... done"
+          echo
+          echo "Available storage:"
+          df -h
+
+
+      - name: Setup environment with Poetry
+        uses: ./.github/actions/setup_environment
+
+      - name: Install Linux System Dependencies
+        if: runner.os=='Linux'
+        run: sudo apt install graphviz
+
+      - name: Install MacOS System Dependencies
+        if: runner.os=='macOS'
+        run: brew install graphviz
+
+      - name: Install Windows System Dependencies
+        if: runner.os=='Windows'
+        run: choco install graphviz
+
+      - name: Check Python Env ahead of tests
+        run: |
+          source $VENV
+          zenml integration list
+          pip list
+
+      - name: Test
+        run: |
+          source $VENV
+          bash scripts/test-coverage-xml.sh integration
+
+      - name: Verify Python Env unaffected
+        run: |
+          source $VENV
+          zenml integration list
+

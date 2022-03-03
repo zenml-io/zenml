@@ -40,34 +40,6 @@ class MyStep(BaseStep):
 
 Please note in both examples above that the name of the parameter can be anything, but the type hint is what is important.
 
-## Using the `StepContext`
-
-`StepContext` provides additional context inside a step function.  It is used to access materializers and artifact URIs inside a step function. 
-
-You do not need to create a `StepContext` object yourself and pass it when creating the step, as long as you specify 
-it in the signature. ZenML will create the `StepContext` and automatically pass it when executing your step.
-
-Note: When using a `StepContext` inside a step, ZenML disables caching for this step by default as the context provides 
-access to external resources which might influence the result of your step execution. 
-To enable caching anyway, explicitly enable it in the `@step` decorator or when initializing your custom step class.
-
-Within a step, there are many things for which you can use the `StepContext` object. For example: 
-
-```python
-@enable_INTEGRATION  # can be `enable_whylogs`, `enable_mlflow` etc. 
-@step
-def my_step(
-    context: StepContext,
-):
-    context.get_output_materializer()  # Returns a materializer for a given step output.
-    context.get_output_artifact_uri()  # Returns the URI for a given step output.
-    context.metadata_store  # Access to the [Metadata Store](https://apidocs.zenml.io/latest/api_docs/metadata_stores/)
-    context.INTEGRATION  # Access to an integration, e.g. `context.whylogs`
-```
-
-For more information, check the [API reference](https://apidocs.zenml.io/latest/api_docs/steps/)
-
->>>>>>> 9633c5509ebaaa6abde3bfcfdf0b8ca4b471d3bd
 ## Using the `BaseStepConfig`
 
 `BaseStepConfig` instances can be passed when creating a step. 

@@ -38,7 +38,7 @@ class S3ArtifactStore(BaseArtifactStore):
 
     @validator("path")
     def ensure_s3_path(cls, path: str) -> str:
-        """Ensures that the path is a valid gcs path."""
+        """Ensures that the path is a valid s3 path."""
         if not path.startswith("s3://"):
             raise ValueError(
                 f"Path '{path}' specified for S3ArtifactStore is not a "

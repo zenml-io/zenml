@@ -24,6 +24,7 @@ These are the third-party integrations that ZenML currently supports:
 | Apache Airflow | ✅ | Orchestrator | Works for local environment | [airflow_local](https://github.com/zenml-io/zenml/tree/main/examples/airflow_local) |
 | Apache Beam | ✅ | Distributed Processing |   |   |
 | AWS | ✅ | Cloud | Use S3 buckets as ZenML artifact stores |   |
+| Azure | ✅ | Cloud | Use Azure Blob Storage buckets as ZenML artifact stores |   |
 | BentoML | ⛏ | Cloud | Looking for community implementors |   |
 | Dash | ✅ | Visualizer | For Pipeline and PipelineRun visualization objects. | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage) |
 | Evidently | ✅ | Monitoring | Allows for visualization of drift as well as export of a `Profile` object | [drift_detection](https://github.com/zenml-io/zenml/tree/release/0.5.7/examples/drift_detection) |
@@ -33,8 +34,8 @@ These are the third-party integrations that ZenML currently supports:
 | Great Expectations | ⛏ | Data Validation | Looking for community implementors |   |
 | KServe | ⛏ | Inference | Looking for community implementors |   |
 | Kubeflow | ✅ | Orchestrator | Either full Kubeflow or Kubeflow Pipelines. Works for local environments currently. | [kubeflow](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) |
-| MLFlow | ⛏ | Orchestrator | Looking for community implementors |   |
-| MLFlow Tracking | ✅ | Monitoring | Tracks your pipelines and your training runs. | [mlflow](https://github.com/zenml-io/zenml/tree/release/0.5.7/examples/mlflow_tracking) |
+| MLflow Tracking | ✅ | Experiment Tracking | Tracks your pipelines and your training runs. | [mlflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_tracking) |
+| MLflow Deployment | ✅ | Deployment | Deploys models with the MLflow scoring server. | [mlflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment) |
 | numpy | ✅ | Exploration |   |   |
 | pandas | ✅ | Exploration |   |   |
 | Plotly | ✅ | Visualizer | For Pipeline and PipelineRun visualization objects. | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage) |

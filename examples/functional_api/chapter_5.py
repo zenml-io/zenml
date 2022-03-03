@@ -23,10 +23,17 @@ from sqlalchemy import Column, Float, Integer, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from zenml.integrations.constants import SKLEARN, TENSORFLOW
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, Output, step
+
+# Path to a pip requirements file that contains requirements necessary to run
+# the pipeline
+requirements_file = os.path.join(
+    os.path.dirname(__file__), "chapter_5_requirements.txt"
+)
 
 Base = declarative_base()
 
@@ -41,7 +48,7 @@ class Floats(Base):
 class SQLALchemyMaterializerForSQLite(BaseMaterializer):
     """Read/Write float to sqlalchemy table."""
 
-    ASSOCIATED_TYPES = [float]
+    ASSOCIATED_TYPES = (float,)
 
     def __init__(self, artifact):
         super().__init__(artifact)
@@ -132,7 +139,10 @@ def sklearn_evaluator(
     return test_acc
 
 
-@pipeline
+@pipeline(
+    required_integrations=[SKLEARN, TENSORFLOW],
+    requirements_file=requirements_file,
+)
 def mnist_pipeline(
     importer,
     normalizer,

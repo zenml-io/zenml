@@ -16,6 +16,7 @@
 import pandas as pd
 import tensorflow as tf
 
+from zenml.integrations.constants import FACETS, TENSORFLOW
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
@@ -91,13 +92,13 @@ def evaluator(
     model: tf.keras.Model,
 ) -> float:
     """Calculate the accuracy on the test set"""
-    test_acc = model.evaluate(
+    _, test_acc = model.evaluate(
         test_df[FEATURE_COLS].values, test_df[TARGET_COL_NAME].values, verbose=2
     )
     return test_acc
 
 
-@pipeline
+@pipeline(required_integrations=[FACETS, TENSORFLOW])
 def boston_housing_pipeline(
     importer,
     trainer,

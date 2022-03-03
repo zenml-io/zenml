@@ -1,0 +1,45 @@
+name: Unit Test & Upload Coverage
+
+on: workflow_call
+
+jobs:
+  unittest:
+    name: unittest
+    runs-on: ${{ matrix.os }}
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
+    # Exit if its a commit from Gitbook
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        python-version: [ 3.7, 3.8 ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup environment with Poetry
+        uses: ./.github/actions/setup_environment
+
+      - name: Install Prerequisites
+        run: |
+          source $VENV
+          zenml integration install kubeflow -f
+
+      - name: Test
+        run: |
+          source $VENV
+          bash scripts/test-coverage-xml.sh unit
+
+      - name: Upload coverage
+        # only do it for python 3.8, we don't need to do it for every version
+        if: ${{ matrix.python-version == '3.8' && matrix.os == 'ubuntu-latest' }}
+        uses: codecov/codecov-action@v2

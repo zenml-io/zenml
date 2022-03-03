@@ -240,3 +240,50 @@ def test_setting_pipeline_parameter_name_when_initializing_pipeline(
     assert step_instance.pipeline_parameter_name is None
     one_step_pipeline(step_instance)
     assert step_instance.pipeline_parameter_name == "step_"
+
+
+def test_calling_a_pipeline_twice_raises_no_exception(
+    one_step_pipeline, empty_step
+):
+    """Tests that calling one pipeline instance twice does not raise
+    any exception."""
+
+    pipeline_instance = one_step_pipeline(empty_step())
+
+    with does_not_raise():
+        pipeline_instance.run()
+        pipeline_instance.run()
+
+
+def test_pipeline_requirements(tmp_path):
+    """Tests that the pipeline requirements are a combination of the
+    requirements of integrations and requirements of the specified
+    requirements file."""
+    from zenml.integrations.sklearn import SklearnIntegration
+
+    requirements_file = tmp_path / "requirements.txt"
+    requirements_file.write_text("any_requirement")
+
+    @pipeline(required_integrations=[SklearnIntegration.NAME])
+    def my_pipeline():
+        pass
+
+    assert my_pipeline().requirements == set(SklearnIntegration.REQUIREMENTS)
+
+    @pipeline(requirements_file=str(requirements_file))
+    def my_pipeline():
+        pass
+
+    assert my_pipeline().requirements == {"any_requirement"}
+
+    @pipeline(
+        required_integrations=[SklearnIntegration.NAME],
+        requirements_file=str(requirements_file),
+    )
+    def my_pipeline():
+        pass
+
+    assert my_pipeline().requirements == {
+        "any_requirement",
+        *SklearnIntegration.REQUIREMENTS,
+    }

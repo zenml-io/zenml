@@ -26,8 +26,8 @@ CHECKPOINT_NAME = "final_checkpoint.ckpt"
 class PyTorchLightningMaterializer(BaseMaterializer):
     """Materializer to read/write Pytorch models."""
 
-    ASSOCIATED_TYPES = [Trainer]
-    ASSOCIATED_ARTIFACT_TYPES = [ModelArtifact]
+    ASSOCIATED_TYPES = (Trainer,)
+    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> Trainer:
         """Reads and returns a PyTorch Lightning trainer.

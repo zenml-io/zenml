@@ -28,8 +28,8 @@ class MyObj:
 
 
 class MyMaterializer(BaseMaterializer):
-    ASSOCIATED_TYPES = [MyObj]
-    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
+    ASSOCIATED_TYPES = (MyObj,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""

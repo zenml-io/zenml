@@ -25,8 +25,8 @@ DEFAULT_FILENAME = "saved_data"
 class TensorflowDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from tf.data.Dataset."""
 
-    ASSOCIATED_TYPES = [tf.data.Dataset]
-    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
+    ASSOCIATED_TYPES = (tf.data.Dataset,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads data into tf.data.Dataset"""

@@ -53,12 +53,12 @@ from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
+from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
 
@@ -409,7 +409,20 @@ class _FunctionExecutor(BaseExecutor):
                     input_dict[arg][0], arg_type
                 )
 
-        with Environment._layer(step_is_running=True):
+        if self._context is None:
+            raise RuntimeError(
+                "No TFX context is set for the currently running pipeline. "
+                "Cannot retrieve pipeline runtime information."
+            )
+        # Wrap the execution of the step function in a step environment
+        # that the step function code can access to retrieve information about
+        # the pipeline runtime, such as the current step name and the current
+        # pipeline run ID
+        with StepEnvironment(
+            pipeline_name=self._context.pipeline_info.id,  # type: ignore[attr-defined]
+            pipeline_run_id=self._context.pipeline_run_id,
+            step_name=getattr(self, PARAM_STEP_NAME),
+        ):
             return_values = self._FUNCTION(**function_params)
 
         spec = inspect.getfullargspec(inspect.unwrap(self._FUNCTION))
@@ -426,13 +439,22 @@ class _FunctionExecutor(BaseExecutor):
             if len(output_annotations) == 1:
                 return_values = [return_values]
             elif not isinstance(return_values, Sequence):
-                # if the user defined multiple outputs, they return value must
+                # if the user defined multiple outputs, the return value must
                 # be a sequence
                 raise StepInterfaceError(
                     f"Wrong step function output type for step '{step_name}: "
                     f"Expected multiple outputs ({output_annotations}) but "
                     f"the function did not return a sequence-like object "
                     f"(actual return value: {return_values})."
+                )
+            elif len(output_annotations) != len(return_values):
+                # if the user defined multiple outputs, the amount of actual
+                # outputs must be the same
+                raise StepInterfaceError(
+                    f"Wrong amount of step function outputs for step "
+                    f"'{step_name}: Expected {len(output_annotations)} outputs "
+                    f"but the function returned {len(return_values)} outputs"
+                    f"(return values: {return_values})."
                 )
 
             for return_value, (output_name, output_type) in zip(

@@ -15,6 +15,7 @@
 import numpy as np
 import tensorflow as tf
 
+from zenml.integrations.constants import TENSORFLOW
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import Output, step
@@ -32,7 +33,7 @@ def importer_mnist() -> Output(
     return X_train, y_train, X_test, y_test
 
 
-@pipeline
+@pipeline(required_integrations=[TENSORFLOW])
 def load_mnist_pipeline(
     importer,
 ):

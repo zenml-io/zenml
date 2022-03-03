@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Any, Type
+from typing import TYPE_CHECKING, Any, Type
 
 import numpy as np
 import pyarrow as pa
@@ -24,6 +24,9 @@ from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.utils import yaml_utils
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
 DATA_FILENAME = "data.parquet"
 SHAPE_FILENAME = "shape.json"
 DATA_VAR = "data_var"
@@ -32,10 +35,10 @@ DATA_VAR = "data_var"
 class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = [np.ndarray]
-    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
+    ASSOCIATED_TYPES = (np.ndarray,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> np.ndarray:
+    def handle_input(self, data_type: Type[Any]) -> "NDArray[Any]":
         """Reads numpy array from parquet file."""
         super().handle_input(data_type)
         shape_dict = yaml_utils.read_json(
@@ -50,7 +53,7 @@ class NumpyMaterializer(BaseMaterializer):
         vals = getattr(data.to_pandas(), DATA_VAR).values
         return np.reshape(vals, shape_tuple)
 
-    def handle_return(self, arr: np.ndarray) -> None:
+    def handle_return(self, arr: "NDArray[Any]") -> None:
         """Writes a np.ndarray to the artifact store as a parquet file.
 
         Args:

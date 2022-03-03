@@ -28,8 +28,8 @@ PROFILE_FILENAME = "profile.pb"
 class WhylogsMaterializer(BaseMaterializer):
     """Materializer to read/write whylogs dataset profiles."""
 
-    ASSOCIATED_TYPES = [DatasetProfile]
-    ASSOCIATED_ARTIFACT_TYPES = [StatisticsArtifact]
+    ASSOCIATED_TYPES = (DatasetProfile,)
+    ASSOCIATED_ARTIFACT_TYPES = (StatisticsArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> DatasetProfile:
         """Reads and returns a whylogs DatasetProfile.

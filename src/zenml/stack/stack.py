@@ -211,8 +211,6 @@ class Stack:
         """The container registry of the stack."""
         return self._container_registry
 
-    # TODO [ENG-371]: Implement CLI method to generate configuration file from a
-    #  stack's available runtime options
     @property
     def runtime_options(self) -> Dict[str, Any]:
         """Runtime options that are available to configure this stack.
@@ -235,6 +233,15 @@ class Stack:
             runtime_options.update(component.runtime_options)
 
         return runtime_options
+
+    def dict(self) -> Dict[str, str]:
+        """Converts the stack into a dictionary."""
+        component_dict = {
+            component_type.value: component.json(sort_keys=True)
+            for component_type, component in self.components.items()
+        }
+        component_dict.update({"name": self.name})
+        return component_dict
 
     def requirements(
         self,
@@ -270,10 +277,6 @@ class Stack:
         Raises:
              StackValidationError: If the stack configuration is not valid.
         """
-        # TODO [ENG-372]: Differentiate between orchestrators running a pipeline
-        #  locally and remotely (potentially using subclasses or an
-        #  `orchestrator.mode` property?) and make sure all components support
-        #  either local/remote execution
 
         for component in self.components.values():
             if component.validator:
@@ -334,8 +337,6 @@ class Stack:
 
         return return_value
 
-    # TODO [ENG-373]: Include provisioning status in CLI `zenml stack describe`
-    #  and `zenml stack-component describe` commands
     @property
     def is_provisioned(self) -> bool:
         """If the stack provisioned resources to run locally."""
@@ -386,7 +387,7 @@ class Stack:
             ProvisioningError: If any stack component is missing provisioned
                 resources.
         """
-        logger.info("Resuming provisioned resources for stack '%s'.", self.name)
+        logger.info("Resuming provisioned resources for stack %s.", self.name)
         for component in self.components.values():
             if component.is_running:
                 # the component is already running, no need to resume anything

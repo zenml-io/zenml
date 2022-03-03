@@ -138,8 +138,6 @@ class Repository:
             self.__config = RepositoryConfiguration.empty_configuration()
 
         if self.version != zenml.__version__:
-            # TODO [ENG-366]: Create compatibility table so we don't have to
-            #  warn about mismatching repository and ZenML version each time
             logger.warning(
                 "This ZenML repository was created with a different version "
                 "of ZenML (Repository version: %s, current ZenML version: %s). "
@@ -262,12 +260,6 @@ class Repository:
             )
         return self.__config.active_stack_name
 
-    # TODO [ENG-367]: Should we replace the stack name by the actual stack
-    #  object? It would be more consistent with the rest of the API but
-    #  requires some additional care (checking if the stack + components are
-    #  actually registered in this repository). Downside: We would need to
-    #  load all the integrations to create the stack object which makes the CLI
-    #  command to set the active stack much slower.
     @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, name: str) -> None:
         """Activates the stack for the given name.
@@ -319,7 +311,6 @@ class Repository:
 
         return Stack.from_components(name=name, components=stack_components)
 
-    @track(event=AnalyticsEvent.REGISTERED_STACK)
     def register_stack(self, stack: Stack) -> None:
         """Registers a stack and it's components.
 
@@ -342,6 +333,7 @@ class Repository:
             )
 
         components = {}
+        metadata = {}
         for component_type, component in stack.components.items():
             try:
                 existing_component = self.get_stack_component(
@@ -358,11 +350,13 @@ class Repository:
                 self.register_stack_component(component)
 
             components[component_type.value] = component.name
+            metadata[component_type.value] = component.flavor.value
 
         stack_configuration = StackConfiguration(**components)
         self.__config.stacks[stack.name] = stack_configuration
         self._write_config()
         logger.info("Registered stack with name '%s'.", stack.name)
+        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack.
@@ -527,7 +521,6 @@ class Repository:
         if fileio.file_exists(component_config_path):
             fileio.remove(component_config_path)
 
-    # TODO [ENG-368]: Discuss whether we want to unify these two methods.
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(
         self, stack_name: Optional[str] = None

@@ -23,8 +23,8 @@ from zenml.materializers.base_materializer import BaseMaterializer
 class BeamMaterializer(BaseMaterializer):
     """Materializer to read data to and from beam."""
 
-    ASSOCIATED_TYPES = [beam.PCollection]
-    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
+    ASSOCIATED_TYPES = (beam.PCollection,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads all files inside the artifact directory and materializes them

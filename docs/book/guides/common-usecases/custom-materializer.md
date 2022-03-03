@@ -14,8 +14,8 @@ data to and from the artifact stores lives in the materializers.
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
-    ASSOCIATED_ARTIFACT_TYPES = []
-    ASSOCIATED_TYPES = []
+    ASSOCIATED_ARTIFACT_TYPES = ()
+    ASSOCIATED_TYPES = ()
 
     def __init__(self, artifact: "BaseArtifact"):
         """Initializes a materializer with the given artifact."""
@@ -71,8 +71,8 @@ In order to control more precisely how data flowing between steps is treated, on
 ```python
 class MyCustomMaterializer(BaseMaterializer):
     """Define my own materialization logic"""
-    ASSOCIATED_ARTIFACT_TYPES = [...]
-    ASSOCIATED_TYPES = [...]
+    ASSOCIATED_ARTIFACT_TYPES = (...)
+    ASSOCIATED_TYPES = (...)
 
 
     def handle_input(self, data_type: Type[Any]) -> Any:
@@ -135,8 +135,8 @@ from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 class MyMaterializer(BaseMaterializer):
-    ASSOCIATED_TYPES = [MyObj]
-    ASSOCIATED_ARTIFACT_TYPES = [DataArtifact]
+    ASSOCIATED_TYPES = (MyObj, )
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact, )
 
     def handle_input(self, data_type: Type[MyObj]) -> MyObj:
         """Read from artifact store"""

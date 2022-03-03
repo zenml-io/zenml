@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -21,5 +21,11 @@ extended by building on the `BaseMaterializer` class.
 from zenml.materializers.built_in_materializer import BuiltInMaterializer
 from zenml.materializers.numpy_materializer import NumpyMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
+from zenml.materializers.service_materializer import ServiceMaterializer
 
-__all__ = ["BuiltInMaterializer", "NumpyMaterializer", "PandasMaterializer"]
+__all__ = [
+    "BuiltInMaterializer",
+    "NumpyMaterializer",
+    "PandasMaterializer",
+    "ServiceMaterializer",
+]

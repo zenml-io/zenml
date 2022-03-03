@@ -4,7 +4,7 @@ description: A simple example to get started with ZenML
 
 # Quickstart
 
-Our goal here is to help you to get the first practical experience with our tool and give you a brief overview on 
+Our goal here is to help you to get the first practical experience with ZenML and give you a brief overview on 
 some basic functionalities of ZenML. We'll create a training pipeline for the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset.
 
 If you want to run this notebook in an interactive environment, feel free to run it in a 
@@ -13,70 +13,74 @@ or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quic
 
 ## Install and initialize
 
-```python
+```shell
 # Install the dependencies for the quickstart
-pip install zenml tensorflow
+pip install zenml
 ```
 
-{% hint style="success" %}
-We are just using TensorFlow for the purposes of illustration; ZenML works with any ML library such as PyTorch, 
-HuggingFace, PyTorch Lightning etc.
-{% endhint %}
+Once the installation is completed, you can go ahead and create your first ZenML repository for your project:
 
-Once the installation is completed, you can go ahead and create your first ZenML repository for your project. As 
-ZenML repositories are built on top of Git repositories, you can create yours in a desired empty directory through:
-
-```python
+```shell
 # Initialize ZenML
 zenml init
 ```
 
+We are building a [sklearn model](https://scikit-learn.org/stable/) in this example, so we need to install that integration:
+
+```shell
+zenml integration install sklearn -f
+```
+
+{% hint style="success" %}
+We are just using sklearn for the purposes of illustration; ZenML works with any ML library such as PyTorch, Tensorflow, 
+HuggingFace, PyTorch Lightning, etc. See our [full list of integrations](../features/integrations.md) for a complete overview.
+{% endhint %}
+
+
 Now, the setup is completed. For the next steps, just make sure that you are executing the code within your 
 ZenML repository.
 
-## Define ZenML Steps
+## Run your first pipeline
 
 In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is 
-decorated with `@step`, the main low-level abstraction that is currently available for creating pipeline steps.
+decorated with `@step`. The pipeline in turn is decorated with the `@pipeline` decorator.
+
+{% hint style="success" %}
+Note that type hints are used for inputs and outputs of each step. The routing of step outputs
+to step inputs is handled within the pipeline definition.
+{% endhint %}
 
 ![Quickstart steps](../assets/quickstart-diagram.png)
 
 ```python
 import numpy as np
-import tensorflow as tf
+from sklearn.base import ClassifierMixin
 
+from zenml.integrations.sklearn.helpers.digits import (
+    get_digits,
+    get_digits_model,
+)
 from zenml.pipelines import pipeline
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 
 @step
 def importer() -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    """Download the MNIST data store it as numpy arrays."""
-    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
-    return X_train, y_train, X_test, y_test
+    """Loads the digits array as normal numpy arrays."""
+    X_train, X_test, y_train, y_test = get_digits()
+    return X_train, X_test, y_train, y_test
 
 
 @step
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
-) -> tf.keras.Model:
-    """A simple Keras Model to train on the data."""
-    model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Flatten(input_shape=(28, 28)))
-    model.add(tf.keras.layers.Dense(10))
-
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(0.001),
-        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=["accuracy"],
-    )
-
+) -> ClassifierMixin:
+    """Train a simple sklearn classifier for the digits dataset."""
+    model = get_digits_model()
     model.fit(X_train, y_train)
-
-    # write model
     return model
 
 
@@ -84,10 +88,11 @@ def trainer(
 def evaluator(
     X_test: np.ndarray,
     y_test: np.ndarray,
-    model: tf.keras.Model,
+    model: ClassifierMixin,
 ) -> float:
     """Calculate the accuracy on the test set"""
-    test_acc = model.evaluate(X_test, y_test, verbose=2)
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
     return test_acc
 
 
@@ -98,19 +103,17 @@ def mnist_pipeline(
     evaluator,
 ):
     """Links all the steps together in a pipeline"""
-    X_train, y_train, X_test, y_test = importer()
+    X_train, X_test, y_train, y_test = importer()
     model = trainer(X_train=X_train, y_train=y_train)
     evaluator(X_test=X_test, y_test=y_test, model=model)
 
 
-if __name__ == "__main__":
-    # Run the pipeline
-    p = mnist_pipeline(
-        importer=importer(),
-        trainer=trainer(),
-        evaluator=evaluator(),
-    )
-    p.run()
+pipeline = mnist_pipeline(
+    importer=importer(),
+    trainer=trainer(),
+    evaluator=evaluator(),
+)
+pipeline.run()
 ```
 
 {% hint style="info" %}
@@ -123,25 +126,21 @@ If you had a hiccup or you have some suggestions/questions regarding our framewo
 
 ## Wait, how is this useful?
 
-The above code looks like its yet another standard pipeline framework that added to your work, but there is a lot 
+The above code looks like it is yet another standard pipeline framework that added to your work, but there is a lot 
 going on under the hood that is mighty helpful:
 
 - All data is versioned and tracked as it flows through the steps.
 - All parameters and return values are tracked by a central metadata store that you can later query.
 - Individual step outputs are now cached, so you can swap out the trainer for other implementations and iterate fast.
-- Code is versioned with `git`.
 
 With just a little more work, one can:
 
-- Deploy this pipeline 'in production' on the cloud with a production ready orchestrator like Kubeflow.
-- Useful metadata like statistics, schemas and drifts can be inferred from model and data flowing through these steps.
-- Convert these steps to run distributed processing to handle large volumes of data.
+- Deploy this pipeline [in production on the cloud](../features/cloud-pipelines) with a production ready orchestrator like Kubeflow.
+- Useful metadata like [statistics, schemas and drifts](../guides/common-usecases/visualizers.md) can be inferred from the model and data flowing through these steps.
 - Models trained this way can be set up to be easily deployed, run batch inference on, or set up in continuous 
 training loops with automatic deployments.
 
 Best of all: We let you and your infra/ops team decide what the underlying tools are to achieve all this.
-
-Keep reading to learn how all of the above can be achieved.
 
 ## Next Steps?
 

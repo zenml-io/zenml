@@ -26,14 +26,13 @@ DEFAULT_FILENAME = "data.json"
 class BuiltInMaterializer(BaseMaterializer):
     """Read/Write JSON files."""
 
-    # TODO [ENG-322]: consider adding typing.Dict and typing.List
     # since these are the 'correct' way to annotate these types.
 
-    ASSOCIATED_ARTIFACT_TYPES = [
+    ASSOCIATED_ARTIFACT_TYPES = (
         DataArtifact,
         DataAnalysisArtifact,
-    ]
-    ASSOCIATED_TYPES = [
+    )
+    ASSOCIATED_TYPES = (
         int,
         str,
         bytes,
@@ -42,7 +41,7 @@ class BuiltInMaterializer(BaseMaterializer):
         list,
         tuple,
         bool,
-    ]
+    )
 
     def handle_input(self, data_type: Type[Any]) -> Any:
         """Reads basic primitive types from json."""
