@@ -77,6 +77,7 @@ class TrainingResourceFlavor(StackComponentFlavor):
     """All supported training resource flavors."""
 
     AZUREML = "azureml"
+    SAGEMAKER = "sagemaker"
 
 
 class StackComponentType(StrEnum):
