@@ -471,3 +471,13 @@ class _FunctionExecutor(BaseExecutor):
                 self.resolve_output_artifact(
                     output_name, output_dict[output_name][0], return_value
                 )
+
+        from tfx.proto.orchestration import execution_result_pb2
+        from tfx.orchestration.portable import outputs_utils
+        from zenml.io import fileio
+
+        result = execution_result_pb2.ExecutorOutput()
+        outputs_utils.populate_output_artifact(result, output_dict)
+
+        with fileio.open(self._context.executor_output_uri, "wb") as f:
+            f.write(result.SerializeToString())

@@ -22,6 +22,8 @@ from typing import cast
 import os
 import sys
 from zenml.repository import Repository
+from zenml.io import fileio
+from tfx.orchestration.portable import outputs_utils
 
 
 class TrainingResourceExecutorOperator(BaseExecutorOperator):
@@ -76,17 +78,10 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
             entrypoint_command=entrypoint_command
         )
 
-        # TODO: Populate output artifact
+        if fileio.file_exists(execution_info.execution_output_uri):
+            result = execution_result_pb2.ExecutorOutput.FromString(
+                fileio.open(execution_info.execution_output_uri, 'rb').read())
+        else:
+            raise ValueError("missing file")
 
-        # if fileio.exists(execution_info.execution_output_uri):
-        #     result = execution_result_pb2.ExecutorOutput.FromString(
-        #         fileio.open(execution_info.execution_output_uri, 'rb').read())
-        # else:
-        #     # Old style TFX executor doesn't return executor_output, but modify
-        #     # output_dict and exec_properties in place. For backward compatibility,
-        #     # we use their executor_output and exec_properties to construct
-        #     # ExecutorOutput.
-        #     result = execution_result_pb2.ExecutorOutput()
-        #     outputs_utils.populate_output_artifact(result, output_dict)
-
-        return execution_result_pb2.ExecutorOutput()
+        return result
