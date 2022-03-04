@@ -79,6 +79,3 @@ def test_get_cache_status_works_when_running_pipeline_twice(clean_repo):
 
     assert get_cache_status(first_run_execution_object) is False
     assert get_cache_status(second_run_execution_object) is True
-    assert get_cache_status(first_run_execution_object) != get_cache_status(
-        second_run_execution_object
-    )
