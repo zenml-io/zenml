@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from typing import TYPE_CHECKING, Any, List, Optional
 
 from azureml.core import (
@@ -52,9 +53,13 @@ class AzureMLTrainingResource(BaseTrainingResource):
     resource_group: str
     workspace_name: str
     compute_target_name: str
-    environment_name: str
 
-    # Service principal authentication https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
+    # Environment
+    environment_name: Optional[str] = None
+    docker_base_image: Optional[str] = None
+
+    # Service principal authentication
+    # https://docs.microsoft.com/en-us/azure/machine-learning/how-to-setup-authentication#configure-a-service-principal
     tenant_id: Optional[str] = None
     service_principal_id: Optional[str] = None
     service_principal_password: Optional[str] = None
@@ -77,6 +82,51 @@ class AzureMLTrainingResource(BaseTrainingResource):
             )
         return None
 
+    def _prepare_environment(
+        self, workspace: Workspace, requirements: List[str], run_name: str
+    ) -> Environment:
+        if self.environment_name:
+            environment = Environment.get(
+                workspace=workspace, name=self.environment_name
+            )
+            if not environment.python.conda_dependencies:
+                environment.python.conda_dependencies = (
+                    CondaDependencies.create(
+                        python_version=ZenMLEnvironment.python_version()
+                    )
+                )
+
+            for requirement in requirements:
+                environment.python.conda_dependencies.add_pip_package(
+                    requirement
+                )
+        else:
+            environment = Environment(name=f"zenml-{run_name}")
+            environment.python.conda_dependencies.set_pip_requirements(
+                requirements
+            )
+
+            if self.docker_base_image:
+                # replace the default azure base image
+                environment.docker.base_image = self.docker_base_image
+
+        environment_variables = {
+            "ENV_ZENML_PREVENT_PIPELINE_EXECUTION": "True",
+        }
+        # set credentials to access aws storage
+        for key in [
+            "AZURE_STORAGE_ACCOUNT_KEY",
+            "AZURE_STORAGE_ACCOUNT_NAME",
+            "AZURE_STORAGE_CONNECTION_STRING",
+            "AZURE_STORAGE_SAS_TOKEN",
+        ]:
+            value = os.getenv(key)
+            if value:
+                environment_variables[key] = value
+
+        environment.environment_variables = environment_variables
+        return environment
+
     def launch(
         self,
         pipeline_name: str,
@@ -95,39 +145,22 @@ class AzureMLTrainingResource(BaseTrainingResource):
         requirements.append(
             "git+https://github.com/zenml-io/zenml.git@wip/azureml"
         )
-        environment = Environment.get(
-            workspace=workspace, name=self.environment_name
+
+        environment = self._prepare_environment(
+            workspace=workspace, requirements=requirements, run_name=run_name
         )
-
-        if environment.python.conda_dependencies:
-            for requirement in requirements:
-                environment.python.conda_dependencies.add_pip_package(
-                    requirement
-                )
-        else:
-            environment.python.conda_dependencies = CondaDependencies.create(
-                pip_packages=requirements,
-                python_version=ZenMLEnvironment.python_version(),
-            )
-
-        environment.environment_variables = {
-            "AZURE_STORAGE_ACCOUNT_KEY": "",
-            "AZURE_STORAGE_ACCOUNT_NAME": "",
-            "ENV_ZENML_PREVENT_PIPELINE_EXECUTION": "True",
-        }
-
-        experiment = Experiment(workspace=workspace, name=pipeline_name)
         compute_target = ComputeTarget(
             workspace=workspace, name=self.compute_target_name
         )
 
         run_config = ScriptRunConfig(
             source_directory=str(Repository().root),
-            compute_target=compute_target,
             environment=environment,
+            compute_target=compute_target,
             command=entrypoint_command,
         )
 
+        experiment = Experiment(workspace=workspace, name=pipeline_name)
         run = experiment.submit(config=run_config)
         run.display_name = run_name
         run.wait_for_completion(show_output=True)
