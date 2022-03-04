@@ -35,6 +35,7 @@ jobs:
 
   check_comments:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     outputs:
       kf_trigger: ${{ steps.check.outputs.triggered }}
     steps:
@@ -45,10 +46,12 @@ jobs:
           reaction: rocket
         env:
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
+      - run: 'echo Found LTKF! in the comments!'
+        if: steps.check.outputs.triggered == 'true'
 
 
   kubeflow-tests:
     needs: [poetry-install, check_comments]
     # Run this one automatically for pull requests onto main
-    if: ${{ github.event.pull_request.base.ref == 'main' || needs.check_comments.outputs.kf_trigger }}
+    if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
     uses: ./.github/workflows/kubeflow.yml
