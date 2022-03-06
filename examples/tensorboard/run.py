@@ -52,21 +52,6 @@ def normalizer(
     return X_train_normed, X_test_normed
 
 
-# Define the pipeline
-@pipeline(required_integrations=[TENSORFLOW, AWS])
-def mnist_pipeline(
-    importer,
-    normalizer,
-    trainer,
-    evaluator,
-):
-    # Link all the steps artifacts together
-    X_train, y_train, X_test, y_test = importer()
-    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
-    model = trainer(X_train=X_trained_normed, y_train=y_train)
-    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
-
-
 @step
 def tf_trainer(
     context: StepContext,
@@ -116,6 +101,21 @@ def tf_evaluator(
 
     _, test_acc = model.evaluate(X_test, y_test, verbose=2)
     return test_acc
+
+
+# Define the pipeline
+@pipeline(required_integrations=[TENSORFLOW, AWS])
+def mnist_pipeline(
+    importer,
+    normalizer,
+    trainer,
+    evaluator,
+):
+    # Link all the steps artifacts together
+    X_train, y_train, X_test, y_test = importer()
+    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
+    model = trainer(X_train=X_trained_normed, y_train=y_train)
+    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
 if __name__ == "__main__":
