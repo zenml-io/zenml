@@ -19,11 +19,14 @@ class TensorflowIntegration(Integration):
     """Definition of Tensorflow integration for ZenML."""
 
     NAME = TENSORFLOW
-    REQUIREMENTS = ["tensorflow==2.8.0"]
+    REQUIREMENTS = ["tensorflow==2.8.0", "tensorflow_io==0.24.0"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
+        # need to import this explicitly to load the Tensoflow file IO support
+        # for S3 and other file systems
+        import tensorflow_io as tfio  # noqa
         from zenml.integrations.tensorflow import materializers  # noqa
 
 
