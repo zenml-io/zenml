@@ -156,8 +156,9 @@ class LocalStackStore(BaseStackStore):
         component_config_path = self._get_stack_component_config_path(
             component_type=component_type, name=name
         )
+        flavor = StackComponentFlavor.for_type(component_type)(components[name])
         config = yaml_utils.read_yaml(component_config_path)
-        return StackComponentFlavor(components[name]), config
+        return flavor, config
 
     def get_stack_component_names(
         self, component_type: StackComponentType
