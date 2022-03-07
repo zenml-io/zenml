@@ -189,7 +189,11 @@ class BaseStackStore(ABC):
     def get_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> StackComponent:
-        """Fetches a registered stack component."""
+        """Fetches a registered stack component.
+        Raises:
+            KeyError: If no component with the requested type and name exists.
+        """
+
         flavor, config = self.get_component_config(component_type, name=name)
         return self._component_from_configuration(
             component_type=component_type,

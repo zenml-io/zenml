@@ -34,7 +34,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
-from zenml.stack_stores import LocalStackStore
+from zenml.stack_stores import BaseStackStore, LocalStackStore, SqlStackStore
 from zenml.stack_stores.models import StackConfiguration, StackStoreModel
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
@@ -54,14 +54,6 @@ class RepositoryConfiguration(BaseModel):
     version: str
     storage_type: StorageType
 
-    @classmethod
-    def empty_configuration(cls) -> "RepositoryConfiguration":
-        """Helper method to create an empty configuration object."""
-        return cls(
-            version=zenml.__version__,
-            storage_type=StorageType.YAML_STORAGE,
-        )
-
 
 class Repository:
     """ZenML repository class.
@@ -73,7 +65,7 @@ class Repository:
     def __init__(
         self,
         root: Optional[Path] = None,
-        storage_type: StorageType = StorageType.YAML_STORAGE,
+        storage_type: StorageType = StorageType.SQLITE_STORAGE,
     ):
         """Initializes a repository instance.
 
@@ -98,6 +90,7 @@ class Repository:
             )
 
         self._root = Repository.find_repository(root)
+        logger.debug(" + Initializing %s repo at %s", storage_type, self._root)
 
         # load the repository configuration file if it exists, otherwise use
         # an empty configuration as default
@@ -107,6 +100,7 @@ class Repository:
             try:
                 self.__config = RepositoryConfiguration.parse_obj(config_dict)
                 stack_data = None
+                logger.debug("Found new_style repository, load from disk.")
             except ValidationError:
                 # if we have an old style repository in place already, split
                 # config and stack store out into separate entities:
@@ -117,12 +111,17 @@ class Repository:
                 stack_data = StackStoreModel.parse_obj(config_dict)
                 self.__config = RepositoryConfiguration(
                     version=stack_data.version,
-                    storage_type=StorageType.YAML_STORAGE,
+                    storage_type=storage_type,
                 )
                 self._write_config()
         else:
             stack_data = None
-            self.__config = RepositoryConfiguration.empty_configuration()
+            logger.debug(
+                "No repo found, creating new repository configuration."
+            )
+            self.__config = RepositoryConfiguration(
+                version=zenml.__version__, storage_type=storage_type
+            )
 
         if self.version != zenml.__version__:
             logger.warning(
@@ -134,13 +133,17 @@ class Repository:
                 zenml.__version__,
             )
 
+        self.stack_store: BaseStackStore
         if self.__config.storage_type == StorageType.YAML_STORAGE:
             self.stack_store = LocalStackStore(
-                base_directory=str(self._root), stack_data=stack_data
+                base_directory=str(self.root), stack_data=stack_data
             )
-        elif self.__config.storage_type == StorageType.SQL_STORAGE:
-            raise NotImplementedError("Sql Stack Storage is not implemented.")
+        elif self.__config.storage_type == StorageType.SQLITE_STORAGE:
+            self.stack_store = SqlStackStore(
+                f"sqlite:///{self.config_directory / 'stackstore.db'}"
+            )
         else:
+            # TODO[HIGH]: implement other stack store backends (rest, mysql?)
             raise ValueError(
                 f"Unsupported StackStore StorageType {self.__config.storage_type.value}"
             )
@@ -156,7 +159,10 @@ class Repository:
 
     @staticmethod
     @track(event=AnalyticsEvent.INITIALIZE_REPO)
-    def initialize(root: Path = Path.cwd()) -> None:
+    def initialize(
+        root: Path = Path.cwd(),
+        storage_type: StorageType = StorageType.SQLITE_STORAGE,
+    ) -> None:
         """Initializes a new ZenML repository at the given path.
 
         The newly created repository will contain a single stack with a local
@@ -179,7 +185,7 @@ class Repository:
         fileio.create_dir_recursive_if_not_exists(config_directory)
 
         # register and activate a local stack
-        repo = Repository(root=root)
+        repo = Repository(root=root, storage_type=storage_type)
         stack = Stack.default_local_stack()
         repo.register_stack(stack)
         repo.activate_stack(stack.name)

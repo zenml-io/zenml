@@ -119,4 +119,6 @@ class StorageType(StrEnum):
     """Storage Backend Types"""
 
     YAML_STORAGE = "yaml_storage"
-    SQL_STORAGE = "sql_storage"
+    SQLITE_STORAGE = "sqlite_storage"
+    MYSQL_STORAGE = "mysql_storage"
+    REST_STORAGE = "rest_storage"

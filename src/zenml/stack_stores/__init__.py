@@ -15,8 +15,12 @@
 
 from zenml.stack_stores.base_stack_store import BaseStackStore
 from zenml.stack_stores.local_stack_store import LocalStackStore
+from zenml.stack_stores.sql_stack_store import (  # type: ignore[attr-defined]
+    SqlStackStore,
+)
 
 __all__ = [
     "BaseStackStore",
     "LocalStackStore",
+    "SqlStackStore",
 ]
