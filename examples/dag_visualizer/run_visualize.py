@@ -14,21 +14,20 @@
 
 
 from pipeline import (
-    dynamic_importer,
-    mnist_pipeline,
-    normalize_mnist,
-    sklearn_evaluator,
-    sklearn_trainer,
+    boston_housing_pipeline,
+    evaluator,
+    importer,
+    trainer,
+    visualizer_graph,
 )
 
 if __name__ == "__main__":
-    # Initialize a new pipeline run
-    scikit_p = mnist_pipeline(
-        importer=dynamic_importer(),
-        normalizer=normalize_mnist(),
-        trainer=sklearn_trainer(),
-        evaluator=sklearn_evaluator(),
+    # Run the pipeline
+    p = boston_housing_pipeline(
+        importer=importer(),
+        trainer=trainer(),
+        evaluator=evaluator(),
     )
+    p.run()
 
-    # Run the new pipeline
-    scikit_p.run()
+    visualizer_graph()
