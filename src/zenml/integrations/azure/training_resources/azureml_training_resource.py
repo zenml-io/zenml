@@ -140,7 +140,7 @@ class AzureMLTrainingResource(BaseTrainingResource):
         )
 
         requirements.append(
-            "git+https://github.com/zenml-io/zenml.git@wip/azureml"
+            "git+https://github.com/zenml-io/zenml.git@feature/ENG-640-training-resource"
         )
 
         environment = self._prepare_environment(
