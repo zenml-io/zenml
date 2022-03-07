@@ -100,6 +100,12 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
                 )
                 requirements |= pipeline_requirements
 
+        # TODO: Find a nice way to set this if the running version of ZenML is
+        #  not an official release (e.g. on a development branch)
+        requirements.add(
+            "git+https://github.com/zenml-io/zenml.git@feature/ENG-640-training-resource"
+        )
+
         training_resource.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,

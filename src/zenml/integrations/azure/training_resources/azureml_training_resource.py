@@ -131,16 +131,12 @@ class AzureMLTrainingResource(BaseTrainingResource):
         entrypoint_command: List[str],
         requirements: List[str],
     ) -> Any:
-        """Launches a step on the training resource."""
+        """Launches a step on AzureML."""
         workspace = Workspace.get(
             subscription_id=self.subscription_id,
             resource_group=self.resource_group,
             name=self.workspace_name,
             auth=self._get_authentication(),
-        )
-
-        requirements.append(
-            "git+https://github.com/zenml-io/zenml.git@feature/ENG-640-training-resource"
         )
 
         environment = self._prepare_environment(
