@@ -19,7 +19,7 @@ import tensorflow as tf
 
 from rich import print
 
-from zenml.integrations.constants import AWS, TENSORFLOW
+from zenml.integrations.constants import TENSORFLOW
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, Output, StepContext, step
@@ -107,7 +107,7 @@ def tf_evaluator(
 
 
 # Define the pipeline
-@pipeline(required_integrations=[TENSORFLOW, AWS], enable_cache=False)
+@pipeline(required_integrations=[TENSORFLOW], enable_cache=False)
 def mnist_pipeline(
     importer,
     normalizer,
