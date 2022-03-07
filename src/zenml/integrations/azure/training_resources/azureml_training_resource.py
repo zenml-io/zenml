@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import Any, List, Optional
 
 from azureml.core import (
     ComputeTarget,
@@ -35,9 +35,6 @@ from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.training_resources import BaseTrainingResource
-
-if TYPE_CHECKING:
-    pass
 
 
 @register_stack_component_class(

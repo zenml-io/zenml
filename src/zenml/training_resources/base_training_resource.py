@@ -21,7 +21,6 @@ from zenml.stack import StackComponent
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack
 
 
 class BaseTrainingResource(StackComponent, ABC):
@@ -39,15 +38,6 @@ class BaseTrainingResource(StackComponent, ABC):
     @abstractmethod
     def flavor(self) -> TrainingResourceFlavor:
         """The training resource flavor."""
-
-    def prepare_pipeline_deployment(
-        self,
-        pipeline: "BasePipeline",
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
-    ) -> None:
-        self._pipeline = pipeline
-        self._runtime_configuration = runtime_configuration
 
     @abstractmethod
     def launch(

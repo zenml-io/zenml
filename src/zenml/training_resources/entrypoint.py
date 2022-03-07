@@ -15,7 +15,6 @@
 import argparse
 import importlib
 import logging
-import os
 import sys
 from typing import Type
 
@@ -137,14 +136,8 @@ def main() -> None:
     )
 
     executor = executor_class(context=context)
-    logging.warning("Starting to run step")
     run_with_executor(execution_info=execution_info, executor=executor)
-    logging.warning("Finished step")
 
-
-print("inside entrypoint")
-print(os.getcwd())
-print(os.listdir("."))
 
 if __name__ == "__main__":
     main()

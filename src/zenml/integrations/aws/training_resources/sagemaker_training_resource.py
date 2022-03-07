@@ -12,16 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, List
+from typing import Any, List
 
 from zenml.enums import StackComponentType, TrainingResourceFlavor
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.training_resources import BaseTrainingResource
-
-if TYPE_CHECKING:
-    pass
 
 
 @register_stack_component_class(
