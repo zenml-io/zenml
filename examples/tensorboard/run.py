@@ -17,8 +17,11 @@ import os
 import numpy as np
 import tensorflow as tf
 
+from rich import print
+
 from zenml.integrations.constants import AWS, TENSORFLOW
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, Output, StepContext, step
 
 
@@ -104,7 +107,7 @@ def tf_evaluator(
 
 
 # Define the pipeline
-@pipeline(required_integrations=[TENSORFLOW, AWS])
+@pipeline(required_integrations=[TENSORFLOW, AWS], enable_cache=False)
 def mnist_pipeline(
     importer,
     normalizer,
@@ -129,3 +132,15 @@ if __name__ == "__main__":
 
     # Run the pipeline
     tf_p.run()
+
+    # Post-execution flow
+    repo = Repository()
+    pipeline = repo.get_pipeline(tf_p.name)
+    run = pipeline.runs[-1]
+    trainer_step = run.get_step("trainer")
+    if trainer_step.outputs:
+        print(
+            "You can run:\n"
+            f"[italic green]    tensorboard --logdir={trainer_step.output.uri}[/italic green]\n"
+            "...to visualize the Tensorboard logs for your trained model."
+        )
