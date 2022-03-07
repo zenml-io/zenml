@@ -137,12 +137,12 @@ def generate_stack_component_list_command(
             active_component_name = repo.active_stack.components[
                 component_type
             ].name
-
-            cli_utils.print_stack_component_list(
-                components, active_component_name=active_component_name
-            )
         except KeyError:
-            cli_utils.error(f"No available {component_type}.")
+            active_component_name = None
+
+        cli_utils.print_stack_component_list(
+            components, active_component_name=active_component_name
+        )
 
     return list_stack_components_command
 
