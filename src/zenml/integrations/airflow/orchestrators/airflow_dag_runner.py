@@ -33,11 +33,11 @@ from zenml.orchestrators import context_utils
 from zenml.orchestrators.utils import create_tfx_pipeline
 from zenml.repository import Repository
 
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
+from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
+
 if TYPE_CHECKING:
     import airflow
-    from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
-    from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
-
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
@@ -130,17 +130,16 @@ class AirflowDagRunner:
             is_paused_upon_creation=False,
             catchup=catchup,
         )
+
+        pipeline_root = tfx_pipeline.pipeline_info.pipeline_root
+
         if "tmp_dir" not in tfx_pipeline.additional_pipeline_args:
-            tmp_dir = os.path.join(
-                tfx_pipeline.pipeline_info.pipeline_root, ".temp", ""
-            )
+            tmp_dir = os.path.join(pipeline_root, ".temp", "")
             tfx_pipeline.additional_pipeline_args["tmp_dir"] = tmp_dir
 
         for component in tfx_pipeline.components:
             if isinstance(component, base_component.BaseComponent):
-                component._resolve_pip_dependencies(
-                    tfx_pipeline.pipeline_info.pipeline_root
-                )
+                component._resolve_pip_dependencies(pipeline_root)
             self._replace_runtime_params(component)
 
         pb2_pipeline: Pb2Pipeline = compiler.Compiler().compile(tfx_pipeline)
