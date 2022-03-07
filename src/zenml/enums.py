@@ -77,6 +77,7 @@ class TrainingResourceFlavor(StackComponentFlavor):
     """All supported training resource flavors."""
 
     AZUREML = "azureml"
+    SAGEMAKER = "sagemaker"
 
 
 class StackComponentType(StrEnum):
@@ -101,3 +102,4 @@ class MetadataContextTypes(Enum):
     """All possible types that contexts can have within pipeline nodes"""
 
     STACK = "stack"
+    PIPELINE_REQUIREMENTS = "pipeline_requirements"

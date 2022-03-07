@@ -66,12 +66,21 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "-t",
+    "--training_resource",
+    "training_resource_name",
+    help="Name of the training resource for this stack.",
+    type=str,
+    required=False,
+)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
     artifact_store_name: str,
     orchestrator_name: str,
     container_registry_name: Optional[str] = None,
+    training_resource_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
     with console.status(f"Registering stack `{stack_name}`..."):
@@ -95,6 +104,14 @@ def register_stack(
             ] = repo.get_stack_component(
                 StackComponentType.CONTAINER_REGISTRY,
                 name=container_registry_name,
+            )
+
+        if training_resource_name:
+            stack_components[
+                StackComponentType.TRAINING_RESOURCE
+            ] = repo.get_stack_component(
+                StackComponentType.TRAINING_RESOURCE,
+                name=training_resource_name,
             )
 
         stack_ = Stack.from_components(

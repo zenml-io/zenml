@@ -177,6 +177,15 @@ class AirflowDagRunner:
                 pipeline_node, runtime_configuration
             )
 
+            # Add pipeline requirements as a context
+            requirements = " ".join(sorted(pipeline.requirements))
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.PIPELINE_REQUIREMENTS.value,
+                name=str(hash(requirements)),
+                properties={"pipeline_requirements": requirements},
+            )
+
             node_id = pipeline_node.node_info.id
             executor_spec = runner_utils.extract_executor_spec(
                 deployment_config, node_id

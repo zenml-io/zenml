@@ -13,13 +13,15 @@
 #  permissions and limitations under the License.
 
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.orchestration.portable import data_types, launcher
+from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
+from zenml.steps import BaseStep
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -82,3 +84,13 @@ def execute_step(
         string_utils.get_human_readable_time(run_duration),
     )
     return execution_info
+
+
+def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:
+    """Finds the matching step for a tfx pipeline node."""
+    step_name = node.node_info.id
+    for step in steps:
+        if step.name == step_name:
+            return step
+
+    raise RuntimeError("unable to find step")
