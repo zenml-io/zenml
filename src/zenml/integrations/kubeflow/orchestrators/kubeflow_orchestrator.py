@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import re
 from typing import TYPE_CHECKING, Any, Optional
 
 import kfp
@@ -359,24 +360,29 @@ class KubeflowOrchestrator(BaseOrchestrator):
             logger.info(
                 "Found already existing local Kubeflow Pipelines deployment. "
                 "If there are any issues with the existing deployment, please "
-                "run 'zenml orchestrator down' to delete it."
+                "run 'zenml stack down --force' to delete it."
             )
             return
 
         if not local_deployment_utils.check_prerequisites():
-            logger.error(
+            raise ProvisioningError(
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Please install 'k3d' and 'kubectl' and try again."
             )
-            return
 
         container_registry = Repository().active_stack.container_registry
         if not container_registry:
-            logger.error(
+            raise ProvisioningError(
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Missing container registry in current stack."
             )
-            return
+
+        if not re.fullmatch(r"localhost:[0-9]{4,5}", container_registry.uri):
+            raise ProvisioningError(
+                f"Container registry URI '{container_registry.uri}' doesn't "
+                f"match the expected format 'localhost:$PORT'. Provisioning "
+                f"stack resources only works for local container registries."
+            )
 
         logger.info("Provisioning local Kubeflow Pipelines deployment...")
         fileio.make_dirs(self.root_directory)

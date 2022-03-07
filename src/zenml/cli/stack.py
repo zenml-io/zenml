@@ -22,6 +22,7 @@ from zenml.cli.cli import cli
 from zenml.cli.utils import print_stack_configuration
 from zenml.console import console
 from zenml.enums import StackComponentType
+from zenml.exceptions import ProvisioningError
 from zenml.repository import Repository
 from zenml.stack import Stack
 
@@ -194,8 +195,11 @@ def up_stack() -> None:
     """Provisions resources for the stack."""
     stack_ = Repository().active_stack
     cli_utils.declare(f"Provisioning resources for stack '{stack_.name}'.")
-    stack_.provision()
-    stack_.resume()
+    try:
+        stack_.provision()
+        stack_.resume()
+    except ProvisioningError as e:
+        cli_utils.error(str(e))
 
 
 @stack.command("down")
