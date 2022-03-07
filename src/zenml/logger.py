@@ -17,10 +17,10 @@ import os
 import re
 import sys
 from logging.handlers import TimedRotatingFileHandler
-from rich.traceback import install as rich_tb_install
 from typing import Any, Dict
 
 from absl import logging as absl_logging
+from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ABSL_LOGGING_VERBOSITY,

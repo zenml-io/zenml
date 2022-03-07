@@ -153,12 +153,12 @@ python run.py
 That's it! If everything went as planned this pipeline should now be running in the cloud, and we are one step 
 closer to a production pipeline!
 
-## SuperQuick `kubeflow` run
+## SuperQuick `tensorboard` run
 
 If you're really in a hurry and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
 ```shell
-zenml example run kubeflow
+zenml example run tensorboard
 ```

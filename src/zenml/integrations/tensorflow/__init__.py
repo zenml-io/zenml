@@ -26,7 +26,8 @@ class TensorflowIntegration(Integration):
         """Activates the integration."""
         # need to import this explicitly to load the Tensoflow file IO support
         # for S3 and other file systems
-        import tensorflow_io as tfio  # noqa
+        import tensorflow_io  # type: ignore [import]
+
         from zenml.integrations.tensorflow import materializers  # noqa
 
 
