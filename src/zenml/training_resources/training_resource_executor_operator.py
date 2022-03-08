@@ -14,7 +14,7 @@
 
 import os
 import sys
-from typing import cast
+from typing import TYPE_CHECKING, List, Tuple, cast
 
 from tfx.orchestration.portable import data_types
 from tfx.orchestration.portable.base_executor_operator import (
@@ -26,6 +26,9 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils import source_utils
+
+if TYPE_CHECKING:
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -68,6 +71,65 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
     ]
     SUPPORTED_PLATFORM_CONFIG_TYPE = []
 
+    @staticmethod
+    def _collect_requirements(
+        stack: "Stack", execution_info: data_types.ExecutionInfo
+    ) -> List[str]:
+        """Collects all requirements necessary to run a step.
+
+        Args:
+            stack: Stack on which the step is being executed.
+            execution_info: Execution info needed to run the step.
+
+        Returns:
+            Alphabetically sorted list of pip requirements.
+        """
+        requirements = stack.requirements()
+
+        # Add pipeline requirements from the corresponding node context
+        for context in execution_info.pipeline_node.contexts.contexts:
+            if context.type.name == "pipeline_requirements":
+                pipeline_requirements = context.properties[
+                    "pipeline_requirements"
+                ].field_value.string_value.split(" ")
+                requirements |= pipeline_requirements
+                break
+
+        # TODO: Find a nice way to set this if the running version of ZenML is
+        #  not an official release (e.g. on a development branch)
+        requirements.add(
+            "git+https://github.com/zenml-io/zenml.git@feature/training-resource-improvements"
+        )
+
+        return sorted(requirements)
+
+    @staticmethod
+    def _resolve_user_modules(
+        execution_info: data_types.ExecutionInfo,
+    ) -> Tuple[str, str]:
+        """Resolves the main and step module.
+
+        Args:
+            execution_info: Execution info needed to run the step.
+
+        Returns:
+            A tuple containing the path of the resolved main module and step
+            class.
+        """
+        main_module_file = cast(str, sys.modules["__main__"].__file__)
+        main_module_path = source_utils.get_module_source_from_file_path(
+            os.path.abspath(main_module_file)
+        )
+
+        step_type = cast(str, execution_info.pipeline_node.node_info.type.name)
+        step_module_path, step_class = step_type.rsplit(".", maxsplit=1)
+        if step_module_path == "__main__":
+            step_module_path = main_module_path
+
+        step_source_path = f"{step_module_path}.{step_class}"
+
+        return main_module_path, step_source_path
+
     def run_executor(
         self,
         execution_info: data_types.ExecutionInfo,
@@ -75,33 +137,23 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         """Invokes the executor with inputs provided by the Launcher.
 
         Args:
-          execution_info: A wrapper of the info needed by this execution.
+            execution_info: Necessary information to run the executor.
 
         Returns:
-          The output from executor.
+            The executor output.
         """
+        step_name = execution_info.pipeline_node.node_info.id
         stack = Repository().active_stack
         training_resource = stack.training_resource
         if not training_resource:
             raise RuntimeError(
-                f"No training resource specified for active stack '{stack.name}'."
+                f"No training resource specified for active stack "
+                f"'{stack.name}', unable to run step '{step_name}'."
             )
 
-        main_module_file = cast(str, sys.modules["__main__"].__file__)
-        main_module = source_utils.get_module_source_from_file_path(
-            os.path.abspath(main_module_file)
+        requirements = self._collect_requirements(
+            stack=stack, execution_info=execution_info
         )
-
-        (
-            step_module,
-            step_class,
-        ) = execution_info.pipeline_node.node_info.type.name.rsplit(
-            ".", maxsplit=1
-        )
-        if step_module == "__main__":
-            step_module = main_module
-
-        step_source_path = f"{step_module}.{step_class}"
 
         # Write the execution info to a temporary directory inside the artifact
         # store so the training resource entrypoint can load it
@@ -110,6 +162,9 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         )
         _write_execution_info(execution_info, path=execution_info_path)
 
+        main_module, step_source_path = self._resolve_user_modules(
+            execution_info=execution_info
+        )
         entrypoint_command = [
             "python",
             "-m",
@@ -122,28 +177,21 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
             execution_info_path,
         ]
 
-        requirements = stack.requirements()
-
-        for context in execution_info.pipeline_node.contexts.contexts:
-            if context.type.name == "pipeline_requirements":
-                pipeline_requirements = set(
-                    context.properties[
-                        "pipeline_requirements"
-                    ].field_value.string_value.split(" ")
-                )
-                requirements |= pipeline_requirements
-
-        # TODO: Find a nice way to set this if the running version of ZenML is
-        #  not an official release (e.g. on a development branch)
-        requirements.add(
-            "git+https://github.com/zenml-io/zenml.git@feature/ENG-640-training-resource"
+        logger.info(
+            "Using training resource '%s' to run step '%s'.",
+            training_resource.name,
+            step_name,
         )
-
+        logger.debug(
+            "Training resource requirements: %s, entrypoint command: %s.",
+            requirements,
+            entrypoint_command,
+        )
         training_resource.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,
+            requirements=requirements,
             entrypoint_command=entrypoint_command,
-            requirements=sorted(requirements),
         )
 
         return _read_executor_output(execution_info.execution_output_uri)
