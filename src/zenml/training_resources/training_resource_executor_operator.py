@@ -92,7 +92,7 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
                 pipeline_requirements = context.properties[
                     "pipeline_requirements"
                 ].field_value.string_value.split(" ")
-                requirements |= pipeline_requirements
+                requirements.update(pipeline_requirements)
                 break
 
         # TODO: Find a nice way to set this if the running version of ZenML is
@@ -167,8 +167,8 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         )
 
         input_artifact_type_mapping = {
-            input_name: source_utils.resolve_class(artifact.__class__)
-            for input_name, artifact in execution_info.input_dict.items()
+            input_name: source_utils.resolve_class(artifacts[0].__class__)
+            for input_name, artifacts in execution_info.input_dict.items()
         }
         entrypoint_command = [
             "python",
