@@ -436,7 +436,7 @@ class _FunctionExecutor(BaseExecutor):
         # the pipeline runtime, such as the current step name and the current
         # pipeline run ID
         with StepEnvironment(
-            pipeline_name=self._context.pipeline_info.id,  # type: ignore[attr-defined]
+            pipeline_name=self._context.pipeline_info.id,
             pipeline_run_id=self._context.pipeline_run_id,
             step_name=getattr(self, PARAM_STEP_NAME),
         ):

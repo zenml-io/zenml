@@ -172,6 +172,11 @@ follow_imports = "skip"
 
 # end of fix
 
+# import all tfx.proto.* files as `Any`
+[[tool.mypy.overrides]]
+module = "tfx.proto.*"
+follow_imports = "skip"
+
 [[tool.mypy.overrides]]
 module = [
     "tensorflow.*",

@@ -14,7 +14,7 @@
 
 import json
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.orchestration.portable import data_types, launcher
@@ -72,8 +72,8 @@ def get_cache_status(
         The caching status of a `tfx` step as a boolean value.
     """
     if execution_info is None:
-        logger.warn("No execution info found when checking for cache status.")
-        return
+        logger.warning("No execution info found when checking cache status.")
+        return False
 
     status = False
     repository = Repository()
@@ -91,7 +91,7 @@ def get_cache_status(
         pipeline_name = execution_info.pipeline_info.id
     else:
         raise KeyError(f"No pipeline info found for step `{step_name}`.")
-    pipeline_run_name = execution_info.pipeline_run_id
+    pipeline_run_name = cast(str, execution_info.pipeline_run_id)
     pipeline = metadata_store.get_pipeline(pipeline_name)
     if pipeline is None:
         logger.error(f"Pipeline {pipeline_name} not found in Metadata Store.")
@@ -116,7 +116,7 @@ def execute_step(
     step_name_param = (
         INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
     )
-    pipeline_step_name = tfx_launcher._pipeline_node.node_info.id  # type: ignore[attr-defined]
+    pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
     start_time = time.time()
     logger.info(f"Step `{pipeline_step_name}` has started.")
     try:
