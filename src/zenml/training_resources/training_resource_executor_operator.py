@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import json
 import os
 import sys
 from typing import TYPE_CHECKING, List, Tuple, cast
@@ -165,6 +165,11 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         main_module, step_source_path = self._resolve_user_modules(
             execution_info=execution_info
         )
+
+        input_artifact_type_mapping = {
+            input_name: source_utils.resolve_class(artifact.__class__)
+            for input_name, artifact in execution_info.input_dict.items()
+        }
         entrypoint_command = [
             "python",
             "-m",
@@ -175,6 +180,8 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
             step_source_path,
             "--execution_info_path",
             execution_info_path,
+            "--input_artifact_types",
+            json.dumps(input_artifact_type_mapping),
         ]
 
         logger.info(

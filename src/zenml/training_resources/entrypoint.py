@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 
 import importlib
+import json
 import logging
 import sys
-from typing import Type, cast
+from typing import Dict, Type, cast
 
 import click
 from tfx.dsl.components.base.base_executor import BaseExecutor
@@ -36,7 +37,7 @@ from zenml.utils import source_utils
 
 def create_executor_class(
     step_source_path: str,
-    # input_artifact_type_mapping: Dict[str, str],
+    input_artifact_type_mapping: Dict[str, str],
 ) -> Type[_FunctionExecutor]:
     """Creates an executor class for a given step.
 
@@ -53,14 +54,14 @@ def create_executor_class(
     materializers = step_instance.get_materializers(ensure_complete=True)
 
     input_spec = {}
-    # for input_name, class_path in input_artifact_type_mapping.items():
-    #     artifact_class = source_utils.load_source_path_class(class_path)
-    #     if not issubclass(artifact_class, BaseArtifact):
-    #         raise RuntimeError(
-    #             f"Class `{artifact_class}` specified as artifact class for "
-    #             f"input '{input_name}' is not a ZenML BaseArtifact subclass."
-    #         )
-    #     input_spec[input_name] = artifact_class
+    for input_name, class_path in input_artifact_type_mapping.items():
+        artifact_class = source_utils.load_source_path_class(class_path)
+        if not issubclass(artifact_class, BaseArtifact):
+            raise RuntimeError(
+                f"Class `{artifact_class}` specified as artifact class for "
+                f"input '{input_name}' is not a ZenML BaseArtifact subclass."
+            )
+        input_spec[input_name] = artifact_class
 
     for key, value in step_class.INPUT_SIGNATURE.items():
         input_spec[key] = BaseArtifact
@@ -124,10 +125,12 @@ def configure_executor(
 @click.option("--main_module", required=True, type=str)
 @click.option("--step_source_path", required=True, type=str)
 @click.option("--execution_info_path", required=True, type=str)
+@click.option("--input_artifact_types", required=True, type=str)
 def main(
     main_module: str,
     step_source_path: str,
     execution_info_path: str,
+    input_artifact_types: str,
 ) -> None:
     """Runs a single ZenML step."""
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -140,7 +143,7 @@ def main(
 
     executor_class = create_executor_class(
         step_source_path=step_source_path,
-        # input_artifact_type_mapping=json.loads(args.input_artifact_types),
+        input_artifact_type_mapping=json.loads(input_artifact_types),
     )
 
     execution_info = load_execution_info(execution_info_path)
