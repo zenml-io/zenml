@@ -15,6 +15,9 @@ from contextlib import ExitStack as does_not_raise
 from typing import Optional
 
 import pytest
+from tfx.orchestration.portable.python_executor_operator import (
+    PythonExecutorOperator,
+)
 
 from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.environment import Environment
@@ -22,6 +25,9 @@ from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps import BaseStepConfig, Output, StepContext, step
+from zenml.training_resources.training_resource_executor_operator import (
+    TrainingResourceExecutorOperator,
+)
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():
@@ -246,6 +252,43 @@ def test_unrecognized_output_in_output_artifact_types():
 
     with pytest.raises(StepInterfaceError):
         some_step()
+
+
+def test_enabling_a_training_resource_for_a_step():
+    """Tests that training resources are disabled by default and can be enabled
+    using the step decorator."""
+
+    @step
+    def step_without_training_resource():
+        pass
+
+    @step(enable_training_resource=True)
+    def step_with_training_resource():
+        pass
+
+    assert step_without_training_resource().enable_training_resource is False
+    assert step_with_training_resource().enable_training_resource is True
+
+
+def test_step_executor_operator():
+    """Tests that the step returns the correct executor operator."""
+
+    @step(enable_training_resource=False)
+    def step_without_training_resource():
+        pass
+
+    @step(enable_training_resource=True)
+    def step_with_training_resource():
+        pass
+
+    assert (
+        step_without_training_resource().executor_operator
+        is PythonExecutorOperator
+    )
+    assert (
+        step_with_training_resource().executor_operator
+        is TrainingResourceExecutorOperator
+    )
 
 
 def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
