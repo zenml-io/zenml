@@ -13,21 +13,14 @@
 #  permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import List
 
 from zenml.enums import StackComponentType, TrainingResourceFlavor
 from zenml.stack import StackComponent
 
-if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
-    from zenml.runtime_configuration import RuntimeConfiguration
-
 
 class BaseTrainingResource(StackComponent, ABC):
     """Base class for all ZenML training resources."""
-
-    _pipeline: Optional["BasePipeline"] = None
-    _runtime_configuration: Optional["RuntimeConfiguration"] = None
 
     @property
     def type(self) -> StackComponentType:
@@ -44,8 +37,23 @@ class BaseTrainingResource(StackComponent, ABC):
         self,
         pipeline_name: str,
         run_name: str,
-        entrypoint_command: List[str],
         requirements: List[str],
-    ) -> Any:
-        """Launches a step on the training resource."""
-        raise NotImplementedError
+        entrypoint_command: List[str],
+    ) -> None:
+        """Abstract method to execute a step on a training resource.
+
+        Concrete training resource subclasses must implement the following
+        functionality in this method:
+        - Prepare the execution environment and install all the necessary
+          `requirements`
+        - Launch a **synchronous** job that executes the `entrypoint_command`
+
+        Args:
+            pipeline_name: Name of the pipeline which the step to be executed
+                is part of.
+            run_name: Name of the pipeline run which the step to be executed
+                is part of.
+            entrypoint_command: Command that executes the step.
+            requirements: List of pip requirements that must be installed
+                inside the training resource environment.
+        """

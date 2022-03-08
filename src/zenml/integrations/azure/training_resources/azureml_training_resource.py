@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from azureml.core import (
     ComputeTarget,
@@ -128,10 +128,20 @@ class AzureMLTrainingResource(BaseTrainingResource):
         self,
         pipeline_name: str,
         run_name: str,
-        entrypoint_command: List[str],
         requirements: List[str],
-    ) -> Any:
-        """Launches a step on AzureML."""
+        entrypoint_command: List[str],
+    ) -> None:
+        """Launches a step on AzureML.
+
+        Args:
+            pipeline_name: Name of the pipeline which the step to be executed
+                is part of.
+            run_name: Name of the pipeline run which the step to be executed
+                is part of.
+            entrypoint_command: Command that executes the step.
+            requirements: List of pip requirements that must be installed
+                inside the training resource environment.
+        """
         workspace = Workspace.get(
             subscription_id=self.subscription_id,
             resource_group=self.resource_group,
