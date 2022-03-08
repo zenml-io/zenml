@@ -48,12 +48,15 @@ import pydantic
 from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
+from tfx.orchestration.portable import outputs_utils
+from tfx.proto.orchestration import execution_result_pb2
 from tfx.types import component_spec
 from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.base_step_config import BaseStepConfig
@@ -472,13 +475,15 @@ class _FunctionExecutor(BaseExecutor):
                     output_name, output_dict[output_name][0], return_value
                 )
 
-        from tfx.orchestration.portable import outputs_utils
-        from tfx.proto.orchestration import execution_result_pb2
+        # Write the executor output to the artifact store so the executor
+        # operator (potentially not running on the same machine) can read it
+        # to populate the metadata store
+        executor_output = execution_result_pb2.ExecutorOutput()
+        outputs_utils.populate_output_artifact(executor_output, output_dict)
 
-        from zenml.io import fileio
-
-        result = execution_result_pb2.ExecutorOutput()
-        outputs_utils.populate_output_artifact(result, output_dict)
-
+        logger.debug(
+            "Writing executor output to '%s'.",
+            self._context.executor_output_uri,
+        )
         with fileio.open(self._context.executor_output_uri, "wb") as f:
-            f.write(result.SerializeToString())
+            f.write(executor_output.SerializeToString())
