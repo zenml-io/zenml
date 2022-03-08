@@ -53,15 +53,15 @@ def _parse_dockerignore(dockerignore_path: str) -> List[str]:
 
 def generate_dockerfile_contents(
     base_image: str,
-    command: Optional[str] = None,
+    entrypoint: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
 ) -> str:
     """Generates a Dockerfile.
 
     Args:
         base_image: The image to use as base for the dockerfile.
-        command: The default command that gets executed when running a
-            container of an image created by this dockerfile.
+        entrypoint: The default entrypoint command that gets executed when
+            running a container of an image created by this dockerfile.
         requirements: Optional list of pip requirements to install.
 
     Returns:
@@ -70,16 +70,14 @@ def generate_dockerfile_contents(
     lines = [f"FROM {base_image}", "WORKDIR /app"]
 
     if requirements:
-        lines.extend(
-            [
-                f"RUN pip install --no-cache {' '.join(sorted(requirements))}",
-            ]
+        lines.append(
+            f"RUN pip install --no-cache {' '.join(sorted(requirements))}"
         )
 
     lines.append("COPY . .")
 
-    if command:
-        lines.append(f"CMD {command}")
+    if entrypoint:
+        lines.append(f"ENTRYPOINT {entrypoint}")
 
     return "\n".join(lines)
 
@@ -171,6 +169,7 @@ def get_current_environment_requirements() -> Dict[str, str]:
 def build_docker_image(
     build_context_path: str,
     image_name: str,
+    entrypoint: Optional[str] = None,
     dockerfile_path: Optional[str] = None,
     dockerignore_path: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
@@ -183,6 +182,8 @@ def build_docker_image(
         build_context_path: Path to a directory that will be sent to the
             docker daemon as build context.
         image_name: The name to use for the created docker image.
+        entrypoint: Optional entrypoint command that gets executed when running
+            a container of the built image.
         dockerfile_path: Optional path to a dockerfile. If no value is given,
             a temporary dockerfile will be created.
         dockerignore_path: Optional path to a dockerignore file. If no value is
@@ -216,8 +217,9 @@ def build_docker_image(
         )
     else:
         dockerfile_contents = generate_dockerfile_contents(
-            requirements=requirements,
             base_image=base_image or DEFAULT_BASE_IMAGE,
+            entrypoint=entrypoint,
+            requirements=requirements,
         )
 
     build_context = create_custom_build_context(
@@ -315,9 +317,7 @@ def _process_stream(stream: Iterable[bytes]) -> None:
             try:
                 line_json = json.loads(line)
                 if "error" in line_json:
-                    raise RuntimeError(
-                        f"Failed to build docker image: {line_json['error']}."
-                    )
+                    raise RuntimeError(f"Docker error: {line_json['error']}.")
                 elif "stream" in line_json:
                     logger.info(line_json["stream"].strip())
                 else:

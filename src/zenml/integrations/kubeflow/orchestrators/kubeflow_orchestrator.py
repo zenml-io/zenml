@@ -132,7 +132,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
         """
-        from zenml.integrations.kubeflow.docker_utils import (
+        from zenml.utils.docker_utils import (
             build_docker_image,
             push_docker_image,
         )
@@ -161,7 +161,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline on Kubeflow Pipelines."""
-        from zenml.integrations.kubeflow.docker_utils import get_image_digest
+        from zenml.utils.docker_utils import get_image_digest
 
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
