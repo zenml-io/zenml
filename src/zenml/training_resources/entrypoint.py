@@ -12,12 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import argparse
 import importlib
 import logging
 import sys
-from typing import Type
+from typing import Type, cast
 
+import click
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.orchestration.portable.data_types import ExecutionInfo
 from tfx.orchestration.portable.python_executor_operator import (
@@ -28,26 +28,25 @@ from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.integrations.registry import integration_registry
+from zenml.steps import BaseStep
 from zenml.steps.utils import _FunctionExecutor, generate_component_class
+from zenml.utils import source_utils
 
 
-def _create_executor_class(
-    step_source_module_name: str,
-    step_function_name: str,
+def create_executor_class(
+    step_source_path: str,
     # input_artifact_type_mapping: Dict[str, str],
 ) -> Type[_FunctionExecutor]:
-    """Creates an executor class for a given step and adds it to the target
-    module.
+    """Creates an executor class for a given step.
 
     Args:
-        step_source_module_name: Name of the module in which the step function
-            is defined.
-        step_function_name: Name of the step function.
+        step_source_path: Import path of the step to run.
         input_artifact_type_mapping: A dictionary mapping input names to
             a string representation of their artifact classes.
     """
-    step_module = importlib.import_module(step_source_module_name)
-    step_class = getattr(step_module, step_function_name)
+    step_class = cast(
+        Type[BaseStep], source_utils.load_source_path_class(step_source_path)
+    )
     step_instance = step_class()
 
     materializers = step_instance.get_materializers(ensure_complete=True)
@@ -76,7 +75,7 @@ def _create_executor_class(
 
     component_class = generate_component_class(
         step_name=step_instance.name,
-        step_module=step_source_module_name,
+        step_module=step_class.__module__,
         input_spec=input_spec,
         output_spec=output_spec,
         execution_parameter_names=set(execution_parameters),
@@ -87,44 +86,26 @@ def _create_executor_class(
     return component_class.EXECUTOR_SPEC.executor_class
 
 
-def _parse_command_line_arguments() -> argparse.Namespace:
-    """Parses the command line input arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--main_module", type=str, required=True)
-    parser.add_argument("--step_module", type=str, required=True)
-    parser.add_argument("--step_function_name", type=str, required=True)
-    # parser.add_argument("--input_artifact_types", type=str, required=True)
-    parser.add_argument("--execution_info", type=str, required=True)
-
-    return parser.parse_args()
-
-
-def main() -> None:
-    """Runs a single step defined by the command line arguments."""
-    # Log to the container's stdout so Kubeflow Pipelines UI can display logs to
-    # the user.
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    logging.getLogger().setLevel(logging.INFO)
-
-    args = _parse_command_line_arguments()
-
-    # make sure all integrations are activated so all materializers etc. are
-    # available
-    integration_registry.activate_integrations()
-
-    # import the user main module to register all the materializers
-    importlib.import_module(args.main_module)
-
-    executor_class = _create_executor_class(
-        step_source_module_name=args.step_module,
-        step_function_name=args.step_function_name,
-        # executor_class_target_module_name=executor_class_target_module_name,
-        # input_artifact_type_mapping=json.loads(args.input_artifact_types),
-    )
-
-    with open(args.execution_info, "rb") as f:
+def load_execution_info(execution_info_path: str) -> ExecutionInfo:
+    """Loads the execution info from the given path."""
+    with open(execution_info_path, "rb") as f:
         execution_info_proto = ExecutionInvocation.FromString(f.read())
-    execution_info = ExecutionInfo.from_proto(execution_info_proto)
+
+    return ExecutionInfo.from_proto(execution_info_proto)
+
+
+def configure_executor(
+    executor_class: Type[BaseExecutor], execution_info: ExecutionInfo
+) -> BaseExecutor:
+    """Creates and configures an executor instance.
+
+    Args:
+        executor_class: The class of the executor instance.
+        execution_info: Execution info for the executor.
+
+    Returns:
+        A configured executor instance.
+    """
     context = BaseExecutor.Context(
         tmp_dir=execution_info.tmp_dir,
         unique_id=str(execution_info.execution_id),
@@ -135,7 +116,34 @@ def main() -> None:
         pipeline_run_id=execution_info.pipeline_run_id,
     )
 
-    executor = executor_class(context=context)
+    return executor_class(context=context)
+
+
+@click.command()
+@click.option("--main_module", required=True, type=str)
+@click.option("--step_source_path", required=True, type=str)
+@click.option("--execution_info_path", required=True, type=str)
+def main(
+    main_module: str,
+    step_source_path: str,
+    execution_info_path: str,
+) -> None:
+    """Runs a single ZenML step."""
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    logging.getLogger().setLevel(logging.INFO)
+
+    # activate integrations and import the user main module to register all
+    # materializers and stack components
+    integration_registry.activate_integrations()
+    importlib.import_module(main_module)
+
+    executor_class = create_executor_class(
+        step_source_path=step_source_path,
+        # input_artifact_type_mapping=json.loads(args.input_artifact_types),
+    )
+
+    execution_info = load_execution_info(execution_info_path)
+    executor = configure_executor(executor_class, execution_info=execution_info)
     run_with_executor(execution_info=execution_info, executor=executor)
 
 

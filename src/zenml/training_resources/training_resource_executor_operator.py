@@ -23,8 +23,43 @@ from tfx.orchestration.portable.base_executor_operator import (
 from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
 
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils import source_utils
+
+logger = get_logger(__name__)
+
+
+def _write_execution_info(
+    execution_info: data_types.ExecutionInfo, path: str
+) -> None:
+    """Writes execution information to a given path."""
+    execution_info_bytes = execution_info.to_proto().SerializeToString()
+
+    with fileio.open(path, "wb") as f:
+        f.write(execution_info_bytes)
+
+    logger.debug("Finished writing execution info to '%s'", path)
+
+
+def _read_executor_output(
+    output_path: str,
+) -> execution_result_pb2.ExecutorOutput:
+    """Reads executor output from the given path.
+
+    Returns:
+        Executor output object.
+
+    Raises:
+        RuntimeError: If no output is written to the given path.
+    """
+    if fileio.file_exists(output_path):
+        with fileio.open(output_path, "rb") as f:
+            return execution_result_pb2.ExecutorOutput.FromString(f.read())
+    else:
+        raise RuntimeError(
+            f"Unable to find executor output at path '{output_path}'."
+        )
 
 
 class TrainingResourceExecutorOperator(BaseExecutorOperator):
@@ -52,28 +87,28 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
                 f"No training resource specified for active stack '{stack.name}'."
             )
 
-        execution_info_proto = execution_info.to_proto().SerializeToString()
-        execution_info_file_name = "zenml-execution-info"
-        execution_info_path = os.path.join(
-            Repository().root, execution_info_file_name
-        )
-        with open(execution_info_path, "wb") as f:
-            f.write(execution_info_proto)
-
         main_module_file = cast(str, sys.modules["__main__"].__file__)
         main_module = source_utils.get_module_source_from_file_path(
             os.path.abspath(main_module_file)
         )
 
-        step_module = execution_info.pipeline_node.node_info.type.name.split(
-            "."
-        )[:-1]
-        if step_module[0] == "__main__":
+        (
+            step_module,
+            step_class,
+        ) = execution_info.pipeline_node.node_info.type.name.rsplit(
+            ".", maxsplit=1
+        )
+        if step_module == "__main__":
             step_module = main_module
-        else:
-            step_module = ".".join(step_module)
 
-        step_function_name = execution_info.pipeline_node.node_info.id
+        step_source_path = f"{step_module}.{step_class}"
+
+        # Write the execution info to a temporary directory inside the artifact
+        # store so the training resource entrypoint can load it
+        execution_info_path = os.path.join(
+            execution_info.tmp_dir, "zenml_execution_info.pb"
+        )
+        _write_execution_info(execution_info, path=execution_info_path)
 
         entrypoint_command = [
             "python",
@@ -81,12 +116,10 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
             "zenml.training_resources.entrypoint",
             "--main_module",
             main_module,
-            "--step_module",
-            step_module,
-            "--step_function_name",
-            step_function_name,
-            "--execution_info",
-            execution_info_file_name,
+            "--step_source_path",
+            step_source_path,
+            "--execution_info_path",
+            execution_info_path,
         ]
 
         requirements = stack.requirements()
@@ -113,11 +146,4 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
             requirements=sorted(requirements),
         )
 
-        if fileio.file_exists(execution_info.execution_output_uri):
-            result = execution_result_pb2.ExecutorOutput.FromString(
-                fileio.open(execution_info.execution_output_uri, "rb").read()
-            )
-        else:
-            raise ValueError("missing file")
-
-        return result
+        return _read_executor_output(execution_info.execution_output_uri)
