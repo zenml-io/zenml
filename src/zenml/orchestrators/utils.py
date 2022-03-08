@@ -89,8 +89,7 @@ def execute_step(
 def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:
     """Finds the matching step for a tfx pipeline node."""
     step_name = node.node_info.id
-    for step in steps:
-        if step.name == step_name:
-            return step
-
-    raise RuntimeError("unable to find step")
+    try:
+        return next(step for step in steps if step.name == step_name)
+    except StopIteration:
+        raise RuntimeError(f"Unable to find step with name '{step_name}'.")
