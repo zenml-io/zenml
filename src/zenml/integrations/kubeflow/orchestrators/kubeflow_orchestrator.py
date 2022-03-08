@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any, Optional
 import kfp
 import urllib3
 from kfp_server_api.exceptions import ApiException
-from kubernetes import config
 
 import zenml.io.utils
 from zenml.enums import OrchestratorFlavor, StackComponentType
@@ -211,11 +210,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     self.kubernetes_context,
                 )
 
-            # load kubernetes config to authorize the KFP client
-            config.load_kube_config(context=self.kubernetes_context)
-
             # upload the pipeline to Kubeflow and start it
-            client = kfp.Client()
+            client = kfp.Client(kube_context=self.kubernetes_context)
             if runtime_configuration.schedule:
                 try:
                     experiment = client.get_experiment(pipeline_name)
