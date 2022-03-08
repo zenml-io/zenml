@@ -60,6 +60,7 @@ from zenml.steps.utils import (
     SINGLE_RETURN_OUT_NAME,
     _ZenMLSimpleComponent,
     generate_component_class,
+    resolve_type_annotation,
 )
 from zenml.training_resources.training_resource_executor_operator import (
     TrainingResourceExecutorOperator,
@@ -125,6 +126,7 @@ class BaseStepMeta(type):
         # Verify the input arguments of the step function
         for arg in step_function_args:
             arg_type = step_function_signature.annotations.get(arg, None)
+            arg_type = resolve_type_annotation(arg_type)
 
             if not arg_type:
                 raise StepInterfaceError(
@@ -167,9 +169,14 @@ class BaseStepMeta(type):
         return_type = step_function_signature.annotations.get("return", None)
         if return_type is not None:
             if isinstance(return_type, Output):
-                cls.OUTPUT_SIGNATURE = dict(return_type.items())
+                cls.OUTPUT_SIGNATURE = {
+                    name: resolve_type_annotation(type_)
+                    for (name, type_) in return_type.items()
+                }
             else:
-                cls.OUTPUT_SIGNATURE[SINGLE_RETURN_OUT_NAME] = return_type
+                cls.OUTPUT_SIGNATURE[
+                    SINGLE_RETURN_OUT_NAME
+                ] = resolve_type_annotation(return_type)
 
         # Raise an exception if input and output names of a step overlap as
         # tfx requires them to be unique

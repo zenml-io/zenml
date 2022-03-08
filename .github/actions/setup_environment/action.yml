@@ -1,0 +1,42 @@
+name: "Setup Matrix and Poetry"
+description: "Install Poetry, loads cached venv if applicable, and performs miscellaneous other operations"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Delete error-causing bash
+      shell: bash
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: rm.exe "C:/WINDOWS/system32/bash.EXE"
+
+    - name: Set path to bash for example runner
+      shell: bash
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        echo "SHELL_EXECUTABLE=C:\Program Files\Git\bin\bash.exe" >> $GITHUB_ENV
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v2.1.6
+      with:
+        path: |
+          .venv
+          poetry.lock
+        # Cache the complete venv dir for a given os, python version, pyproject.toml
+        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+
+    - name: Install Project
+      shell: bash
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install

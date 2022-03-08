@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+from datetime import datetime, timedelta
 
 from pipeline import (
     dynamic_importer,
@@ -20,6 +20,8 @@ from pipeline import (
     sklearn_evaluator,
     sklearn_trainer,
 )
+
+from zenml.pipelines import Schedule
 
 if __name__ == "__main__":
     # Initialize a new pipeline run
@@ -30,5 +32,12 @@ if __name__ == "__main__":
         evaluator=sklearn_evaluator(),
     )
 
-    # Run the new pipeline
-    scikit_p.run()
+    # Run the new pipeline on a Schedule
+    DAG = scikit_p.run(
+        schedule=Schedule(
+            start_time=datetime.now(),
+            end_time=datetime.now() + timedelta(minutes=9),
+            interval_second=180,
+            catchup=False,
+        )
+    )

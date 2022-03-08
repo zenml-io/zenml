@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 
 import os
+import re
 from typing import TYPE_CHECKING, Any, Optional
 
 import kfp
 import urllib3
 from kfp_server_api.exceptions import ApiException
-from kubernetes import config
 
 import zenml.io.utils
 from zenml.enums import OrchestratorFlavor, StackComponentType
@@ -210,11 +210,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     self.kubernetes_context,
                 )
 
-            # load kubernetes config to authorize the KFP client
-            config.load_kube_config(context=self.kubernetes_context)
-
             # upload the pipeline to Kubeflow and start it
-            client = kfp.Client()
+            client = kfp.Client(kube_context=self.kubernetes_context)
             if runtime_configuration.schedule:
                 try:
                     experiment = client.get_experiment(pipeline_name)
@@ -359,24 +356,29 @@ class KubeflowOrchestrator(BaseOrchestrator):
             logger.info(
                 "Found already existing local Kubeflow Pipelines deployment. "
                 "If there are any issues with the existing deployment, please "
-                "run 'zenml orchestrator down' to delete it."
+                "run 'zenml stack down --force' to delete it."
             )
             return
 
         if not local_deployment_utils.check_prerequisites():
-            logger.error(
+            raise ProvisioningError(
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Please install 'k3d' and 'kubectl' and try again."
             )
-            return
 
         container_registry = Repository().active_stack.container_registry
         if not container_registry:
-            logger.error(
+            raise ProvisioningError(
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Missing container registry in current stack."
             )
-            return
+
+        if not re.fullmatch(r"localhost:[0-9]{4,5}", container_registry.uri):
+            raise ProvisioningError(
+                f"Container registry URI '{container_registry.uri}' doesn't "
+                f"match the expected format 'localhost:$PORT'. Provisioning "
+                f"stack resources only works for local container registries."
+            )
 
         logger.info("Provisioning local Kubeflow Pipelines deployment...")
         fileio.make_dirs(self.root_directory)

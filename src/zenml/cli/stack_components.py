@@ -55,7 +55,7 @@ def _get_stack_component(
 
     component = repo.active_stack.components[component_type]
     cli_utils.declare(
-        f"No orchestrator name given, using `{component.name}` "
+        f"No component name given, using `{component.name}` "
         f"from active stack."
     )
     return component
@@ -103,16 +103,31 @@ def generate_stack_component_describe_command(
         if len(components) == 0:
             cli_utils.warning(f"No {plural_display_name} registered.")
             return
+
+        try:
+            component = _get_stack_component(
+                component_type, component_name=name
+            )
+        except KeyError:
+            if name:
+                cli_utils.warning(
+                    f"No {singular_display_name} found for name '{name}'."
+                )
+            else:
+                cli_utils.warning(
+                    f"No {singular_display_name} in active stack."
+                )
+            return
+
         try:
             active_component_name = repo.active_stack.components[
                 component_type
             ].name
+            is_active = active_component_name == component.name
         except KeyError:
-            cli_utils.error(f"No available {component_type}.")
-            return
+            # there is no component of this type in the active stack
+            is_active = False
 
-        component = _get_stack_component(component_type, component_name=name)
-        is_active = active_component_name == component.name
         cli_utils.print_stack_component_configuration(
             component, singular_display_name, is_active
         )
@@ -137,12 +152,12 @@ def generate_stack_component_list_command(
             active_component_name = repo.active_stack.components[
                 component_type
             ].name
-
-            cli_utils.print_stack_component_list(
-                components, active_component_name=active_component_name
-            )
         except KeyError:
-            cli_utils.error(f"No available {component_type}.")
+            active_component_name = None
+
+        cli_utils.print_stack_component_list(
+            components, active_component_name=active_component_name
+        )
 
     return list_stack_components_command
 

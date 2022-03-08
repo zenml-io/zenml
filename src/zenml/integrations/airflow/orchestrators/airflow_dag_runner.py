@@ -49,7 +49,9 @@ class AirflowPipelineConfig(pipeline_config.PipelineConfig):
     """Pipeline config for AirflowDagRunner."""
 
     def __init__(
-        self, airflow_dag_config: Optional[Dict[str, Any]] = None, **kwargs: Any
+        self,
+        airflow_dag_config: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
     ):
         """Creates an instance of AirflowPipelineConfig.
 
@@ -198,8 +200,8 @@ class AirflowDagRunner:
                 parent_dag=airflow_dag,
                 pipeline_node=pipeline_node,
                 mlmd_connection=connection_config,
-                pipeline_info=pipeline.pipeline_info,
-                pipeline_runtime_spec=pipeline.runtime_spec,
+                pipeline_info=tfx_pipeline.pipeline_info,
+                pipeline_runtime_spec=pb2_pipeline.runtime_spec,
                 executor_spec=executor_spec,
                 custom_driver_spec=custom_driver_spec,
             )
