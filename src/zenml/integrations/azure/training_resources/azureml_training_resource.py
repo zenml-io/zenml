@@ -42,7 +42,19 @@ from zenml.training_resources import BaseTrainingResource
     component_flavor=TrainingResourceFlavor.AZUREML,
 )
 class AzureMLTrainingResource(BaseTrainingResource):
-    """Training resource to run a step on AzureML."""
+    """Training resource to run a step on AzureML.
+
+    Attributes:
+        subscription_id:
+        resource_group:
+        workspace_name:
+        compute_target_name:
+        environment_name:
+        docker_base_image:
+        tenant_id:
+        service_principal_id:
+        service_principal_password:
+    """
 
     supports_local_execution = True
     supports_remote_execution = True

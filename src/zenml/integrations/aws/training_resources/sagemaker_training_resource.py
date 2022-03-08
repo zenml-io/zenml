@@ -31,7 +31,15 @@ from zenml.utils import docker_utils
     component_flavor=TrainingResourceFlavor.SAGEMAKER,
 )
 class SagemakerTrainingResource(BaseTrainingResource):
-    """Training resource to run a step on Sagemaker."""
+    """Training resource to run a step on Sagemaker.
+
+    Attributes:
+        role:
+        instance_type:
+        base_image:
+        bucket:
+        experiment_name:
+    """
 
     supports_local_execution = True
     supports_remote_execution = True
