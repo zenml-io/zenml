@@ -281,11 +281,18 @@ def _dump_ui_metadata(
             or spec.artifact_spec.type.name == ModelArtifact.TYPE_NAME
         ):
             output_model = execution_info.output_dict[name][0]
+            source = output_model.uri
 
+            # For local artifact repository, use a path that is relative to
+            # the point where the local artifact folder is mounted as a volume
+            artifact_store = Repository().active_stack.artifact_store
+            if artifact_store.supports_local_execution:
+                source = os.path.relpath(source, artifact_store.path)
+                source = f"volume://local-artifact-store/{source}"
             # Add Tensorboard view.
             tensorboard_output = {
                 "type": "tensorboard",
-                "source": output_model.uri,
+                "source": source,
             }
             outputs.append(tensorboard_output)
 

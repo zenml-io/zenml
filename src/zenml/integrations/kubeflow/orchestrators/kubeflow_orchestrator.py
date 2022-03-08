@@ -401,6 +401,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 kubernetes_context=kubernetes_context
             )
 
+            artifact_store = Repository().active_stack.artifact_store
+            if artifact_store.supports_local_execution:
+                local_deployment_utils.add_hostpath_to_kubeflow_pipelines(
+                    kubernetes_context=kubernetes_context,
+                    local_path=artifact_store.path,
+                )
+
             local_deployment_utils.start_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path,
                 log_file_path=self.log_file,

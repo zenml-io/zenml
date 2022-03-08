@@ -1,0 +1,164 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
+from typing import (
+    Any,
+    Callable,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
+
+from zenml.integrations.mlflow.mlflow_step_decorator import (
+    enable_mlflow as enable_mlflow_step,
+)
+from zenml.pipelines.base_pipeline import BasePipeline
+from zenml.steps import BaseStep
+
+# pipeline class type
+P = TypeVar("P", bound=Type[BasePipeline])
+
+
+@overload
+def enable_mlflow(
+    _pipeline: P,
+) -> P:
+    """Type annotations for mlflow pipeline decorator in case of no arguments."""
+    ...
+
+
+@overload
+def enable_mlflow(
+    *,
+    experiment_name: Optional[str] = None,
+) -> Callable[[P], P]:
+    """Type annotations for mlflow pipeline decorator in case of arguments."""
+    ...
+
+
+def enable_mlflow(
+    _pipeline: Optional[P] = None,
+    *,
+    experiment_name: Optional[str] = None,
+) -> Union[P, Callable[[P], P]]:
+    """Decorator to enable mlflow for a pipeline.
+
+    Apply this decorator to a ZenML pipeline to enable MLflow experiment
+    tracking. The MLflow tracking configuration (tracking URI, experiment name,
+    run name) will be automatically configured before each steps in the
+    pipeline is executed, so the step can simply use the `mlflow` module to log
+    metrics and artifacts, like so:
+
+    ```python
+    @enable_mlflow
+    @step
+    def tf_evaluator(
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        model: tf.keras.Model,
+    ) -> float:
+        _, test_acc = model.evaluate(x_test, y_test, verbose=2)
+        mlflow.log_metric("val_accuracy", test_acc)
+        return test_acc
+    ```
+
+    All MLflow artifacts and metrics logged from all the steps in the pipeline
+    run are grouped under a single experiment named after the pipeline.
+    To log MLflow artifacts and metrics from different pipeline steps in
+    different MLflow experiment, use the `enable_mlflow` step decorator
+    instead.
+
+    Args:
+        _pipeline: The decorated pipeline.
+        experiment_name: optional mlflow experiment name to use for the
+            pipeline. If not provided, the name of the pipeline will be used as
+            experiment name.
+
+    Returns:
+        The inner decorator which enhaces the input pipeline class with mlflow
+        tracking functionality
+    """
+
+    def inner_decorator(_pipeline: P) -> P:
+        """Inner decorator function for the creation of a ZenML Pipeline with
+        mlflow tracking enabled.
+
+        The pipeline's __init__ method is extended to apply the `enable_mlflow`
+        step decorator to all the steps in the pipeline.
+
+        Args:
+          _pipeline: BasePipeline which will be extended
+
+        Returns:
+            the class of a newly generated ZenML Pipeline with mlflow tracking
+            enabled
+
+        """
+
+        return cast(
+            P,
+            type(  # noqa
+                _pipeline.__name__,
+                (_pipeline,),
+                {
+                    "__init__": enable_mlflow_init(
+                        _pipeline.__init__, experiment_name
+                    ),
+                    "__module__": _pipeline.__module__,
+                },
+            ),
+        )
+
+    if _pipeline is None:
+        return inner_decorator
+    else:
+        return inner_decorator(_pipeline)
+
+
+def enable_mlflow_init(
+    original_init: Callable[[BasePipeline, BaseStep, Any], None],
+    experiment_name: Optional[str] = None,
+) -> Callable[..., None]:
+    """Outer decorator function for extending the __init__ method for pipelines
+    that should be run using mlflow
+
+    Args:
+        original_init: The __init__ method that should be extended
+        experiment_name: optional mlflow experiment name to use for the
+            pipeline. If not provided, the name of the pipeline will be used as
+            the experiment name.
+
+    Returns:
+        the inner decorator which extends the __init__ method
+    """
+
+    def inner_decorator(
+        self: BasePipeline, *args: BaseStep, **kwargs: Any
+    ) -> None:
+        """Inner decorator overwriting the pipeline __init__
+        Makes sure mlflow is properly set up and all mlflow logging takes place
+        within one mlflow experiment that is associated with the pipeline
+        """
+        decorated_steps = tuple(
+            enable_mlflow_step(experiment_name=experiment_name)(step)
+            for step in args
+        )
+
+        original_init(self, *decorated_steps, **kwargs)
+
+    return inner_decorator
