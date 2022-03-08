@@ -26,3 +26,8 @@ pre_run () {
 pre_run_forced () {
   zenml integration install kubeflow sklearn -f
 }
+
+post_run () {
+  # cleanup the last local ZenML daemon started by the example
+  pkill -n -f zenml.services.local.local_daemon_entrypoint
+}

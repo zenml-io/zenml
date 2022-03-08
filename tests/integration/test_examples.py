@@ -172,13 +172,6 @@ examples = [
             step_count=4,
         ),
     ),
-    ExampleIntegrationTestConfiguration(
-        name="tensorboard",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline",
-            step_count=4,
-        ),
-    ),
 ]
 
 # flake8: noqa: C901

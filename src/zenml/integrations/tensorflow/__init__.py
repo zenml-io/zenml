@@ -29,6 +29,7 @@ class TensorflowIntegration(Integration):
         import tensorflow_io  # type: ignore [import]
 
         from zenml.integrations.tensorflow import materializers  # noqa
+        from zenml.integrations.tensorflow import services  # noqa
 
 
 TensorflowIntegration.check_installation()

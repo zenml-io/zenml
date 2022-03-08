@@ -13,18 +13,14 @@
 #  permissions and limitations under the License.
 
 import logging
-from datetime import datetime, timedelta
+import os
 
 import numpy as np
-from sklearn.base import ClassifierMixin
+import tensorflow as tf
 
-from zenml.integrations.constants import SKLEARN
-from zenml.integrations.sklearn.helpers.digits import (
-    get_digits,
-    get_digits_model,
-)
-from zenml.pipelines import Schedule, pipeline
-from zenml.steps import Output, step
+from zenml.integrations.constants import TENSORFLOW
+from zenml.pipelines import pipeline
+from zenml.steps import BaseStepConfig, Output, StepContext, step
 
 
 @step
@@ -34,8 +30,11 @@ def importer() -> Output(
     y_train=np.ndarray,
     y_test=np.ndarray,
 ):
-    """Loads the digits array as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
+    """Download the MNIST data store it as an artifact"""
+    (X_train, y_train), (
+        X_test,
+        y_test,
+    ) = tf.keras.datasets.mnist.load_data()
     return X_train, X_test, y_train, y_test
 
 
@@ -49,15 +48,48 @@ def normalizer(
     return X_train_normed, X_test_normed
 
 
-@step(enable_cache=False)
+class TrainerConfig(BaseStepConfig):
+    """Trainer params"""
+
+    epochs: int = 5
+    lr: float = 0.001
+
+
+@step(enable_cache=True)
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a simple sklearn classifier for the digits dataset."""
-    model = get_digits_model()
+    context: StepContext,
+    config: TrainerConfig,
+) -> tf.keras.Model:
+    """Train a neural net from scratch to recognize MNIST digits return our
+    model or the learner"""
+    model = tf.keras.Sequential(
+        [
+            tf.keras.layers.Flatten(input_shape=(28, 28)),
+            tf.keras.layers.Dense(10, activation="relu"),
+            tf.keras.layers.Dense(10),
+        ]
+    )
 
-    model.fit(X_train, y_train)
+    log_dir = os.path.join(context.get_output_artifact_uri(), "logs")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(
+        log_dir=log_dir, histogram_freq=1
+    )
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(config.lr),
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        metrics=["accuracy"],
+    )
+
+    model.fit(
+        X_train,
+        y_train,
+        epochs=config.epochs,
+        callbacks=[tensorboard_callback],
+    )
+
     return model
 
 
@@ -65,15 +97,16 @@ def trainer(
 def evaluator(
     X_test: np.ndarray,
     y_test: np.ndarray,
-    model: ClassifierMixin,
+    model: tf.keras.Model,
 ) -> float:
     """Calculate the accuracy on the test set"""
-    test_acc = model.score(X_test, y_test)
+
+    _, test_acc = model.evaluate(X_test, y_test, verbose=2)
     logging.info(f"Test accuracy: {test_acc}")
     return test_acc
 
 
-@pipeline(required_integrations=[SKLEARN])
+@pipeline(required_integrations=[TENSORFLOW], enable_cache=True)
 def mnist_pipeline(
     importer,
     normalizer,
@@ -82,8 +115,6 @@ def mnist_pipeline(
 ):
     # Link all the steps together
     X_train, X_test, y_train, y_test = importer()
-    X_trained_normed, X_test_normed = normalizer(
-        X_train=X_train, X_test=X_test
-    )
+    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
     model = trainer(X_train=X_trained_normed, y_train=y_train)
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
