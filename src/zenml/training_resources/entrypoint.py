@@ -28,6 +28,7 @@ from tfx.proto.orchestration.execution_invocation_pb2 import ExecutionInvocation
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.integrations.registry import integration_registry
+from zenml.io import fileio
 from zenml.steps import BaseStep
 from zenml.steps.utils import _FunctionExecutor, generate_component_class
 from zenml.utils import source_utils
@@ -88,7 +89,7 @@ def create_executor_class(
 
 def load_execution_info(execution_info_path: str) -> ExecutionInfo:
     """Loads the execution info from the given path."""
-    with open(execution_info_path, "rb") as f:
+    with fileio.open(execution_info_path, "rb") as f:
         execution_info_proto = ExecutionInvocation.FromString(f.read())
 
     return ExecutionInfo.from_proto(execution_info_proto)
