@@ -204,6 +204,8 @@ class BaseStep(metaclass=BaseStepMeta):
         pipeline_parameter_name: The name of the pipeline parameter for which
             this step was passed as an argument.
         enable_cache: A boolean indicating if caching is enabled for this step.
+        enable_training_resource: A boolean indicating if a training resource
+            should be used to run this step.
         requires_context: A boolean indicating if this step requires a
             `StepContext` object during execution.
     """
@@ -630,7 +632,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         # Resolve the returns in the right order.
-        returns = [self.component.outputs[key] for key in self.OUTPUT_SPEC]
+        returns = [self.component.outputs[key] for key in self.OUTPUT_SIGNATURE]
 
         # If its one return we just return the one channel not as a list
         if len(returns) == 1:
@@ -650,6 +652,7 @@ class BaseStep(metaclass=BaseStepMeta):
 
     @property
     def executor_operator(self) -> Type[BaseExecutorOperator]:
+        """Executor operator class that should be used to run this step."""
         if self.enable_training_resource:
             return TrainingResourceExecutorOperator
         else:

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, List, Optional
+from typing import List, Optional
 
 import sagemaker
 
@@ -31,7 +31,15 @@ from zenml.utils import docker_utils
     component_flavor=TrainingResourceFlavor.SAGEMAKER,
 )
 class SagemakerTrainingResource(BaseTrainingResource):
-    """Training resource to run a step on Sagemaker."""
+    """Training resource to run a step on Sagemaker.
+
+    Attributes:
+        role:
+        instance_type:
+        base_image:
+        bucket:
+        experiment_name:
+    """
 
     supports_local_execution = True
     supports_remote_execution = True
@@ -84,10 +92,20 @@ class SagemakerTrainingResource(BaseTrainingResource):
         self,
         pipeline_name: str,
         run_name: str,
-        entrypoint_command: List[str],
         requirements: List[str],
-    ) -> Any:
-        """Launches a step on Sagemaker."""
+        entrypoint_command: List[str],
+    ) -> None:
+        """Launches a step on Sagemaker.
+
+        Args:
+            pipeline_name: Name of the pipeline which the step to be executed
+                is part of.
+            run_name: Name of the pipeline run which the step to be executed
+                is part of.
+            entrypoint_command: Command that executes the step.
+            requirements: List of pip requirements that must be installed
+                inside the training resource environment.
+        """
         image_name = self._build_docker_image(
             pipeline_name=pipeline_name,
             requirements=requirements,

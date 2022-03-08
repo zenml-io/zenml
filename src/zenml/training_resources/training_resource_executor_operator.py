@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+import json
 import os
 import sys
-from typing import cast
+from typing import TYPE_CHECKING, List, Tuple, cast
 
 from tfx.orchestration.portable import data_types
 from tfx.orchestration.portable.base_executor_operator import (
@@ -23,8 +23,46 @@ from tfx.orchestration.portable.base_executor_operator import (
 from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
 
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils import source_utils
+
+if TYPE_CHECKING:
+    from zenml.stack import Stack
+
+logger = get_logger(__name__)
+
+
+def _write_execution_info(
+    execution_info: data_types.ExecutionInfo, path: str
+) -> None:
+    """Writes execution information to a given path."""
+    execution_info_bytes = execution_info.to_proto().SerializeToString()
+
+    with fileio.open(path, "wb") as f:
+        f.write(execution_info_bytes)
+
+    logger.debug("Finished writing execution info to '%s'", path)
+
+
+def _read_executor_output(
+    output_path: str,
+) -> execution_result_pb2.ExecutorOutput:
+    """Reads executor output from the given path.
+
+    Returns:
+        Executor output object.
+
+    Raises:
+        RuntimeError: If no output is written to the given path.
+    """
+    if fileio.file_exists(output_path):
+        with fileio.open(output_path, "rb") as f:
+            return execution_result_pb2.ExecutorOutput.FromString(f.read())
+    else:
+        raise RuntimeError(
+            f"Unable to find executor output at path '{output_path}'."
+        )
 
 
 class TrainingResourceExecutorOperator(BaseExecutorOperator):
@@ -33,72 +71,29 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
     ]
     SUPPORTED_PLATFORM_CONFIG_TYPE = []
 
-    def run_executor(
-        self,
-        execution_info: data_types.ExecutionInfo,
-    ) -> execution_result_pb2.ExecutorOutput:
-        """Invokes the executor with inputs provided by the Launcher.
+    @staticmethod
+    def _collect_requirements(
+        stack: "Stack", execution_info: data_types.ExecutionInfo
+    ) -> List[str]:
+        """Collects all requirements necessary to run a step.
 
         Args:
-          execution_info: A wrapper of the info needed by this execution.
+            stack: Stack on which the step is being executed.
+            execution_info: Execution info needed to run the step.
 
         Returns:
-          The output from executor.
+            Alphabetically sorted list of pip requirements.
         """
-        stack = Repository().active_stack
-        training_resource = stack.training_resource
-        if not training_resource:
-            raise RuntimeError(
-                f"No training resource specified for active stack '{stack.name}'."
-            )
-
-        execution_info_proto = execution_info.to_proto().SerializeToString()
-        execution_info_file_name = "zenml-execution-info"
-        execution_info_path = os.path.join(
-            Repository().root, execution_info_file_name
-        )
-        with open(execution_info_path, "wb") as f:
-            f.write(execution_info_proto)
-
-        main_module_file = cast(str, sys.modules["__main__"].__file__)
-        main_module = source_utils.get_module_source_from_file_path(
-            os.path.abspath(main_module_file)
-        )
-
-        step_module = execution_info.pipeline_node.node_info.type.name.split(
-            "."
-        )[:-1]
-        if step_module[0] == "__main__":
-            step_module = main_module
-        else:
-            step_module = ".".join(step_module)
-
-        step_function_name = execution_info.pipeline_node.node_info.id
-
-        entrypoint_command = [
-            "python",
-            "-m",
-            "zenml.training_resources.entrypoint",
-            "--main_module",
-            main_module,
-            "--step_module",
-            step_module,
-            "--step_function_name",
-            step_function_name,
-            "--execution_info",
-            execution_info_file_name,
-        ]
-
         requirements = stack.requirements()
 
+        # Add pipeline requirements from the corresponding node context
         for context in execution_info.pipeline_node.contexts.contexts:
             if context.type.name == "pipeline_requirements":
-                pipeline_requirements = set(
-                    context.properties[
-                        "pipeline_requirements"
-                    ].field_value.string_value.split(" ")
-                )
-                requirements |= pipeline_requirements
+                pipeline_requirements = context.properties[
+                    "pipeline_requirements"
+                ].field_value.string_value.split(" ")
+                requirements.update(pipeline_requirements)
+                break
 
         # TODO: Find a nice way to set this if the running version of ZenML is
         #  not an official release (e.g. on a development branch)
@@ -106,18 +101,104 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
             "git+https://github.com/zenml-io/zenml.git@feature/ENG-640-training-resource"
         )
 
+        return sorted(requirements)
+
+    @staticmethod
+    def _resolve_user_modules(
+        execution_info: data_types.ExecutionInfo,
+    ) -> Tuple[str, str]:
+        """Resolves the main and step module.
+
+        Args:
+            execution_info: Execution info needed to run the step.
+
+        Returns:
+            A tuple containing the path of the resolved main module and step
+            class.
+        """
+        main_module_file = cast(str, sys.modules["__main__"].__file__)
+        main_module_path = source_utils.get_module_source_from_file_path(
+            os.path.abspath(main_module_file)
+        )
+
+        step_type = cast(str, execution_info.pipeline_node.node_info.type.name)
+        step_module_path, step_class = step_type.rsplit(".", maxsplit=1)
+        if step_module_path == "__main__":
+            step_module_path = main_module_path
+
+        step_source_path = f"{step_module_path}.{step_class}"
+
+        return main_module_path, step_source_path
+
+    def run_executor(
+        self,
+        execution_info: data_types.ExecutionInfo,
+    ) -> execution_result_pb2.ExecutorOutput:
+        """Invokes the executor with inputs provided by the Launcher.
+
+        Args:
+            execution_info: Necessary information to run the executor.
+
+        Returns:
+            The executor output.
+        """
+        step_name = execution_info.pipeline_node.node_info.id
+        stack = Repository().active_stack
+        training_resource = stack.training_resource
+        if not training_resource:
+            raise RuntimeError(
+                f"No training resource specified for active stack "
+                f"'{stack.name}', unable to run step '{step_name}'."
+            )
+
+        requirements = self._collect_requirements(
+            stack=stack, execution_info=execution_info
+        )
+
+        # Write the execution info to a temporary directory inside the artifact
+        # store so the training resource entrypoint can load it
+        execution_info_path = os.path.join(
+            execution_info.tmp_dir, "zenml_execution_info.pb"
+        )
+        _write_execution_info(execution_info, path=execution_info_path)
+
+        main_module, step_source_path = self._resolve_user_modules(
+            execution_info=execution_info
+        )
+
+        input_artifact_type_mapping = {
+            input_name: source_utils.resolve_class(artifacts[0].__class__)
+            for input_name, artifacts in execution_info.input_dict.items()
+        }
+        entrypoint_command = [
+            "python",
+            "-m",
+            "zenml.training_resources.entrypoint",
+            "--main_module",
+            main_module,
+            "--step_source_path",
+            step_source_path,
+            "--execution_info_path",
+            execution_info_path,
+            "--input_artifact_types",
+            json.dumps(input_artifact_type_mapping),
+        ]
+
+        logger.info(
+            "Using training resource '%s' to run step '%s'.",
+            training_resource.name,
+            step_name,
+        )
+        logger.debug(
+            "Training resource requirements: %s, entrypoint command: %s.",
+            requirements,
+            entrypoint_command,
+        )
         training_resource.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,
+            requirements=requirements,
             entrypoint_command=entrypoint_command,
-            requirements=sorted(requirements),
         )
 
-        if fileio.file_exists(execution_info.execution_output_uri):
-            result = execution_result_pb2.ExecutorOutput.FromString(
-                fileio.open(execution_info.execution_output_uri, "rb").read()
-            )
-        else:
-            raise ValueError("missing file")
-
-        return result
+        return _read_executor_output(execution_info.execution_output_uri)
