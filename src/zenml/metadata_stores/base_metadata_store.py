@@ -63,8 +63,12 @@ class BaseMetadataStore(StackComponent, ABC):
     def store(self) -> metadata_store.MetadataStore:
         """General property that hooks into TFX metadata store."""
         # TODO [ENG-133]: this always gets recreated, is this intended?
+        config = self.get_tfx_metadata_config()
         return metadata_store.MetadataStore(
-            self.get_tfx_metadata_config(), enable_upgrade_migration=True
+            config,
+            enable_upgrade_migration=isinstance(
+                config, metadata_store_pb2.ConnectionConfig
+            ),
         )
 
     @abstractmethod
