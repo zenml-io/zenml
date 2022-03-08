@@ -632,7 +632,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         # Resolve the returns in the right order.
-        returns = [self.component.outputs[key] for key in self.OUTPUT_SPEC]
+        returns = [self.component.outputs[key] for key in self.OUTPUT_SIGNATURE]
 
         # If its one return we just return the one channel not as a list
         if len(returns) == 1:
