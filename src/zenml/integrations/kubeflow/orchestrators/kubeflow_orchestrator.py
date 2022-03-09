@@ -21,6 +21,7 @@ from kfp_server_api.exceptions import ApiException
 from kubernetes import config
 
 import zenml.io.utils
+from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
@@ -402,7 +403,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
             artifact_store = Repository().active_stack.artifact_store
-            if artifact_store.supports_local_execution:
+            if isinstance(artifact_store, LocalArtifactStore):
                 local_deployment_utils.add_hostpath_to_kubeflow_pipelines(
                     kubernetes_context=kubernetes_context,
                     local_path=artifact_store.path,
