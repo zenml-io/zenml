@@ -14,7 +14,7 @@
 
 import os
 import sys
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import psutil
 from rich import print
@@ -170,14 +170,15 @@ class TensorboardVisualizer(BaseStepVisualizer):
                 return
 
 
-def visualize_tensorboard(pipeline_name: str, step_name: str) -> None:
-    """Start a Tensorboard server to visualize all models logged as output by
-    the named pipeline step. The server will monitor and display all the models
-    logged by past and future step runs.
+def get_step(pipeline_name: str, step_name: str) -> StepView:
+    """Get the StepView for the specified pipeline and step name.
 
     Args:
-        pipeline_name: the name of the pipeline
-        step_name: pipeline step name
+        pipeline_name: The name of the pipeline.
+        step_name: The name of the step.
+
+    Returns:
+        The StepView for the specified pipeline and step name.
     """
     repo = Repository()
     pipeline = repo.get_pipeline(pipeline_name)
@@ -191,6 +192,19 @@ def visualize_tensorboard(pipeline_name: str, step_name: str) -> None:
             f"No pipeline step with name `{step_name}` was found in "
             f"pipeline `{pipeline_name}`"
         )
+    return cast(StepView, step)
+
+
+def visualize_tensorboard(pipeline_name: str, step_name: str) -> None:
+    """Start a Tensorboard server to visualize all models logged as output by
+    the named pipeline step. The server will monitor and display all the models
+    logged by past and future step runs.
+
+    Args:
+        pipeline_name: the name of the pipeline
+        step_name: pipeline step name
+    """
+    step = get_step(pipeline_name, step_name)
     TensorboardVisualizer().visualize(step)
 
 
@@ -201,16 +215,5 @@ def stop_tensorboard_server(pipeline_name: str, step_name: str) -> None:
         pipeline_name: the name of the pipeline
         step_name: pipeline step name
     """
-    repo = Repository()
-    pipeline = repo.get_pipeline(pipeline_name)
-    if pipeline is None:
-        raise RuntimeError(f"No pipeline with name `{pipeline_name}` was found")
-
-    last_run = pipeline.runs[-1]
-    step = last_run.get_step(name=step_name)
-    if step is None:
-        raise RuntimeError(
-            f"No pipeline step with name `{step_name}` was found in "
-            f"pipeline `{pipeline_name}`"
-        )
+    step = get_step(pipeline_name, step_name)
     TensorboardVisualizer().stop(step)
