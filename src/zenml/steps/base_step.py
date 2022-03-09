@@ -47,6 +47,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
+from zenml.step_operators.step_operator import StepExecutorOperator
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
@@ -54,16 +55,13 @@ from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CREATED_BY_FUNCTIONAL_API,
+    PARAM_CUSTOM_STEP_OPERATOR,
     PARAM_ENABLE_CACHE,
-    PARAM_ENABLE_TRAINING_RESOURCE,
     PARAM_PIPELINE_PARAMETER_NAME,
     SINGLE_RETURN_OUT_NAME,
     _ZenMLSimpleComponent,
     generate_component_class,
     resolve_type_annotation,
-)
-from zenml.training_resources.training_resource_executor_operator import (
-    TrainingResourceExecutorOperator,
 )
 from zenml.utils.source_utils import get_hashed_source
 
@@ -211,8 +209,8 @@ class BaseStep(metaclass=BaseStepMeta):
         pipeline_parameter_name: The name of the pipeline parameter for which
             this step was passed as an argument.
         enable_cache: A boolean indicating if caching is enabled for this step.
-        enable_training_resource: A boolean indicating if a training resource
-            should be used to run this step.
+        custom_step_operator: Optional name of a custom step operator to use
+            for this step.
         requires_context: A boolean indicating if this step requires a
             `StepContext` object during execution.
     """
@@ -240,9 +238,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self._created_by_functional_api = kwargs.pop(
             PARAM_CREATED_BY_FUNCTIONAL_API, False
         )
-        self.enable_training_resource = kwargs.pop(
-            PARAM_ENABLE_TRAINING_RESOURCE, False
-        )
+        self.custom_step_operator = kwargs.pop(PARAM_CUSTOM_STEP_OPERATOR, None)
 
         enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)
         if enable_cache is None:
@@ -660,8 +656,8 @@ class BaseStep(metaclass=BaseStepMeta):
     @property
     def executor_operator(self) -> Type[BaseExecutorOperator]:
         """Executor operator class that should be used to run this step."""
-        if self.enable_training_resource:
-            return TrainingResourceExecutorOperator
+        if self.custom_step_operator:
+            return StepExecutorOperator
         else:
             return PythonExecutorOperator
 

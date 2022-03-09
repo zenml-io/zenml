@@ -28,21 +28,21 @@ from azureml.core.authentication import (
 )
 from azureml.core.conda_dependencies import CondaDependencies
 
-from zenml.enums import StackComponentType, TrainingResourceFlavor
+from zenml.enums import StackComponentType, StepOperatorFlavor
 from zenml.environment import Environment as ZenMLEnvironment
 from zenml.repository import Repository
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
-from zenml.training_resources import BaseTrainingResource
+from zenml.step_operators import BaseStepOperator
 
 
 @register_stack_component_class(
-    component_type=StackComponentType.TRAINING_RESOURCE,
-    component_flavor=TrainingResourceFlavor.AZUREML,
+    component_type=StackComponentType.STEP_OPERATOR,
+    component_flavor=StepOperatorFlavor.AZUREML,
 )
-class AzureMLTrainingResource(BaseTrainingResource):
-    """Training resource to run a step on AzureML.
+class AzureMLStepOperator(BaseStepOperator):
+    """Step operator to run a step on AzureML.
 
     Attributes:
         subscription_id:
@@ -74,9 +74,9 @@ class AzureMLTrainingResource(BaseTrainingResource):
     service_principal_password: Optional[str] = None
 
     @property
-    def flavor(self) -> TrainingResourceFlavor:
-        """The training resource flavor."""
-        return TrainingResourceFlavor.AZUREML
+    def flavor(self) -> StepOperatorFlavor:
+        """The step operator flavor."""
+        return StepOperatorFlavor.AZUREML
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:
         if (
@@ -152,7 +152,7 @@ class AzureMLTrainingResource(BaseTrainingResource):
                 is part of.
             entrypoint_command: Command that executes the step.
             requirements: List of pip requirements that must be installed
-                inside the training resource environment.
+                inside the step operator environment.
         """
         workspace = Workspace.get(
             subscription_id=self.subscription_id,

@@ -15,22 +15,22 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from zenml.enums import StackComponentType, TrainingResourceFlavor
+from zenml.enums import StackComponentType, StepOperatorFlavor
 from zenml.stack import StackComponent
 
 
-class BaseTrainingResource(StackComponent, ABC):
-    """Base class for all ZenML training resources."""
+class BaseStepOperator(StackComponent, ABC):
+    """Base class for all ZenML step operators."""
 
     @property
     def type(self) -> StackComponentType:
         """The component type."""
-        return StackComponentType.TRAINING_RESOURCE
+        return StackComponentType.STEP_OPERATOR
 
     @property
     @abstractmethod
-    def flavor(self) -> TrainingResourceFlavor:
-        """The training resource flavor."""
+    def flavor(self) -> StepOperatorFlavor:
+        """The step operator flavor."""
 
     @abstractmethod
     def launch(
@@ -40,9 +40,9 @@ class BaseTrainingResource(StackComponent, ABC):
         requirements: List[str],
         entrypoint_command: List[str],
     ) -> None:
-        """Abstract method to execute a step on a training resource.
+        """Abstract method to execute a step.
 
-        Concrete training resource subclasses must implement the following
+        Concrete step operator subclasses must implement the following
         functionality in this method:
         - Prepare the execution environment and install all the necessary
           `requirements`
@@ -55,5 +55,5 @@ class BaseTrainingResource(StackComponent, ABC):
                 is part of.
             entrypoint_command: Command that executes the step.
             requirements: List of pip requirements that must be installed
-                inside the training resource environment.
+                inside the step operator environment.
         """

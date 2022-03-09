@@ -73,8 +73,8 @@ class OrchestratorFlavor(StackComponentFlavor):
     AIRFLOW = "airflow"
 
 
-class TrainingResourceFlavor(StackComponentFlavor):
-    """All supported training resource flavors."""
+class StepOperatorFlavor(StackComponentFlavor):
+    """All supported step operator flavors."""
 
     AZUREML = "azureml"
     SAGEMAKER = "sagemaker"
@@ -87,7 +87,7 @@ class StackComponentType(StrEnum):
     METADATA_STORE = "metadata_store"
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
-    TRAINING_RESOURCE = "training_resource"
+    STEP_OPERATOR = "step_operator"
 
     @property
     def plural(self) -> str:

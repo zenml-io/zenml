@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
     from zenml.stack import StackComponent
-    from zenml.training_resources import BaseTrainingResource
+    from zenml.step_operators import BaseStepOperator
 
 
 logger = get_logger(__name__)
@@ -67,7 +67,7 @@ class Stack:
         metadata_store: "BaseMetadataStore",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
-        training_resource: Optional["BaseTrainingResource"] = None,
+        step_operator: Optional["BaseStepOperator"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -79,7 +79,7 @@ class Stack:
         self._metadata_store = metadata_store
         self._artifact_store = artifact_store
         self._container_registry = container_registry
-        self._training_resource = training_resource
+        self._step_operator = step_operator
 
         self.validate()
 
@@ -104,7 +104,7 @@ class Stack:
         from zenml.container_registries import BaseContainerRegistry
         from zenml.metadata_stores import BaseMetadataStore
         from zenml.orchestrators import BaseOrchestrator
-        from zenml.training_resources import BaseTrainingResource
+        from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
             component: Optional["StackComponent"], expected_class: Type[Any]
@@ -136,11 +136,11 @@ class Stack:
         ):
             _raise_type_error(container_registry, BaseContainerRegistry)
 
-        training_resource = components.get(StackComponentType.TRAINING_RESOURCE)
-        if training_resource is not None and not isinstance(
-            training_resource, BaseTrainingResource
+        step_operator = components.get(StackComponentType.STEP_OPERATOR)
+        if step_operator is not None and not isinstance(
+            step_operator, BaseStepOperator
         ):
-            _raise_type_error(training_resource, BaseTrainingResource)
+            _raise_type_error(step_operator, BaseStepOperator)
 
         return Stack(
             name=name,
@@ -148,7 +148,7 @@ class Stack:
             metadata_store=metadata_store,
             artifact_store=artifact_store,
             container_registry=container_registry,
-            training_resource=training_resource,
+            step_operator=step_operator,
         )
 
     @classmethod
@@ -194,7 +194,7 @@ class Stack:
                 self.metadata_store,
                 self.artifact_store,
                 self.container_registry,
-                self.training_resource,
+                self.step_operator,
             ]
             if component is not None
         }
@@ -225,9 +225,9 @@ class Stack:
         return self._container_registry
 
     @property
-    def training_resource(self) -> Optional["BaseTrainingResource"]:
-        """The training resource of the stack."""
-        return self._training_resource
+    def step_operator(self) -> Optional["BaseStepOperator"]:
+        """The step operator of the stack."""
+        return self._step_operator
 
     @property
     def runtime_options(self) -> Dict[str, Any]:

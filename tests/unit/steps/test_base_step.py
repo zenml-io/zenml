@@ -25,10 +25,8 @@ from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
+from zenml.step_operators.step_executor_operator import StepExecutorOperator
 from zenml.steps import BaseStepConfig, Output, StepContext, step
-from zenml.training_resources.training_resource_executor_operator import (
-    TrainingResourceExecutorOperator,
-)
 
 
 def test_step_decorator_creates_class_in_same_module_as_decorated_function():
@@ -255,41 +253,39 @@ def test_unrecognized_output_in_output_artifact_types():
         some_step()
 
 
-def test_enabling_a_training_resource_for_a_step():
-    """Tests that training resources are disabled by default and can be enabled
+def test_enabling_a_custom_step_operator_for_a_step():
+    """Tests that step operators are disabled by default and can be enabled
     using the step decorator."""
 
     @step
-    def step_without_training_resource():
+    def step_without_step_operator():
         pass
 
-    @step(enable_training_resource=True)
-    def step_with_training_resource():
+    @step(custom_step_operator="some_step_operator")
+    def step_with_step_operator():
         pass
 
-    assert step_without_training_resource().enable_training_resource is False
-    assert step_with_training_resource().enable_training_resource is True
+    assert step_without_step_operator().custom_step_operator is None
+    assert (
+        step_with_step_operator().custom_step_operator == "some_step_operator"
+    )
 
 
 def test_step_executor_operator():
     """Tests that the step returns the correct executor operator."""
 
-    @step(enable_training_resource=False)
-    def step_without_training_resource():
+    @step(custom_step_operator=None)
+    def step_without_step_operator():
         pass
 
-    @step(enable_training_resource=True)
-    def step_with_training_resource():
+    @step(custom_step_operator="some_step_operator")
+    def step_with_step_operator():
         pass
 
     assert (
-        step_without_training_resource().executor_operator
-        is PythonExecutorOperator
+        step_without_step_operator().executor_operator is PythonExecutorOperator
     )
-    assert (
-        step_with_training_resource().executor_operator
-        is TrainingResourceExecutorOperator
-    )
+    assert step_with_step_operator().executor_operator is StepExecutorOperator
 
 
 def test_pipeline_parameter_name_is_empty_when_initializing_a_step():

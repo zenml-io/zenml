@@ -16,22 +16,22 @@ from typing import List, Optional
 
 import sagemaker
 
-from zenml.enums import StackComponentType, TrainingResourceFlavor
+from zenml.enums import StackComponentType, StepOperatorFlavor
 from zenml.repository import Repository
 from zenml.stack import StackValidator
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
-from zenml.training_resources import BaseTrainingResource
+from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
 
 
 @register_stack_component_class(
-    component_type=StackComponentType.TRAINING_RESOURCE,
-    component_flavor=TrainingResourceFlavor.SAGEMAKER,
+    component_type=StackComponentType.STEP_OPERATOR,
+    component_flavor=StepOperatorFlavor.SAGEMAKER,
 )
-class SagemakerTrainingResource(BaseTrainingResource):
-    """Training resource to run a step on Sagemaker.
+class SagemakerStepOperator(BaseStepOperator):
+    """Step operator to run a step on Sagemaker.
 
     Attributes:
         role:
@@ -52,9 +52,9 @@ class SagemakerTrainingResource(BaseTrainingResource):
     experiment_name: Optional[str] = None
 
     @property
-    def flavor(self) -> TrainingResourceFlavor:
-        """The training resource flavor."""
-        return TrainingResourceFlavor.SAGEMAKER
+    def flavor(self) -> StepOperatorFlavor:
+        """The step operator flavor."""
+        return StepOperatorFlavor.SAGEMAKER
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -104,7 +104,7 @@ class SagemakerTrainingResource(BaseTrainingResource):
                 is part of.
             entrypoint_command: Command that executes the step.
             requirements: List of pip requirements that must be installed
-                inside the training resource environment.
+                inside the step operator environment.
         """
         image_name = self._build_docker_image(
             pipeline_name=pipeline_name,

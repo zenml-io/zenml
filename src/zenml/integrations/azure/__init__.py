@@ -32,7 +32,7 @@ class AzureIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.azure import artifact_stores  # noqa
         from zenml.integrations.azure import io  # noqa
-        from zenml.integrations.azure import training_resources  # noqa
+        from zenml.integrations.azure import step_operators  # noqa
 
 
 AzureIntegration.check_installation()

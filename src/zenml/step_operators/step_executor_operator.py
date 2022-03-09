@@ -65,7 +65,7 @@ def _read_executor_output(
         )
 
 
-class TrainingResourceExecutorOperator(BaseExecutorOperator):
+class StepExecutorOperator(BaseExecutorOperator):
     SUPPORTED_EXECUTOR_SPEC_TYPE = [
         executable_spec_pb2.PythonClassExecutableSpec
     ]
@@ -144,10 +144,10 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         """
         step_name = execution_info.pipeline_node.node_info.id
         stack = Repository().active_stack
-        training_resource = stack.training_resource
-        if not training_resource:
+        step_operator = stack.step_operator
+        if not step_operator:
             raise RuntimeError(
-                f"No training resource specified for active stack "
+                f"No step operator specified for active stack "
                 f"'{stack.name}', unable to run step '{step_name}'."
             )
 
@@ -173,7 +173,7 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         entrypoint_command = [
             "python",
             "-m",
-            "zenml.training_resources.entrypoint",
+            "zenml.step_operators.entrypoint",
             "--main_module",
             main_module,
             "--step_source_path",
@@ -185,16 +185,16 @@ class TrainingResourceExecutorOperator(BaseExecutorOperator):
         ]
 
         logger.info(
-            "Using training resource '%s' to run step '%s'.",
-            training_resource.name,
+            "Using step operator '%s' to run step '%s'.",
+            step_operator.name,
             step_name,
         )
         logger.debug(
-            "Training resource requirements: %s, entrypoint command: %s.",
+            "Step operator requirements: %s, entrypoint command: %s.",
             requirements,
             entrypoint_command,
         )
-        training_resource.launch(
+        step_operator.launch(
             pipeline_name=execution_info.pipeline_info.id,
             run_name=execution_info.pipeline_run_id,
             requirements=requirements,

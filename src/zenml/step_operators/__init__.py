@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.step_operators.base_step_operator import BaseStepOperator
 
-from zenml.integrations.aws.training_resources.sagemaker_training_resource import (  # noqa
-    SagemakerTrainingResource,
-)
+__all__ = ["BaseStepOperator"]
