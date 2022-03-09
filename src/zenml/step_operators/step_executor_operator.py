@@ -156,7 +156,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         )
 
         # Write the execution info to a temporary directory inside the artifact
-        # store so the training resource entrypoint can load it
+        # store so the step operator entrypoint can load it
         execution_info_path = os.path.join(
             execution_info.tmp_dir, "zenml_execution_info.pb"
         )
