@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import sys
 from typing import Any, Optional
 
 import psutil
@@ -84,7 +85,9 @@ class TensorboardVisualizer(BaseStepVisualizer):
                 # the same logdir location and use that one
                 running_server = self.find_running_tensorboard_server(logdir)
                 if running_server:
-                    self.visualize_tensorboard(running_server.port)
+                    self.visualize_tensorboard(
+                        running_server.port, height, logdir
+                    )
                     return
 
                 # start a new Tensorboard server
@@ -96,14 +99,15 @@ class TensorboardVisualizer(BaseStepVisualizer):
                 service.start(timeout=20)
                 if service.endpoint.status.port:
                     self.visualize_tensorboard(
-                        service.endpoint.status.port, height
+                        service.endpoint.status.port, height, logdir
                     )
                 return
 
     def visualize_tensorboard(
         self,
         port: int,
-        height: int = 800,
+        height: int,
+        logdir: str,
     ) -> None:
         """Generate a visualization of a Tensorboard.
 
@@ -111,17 +115,27 @@ class TensorboardVisualizer(BaseStepVisualizer):
             port: the TCP port where the Tensorboard server is listening for
                 requests.
             height: Height of the generated visualization.
+            logdir: The logdir location for the Tensorboard server.
         """
         if Environment.in_notebook():
 
             notebook.display(port, height=height)
             return
 
-        print(
-            "You can visit:\n"
-            f"[italic green]    http://localhost:{port}/[/italic green]\n"
-            "...to visualize the Tensorboard logs for your trained model."
-        )
+        if sys.platform == "win32":
+            # Daemon service functionality is currently not supported on Windows
+            print(
+                "You can run:\n"
+                f"[italic green]    tensorboard --logdir {logdir}"
+                "[/italic green]\n"
+                "...to visualize the Tensorboard logs for your trained model."
+            )
+        else:
+            print(
+                "You can visit:\n"
+                f"[italic green]    http://localhost:{port}/[/italic green]\n"
+                "...to visualize the Tensorboard logs for your trained model."
+            )
 
     def stop(
         self,
