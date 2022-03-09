@@ -33,12 +33,19 @@ from zenml.utils import docker_utils
 class SagemakerStepOperator(BaseStepOperator):
     """Step operator to run a step on Sagemaker.
 
+    This class defines code that buidls an image with the ZenML entrypoint 
+    to run using Sagemaker's Estimator.
+
     Attributes:
-        role:
-        instance_type:
-        base_image:
-        bucket:
-        experiment_name:
+        role: The role that has to be assigned to jobs running in Sagemaker.
+        instance_type: The instance type of the compute where jobs will run. 
+        base_image: [Optional] The base image to use for building the docker 
+            image that will be executed.  
+        bucket: [Optional] Name of the S3 bucket to use for storing artifacts 
+            from the job run. If not provided, a default bucket will be created 
+            based on the following format: "sagemaker-{region}-{aws-account-id}".
+        experiment_name: [Optional] The name for the experiment to which the job 
+            will be associated. If not provided, the job runs would be independent. 
     """
 
     supports_local_execution = True
