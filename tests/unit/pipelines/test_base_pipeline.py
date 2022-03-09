@@ -16,7 +16,11 @@ from contextlib import ExitStack as does_not_raise
 
 import pytest
 
-from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
+from zenml.exceptions import (
+    PipelineConfigurationError,
+    PipelineInterfaceError,
+    StackValidationError,
+)
 from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, step
 from zenml.utils.yaml_utils import write_yaml
@@ -287,3 +291,18 @@ def test_pipeline_requirements(tmp_path):
         "any_requirement",
         *SklearnIntegration.REQUIREMENTS,
     }
+
+
+def test_pipeline_run_fails_when_required_training_resource_is_missing(
+    clean_repo, one_step_pipeline
+):
+    """Tests that running a pipeline with a step that requires a training
+    resource fails if the active stack does not contain a training resource."""
+
+    @step(enable_training_resource=True)
+    def step_that_requires_training_resource():
+        pass
+
+    assert not clean_repo.active_stack.training_resource
+    with pytest.raises(StackValidationError):
+        one_step_pipeline(step_that_requires_training_resource()).run()
