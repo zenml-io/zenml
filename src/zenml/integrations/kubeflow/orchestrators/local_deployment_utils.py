@@ -244,7 +244,7 @@ def add_hostpath_to_kubeflow_pipelines(
     Args:
         kubernetes_context: The kubernetes context on which Kubeflow Pipelines
             should be patched.
-        palocal_pathth: The path to the local folder to mount as a hostpath.
+        local_path: The path to the local folder to mount as a hostpath.
     """
     logger.info("Patching Kubeflow Pipelines to mount a local folder.")
 
