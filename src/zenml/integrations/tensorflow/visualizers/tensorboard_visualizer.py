@@ -85,29 +85,35 @@ class TensorboardVisualizer(BaseStepVisualizer):
                 # the same logdir location and use that one
                 running_server = self.find_running_tensorboard_server(logdir)
                 if running_server:
-                    self.visualize_tensorboard(
-                        running_server.port, height, logdir
-                    )
+                    self.visualize_tensorboard(running_server.port, height)
                     return
 
-                # start a new Tensorboard server
-                service = TensorboardService(
-                    TensorboardServiceConfig(
-                        logdir=logdir,
+                if sys.platform == "win32":
+                    # Daemon service functionality is currently not supported on Windows
+                    print(
+                        "You can run:\n"
+                        f"[italic green]    tensorboard --logdir {logdir}"
+                        "[/italic green]\n"
+                        "...to visualize the Tensorboard logs for your trained model."
                     )
-                )
-                service.start(timeout=20)
-                if service.endpoint.status.port:
-                    self.visualize_tensorboard(
-                        service.endpoint.status.port, height, logdir
+                else:
+                    # start a new Tensorboard server
+                    service = TensorboardService(
+                        TensorboardServiceConfig(
+                            logdir=logdir,
+                        )
                     )
+                    service.start(timeout=20)
+                    if service.endpoint.status.port:
+                        self.visualize_tensorboard(
+                            service.endpoint.status.port, height
+                        )
                 return
 
     def visualize_tensorboard(
         self,
         port: int,
         height: int,
-        logdir: str,
     ) -> None:
         """Generate a visualization of a Tensorboard.
 
@@ -122,20 +128,11 @@ class TensorboardVisualizer(BaseStepVisualizer):
             notebook.display(port, height=height)
             return
 
-        if sys.platform == "win32":
-            # Daemon service functionality is currently not supported on Windows
-            print(
-                "You can run:\n"
-                f"[italic green]    tensorboard --logdir {logdir}"
-                "[/italic green]\n"
-                "...to visualize the Tensorboard logs for your trained model."
-            )
-        else:
-            print(
-                "You can visit:\n"
-                f"[italic green]    http://localhost:{port}/[/italic green]\n"
-                "...to visualize the Tensorboard logs for your trained model."
-            )
+        print(
+            "You can visit:\n"
+            f"[italic green]    http://localhost:{port}/[/italic green]\n"
+            "...to visualize the Tensorboard logs for your trained model."
+        )
 
     def stop(
         self,
