@@ -1,0 +1,2 @@
+wandb>=0.12.11
+tensorflow==2.8.0
