@@ -12,12 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import time
+from importlib import import_module
 from typing import Callable, List, Optional
 
 import click
+from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
+from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.repository import Repository
@@ -347,6 +350,23 @@ def generate_stack_component_logs_command(
     return stack_component_logs_command
 
 
+def generate_stack_component_explain_command(
+    component_type: StackComponentType,
+) -> Callable[[], None]:
+    """Generates an `explain` command for the specific stack component type"""
+
+    def explain_stack_components_command() -> None:
+        """Explains the concept of the stack component"""
+
+        component_module = import_module(f"zenml.{component_type.plural}")
+
+        if component_module.__doc__ is not None:
+            md = Markdown(component_module.__doc__)
+            console.print(md)
+
+    return explain_stack_components_command
+
+
 def register_single_stack_component_cli_commands(
     component_type: StackComponentType, parent_group: click.Group
 ) -> None:
@@ -414,6 +434,12 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "logs", help=f"Display {singular_display_name} logs."
     )(logs_command)
+
+    # zenml stack-component explain
+    explain_command = generate_stack_component_explain_command(component_type)
+    command_group.command(
+        "explain", help=f"Explaining the {plural_display_name}."
+    )(explain_command)
 
 
 def register_all_stack_component_cli_commands() -> None:
