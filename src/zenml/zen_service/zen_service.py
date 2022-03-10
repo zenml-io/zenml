@@ -29,7 +29,7 @@ stack_store = SqlStackStore(url)
 
 @app.get("/")
 @app.get("/health")
-async def heath() -> str:
+async def health() -> str:
     return "OK"
 
 

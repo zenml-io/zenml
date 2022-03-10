@@ -1,5 +1,7 @@
 import subprocess
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
+
+import uvicorn
 
 from zenml.logger import get_logger
 from zenml.services import (
@@ -15,21 +17,21 @@ from zenml.services import (
 
 logger = get_logger(__name__)
 
-ZEN_SERVICE_URL_PATH = "invocations"
-ZEN_SERVICE_HEALTHCHECK_URL_PATH = "ping"
+ZEN_SERVICE_URL_PATH = "/"
+ZEN_SERVICE_HEALTHCHECK_URL_PATH = "health"
 
 
-class ZenServiceDeploymentEndpointConfig(LocalDaemonServiceEndpointConfig):
+class ZenServiceEndpointConfig(LocalDaemonServiceEndpointConfig):
     """MLflow daemon service endpoint configuration.
 
     Attributes:
-        zen_service_uri_path: URI subpath for prediction requests
+        zen_service_uri_path: URI path for the zenml service
     """
 
     zen_service_uri_path: str
 
 
-class ZenServiceDeploymentEndpoint(LocalDaemonServiceEndpoint):
+class ZenServiceEndpoint(LocalDaemonServiceEndpoint):
     """A service endpoint exposed by the MLflow deployment daemon.
 
     Attributes:
@@ -37,7 +39,7 @@ class ZenServiceDeploymentEndpoint(LocalDaemonServiceEndpoint):
         monitor: optional service endpoint health monitor
     """
 
-    config: ZenServiceDeploymentEndpointConfig
+    config: ZenServiceEndpointConfig
     monitor: HTTPEndpointHealthMonitor
 
     @property
@@ -48,17 +50,17 @@ class ZenServiceDeploymentEndpoint(LocalDaemonServiceEndpoint):
         return f"{uri}{self.config.zen_service_uri_path}"
 
 
-class ZenServiceDeploymentConfig(LocalDaemonServiceConfig):
+class ZenServiceConfig(LocalDaemonServiceConfig):
     """MLflow model deployment configuration.
 
     Attributes:
-        workers: number of workers to use for the service
+        port: Port at which the service is running
     """
 
-    port: int = 5555
+    port: int = 8000
 
 
-class ZenServiceDeploymentService(LocalDaemonService):
+class ZenServiceService(LocalDaemonService):
     """ZenService deployment service that can be used to start a local
     ZenService server
 
@@ -70,23 +72,23 @@ class ZenServiceDeploymentService(LocalDaemonService):
     """
 
     SERVICE_TYPE = ServiceType(
-        name="zen_service-deployment",
-        type="local",
+        name="zen_service",
+        type="zenml",
         flavor="zenml",
         description="ZenService to manage stacks, user and pipelines",
     )
 
-    config: ZenServiceDeploymentConfig
-    endpoint: ZenServiceDeploymentEndpoint
+    config: ZenServiceConfig
+    endpoint: ZenServiceEndpoint
 
     def __init__(
             self,
-            config: Union[ZenServiceDeploymentConfig, Dict[str, Any]],
+            config: Union[ZenServiceConfig, Dict[str, Any]],
             **attrs: Any,
     ) -> None:
         # ensure that the endpoint is created before the service is initialized
         if (
-                isinstance(config, ZenServiceDeploymentConfig)
+                isinstance(config, ZenServiceConfig)
                 and "endpoint" not in attrs
         ):
 
@@ -94,10 +96,11 @@ class ZenServiceDeploymentService(LocalDaemonService):
             healthcheck_uri_path = ZEN_SERVICE_HEALTHCHECK_URL_PATH
             use_head_request = True
 
-            endpoint = ZenServiceDeploymentEndpoint(
-                config=ZenServiceDeploymentEndpointConfig(
+            endpoint = ZenServiceEndpoint(
+                config=ZenServiceEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
-                    endpoint_uri=endpoint_uri_path,
+                    port=config.port,
+                    zen_service_uri_path=endpoint_uri_path,
                 ),
                 monitor=HTTPEndpointHealthMonitor(
                     config=HTTPEndpointHealthMonitorConfig(
@@ -118,11 +121,11 @@ class ZenServiceDeploymentService(LocalDaemonService):
         self.endpoint.prepare_for_start()
 
         try:
-            subprocess.check_output(["uvicorn",
-                                     "dummy_fast_api:app",
-                                     "--host 0.0.0.0",
-                                     f"--port {self.config.port}",
-                                     "--reload"])
+            uvicorn.run(
+                "zenml.zervice.dummy_fast_api:app",
+                host="127.0.0.1",
+                port=self.endpoint.status.port,
+                log_level="info")
         except KeyboardInterrupt:
             logger.info(
                 "Zen service stopped. Resuming normal execution."
@@ -130,12 +133,12 @@ class ZenServiceDeploymentService(LocalDaemonService):
 
     @property
     def zen_service_uri(self) -> Optional[str]:
-        """Get the URI where the prediction service is answering requests.
+        """Get the URI where the service is running.
 
         Returns:
-            The URI where the prediction service can be contacted to process
+            The URI where the service can be contacted
             HTTP/REST inference requests, or None, if the service isn't running.
         """
         if not self.is_running:
             return None
-        return self.endpoint.prediction_uri
+        return self.endpoint.endpoint_uri
