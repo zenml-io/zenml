@@ -13,8 +13,8 @@ on:
     types: [created]
 
 concurrency:
-  group: ci-tests-${{ github.ref }}-1
   # New commit on branch cancels running workflows of the same branch
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
 
   check_comments:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event.issue.pull_request
     outputs:
       kf_trigger: ${{ steps.check.outputs.triggered }}
     steps:
@@ -52,6 +52,6 @@ jobs:
 
   kubeflow-tests:
     needs: [poetry-install, check_comments]
-    # Run this one automatically for pull requests onto main
+    # Run this one automatically if 'LTKF! is in the PR comments
     if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
     uses: ./.github/workflows/kubeflow.yml

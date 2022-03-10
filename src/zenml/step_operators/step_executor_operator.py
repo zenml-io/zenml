@@ -68,9 +68,9 @@ def _read_executor_output(
 class StepExecutorOperator(BaseExecutorOperator):
     """StepExecutorOperator extends TFX's BaseExecutorOperator.
 
-    This class can be passed as a custom executor operator during 
-    a pipeline run which will then be used to call the step's 
-    configured step operator to launch it in some environment. 
+    This class can be passed as a custom executor operator during
+    a pipeline run which will then be used to call the step's
+    configured step operator to launch it in some environment.
     """
 
     SUPPORTED_EXECUTOR_SPEC_TYPE = [

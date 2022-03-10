@@ -92,7 +92,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline.
         requirements_file: Optional path to a pip requirements file that
             contains all requirements to run the pipeline.
-        required_integrations: Optional set of integrations that need to be 
+        required_integrations: Optional set of integrations that need to be
             installed for this pipeline to run.
     """
 
