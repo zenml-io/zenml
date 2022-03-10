@@ -38,6 +38,7 @@ def init(path: Optional[Path], storage_type: Optional[StorageType]) -> None:
 
     Args:
       path: Path to the repository.
+      storage_type: How to persist stack data.
 
     Raises:
         InitializationException: If the repo is already initialized.
@@ -54,6 +55,24 @@ def init(path: Optional[Path], storage_type: Optional[StorageType]) -> None:
             declare(f"ZenML repository initialized at {path}.")
         except InitializationException as e:
             error(f"{e}")
+
+
+@cli.command("service-up")  # TODO how do I create a custom group?
+@click.option("--storage-type", type=click.Choice(StorageType.list()))
+def up(storage_type: Optional[StorageType]) -> None:
+    """Spin up a zenml service backend.
+
+    Args:
+      storage_type: How to persist stack data.
+
+    Raises:
+        InitializationException: If a service is already running
+    """
+    from zenml.service import Service
+
+    if storage_type is None:
+        storage_type = StorageType.SQLITE_STORAGE
+    Service(storage_type=storage_type).run()
 
 
 @cli.command("clean")

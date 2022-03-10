@@ -111,7 +111,7 @@ class LocalStackStore(BaseStackStore):
         """Configuration for all stacks registered in this repository."""
         return self.__store.stacks.copy()
 
-    def create_stack(
+    def _create_stack(
         self, name: str, stack_configuration: StackConfiguration
     ) -> None:
         """Add a stack to storage"""
@@ -119,7 +119,7 @@ class LocalStackStore(BaseStackStore):
         self._write_store()
         logger.info("Registered stack with name '%s'.", name)
 
-    def delete_stack(self, name: str) -> None:
+    def _delete_stack(self, name: str) -> None:
         """Delete a stack from storage."""
         try:
             del self.__store.stacks[name]
@@ -132,7 +132,7 @@ class LocalStackStore(BaseStackStore):
                 name,
             )
 
-    def get_component_config(
+    def _get_component_config(
         self, component_type: StackComponentType, name: str
     ) -> Tuple[StackComponentFlavor, Any]:
         """Fetches a registered stack component.
@@ -160,7 +160,7 @@ class LocalStackStore(BaseStackStore):
         config = yaml_utils.read_yaml(component_config_path)
         return flavor, config
 
-    def get_stack_component_names(
+    def _get_stack_component_names(
         self, component_type: StackComponentType
     ) -> List[str]:
         return list(self.__store.stack_components[component_type])
@@ -204,7 +204,7 @@ class LocalStackStore(BaseStackStore):
             "Registered stack component with name '%s'.", component.name
         )
 
-    def delete_stack_component(
+    def _delete_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> None:
         """Remove a StackComponent from storage."""
