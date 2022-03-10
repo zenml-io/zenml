@@ -162,6 +162,17 @@ class KubeflowOrchestrator(BaseOrchestrator):
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline on Kubeflow Pipelines."""
+        # First check whether its running in a notebok
+        from zenml.environment import Environment
+
+        if Environment.in_notebook():
+            raise AssertionError(
+                "The Kubeflow orchestrator cannot run pipelines in a notebook environment. The reason is that it is "
+                "non-trivial to create a Docker image of a notebook. Please consider refactoring your notebook cells "
+                "into separate scripts in a Python module and run the code outside of a notebook when using this "
+                "orchestrator."
+            )
+
         from zenml.integrations.kubeflow.docker_utils import get_image_digest
 
         image_name = self.get_docker_image_name(pipeline.name)
