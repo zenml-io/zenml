@@ -28,6 +28,7 @@ from __future__ import absolute_import, division, print_function
 import inspect
 import json
 import sys
+import typing
 from typing import (
     Any,
     Callable,
@@ -88,6 +89,20 @@ def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
     # TODO [ENG-158]: Check more complicated cases where type_a can be a sub-type
     #  of type_b
     return type_a == type_b
+
+
+def resolve_type_annotation(obj: Any) -> Any:
+    """Returns the non-generic class for generic aliases of the typing module.
+
+    If the input is no generic typing alias, the input itself is returned.
+
+    Example: if the input object is `typing.Dict`, this method will return the
+    concrete class `dict`.
+    """
+    if isinstance(obj, typing._GenericAlias):  # type: ignore[attr-defined]
+        return obj.__origin__
+    else:
+        return obj
 
 
 def generate_component_spec_class(
@@ -379,6 +394,8 @@ class _FunctionExecutor(BaseExecutor):
 
         for arg in args:
             arg_type = spec.annotations.get(arg, None)
+            arg_type = resolve_type_annotation(arg_type)
+
             if issubclass(arg_type, BaseStepConfig):
                 try:
                     config_object = arg_type.parse_obj(exec_properties)
@@ -419,7 +436,7 @@ class _FunctionExecutor(BaseExecutor):
         # the pipeline runtime, such as the current step name and the current
         # pipeline run ID
         with StepEnvironment(
-            pipeline_name=self._context.pipeline_info.id,  # type: ignore[attr-defined]
+            pipeline_name=self._context.pipeline_info.id,
             pipeline_run_id=self._context.pipeline_run_id,
             step_name=getattr(self, PARAM_STEP_NAME),
         ):

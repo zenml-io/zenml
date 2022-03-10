@@ -148,7 +148,7 @@ def _render_artifact_as_mdstr(single_artifact: artifact.Artifact) -> str:
 
 
 def _dump_ui_metadata(
-    node: pipeline_pb2.PipelineNode,  # type: ignore[valid-type]
+    node: pipeline_pb2.PipelineNode,
     execution_info: data_types.ExecutionInfo,
     ui_metadata_path: str = "/tmp/mlpipeline-ui-metadata.json",
 ) -> None:
@@ -174,7 +174,7 @@ def _dump_ui_metadata(
     )
 
     def _dump_input_populated_artifacts(
-        node_inputs: MutableMapping[str, pipeline_pb2.InputSpec],  # type: ignore[valid-type] # noqa
+        node_inputs: MutableMapping[str, pipeline_pb2.InputSpec],
         name_to_artifacts: Dict[str, List[artifact.Artifact]],
     ) -> List[str]:
         """Dump artifacts markdown string for inputs.
@@ -197,7 +197,7 @@ def _dump_ui_metadata(
             )
             # There must be at least a channel in a input, and all channels in
             # a input share the same artifact type.
-            artifact_type = spec.channels[0].artifact_query.type.name  # type: ignore[attr-defined] # noqa
+            artifact_type = spec.channels[0].artifact_query.type.name
             rendered_list.append(
                 "## {name}\n\n**Type**: {channel_type}\n\n{artifacts}".format(
                     name=_sanitize_underscore(name),
@@ -209,7 +209,7 @@ def _dump_ui_metadata(
         return rendered_list
 
     def _dump_output_populated_artifacts(
-        node_outputs: MutableMapping[str, pipeline_pb2.OutputSpec],  # type: ignore[valid-type] # noqa
+        node_outputs: MutableMapping[str, pipeline_pb2.OutputSpec],
         name_to_artifacts: Dict[str, List[artifact.Artifact]],
     ) -> List[str]:
         """Dump artifacts markdown string for outputs.
@@ -232,7 +232,7 @@ def _dump_ui_metadata(
             )
             # There must be at least a channel in a input, and all channels
             # in a input share the same artifact type.
-            artifact_type = spec.artifact_spec.type.name  # type: ignore[attr-defined] # noqa
+            artifact_type = spec.artifact_spec.type.name
             rendered_list.append(
                 "## {name}\n\n**Type**: {channel_type}\n\n{artifacts}".format(
                     name=_sanitize_underscore(name),
@@ -246,7 +246,7 @@ def _dump_ui_metadata(
     src_str_inputs = "# Inputs:\n{}".format(
         "".join(
             _dump_input_populated_artifacts(
-                node_inputs=node.inputs.inputs,  # type: ignore[attr-defined] # noqa
+                node_inputs=node.inputs.inputs,
                 name_to_artifacts=execution_info.input_dict or {},
             )
         )
@@ -256,7 +256,7 @@ def _dump_ui_metadata(
     src_str_outputs = "# Outputs:\n{}".format(
         "".join(
             _dump_output_populated_artifacts(
-                node_outputs=node.outputs.outputs,  # type: ignore[attr-defined] # noqa
+                node_outputs=node.outputs.outputs,
                 name_to_artifacts=execution_info.output_dict or {},
             )
         )
@@ -275,7 +275,7 @@ def _dump_ui_metadata(
         }
     ]
     # Add Tensorboard view for ModelRun outputs.
-    for name, spec in node.outputs.outputs.items():  # type: ignore[attr-defined] # noqa
+    for name, spec in node.outputs.outputs.items():
         if (
             spec.artifact_spec.type.name
             == standard_artifacts.ModelRun.TYPE_NAME
@@ -304,11 +304,11 @@ def _dump_ui_metadata(
 
 
 def _get_pipeline_node(
-    pipeline: pipeline_pb2.Pipeline, node_id: str  # type: ignore[valid-type] # noqa
-) -> pipeline_pb2.PipelineNode:  # type: ignore[valid-type]
+    pipeline: pipeline_pb2.Pipeline, node_id: str
+) -> pipeline_pb2.PipelineNode:
     """Gets node of a certain node_id from a pipeline."""
-    result: Optional[pipeline_pb2.PipelineNode] = None  # type: ignore[valid-type] # noqa
-    for node in pipeline.nodes:  # type: ignore[attr-defined] # noqa
+    result: Optional[pipeline_pb2.PipelineNode] = None
+    for node in pipeline.nodes:
         if (
             node.WhichOneof("node") == "pipeline_node"
             and node.pipeline_node.node_info.id == node_id
@@ -328,25 +328,19 @@ def _parse_runtime_parameter_str(param: str) -> Tuple[str, Property]:
     # Runtime parameter format: "{name}=(INT|DOUBLE|STRING):{value}"
     name, value_and_type = param.split("=", 1)
     value_type, value = value_and_type.split(":", 1)
-    if (
-        value_type
-        == pipeline_pb2.RuntimeParameter.Type.Name(  # type: ignore[attr-defined] # noqa
-            pipeline_pb2.RuntimeParameter.INT  # type: ignore[attr-defined]
-        )
+    if value_type == pipeline_pb2.RuntimeParameter.Type.Name(
+        pipeline_pb2.RuntimeParameter.INT
     ):
         return name, int(value)
-    elif (
-        value_type
-        == pipeline_pb2.RuntimeParameter.Type.Name(  # type: ignore[attr-defined] # noqa
-            pipeline_pb2.RuntimeParameter.DOUBLE  # type: ignore[attr-defined]
-        )
+    elif value_type == pipeline_pb2.RuntimeParameter.Type.Name(
+        pipeline_pb2.RuntimeParameter.DOUBLE
     ):
         return name, float(value)
     return name, value
 
 
 def _resolve_runtime_parameters(
-    tfx_ir: pipeline_pb2.Pipeline,  # type: ignore[valid-type] # noqa
+    tfx_ir: pipeline_pb2.Pipeline,
     run_name: str,
     parameters: Optional[List[str]],
 ) -> None:
