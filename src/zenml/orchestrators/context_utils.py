@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 
 
 def add_context_to_node(
-    pipeline_node: "pipeline_pb2.PipelineNode",  # type: ignore[valid-type]
+    pipeline_node: "pipeline_pb2.PipelineNode",
     type_: str,
     name: str,
     properties: Dict[str, str],
@@ -44,16 +44,14 @@ def add_context_to_node(
         properties: dictionary of strings as properties of the context
     """
     # Add a new context to the pipeline
-    context: "pipeline_pb2.ContextSpec" = (  # type: ignore[valid-type]
-        pipeline_node.contexts.contexts.add()  # type: ignore[attr-defined]
-    )
+    context: "pipeline_pb2.ContextSpec" = pipeline_node.contexts.contexts.add()
     # Adding the type of context
-    context.type.name = type_  # type: ignore[attr-defined]
+    context.type.name = type_
     # Setting the name of the context
-    context.name.field_value.string_value = name  # type: ignore[attr-defined]
+    context.name.field_value.string_value = name
     # Setting the properties of the context depending on attribute type
     for key, value in properties.items():
-        c_property = context.properties[key]  # type:ignore[attr-defined]
+        c_property = context.properties[key]
         c_property.field_value.string_value = value
 
 
@@ -94,7 +92,7 @@ def serialize_pydantic_object(
 
 
 def add_runtime_configuration_to_node(
-    pipeline_node: "pipeline_pb2.PipelineNode",  # type: ignore[valid-type]
+    pipeline_node: "pipeline_pb2.PipelineNode",
     runtime_config: RuntimeConfiguration,
 ) -> None:
     """
