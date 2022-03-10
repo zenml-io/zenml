@@ -19,7 +19,7 @@ import logging
 import os
 import sys
 import textwrap
-from typing import Dict, List, MutableMapping, Optional, Tuple
+from typing import Dict, List, MutableMapping, Optional, Tuple, cast
 
 import kfp
 from google.protobuf import json_format
@@ -29,7 +29,6 @@ from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import (
     data_types,
-    kubernetes_executor_operator,
     launcher,
     runtime_parameter_utils,
 )
@@ -43,6 +42,7 @@ from zenml.exceptions import RepositoryNotFoundError
 from zenml.integrations.registry import integration_registry
 from zenml.orchestrators.utils import execute_step
 from zenml.repository import Repository
+from zenml.steps import BaseStep
 from zenml.steps.utils import generate_component_class
 from zenml.utils import source_utils
 
@@ -359,8 +359,7 @@ def _resolve_runtime_parameters(
 
 
 def _create_executor_class(
-    step_source_module_name: str,
-    step_function_name: str,
+    step: BaseStep,
     executor_class_target_module_name: str,
     input_artifact_type_mapping: Dict[str, str],
 ) -> None:
@@ -368,19 +367,13 @@ def _create_executor_class(
     module.
 
     Args:
-        step_source_module_name: Name of the module in which the step function
-            is defined.
-        step_function_name: Name of the step function.
+        step: The step for which the executor should be created.
         executor_class_target_module_name: Name of the module to which the
             executor class should be added.
         input_artifact_type_mapping: A dictionary mapping input names to
             a string representation of their artifact classes.
     """
-    step_module = importlib.import_module(step_source_module_name)
-    step_class = getattr(step_module, step_function_name)
-    step_instance = step_class()
-
-    materializers = step_instance.get_materializers(ensure_complete=True)
+    materializers = step.get_materializers(ensure_complete=True)
 
     input_spec = {}
     for input_name, class_path in input_artifact_type_mapping.items():
@@ -393,21 +386,21 @@ def _create_executor_class(
         input_spec[input_name] = artifact_class
 
     output_spec = {}
-    for key, value in step_class.OUTPUT_SIGNATURE.items():
+    for key, value in step.OUTPUT_SIGNATURE.items():
         output_spec[key] = type_registry.get_artifact_type(value)[0]
 
     execution_parameters = {
-        **step_instance.PARAM_SPEC,
-        **step_instance._internal_execution_parameters,
+        **step.PARAM_SPEC,
+        **step._internal_execution_parameters,
     }
 
     generate_component_class(
-        step_name=step_instance.name,
+        step_name=step.name,
         step_module=executor_class_target_module_name,
         input_spec=input_spec,
         output_spec=output_spec,
         execution_parameter_names=set(execution_parameters),
-        step_function=step_instance.entrypoint,
+        step_function=step.entrypoint,
         materializers=materializers,
     )
 
@@ -468,9 +461,6 @@ def main() -> None:
     custom_driver_spec = runner_utils.extract_custom_driver_spec(
         deployment_config, node_id
     )
-    custom_executor_operators = {
-        executable_spec_pb2.ContainerExecutableSpec: kubernetes_executor_operator.KubernetesExecutorOperator
-    }
 
     # make sure all integrations are activated so all materializers etc. are
     # available
@@ -496,12 +486,15 @@ def main() -> None:
     # import the user main module to register all the materializers
     importlib.import_module(args.main_module)
 
+    step_module = importlib.import_module(args.step_module)
+    step_class = getattr(step_module, args.step_function_name)
+    step_instance = cast(BaseStep, step_class())
+
     if hasattr(executor_spec, "class_path"):
         executor_module_parts = getattr(executor_spec, "class_path").split(".")
         executor_class_target_module_name = ".".join(executor_module_parts[:-1])
         _create_executor_class(
-            step_source_module_name=args.step_module,
-            step_function_name=args.step_function_name,
+            step=step_instance,
             executor_class_target_module_name=executor_class_target_module_name,
             input_artifact_type_mapping=json.loads(args.input_artifact_types),
         )
@@ -509,6 +502,10 @@ def main() -> None:
         raise RuntimeError(
             f"No class path found inside executor spec: {executor_spec}."
         )
+
+    custom_executor_operators = {
+        executable_spec_pb2.PythonClassExecutableSpec: step_instance.executor_operator
+    }
 
     component_launcher = launcher.Launcher(
         pipeline_node=pipeline_node,
