@@ -25,10 +25,15 @@ from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.steps.utils import (
+    INTERNAL_EXECUTION_PARAMETER_PREFIX,
+    PARAM_CUSTOM_STEP_OPERATOR,
+)
 from zenml.utils import source_utils
 
 if TYPE_CHECKING:
     from zenml.stack import Stack
+    from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
 
@@ -130,6 +135,42 @@ class StepExecutorOperator(BaseExecutorOperator):
 
         return main_module_path, step_source_path
 
+    @staticmethod
+    def _get_step_operator(
+        stack: "Stack", execution_info: data_types.ExecutionInfo
+    ) -> "BaseStepOperator":
+        """Fetches the step operator specified in the execution info.
+
+        Args:
+            stack: Stack on which the step is being executed.
+            execution_info: Execution info needed to run the step.
+
+        Returns:
+            The step operator to run a step.
+        """
+        step_operator = stack.step_operator
+
+        # the two following errors should never happen as the stack gets
+        # validated before running the pipeline
+        if not step_operator:
+            raise RuntimeError(
+                f"No step operator specified for active stack '{stack.name}'."
+            )
+
+        step_operator_property_name = (
+            INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_CUSTOM_STEP_OPERATOR
+        )
+        required_step_operator = json.loads(
+            execution_info.exec_properties[step_operator_property_name]
+        )
+        if required_step_operator != step_operator.name:
+            raise RuntimeError(
+                f"No step operator named '{required_step_operator}' in active "
+                f"stack '{stack.name}'."
+            )
+
+        return step_operator
+
     def run_executor(
         self,
         execution_info: data_types.ExecutionInfo,
@@ -144,12 +185,9 @@ class StepExecutorOperator(BaseExecutorOperator):
         """
         step_name = execution_info.pipeline_node.node_info.id
         stack = Repository().active_stack
-        step_operator = stack.step_operator
-        if not step_operator:
-            raise RuntimeError(
-                f"No step operator specified for active stack "
-                f"'{stack.name}', unable to run step '{step_name}'."
-            )
+        step_operator = self._get_step_operator(
+            stack=stack, execution_info=execution_info
+        )
 
         requirements = self._collect_requirements(
             stack=stack, execution_info=execution_info
