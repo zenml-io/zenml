@@ -122,7 +122,7 @@ class ZenServiceService(LocalDaemonService):
 
         try:
             uvicorn.run(
-                "zenml.zervice.dummy_fast_api:app",
+                "zenml.zen_service.zen_service:app",
                 host="127.0.0.1",
                 port=self.endpoint.status.port,
                 log_level="info")
