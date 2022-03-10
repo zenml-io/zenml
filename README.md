@@ -56,7 +56,7 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
 | 📒 **[API Reference]** | The detailed reference for ZenML's API. |
-| 🗂️️ **[ZenFiles]** | End-to-end fully fledge projects using ZenML. |
+| 🗂️️ **[ZenFiles]** | End-to-end projects using ZenML. |
 | ⚽️ **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
 | 📬 **[Blog]** | Use cases of ZenML and technical deep dives on how we built it. |
 | 🔈 **[Podcast]** | Conversations with leaders in ML, released every 2 weeks. |
@@ -251,8 +251,8 @@ pipeline.run()
 
 # 🗂️ ZenFiles
 
-ZenFiles are production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end, projects that show-case 
-ZenML's capabilities. They also serve as a template to start similar projects from.
+ZenFiles are production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end, projects that showcase 
+ZenML's capabilities. They can also serve as a template from which to start similar projects.
 
 The ZenFiles project is fully maintained and can be viewed as a sister repository of ZenML. Check it out [here](https://github.com/zenml-io/zenfiles).
 
