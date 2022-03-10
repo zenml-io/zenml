@@ -33,7 +33,7 @@ from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CUSTOM_STEP_OPERATOR,
 )
-from zenml.utils import source_utils
+from zenml.utils import source_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.stack import Stack
@@ -115,7 +115,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         # TODO: Find a nice way to set this if the running version of ZenML is
         #  not an official release (e.g. on a development branch)
         requirements.add(
-            "git+https://github.com/zenml-io/zenml.git@feature/ENG-640-training-resource"
+            "git+https://github.com/zenml-io/zenml.git@feature/enable-training-resource-on-airflow-kubeflow"
         )
 
         return sorted(requirements)
@@ -224,10 +224,16 @@ class StepExecutorOperator(BaseExecutorOperator):
             pipeline_node=execution_info.pipeline_node
         )
 
+        input_artifact_types_path = os.path.join(
+            execution_info.tmp_dir, "input_artifacts.json"
+        )
         input_artifact_type_mapping = {
             input_name: source_utils.resolve_class(artifacts[0].__class__)
             for input_name, artifacts in execution_info.input_dict.items()
         }
+        yaml_utils.write_json(
+            input_artifact_types_path, input_artifact_type_mapping
+        )
         entrypoint_command = [
             "python",
             "-m",
@@ -238,8 +244,8 @@ class StepExecutorOperator(BaseExecutorOperator):
             step_source_path,
             "--execution_info_path",
             execution_info_path,
-            "--input_artifact_types",
-            json.dumps(input_artifact_type_mapping),
+            "--input_artifact_types_path",
+            input_artifact_path,
         ]
 
         logger.info(

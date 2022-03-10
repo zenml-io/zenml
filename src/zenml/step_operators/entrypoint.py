@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import importlib
-import json
 import logging
 import sys
 from typing import Dict, Type, cast
@@ -32,7 +31,7 @@ from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.steps import BaseStep
 from zenml.steps.utils import _FunctionExecutor, generate_component_class
-from zenml.utils import source_utils
+from zenml.utils import source_utils, yaml_utils
 
 
 def create_executor_class(
@@ -127,12 +126,12 @@ def configure_executor(
 @click.option("--main_module", required=True, type=str)
 @click.option("--step_source_path", required=True, type=str)
 @click.option("--execution_info_path", required=True, type=str)
-@click.option("--input_artifact_types", required=True, type=str)
+@click.option("--input_artifact_types_path", required=True, type=str)
 def main(
     main_module: str,
     step_source_path: str,
     execution_info_path: str,
-    input_artifact_types: str,
+    input_artifact_types_path: str,
 ) -> None:
     """Runs a single ZenML step."""
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -143,9 +142,12 @@ def main(
     integration_registry.activate_integrations()
     importlib.import_module(main_module)
 
+    input_artifact_type_mapping = yaml_utils.read_json(
+        input_artifact_types_path
+    )
     executor_class = create_executor_class(
         step_source_path=step_source_path,
-        input_artifact_type_mapping=json.loads(input_artifact_types),
+        input_artifact_type_mapping=input_artifact_type_mapping,
     )
 
     execution_info = load_execution_info(execution_info_path)
