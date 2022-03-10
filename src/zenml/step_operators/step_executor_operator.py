@@ -245,7 +245,7 @@ class StepExecutorOperator(BaseExecutorOperator):
             "--execution_info_path",
             execution_info_path,
             "--input_artifact_types_path",
-            input_artifact_path,
+            input_artifact_types_path,
         ]
 
         logger.info(
