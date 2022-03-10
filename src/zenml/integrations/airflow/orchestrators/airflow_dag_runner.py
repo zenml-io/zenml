@@ -25,6 +25,7 @@ from tfx.orchestration.config import pipeline_config
 from tfx.orchestration.data_types import RuntimeParameter
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import runtime_parameter_utils
+from tfx.proto.orchestration import executable_spec_pb2
 from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 
 from zenml.enums import MetadataContextTypes
@@ -32,7 +33,6 @@ from zenml.logger import get_logger
 from zenml.orchestrators import context_utils
 from zenml.orchestrators.utils import create_tfx_pipeline, get_step_for_node
 from zenml.repository import Repository
-from tfx.proto.orchestration import executable_spec_pb2
 
 if TYPE_CHECKING:
     import airflow
