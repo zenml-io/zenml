@@ -20,6 +20,11 @@ import os
 
 import click
 
+# import this explicitly for the service daemon to know about this
+# TODO [MEDIUM]: Figure out a more streamlined way to do this - ask Stefann
+#  for more info on this
+import zenml.zen_service.zen_service_deployment
+
 from zenml.utils.daemon import daemonize
 
 
