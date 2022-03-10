@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from pathlib import Path
 from typing import Optional
 
 from mlflow import (  # type: ignore [import]
@@ -55,34 +54,22 @@ class MLFlowEnvironment(BaseEnvironmentComponent):
 
     NAME = MLFLOW_ENVIRONMENT_NAME
 
-    def __init__(self, repo_root: Optional[Path] = None):
-        """Initialize a MLflow environment component.
-
-        Args:
-            root: Optional root directory of the ZenML repository. If no path
-                is given, the default repository location will be used.
-        """
+    def __init__(self) -> None:
+        """Initialize a MLflow environment component."""
         super().__init__()
         # TODO [ENG-316]: Implement a way to get the mlflow token and set
         #  it as env variable at MLFLOW_TRACKING_TOKEN
-        self._mlflow_tracking_uri = self._local_mlflow_backend(repo_root)
+        self._mlflow_tracking_uri = self._local_mlflow_backend()
 
     @staticmethod
-    def _local_mlflow_backend(root: Optional[Path] = None) -> str:
+    def _local_mlflow_backend() -> str:
         """Returns the local mlflow backend inside the zenml artifact
         repository directory
-
-        Args:
-            root: Optional root directory of the repository. If no path is
-                given, this function tries to find the repository using the
-                environment variable `ZENML_REPOSITORY_PATH` (if set) and
-                recursively searching in the parent directories of the current
-                working directory.
 
         Returns:
             The MLflow tracking URI for the local mlflow backend.
         """
-        repo = Repository(root)
+        repo = Repository()
         artifact_store = repo.active_stack.artifact_store
         local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
         if not os.path.exists(local_mlflow_backend_uri):

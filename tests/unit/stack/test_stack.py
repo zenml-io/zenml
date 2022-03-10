@@ -38,7 +38,7 @@ def test_default_local_stack():
     assert stack.container_registry is None
 
     expected_artifact_store_path = os.path.join(
-        GlobalConfig.config_directory(),
+        GlobalConfig().config_directory,
         "local_stores",
         str(stack.artifact_store.uuid),
     )

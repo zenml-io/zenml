@@ -21,10 +21,12 @@ from dateutil import tz
 from rich import box, table
 from rich.text import Text
 
+from zenml.config.global_config import ConfigProfile
 from zenml.console import console
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -99,7 +101,11 @@ def pretty_print(obj: Any) -> None:
     console.print(obj)
 
 
-def print_table(obj: List[Dict[str, Any]]) -> None:
+def print_table(
+    obj: List[Dict[str, Any]],
+    title: Optional[str] = None,
+    caption: Optional[str] = None,
+) -> None:
     """Prints the list of dicts in a table format. The input object should be a
     List of Dicts. Each item in that list represent a line in the Table. Each
     dict should have the same keys. The keys of the dict will be used as
@@ -109,7 +115,14 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
       obj: A List containing dictionaries.
     """
     columns = {key.upper(): None for dict_ in obj for key in dict_.keys()}
-    rich_table = table.Table(*columns.keys(), box=box.HEAVY_EDGE)
+    rich_table = table.Table(
+        *columns.keys(),
+        box=box.HEAVY_EDGE,
+        title=title,
+        caption=caption,
+        caption_justify="left",
+        title_justify="left",
+    )
 
     for dict_ in obj:
         values = columns.copy()
@@ -141,7 +154,8 @@ def format_integration_list(
 
 def print_stack_component_list(
     components: List[StackComponent],
-    active_component_name: Optional[str] = None,
+    global_active_component_name: Optional[str] = None,
+    local_active_component_name: Optional[str] = None,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
@@ -150,29 +164,47 @@ def print_stack_component_list(
 
     Args:
         components: List of stack components to print.
-        active_component_name: Name of the component that is currently active.
+        global_active_component_name: Name of the component that is currently
+            globally active.
+        local_active_component_name: Name of the component that is currently
+            locally active.
     """
     configurations = []
     for component in components:
-        is_active = component.name == active_component_name
+        active_str = ""
+        if component.name == global_active_component_name:
+            active_str += ":crown:"
+        if component.name == local_active_component_name:
+            active_str += ":point_right:"
         component_config = {
-            "ACTIVE": ":point_right:" if is_active else "",
+            "ACTIVE": active_str,
             **{
                 key.upper(): str(value)
                 for key, value in component.dict().items()
             },
         }
         configurations.append(component_config)
-    print_table(configurations)
+    print_table(
+        configurations,
+        caption=":crown: = globally active, :point_right: = locally active",
+    )
 
 
 def print_stack_configuration(
-    config: Dict[StackComponentType, str], active: bool, stack_name: str
+    config: Dict[StackComponentType, str],
+    locally_active: bool,
+    globally_active: bool,
+    stack_name: str,
 ) -> None:
     """Prints the configuration options of a stack."""
     stack_caption = f"'{stack_name}' stack"
-    if active:
-        stack_caption += " (ACTIVE)"
+    if globally_active or locally_active:
+        stack_caption += " (ACTIVE:"
+        if globally_active:
+            stack_caption += " GLOBAL"
+        if locally_active:
+            stack_caption += " LOCAL"
+        stack_caption += ")"
     rich_table = table.Table(
         box=box.HEAVY_EDGE,
         title="Stack Configuration",
@@ -181,9 +213,9 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE")
     rich_table.add_column("COMPONENT_NAME")
-    items = {typ.value: name for typ, name in config.items()}
+    items = ([typ.value, name] for typ, name in config.items())
     for item in items:
-        rich_table.add_row(*list(item))
+        rich_table.add_row(*item)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -209,6 +241,71 @@ def print_stack_component_configuration(
     items = component.dict().items()
     for item in items:
         rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+    ]
+    console.print(rich_table)
+
+
+def print_active_profile() -> None:
+    """Print active profile."""
+    repo = Repository()
+    if repo.root:
+        scope = "local"
+    else:
+        scope = "global"
+    declare(
+        f"Running with active profile: `{repo.active_profile_name}` ({scope})"
+    )
+
+
+def print_active_stack() -> None:
+    """Print active stack."""
+    repo = Repository()
+    if repo.root:
+        scope = "local"
+    else:
+        scope = "global"
+    declare(f"Running with active stack: `{repo.active_stack_name}` ({scope})")
+
+
+def print_profile(
+    profile: ConfigProfile,
+    locally_active: bool,
+    globally_active: bool,
+) -> None:
+    """Prints the configuration options of a profile.
+
+    Args:
+        profile: Profile to print.
+        locally_active: Whether the profile is active locally.
+        globally_active: Whether the profile is active globally.
+        name: Name of the profile.
+    """
+    local_stack = ""
+    profile_title = f"'{profile.name}' Profile Configuration"
+    if globally_active or locally_active:
+        profile_title += " (ACTIVE:"
+        if globally_active:
+            profile_title += " GLOBAL"
+        if locally_active:
+            profile_title += " LOCAL"
+            local_stack = Repository().active_stack_name or ""
+        profile_title += ")"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=profile_title,
+        show_lines=True,
+    )
+    rich_table.add_column("PROPERTY")
+    rich_table.add_column("VALUE")
+    items = profile.dict().items()
+    for item in items:
+        rich_table.add_row(*[str(elem) for elem in item])
+    rich_table.add_row("LOCAL ACTIVE STACK", local_stack)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [

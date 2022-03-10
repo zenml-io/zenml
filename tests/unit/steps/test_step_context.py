@@ -19,6 +19,7 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import StepContextError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.repository import Repository
 from zenml.steps import StepContext
 
 
@@ -129,10 +130,10 @@ def test_step_context_returns_instance_of_custom_materializer_class(
     assert isinstance(materializer, BuiltInMaterializer)
 
 
-def test_step_context_returns_metadata_store_of_active_stack(clean_repo):
+def test_step_context_returns_metadata_store_of_active_stack():
     """Tests that the step context returns the metadata store of the active
     stack."""
     context = StepContext(
         step_name="some_step_name", output_materializers={}, output_artifacts={}
     )
-    assert clean_repo.active_stack.metadata_store == context.metadata_store
+    assert Repository().active_stack.metadata_store == context.metadata_store
