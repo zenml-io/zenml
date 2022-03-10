@@ -14,13 +14,17 @@
 import json
 import os
 import sys
-from typing import TYPE_CHECKING, List, Tuple, cast
+from typing import TYPE_CHECKING, Any, List, Tuple, cast
 
 from tfx.orchestration.portable import data_types
 from tfx.orchestration.portable.base_executor_operator import (
     BaseExecutorOperator,
 )
-from tfx.proto.orchestration import executable_spec_pb2, execution_result_pb2
+from tfx.proto.orchestration import (
+    executable_spec_pb2,
+    execution_result_pb2,
+    pipeline_pb2,
+)
 
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -76,17 +80,18 @@ class StepExecutorOperator(BaseExecutorOperator):
     SUPPORTED_EXECUTOR_SPEC_TYPE = [
         executable_spec_pb2.PythonClassExecutableSpec
     ]
-    SUPPORTED_PLATFORM_CONFIG_TYPE = []
+    SUPPORTED_PLATFORM_CONFIG_TYPE: List[Any] = []
 
     @staticmethod
     def _collect_requirements(
-        stack: "Stack", execution_info: data_types.ExecutionInfo
+        stack: "Stack",
+        pipeline_node: pipeline_pb2.PipelineNode,
     ) -> List[str]:
         """Collects all requirements necessary to run a step.
 
         Args:
             stack: Stack on which the step is being executed.
-            execution_info: Execution info needed to run the step.
+            pipeline_node: Pipeline node info for a step.
 
         Returns:
             Alphabetically sorted list of pip requirements.
@@ -94,7 +99,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         requirements = stack.requirements()
 
         # Add pipeline requirements from the corresponding node context
-        for context in execution_info.pipeline_node.contexts.contexts:
+        for context in pipeline_node.contexts.contexts:
             if context.type.name == "pipeline_requirements":
                 pipeline_requirements = context.properties[
                     "pipeline_requirements"
@@ -112,12 +117,12 @@ class StepExecutorOperator(BaseExecutorOperator):
 
     @staticmethod
     def _resolve_user_modules(
-        execution_info: data_types.ExecutionInfo,
+        pipeline_node: pipeline_pb2.PipelineNode,
     ) -> Tuple[str, str]:
         """Resolves the main and step module.
 
         Args:
-            execution_info: Execution info needed to run the step.
+            pipeline_node: Pipeline node info for a step.
 
         Returns:
             A tuple containing the path of the resolved main module and step
@@ -128,7 +133,7 @@ class StepExecutorOperator(BaseExecutorOperator):
             os.path.abspath(main_module_file)
         )
 
-        step_type = cast(str, execution_info.pipeline_node.node_info.type.name)
+        step_type = cast(str, pipeline_node.node_info.type.name)
         step_module_path, step_class = step_type.rsplit(".", maxsplit=1)
         if step_module_path == "__main__":
             step_module_path = main_module_path
@@ -149,6 +154,14 @@ class StepExecutorOperator(BaseExecutorOperator):
         Returns:
             The executor output.
         """
+        # Pretty sure this attributes will always be not None, assert here so
+        # mypy doesn't complain
+        assert execution_info.pipeline_node
+        assert execution_info.pipeline_info
+        assert execution_info.pipeline_run_id
+        assert execution_info.tmp_dir
+        assert execution_info.execution_output_uri
+
         step_name = execution_info.pipeline_node.node_info.id
         stack = Repository().active_stack
         step_operator = stack.step_operator
@@ -159,7 +172,7 @@ class StepExecutorOperator(BaseExecutorOperator):
             )
 
         requirements = self._collect_requirements(
-            stack=stack, execution_info=execution_info
+            stack=stack, pipeline_node=execution_info.pipeline_node
         )
 
         # Write the execution info to a temporary directory inside the artifact
@@ -170,7 +183,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         _write_execution_info(execution_info, path=execution_info_path)
 
         main_module, step_source_path = self._resolve_user_modules(
-            execution_info=execution_info
+            pipeline_node=execution_info.pipeline_node
         )
 
         input_artifact_type_mapping = {
