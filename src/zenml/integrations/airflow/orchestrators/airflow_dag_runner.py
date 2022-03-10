@@ -32,10 +32,10 @@ from zenml.logger import get_logger
 from zenml.orchestrators import context_utils
 from zenml.orchestrators.utils import create_tfx_pipeline, get_step_for_node
 from zenml.repository import Repository
+from tfx.proto.orchestration import executable_spec_pb2
 
 if TYPE_CHECKING:
     import airflow
-    from tfx.proto.orchestration import executable_spec_pb2
     from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
     from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
@@ -207,7 +207,7 @@ class AirflowDagRunner:
                 parent_dag=airflow_dag,
                 pipeline_node=pipeline_node,
                 mlmd_connection=connection_config,
-                pipeline_info=tfx_pipeline.pipeline_info,
+                pipeline_info=pb2_pipeline.pipeline_info,
                 pipeline_runtime_spec=pb2_pipeline.runtime_spec,
                 executor_spec=executor_spec,
                 custom_driver_spec=custom_driver_spec,
