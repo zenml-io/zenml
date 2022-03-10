@@ -44,16 +44,25 @@ from zenml.step_operators import BaseStepOperator
 class AzureMLStepOperator(BaseStepOperator):
     """Step operator to run a step on AzureML.
 
+    This class defines code that can setup an AzureML environment and run the
+    ZenML entrypoint command in it.
+
     Attributes:
-        subscription_id:
-        resource_group:
-        workspace_name:
-        compute_target_name:
-        environment_name:
-        docker_base_image:
-        tenant_id:
-        service_principal_id:
-        service_principal_password:
+        subscription_id: The Azure account's subscription ID
+        resource_group: The resource group to which the AzureML workspace
+            is deployed.
+        workspace_name: The name of the AzureML Workspace.
+        compute_target_name: The name of the configured ComputeTarget.
+            An instance of it has to be created on the portal if it doesn't
+            exist already.
+        environment_name: [Optional] The name of the environment if there
+            already exists one.
+        docker_base_image: [Optional] The custom docker base image that the
+            environment should use.
+        tenant_id: The Azure Tenant ID.
+        service_principal_id: The ID for the service principal that is created
+            to allow apps to access secure resources.
+        service_principal_password: Password for the service principal.
     """
 
     supports_local_execution = True
@@ -94,6 +103,17 @@ class AzureMLStepOperator(BaseStepOperator):
     def _prepare_environment(
         self, workspace: Workspace, requirements: List[str], run_name: str
     ) -> Environment:
+        """Prepares the environment in which Azure will run all jobs.
+
+        Args:
+            workspace: The AzureML Workspace that has configuration
+                for a storage account, container registry among other
+                things.
+            requirements: The list of requirements to be installed
+                in the environment.
+            run_name: The name of the pipeline run that can be used
+                for naming environments and runs.
+        """
         if self.environment_name:
             environment = Environment.get(
                 workspace=workspace, name=self.environment_name

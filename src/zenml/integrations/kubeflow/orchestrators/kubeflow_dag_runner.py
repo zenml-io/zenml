@@ -308,14 +308,10 @@ class KubeflowDagRunner:
           runtime_configuration: The runtime configuration
         """
         component_to_kfp_op: Dict[base_node.BaseNode, dsl.ContainerOp] = {}
-        tfx_ir: Pb2Pipeline = self._generate_tfx_ir(  # type:ignore[valid-type]
-            tfx_pipeline
-        )
+        tfx_ir: Pb2Pipeline = self._generate_tfx_ir(tfx_pipeline)
 
-        for node in tfx_ir.nodes:  # type:ignore[attr-defined]
-            pipeline_node: PipelineNode = (  # type:ignore[valid-type]
-                node.pipeline_node
-            )
+        for node in tfx_ir.nodes:
+            pipeline_node: PipelineNode = node.pipeline_node
 
             # Add the stack as context to each pipeline node:
             context_utils.add_context_to_node(
@@ -393,32 +389,30 @@ class KubeflowDagRunner:
                 del message_dict[item]
 
     def _dehydrate_tfx_ir(
-        self, original_pipeline: Pb2Pipeline, node_id: str  # type: ignore[valid-type] # noqa
-    ) -> Pb2Pipeline:  # type: ignore[valid-type]
+        self, original_pipeline: Pb2Pipeline, node_id: str
+    ) -> Pb2Pipeline:
         """Dehydrate the TFX IR to remove unused fields."""
         pipeline = copy.deepcopy(original_pipeline)
-        for node in pipeline.nodes:  # type: ignore[attr-defined]
+        for node in pipeline.nodes:
             if (
                 node.WhichOneof("node") == "pipeline_node"
                 and node.pipeline_node.node_info.id == node_id
             ):
-                del pipeline.nodes[:]  # type: ignore[attr-defined]
-                pipeline.nodes.extend([node])  # type: ignore[attr-defined]
+                del pipeline.nodes[:]
+                pipeline.nodes.extend([node])
                 break
 
         deployment_config = IntermediateDeploymentConfig()
-        pipeline.deployment_config.Unpack(deployment_config)  # type: ignore[attr-defined] # noqa
+        pipeline.deployment_config.Unpack(deployment_config)
         self._del_unused_field(node_id, deployment_config.executor_specs)
         self._del_unused_field(node_id, deployment_config.custom_driver_specs)
         self._del_unused_field(
             node_id, deployment_config.node_level_platform_configs
         )
-        pipeline.deployment_config.Pack(deployment_config)  # type: ignore[attr-defined] # noqa
+        pipeline.deployment_config.Pack(deployment_config)
         return pipeline
 
-    def _generate_tfx_ir(
-        self, pipeline: TfxPipeline
-    ) -> Pb2Pipeline:  # type: ignore[valid-type]
+    def _generate_tfx_ir(self, pipeline: TfxPipeline) -> Pb2Pipeline:
         """Generate the TFX IR from the logical TFX pipeline."""
         result = self._tfx_compiler.compile(pipeline)
         return result

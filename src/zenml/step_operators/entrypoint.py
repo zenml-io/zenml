@@ -85,7 +85,9 @@ def create_executor_class(
         materializers=materializers,
     )
 
-    return component_class.EXECUTOR_SPEC.executor_class
+    return cast(
+        Type[_FunctionExecutor], component_class.EXECUTOR_SPEC.executor_class
+    )
 
 
 def load_execution_info(execution_info_path: str) -> ExecutionInfo:
