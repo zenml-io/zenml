@@ -32,6 +32,7 @@ ZenML repository:
 ```bash
 # Install python dependencies
 pip install zenml
+pip install notebook  # if you want to run the example on the notebook
 
 # Install ZenML integrations
 zenml integration install kubeflow tensorflow
@@ -44,8 +45,16 @@ cd zenml_examples/kubeflow
 zenml init
 ```
 
-## Run on the local machine
+## Use the notebook 
+As an alternate to running the below commands, you can also simply use the notebook version and see the story unfold there:
 
+```shell
+jupyter notebook
+```
+
+Otherwise, please continue reading if you want to run it straight in Python scripts.
+
+## Run on the local machine
 
 ### Run the pipeline
 
@@ -63,7 +72,7 @@ the model and the Tensorboard server will be updated automatically to include
 the new model information, e.g.:
 
 ```shell
-python run.py --learning_rate=0.02
+python run.py --lr=0.02
 python run.py --epochs=10
 ```
 
