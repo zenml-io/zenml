@@ -14,6 +14,7 @@
 import inspect
 from abc import abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -35,18 +36,23 @@ from zenml.constants import (
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
     SHOULD_PREVENT_PIPELINE_EXECUTION,
 )
-from zenml.enums import StackComponentType
-from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
+from zenml.exceptions import (
+    PipelineConfigurationError,
+    PipelineInterfaceError,
+    StackValidationError,
+)
 from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
-from zenml.stack import Stack, StackValidator
 from zenml.steps import BaseStep
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+
+if TYPE_CHECKING:
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -278,15 +284,23 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise PipelineInterfaceError("Cannot set steps manually!")
 
-    def validate_stack(self, stack: Stack) -> None:
+    def validate_stack(self, stack: "Stack") -> None:
         """Validates if a stack is able to run this pipeline."""
-        requires_training_resource = any(
-            step.enable_training_resource for step in self.steps.values()
+        available_step_operators = (
+            {stack.step_operator.name} if stack.step_operator else set()
         )
-        if requires_training_resource:
-            StackValidator(
-                required_components={StackComponentType.TRAINING_RESOURCE}
-            ).validate(stack)
+
+        for step in self.steps.values():
+            if (
+                step.custom_step_operator
+                and step.custom_step_operator not in available_step_operators
+            ):
+                raise StackValidationError(
+                    f"Step '{step.name}' requires custom step operator "
+                    f"'{step.custom_step_operator}' which is not configured in "
+                    f"the active stack. Available step operators: "
+                    f"{available_step_operators}."
+                )
 
     def _reset_step_flags(self) -> None:
         """Reset the _has_been_called flag at the beginning of a pipeline run,

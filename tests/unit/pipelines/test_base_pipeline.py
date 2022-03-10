@@ -293,16 +293,16 @@ def test_pipeline_requirements(tmp_path):
     }
 
 
-def test_pipeline_run_fails_when_required_training_resource_is_missing(
+def test_pipeline_run_fails_when_required_step_operator_is_missing(
     clean_repo, one_step_pipeline
 ):
-    """Tests that running a pipeline with a step that requires a training
-    resource fails if the active stack does not contain a training resource."""
+    """Tests that running a pipeline with a step that requires a custom step
+    operator fails if the active stack does not contain this step operator."""
 
-    @step(enable_training_resource=True)
-    def step_that_requires_training_resource():
+    @step(custom_step_operator="azureml")
+    def step_that_requires_step_operator():
         pass
 
-    assert not clean_repo.active_stack.training_resource
+    assert not clean_repo.active_stack.step_operator
     with pytest.raises(StackValidationError):
-        one_step_pipeline(step_that_requires_training_resource()).run()
+        one_step_pipeline(step_that_requires_step_operator()).run()
