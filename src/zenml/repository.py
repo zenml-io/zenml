@@ -75,6 +75,8 @@ class Repository:
                 environment variable `ZENML_REPOSITORY_PATH` (if set) and
                 recursively searching in the parent directories of the current
                 working directory.
+            storage_type: Optionally specify how to persist stacks. Valid
+                options: SQLITE_STORAGE, YAML_STORAGE
 
         Raises:
             RepositoryNotFoundError: If no ZenML repository directory is found.

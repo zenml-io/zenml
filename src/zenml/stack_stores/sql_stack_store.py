@@ -169,7 +169,7 @@ class SqlStackStore(BaseStackStore):
         """Configuration for all stacks registered in this repository."""
         return {n: self.get_stack_configuration(n) for n in self.stack_names}
 
-    def create_stack(
+    def _create_stack(
         self, name: str, stack_configuration: StackConfiguration
     ) -> None:
         with Session(self.engine) as session:
@@ -186,7 +186,7 @@ class SqlStackStore(BaseStackStore):
                     )
             session.commit()
 
-    def delete_stack(self, name: str) -> None:
+    def _delete_stack(self, name: str) -> None:
         with Session(self.engine) as session:
             stack = session.exec(
                 select(ZenStack).where(ZenStack.name == name)
@@ -194,7 +194,7 @@ class SqlStackStore(BaseStackStore):
             session.delete(stack)
             session.commit()
 
-    def get_component_config(
+    def _get_component_config(
         self, component_type: StackComponentType, name: str
     ) -> Tuple[StackComponentFlavor, Any]:
         """Fetch the flavor and configuration for a stack component."""
@@ -217,7 +217,7 @@ class SqlStackStore(BaseStackStore):
         )
         return flavor, config
 
-    def get_stack_component_names(
+    def _get_stack_component_names(
         self, component_type: StackComponentType
     ) -> List[str]:
         """Get names of all registered stack components of a given type."""
@@ -256,7 +256,7 @@ class SqlStackStore(BaseStackStore):
             session.add(new_component)
             session.commit()
 
-    def delete_stack_component(
+    def _delete_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> None:
         """Delete a stack component."""
