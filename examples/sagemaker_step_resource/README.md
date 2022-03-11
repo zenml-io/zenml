@@ -58,22 +58,23 @@ The stack will consist of:
 
 ```bash
 zenml artifact-store register s3-store \
-    --type s3
-    --path $PATH_TO_YOUR_S3_BUCKET
+    --type=s3
+    --path=$PATH_TO_YOUR_S3_BUCKET
 
 # create the sagemaker step operator
 zenml step-operator register sagemaker \
-    --type sagemaker
-    --role <SAGEMAKER_ROLE> \
-    --instance_type <SAGEMAKER_INSTANCE_TYPE>
-    --base_image <CUSTOM_BASE_IMAGE>
-    --bucket_name <S3_BUCKET_NAME>
-    --experiment_name <SAGEMAKER_EXPERIMENT_NAME>
+    --type=sagemaker
+    --role=<SAGEMAKER_ROLE> \
+    --instance_type=<SAGEMAKER_INSTANCE_TYPE>
+    --base_image=<CUSTOM_BASE_IMAGE>
+    --bucket_name=<S3_BUCKET_NAME>
+    --experiment_name=<SAGEMAKER_EXPERIMENT_NAME>
 
 # register the sagemaker stack
 zenml stack register sagemaker_stack \
     -m local_metadata_store \
     -o local_orchestrator \
+    -c ecr_registry \
     -a s3-store \
     -s sagemaker
 
