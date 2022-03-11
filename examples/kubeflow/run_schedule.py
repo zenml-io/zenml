@@ -14,13 +14,8 @@
 
 from datetime import datetime, timedelta
 
-from pipeline import (
-    mnist_pipeline,
-    importer,
-    trainer,
-    evaluator,
-    normalizer,
-)
+from pipeline import evaluator, importer, mnist_pipeline, normalizer, trainer
+
 from zenml.pipelines import Schedule
 
 if __name__ == "__main__":

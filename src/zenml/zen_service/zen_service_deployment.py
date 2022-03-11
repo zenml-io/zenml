@@ -1,4 +1,3 @@
-import subprocess
 from typing import Any, Dict, Optional, Union
 
 import uvicorn
@@ -82,15 +81,12 @@ class ZenServiceService(LocalDaemonService):
     endpoint: ZenServiceEndpoint
 
     def __init__(
-            self,
-            config: Union[ZenServiceConfig, Dict[str, Any]],
-            **attrs: Any,
+        self,
+        config: Union[ZenServiceConfig, Dict[str, Any]],
+        **attrs: Any,
     ) -> None:
         # ensure that the endpoint is created before the service is initialized
-        if (
-                isinstance(config, ZenServiceConfig)
-                and "endpoint" not in attrs
-        ):
+        if isinstance(config, ZenServiceConfig) and "endpoint" not in attrs:
 
             endpoint_uri_path = ZEN_SERVICE_URL_PATH
             healthcheck_uri_path = ZEN_SERVICE_HEALTHCHECK_URL_PATH
@@ -125,11 +121,10 @@ class ZenServiceService(LocalDaemonService):
                 "zenml.zen_service.zen_service:app",
                 host="127.0.0.1",
                 port=self.endpoint.status.port,
-                log_level="info")
-        except KeyboardInterrupt:
-            logger.info(
-                "Zen service stopped. Resuming normal execution."
+                log_level="info",
             )
+        except KeyboardInterrupt:
+            logger.info("Zen service stopped. Resuming normal execution.")
 
     @property
     def zen_service_uri(self) -> Optional[str]:
