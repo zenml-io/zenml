@@ -363,6 +363,13 @@ def generate_stack_component_explain_command(
         if component_module.__doc__ is not None:
             md = Markdown(component_module.__doc__)
             console.print(md)
+        else:
+            console.print(
+                "The explain subcommand is yet not available for "
+                "this stack component. For more information, you can "
+                "visit our docs page: https://docs.zenml.io/ and "
+                "stay tuned for future releases."
+            )
 
     return explain_stack_components_command
 
