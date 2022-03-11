@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional, Union
 
-import uvicorn
+import uvicorn  # type: ignore[import]
 
 from zenml.logger import get_logger
 from zenml.services import (

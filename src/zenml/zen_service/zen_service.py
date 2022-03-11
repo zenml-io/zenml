@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from zenml.enums import StackComponentType
 from zenml.io.utils import get_global_config_directory
-from zenml.stack_stores import SqlStackStore
+from zenml.stack_stores import BaseStackStore, SqlStackStore
 from zenml.stack_stores.models import (
     ActiveStackName,
     StackComponentConfiguration,
@@ -18,13 +18,12 @@ app = FastAPI()
 
 # to run this, execute:
 # uvicorn zenml.zen_service.zen_service:app --reload
-# TODO: figure out how to make `zenml service up` start this
 
 
 root: Path = Path(get_global_config_directory())
 url = f"sqlite:///{root / 'service_stack_store.db'}"
 print(url)
-stack_store = SqlStackStore(url)
+stack_store: BaseStackStore = SqlStackStore(url)
 
 
 @app.head("/health")
@@ -52,12 +51,14 @@ async def activate_stack(name: str) -> None:
     stack_store.activate_stack(name)
 
 
-@app.get("/stacks/configurations/{name}")
+@app.get("/stacks/configurations/{name}", response_model=StackConfiguration)
 async def get_stack_configuration(name: str) -> StackConfiguration:
     return stack_store.get_stack_configuration(name)
 
 
-@app.get("/stacks/configurations/")
+@app.get(
+    "/stacks/configurations/", response_model=Dict[str, StackConfiguration]
+)
 async def stack_configurations() -> Dict[str, StackConfiguration]:
     return stack_store.stack_configurations
 
@@ -70,14 +71,11 @@ async def register_stack_component(
 
 
 @app.get("/stacks", response_model=List[StackWrapper])
-async def stacks():
+async def stacks() -> List[StackWrapper]:
     return [
         StackWrapper(name=s.name, components=s.components)
         for s in stack_store.stacks
     ]
-
-
-# TODO: use stack wrappers in all StackStores!
 
 
 @app.post("/stacks/register", response_model=Dict[str, str])
@@ -97,14 +95,20 @@ def deregister_stack(name: str) -> None:
     stack_store.deregister_stack(name)
 
 
-@app.get("/components/{component_type}/{name}")
+@app.get(
+    "/components/{component_type}/{name}",
+    response_model=StackComponentConfiguration,
+)
 async def get_stack_component(
     component_type: StackComponentType, name: str
 ) -> StackComponentConfiguration:
     return stack_store.get_stack_component(component_type, name=name)
 
 
-@app.get("/components/{component_type}")
+@app.get(
+    "/components/{component_type}",
+    response_model=List[StackComponentConfiguration],
+)
 def get_stack_components(
     component_type: StackComponentType,
 ) -> List[StackComponentConfiguration]:

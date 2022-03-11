@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, cast
 
 import requests
 from pydantic import BaseModel
@@ -92,7 +92,7 @@ class RestStackStore(BaseStackStore):
 
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Registers a stack and its components."""
-        return self.post("/stacks/register", stack)
+        return cast(Dict[str, str], self.post("/stacks/register", stack))
 
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack."""
@@ -158,6 +158,4 @@ class RestStackStore(BaseStackStore):
         return requests.get(self.endpoint + path).json()
 
     def post(self, path: str, body: BaseModel) -> Any:
-        print(f" ## sending to path {path}:")
-        print(body.json())
-        return requests.post(self.endpoint + path, json=body.json())
+        return requests.post(self.endpoint + path, json=body.json()).json()

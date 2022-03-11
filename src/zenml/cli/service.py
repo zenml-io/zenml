@@ -41,7 +41,7 @@ def service() -> None:
 
 @service.command("up", help="Start a daemon service running the zenml service")
 @click.option("--port", required=False, type=int, default=8000)
-def up_server(port) -> None:
+def up_server(port: int) -> None:
     """Provisions resources for the zen service."""
 
     try:
@@ -57,22 +57,26 @@ def up_server(port) -> None:
 
     zen_service.start(timeout=10)
 
-    if zen_service.endpoint.status.port != port:
-        cli_utils.error(
-            f"You specified port={port} but the service is "
-            f"running at '{zen_service.endpoint.status.uri}' "
-            f"This can happen in case the specified port is "
-            f"in use or if the service was already running "
-            f"on port{zen_service.endpoint.status.port}' "
-            f"In case you want to change to port={port} "
-            f"shut down the service with "
-            f"`zenml service down -f` and restart it with "
-            f"a free port of your choice."
-        )
+    if zen_service.endpoint:
+        if zen_service.endpoint.status.port != port:
+            cli_utils.error(
+                f"You specified port={port} but the service is "
+                f"running at '{zen_service.endpoint.status.uri}' "
+                f"This can happen in case the specified port is "
+                f"in use or if the service was already running "
+                f"on port{zen_service.endpoint.status.port}' "
+                f"In case you want to change to port={port} "
+                f"shut down the service with "
+                f"`zenml service down -f` and restart it with "
+                f"a free port of your choice."
+            )
+        else:
+            cli_utils.declare(
+                "Zenml Service running at "
+                f"'{zen_service.endpoint.status.uri}'."
+            )
     else:
-        cli_utils.declare(
-            "Zenml Service running at " f"'{zen_service.endpoint.status.uri}'."
-        )
+        raise ValueError("No endpoint found for Zen Service.")
 
     with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "w") as f:
         f.write(zen_service.json(indent=4))
@@ -92,7 +96,7 @@ def status_server() -> None:
         response_message = (
             f"The Zenml Service status is " f"{zen_service_status[0]}"
         )
-        if zen_service_status[0] == ServiceState.ACTIVE:
+        if zen_service_status[0] == ServiceState.ACTIVE and zervice.endpoint:
             response_message += (
                 f" and running at " f"{zervice.endpoint.status.uri}."
             )

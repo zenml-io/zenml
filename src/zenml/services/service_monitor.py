@@ -15,7 +15,7 @@
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Optional, Tuple
 
-import requests  # type: ignore [import]
+import requests
 from pydantic import Field
 
 from zenml.logger import get_logger

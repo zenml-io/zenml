@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
-import requests  # type: ignore [import]
+import requests
 from mlflow.pyfunc.backend import PyFuncBackend  # type: ignore [import]
 
 from zenml.logger import get_logger
@@ -185,9 +185,12 @@ class MLFlowDeploymentService(LocalDaemonService):
                 "Please start the service before making predictions."
             )
 
-        response = requests.post(
-            self.endpoint.prediction_uri,
-            json={"instances": request.tolist()},
-        )
+        if self.endpoint.prediction_uri is not None:
+            response = requests.post(
+                self.endpoint.prediction_uri,
+                json={"instances": request.tolist()},
+            )
+        else:
+            raise ValueError("No endpoint known for prediction.")
         response.raise_for_status()
         return np.array(response.json())
