@@ -37,7 +37,9 @@ from tfx.types import artifact, channel, standard_artifacts
 from tfx.types.channel import Property
 
 import zenml.constants
+from zenml.artifact_stores import LocalArtifactStore
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.exceptions import RepositoryNotFoundError
 from zenml.integrations.registry import integration_registry
@@ -278,13 +280,21 @@ def _dump_ui_metadata(
         if (
             spec.artifact_spec.type.name
             == standard_artifacts.ModelRun.TYPE_NAME
+            or spec.artifact_spec.type.name == ModelArtifact.TYPE_NAME
         ):
             output_model = execution_info.output_dict[name][0]
+            source = output_model.uri
 
+            # For local artifact repository, use a path that is relative to
+            # the point where the local artifact folder is mounted as a volume
+            artifact_store = Repository().active_stack.artifact_store
+            if isinstance(artifact_store, LocalArtifactStore):
+                source = os.path.relpath(source, artifact_store.path)
+                source = f"volume://local-artifact-store/{source}"
             # Add Tensorboard view.
             tensorboard_output = {
                 "type": "tensorboard",
-                "source": output_model.uri,
+                "source": source,
             }
             outputs.append(tensorboard_output)
 

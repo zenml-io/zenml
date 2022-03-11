@@ -16,4 +16,4 @@ from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
 
 from zenml.integrations.gcp.io.gcs_plugin import ZenGCS
 
-DEFAULT_FILESYSTEM_REGISTRY.register(ZenGCS, 15)
+DEFAULT_FILESYSTEM_REGISTRY.register(ZenGCS, priority=5)

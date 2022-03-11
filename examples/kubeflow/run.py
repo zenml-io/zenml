@@ -12,22 +12,60 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from datetime import datetime, timedelta
-
+import click
 from pipeline import (
+    TrainerConfig,
     mnist_pipeline,
     importer,
     trainer,
     evaluator,
     normalizer,
 )
+from rich import print
+from zenml.integrations.tensorflow.services import (
+    TensorboardService,
+    TensorboardServiceConfig,
+)
+from zenml.integrations.tensorflow.visualizers import (
+    visualize_tensorboard,
+    stop_tensorboard_server,
+)
+from zenml.repository import Repository
 
-if __name__ == "__main__":
+
+@click.command()
+@click.option("--epochs", default=5, help="Number of epochs for training")
+@click.option("--lr", default=0.001, help="Learning rate for training")
+@click.option(
+    "--stop-tensorboard",
+    is_flag=True,
+    default=False,
+    help="Stop the Tensorboard server",
+)
+def main(epochs: int, lr: float, stop_tensorboard: bool):
+    """Run the mnist example pipeline"""
+
+    if stop_tensorboard:
+        stop_tensorboard_server(
+            pipeline_name="mnist_pipeline",
+            step_name="trainer",
+        )
+        return
+
     # Run the pipeline
     p = mnist_pipeline(
         importer=importer(),
         normalizer=normalizer(),
-        trainer=trainer(),
+        trainer=trainer(config=TrainerConfig(epochs=epochs, lr=lr)),
         evaluator=evaluator(),
     )
     p.run()
+
+    visualize_tensorboard(
+        pipeline_name="mnist_pipeline",
+        step_name="trainer",
+    )
+
+
+if __name__ == "__main__":
+    main()
