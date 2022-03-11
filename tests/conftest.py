@@ -249,61 +249,70 @@ def virtualenv(
     Yields:
         Path to the virtual environment
     """
-    # Remember the old executable
-    orig_sys_executable = Path(sys.executable)
+    if request.config.getoption("use_virtualenv"):
+        # Remember the old executable
+        orig_sys_executable = Path(sys.executable)
 
-    test_name = request.node.name
-    test_name = test_name.replace("[", "-").replace("]", "-")
+        test_name = request.node.name
+        test_name = test_name.replace("[", "-").replace("]", "-")
 
-    # Create temporary venv
-    tmp_path = tmp_path_factory.mktemp(test_name) / "venv"
-    # TODO[HIGH]: Implement for use outside of a base virtual environment
-    #  If this happens outside of a virtual environment the complete
-    #  /usr space is cloned
-    clone_virtualenv(
-        src_dir=str(orig_sys_executable.parent.parent), dst_dir=str(tmp_path)
-    )
-
-    env_bin_dir = "bin"
-    if sys.platform == "win32":
-        env_bin_dir = "Scripts"
-
-    # Activate venv
-    activate_this_file = tmp_path / env_bin_dir / "activate_this.py"
-
-    if not activate_this_file.is_file():
-        raise FileNotFoundError(
-            "Integration tests don't work for some local "
-            "virtual environments. Use virtualenv for "
-            "your virtual environment to run integration "
-            "tests"
+        # Create temporary venv
+        tmp_path = tmp_path_factory.mktemp(test_name) / "venv"
+        # TODO[HIGH]: Implement for use outside of a base virtual environment
+        #  If this happens outside of a virtual environment the complete
+        #  /usr space is cloned
+        clone_virtualenv(
+            src_dir=str(orig_sys_executable.parent.parent),
+            dst_dir=str(tmp_path),
         )
 
-    execfile(str(activate_this_file), dict(__file__=str(activate_this_file)))
+        env_bin_dir = "bin"
+        if sys.platform == "win32":
+            env_bin_dir = "Scripts"
 
-    # Set new system executable
-    sys.executable = tmp_path / env_bin_dir / "python"
+        # Activate venv
+        activate_this_file = tmp_path / env_bin_dir / "activate_this.py"
 
-    yield tmp_path
-    # Reset system executable
-    sys.executable = orig_sys_executable
+        if not activate_this_file.is_file():
+            raise FileNotFoundError(
+                "Integration tests don't work for some local "
+                "virtual environments. Use virtualenv for "
+                "your virtual environment to run integration "
+                "tests"
+            )
 
-    # Switch back to original venv
-    activate_this_f = Path(orig_sys_executable).parent / "activate_this.py"
-
-    if not activate_this_f.is_file():
-        raise FileNotFoundError(
-            "Integration tests don't work for some local "
-            "virtual environments. Use virtualenv for "
-            "your virtual environment to run integration "
-            "tests"
+        execfile(
+            str(activate_this_file), dict(__file__=str(activate_this_file))
         )
-    execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
+
+        # Set new system executable
+        sys.executable = tmp_path / env_bin_dir / "python"
+
+        yield tmp_path
+        # Reset system executable
+        sys.executable = orig_sys_executable
+
+        # Switch back to original venv
+        activate_this_f = Path(orig_sys_executable).parent / "activate_this.py"
+
+        if not activate_this_f.is_file():
+            raise FileNotFoundError(
+                "Integration tests don't work for some local "
+                "virtual environments. Use virtualenv for "
+                "your virtual environment to run integration "
+                "tests"
+            )
+        execfile(str(activate_this_f), dict(__file__=str(activate_this_f)))
+
+    else:
+        yield ""
 
 
 def pytest_addoption(parser):
     """Fixture that gets called by pytest ahead of tests. Adds cli option to
-    enable kubeflow for integration tests
+    enable kubeflow for integration tests or to disable the use of the
+    virtualenv fixture. This might be useful for local integration testing
+    in case you do not care about your base environment being affected
 
     How to use this option:
         ```pytest tests/integration/test_examples.py --on-kubeflow```
@@ -313,6 +322,12 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help="Only run Kubeflow",
+    )
+    parser.addoption(
+        "--use-virtualenv",
+        action="store_true",
+        default=False,
+        help="Run Integration tests in cloned env",
     )
 
 

@@ -87,13 +87,18 @@ class LocalOrchestrator(BaseOrchestrator):
                 "and the pipeline will be run directly"
             )
 
+        pipeline_root = tfx_pipeline.pipeline_info.pipeline_root
+        if not isinstance(pipeline_root, str):
+            raise TypeError(
+                "TFX Pipeline root may not be a Placeholder, "
+                "but must be a specific string."
+            )
+
         for component in tfx_pipeline.components:
             if isinstance(component, base_component.BaseComponent):
-                component._resolve_pip_dependencies(
-                    tfx_pipeline.pipeline_info.pipeline_root
-                )
+                component._resolve_pip_dependencies(pipeline_root)
 
-        pb2_pipeline: Pb2Pipeline = Compiler().compile(tfx_pipeline)  # type: ignore[valid-type]
+        pb2_pipeline: Pb2Pipeline = Compiler().compile(tfx_pipeline)
 
         # Substitute the runtime parameter to be a concrete run_id
         runtime_parameter_utils.substitute_runtime_parameter(
@@ -115,8 +120,8 @@ class LocalOrchestrator(BaseOrchestrator):
 
         # Run each component. Note that the pipeline.components list is in
         # topological order.
-        for node in pb2_pipeline.nodes:  # type: ignore[attr-defined]
-            pipeline_node: PipelineNode = node.pipeline_node  # type: ignore[valid-type]
+        for node in pb2_pipeline.nodes:
+            pipeline_node: PipelineNode = node.pipeline_node
 
             # fill out that context
             context_utils.add_context_to_node(
@@ -131,7 +136,7 @@ class LocalOrchestrator(BaseOrchestrator):
                 pipeline_node, runtime_configuration
             )
 
-            node_id = pipeline_node.node_info.id  # type:ignore[attr-defined]
+            node_id = pipeline_node.node_info.id
             executor_spec = runner_utils.extract_executor_spec(
                 deployment_config, node_id
             )
@@ -139,8 +144,8 @@ class LocalOrchestrator(BaseOrchestrator):
                 deployment_config, node_id
             )
 
-            p_info = pb2_pipeline.pipeline_info  # type:ignore[attr-defined]
-            r_spec = pb2_pipeline.runtime_spec  # type:ignore[attr-defined]
+            p_info = pb2_pipeline.pipeline_info
+            r_spec = pb2_pipeline.runtime_spec
 
             component_launcher = launcher.Launcher(
                 pipeline_node=pipeline_node,

@@ -12,77 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import logging
 from datetime import datetime, timedelta
 
-import numpy as np
-from sklearn.base import ClassifierMixin
-
-from zenml.integrations.constants import SKLEARN
-from zenml.integrations.sklearn.helpers.digits import (
-    get_digits,
-    get_digits_model,
-)
-from zenml.pipelines import Schedule, pipeline
-from zenml.steps import Output, step
-
-
-@step
-def importer() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
-):
-    """Loads the digits array as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
-    return X_train, X_test, y_train, y_test
-
-
-@step
-def normalizer(
-    X_train: np.ndarray, X_test: np.ndarray
-) -> Output(X_train_normed=np.ndarray, X_test_normed=np.ndarray):
-    """Normalize digits dataset with mean and standard deviation."""
-    X_train_normed = (X_train - np.mean(X_train)) / np.std(X_train)
-    X_test_normed = (X_test - np.mean(X_test)) / np.std(X_test)
-    return X_train_normed, X_test_normed
-
-
-@step(enable_cache=False)
-def trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a simple sklearn classifier for the digits dataset."""
-    model = get_digits_model()
-
-    model.fit(X_train, y_train)
-    return model
-
-
-@step
-def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: ClassifierMixin,
-) -> float:
-    """Calculate the accuracy on the test set"""
-    test_acc = model.score(X_test, y_test)
-    logging.info(f"Test accuracy: {test_acc}")
-    return test_acc
-
-
-@pipeline(required_integrations=[SKLEARN])
-def mnist_pipeline(
+from pipeline import (
+    mnist_pipeline,
     importer,
-    normalizer,
     trainer,
     evaluator,
-):
-    # Link all the steps together
-    X_train, X_test, y_train, y_test = importer()
-    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
-    model = trainer(X_train=X_trained_normed, y_train=y_train)
-    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
-
+    normalizer,
+)
+from zenml.pipelines import Schedule
 
 if __name__ == "__main__":
     # Run the pipeline

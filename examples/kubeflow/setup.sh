@@ -20,9 +20,14 @@ setup_stack () {
 }
 
 pre_run () {
-  zenml integration install kubeflow sklearn
+  zenml integration install kubeflow tensorflow
 }
 
 pre_run_forced () {
-  zenml integration install kubeflow sklearn -f
+  zenml integration install kubeflow tensorflow -f
+}
+
+post_run () {
+  # cleanup the last local ZenML daemon started by the example
+  pkill -n -f zenml.services.local.local_daemon_entrypoint || true
 }

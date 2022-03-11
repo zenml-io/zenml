@@ -228,6 +228,129 @@ def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
     logger.info("Finished Kubeflow Pipelines setup.")
 
 
+def add_hostpath_to_kubeflow_pipelines(
+    kubernetes_context: str, local_path: str
+) -> None:
+    """Patches the Kubeflow Pipelines deployment to mount a local folder as
+    a hostpath for visualization purposes.
+
+    This function reconfigures the Kubeflow pipelines deployment to use a
+    shared local folder to support loading the Tensorboard viewer and other
+    pipeline visualization results from a local artifact store, as described
+    here:
+
+    https://github.com/kubeflow/pipelines/blob/master/docs/config/volume-support.md
+
+    Args:
+        kubernetes_context: The kubernetes context on which Kubeflow Pipelines
+            should be patched.
+        local_path: The path to the local folder to mount as a hostpath.
+    """
+    logger.info("Patching Kubeflow Pipelines to mount a local folder.")
+
+    pod_template = {
+        "spec": {
+            "serviceAccountName": "kubeflow-pipelines-viewer",
+            "containers": [
+                {
+                    "volumeMounts": [
+                        {
+                            "mountPath": local_path,
+                            "name": "local-artifact-store",
+                        }
+                    ]
+                }
+            ],
+            "volumes": [
+                {
+                    "hostPath": {
+                        "path": local_path,
+                        "type": "Directory",
+                    },
+                    "name": "local-artifact-store",
+                }
+            ],
+        }
+    }
+    pod_template_json = json.dumps(pod_template, indent=2)
+    config_map_data = {"data": {"viewer-pod-template.json": pod_template_json}}
+    config_map_data_json = json.dumps(config_map_data, indent=2)
+
+    logger.debug(
+        "Adding host path volume for local path `%s` to kubeflow pipeline"
+        "viewer pod template configuration.",
+        local_path,
+    )
+    subprocess.check_call(
+        [
+            "kubectl",
+            "--context",
+            kubernetes_context,
+            "-n",
+            "kubeflow",
+            "patch",
+            "configmap/ml-pipeline-ui-configmap",
+            "--type",
+            "merge",
+            "-p",
+            config_map_data_json,
+        ]
+    )
+
+    deployment_patch = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "ml-pipeline-ui",
+                            "volumeMounts": [
+                                {
+                                    "mountPath": local_path,
+                                    "name": "local-artifact-store",
+                                }
+                            ],
+                        }
+                    ],
+                    "volumes": [
+                        {
+                            "hostPath": {
+                                "path": local_path,
+                                "type": "Directory",
+                            },
+                            "name": "local-artifact-store",
+                        }
+                    ],
+                }
+            }
+        }
+    }
+    deployment_patch_json = json.dumps(deployment_patch, indent=2)
+
+    logger.debug(
+        "Adding host path volume for local path `%s` to the kubeflow UI",
+        local_path,
+    )
+    subprocess.check_call(
+        [
+            "kubectl",
+            "--context",
+            kubernetes_context,
+            "-n",
+            "kubeflow",
+            "patch",
+            "deployment/ml-pipeline-ui",
+            "--type",
+            "strategic",
+            "-p",
+            deployment_patch_json,
+        ]
+    )
+    wait_until_kubeflow_pipelines_ready(kubernetes_context=kubernetes_context)
+
+    logger.info("Finished patching Kubeflow Pipelines setup.")
+
+
 def start_kfp_ui_daemon(
     pid_file_path: str, log_file_path: str, port: int
 ) -> None:

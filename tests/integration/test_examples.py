@@ -123,6 +123,55 @@ examples = [
     ExampleIntegrationTestConfiguration(
         name="whylogs", validation_function=whylogs_example_validation
     ),
+    ExampleIntegrationTestConfiguration(
+        name="statistics",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=3,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="lineage",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=4,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="dag_visualizer",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=3,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="standard_interfaces",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="TrainingPipeline",
+            step_count=6,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="airflow_local",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline",
+            step_count=4,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="class_based_api",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="TrainingPipeline",
+            step_count=6,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="functional_api",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline",
+            step_count=4,
+        ),
+    ),
 ]
 
 # flake8: noqa: C901
@@ -144,7 +193,7 @@ def test_run_example(
     example_configuration: ExampleIntegrationTestConfiguration,
     repo_fixture_name: str,
     request: pytest.FixtureRequest,
-    virtualenv,
+    virtualenv: str,
 ) -> None:
     """Runs the given examples and validates they ran correctly.
 
@@ -155,6 +204,8 @@ def test_run_example(
             active stack of the repository given by the fixture.
         request: Pytest fixture needed to run the fixture given in the
             `repo_fixture_name` argument
+        virtualenv: Either a separate cloned environment for each test, or an
+                    empty string.
     """
     # run the fixture given by repo_fixture_name
     repo = request.getfixturevalue(repo_fixture_name)

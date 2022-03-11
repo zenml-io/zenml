@@ -1,35 +1,41 @@
 # Deploy pipelines to production using Kubeflow Pipelines
 
-When developing ML models, you probably develop your pipelines on your local machine initially as this allows for 
-quicker iteration and debugging. However, at a certain point when you are finished with its design, you might want to 
-transition to a more production-ready setting and deploy the pipeline to a more robust environment.
+When developing ML models, you probably develop your pipelines on your local
+machine initially as this allows for quicker iteration and debugging. However,
+at a certain point when you are finished with its design, you might want to 
+transition to a more production-ready setting and deploy the pipeline to a more
+robust environment.
 
 You can also watch a video of this example [here](https://www.youtube.com/watch?v=b5TXRYkdL3w).
 
 ## Pre-requisites
 
-In order to run this example, we have to install a few tools that allow ZenML to spin up a local Kubeflow Pipelines 
+In order to run this example, we have to install a few tools that allow ZenML to
+spin up a local Kubeflow Pipelines 
 setup:
 
-* [K3D](https://k3d.io/v5.2.1/#installation) to spin up a local Kubernetes cluster
-* The Kubernetes command-line tool [Kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) to deploy 
-Kubeflow Pipelines
-* [Docker](https://docs.docker.com/get-docker/) to build docker images that run your pipeline in Kubernetes 
-pods (**Note**: the local Kubeflow Pipelines deployment requires more than 2 GB of RAM, so if you're using 
-Docker Desktop make sure to update the resource limits in the preferences)
+* [K3D](https://k3d.io/v5.2.1/#installation) to spin up a local Kubernetes
+cluster
+* The Kubernetes command-line tool [Kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
+to deploy Kubeflow Pipelines
+* [Docker](https://docs.docker.com/get-docker/) to build docker images that run
+your pipeline in Kubernetes pods (**Note**: the local Kubeflow Pipelines
+deployment requires more than 2 GB of RAM, so if you're using Docker Desktop
+make sure to update the resource limits in the preferences)
 
 
 ## Installation
 
-Next, we will install ZenML, get the code for this example and initialize a ZenML repository:
+Next, we will install ZenML, get the code for this example and initialize a
+ZenML repository:
 
 ```bash
 # Install python dependencies
 pip install zenml
+pip install notebook  # if you want to run the example on the notebook
 
 # Install ZenML integrations
-zenml integration install kubeflow  
-zenml integration install sklearn  
+zenml integration install kubeflow tensorflow
 
 # Pull the kubeflow example
 zenml example pull kubeflow
@@ -39,17 +45,66 @@ cd zenml_examples/kubeflow
 zenml init
 ```
 
-## Run on a local Kubeflow Pipelines deployment
+## Use the notebook 
+As an alternate to running the below commands, you can also simply use the notebook version and see the story unfold there:
+
+```shell
+jupyter notebook
+```
+
+Otherwise, please continue reading if you want to run it straight in Python scripts.
+
+## Run on the local machine
+
+### Run the pipeline
+
+We can now run the pipeline by simply executing the python script:
+
+```bash
+python run.py
+```
+
+The script will run the pipeline locally and will start a Tensorboard
+server that can be accessed to visualize the information for the trained model.
+
+Re-running the example with different hyperparameter values will re-train
+the model and the Tensorboard server will be updated automatically to include
+the new model information, e.g.:
+
+```shell
+python run.py --lr=0.02
+python run.py --epochs=10
+```
+
+![Tensorboard 01](assets/tensorboard-01.png)
+![Tensorboard 02](assets/tensorboard-02.png)
+![Tensorboard 03](assets/tensorboard-03.png)
+
+### Clean up
+
+Once you're done experimenting, you can stop the Tensorboard server running
+in the background by running the command below. However, you may want to keep
+it running if you want to continue on to the next step and run the same
+pipeline on a local Kubeflow Pipelines deployment.
+
+```bash
+python run.py --stop-tensorboard
+```
+
+## Run the same pipeline on a local Kubeflow Pipelines deployment
 
 ### Create a local Kubeflow Pipelines Stack
 
-Now with all the installation and initialization out of the way, all that's left to do is configuring our 
-ZenML [stack](https://docs.zenml.io/core-concepts). For this example, the stack we create consists of the 
-following four parts:
+Now with all the installation and initialization out of the way, all that's left
+to do is configuring our ZenML [stack](https://docs.zenml.io/core-concepts). For
+this example, the stack we create consists of the following four parts:
 * The **local artifact store** stores step outputs on your hard disk. 
-* The **local metadata store** stores metadata like the pipeline name and step parameters inside a local SQLite database.
-* The docker images that are created to run your pipeline are stored in a local docker **container registry**.
-* The **Kubeflow orchestrator** is responsible for running your ZenML pipeline in Kubeflow Pipelines.
+* The **local metadata store** stores metadata like the pipeline name and step
+parameters inside a local SQLite database.
+* The docker images that are created to run your pipeline are stored in a local
+docker **container registry**.
+* The **Kubeflow orchestrator** is responsible for running your ZenML pipeline
+in Kubeflow Pipelines.
 
 ```bash
 # Make sure to create the local registry on port 5000 for it to work 
@@ -66,13 +121,16 @@ zenml stack set local_kubeflow_stack
 ```
 
 ### Start up Kubeflow Pipelines locally
-ZenML takes care of setting up and configuring the local Kubeflow Pipelines deployment. All we need to do is run:
+
+ZenML takes care of setting up and configuring the local Kubeflow Pipelines
+deployment. All we need to do is run:
+
 ```bash
 zenml stack up
 ```
-When the setup is finished, you should see a local URL which you can access in your browser and take a look at the 
-Kubeflow Pipelines UI.
 
+When the setup is finished, you should see a local URL which you can access in
+your browser and take a look at the Kubeflow Pipelines UI.
 
 ### Run the pipeline
 We can now run the pipeline by simply executing the python script:
@@ -81,12 +139,41 @@ We can now run the pipeline by simply executing the python script:
 python run.py
 ```
 
-This will build a docker image containing all the necessary python packages and files, push it to the local container 
-registry and schedule a pipeline run in Kubeflow Pipelines.
-Once the script is finished, you should be able to see the pipeline run [here](http://localhost:8080/#/runs).
+This will build a docker image containing all the necessary python packages and
+files, push it to the local container registry and schedule a pipeline run in
+Kubeflow Pipelines. Once the script is finished, you should be able to see the
+pipeline run [here](http://localhost:8080/#/runs).
+
+The Tensorboard logs for the model trained in every pipeline run can be viewed
+directly in the Kubeflow Pipelines UI by clicking on the "Visualization" tab
+and then clicking on the "Open Tensorboard" button.
+
+![Tensorboard Kubeflow Visualization](assets/tensorboard-kubeflow-vis.png)
+![Tensorboard Kubeflow UI](assets/tensorboard-kubeflow-ui.png)
+
+At the same time, the script will start a local Tensorboard server that can be
+accessed to visualize the information for all past and future versions of the
+trained model.
+
+Re-running the example with different hyperparameter values will re-train
+the model and the Tensorboard server will be updated automatically to include
+the new model information, e.g.:
+
+```shell
+python run.py --learning_rate=0.02
+python run.py --epochs=10
+```
 
 ### Clean up
-Once you're done experimenting, you can delete the local Kubernetes cluster and all associated resources by calling:
+Once you're done experimenting, you can stop the Tensorboard server running
+in the background with the command:
+
+```bash
+python run.py --stop-tensorboard
+```
+
+You can delete the local Kubernetes cluster and all associated resources by
+calling:
 
 ```bash
 zenml stack down
