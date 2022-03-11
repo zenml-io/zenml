@@ -52,16 +52,9 @@ def create_executor_class(
 
     materializers = step_instance.get_materializers(ensure_complete=True)
 
+    # We don't publish anything to the metadata store inside this environment,
+    # so the specific artifact classes don't matter
     input_spec = {}
-    # for input_name, class_path in input_artifact_type_mapping.items():
-    #     artifact_class = source_utils.load_source_path_class(class_path)
-    #     if not issubclass(artifact_class, BaseArtifact):
-    #         raise RuntimeError(
-    #             f"Class `{artifact_class}` specified as artifact class for "
-    #             f"input '{input_name}' is not a ZenML BaseArtifact subclass."
-    #         )
-    #     input_spec[input_name] = artifact_class
-
     for key, value in step_class.INPUT_SIGNATURE.items():
         input_spec[key] = BaseArtifact
 

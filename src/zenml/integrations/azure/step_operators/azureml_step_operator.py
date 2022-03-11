@@ -143,7 +143,7 @@ class AzureMLStepOperator(BaseStepOperator):
         environment_variables = {
             "ENV_ZENML_PREVENT_PIPELINE_EXECUTION": "True",
         }
-        # set credentials to access aws storage
+        # set credentials to access azure storage
         for key in [
             "AZURE_STORAGE_ACCOUNT_KEY",
             "AZURE_STORAGE_ACCOUNT_NAME",

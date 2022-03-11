@@ -116,7 +116,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         # TODO: Find a nice way to set this if the running version of ZenML is
         #  not an official release (e.g. on a development branch)
         requirements.add(
-            "git+https://github.com/zenml-io/zenml.git@feature/enable-training-resource-on-airflow-kubeflow"
+            "git+https://github.com/zenml-io/zenml.git@feature/ENG-640-training-resource"
         )
 
         return sorted(requirements)
