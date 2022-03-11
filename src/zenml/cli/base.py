@@ -32,7 +32,7 @@ from zenml.repository import Repository
         exists=True, file_okay=False, dir_okay=True, path_type=Path
     ),
 )
-@click.option("--storage-type", type=click.Choice(StorageType.list()))
+@click.option("--storage-type", type=click.Choice(StorageType.values()))
 def init(path: Optional[Path], storage_type: Optional[StorageType]) -> None:
     """Initialize ZenML on given path.
 
@@ -58,7 +58,7 @@ def init(path: Optional[Path], storage_type: Optional[StorageType]) -> None:
 
 
 @cli.command("service-up")  # TODO how do I create a custom group?
-@click.option("--storage-type", type=click.Choice(StorageType.list()))
+@click.option("--storage-type", type=click.Choice(StorageType.values()))
 def up(storage_type: Optional[StorageType]) -> None:
     """Spin up a zenml service backend.
 

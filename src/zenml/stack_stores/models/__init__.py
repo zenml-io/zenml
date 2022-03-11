@@ -11,16 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.stack_stores.models.rest_api_models import (
-    ActiveStackName,
-    StackWrapper,
-    Version,
+from zenml.stack_stores.models.rest_api_models import ActiveStackName, Version
+from zenml.stack_stores.models.stack_component_configuration import (
+    StackComponentConfiguration,
 )
 from zenml.stack_stores.models.stack_configuration import StackConfiguration
 from zenml.stack_stores.models.stack_store_model import StackStoreModel
+from zenml.stack_stores.models.stack_wrapper import StackWrapper
 
 __all__ = [
     "ActiveStackName",
+    "StackComponentConfiguration",
     "StackConfiguration",
     "StackStoreModel",
     "StackWrapper",

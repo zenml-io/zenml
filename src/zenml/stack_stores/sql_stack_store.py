@@ -17,21 +17,20 @@
 # TODO[HIGH]: Get mypy working on SQLModel. Currently the entire file must be
 #  ignored.
 
-import base64
 import datetime as dt
-import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-import yaml
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from zenml import __version__
 from zenml.enums import StackComponentFlavor, StackComponentType
 from zenml.exceptions import StackComponentExistsError
 from zenml.logger import get_logger
-from zenml.stack import StackComponent
 from zenml.stack_stores import BaseStackStore
-from zenml.stack_stores.models import StackConfiguration
+from zenml.stack_stores.models import (
+    StackComponentConfiguration,
+    StackConfiguration,
+)
 
 logger = get_logger(__name__)
 
@@ -196,7 +195,7 @@ class SqlStackStore(BaseStackStore):
 
     def _get_component_config(
         self, component_type: StackComponentType, name: str
-    ) -> Tuple[StackComponentFlavor, Any]:
+    ) -> Tuple[StackComponentFlavor, bytes]:
         """Fetch the flavor and configuration for a stack component."""
         with Session(self.engine) as session:
             component = session.exec(
@@ -209,13 +208,14 @@ class SqlStackStore(BaseStackStore):
                     f"Unable to find stack component (type: {component_type}) "
                     f"with name '{name}'."
                 )
-        config = yaml.safe_load(
-            base64.b64decode(component.configuration).decode()
-        )
+        # config = yaml.safe_load(
+        #     base64.b64decode(component.configuration).decode()
+        # )
+        # TODO: move this to repo
         flavor = StackComponentFlavor.for_type(component_type)(
             component.component_flavor
         )
-        return flavor, config
+        return flavor, component.configuration
 
     def _get_stack_component_names(
         self, component_type: StackComponentType
@@ -229,7 +229,7 @@ class SqlStackStore(BaseStackStore):
 
     def register_stack_component(
         self,
-        component: StackComponent,
+        component: StackComponentConfiguration,
     ) -> None:
         """Register a stack component"""
         with Session(self.engine) as session:
@@ -244,14 +244,11 @@ class SqlStackStore(BaseStackStore):
                     f"{component.type}) with name '{component.name}': Found "
                     f"existing stack component with this name."
                 )
-            config = base64.b64encode(
-                yaml.dump(json.loads(component.json())).encode()
-            )
             new_component = ZenStackComponent(
                 component_type=component.type,
                 name=component.name,
-                component_flavor=component.flavor.value,
-                configuration=config,
+                component_flavor=component.flavor,
+                configuration=component.config,
             )
             session.add(new_component)
             session.commit()

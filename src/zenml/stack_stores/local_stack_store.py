@@ -11,19 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import base64
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from zenml.constants import LOCAL_CONFIG_DIRECTORY_NAME
 from zenml.enums import StackComponentFlavor, StackComponentType
 from zenml.exceptions import StackComponentExistsError
 from zenml.io import fileio
+from zenml.io.utils import (
+    read_file_contents_as_string,
+    write_file_contents_as_string,
+)
 from zenml.logger import get_logger
-from zenml.stack import StackComponent
 from zenml.stack_stores import BaseStackStore
-from zenml.stack_stores.models import StackConfiguration, StackStoreModel
+from zenml.stack_stores.models import (
+    StackComponentConfiguration,
+    StackConfiguration,
+    StackStoreModel,
+)
 from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
@@ -134,7 +142,7 @@ class LocalStackStore(BaseStackStore):
 
     def _get_component_config(
         self, component_type: StackComponentType, name: str
-    ) -> Tuple[StackComponentFlavor, Any]:
+    ) -> Tuple[StackComponentFlavor, bytes]:
         """Fetches a registered stack component.
 
         Args:
@@ -157,7 +165,9 @@ class LocalStackStore(BaseStackStore):
             component_type=component_type, name=name
         )
         flavor = StackComponentFlavor.for_type(component_type)(components[name])
-        config = yaml_utils.read_yaml(component_config_path)
+        config = base64.b64encode(
+            read_file_contents_as_string(component_config_path).encode()
+        )
         return flavor, config
 
     def _get_stack_component_names(
@@ -167,7 +177,7 @@ class LocalStackStore(BaseStackStore):
 
     def register_stack_component(
         self,
-        component: StackComponent,
+        component: StackComponentConfiguration,
     ) -> None:
         """Registers a stack component.
 
@@ -193,12 +203,13 @@ class LocalStackStore(BaseStackStore):
         fileio.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
         )
-        yaml_utils.write_yaml(
-            component_config_path, json.loads(component.json())
+        write_file_contents_as_string(
+            component_config_path,
+            json.loads(base64.b64decode(component.config).decode()),
         )
 
         # add the component to the repository configuration and write it to disk
-        components[component.name] = component.flavor.value
+        components[component.name] = component.flavor
         self._write_store()
         logger.info(
             "Registered stack component with name '%s'.", component.name

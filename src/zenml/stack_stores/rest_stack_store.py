@@ -18,10 +18,10 @@ from pydantic import BaseModel
 
 from zenml.enums import StackComponentFlavor, StackComponentType
 from zenml.logger import get_logger
-from zenml.stack import Stack, StackComponent
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import (
     ActiveStackName,
+    StackComponentConfiguration,
     StackConfiguration,
     StackWrapper,
     Version,
@@ -74,7 +74,7 @@ class RestStackStore(BaseStackStore):
 
     def register_stack_component(
         self,
-        component: StackComponent,
+        component: StackComponentConfiguration,
     ) -> None:
         """Registers a stack component."""
         self.post("/components/register", body=component)
@@ -82,28 +82,17 @@ class RestStackStore(BaseStackStore):
     # Custom implementations:
 
     @property
-    def stacks(self) -> List[Stack]:
+    def stacks(self) -> List[StackWrapper]:
         """All stacks registered in this repository."""
-        return [
-            Stack.from_components(
-                name=wrapper.name, components=wrapper.components
-            )
-            for wrapper in map(StackWrapper.parse_obj, self.get("/stacks"))
-        ]
+        return [StackWrapper.parse_obj(s) for s in self.get("/stacks")]
 
-    def get_stack(self, name: str) -> Stack:
+    def get_stack(self, name: str) -> StackWrapper:
         """Fetches a stack."""
-        wrapper = StackWrapper.parse_obj(self.get(f"/stacks/{name}"))
-        return Stack.from_components(
-            name=wrapper.name, components=wrapper.components
-        )
+        return StackWrapper.parse_obj(self.get(f"/stacks/{name}"))
 
-    def register_stack(self, stack: Stack) -> Dict[str, str]:
+    def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Registers a stack and its components."""
-        return self.post(
-            "/stacks/register",
-            StackWrapper(name=stack.name, components=stack.components),
-        )
+        return self.post("/stacks/register", stack)
 
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack."""
@@ -111,18 +100,18 @@ class RestStackStore(BaseStackStore):
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
-    ) -> StackComponent:
+    ) -> StackComponentConfiguration:
         """Fetches a registered stack component."""
-        return StackComponent.parse_obj(
+        return StackComponentConfiguration.parse_obj(
             self.get(f"/components/{component_type}/{name}")
         )
 
     def get_stack_components(
         self, component_type: StackComponentType
-    ) -> List[StackComponent]:
+    ) -> List[StackComponentConfiguration]:
         """Fetches all registered stack components of the given type."""
         return [
-            StackComponent.parse_obj(c)
+            StackComponentConfiguration.parse_obj(c)
             for c in self.get(f"/components/{component_type}")
         ]
 
@@ -169,4 +158,6 @@ class RestStackStore(BaseStackStore):
         return requests.get(self.endpoint + path).json()
 
     def post(self, path: str, body: BaseModel) -> Any:
+        print(f" ## sending to path {path}:")
+        print(body.json())
         return requests.post(self.endpoint + path, json=body.json())

@@ -11,13 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import List
 
 from pydantic import BaseModel
 
+from zenml.stack import Stack
+from zenml.stack_stores.models import StackComponentConfiguration
 
-class ActiveStackName(BaseModel):
-    active_stack_name: str
 
+class StackWrapper(BaseModel):
+    """Network Serializable Wrapper describing a Stack."""
 
-class Version(BaseModel):
-    version: str
+    name: str
+    components: List[StackComponentConfiguration]
+
+    @classmethod
+    def from_stack(cls, stack: Stack) -> "StackWrapper":
+        return cls(
+            name=stack.name,
+            components=[
+                StackComponentConfiguration.from_component(component)
+                for t, component in stack.components.items()
+            ],
+        )
