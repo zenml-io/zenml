@@ -66,14 +66,16 @@ on Azure.
 
 ```bash
 zenml artifact-store register azure_store \
-    --path <AZURE_BLOB_CONTAINER_PATH>
+    --type=azure \
+    --path=<AZURE_BLOB_CONTAINER_PATH>
 
 zenml step-operator register azureml \
-    --subscription_id <AZURE_SUBSCRIPTION_ID> \
-    --resource_group <AZURE_RESOURCE_GROUP> \
-    --workspace_name <AZURE_WORKSPACE_NAME> \
-    --compute_target_name <AZURE_COMPUTE_TARGET_NAME> \
-    --environment_name <AZURE_ENVIRONMENT_NAME> 
+    --type=azureml \
+    --subscription_id=<AZURE_SUBSCRIPTION_ID> \
+    --resource_group=<AZURE_RESOURCE_GROUP> \
+    --workspace_name=<AZURE_WORKSPACE_NAME> \
+    --compute_target_name=<AZURE_COMPUTE_TARGET_NAME> \
+    --environment_name=<AZURE_ENVIRONMENT_NAME> 
 
 zenml stack register azureml_stack \
     -m local_metadata_store \
