@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Optional
 
 from zenml import __version__
 
@@ -101,3 +102,5 @@ SEGMENT_KEY_PROD = "sezE77zEoxHPFDXuyFfILx6fBnJFZ4p7"
 SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 )
+
+USER_MAIN_MODULE: Optional[str] = None

@@ -26,6 +26,7 @@ from tfx.proto.orchestration import (
     pipeline_pb2,
 )
 
+import zenml.constants
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
@@ -133,10 +134,12 @@ class StepExecutorOperator(BaseExecutorOperator):
             A tuple containing the path of the resolved main module and step
             class.
         """
-        main_module_file = cast(str, sys.modules["__main__"].__file__)
-        main_module_path = source_utils.get_module_source_from_file_path(
-            os.path.abspath(main_module_file)
-        )
+        main_module_path = zenml.constants.USER_MAIN_MODULE
+        if not main_module_path:
+            main_module_file = cast(str, sys.modules["__main__"].__file__)
+            main_module_path = source_utils.get_module_source_from_file_path(
+                os.path.abspath(main_module_file)
+            )
 
         step_type = cast(str, pipeline_node.node_info.type.name)
         step_module_path, step_class = step_type.rsplit(".", maxsplit=1)

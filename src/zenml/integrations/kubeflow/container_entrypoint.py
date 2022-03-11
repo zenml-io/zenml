@@ -36,6 +36,7 @@ from tfx.proto.orchestration import executable_spec_pb2, pipeline_pb2
 from tfx.types import artifact, channel, standard_artifacts
 from tfx.types.channel import Property
 
+import zenml.constants
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.exceptions import RepositoryNotFoundError
@@ -479,6 +480,7 @@ def main() -> None:
 
     # import the user main module to register all the materializers
     importlib.import_module(args.main_module)
+    zenml.constants.USER_MAIN_MODULE = args.main_module
 
     step_module = importlib.import_module(args.step_module)
     step_class = getattr(step_module, args.step_function_name)
