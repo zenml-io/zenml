@@ -17,21 +17,23 @@
 # TODO[HIGH]: Get mypy working on SQLModel. Currently the entire file must be
 #  ignored.
 
-import base64
 import datetime as dt
-import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-import yaml
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from zenml import __version__
-from zenml.enums import StackComponentFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentExistsError
 from zenml.logger import get_logger
-from zenml.stack import StackComponent
 from zenml.stack_stores import BaseStackStore
-from zenml.stack_stores.models import StackConfiguration
+from zenml.stack_stores.models import (
+    StackComponentConfiguration,
+    StackConfiguration,
+)
+
+# from sqlalchemy import select
+
 
 logger = get_logger(__name__)
 
@@ -96,7 +98,7 @@ class SqlStackStore(BaseStackStore):
                 session.add(ZenUser(id=1, name="LocalZenUser"))
             session.commit()
 
-    """ Interface: """
+    # Public interface implementations:
 
     @property
     def version(self) -> str:
@@ -169,9 +171,51 @@ class SqlStackStore(BaseStackStore):
         """Configuration for all stacks registered in this repository."""
         return {n: self.get_stack_configuration(n) for n in self.stack_names}
 
-    def create_stack(
+    def register_stack_component(
+        self,
+        component: StackComponentConfiguration,
+    ) -> None:
+        """Register a stack component.
+
+        Args:
+            component: The component to register.
+
+        Raises:
+            StackComponentExistsError: If a stack component with the same type
+                and name already exists.
+        """
+        with Session(self.engine) as session:
+            existing_component = session.exec(
+                select(ZenStackComponent)
+                .where(ZenStackComponent.name == component.name)
+                .where(ZenStackComponent.component_type == component.type)
+            ).first()
+            if existing_component is not None:
+                raise StackComponentExistsError(
+                    f"Unable to register stack component (type: "
+                    f"{component.type}) with name '{component.name}': Found "
+                    f"existing stack component with this name."
+                )
+            new_component = ZenStackComponent(
+                component_type=component.type,
+                name=component.name,
+                component_flavor=component.flavor,
+                configuration=component.config,
+            )
+            session.add(new_component)
+            session.commit()
+
+    # Private interface implementations:
+
+    def _create_stack(
         self, name: str, stack_configuration: StackConfiguration
     ) -> None:
+        """Add a stack to storage.
+
+        Args:
+            name: The name to save the stack as.
+            stack_configuration: StackConfiguration to persist.
+        """
         with Session(self.engine) as session:
             stack = ZenStack(name=name, created_by=1)
             session.add(stack)
@@ -186,7 +230,12 @@ class SqlStackStore(BaseStackStore):
                     )
             session.commit()
 
-    def delete_stack(self, name: str) -> None:
+    def _delete_stack(self, name: str) -> None:
+        """Delete a stack from storage.
+
+        Args:
+            name: The name of the stack to be deleted.
+        """
         with Session(self.engine) as session:
             stack = session.exec(
                 select(ZenStack).where(ZenStack.name == name)
@@ -194,10 +243,18 @@ class SqlStackStore(BaseStackStore):
             session.delete(stack)
             session.commit()
 
-    def get_component_config(
+    def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str
-    ) -> Tuple[StackComponentFlavor, Any]:
-        """Fetch the flavor and configuration for a stack component."""
+    ) -> Tuple[str, bytes]:
+        """Fetch the flavor and configuration for a stack component.
+
+        Args:
+            component_type: The type of the component to fetch.
+            name: The name of the component to fetch.
+
+        Raises:
+            KeyError: If no stack component exists for the given type and name.
+        """
         with Session(self.engine) as session:
             component = session.exec(
                 select(ZenStackComponent)
@@ -209,15 +266,9 @@ class SqlStackStore(BaseStackStore):
                     f"Unable to find stack component (type: {component_type}) "
                     f"with name '{name}'."
                 )
-        config = yaml.safe_load(
-            base64.b64decode(component.configuration).decode()
-        )
-        flavor = StackComponentFlavor.for_type(component_type)(
-            component.component_flavor
-        )
-        return flavor, config
+        return component.component_flavor, component.configuration
 
-    def get_stack_component_names(
+    def _get_stack_component_names(
         self, component_type: StackComponentType
     ) -> List[str]:
         """Get names of all registered stack components of a given type."""
@@ -227,39 +278,10 @@ class SqlStackStore(BaseStackStore):
             )
             return [component.name for component in session.exec(statement)]
 
-    def register_stack_component(
-        self,
-        component: StackComponent,
-    ) -> None:
-        """Register a stack component"""
-        with Session(self.engine) as session:
-            existing_component = session.exec(
-                select(ZenStackComponent)
-                .where(ZenStackComponent.name == component.name)
-                .where(ZenStackComponent.component_type == component.type)
-            ).first()
-            if existing_component is not None:
-                raise StackComponentExistsError(
-                    f"Unable to register stack component (type: "
-                    f"{component.type}) with name '{component.name}': Found "
-                    f"existing stack component with this name."
-                )
-            config = base64.b64encode(
-                yaml.dump(json.loads(component.json())).encode()
-            )
-            new_component = ZenStackComponent(
-                component_type=component.type,
-                name=component.name,
-                component_flavor=component.flavor.value,
-                configuration=config,
-            )
-            session.add(new_component)
-            session.commit()
-
-    def delete_stack_component(
+    def _delete_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> None:
-        """Delete a stack component."""
+        """Remove a StackComponent from storage."""
         with Session(self.engine) as session:
             component = session.exec(
                 select(ZenStackComponent)
@@ -282,7 +304,7 @@ class SqlStackStore(BaseStackStore):
                     name,
                 )
 
-    """ Implementation-specific methods: """
+    # Implementation-specific internal methods:
 
     @property
     def stack_names(self) -> List[str]:

@@ -27,3 +27,8 @@ class StrEnum(str, Enum):
     def list(cls) -> List[str]:
         """Get all enum names as a list of strings"""
         return [c.name for c in cls]
+
+    @classmethod
+    def values(cls) -> List[str]:
+        """Get all enum names as a list of strings"""
+        return [c.value for c in cls]
