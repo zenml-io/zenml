@@ -23,9 +23,8 @@
   * [Caching](guides/class-based-api/caching.md)
   * [Materialize artifacts](guides/class-based-api/materialize-artifacts.md)
 * [General](guides/common-usecases/index.md)
-  * [Post Execution Workflow](guides/common-usecases/post-execution-workflow.md)
-  * [Naming a pipeline run](guides/common-usecases/naming-a-pipeline-run.md)
   * [Fetch pipelines and artifacts after running them](guides/common-usecases/post-execution-workflow.md)
+  * [Naming a pipeline run](guides/common-usecases/naming-a-pipeline-run.md)
   * [Use `zenml example run`](guides/common-usecases/zenml-example-cli.md)
   * [Creating a custom `materializer`](guides/common-usecases/custom-materializer.md)
   * [Fetching historic runs using `StepContext`](guides/common-usecases/historic-runs.md)
@@ -33,14 +32,15 @@
 
 ## Features
 
+* [Integrations](features/integrations.md)
 * [Pipeline Configuration](features/pipeline-configuration.md)
 * [Caching](features/caching.md)
-* [Integrations](features/integrations.md)
 * [Standardized Artifacts](features/artifacts.md)
 * [Run Your Pipelines in the Cloud](features/cloud-pipelines/cloud-pipelines.md)
   * [Cloud-specific guide](features/cloud-pipelines/guide-aws-gcp-azure.md)
-* [Step Fixtures](features/step-fixtures.md)
+* [Convenient Step Fixtures](features/step-fixtures.md)
 * [Continuous Training and Deployment](features/continous-training-and-deployment.md)
+* [Managing External Services](features/services.md)
 
 ## Support
 

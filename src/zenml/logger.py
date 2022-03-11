@@ -20,6 +20,7 @@ from logging.handlers import TimedRotatingFileHandler
 from typing import Any, Dict
 
 from absl import logging as absl_logging
+from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ABSL_LOGGING_VERBOSITY,
@@ -103,6 +104,8 @@ def set_root_verbosity() -> None:
     """Set the root verbosity."""
     level = get_logging_level()
     if level != LoggingLevels.NOTSET:
+        rich_tb_install(show_locals=(level == LoggingLevels.DEBUG))
+
         logging.basicConfig(level=level.value)
         get_logger(__name__).debug(
             f"Logging set to level: " f"{logging.getLevelName(level.value)}"
