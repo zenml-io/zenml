@@ -173,6 +173,10 @@ with ZenML. Metadata are stored inside the metadata store.
 An orchestrator manages the running of each step of the pipeline, administering the actual pipeline runs. You can 
 think of it as the 'root' of any pipeline job that you run during your experimentation.
 
+## Step Operator
+
+The step operator defers the execution of individual steps in a pipeline to specialized runtime environments that are optimized for Machine Learning workloads.
+
 ## Container Registry
 
 A container registry is a store for (Docker) containers. A ZenML workflow involving a container registry would automatically 
@@ -191,6 +195,7 @@ A stack is made up of multiple components. Some examples are:
 - An Artifact Store
 - A Metadata Store
 - An Orchestrator
+- A Step Operator
 - A Container Registry
 
 You have to registry each individual component separately with unique names. Then you can put together a stack as follows: 
@@ -200,6 +205,7 @@ zenml stack register STACK_NAME \
     -m METADATA_STORE_NAME \
     -a ARTIFACT_STORE_NAME \
     -o ORCHESTRATOR_NAME \
+    -s STEP_OPERATOR_NAME \
     -c CONTAINER_REGISTRY_NAME \
     ...
 ```
