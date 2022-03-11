@@ -171,7 +171,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """
 
     def update_status(self) -> None:
-        """Check the the current operational state of the external service
+        """Check the  current operational state of the external service
         and update the local operational status information to reflect it.
 
         This method should be overridden by subclasses that implement

@@ -17,7 +17,7 @@ from zenml.stack_stores.models import (
 app = FastAPI()
 
 # to run this, execute:
-# uvicorn zervice:app --reload
+# uvicorn zenml.zen_service.zen_service:app --reload
 # TODO: figure out how to make `zenml service up` start this
 
 
@@ -27,9 +27,8 @@ print(url)
 stack_store = SqlStackStore(url)
 
 
-@app.get("/")
-@app.get("/health")
-async def heath() -> str:
+@app.head("/health")
+async def health() -> str:
     return "OK"
 
 
