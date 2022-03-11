@@ -117,6 +117,27 @@ If you are doing a manual install of the Kubeflow Pipelines, make sure that the 
 {% endtab %}
 {% endtabs %}
 
+### Step Operators
+
+{% tabs %}
+{% tab title="AzureML" %}
+* 
+{% endtab %}
+
+{% tab title="Amazon SageMaker" %}
+
+
+{% endtab %}
+
+Once registered and activated, it can be used for a step by simply adding the `custom_step_operator` parameter to the step decorator.
+
+```python
+@step(custom_step_operator="some_step_operator")
+def step_with_step_operator():
+	pass
+```
+
+
 ## Integrating with ZenML
 
 To run our pipeline on Kubeflow Pipelines deployed to cloud, we will create a new stack with these components that you have just created.
