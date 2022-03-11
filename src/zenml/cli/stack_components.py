@@ -353,10 +353,10 @@ def generate_stack_component_logs_command(
 def generate_stack_component_explain_command(
     component_type: StackComponentType,
 ) -> Callable[[], None]:
-    """Generates an `explain` command for the specific stack component type"""
+    """Generates an `explain` command for the specific stack component type."""
 
     def explain_stack_components_command() -> None:
-        """Explains the concept of the stack component"""
+        """Explains the concept of the stack component."""
 
         component_module = import_module(f"zenml.{component_type.plural}")
 

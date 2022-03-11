@@ -14,11 +14,11 @@
 """
 ## Artifact Stores
 
-In `ZenML`, the inputs and outputs which go through any step is treated as an
+In ZenML, the inputs and outputs which go through any step is treated as an
 artifact and as its name suggests, an `ArtifactStore` is a place where these
 artifacts get stored.
 
-Out of the box, `ZenML` comes with the `BaseArtifactStore` and
+Out of the box, ZenML comes with the `BaseArtifactStore` and
 `LocalArtifactStore` implementations. While the `BaseArtifactStore` establishes
 an interface for people who want to extend it to their needs, the
 `LocalArtifactStore` is a simple implementation for a local setup.
