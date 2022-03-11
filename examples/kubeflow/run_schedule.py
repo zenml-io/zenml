@@ -20,8 +20,8 @@ from pipeline import (
     trainer,
     evaluator,
     normalizer,
-    Schedule,
 )
+from zenml.pipelines import Schedule
 
 if __name__ == "__main__":
     # Run the pipeline

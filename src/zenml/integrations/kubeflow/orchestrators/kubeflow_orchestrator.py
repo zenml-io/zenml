@@ -21,6 +21,7 @@ import urllib3
 from kfp_server_api.exceptions import ApiException
 
 import zenml.io.utils
+from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
@@ -161,6 +162,17 @@ class KubeflowOrchestrator(BaseOrchestrator):
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline on Kubeflow Pipelines."""
+        # First check whether its running in a notebok
+        from zenml.environment import Environment
+
+        if Environment.in_notebook():
+            raise RuntimeError(
+                "The Kubeflow orchestrator cannot run pipelines in a notebook environment. The reason is that it is "
+                "non-trivial to create a Docker image of a notebook. Please consider refactoring your notebook cells "
+                "into separate scripts in a Python module and run the code outside of a notebook when using this "
+                "orchestrator."
+            )
+
         from zenml.integrations.kubeflow.docker_utils import get_image_digest
 
         image_name = self.get_docker_image_name(pipeline.name)
@@ -402,6 +414,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
             local_deployment_utils.deploy_kubeflow_pipelines(
                 kubernetes_context=kubernetes_context
             )
+
+            artifact_store = Repository().active_stack.artifact_store
+            if isinstance(artifact_store, LocalArtifactStore):
+                local_deployment_utils.add_hostpath_to_kubeflow_pipelines(
+                    kubernetes_context=kubernetes_context,
+                    local_path=artifact_store.path,
+                )
 
             local_deployment_utils.start_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path,
