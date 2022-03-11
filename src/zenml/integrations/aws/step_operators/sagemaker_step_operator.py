@@ -33,7 +33,7 @@ from zenml.utils import docker_utils
 class SagemakerStepOperator(BaseStepOperator):
     """Step operator to run a step on Sagemaker.
 
-    This class defines code that buidls an image with the ZenML entrypoint
+    This class defines code that builds an image with the ZenML entrypoint
     to run using Sagemaker's Estimator.
 
     Attributes:
