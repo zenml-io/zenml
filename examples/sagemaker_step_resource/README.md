@@ -70,6 +70,9 @@ zenml step-operator register sagemaker \
     --bucket_name=<S3_BUCKET_NAME>
     --experiment_name=<SAGEMAKER_EXPERIMENT_NAME>
 
+# register the container registry
+zenml container-registry register ecr_registry --type=default --uri=<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+
 # register the sagemaker stack
 zenml stack register sagemaker_stack \
     -m local_metadata_store \
