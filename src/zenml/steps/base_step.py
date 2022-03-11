@@ -327,7 +327,8 @@ class BaseStep(metaclass=BaseStepMeta):
     def _internal_execution_parameters(self) -> Dict[str, Any]:
         """ZenML internal execution parameters for this step."""
         parameters = {
-            PARAM_PIPELINE_PARAMETER_NAME: self.pipeline_parameter_name
+            PARAM_PIPELINE_PARAMETER_NAME: self.pipeline_parameter_name,
+            PARAM_CUSTOM_STEP_OPERATOR: self.custom_step_operator,
         }
 
         if self.enable_cache:

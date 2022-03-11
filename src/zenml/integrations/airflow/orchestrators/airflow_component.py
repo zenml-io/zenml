@@ -14,7 +14,7 @@
 """Definition for Airflow component for TFX."""
 
 import functools
-from typing import Optional
+from typing import Any, Dict, Optional, Type
 
 import airflow
 from airflow.operators import python
@@ -33,6 +33,9 @@ def _airflow_component_launcher(
     pipeline_runtime_spec: pipeline_pb2.PipelineRuntimeSpec,
     executor_spec: Optional[message.Message] = None,
     custom_driver_spec: Optional[message.Message] = None,
+    custom_executor_operators: Optional[
+        Dict[Any, Type[launcher.ExecutorOperator]]
+    ] = None,
 ) -> None:
     """Helper function to launch TFX component execution.
 
@@ -44,6 +47,8 @@ def _airflow_component_launcher(
             node runs in.
         executor_spec: Specification for the executor of the node.
         custom_driver_spec: Specification for custom driver.
+        custom_executor_operators: Map of executable specs to executor
+            operators.
     """
     component_launcher = launcher.Launcher(
         pipeline_node=pipeline_node,
@@ -52,6 +57,7 @@ def _airflow_component_launcher(
         pipeline_runtime_spec=pipeline_runtime_spec,
         executor_spec=executor_spec,
         custom_driver_spec=custom_driver_spec,
+        custom_executor_operators=custom_executor_operators,
     )
     execute_step(component_launcher)
 
@@ -70,7 +76,10 @@ class AirflowComponent(python.PythonOperator):
         pipeline_info: pipeline_pb2.PipelineInfo,
         pipeline_runtime_spec: pipeline_pb2.PipelineRuntimeSpec,
         executor_spec: Optional[message.Message] = None,
-        custom_driver_spec: Optional[message.Message] = None
+        custom_driver_spec: Optional[message.Message] = None,
+        custom_executor_operators: Optional[
+            Dict[Any, Type[launcher.ExecutorOperator]]
+        ] = None,
     ) -> None:
         """Constructs an Airflow implementation of TFX component.
 
@@ -84,6 +93,8 @@ class AirflowComponent(python.PythonOperator):
                 that this node runs in.
             executor_spec: Specification for the executor of the node.
             custom_driver_spec: Specification for custom driver.
+            custom_executor_operators: Map of executable specs to executor
+                operators.
         """
         launcher_callable = functools.partial(
             _airflow_component_launcher,
@@ -93,6 +104,7 @@ class AirflowComponent(python.PythonOperator):
             pipeline_runtime_spec=pipeline_runtime_spec,
             executor_spec=executor_spec,
             custom_driver_spec=custom_driver_spec,
+            custom_executor_operators=custom_executor_operators,
         )
 
         super().__init__(

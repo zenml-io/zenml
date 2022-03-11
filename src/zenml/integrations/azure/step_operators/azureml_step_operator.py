@@ -131,8 +131,9 @@ class AzureMLStepOperator(BaseStepOperator):
                 )
         else:
             environment = Environment(name=f"zenml-{run_name}")
-            environment.python.conda_dependencies.set_pip_requirements(
-                requirements
+            environment.python.conda_dependencies = CondaDependencies.create(
+                pip_packages=requirements,
+                python_version=ZenMLEnvironment.python_version(),
             )
 
             if self.docker_base_image:
@@ -142,7 +143,7 @@ class AzureMLStepOperator(BaseStepOperator):
         environment_variables = {
             "ENV_ZENML_PREVENT_PIPELINE_EXECUTION": "True",
         }
-        # set credentials to access aws storage
+        # set credentials to access azure storage
         for key in [
             "AZURE_STORAGE_ACCOUNT_KEY",
             "AZURE_STORAGE_ACCOUNT_NAME",

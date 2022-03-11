@@ -26,13 +26,19 @@ from tfx.proto.orchestration import (
     pipeline_pb2,
 )
 
+import zenml.constants
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.utils import source_utils
+from zenml.steps.utils import (
+    INTERNAL_EXECUTION_PARAMETER_PREFIX,
+    PARAM_CUSTOM_STEP_OPERATOR,
+)
+from zenml.utils import source_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.stack import Stack
+    from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
 
@@ -128,10 +134,12 @@ class StepExecutorOperator(BaseExecutorOperator):
             A tuple containing the path of the resolved main module and step
             class.
         """
-        main_module_file = cast(str, sys.modules["__main__"].__file__)
-        main_module_path = source_utils.get_module_source_from_file_path(
-            os.path.abspath(main_module_file)
-        )
+        main_module_path = zenml.constants.USER_MAIN_MODULE
+        if not main_module_path:
+            main_module_file = cast(str, sys.modules["__main__"].__file__)
+            main_module_path = source_utils.get_module_source_from_file_path(
+                os.path.abspath(main_module_file)
+            )
 
         step_type = cast(str, pipeline_node.node_info.type.name)
         step_module_path, step_class = step_type.rsplit(".", maxsplit=1)
@@ -141,6 +149,42 @@ class StepExecutorOperator(BaseExecutorOperator):
         step_source_path = f"{step_module_path}.{step_class}"
 
         return main_module_path, step_source_path
+
+    @staticmethod
+    def _get_step_operator(
+        stack: "Stack", execution_info: data_types.ExecutionInfo
+    ) -> "BaseStepOperator":
+        """Fetches the step operator specified in the execution info.
+
+        Args:
+            stack: Stack on which the step is being executed.
+            execution_info: Execution info needed to run the step.
+
+        Returns:
+            The step operator to run a step.
+        """
+        step_operator = stack.step_operator
+
+        # the two following errors should never happen as the stack gets
+        # validated before running the pipeline
+        if not step_operator:
+            raise RuntimeError(
+                f"No step operator specified for active stack '{stack.name}'."
+            )
+
+        step_operator_property_name = (
+            INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_CUSTOM_STEP_OPERATOR
+        )
+        required_step_operator = json.loads(
+            execution_info.exec_properties[step_operator_property_name]
+        )
+        if required_step_operator != step_operator.name:
+            raise RuntimeError(
+                f"No step operator named '{required_step_operator}' in active "
+                f"stack '{stack.name}'."
+            )
+
+        return step_operator
 
     def run_executor(
         self,
@@ -164,12 +208,9 @@ class StepExecutorOperator(BaseExecutorOperator):
 
         step_name = execution_info.pipeline_node.node_info.id
         stack = Repository().active_stack
-        step_operator = stack.step_operator
-        if not step_operator:
-            raise RuntimeError(
-                f"No step operator specified for active stack "
-                f"'{stack.name}', unable to run step '{step_name}'."
-            )
+        step_operator = self._get_step_operator(
+            stack=stack, execution_info=execution_info
+        )
 
         requirements = self._collect_requirements(
             stack=stack, pipeline_node=execution_info.pipeline_node
@@ -186,10 +227,16 @@ class StepExecutorOperator(BaseExecutorOperator):
             pipeline_node=execution_info.pipeline_node
         )
 
+        input_artifact_types_path = os.path.join(
+            execution_info.tmp_dir, "input_artifacts.json"
+        )
         input_artifact_type_mapping = {
             input_name: source_utils.resolve_class(artifacts[0].__class__)
             for input_name, artifacts in execution_info.input_dict.items()
         }
+        yaml_utils.write_json(
+            input_artifact_types_path, input_artifact_type_mapping
+        )
         entrypoint_command = [
             "python",
             "-m",
@@ -200,8 +247,8 @@ class StepExecutorOperator(BaseExecutorOperator):
             step_source_path,
             "--execution_info_path",
             execution_info_path,
-            "--input_artifact_types",
-            json.dumps(input_artifact_type_mapping),
+            "--input_artifact_types_path",
+            input_artifact_types_path,
         ]
 
         logger.info(
