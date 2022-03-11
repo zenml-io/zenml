@@ -136,8 +136,20 @@ on Azure.
 Optionally, you can also create a [Service Principal for authentication](https://docs.microsoft.com/en-us/azure/developer/java/sdk/identity-service-principal-auth). 
 This might especially be useful if you are planning to orchestrate your 
 pipelines in a non-local setup such as Kubeflow where your local authentication 
-won't be accessible. However, for the sake of simplicity, this is considered to 
-be out of the scope of this example.
+won't be accessible.
+
+The command to register the stack component would like the following.
+
+```bash
+zenml step-operator register azureml \
+    --type=azureml \
+    --subscription_id=<AZURE_SUBSCRIPTION_ID> \
+    --resource_group=<AZURE_RESOURCE_GROUP> \
+    --workspace_name=<AZURE_WORKSPACE_NAME> \
+    --compute_target_name=<AZURE_COMPUTE_TARGET_NAME> \
+    --environment_name=<AZURE_ENVIRONMENT_NAME> 
+```
+
 {% endtab %}
 
 {% tab title="Amazon SageMaker" %}
@@ -157,6 +169,18 @@ be out of the scope of this example.
 
 Once you have all these values handy, you can proceed to setting up the components required for your stack.
 
+The command to register the stack component would like the following.
+
+```bash
+zenml step-operator register sagemaker \
+    --type=sagemaker
+    --role=<SAGEMAKER_ROLE> \
+    --instance_type=<SAGEMAKER_INSTANCE_TYPE>
+    --base_image=<CUSTOM_BASE_IMAGE>
+    --bucket_name=<S3_BUCKET_NAME>
+    --experiment_name=<SAGEMAKER_EXPERIMENT_NAME>
+```
+
 {% endtab %}
 
 Once registered and activated, it can be used for a step by simply adding the `custom_step_operator` parameter to the step decorator.
@@ -166,6 +190,7 @@ Once registered and activated, it can be used for a step by simply adding the `c
 def step_with_step_operator():
 	pass
 ```
+
 
 
 ## Integrating with ZenML
@@ -186,6 +211,7 @@ To run our pipeline on Kubeflow Pipelines deployed to cloud, we will create a ne
     zenml orchestrator register cloud_orchestrator --type=kubeflow --custom_docker_base_image_name=YOUR_IMAGE
     zenml metadata-store register kubeflow_metadata_store --type=kubeflow
     zenml artifact-store register cloud_artifact_store --type=<s3/gcp/azure> --path=$PATH_TO_YOUR_BUCKET
+    zenml step-operator register ...
 
     # Register the cloud stack
     zenml stack register cloud_kubeflow_stack -m kubeflow_metadata_store -a cloud_artifact_store -o cloud_orchestrator -c cloud_registry
