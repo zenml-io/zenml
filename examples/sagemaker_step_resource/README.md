@@ -1,5 +1,5 @@
 # Get up and running quickly on Sagemaker
-This example shows how you can use the `StepOperator` class to run your training jobs on Sagemaker.
+This example shows how you can use the `StepOperator` class to run your training jobs on [AWS Sagemaker](https://aws.amazon.com/sagemaker).
 
 Sagemaker offers specialized compute instances to run your training jobs and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit individual steps to be run on compute instances managed by Amazon Sagemaker. 
 
