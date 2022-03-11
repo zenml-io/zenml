@@ -12,14 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.orchestration.portable import data_types, launcher
 
 from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
+from zenml.repository import Repository
+from zenml.steps.utils import (
+    INTERNAL_EXECUTION_PARAMETER_PREFIX,
+    PARAM_PIPELINE_PARAMETER_NAME,
+)
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -50,6 +56,52 @@ def create_tfx_pipeline(
     )
 
 
+def get_cache_status(
+    execution_info: data_types.ExecutionInfo,
+) -> bool:
+    """Returns the caching status of a step.
+
+    Args:
+        execution_info: The execution info of a `tfx` step.
+
+    Raises:
+        AttributeError: If the execution info is `None`.
+        KeyError: If no pipeline info is found in the `execution_info`.
+
+    Returns:
+        The caching status of a `tfx` step as a boolean value.
+    """
+    if execution_info is None:
+        logger.warning("No execution info found when checking cache status.")
+        return False
+
+    status = False
+    repository = Repository()
+    # TODO [HIGH]: Get the current running stack instead of just the active
+    #   stack
+    metadata_store = repository.get_stack(
+        repository.active_stack_name
+    ).metadata_store
+
+    step_name_param = (
+        INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
+    )
+    step_name = json.loads(execution_info.exec_properties[step_name_param])
+    if execution_info.pipeline_info:
+        pipeline_name = execution_info.pipeline_info.id
+    else:
+        raise KeyError(f"No pipeline info found for step `{step_name}`.")
+    pipeline_run_name = cast(str, execution_info.pipeline_run_id)
+    pipeline = metadata_store.get_pipeline(pipeline_name)
+    if pipeline is None:
+        logger.error(f"Pipeline {pipeline_name} not found in Metadata Store.")
+    else:
+        status = (
+            pipeline.get_run(pipeline_run_name).get_step(step_name).is_cached
+        )
+    return status
+
+
 def execute_step(
     tfx_launcher: launcher.Launcher,
 ) -> Optional[data_types.ExecutionInfo]:
@@ -61,11 +113,28 @@ def execute_step(
     Returns:
         Optional execution info returned by the launcher.
     """
-    step_name = tfx_launcher._pipeline_node.node_info.id  # type: ignore[attr-defined] # noqa
+    step_name_param = (
+        INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
+    )
+    pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
     start_time = time.time()
-    logger.info(f"Step `{step_name}` has started.")
+    logger.info(f"Step `{pipeline_step_name}` has started.")
     try:
         execution_info = tfx_launcher.launch()
+        if execution_info and get_cache_status(execution_info):
+            if execution_info.exec_properties:
+                pipeline_run_id = execution_info.pipeline_run_id
+                step_name = json.loads(
+                    execution_info.exec_properties[step_name_param]
+                )
+                logger.info(
+                    f"Using cached version of `{pipeline_step_name}` [`{step_name}`] "
+                    f"from pipeline_run_id `{pipeline_run_id}`.",
+                )
+            else:
+                logger.error(
+                    f"No execution properties found for step `{pipeline_step_name}`."
+                )
     except RuntimeError as e:
         if "execution has already succeeded" in str(e):
             # Hacky workaround to catch the error that a pipeline run with
@@ -77,8 +146,6 @@ def execute_step(
 
     run_duration = time.time() - start_time
     logger.info(
-        "Step `%s` has finished in %s.",
-        step_name,
-        string_utils.get_human_readable_time(run_duration),
+        f"Step `{pipeline_step_name}` has finished in {string_utils.get_human_readable_time(run_duration)}."
     )
     return execution_info

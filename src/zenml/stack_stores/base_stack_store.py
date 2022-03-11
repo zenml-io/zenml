@@ -13,13 +13,13 @@
 #  permissions and limitations under the License.
 import base64
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 import yaml
 
-from zenml.enums import StackComponentFlavor, StackComponentType
+from zenml.enums import StackComponentType
+from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
-from zenml.stack import StackComponent
 from zenml.stack_stores.models import (
     StackComponentConfiguration,
     StackConfiguration,
@@ -62,7 +62,15 @@ class BaseStackStore(ABC):
         self,
         component: StackComponentConfiguration,
     ) -> None:
-        """Registers a stack component."""
+        """Register a stack component.
+
+        Args:
+            component: The component to register.
+
+        Raises:
+            StackComponentExistsError: If a stack component with the same type
+                and name already exists.
+        """
 
     # Private interface (must be implemented, not to be called by user):
 
@@ -70,17 +78,34 @@ class BaseStackStore(ABC):
     def _create_stack(
         self, name: str, stack_configuration: StackConfiguration
     ) -> None:
-        """Add a stack to storage"""
+        """Add a stack to storage.
+
+        Args:
+            name: The name to save the stack as.
+            stack_configuration: StackConfiguration to persist.
+        """
 
     @abstractmethod
     def _delete_stack(self, name: str) -> None:
-        """Delete a stack from storage."""
+        """Delete a stack from storage.
+
+        Args:
+            name: The name of the stack to be deleted.
+        """
 
     @abstractmethod
-    def _get_component_config(
+    def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str
-    ) -> Tuple[StackComponentFlavor, bytes]:
-        """Fetch the flavor and configuration for a stack component."""
+    ) -> Tuple[str, bytes]:
+        """Fetch the flavor and configuration for a stack component.
+
+        Args:
+            component_type: The type of the component to fetch.
+            name: The name of the component to fetch.
+
+        Raises:
+            KeyError: If no stack component exists for the given type and name.
+        """
 
     @abstractmethod
     def _get_stack_component_names(
@@ -130,7 +155,7 @@ class BaseStackStore(ABC):
         except KeyError:
             pass
         else:
-            raise KeyError(
+            raise StackExistsError(
                 f"Unable to register stack with name '{stack.name}': Found "
                 f"existing stack with this name."
             )
@@ -143,7 +168,7 @@ class BaseStackStore(ABC):
                     component_type=component.type, name=component.name
                 )
                 if existing_component.uuid != component.uuid:
-                    raise KeyError(
+                    raise StackComponentExistsError(
                         f"Unable to register one of the stacks components: "
                         f"A component of type '{component.type}' and name "
                         f"'{component.name}' already exists."
@@ -181,29 +206,16 @@ class BaseStackStore(ABC):
         Raises:
             KeyError: If no component with the requested type and name exists.
         """
-        flavor, config = self._get_component_config(component_type, name=name)
+        flavor, config = self._get_component_flavor_and_config(
+            component_type, name=name
+        )
         uuid = yaml.safe_load(base64.b64decode(config).decode())["uuid"]
         return StackComponentConfiguration(
             type=component_type,
-            flavor=flavor.value,
+            flavor=flavor,
             name=name,
             uuid=uuid,
             config=config,
-        )
-
-    def get_stack_component_OLD(
-        self, component_type: StackComponentType, name: str
-    ) -> StackComponent:
-        """Fetches a registered stack component.
-        Raises:
-            KeyError: If no component with the requested type and name exists.
-        """
-
-        flavor, config = self._get_component_config(component_type, name=name)
-        return self._component_from_configuration(
-            component_type=component_type,
-            component_flavor=flavor,
-            component_config=config,
         )
 
     def get_stack_components(
@@ -250,39 +262,3 @@ class BaseStackStore(ABC):
             if component_name
         ]
         return StackWrapper(name=name, components=stack_components)
-
-    # def _stack_from_configuration_OLD(
-    #     self, name: str, stack_configuration: StackConfiguration
-    # ) -> Stack:
-    #     stack_components = {}
-    #     for (
-    #         component_type_name,
-    #         component_name,
-    #     ) in stack_configuration.dict().items():
-    #         component_type = StackComponentType(component_type_name)
-    #         if not component_name:
-    #             # optional component which is not set, continue
-    #             continue
-    #         component = self.get_stack_component(
-    #             component_type=component_type,
-    #             name=component_name,
-    #         )
-    #         stack_components[component_type] = component
-    #
-    #     return Stack.from_components(name=name, components=stack_components)
-
-    def _component_from_configuration(
-        self,
-        component_type: StackComponentType,
-        component_flavor: StackComponentFlavor,
-        component_config: Any,
-    ) -> StackComponent:
-        """Build a stack component from the stored configuration."""
-        from zenml.stack.stack_component_class_registry import (
-            StackComponentClassRegistry,
-        )
-
-        component_class = StackComponentClassRegistry.get_class(
-            component_type=component_type, component_flavor=component_flavor
-        )
-        return component_class.parse_obj(component_config)

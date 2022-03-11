@@ -176,3 +176,7 @@ zenml_examples/
 
 # Prettier
 .prettierignore
+
+# mutmut / hammet incidental files
+.hammett-db
+.mutmut-cache

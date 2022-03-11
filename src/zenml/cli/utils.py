@@ -14,7 +14,7 @@
 import datetime
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import click
 from dateutil import tz
@@ -108,11 +108,14 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     Args:
       obj: A List containing dictionaries.
     """
-    rich_table = table.Table(box=box.HEAVY_EDGE)
-    for key, _ in obj[0].items():
-        rich_table.add_column(key.upper())
-    for item in obj:
-        rich_table.add_row(*list(item.values()))
+    columns = {key.upper(): None for dict_ in obj for key in dict_.keys()}
+    rich_table = table.Table(*columns.keys(), box=box.HEAVY_EDGE)
+
+    for dict_ in obj:
+        values = columns.copy()
+        values.update(dict_)
+        rich_table.add_row(*list(values.values()))
+
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
     console.print(rich_table)
@@ -137,7 +140,8 @@ def format_integration_list(
 
 
 def print_stack_component_list(
-    components: List[StackComponent], active_component_name: str
+    components: List[StackComponent],
+    active_component_name: Optional[str] = None,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 

@@ -306,14 +306,10 @@ class KubeflowDagRunner:
           runtime_configuration: The runtime configuration
         """
         component_to_kfp_op: Dict[base_node.BaseNode, dsl.ContainerOp] = {}
-        tfx_ir: Pb2Pipeline = self._generate_tfx_ir(  # type:ignore[valid-type]
-            pipeline
-        )
+        tfx_ir: Pb2Pipeline = self._generate_tfx_ir(pipeline)
 
-        for node in tfx_ir.nodes:  # type:ignore[attr-defined]
-            pipeline_node: PipelineNode = (  # type:ignore[valid-type]
-                node.pipeline_node
-            )
+        for node in tfx_ir.nodes:
+            pipeline_node: PipelineNode = node.pipeline_node
 
             # Add the stack as context to each pipeline node:
             context_utils.add_context_to_node(
@@ -382,32 +378,30 @@ class KubeflowDagRunner:
                 del message_dict[item]
 
     def _dehydrate_tfx_ir(
-        self, original_pipeline: Pb2Pipeline, node_id: str  # type: ignore[valid-type] # noqa
-    ) -> Pb2Pipeline:  # type: ignore[valid-type]
+        self, original_pipeline: Pb2Pipeline, node_id: str
+    ) -> Pb2Pipeline:
         """Dehydrate the TFX IR to remove unused fields."""
         pipeline = copy.deepcopy(original_pipeline)
-        for node in pipeline.nodes:  # type: ignore[attr-defined]
+        for node in pipeline.nodes:
             if (
                 node.WhichOneof("node") == "pipeline_node"
                 and node.pipeline_node.node_info.id == node_id
             ):
-                del pipeline.nodes[:]  # type: ignore[attr-defined]
-                pipeline.nodes.extend([node])  # type: ignore[attr-defined]
+                del pipeline.nodes[:]
+                pipeline.nodes.extend([node])
                 break
 
         deployment_config = IntermediateDeploymentConfig()
-        pipeline.deployment_config.Unpack(deployment_config)  # type: ignore[attr-defined] # noqa
+        pipeline.deployment_config.Unpack(deployment_config)
         self._del_unused_field(node_id, deployment_config.executor_specs)
         self._del_unused_field(node_id, deployment_config.custom_driver_specs)
         self._del_unused_field(
             node_id, deployment_config.node_level_platform_configs
         )
-        pipeline.deployment_config.Pack(deployment_config)  # type: ignore[attr-defined] # noqa
+        pipeline.deployment_config.Pack(deployment_config)
         return pipeline
 
-    def _generate_tfx_ir(
-        self, pipeline: TfxPipeline
-    ) -> Pb2Pipeline:  # type: ignore[valid-type]
+    def _generate_tfx_ir(self, pipeline: TfxPipeline) -> Pb2Pipeline:
         """Generate the TFX IR from the logical TFX pipeline."""
         result = self._tfx_compiler.compile(pipeline)
         return result
@@ -427,14 +421,18 @@ class KubeflowDagRunner:
         """
         tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
+        pipeline_root = tfx_pipeline.pipeline_info.pipeline_root
+        if not isinstance(pipeline_root, str):
+            raise TypeError(
+                "TFX Pipeline root may not be a Placeholder, "
+                "but must be a specific string."
+            )
+
         for component in tfx_pipeline.components:
             # TODO(b/187122662): Pass through pip dependencies as a first-class
             # component flag.
             if isinstance(component, tfx_base_component.BaseComponent):
-                component._resolve_pip_dependencies(
-                    # pylint: disable=protected-access
-                    tfx_pipeline.pipeline_info.pipeline_root
-                )
+                component._resolve_pip_dependencies(pipeline_root)
 
         def _construct_pipeline() -> None:
             """Creates Kubeflow ContainerOps for each TFX component

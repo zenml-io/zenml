@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from zenml.constants import LOCAL_CONFIG_DIRECTORY_NAME
-from zenml.enums import StackComponentFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentExistsError
 from zenml.io import fileio
 from zenml.io.utils import (
@@ -60,7 +60,7 @@ class LocalStackStore(BaseStackStore):
         else:
             self.__store = StackStoreModel.empty_store()
 
-    # Interface:
+    # Public interface implementations:
 
     @property
     def version(self) -> str:
@@ -119,67 +119,11 @@ class LocalStackStore(BaseStackStore):
         """Configuration for all stacks registered in this repository."""
         return self.__store.stacks.copy()
 
-    def _create_stack(
-        self, name: str, stack_configuration: StackConfiguration
-    ) -> None:
-        """Add a stack to storage"""
-        self.__store.stacks[name] = stack_configuration
-        self._write_store()
-        logger.info("Registered stack with name '%s'.", name)
-
-    def _delete_stack(self, name: str) -> None:
-        """Delete a stack from storage."""
-        try:
-            del self.__store.stacks[name]
-            self._write_store()
-            logger.info("Deregistered stack with name '%s'.", name)
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack with name '%s': No stack exists "
-                "with this name.",
-                name,
-            )
-
-    def _get_component_config(
-        self, component_type: StackComponentType, name: str
-    ) -> Tuple[StackComponentFlavor, bytes]:
-        """Fetches a registered stack component.
-
-        Args:
-            component_type: The type of the component to fetch.
-            name: The name of the component to fetch.
-
-        Raises:
-            KeyError: If no stack component exists for the given type and name.
-        """
-        components: Dict[str, str] = self.__store.stack_components[
-            component_type
-        ]
-        if name not in components:
-            raise KeyError(
-                f"Unable to find stack component (type: {component_type}) "
-                f"with name '{name}'. Available names: {set(components)}."
-            )
-
-        component_config_path = self._get_stack_component_config_path(
-            component_type=component_type, name=name
-        )
-        flavor = StackComponentFlavor.for_type(component_type)(components[name])
-        config = base64.b64encode(
-            read_file_contents_as_string(component_config_path).encode()
-        )
-        return flavor, config
-
-    def _get_stack_component_names(
-        self, component_type: StackComponentType
-    ) -> List[str]:
-        return list(self.__store.stack_components[component_type])
-
     def register_stack_component(
         self,
         component: StackComponentConfiguration,
     ) -> None:
-        """Registers a stack component.
+        """Register a stack component.
 
         Args:
             component: The component to register.
@@ -215,6 +159,74 @@ class LocalStackStore(BaseStackStore):
             "Registered stack component with name '%s'.", component.name
         )
 
+    # Private interface implementations:
+
+    def _create_stack(
+        self, name: str, stack_configuration: StackConfiguration
+    ) -> None:
+        """Add a stack to storage.
+
+        Args:
+            name: The name to save the stack as.
+            stack_configuration: StackConfiguration to persist.
+        """
+        self.__store.stacks[name] = stack_configuration
+        self._write_store()
+        logger.info("Registered stack with name '%s'.", name)
+
+    def _delete_stack(self, name: str) -> None:
+        """Delete a stack from storage.
+
+        Args:
+            name: The name of the stack to be deleted.
+        """
+        try:
+            del self.__store.stacks[name]
+            self._write_store()
+            logger.info("Deregistered stack with name '%s'.", name)
+        except KeyError:
+            logger.warning(
+                "Unable to deregister stack with name '%s': No stack exists "
+                "with this name.",
+                name,
+            )
+
+    def _get_component_flavor_and_config(
+        self, component_type: StackComponentType, name: str
+    ) -> Tuple[str, bytes]:
+        """Fetch the flavor and configuration for a stack component.
+
+        Args:
+            component_type: The type of the component to fetch.
+            name: The name of the component to fetch.
+
+        Raises:
+            KeyError: If no stack component exists for the given type and name.
+        """
+        components: Dict[str, str] = self.__store.stack_components[
+            component_type
+        ]
+        if name not in components:
+            raise KeyError(
+                f"Unable to find stack component (type: {component_type}) "
+                f"with name '{name}'. Available names: {set(components)}."
+            )
+
+        component_config_path = self._get_stack_component_config_path(
+            component_type=component_type, name=name
+        )
+        flavor = components[name]
+        config = base64.b64encode(
+            read_file_contents_as_string(component_config_path).encode()
+        )
+        return flavor, config
+
+    def _get_stack_component_names(
+        self, component_type: StackComponentType
+    ) -> List[str]:
+        """Get names of all registered stack components of a given type."""
+        return list(self.__store.stack_components[component_type])
+
     def _delete_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> None:
@@ -242,7 +254,7 @@ class LocalStackStore(BaseStackStore):
         if fileio.file_exists(component_config_path):
             fileio.remove(component_config_path)
 
-    # Implementation-specific methods:
+    # Implementation-specific internal methods:
 
     def _get_stack_component_config_path(
         self, component_type: StackComponentType, name: str
