@@ -4,6 +4,7 @@ import os
 from typing import Any, Type
 from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
+from transformers import TFDistilBertForTokenClassification
 
 
 DEFAULT_FILENAME = "dataset.parquet.gzip"
@@ -56,7 +57,7 @@ class HFModelMaterializer(BaseMaterializer):
         """Reads Dataset from a parquet file."""
         super().handle_input(data_type)
 
-        return TFAutoModelForTokenClassification.from_pretrained(
+        return TFDistilBertForTokenClassification.from_pretrained(
             os.path.join(self.artifact.uri, DEFAULT_MODEL_DIR)
         )
 

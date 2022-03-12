@@ -8,7 +8,7 @@ from datasets.dataset_dict import DatasetDict
 import os
 from typing import Any, Type
 from transformers import AutoTokenizer
-from transformers import TFAutoModelForTokenClassification, TFDistilBertForTokenClassification
+from transformers import TFDistilBertForTokenClassification
 from transformers import create_optimizer
 from transformers import DataCollatorForTokenClassification
 from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact, ModelArtifact
@@ -78,7 +78,7 @@ def trainer(
 ) -> TFDistilBertForTokenClassification:
   label_list = tokenized_datasets["train"].features[f"{config.task}_tags"].feature.names
   
-  model = TFAutoModelForTokenClassification.from_pretrained(
+  model = TFDistilBertForTokenClassification.from_pretrained(
     config.model_checkpoint, num_labels=len(label_list)
   )
   
