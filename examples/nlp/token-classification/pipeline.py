@@ -81,6 +81,8 @@ def trainer(
   model = TFDistilBertForTokenClassification.from_pretrained(
     config.model_checkpoint, num_labels=len(label_list)
   )
+  model.config.label2id = {l: i for i, l in enumerate(label_list)}
+  model.config.id2label = {i: l for i, l in enumerate(label_list)}
   
   num_train_steps = (len(tokenized_datasets["train"]) // config.batch_size) * config.num_train_epochs
   optimizer, lr_schedule = create_optimizer(
