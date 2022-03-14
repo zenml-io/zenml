@@ -1,20 +1,15 @@
 import mlflow
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
-from zenml.pipelines import Schedule, pipeline
-from zenml.steps import BaseStepConfig, Output, step
-from datasets import load_dataset, load_metric
-from datasets import Dataset
-from datasets.dataset_dict import DatasetDict
-import os
-from typing import Any, Type
+import tensorflow as tf
 from transformers import AutoTokenizer
 from transformers import TFDistilBertForTokenClassification
 from transformers import create_optimizer
 from transformers import DataCollatorForTokenClassification
-from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact, ModelArtifact
-from zenml.materializers.base_materializer import BaseMaterializer
-from materializer_utils import DatasetMaterializer, HFModelMaterializer
-import tensorflow as tf
+
+from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+from zenml.pipelines import pipeline
+from zenml.steps import BaseStepConfig, step
+from datasets import load_dataset
+from datasets.dataset_dict import DatasetDict
 
 class TokenClassificationConfig(BaseStepConfig):
   task = "ner"  # Should be one of "ner", "pos" or "chunk"
