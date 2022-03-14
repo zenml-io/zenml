@@ -1,3 +1,41 @@
+# 0.6.3
+
+With ZenML 0.6.3, you can now run your ZenML steps on Sagemaker and AzureML! It's normal to have certain steps that require specific hardware on which to run model training, for example, and this latest release gives you the power to switch out hardware for individual steps to support this.
+
+We added a new Tensorboard visualisation that you can make use of when using our Kubeflow Pipelines integration. We handle the background processes needed to spin up this interactive web interface that you can use to visualise your model's performance over time.
+
+Behind the scenes we gave our integration testing suite a massive upgrade, fixed a number of smaller bugs and made documentation updates. For a detailed look at what's changed, give [our full release notes](https://github.com/zenml-io/zenml/releases/tag/0.6.3) a glance.
+
+## What's Changed
+* Fix typo by @wjayesh in https://github.com/zenml-io/zenml/pull/432
+* Remove tabulate dependency (replaced by rich) by @jwwwb in https://github.com/zenml-io/zenml/pull/436
+* Fix potential issue with local integration tests by @schustmi in https://github.com/zenml-io/zenml/pull/428
+* Remove support for python 3.6 by @schustmi in https://github.com/zenml-io/zenml/pull/437
+* Create clean test repos in separate folders by @michael-zenml in https://github.com/zenml-io/zenml/pull/430
+* Copy explicit materializers before modifying, log correct class by @schustmi in https://github.com/zenml-io/zenml/pull/434
+* Fix typo in mysql password parameter by @pafpixel in https://github.com/zenml-io/zenml/pull/438
+* Pytest-fixture for separate virtual environments for each integration test by @AlexejPenner in https://github.com/zenml-io/zenml/pull/405
+* Bugfix/fix failing tests due to comments step by @AlexejPenner in https://github.com/zenml-io/zenml/pull/444
+* Added --use-virtualenvs option to allow choosing envs to run by @AlexejPenner in https://github.com/zenml-io/zenml/pull/445
+* Log whether a step was cached by @strickvl in https://github.com/zenml-io/zenml/pull/435
+* Added basic integration tests for remaining examples by @strickvl in https://github.com/zenml-io/zenml/pull/439
+* Improve error message when provisioning local kubeflow resources with a non-local container registry. by @schustmi in https://github.com/zenml-io/zenml/pull/442
+* Enable generic step inputs and outputs by @schustmi in https://github.com/zenml-io/zenml/pull/440
+* Removed old reference to a step that no longer exists by @AlexejPenner in https://github.com/zenml-io/zenml/pull/452
+* Correctly use custom kubernetes context if specified by @schustmi in https://github.com/zenml-io/zenml/pull/451
+* Fix CLI stack component describe/list commands by @schustmi in https://github.com/zenml-io/zenml/pull/450
+* Ignore type of any tfx proto file by @schustmi in https://github.com/zenml-io/zenml/pull/453
+* Another boyscout pr on the gh actions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/455
+* Upgrade TFX to 1.6.1 by @jwwwb in https://github.com/zenml-io/zenml/pull/441
+* Added ZenFiles to README by @htahir1 in https://github.com/zenml-io/zenml/pull/457
+* Upgrade `rich` from 11.0 to 12.0 by @strickvl in https://github.com/zenml-io/zenml/pull/458
+* Add Kubeflow tensorboard viz and fix tensorflow file IO for cloud back-ends by @stefannica in https://github.com/zenml-io/zenml/pull/447
+* Implementing the `explain` subcommand by @bcdurak in https://github.com/zenml-io/zenml/pull/460
+* Implement AzureML and Sagemaker step operators by @schustmi in https://github.com/zenml-io/zenml/pull/456
+
+## New Contributors
+* @pafpixel made their first contribution in https://github.com/zenml-io/zenml/pull/438
+
 # 0.6.2
 
 ZenML 0.6.2 brings you the ability to serve models using MLflow deployments as well as an updated CLI interface! For a real continuous deployment cycle, we know that ZenML pipelines should be able to handle everything — from pre-processing to training to serving to monitoring and then potentially re-training and re-serving. The interfaces we created in this release are the foundation on which all of this will build.
