@@ -272,15 +272,14 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     return r_args
 
 
-def install_package(package: str) -> None:
-    """Installs pypi package into the current environment with pip"""
+def install_packages(packages: List[str]) -> None:
+    """Installs pypi packages into the current environment with pip"""
     command = [
         sys.executable,
         "-m",
         "pip",
         "install",
-        package,
-    ]
+    ] + packages
 
     if not IS_DEBUG_ENV:
         command += [
