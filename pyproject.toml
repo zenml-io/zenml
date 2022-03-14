@@ -207,7 +207,9 @@ module = [
     "kfp.*",
     "kubernetes.*",
     "urllib3.*",
-    "kfp_server_api.*"
+    "kfp_server_api.*",
+    "sagemaker.*",
+    "azureml.*",
 ]
 ignore_missing_imports = true
 

@@ -295,18 +295,20 @@ class KubeflowDagRunner:
 
     def _construct_pipeline_graph(
         self,
-        pipeline: TfxPipeline,
+        pipeline: "BasePipeline",
+        tfx_pipeline: TfxPipeline,
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
         """Constructs a Kubeflow Pipeline graph.
         Args:
-          pipeline: The logical TFX pipeline to base the construction on.
+          pipeline: ZenML pipeline instance.
+          tfx_pipeline: The logical TFX pipeline to base the construction on.
           stack: The ZenML stack that the pipeline is running on
           runtime_configuration: The runtime configuration
         """
         component_to_kfp_op: Dict[base_node.BaseNode, dsl.ContainerOp] = {}
-        tfx_ir: Pb2Pipeline = self._generate_tfx_ir(pipeline)
+        tfx_ir: Pb2Pipeline = self._generate_tfx_ir(tfx_pipeline)
 
         for node in tfx_ir.nodes:
             pipeline_node: PipelineNode = node.pipeline_node
@@ -325,10 +327,19 @@ class KubeflowDagRunner:
                 pipeline_node, runtime_configuration
             )
 
+            # Add pipeline requirements as a context
+            requirements = " ".join(sorted(pipeline.requirements))
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.PIPELINE_REQUIREMENTS.value,
+                name=str(hash(requirements)),
+                properties={"pipeline_requirements": requirements},
+            )
+
         # Assumption: There is a partial ordering of components in the list,
         # i.e. if component A depends on component B and C, then A appears
         # after B and C in the list.
-        for component in pipeline.components:
+        for component in tfx_pipeline.components:
             # Keep track of the set of upstream dsl.ContainerOps for this
             # component.
             depends_on = set()
@@ -438,7 +449,7 @@ class KubeflowDagRunner:
             """Creates Kubeflow ContainerOps for each TFX component
             encountered in the pipeline definition."""
             self._construct_pipeline_graph(
-                tfx_pipeline, stack, runtime_configuration
+                pipeline, tfx_pipeline, stack, runtime_configuration
             )
 
         # Need to run this first to get self._params populated. Then KFP
