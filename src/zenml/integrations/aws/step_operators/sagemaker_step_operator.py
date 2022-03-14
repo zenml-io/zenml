@@ -16,9 +16,13 @@ from typing import List, Optional
 
 import sagemaker
 
-from zenml.enums import StackComponentType, StepOperatorFlavor
+from zenml.enums import (
+    OrchestratorFlavor,
+    StackComponentType,
+    StepOperatorFlavor,
+)
 from zenml.repository import Repository
-from zenml.stack import StackValidator
+from zenml.stack import Stack, StackValidator
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -66,8 +70,13 @@ class SagemakerStepOperator(BaseStepOperator):
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry."""
+
+        def _ensure_local_orchestrator(stack: Stack) -> bool:
+            return stack.orchestrator.flavor == OrchestratorFlavor.LOCAL
+
         return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY}
+            required_components={StackComponentType.CONTAINER_REGISTRY},
+            custom_validation_function=_ensure_local_orchestrator,
         )
 
     def _build_docker_image(
