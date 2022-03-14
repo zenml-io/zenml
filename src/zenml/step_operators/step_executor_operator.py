@@ -26,6 +26,7 @@ from tfx.proto.orchestration import (
     pipeline_pb2,
 )
 
+import zenml
 import zenml.constants
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -113,11 +114,10 @@ class StepExecutorOperator(BaseExecutorOperator):
                 requirements.update(pipeline_requirements)
                 break
 
-        # TODO: Find a nice way to set this if the running version of ZenML is
-        #  not an official release (e.g. on a development branch)
-        requirements.add(
-            "git+https://github.com/zenml-io/zenml.git@feature/ENG-640-training-resource"
-        )
+        # TODO [MEDIUM]: Find a nice way to set this if the running version of
+        #  ZenML is not an official release (e.g. on a development branch)
+        # Add the current ZenML version as a requirement
+        requirements.add(f"zenml=={zenml.__version__}")
 
         return sorted(requirements)
 
@@ -198,7 +198,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         Returns:
             The executor output.
         """
-        # Pretty sure this attributes will always be not None, assert here so
+        # Pretty sure these attributes will always be not None, assert here so
         # mypy doesn't complain
         assert execution_info.pipeline_node
         assert execution_info.pipeline_info
@@ -252,7 +252,7 @@ class StepExecutorOperator(BaseExecutorOperator):
         ]
 
         logger.info(
-            "Using step operator '%s' to run step '%s'.",
+            "Using step operator `%s` to run step `%s`.",
             step_operator.name,
             step_name,
         )

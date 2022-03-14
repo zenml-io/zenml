@@ -126,7 +126,7 @@ def install(integrations: Tuple[str], force: bool = False) -> None:
             f"{requirements}"
         )
     ):
-        with console.status(f"Installing integrations..."):
+        with console.status("Installing integrations..."):
             install_packages(requirements)
 
         for integration_name in integrations_to_install:
