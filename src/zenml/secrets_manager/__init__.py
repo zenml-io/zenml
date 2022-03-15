@@ -16,5 +16,8 @@
 
 ...
 """
+from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_manager.local.local_secrets_manager import \
+    LocalSecretsManager
 
 __all__ = ["BaseSecretsManager", "LocalSecretsManager"]
