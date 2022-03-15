@@ -69,6 +69,14 @@ def stack() -> None:
 )
 @click.option(
     "-s",
+    "--secrets_manager",
+    "secrets_manager_name",
+    help="Name of the secrets manager for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-o",
     "--step_operator",
     "step_operator_name",
     help="Name of the step operator for this stack.",
@@ -81,6 +89,7 @@ def register_stack(
     artifact_store_name: str,
     orchestrator_name: str,
     container_registry_name: Optional[str] = None,
+    secrets_manager_name: Optional[str] = None,
     step_operator_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
@@ -105,6 +114,14 @@ def register_stack(
             ] = repo.get_stack_component(
                 StackComponentType.CONTAINER_REGISTRY,
                 name=container_registry_name,
+            )
+
+        if secrets_manager_name:
+            stack_components[
+                StackComponentType.SECRETS_MANAGER
+            ] = repo.get_stack_component(
+                StackComponentType.SECRETS_MANAGER,
+                name=secrets_manager_name,
             )
 
         if step_operator_name:

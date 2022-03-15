@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 from typing import Dict, List, Optional
 
+from zenml.repository import Repository
+from zenml.stack.stack_component import StackComponent
 from zenml.enums import SecretsManagerFlavor
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
+from zenml.utils import yaml_utils
 
 
 class LocalSecretsManager(BaseSecretsManager):
@@ -28,7 +31,11 @@ class LocalSecretsManager(BaseSecretsManager):
     @property
     def create_secret(self, name: str, secret_value: str) -> None:
         """Create secret."""
-        return
+        secrets_manager = Repository().active_stack.components.get(
+            StackComponent.SECRETS_MANAGER
+        )
+        secrets_manager_config_path = 
+        secrets_store_items = self.parse_obj(yaml_utils.read_yaml(secrets_manager_config_path))
 
     @property
     def get_secret_by_key(self, name: str) -> Optional[str]:

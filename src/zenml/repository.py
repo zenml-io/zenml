@@ -48,6 +48,7 @@ class StackConfiguration(BaseModel):
     metadata_store: str
     artifact_store: str
     container_registry: Optional[str]
+    secrets_manager: Optional[str]
     step_operator: Optional[str]
 
     def contains_component(
