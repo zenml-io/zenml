@@ -103,3 +103,10 @@ class MetadataContextTypes(Enum):
 
     STACK = "stack"
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
+
+
+class SecretsManagerFlavor(Enum):
+    """All supported orchestrator flavors."""
+
+    LOCAL = "local"
+    VAULT = "vault"
