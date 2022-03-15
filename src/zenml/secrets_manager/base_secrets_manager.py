@@ -14,8 +14,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 
-
-from zenml.enums import SecretsManagerFlavor, StackComponentType
+from zenml.enums import SecretsManagerFlavor
 from zenml.stack import StackComponent
 
 
