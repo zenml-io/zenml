@@ -12,36 +12,42 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import Dict, List, Optional
 
 
+from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.stack import StackComponent
 
 
 class BaseSecretsManager(StackComponent, ABC):
-    """Base class for all ZenML secret managers."""
+    """Base class for all ZenML secrets managers."""
 
     @property
     @abstractmethod
-    def create_secret(self) -> None:
+    def flavor(self) -> SecretsManagerFlavor:
+        """The secrets manager flavor."""
+
+    @property
+    @abstractmethod
+    def create_secret(self, name: str, secret_value: str) -> None:
         """Create secret."""
 
     @property
     @abstractmethod
-    def get_secret_by_key(self) -> Dict[str, str]:
-        """Get secret."""
+    def get_secret_by_key(self, name: str) -> Optional[str]:
+        """Get secret, given a name passed in to identify it."""
 
     @property
     @abstractmethod
-    def get_all_secret_keys(self) -> List[str]:
-        """Get secret."""
+    def get_all_secret_keys(self) -> List[Optional[Dict[str, str]]]:
+        """Get all secret keys."""
 
     @property
     @abstractmethod
-    def update_secret_by_key(self) -> None:
+    def update_secret_by_key(self, name: str, secret_value: str) -> None:
         """Update existing secret."""
 
     @property
     @abstractmethod
-    def delete_secret_by_key(self) -> None:
+    def delete_secret_by_key(self, name: str) -> None:
         """Delete existing secret."""

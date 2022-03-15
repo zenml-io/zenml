@@ -346,6 +346,10 @@ To see which stack is currently set as the default active stack, type:
 ```bash
 zenml stack get
 ```
+
+Registering Secrets
+-------------------
+# TODO: [HIGH]
 """
 
 from zenml.cli.base import *  # noqa
@@ -353,6 +357,7 @@ from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.pipeline import *  # noqa
+from zenml.cli.secret import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.version import *  # noqa

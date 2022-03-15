@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,21 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.integrations.constants import VAULT
+from zenml.integrations.integration import Integration
 
-AIRFLOW = "airflow"
-AWS = "aws"
-AZURE = "azure"
-DASH = "dash"
-EVIDENTLY = "evidently"
-FACETS = "facets"
-GCP = "gcp"
-GRAPHVIZ = "graphviz"
-KUBEFLOW = "kubeflow"
-MLFLOW = "mlflow"
-PLOTLY = "plotly"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-VAULT = "vault"
-WHYLOGS = "whylogs"
+
+class VaultIntegration(Integration):
+    """Definition of Graphviz integration for ZenML."""
+
+    NAME = VAULT
+    SYSTEM_REQUIREMENTS = {"vault": "vault"}
+
+
+VaultIntegration.check_installation()

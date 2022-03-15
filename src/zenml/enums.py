@@ -88,6 +88,7 @@ class StackComponentType(StrEnum):
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
     STEP_OPERATOR = "step_operator"
+    SECRETS_MANAGER = "secrets_manager"
 
     @property
     def plural(self) -> str:
