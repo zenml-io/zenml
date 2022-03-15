@@ -17,6 +17,8 @@ import click
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation
 from zenml.console import console
+from zenml.repository import Repository
+from zenml.stack.stack_component import StackComponent
 
 
 # Secrets
@@ -38,7 +40,11 @@ def secret() -> None:
 def create_secret(name: str, secret_value: str) -> None:
     """Create a secret."""
     with console.status(f"Creating secret `{name}`..."):
-        # DO SOMETHING HERE with secret_value
+        active_stack = Repository().active_stack
+        secrets_manager = active_stack.components.get(
+            StackComponent.SECRETS_MANAGER
+        )
+        secrets_manager.create_secret(name, secret_value)
         console.print(f"Secret `{name.upper()}` created.")
 
 
@@ -47,7 +53,11 @@ def create_secret(name: str, secret_value: str) -> None:
 def get_secret(name: str) -> None:
     """Get a secret, given its name."""
     with console.status(f"Getting secret `{name}`..."):
-        secret_value = "my-secret-value"  # TODO: [HIGH] replace with real value
+        active_stack = Repository().active_stack
+        secrets_manager = active_stack.components.get(
+            StackComponent.SECRETS_MANAGER
+        )
+        secret_value = secrets_manager.get_secret_by_key(name)
         console.print(f"Secret for `{name.upper()}` is `{secret_value}`.")
 
 
@@ -63,7 +73,11 @@ def delete_secret(name: str) -> None:
         console.print("Aborting secret deletion...")
     else:
         with console.status(f"Deleting secret `{name}`..."):
-            # DO SOMETHING HERE
+            active_stack = Repository().active_stack
+            secrets_manager = active_stack.components.get(
+                StackComponent.SECRETS_MANAGER
+            )
+            secrets_manager.delete_secret_by_key(name)
             console.print(f"Deleted secret for `{name.upper()}`.")
 
 
@@ -80,5 +94,9 @@ def delete_secret(name: str) -> None:
 def update_secret(name: str, secret_value: str) -> None:
     """Update a secret."""
     with console.status(f"Updating secret `{name}`..."):
-        # DO SOMETHING HERE with secret_value
+        active_stack = Repository().active_stack
+        secrets_manager = active_stack.components.get(
+            StackComponent.SECRETS_MANAGER
+        )
+        secrets_manager.update_secret_by_key(name, secret_value)
         console.print(f"Secret `{name.upper()}` updated.")

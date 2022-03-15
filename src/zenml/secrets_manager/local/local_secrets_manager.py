@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from zenml.enums import SecretsManagerFlavor
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
@@ -26,26 +26,26 @@ class LocalSecretsManager(BaseSecretsManager):
         return SecretsManagerFlavor.LOCAL
 
     @property
-    def create_secret(self) -> SecretsManagerFlavor:
+    def create_secret(self, name: str, secret_value: str) -> None:
         """Create secret."""
-        raise NotImplementedError
+        return
 
     @property
-    def get_secret_by_key(self) -> Dict[str, str]:
-        """Get secret."""
-        raise NotImplementedError
+    def get_secret_by_key(self, name: str) -> Optional[str]:
+        """Get secret, given a name passed in to identify it."""
+        return
 
     @property
-    def get_all_secret_keys(self) -> List[str]:
-        """Get secret."""
-        raise NotImplementedError
+    def get_all_secret_keys(self) -> List[Optional[Dict[str, str]]]:
+        """Get all secret keys."""
+        return []
 
     @property
-    def update_secret_by_key(self) -> None:
+    def update_secret_by_key(self, name: str, secret_value: str) -> None:
         """Update existing secret."""
-        raise NotImplementedError
+        return
 
     @property
-    def delete_secret_by_key(self) -> None:
+    def delete_secret_by_key(self, name: str) -> None:
         """Delete existing secret."""
-        raise NotImplementedError
+        return
