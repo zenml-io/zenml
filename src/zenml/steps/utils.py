@@ -49,12 +49,15 @@ import pydantic
 from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
+from tfx.orchestration.portable import outputs_utils
+from tfx.proto.orchestration import execution_result_pb2
 from tfx.types import component_spec
 from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.base_step_config import BaseStepConfig
@@ -71,6 +74,7 @@ PARAM_STEP_NAME: str = "step_name"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_PIPELINE_PARAMETER_NAME: str = "pipeline_parameter_name"
 PARAM_CREATED_BY_FUNCTIONAL_API: str = "created_by_functional_api"
+PARAM_CUSTOM_STEP_OPERATOR: str = "custom_step_operator"
 INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
 INSTANCE_CONFIGURATION: str = "INSTANCE_CONFIGURATION"
 OUTPUT_SPEC: str = "OUTPUT_SPEC"
@@ -487,3 +491,16 @@ class _FunctionExecutor(BaseExecutor):
                 self.resolve_output_artifact(
                     output_name, output_dict[output_name][0], return_value
                 )
+
+        # Write the executor output to the artifact store so the executor
+        # operator (potentially not running on the same machine) can read it
+        # to populate the metadata store
+        executor_output = execution_result_pb2.ExecutorOutput()
+        outputs_utils.populate_output_artifact(executor_output, output_dict)
+
+        logger.debug(
+            "Writing executor output to '%s'.",
+            self._context.executor_output_uri,
+        )
+        with fileio.open(self._context.executor_output_uri, "wb") as f:
+            f.write(executor_output.SerializeToString())

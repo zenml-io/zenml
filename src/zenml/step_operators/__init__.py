@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,21 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from pipeline import (
-    dynamic_importer,
-    mnist_pipeline,
-    normalize_mnist,
-    sklearn_evaluator,
-    sklearn_trainer,
-)
+from zenml.step_operators.base_step_operator import BaseStepOperator
 
-# Initialize a new pipeline run
-scikit_p = mnist_pipeline(
-    importer=dynamic_importer(),
-    normalizer=normalize_mnist(),
-    trainer=sklearn_trainer(),
-    evaluator=sklearn_evaluator(),
-)
-
-# Run the new pipeline
-DAG = scikit_p.run()
+__all__ = ["BaseStepOperator"]

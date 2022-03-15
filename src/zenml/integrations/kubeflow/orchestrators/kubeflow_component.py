@@ -226,6 +226,20 @@ class KubeflowComponent:
                 name=ENV_ZENML_PREVENT_PIPELINE_EXECUTION, value="True"
             )
         )
+        # Add environment variables for Azure Blob Storage to pod in case they
+        # are set locally
+        # TODO [HIGH]: remove this as soon as we implement credential handling
+        for key in [
+            "AZURE_STORAGE_ACCOUNT_KEY",
+            "AZURE_STORAGE_ACCOUNT_NAME",
+            "AZURE_STORAGE_CONNECTION_STRING",
+            "AZURE_STORAGE_SAS_TOKEN",
+        ]:
+            value = os.getenv(key)
+            if value:
+                self.container_op.container.add_env_variable(
+                    k8s_client.V1EnvVar(name=key, value=value)
+                )
 
         for k, v in pod_labels_to_attach.items():
             self.container_op.add_pod_label(k, v)

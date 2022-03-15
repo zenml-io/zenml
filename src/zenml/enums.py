@@ -46,6 +46,7 @@ class StackComponentType(StrEnum):
     METADATA_STORE = "metadata_store"
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
+    STEP_OPERATOR = "step_operator"
 
     @property
     def plural(self) -> str:
@@ -109,10 +110,18 @@ class OrchestratorFlavor(StackComponentFlavor):
     AIRFLOW = "airflow"
 
 
+class StepOperatorFlavor(StackComponentFlavor):
+    """All supported step operator flavors."""
+
+    AZUREML = "azureml"
+    SAGEMAKER = "sagemaker"
+
+
 class MetadataContextTypes(Enum):
     """All possible types that contexts can have within pipeline nodes"""
 
     STACK = "stack"
+    PIPELINE_REQUIREMENTS = "pipeline_requirements"
 
 
 class StorageType(StrEnum):

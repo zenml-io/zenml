@@ -73,7 +73,7 @@ def test_integration_install_inexistent_integration(
     runner = CliRunner()
     mock_install_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
-        "install_package",
+        "install_packages",
         return_value=None,
     )
     result = runner.invoke(integration, ["install", not_an_integration])
@@ -92,7 +92,7 @@ def test_integration_install_specific_integration(
 
     mock_install_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
-        "install_package",
+        "install_packages",
         return_value=None,
     )
     mocker.patch(
@@ -112,7 +112,7 @@ def test_integration_install_multiple_integrations(mocker: MockFixture) -> None:
 
     mock_install_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
-        "install_package",
+        "install_packages",
         return_value=None,
     )
     mocker.patch(
@@ -132,7 +132,7 @@ def test_integration_install_all(mocker: MockFixture) -> None:
     runner = CliRunner()
     mock_install_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
-        "install_package",
+        "install_packages",
         return_value=None,
     )
     mocker.patch(

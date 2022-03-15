@@ -25,6 +25,7 @@ from tfx.orchestration.config import pipeline_config
 from tfx.orchestration.data_types import RuntimeParameter
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import runtime_parameter_utils
+from tfx.proto.orchestration import executable_spec_pb2
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 from tfx.utils.json_utils import json  # type: ignore[attr-defined]
@@ -32,7 +33,7 @@ from tfx.utils.json_utils import json  # type: ignore[attr-defined]
 from zenml.enums import MetadataContextTypes
 from zenml.logger import get_logger
 from zenml.orchestrators import context_utils
-from zenml.orchestrators.utils import create_tfx_pipeline
+from zenml.orchestrators.utils import create_tfx_pipeline, get_step_for_node
 from zenml.repository import Repository
 
 if TYPE_CHECKING:
@@ -178,6 +179,15 @@ class AirflowDagRunner:
                 pipeline_node, runtime_configuration
             )
 
+            # Add pipeline requirements as a context
+            requirements = " ".join(sorted(pipeline.requirements))
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.PIPELINE_REQUIREMENTS.value,
+                name=str(hash(requirements)),
+                properties={"pipeline_requirements": requirements},
+            )
+
             node_id = pipeline_node.node_info.id
             executor_spec = runner_utils.extract_executor_spec(
                 deployment_config, node_id
@@ -185,15 +195,22 @@ class AirflowDagRunner:
             custom_driver_spec = runner_utils.extract_custom_driver_spec(
                 deployment_config, node_id
             )
+            step = get_step_for_node(
+                pipeline_node, steps=list(pipeline.steps.values())
+            )
+            custom_executor_operators = {
+                executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator
+            }
 
             current_airflow_component = airflow_component.AirflowComponent(
                 parent_dag=airflow_dag,
                 pipeline_node=pipeline_node,
                 mlmd_connection=connection_config,
-                pipeline_info=tfx_pipeline.pipeline_info,
+                pipeline_info=pb2_pipeline.pipeline_info,
                 pipeline_runtime_spec=pb2_pipeline.runtime_spec,
                 executor_spec=executor_spec,
                 custom_driver_spec=custom_driver_spec,
+                custom_executor_operators=custom_executor_operators,
             )
             component_impl_map[node_id] = current_airflow_component
             for upstream_node in node.pipeline_node.upstream_nodes:

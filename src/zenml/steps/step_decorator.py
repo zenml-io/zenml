@@ -28,6 +28,7 @@ from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     OUTPUT_SPEC,
     PARAM_CREATED_BY_FUNCTIONAL_API,
+    PARAM_CUSTOM_STEP_OPERATOR,
     PARAM_ENABLE_CACHE,
     STEP_INNER_FUNC_NAME,
 )
@@ -50,6 +51,7 @@ def step(
     name: Optional[str] = None,
     enable_cache: bool = True,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
+    custom_step_operator: Optional[str] = None
 ) -> Callable[[F], Type[BaseStep]]:
     """Type annotations for step decorator in case of arguments."""
     ...
@@ -61,6 +63,7 @@ def step(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
+    custom_step_operator: Optional[str] = None
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
 
@@ -77,6 +80,8 @@ def step(
             :class:`zenml.steps.step_context.StepContext` for more information).
         output_types: A dictionary which sets different outputs to non-default
             artifact types
+        custom_step_operator: Optional name of a
+            `zenml.step_operators.BaseStepOperator` to use for this step.
 
     Returns:
         the inner decorator which creates the step class based on the
@@ -104,6 +109,7 @@ def step(
                 INSTANCE_CONFIGURATION: {
                     PARAM_ENABLE_CACHE: enable_cache,
                     PARAM_CREATED_BY_FUNCTIONAL_API: True,
+                    PARAM_CUSTOM_STEP_OPERATOR: custom_step_operator,
                 },
                 OUTPUT_SPEC: output_spec,
                 "__module__": func.__module__,

@@ -14,6 +14,7 @@
 import inspect
 from abc import abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -35,7 +36,11 @@ from zenml.constants import (
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
     SHOULD_PREVENT_PIPELINE_EXECUTION,
 )
-from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
+from zenml.exceptions import (
+    PipelineConfigurationError,
+    PipelineInterfaceError,
+    StackValidationError,
+)
 from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -45,6 +50,9 @@ from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+
+if TYPE_CHECKING:
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
@@ -92,6 +100,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline.
         requirements_file: Optional path to a pip requirements file that
             contains all requirements to run the pipeline.
+        required_integrations: Optional set of integrations that need to be
+            installed for this pipeline to run.
     """
 
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
@@ -276,6 +286,24 @@ class BasePipeline(metaclass=BasePipelineMeta):
         """
         raise PipelineInterfaceError("Cannot set steps manually!")
 
+    def validate_stack(self, stack: "Stack") -> None:
+        """Validates if a stack is able to run this pipeline."""
+        available_step_operators = (
+            {stack.step_operator.name} if stack.step_operator else set()
+        )
+
+        for step in self.steps.values():
+            if (
+                step.custom_step_operator
+                and step.custom_step_operator not in available_step_operators
+            ):
+                raise StackValidationError(
+                    f"Step '{step.name}' requires custom step operator "
+                    f"'{step.custom_step_operator}' which is not configured in "
+                    f"the active stack. Available step operators: "
+                    f"{available_step_operators}."
+                )
+
     def _reset_step_flags(self) -> None:
         """Reset the _has_been_called flag at the beginning of a pipeline run,
         to make sure a pipeline instance can be called more than once."""
@@ -342,6 +370,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         self._reset_step_flags()
+        self.validate_stack(stack)
 
         return stack.deploy_pipeline(
             self, runtime_configuration=runtime_configuration
