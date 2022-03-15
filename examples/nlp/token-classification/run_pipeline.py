@@ -102,19 +102,23 @@ def trainer(
     tokenizer: DistilBertTokenizerFast,
 ) -> TFDistilBertForTokenClassification:
     """Build and Train token classification model"""
+    # Get label list
     label_list = (
         tokenized_datasets["train"]
         .features[f"{config.task}_tags"]
         .feature.names
     )
 
+    # Load pre-trained model from huggingface hub
     model = TFDistilBertForTokenClassification.from_pretrained(
         config.model_checkpoint, num_labels=len(label_list)
     )
 
+    # Update label2id lookup
     model.config.label2id = {l: i for i, l in enumerate(label_list)}
     model.config.id2label = {i: l for i, l in enumerate(label_list)}
 
+    # Prepare optimizer
     num_train_steps = (
         len(tokenized_datasets["train"]) // config.batch_size
     ) * config.num_train_epochs
@@ -125,8 +129,10 @@ def trainer(
         num_warmup_steps=0,
     )
 
+    # Compile model
     model.compile(optimizer=optimizer)
 
+    # Convert tokenized datasets into tf dataset
     train_set = tokenized_datasets["train"].to_tf_dataset(
         columns=["attention_mask", "input_ids", "labels"],
         shuffle=True,
@@ -150,7 +156,10 @@ def evaluator(
     tokenizer: DistilBertTokenizerFast,
 ) -> float:
     """Evaluate trained model on validation set"""
+    # Needs to recompile because we are reloading model for evaluation
     model.compile(optimizer=tf.keras.optimizers.Adam())
+
+    # Convert into tf dataset format
     validation_set = tokenized_datasets["validation"].to_tf_dataset(
         columns=["attention_mask", "input_ids", "labels"],
         shuffle=False,
@@ -159,6 +168,8 @@ def evaluator(
             tokenizer, return_tensors="tf"
         ),
     )
+
+    # Calculate loss
     test_loss = model.evaluate(validation_set, verbose=1)
     mlflow.log_metric("val_loss", test_loss)
     return test_loss
