@@ -26,7 +26,7 @@ class LocalSecretsManager(BaseSecretsManager):
         return SecretsManagerFlavor.LOCAL
 
     @property
-    def create_secret(self) -> SecretsManagerFlavor:
+    def create_secret(self) -> None:
         """Create secret."""
         raise NotImplementedError
 

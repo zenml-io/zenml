@@ -14,22 +14,16 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict
 
-from pydantic import BaseModel
 
-from zenml.enums import SecretsManagerFlavor
+from zenml.stack import StackComponent
 
 
-class BaseSecretsManager(BaseModel, ABC):
+class BaseSecretsManager(StackComponent, ABC):
     """Base class for all ZenML secret managers."""
 
     @property
     @abstractmethod
-    def flavor(self) -> SecretsManagerFlavor:
-        """The secrets manager flavor."""
-
-    @property
-    @abstractmethod
-    def create_secret(self) -> SecretsManagerFlavor:
+    def create_secret(self) -> None:
         """Create secret."""
 
     @property

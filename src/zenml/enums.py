@@ -105,7 +105,7 @@ class MetadataContextTypes(Enum):
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
 
 
-class SecretsManagerFlavor(Enum):
+class SecretsManagerFlavor(StackComponentFlavor):
     """All supported orchestrator flavors."""
 
     LOCAL = "local"
