@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import Dict, List
 
 from pydantic import BaseModel
 
