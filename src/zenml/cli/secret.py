@@ -25,21 +25,21 @@ def secret() -> None:
     """Secrets for storing key-value pairs for use in authentication."""
 
 
-@secret.command("register")
+@secret.command("create")
 @click.argument("name", type=str)
 @click.option(
     "--secret",
     "-s",
     "secret_value",
-    help="The secret to register.",
+    help="The secret to create.",
     required=True,
     type=str,
 )
-def register_secret(name: str, secret_value: str) -> None:
-    """Register a secret."""
-    with console.status(f"Registering secret `{name}`..."):
+def create_secret(name: str, secret_value: str) -> None:
+    """Create a secret."""
+    with console.status(f"Creating secret `{name}`..."):
         # DO SOMETHING HERE with secret_value
-        console.print(f"Secret `{name.upper()}` registered.")
+        console.print(f"Secret `{name.upper()}` created.")
 
 
 @secret.command("get")
