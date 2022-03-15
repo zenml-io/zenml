@@ -112,6 +112,9 @@ def trainer(
         config.model_checkpoint, num_labels=len(label_list)
     )
 
+    model.config.label2id = {l: i for i, l in enumerate(label_list)}
+    model.config.id2label = {i: l for i, l in enumerate(label_list)}
+
     num_train_steps = (
         len(tokenized_datasets["train"]) // config.batch_size
     ) * config.num_train_epochs
@@ -207,4 +210,4 @@ if __name__ == "__main__":
 
     # Use hf pipeline to check for a sample example
     ner = hf_pipeline("token-classification", model=model, tokenizer=tokenizer)
-    print("Output: ", ner("Zenml-io based out of Munich, Germany"))
+    print("Output: ", ner("Zenml-io is based out of Munich, Germany"))
