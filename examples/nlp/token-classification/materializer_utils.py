@@ -3,7 +3,10 @@ from typing import Any, Type
 
 from datasets import Dataset
 from datasets.dataset_dict import DatasetDict
-from transformers import TFDistilBertForTokenClassification
+from transformers import (
+    DistilBertTokenizerFast,
+    TFDistilBertForTokenClassification,
+)
 
 from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer

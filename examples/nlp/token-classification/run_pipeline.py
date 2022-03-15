@@ -207,4 +207,4 @@ if __name__ == "__main__":
 
     # Use hf pipeline to check for a sample example
     ner = hf_pipeline("token-classification", model=model, tokenizer=tokenizer)
-    print("Output: ", ner("I love my country India!"))
+    print("Output: ", ner("Zenml-io based out of Munich, Germany"))
