@@ -221,6 +221,19 @@ class SqlStackStore(BaseStackStore):
             session.add(new_component)
             session.commit()
 
+    def deregister_stack(self, name: str) -> None:
+        """Delete a stack from storage.
+
+        Args:
+            name: The name of the stack to be deleted.
+        """
+        with Session(self.engine) as session:
+            stack = session.exec(
+                select(ZenStack).where(ZenStack.name == name)
+            ).one()
+            session.delete(stack)
+            session.commit()
+
     # Private interface implementations:
 
     def _create_stack(
@@ -244,19 +257,6 @@ class SqlStackStore(BaseStackStore):
                             component_name=cname,
                         )
                     )
-            session.commit()
-
-    def _delete_stack(self, name: str) -> None:
-        """Delete a stack from storage.
-
-        Args:
-            name: The name of the stack to be deleted.
-        """
-        with Session(self.engine) as session:
-            stack = session.exec(
-                select(ZenStack).where(ZenStack.name == name)
-            ).one()
-            session.delete(stack)
             session.commit()
 
     def _get_component_flavor_and_config(

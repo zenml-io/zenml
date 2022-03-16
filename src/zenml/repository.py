@@ -14,6 +14,7 @@
 import base64
 import json
 import os
+from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -58,7 +59,30 @@ class RepositoryConfiguration(BaseModel):
     """
 
     version: str
+    active_stack_name: Optional[str]
     storage_type: StorageType
+
+
+class LegacyRepositoryConfig(BaseModel):
+    version: str
+    active_stack_name: Optional[str]
+    stacks: Dict[str, Dict[StackComponentType, Optional[str]]]
+    stack_components: Dict[StackComponentType, Dict[str, str]]
+
+    def get_stack_data(self) -> StackStoreModel:
+        """Extract stack data from Legacy Repository file."""
+        return StackStoreModel(
+            stacks={
+                name: {
+                    component_type: value
+                    for component_type, value in stack.items()
+                    if value is not None  # filter out null components
+                }
+                for name, stack in self.stacks.items()
+            },
+            stack_components=defaultdict(dict, self.stack_components),
+            **self.dict(exclude={"stacks", "stack_components"}),
+        )
 
 
 class Repository:
@@ -116,9 +140,11 @@ class Repository:
                     "Found old style repository, converting to "
                     "minimal repository config with separate stack store file."
                 )
-                stack_data = StackStoreModel.parse_obj(config_dict)
+                legacy_config = LegacyRepositoryConfig.parse_obj(config_dict)
+                stack_data = legacy_config.get_stack_data()
                 self.__config = RepositoryConfiguration(
-                    version=stack_data.version,
+                    version=legacy_config.version,
+                    active_stack_name=legacy_config.active_stack_name,
                     storage_type=storage_type,
                 )
                 self._write_config()
@@ -244,7 +270,12 @@ class Repository:
             KeyError: If no stack was found for the configured name or one
                 of the stack components is not registered.
         """
-        return self.get_stack(name=self.active_stack_name)
+        if self.__config.active_stack_name is None:
+            raise RuntimeError(
+                "No active stack name configured. Run "
+                "`zenml stack set STACK_NAME` to update the active stack."
+            )
+        return self.get_stack(name=self.__config.active_stack_name)
 
     @property
     def active_stack_name(self) -> str:
@@ -253,7 +284,12 @@ class Repository:
         Raises:
             RuntimeError: If no active stack name is configured.
         """
-        return self.stack_store.active_stack_name
+        if self.__config.active_stack_name is None:
+            raise RuntimeError(
+                "No active stack name configured. Run "
+                "`zenml stack set STACK_NAME` to update the active stack."
+            )
+        return self.__config.active_stack_name
 
     @track(event=AnalyticsEvent.SET_STACK)
     def activate_stack(self, name: str) -> None:
@@ -265,7 +301,9 @@ class Repository:
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        self.stack_store.activate_stack(name)
+        self.stack_store.get_stack_configuration(name)  # raises KeyError
+        self.__config.active_stack_name = name
+        self._write_config()
 
     def get_stack(self, name: str) -> Stack:
         """Fetches a stack.
@@ -309,6 +347,8 @@ class Repository:
             ValueError: If the stack is the currently active stack for this
                 repository.
         """
+        if name == self.active_stack_name:
+            raise ValueError(f"Unable to deregister active stack '{name}'.")
         self.stack_store.deregister_stack(name)
 
     def get_stack_components(
