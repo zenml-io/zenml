@@ -68,7 +68,7 @@ def stack() -> None:
     required=False,
 )
 @click.option(
-    "-s",
+    "-x",
     "--secrets_manager",
     "secrets_manager_name",
     help="Name of the secrets manager for this stack.",
@@ -76,7 +76,7 @@ def stack() -> None:
     required=False,
 )
 @click.option(
-    "-o",
+    "-s",
     "--step_operator",
     "step_operator_name",
     help="Name of the step operator for this stack.",

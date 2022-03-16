@@ -16,7 +16,7 @@ import os
 from typing import Dict, List, Optional
 
 from zenml.cli.utils import error
-from zenml.enums import SecretsManagerFlavor
+from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.repository import Repository
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
 from zenml.stack.stack_component import StackComponent
@@ -38,13 +38,16 @@ def decode_string(secret: str) -> str:
 
 
 class LocalSecretsManager(BaseSecretsManager):
-    """Base class for all ZenML secret managers."""
+    """Local class for ZenML secret manager."""
 
-    def __init__(self):
-        self.config_dir = get_global_config_directory()
-        self.secrets_file = os.path.join(
-            self.config_dir, LOCAL_SECRETS_FILENAME
-        )
+    secrets_file: str = os.path.join(
+        get_global_config_directory(), LOCAL_SECRETS_FILENAME
+    )
+    supports_local_execution: bool = True
+    supports_remote_execution: bool = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         create_file_if_not_exists(self.secrets_file, "")
 
     def _verify_key_exists(self, key: str) -> bool:
@@ -60,6 +63,11 @@ class LocalSecretsManager(BaseSecretsManager):
     def flavor(self) -> SecretsManagerFlavor:
         """The secrets manager flavor."""
         return SecretsManagerFlavor.LOCAL
+
+    @property
+    def type(self) -> StackComponentType:
+        """The secrets manager type."""
+        return StackComponentType.SECRETS_MANAGER
 
     @property
     def create_secret(self, name: str, secret_value: str) -> None:

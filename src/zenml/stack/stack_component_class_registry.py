@@ -21,6 +21,7 @@ from zenml.enums import (
     ContainerRegistryFlavor,
     MetadataStoreFlavor,
     OrchestratorFlavor,
+    SecretsManagerFlavor,
     StackComponentFlavor,
     StackComponentType,
 )
@@ -177,6 +178,6 @@ StackComponentClassRegistry.register_class(
 )
 StackComponentClassRegistry.register_class(
     StackComponentType.SECRETS_MANAGER,
-    StackComponentFlavor.LOCAL,
+    SecretsManagerFlavor.LOCAL,
     LocalSecretsManager,
 )

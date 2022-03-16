@@ -21,11 +21,15 @@ from zenml.repository import Repository
 from zenml.stack.stack_component import StackComponent
 from zenml.enums import StackComponentType
 
-
-pass_secrets_manager = click.make_pass_decorator(
-    Repository().active_stack.components.get(StackComponent.SECRETS_MANAGER),
-    ensure=True,
-)
+if StackComponentType.SECRETS_MANAGER in Repository().active_stack.components:
+    pass_secrets_manager = click.make_pass_decorator(
+        Repository().active_stack.components.get(
+            StackComponentType.SECRETS_MANAGER
+        ),
+        ensure=True,
+    )
+else:
+    pass_secrets_manager = click.make_pass_decorator(None)
 
 
 # Secrets
@@ -35,8 +39,8 @@ def secret() -> None:
 
 
 @secret.command("create")
-@pass_secrets_manager
-@click.argument("name", type=str)
+# @pass_secrets_manager
+@click.argument("name", type=click.STRING)
 @click.option(
     "--secret",
     "-s",
@@ -46,15 +50,17 @@ def secret() -> None:
     type=str,
 )
 def create_secret(
-    secrets_manager: StackComponentType.SECRETS_MANAGER,
+    # secrets_manager: StackComponentType.SECRETS_MANAGER,
     name: str,
     secret_value: str,
 ) -> None:
     """Create a secret."""
+    breakpoint()
     with console.status(f"Creating secret `{name}`..."):
-        active_stack = Repository().active_stack
-        secrets_manager = active_stack.components.get(
-            StackComponent.SECRETS_MANAGER
+        secrets_manager = (
+            Repository().active_stack.components.get(
+                StackComponentType.SECRETS_MANAGER
+            ),
         )
         try:
             secrets_manager.create_secret(name, secret_value)
