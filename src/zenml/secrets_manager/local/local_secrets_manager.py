@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import base64
+import os
 from typing import Dict, List, Optional
 
 from zenml.cli.utils import error
@@ -19,10 +21,40 @@ from zenml.repository import Repository
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
 from zenml.stack.stack_component import StackComponent
 from zenml.utils import yaml_utils
+from zenml.io.utils import get_global_config_directory
+from zenml.io.fileio import create_file_if_not_exists
+
+LOCAL_SECRETS_FILENAME = "secrets.yaml"
+
+
+def encode_string(string: str) -> str:
+    encodedBytes = base64.b64encode(string.encode("utf-8"))
+    return str(encodedBytes, "utf-8")
+
+
+def decode_string(secret: str) -> str:
+    decodedBytes = base64.b64decode(secret)
+    return str(decodedBytes, "utf-8")
 
 
 class LocalSecretsManager(BaseSecretsManager):
     """Base class for all ZenML secret managers."""
+
+    def __init__(self):
+        self.config_dir = get_global_config_directory()
+        self.secrets_file = os.path.join(
+            self.config_dir, LOCAL_SECRETS_FILENAME
+        )
+        create_file_if_not_exists(self.secrets_file, "")
+
+    def _verify_key_exists(self, key: str) -> bool:
+        secrets_store_items = self.parse_obj(
+            yaml_utils.read_yaml(self.secrets_file)
+        )
+        return key in secrets_store_items
+
+    def _get_all_secrets(self) -> Dict[str, str]:
+        return self.parse_obj(yaml_utils.read_yaml(self.secrets_file))
 
     @property
     def flavor(self) -> SecretsManagerFlavor:
@@ -32,66 +64,45 @@ class LocalSecretsManager(BaseSecretsManager):
     @property
     def create_secret(self, name: str, secret_value: str) -> None:
         """Create secret."""
-        # TODO: [HIGH] Handle the case where the secret already exists.
-        secrets_manager = Repository().active_stack.components.get(
-            StackComponent.SECRETS_MANAGER
-        )
-        secrets_manager_config_path = secrets_manager.config_path
-        secrets_store_items = self.parse_obj(
-            yaml_utils.read_yaml(secrets_manager_config_path)
-        )
-        secrets_store_items[name] = secret_value
-        yaml_utils.write_yaml(secrets_manager_config_path, secrets_store_items)
+        encoded_secret = encode_string(secret_value)
+        secrets_store_items = self._get_all_secrets()
+        if not secrets_store_items[name]:
+            secrets_store_items[name] = encoded_secret
+            yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
+        else:
+            raise KeyError(f"Secret `{name}` already exists.")
 
     @property
     def get_secret_by_key(self, name: str) -> Optional[str]:
         """Get secret, given a name passed in to identify it."""
-        secrets_manager = Repository().active_stack.components.get(
-            StackComponent.SECRETS_MANAGER
-        )
-        secrets_manager_config_path = secrets_manager.config_path
-        secrets_store_items = self.parse_obj(
-            yaml_utils.read_yaml(secrets_manager_config_path)
-        )
-        return secrets_store_items.get(name)
+        secrets_store_items = self._get_all_secrets()
+        if self._verify_key_exists(name):
+            return decode_string(secrets_store_items.get(name))
+        else:
+            raise KeyError(f"Secret `{name}` does not exist.")
 
     @property
-    def get_all_secret_keys(self) -> List[Optional[Dict[str, str]]]:
+    def get_all_secret_keys(self) -> List[Optional[str]]:
         """Get all secret keys."""
-        secrets_manager = Repository().active_stack.components.get(
-            StackComponent.SECRETS_MANAGER
-        )
-        secrets_manager_config_path = secrets_manager.config_path
-        secrets_store_items = self.parse_obj(
-            yaml_utils.read_yaml(secrets_manager_config_path)
-        )
-        return list(secrets_store_items)
+        secrets_store_items = self._get_all_secrets()
+        return list(secrets_store_items.keys())
 
     @property
     def update_secret_by_key(self, name: str, secret_value: str) -> None:
         """Update existing secret."""
-        secrets_manager = Repository().active_stack.components.get(
-            StackComponent.SECRETS_MANAGER
-        )
-        secrets_manager_config_path = secrets_manager.config_path
-        secrets_store_items = self.parse_obj(
-            yaml_utils.read_yaml(secrets_manager_config_path)
-        )
-        secrets_store_items[name] = secret_value
-        yaml_utils.write_yaml(secrets_manager_config_path, secrets_store_items)
+        secrets_store_items = self._get_all_secrets()
+        if self._verify_key_exists(name):
+            secrets_store_items[name] = secret_value
+            yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
+        else:
+            raise KeyError(f"Secret `{name}` does not exist.")
 
     @property
     def delete_secret_by_key(self, name: str) -> None:
         """Delete existing secret."""
-        secrets_manager = Repository().active_stack.components.get(
-            StackComponent.SECRETS_MANAGER
-        )
-        secrets_manager_config_path = secrets_manager.config_path
-        secrets_store_items = self.parse_obj(
-            yaml_utils.read_yaml(secrets_manager_config_path)
-        )
+        secrets_store_items = self._get_all_secrets()
         try:
             secrets_store_items.pop(name)
+            yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
         except KeyError:
             error(f"Secret {name} does not exist.")
-        yaml_utils.write_yaml(secrets_manager_config_path, secrets_store_items)

@@ -38,7 +38,7 @@ class BaseSecretsManager(StackComponent, ABC):
 
     @property
     @abstractmethod
-    def get_all_secret_keys(self) -> List[Optional[Dict[str, str]]]:
+    def get_all_secret_keys(self) -> List[Optional[str]]:
         """Get all secret keys."""
 
     @property

@@ -15,10 +15,17 @@
 import click
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation
+from zenml.cli.utils import confirmation, error
 from zenml.console import console
 from zenml.repository import Repository
 from zenml.stack.stack_component import StackComponent
+from zenml.enums import StackComponentType
+
+
+pass_secrets_manager = click.make_pass_decorator(
+    Repository().active_stack.components.get(StackComponent.SECRETS_MANAGER),
+    ensure=True,
+)
 
 
 # Secrets
@@ -28,6 +35,7 @@ def secret() -> None:
 
 
 @secret.command("create")
+@pass_secrets_manager
 @click.argument("name", type=str)
 @click.option(
     "--secret",
@@ -37,33 +45,49 @@ def secret() -> None:
     required=True,
     type=str,
 )
-def create_secret(name: str, secret_value: str) -> None:
+def create_secret(
+    secrets_manager: StackComponentType.SECRETS_MANAGER,
+    name: str,
+    secret_value: str,
+) -> None:
     """Create a secret."""
     with console.status(f"Creating secret `{name}`..."):
         active_stack = Repository().active_stack
         secrets_manager = active_stack.components.get(
             StackComponent.SECRETS_MANAGER
         )
-        secrets_manager.create_secret(name, secret_value)
-        console.print(f"Secret `{name.upper()}` created.")
+        try:
+            secrets_manager.create_secret(name, secret_value)
+            console.print(f"Secret `{name.upper()}` created.")
+        except KeyError as e:
+            error(e)
 
 
 @secret.command("get")
+@pass_secrets_manager
 @click.argument("name", type=str)
-def get_secret(name: str) -> None:
+def get_secret(
+    secrets_manager: StackComponentType.SECRETS_MANAGER, name: str
+) -> None:
     """Get a secret, given its name."""
     with console.status(f"Getting secret `{name}`..."):
         active_stack = Repository().active_stack
         secrets_manager = active_stack.components.get(
             StackComponent.SECRETS_MANAGER
         )
-        secret_value = secrets_manager.get_secret_by_key(name)
-        console.print(f"Secret for `{name.upper()}` is `{secret_value}`.")
+        try:
+            secret_value = secrets_manager.get_secret_by_key(name)
+            console.print(f"Secret for `{name.upper()}` is `{secret_value}`.")
+        except KeyError as e:
+            error(e)
 
 
 @secret.command("delete")
+@pass_secrets_manager
 @click.argument("name", type=str)
-def delete_secret(name: str) -> None:
+def delete_secret(
+    secrets_manager: StackComponentType.SECRETS_MANAGER, name: str
+) -> None:
     """Delete a secret, given its name."""
     confirmation_response = confirmation(
         f"This will delete the secret associated with `{name}`. "
@@ -77,11 +101,15 @@ def delete_secret(name: str) -> None:
             secrets_manager = active_stack.components.get(
                 StackComponent.SECRETS_MANAGER
             )
-            secrets_manager.delete_secret_by_key(name)
-            console.print(f"Deleted secret for `{name.upper()}`.")
+            try:
+                secrets_manager.delete_secret_by_key(name)
+                console.print(f"Deleted secret for `{name.upper()}`.")
+            except KeyError as e:
+                error(e)
 
 
 @secret.command("update")
+@pass_secrets_manager
 @click.argument("name", type=str)
 @click.option(
     "--secret",
@@ -91,12 +119,19 @@ def delete_secret(name: str) -> None:
     required=True,
     type=str,
 )
-def update_secret(name: str, secret_value: str) -> None:
+def update_secret(
+    secrets_manager: StackComponentType.SECRETS_MANAGER,
+    name: str,
+    secret_value: str,
+) -> None:
     """Update a secret."""
     with console.status(f"Updating secret `{name}`..."):
         active_stack = Repository().active_stack
         secrets_manager = active_stack.components.get(
             StackComponent.SECRETS_MANAGER
         )
-        secrets_manager.update_secret_by_key(name, secret_value)
-        console.print(f"Secret `{name.upper()}` updated.")
+        try:
+            secrets_manager.update_secret_by_key(name, secret_value)
+            console.print(f"Secret `{name.upper()}` updated.")
+        except KeyError as e:
+            error(e)
