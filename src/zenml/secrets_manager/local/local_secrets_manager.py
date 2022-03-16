@@ -26,13 +26,13 @@ LOCAL_SECRETS_FILENAME = "secrets.yaml"
 
 
 def encode_string(string: str) -> str:
-    encodedBytes = base64.b64encode(string.encode("utf-8"))
-    return str(encodedBytes, "utf-8")
+    encoded_bytes = base64.b64encode(string.encode("utf-8"))
+    return str(encoded_bytes, "utf-8")
 
 
 def decode_string(secret: str) -> str:
-    decodedBytes = base64.b64decode(secret)
-    return str(decodedBytes, "utf-8")
+    decoded_bytes = base64.b64decode(secret)
+    return str(decoded_bytes, "utf-8")
 
 
 class LocalSecretsManager(BaseSecretsManager):
@@ -67,13 +67,13 @@ class LocalSecretsManager(BaseSecretsManager):
 
     def register_secret(self, name: str, secret_value: str) -> None:
         """Register secret."""
-        encoded_secret = encode_string(secret_value)
-        secrets_store_items = self._get_all_secrets()
-        if not secrets_store_items.get(name):
+        if self._verify_key_exists(name):
+            raise KeyError(f"Secret `{name}` already exists.")
+        else:
+            encoded_secret = encode_string(secret_value)
+            secrets_store_items = self._get_all_secrets()
             secrets_store_items[name] = encoded_secret
             yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
-        else:
-            raise KeyError(f"Secret `{name}` already exists.")
 
     def get_secret_by_key(self, name: str) -> Optional[str]:
         """Get secret, given a name passed in to identify it."""
