@@ -32,6 +32,7 @@ class LocalSecretsManager(BaseSecretsManager):
     @property
     def create_secret(self, name: str, secret_value: str) -> None:
         """Create secret."""
+        # TODO: [HIGH] Handle the case where the secret already exists.
         secrets_manager = Repository().active_stack.components.get(
             StackComponent.SECRETS_MANAGER
         )
