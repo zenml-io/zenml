@@ -40,6 +40,19 @@ def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
     zenml.io.utils.write_file_contents_as_string(file_path, yaml.dump(contents))
 
 
+def append_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
+    """Append contents to a YAML file at file_path."""
+    file_contents = read_yaml(file_path) or {}
+    file_contents.update(contents)
+    if not fileio.is_remote(file_path):
+        dir_ = str(Path(file_path).parent)
+        if not fileio.is_dir(dir_):
+            raise FileNotFoundError(f"Directory {dir_} does not exist.")
+    zenml.io.utils.write_file_contents_as_string(
+        file_path, yaml.dump(file_contents)
+    )
+
+
 def read_yaml(file_path: str) -> Any:
     """Read YAML on file path and returns contents as dict.
 
@@ -54,6 +67,8 @@ def read_yaml(file_path: str) -> Any:
     """
     if fileio.file_exists(file_path):
         contents = zenml.io.utils.read_file_contents_as_string(file_path)
+        # TODO: [LOW] consider adding a default empty dict to be returned
+        # instead of None
         return yaml.safe_load(contents)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")
