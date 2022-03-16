@@ -55,6 +55,7 @@ class LocalStackStore(BaseStackStore):
             self.__store = StackStoreModel.parse_obj(config_dict)
         else:
             self.__store = StackStoreModel.empty_store()
+        self._write_store()
 
     # Public interface implementations:
 
@@ -62,35 +63,6 @@ class LocalStackStore(BaseStackStore):
     def version(self) -> str:
         """Get the ZenML version."""
         return self.__store.version
-
-    @property
-    def active_stack_name(self) -> str:
-        """The name of the active stack for this stack store.
-
-        Raises:
-            RuntimeError: If no active stack name is configured.
-        """
-        if not self.__store.active_stack_name:
-            raise RuntimeError(
-                "No active stack name configured. Run "
-                "`zenml stack set STACK_NAME` to update the active stack."
-            )
-        return self.__store.active_stack_name
-
-    def activate_stack(self, name: str) -> None:
-        """Activate the stack for the given name.
-
-        Args:
-            name: Name of the stack to activate.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
-        """
-        if name not in self.__store.stacks:
-            raise KeyError(f"Unable to find stack for name '{name}'.")
-
-        self.__store.active_stack_name = name
-        self._write_store()
 
     def get_stack_configuration(
         self, name: str
@@ -164,23 +136,8 @@ class LocalStackStore(BaseStackStore):
             "Registered stack component with name '%s'.", component.name
         )
 
-    # Private interface implementations:
-
-    def _create_stack(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
-    ) -> None:
-        """Add a stack to storage.
-
-        Args:
-            name: The name to save the stack as.
-            stack_configuration: Dict[StackComponentType, str] to persist.
-        """
-        self.__store.stacks[name] = stack_configuration
-        self._write_store()
-        logger.info("Registered stack with name '%s'.", name)
-
-    def _delete_stack(self, name: str) -> None:
-        """Delete a stack from storage.
+    def deregister_stack(self, name: str) -> None:
+        """Remove a stack from storage.
 
         Args:
             name: The name of the stack to be deleted.
@@ -195,6 +152,21 @@ class LocalStackStore(BaseStackStore):
                 "with this name.",
                 name,
             )
+
+    # Private interface implementations:
+
+    def _create_stack(
+        self, name: str, stack_configuration: Dict[StackComponentType, str]
+    ) -> None:
+        """Add a stack to storage.
+
+        Args:
+            name: The name to save the stack as.
+            stack_configuration: Dict[StackComponentType, str] to persist.
+        """
+        self.__store.stacks[name] = stack_configuration
+        self._write_store()
+        logger.info("Registered stack with name '%s'.", name)
 
     def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str

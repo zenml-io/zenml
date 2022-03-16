@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from collections import defaultdict
-from typing import DefaultDict, Dict, Optional
+from typing import DefaultDict, Dict
 
 from pydantic import BaseModel, validator
 
@@ -33,7 +33,6 @@ class StackStoreModel(BaseModel):
     """
 
     version: str
-    active_stack_name: Optional[str]
     stacks: Dict[str, Dict[StackComponentType, str]]
     stack_components: DefaultDict[StackComponentType, Dict[str, str]]
 

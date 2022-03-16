@@ -35,26 +35,6 @@ class BaseStackStore(ABC):
     def version(self) -> str:
         """Get the ZenML version."""
 
-    @property
-    @abstractmethod
-    def active_stack_name(self) -> str:
-        """The name of the active stack for this stack store.
-
-        Raises:
-            RuntimeError: If no active stack name is configured.
-        """
-
-    @abstractmethod
-    def activate_stack(self, name: str) -> None:
-        """Activate the stack for the given name.
-
-        Args:
-            name: Name of the stack to activate.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
-        """
-
     @abstractmethod
     def get_stack_configuration(
         self, name: str
@@ -95,6 +75,14 @@ class BaseStackStore(ABC):
                 and name already exists.
         """
 
+    @abstractmethod
+    def deregister_stack(self, name: str) -> None:
+        """Delete a stack from storage.
+
+        Args:
+            name: The name of the stack to be deleted.
+        """
+
     # Private interface (must be implemented, not to be called by user):
 
     @abstractmethod
@@ -106,14 +94,6 @@ class BaseStackStore(ABC):
         Args:
             name: The name to save the stack as.
             stack_configuration: Dict[StackComponentType, str] to persist.
-        """
-
-    @abstractmethod
-    def _delete_stack(self, name: str) -> None:
-        """Delete a stack from storage.
-
-        Args:
-            name: The name of the stack to be deleted.
         """
 
     @abstractmethod
@@ -230,20 +210,6 @@ class BaseStackStore(ABC):
         metadata = {c.type.value: c.flavor for c in stack.components}
         self._create_stack(stack.name, stack_configuration)
         return metadata
-
-    def deregister_stack(self, name: str) -> None:
-        """Deregister a stack.
-
-        Args:
-            name: The name of the stack to deregister.
-
-        Raises:
-            ValueError: If the stack is the currently active stack for this
-                stack store.
-        """
-        if name == self.active_stack_name:
-            raise ValueError(f"Unable to deregister active stack '{name}'.")
-        self._delete_stack(name)
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
