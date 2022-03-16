@@ -23,11 +23,11 @@ from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
 
-class StackComponentConfiguration(BaseModel):
+class StackComponentWrapper(BaseModel):
     """Serializable Configuration of a StackComponent"""
 
     type: StackComponentType
-    flavor: str  # due to subclassing, can't properly use enum type her
+    flavor: str  # due to subclassing, can't properly use enum type here
     name: str
     uuid: UUID
     config: bytes  # b64 encoded yaml config
@@ -35,7 +35,7 @@ class StackComponentConfiguration(BaseModel):
     @classmethod
     def from_component(
         cls, component: StackComponent
-    ) -> "StackComponentConfiguration":
+    ) -> "StackComponentWrapper":
         return cls(
             type=component.type,
             flavor=component.flavor.value,

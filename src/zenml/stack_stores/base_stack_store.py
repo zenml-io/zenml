@@ -20,11 +20,7 @@ import yaml
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
-from zenml.stack_stores.models import (
-    StackComponentConfiguration,
-    StackConfiguration,
-    StackWrapper,
-)
+from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
 
 logger = get_logger(__name__)
 
@@ -60,14 +56,16 @@ class BaseStackStore(ABC):
         """
 
     @abstractmethod
-    def get_stack_configuration(self, name: str) -> StackConfiguration:
+    def get_stack_configuration(
+        self, name: str
+    ) -> Dict[StackComponentType, str]:
         """Fetches a stack configuration by name.
 
         Args:
             name: The name of the stack to fetch.
 
         Returns:
-            StackConfiguration for the requested stack name.
+            Dict[StackComponentType, str] for the requested stack name.
 
         Raises:
             KeyError: If no stack exists for the given name.
@@ -75,17 +73,17 @@ class BaseStackStore(ABC):
 
     @property
     @abstractmethod
-    def stack_configurations(self) -> Dict[str, StackConfiguration]:
-        """Configuration for all stacks registered in this stack store.
+    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
+        """Configurations for all stacks registered in this stack store.
 
         Returns:
-            Dictionary mapping stack names to StackConfigurations
+            Dictionary mapping stack names to Dict[StackComponentType, str]'s
         """
 
     @abstractmethod
     def register_stack_component(
         self,
-        component: StackComponentConfiguration,
+        component: StackComponentWrapper,
     ) -> None:
         """Register a stack component.
 
@@ -101,13 +99,13 @@ class BaseStackStore(ABC):
 
     @abstractmethod
     def _create_stack(
-        self, name: str, stack_configuration: StackConfiguration
+        self, name: str, stack_configuration: Dict[StackComponentType, str]
     ) -> None:
         """Add a stack to storage.
 
         Args:
             name: The name to save the stack as.
-            stack_configuration: StackConfiguration to persist.
+            stack_configuration: Dict[StackComponentType, str] to persist.
         """
 
     @abstractmethod
@@ -166,7 +164,7 @@ class BaseStackStore(ABC):
     def stacks(self) -> List[StackWrapper]:
         """All stacks registered in this stack store."""
         return [
-            self._stack_from_configuration(name, conf)
+            self._stack_from_dict(name, conf)
             for name, conf in self.stack_configurations.items()
         ]
 
@@ -182,9 +180,7 @@ class BaseStackStore(ABC):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        return self._stack_from_configuration(
-            name, self.get_stack_configuration(name)
-        )
+        return self._stack_from_dict(name, self.get_stack_configuration(name))
 
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
@@ -212,7 +208,7 @@ class BaseStackStore(ABC):
             )
 
         def __check_component(
-            component: StackComponentConfiguration,
+            component: StackComponentWrapper,
         ) -> Tuple[StackComponentType, str]:
             try:
                 existing_component = self.get_stack_component(
@@ -228,11 +224,10 @@ class BaseStackStore(ABC):
                 self.register_stack_component(component)
             return component.type, component.name
 
-        components = {
-            t.value: n for t, n in map(__check_component, stack.components)
+        stack_configuration = {
+            typ: name for typ, name in map(__check_component, stack.components)
         }
         metadata = {c.type.value: c.flavor for c in stack.components}
-        stack_configuration = StackConfiguration(**components)
         self._create_stack(stack.name, stack_configuration)
         return metadata
 
@@ -252,7 +247,7 @@ class BaseStackStore(ABC):
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
-    ) -> StackComponentConfiguration:
+    ) -> StackComponentWrapper:
         """Get a registered stack component.
 
         Raises:
@@ -262,7 +257,7 @@ class BaseStackStore(ABC):
             component_type, name=name
         )
         uuid = yaml.safe_load(base64.b64decode(config).decode())["uuid"]
-        return StackComponentConfiguration(
+        return StackComponentWrapper(
             type=component_type,
             flavor=flavor,
             name=name,
@@ -272,7 +267,7 @@ class BaseStackStore(ABC):
 
     def get_stack_components(
         self, component_type: StackComponentType
-    ) -> List[StackComponentConfiguration]:
+    ) -> List[StackComponentWrapper]:
         """Fetches all registered stack components of the given type.
 
         Args:
@@ -300,9 +295,7 @@ class BaseStackStore(ABC):
                 of a stack.
         """
         for stack_name, stack_config in self.stack_configurations.items():
-            if stack_config.contains_component(
-                component_type=component_type, name=name
-            ):
+            if stack_config.get(component_type) == name:
                 raise ValueError(
                     f"Unable to deregister stack component (type: "
                     f"{component_type}, name: {name}) that is part of a "
@@ -312,16 +305,14 @@ class BaseStackStore(ABC):
 
     # Common code (internal implementations, private):
 
-    def _stack_from_configuration(
-        self, name: str, stack_configuration: StackConfiguration
+    def _stack_from_dict(
+        self, name: str, stack_configuration: Dict[StackComponentType, str]
     ) -> StackWrapper:
         """Build a StackWrapper from stored configurations"""
         stack_components = [
             self.get_stack_component(
-                component_type=StackComponentType(component_type_name),
-                name=component_name,
+                component_type=component_type, name=component_name
             )
-            for component_type_name, component_name in stack_configuration.dict().items()
-            if component_name
+            for component_type, component_name in stack_configuration.items()
         ]
         return StackWrapper(name=name, components=stack_components)

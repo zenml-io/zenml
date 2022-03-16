@@ -19,7 +19,6 @@ from pydantic import BaseModel, validator
 
 import zenml
 from zenml.enums import StackComponentType
-from zenml.stack_stores.models import StackConfiguration
 
 
 class StackStoreModel(BaseModel):
@@ -35,7 +34,7 @@ class StackStoreModel(BaseModel):
 
     version: str
     active_stack_name: Optional[str]
-    stacks: Dict[str, StackConfiguration]
+    stacks: Dict[str, Dict[StackComponentType, str]]
     stack_components: DefaultDict[StackComponentType, Dict[str, str]]
 
     @validator("stack_components")

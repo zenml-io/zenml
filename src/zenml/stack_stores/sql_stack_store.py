@@ -27,10 +27,7 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentExistsError
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
-from zenml.stack_stores.models import (
-    StackComponentConfiguration,
-    StackConfiguration,
-)
+from zenml.stack_stores.models import StackComponentWrapper
 
 # from sqlalchemy import select
 
@@ -121,13 +118,10 @@ class SqlStackStore(BaseStackStore):
         return conf.active_stack
 
     def activate_stack(self, name: str) -> None:
-        """Fetches a stack configuration by name.
+        """Activate the stack for the given name.
 
         Args:
-            name: The name of the stack to fetch.
-
-        Returns:
-            StackConfiguration for the requested stack name.
+            name: Name of the stack to activate.
 
         Raises:
             KeyError: If no stack exists for the given name.
@@ -140,14 +134,16 @@ class SqlStackStore(BaseStackStore):
             session.add(conf)
             session.commit()
 
-    def get_stack_configuration(self, name: str) -> StackConfiguration:
+    def get_stack_configuration(
+        self, name: str
+    ) -> Dict[StackComponentType, str]:
         """Fetches a stack configuration by name.
 
         Args:
             name: The name of the stack to fetch.
 
         Returns:
-            StackConfiguration for the requested stack name.
+            Dict[StackComponentType, str] for the requested stack name.
 
         Raises:
             KeyError: If no stack exists for the given name.
@@ -180,21 +176,20 @@ class SqlStackStore(BaseStackStore):
                 component.component_type: component.name
                 for _, component in definitions_and_components
             }
-        # finally build a StackConfiguration object from them
-        return StackConfiguration(**params)
+        return {StackComponentType(typ): name for typ, name in params.items()}
 
     @property
-    def stack_configurations(self) -> Dict[str, StackConfiguration]:
+    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
         """Configuration for all stacks registered in this stack store.
 
         Returns:
-            Dictionary mapping stack names to StackConfigurations
+            Dictionary mapping stack names to Dict[StackComponentType, str]
         """
         return {n: self.get_stack_configuration(n) for n in self.stack_names}
 
     def register_stack_component(
         self,
-        component: StackComponentConfiguration,
+        component: StackComponentWrapper,
     ) -> None:
         """Register a stack component.
 
@@ -229,23 +224,23 @@ class SqlStackStore(BaseStackStore):
     # Private interface implementations:
 
     def _create_stack(
-        self, name: str, stack_configuration: StackConfiguration
+        self, name: str, stack_configuration: Dict[StackComponentType, str]
     ) -> None:
         """Add a stack to storage.
 
         Args:
             name: The name to save the stack as.
-            stack_configuration: StackConfiguration to persist.
+            stack_configuration: Dict[StackComponentType, str] to persist.
         """
         with Session(self.engine) as session:
             stack = ZenStack(name=name, created_by=1)
             session.add(stack)
-            for ctype, cname in stack_configuration.dict().items():
+            for ctype, cname in stack_configuration.items():
                 if cname is not None:
                     session.add(
                         ZenStackDefinition(
                             stack_name=name,
-                            component_type=ctype,  # TODO: should be enum, will this work?
+                            component_type=ctype,
                             component_name=cname,
                         )
                     )

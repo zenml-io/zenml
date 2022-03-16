@@ -27,11 +27,7 @@ from zenml.io.utils import (
 )
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
-from zenml.stack_stores.models import (
-    StackComponentConfiguration,
-    StackConfiguration,
-    StackStoreModel,
-)
+from zenml.stack_stores.models import StackComponentWrapper, StackStoreModel
 from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
@@ -96,14 +92,16 @@ class LocalStackStore(BaseStackStore):
         self.__store.active_stack_name = name
         self._write_store()
 
-    def get_stack_configuration(self, name: str) -> StackConfiguration:
+    def get_stack_configuration(
+        self, name: str
+    ) -> Dict[StackComponentType, str]:
         """Fetches a stack configuration by name.
 
         Args:
             name: The name of the stack to fetch.
 
         Returns:
-            StackConfiguration for the requested stack name.
+            Dict[StackComponentType, str] for the requested stack name.
 
         Raises:
             KeyError: If no stack exists for the given name.
@@ -118,17 +116,17 @@ class LocalStackStore(BaseStackStore):
         return self.__store.stacks[name]
 
     @property
-    def stack_configurations(self) -> Dict[str, StackConfiguration]:
+    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
         """Configuration for all stacks registered in this stack store.
 
         Returns:
-            Dictionary mapping stack names to StackConfigurations
+            Dictionary mapping stack names to Dict[StackComponentType, str]
         """
         return self.__store.stacks.copy()
 
     def register_stack_component(
         self,
-        component: StackComponentConfiguration,
+        component: StackComponentWrapper,
     ) -> None:
         """Register a stack component.
 
@@ -169,13 +167,13 @@ class LocalStackStore(BaseStackStore):
     # Private interface implementations:
 
     def _create_stack(
-        self, name: str, stack_configuration: StackConfiguration
+        self, name: str, stack_configuration: Dict[StackComponentType, str]
     ) -> None:
         """Add a stack to storage.
 
         Args:
             name: The name to save the stack as.
-            stack_configuration: StackConfiguration to persist.
+            stack_configuration: Dict[StackComponentType, str] to persist.
         """
         self.__store.stacks[name] = stack_configuration
         self._write_store()
