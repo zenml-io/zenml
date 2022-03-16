@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from zenml.enums import SecretsManagerFlavor
 from zenml.stack import StackComponent
@@ -28,8 +28,8 @@ class BaseSecretsManager(StackComponent, ABC):
 
     @property
     @abstractmethod
-    def create_secret(self, name: str, secret_value: str) -> None:
-        """Create secret."""
+    def register_secret(self, name: str, secret_value: str) -> None:
+        """Register secret."""
 
     @property
     @abstractmethod

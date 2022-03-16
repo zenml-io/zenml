@@ -17,12 +17,10 @@ from typing import Dict, List, Optional
 
 from zenml.cli.utils import error
 from zenml.enums import SecretsManagerFlavor, StackComponentType
-from zenml.repository import Repository
-from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
-from zenml.stack.stack_component import StackComponent
-from zenml.utils import yaml_utils
-from zenml.io.utils import get_global_config_directory
 from zenml.io.fileio import create_file_if_not_exists
+from zenml.io.utils import get_global_config_directory
+from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
+from zenml.utils import yaml_utils
 
 LOCAL_SECRETS_FILENAME = "secrets.yaml"
 
@@ -51,13 +49,11 @@ class LocalSecretsManager(BaseSecretsManager):
         create_file_if_not_exists(self.secrets_file, "")
 
     def _verify_key_exists(self, key: str) -> bool:
-        secrets_store_items = self.parse_obj(
-            yaml_utils.read_yaml(self.secrets_file)
-        )
+        secrets_store_items = yaml_utils.read_yaml(self.secrets_file)
         return key in secrets_store_items
 
     def _get_all_secrets(self) -> Dict[str, str]:
-        return self.parse_obj(yaml_utils.read_yaml(self.secrets_file))
+        return yaml_utils.read_yaml(self.secrets_file) or {}
 
     @property
     def flavor(self) -> SecretsManagerFlavor:
@@ -69,18 +65,16 @@ class LocalSecretsManager(BaseSecretsManager):
         """The secrets manager type."""
         return StackComponentType.SECRETS_MANAGER
 
-    @property
-    def create_secret(self, name: str, secret_value: str) -> None:
-        """Create secret."""
+    def register_secret(self, name: str, secret_value: str) -> None:
+        """Register secret."""
         encoded_secret = encode_string(secret_value)
         secrets_store_items = self._get_all_secrets()
-        if not secrets_store_items[name]:
+        if not secrets_store_items.get(name):
             secrets_store_items[name] = encoded_secret
-            yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
+            yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
         else:
             raise KeyError(f"Secret `{name}` already exists.")
 
-    @property
     def get_secret_by_key(self, name: str) -> Optional[str]:
         """Get secret, given a name passed in to identify it."""
         secrets_store_items = self._get_all_secrets()
@@ -89,13 +83,11 @@ class LocalSecretsManager(BaseSecretsManager):
         else:
             raise KeyError(f"Secret `{name}` does not exist.")
 
-    @property
     def get_all_secret_keys(self) -> List[Optional[str]]:
         """Get all secret keys."""
         secrets_store_items = self._get_all_secrets()
         return list(secrets_store_items.keys())
 
-    @property
     def update_secret_by_key(self, name: str, secret_value: str) -> None:
         """Update existing secret."""
         secrets_store_items = self._get_all_secrets()
@@ -105,7 +97,6 @@ class LocalSecretsManager(BaseSecretsManager):
         else:
             raise KeyError(f"Secret `{name}` does not exist.")
 
-    @property
     def delete_secret_by_key(self, name: str) -> None:
         """Delete existing secret."""
         secrets_store_items = self._get_all_secrets()
