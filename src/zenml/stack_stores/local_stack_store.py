@@ -46,7 +46,7 @@ class LocalStackStore(BaseStackStore):
         """Initializes a local stack store instance.
 
         Args:
-            base_directory: root directory of the repository to use for
+            base_directory: root directory of the stack store to use for
                 stack storage.
             stack_data: optional stack data store object to pre-populate the
                 stack store with.
@@ -69,7 +69,7 @@ class LocalStackStore(BaseStackStore):
 
     @property
     def active_stack_name(self) -> str:
-        """The name of the active stack for this repository.
+        """The name of the active stack for this stack store.
 
         Raises:
             RuntimeError: If no active stack name is configured.
@@ -82,7 +82,7 @@ class LocalStackStore(BaseStackStore):
         return self.__store.active_stack_name
 
     def activate_stack(self, name: str) -> None:
-        """Activates the stack for the given name.
+        """Activate the stack for the given name.
 
         Args:
             name: Name of the stack to activate.
@@ -97,10 +97,13 @@ class LocalStackStore(BaseStackStore):
         self._write_store()
 
     def get_stack_configuration(self, name: str) -> StackConfiguration:
-        """Fetches a stack.
+        """Fetches a stack configuration by name.
 
         Args:
             name: The name of the stack to fetch.
+
+        Returns:
+            StackConfiguration for the requested stack name.
 
         Raises:
             KeyError: If no stack exists for the given name.
@@ -116,7 +119,11 @@ class LocalStackStore(BaseStackStore):
 
     @property
     def stack_configurations(self) -> Dict[str, StackConfiguration]:
-        """Configuration for all stacks registered in this repository."""
+        """Configuration for all stacks registered in this stack store.
+
+        Returns:
+            Dictionary mapping stack names to StackConfigurations
+        """
         return self.__store.stacks.copy()
 
     def register_stack_component(
@@ -149,10 +156,10 @@ class LocalStackStore(BaseStackStore):
         )
         write_file_contents_as_string(
             component_config_path,
-            json.loads(base64.b64decode(component.config).decode()),
+            base64.b64decode(component.config).decode(),
         )
 
-        # add the component to the repository configuration and write it to disk
+        # add the component to the stack store dict and write it to disk
         components[component.name] = component.flavor
         self._write_store()
         logger.info(
@@ -200,6 +207,10 @@ class LocalStackStore(BaseStackStore):
             component_type: The type of the component to fetch.
             name: The name of the component to fetch.
 
+        Returns:
+            Pair of (flavor, congfiguration) for stack component, as string and
+            base64-encoded yaml document, respectively
+
         Raises:
             KeyError: If no stack component exists for the given type and name.
         """
@@ -230,7 +241,12 @@ class LocalStackStore(BaseStackStore):
     def _delete_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> None:
-        """Remove a StackComponent from storage."""
+        """Remove a StackComponent from storage.
+
+        Args:
+            component_type: The type of component to delete.
+            name: Then name of the component to delete.
+        """
         components = self.__store.stack_components[component_type]
         try:
             del components[name]
@@ -265,19 +281,19 @@ class LocalStackStore(BaseStackStore):
 
     @property
     def root(self) -> Path:
-        """The root directory of this repository."""
+        """The root directory of this stack store."""
         return Path(self._root)
 
     @property
     def config_directory(self) -> Path:
-        """The configuration directory of this repository."""
+        """The configuration directory of this stack store."""
         return self.root / LOCAL_CONFIG_DIRECTORY_NAME
 
     def _store_path(self) -> str:
-        """Path to the repository configuration file."""
+        """Path to the stack store yaml file."""
         return str(self.config_directory / "stacks.yaml")
 
     def _write_store(self) -> None:
-        """Writes the repository configuration file."""
+        """Writes the stack store yaml file."""
         config_dict = json.loads(self.__store.json())
         yaml_utils.write_yaml(self._store_path(), config_dict)

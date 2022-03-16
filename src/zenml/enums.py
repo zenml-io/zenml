@@ -73,6 +73,8 @@ class StackComponentFlavor(StrEnum):
             return ContainerRegistryFlavor
         elif component_type == StackComponentType.ORCHESTRATOR:
             return OrchestratorFlavor
+        elif component_type == StackComponentType.STEP_OPERATOR:
+            return StepOperatorFlavor
         else:
             raise ValueError(
                 f"Unsupported Stack Component Type {component_type.value}"

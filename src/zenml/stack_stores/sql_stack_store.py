@@ -102,14 +102,18 @@ class SqlStackStore(BaseStackStore):
 
     @property
     def version(self) -> str:
-        """The version of the repository."""
+        """Get the ZenML version."""
         with Session(self.engine) as session:
             conf = session.exec(select(ZenConfig)).one()
         return conf.version
 
     @property
     def active_stack_name(self) -> str:
-        """The name of the active stack for this repository."""
+        """The name of the active stack for this stack store.
+
+        Raises:
+            RuntimeError: If no active stack name is configured.
+        """
         with Session(self.engine) as session:
             conf = session.exec(select(ZenConfig)).first()
         if conf.active_stack is None:
@@ -117,9 +121,19 @@ class SqlStackStore(BaseStackStore):
         return conf.active_stack
 
     def activate_stack(self, name: str) -> None:
-        """Activates the stack for the given name."""
-        # modify the single row of ZenConfig in place
+        """Fetches a stack configuration by name.
+
+        Args:
+            name: The name of the stack to fetch.
+
+        Returns:
+            StackConfiguration for the requested stack name.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
+        """
         with Session(self.engine) as session:
+            # modify the single row of ZenConfig in place
             conf = session.exec(select(ZenConfig)).one()
             _ = self.get_stack(name)
             conf.active_stack = name
@@ -127,10 +141,13 @@ class SqlStackStore(BaseStackStore):
             session.commit()
 
     def get_stack_configuration(self, name: str) -> StackConfiguration:
-        """Fetches a stack.
+        """Fetches a stack configuration by name.
 
         Args:
             name: The name of the stack to fetch.
+
+        Returns:
+            StackConfiguration for the requested stack name.
 
         Raises:
             KeyError: If no stack exists for the given name.
@@ -152,7 +169,7 @@ class SqlStackStore(BaseStackStore):
                 select(ZenStackDefinition, ZenStackComponent)
                 .where(
                     ZenStackDefinition.component_type
-                    == ZenStackDefinition.component_type
+                    == ZenStackComponent.component_type
                 )
                 .where(
                     ZenStackDefinition.component_name == ZenStackComponent.name
@@ -168,7 +185,11 @@ class SqlStackStore(BaseStackStore):
 
     @property
     def stack_configurations(self) -> Dict[str, StackConfiguration]:
-        """Configuration for all stacks registered in this repository."""
+        """Configuration for all stacks registered in this stack store.
+
+        Returns:
+            Dictionary mapping stack names to StackConfigurations
+        """
         return {n: self.get_stack_configuration(n) for n in self.stack_names}
 
     def register_stack_component(
@@ -252,6 +273,10 @@ class SqlStackStore(BaseStackStore):
             component_type: The type of the component to fetch.
             name: The name of the component to fetch.
 
+        Returns:
+            Pair of (flavor, congfiguration) for stack component, as string and
+            base64-encoded yaml document, respectively
+
         Raises:
             KeyError: If no stack component exists for the given type and name.
         """
@@ -271,7 +296,14 @@ class SqlStackStore(BaseStackStore):
     def _get_stack_component_names(
         self, component_type: StackComponentType
     ) -> List[str]:
-        """Get names of all registered stack components of a given type."""
+        """Get names of all registered stack components of a given type.
+
+        Args:
+            component_type: The type of the component to list names for.
+
+        Returns:
+            A list of names as strings.
+        """
         with Session(self.engine) as session:
             statement = select(ZenStackComponent).where(
                 ZenStackComponent.component_type == component_type
@@ -281,7 +313,12 @@ class SqlStackStore(BaseStackStore):
     def _delete_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> None:
-        """Remove a StackComponent from storage."""
+        """Remove a StackComponent from storage.
+
+        Args:
+            component_type: The type of component to delete.
+            name: Then name of the component to delete.
+        """
         with Session(self.engine) as session:
             component = session.exec(
                 select(ZenStackComponent)
@@ -308,6 +345,6 @@ class SqlStackStore(BaseStackStore):
 
     @property
     def stack_names(self) -> List[str]:
-        """Names of all stacks registered in this repository."""
+        """Names of all stacks registered in this StackStore."""
         with Session(self.engine) as session:
             return [s.name for s in session.exec(select(ZenStack))]

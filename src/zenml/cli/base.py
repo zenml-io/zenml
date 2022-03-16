@@ -32,7 +32,7 @@ from zenml.repository import Repository
         exists=True, file_okay=False, dir_okay=True, path_type=Path
     ),
 )
-@click.option("--storage-type", type=click.Choice(StorageType.list()))
+@click.option("--storage-type", type=click.Choice(StorageType.names()))
 def init(path: Optional[Path], storage_type: Optional[StorageType]) -> None:
     """Initialize ZenML on given path.
 
