@@ -21,8 +21,7 @@ from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import (
     ActiveStackName,
-    StackComponentConfiguration,
-    StackConfiguration,
+    StackComponentWrapper,
     StackWrapper,
     Version,
 )
@@ -58,23 +57,25 @@ class RestStackStore(BaseStackStore):
         """Activates the stack for the given name."""
         self.get(f"/stacks/activate/{name}")
 
-    def get_stack_configuration(self, name: str) -> StackConfiguration:
+    def get_stack_configuration(
+        self, name: str
+    ) -> Dict[StackComponentType, str]:
         """Fetches a stack configuration."""
-        return StackConfiguration.parse_obj(
-            self.get(f"/stacks/configuration/{name}")
+        return self._parse_stack_configuration(
+            self.get(f"/stacks/configuration/{name}").items()
         )
 
     @property
-    def stack_configurations(self) -> Dict[str, StackConfiguration]:
+    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
         """Configuration for all stacks registered in this repository."""
         return {
-            key: StackConfiguration.parse_obj(value)
+            key: self._parse_stack_configuration(value)
             for key, value in self.get("/stacks/configurations/")
         }
 
     def register_stack_component(
         self,
-        component: StackComponentConfiguration,
+        component: StackComponentWrapper,
     ) -> None:
         """Registers a stack component."""
         self.post("/components/register", body=component)
@@ -100,18 +101,18 @@ class RestStackStore(BaseStackStore):
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
-    ) -> StackComponentConfiguration:
+    ) -> StackComponentWrapper:
         """Fetches a registered stack component."""
-        return StackComponentConfiguration.parse_obj(
+        return StackComponentWrapper.parse_obj(
             self.get(f"/components/{component_type}/{name}")
         )
 
     def get_stack_components(
         self, component_type: StackComponentType
-    ) -> List[StackComponentConfiguration]:
+    ) -> List[StackComponentWrapper]:
         """Fetches all registered stack components of the given type."""
         return [
-            StackComponentConfiguration.parse_obj(c)
+            StackComponentWrapper.parse_obj(c)
             for c in self.get(f"/components/{component_type}")
         ]
 
@@ -125,7 +126,7 @@ class RestStackStore(BaseStackStore):
     # aren't needed with custom implementations of the above:
 
     def _create_stack(
-        self, name: str, stack_configuration: StackConfiguration
+        self, name: str, stack_configuration: Dict[StackComponentType, str]
     ) -> None:
         """Add a stack to storage"""
         raise NotImplementedError("Not to be accessed direclty in client!")
@@ -153,6 +154,15 @@ class RestStackStore(BaseStackStore):
         raise NotImplementedError("Not to be accessed direclty in client!")
 
     # Implementation specific methods:
+
+    def _parse_stack_configuration(
+        self, to_parse: Any
+    ) -> Dict[StackComponentType, str]:
+        """Parse an API response into `Dict[StackComponentType, str]`."""
+        return {
+            StackComponentType(typ): component_name
+            for typ, component_name in to_parse.items()
+        }
 
     def get(self, path: str) -> Any:
         return requests.get(self.endpoint + path).json()

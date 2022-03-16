@@ -8,8 +8,7 @@ from zenml.io.utils import get_global_config_directory
 from zenml.stack_stores import BaseStackStore, SqlStackStore
 from zenml.stack_stores.models import (
     ActiveStackName,
-    StackComponentConfiguration,
-    StackConfiguration,
+    StackComponentWrapper,
     StackWrapper,
     Version,
 )
@@ -51,21 +50,25 @@ async def activate_stack(name: str) -> None:
     stack_store.activate_stack(name)
 
 
-@app.get("/stacks/configurations/{name}", response_model=StackConfiguration)
-async def get_stack_configuration(name: str) -> StackConfiguration:
+@app.get(
+    "/stacks/configurations/{name}",
+    response_model=Dict[StackComponentType, str],
+)
+async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
     return stack_store.get_stack_configuration(name)
 
 
 @app.get(
-    "/stacks/configurations/", response_model=Dict[str, StackConfiguration]
+    "/stacks/configurations/",
+    response_model=Dict[str, Dict[StackComponentType, str]],
 )
-async def stack_configurations() -> Dict[str, StackConfiguration]:
+async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
     return stack_store.stack_configurations
 
 
 @app.post("/components/register")
 async def register_stack_component(
-    component: StackComponentConfiguration,
+    component: StackComponentWrapper,
 ) -> None:
     stack_store.register_stack_component(component)
 
@@ -97,21 +100,21 @@ def deregister_stack(name: str) -> None:
 
 @app.get(
     "/components/{component_type}/{name}",
-    response_model=StackComponentConfiguration,
+    response_model=StackComponentWrapper,
 )
 async def get_stack_component(
     component_type: StackComponentType, name: str
-) -> StackComponentConfiguration:
+) -> StackComponentWrapper:
     return stack_store.get_stack_component(component_type, name=name)
 
 
 @app.get(
     "/components/{component_type}",
-    response_model=List[StackComponentConfiguration],
+    response_model=List[StackComponentWrapper],
 )
 def get_stack_components(
     component_type: StackComponentType,
-) -> List[StackComponentConfiguration]:
+) -> List[StackComponentWrapper]:
     return stack_store.get_stack_components(component_type)
 
 
