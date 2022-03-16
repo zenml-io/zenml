@@ -17,19 +17,9 @@ import click
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, error
 from zenml.console import console
+from zenml.enums import StackComponentType
 from zenml.repository import Repository
 from zenml.stack.stack_component import StackComponent
-from zenml.enums import StackComponentType
-
-if StackComponentType.SECRETS_MANAGER in Repository().active_stack.components:
-    pass_secrets_manager = click.make_pass_decorator(
-        Repository().active_stack.components.get(
-            StackComponentType.SECRETS_MANAGER
-        ),
-        ensure=True,
-    )
-else:
-    pass_secrets_manager = click.make_pass_decorator(None)
 
 
 # Secrets
@@ -38,8 +28,7 @@ def secret() -> None:
     """Secrets for storing key-value pairs for use in authentication."""
 
 
-@secret.command("create")
-# @pass_secrets_manager
+@secret.command("register")
 @click.argument("name", type=click.STRING)
 @click.option(
     "--secret",
@@ -49,33 +38,31 @@ def secret() -> None:
     required=True,
     type=str,
 )
-def create_secret(
-    # secrets_manager: StackComponentType.SECRETS_MANAGER,
+def register_secret(
     name: str,
     secret_value: str,
 ) -> None:
     """Create a secret."""
-    breakpoint()
+    secrets_manager = Repository().active_stack.components.get(
+        StackComponentType.SECRETS_MANAGER, None
+    )
     with console.status(f"Creating secret `{name}`..."):
-        secrets_manager = (
-            Repository().active_stack.components.get(
-                StackComponentType.SECRETS_MANAGER
-            ),
-        )
         try:
-            secrets_manager.create_secret(name, secret_value)
-            console.print(f"Secret `{name.upper()}` created.")
+            secrets_manager.register_secret(name, secret_value)
+            console.print(f"Secret `{name.upper()}` registered.")
         except KeyError as e:
             error(e)
 
 
 @secret.command("get")
-@pass_secrets_manager
 @click.argument("name", type=str)
 def get_secret(
     secrets_manager: StackComponentType.SECRETS_MANAGER, name: str
 ) -> None:
     """Get a secret, given its name."""
+    secrets_manager = Repository().active_stack.components.get(
+        StackComponentType.SECRETS_MANAGER, None
+    )
     with console.status(f"Getting secret `{name}`..."):
         active_stack = Repository().active_stack
         secrets_manager = active_stack.components.get(
@@ -89,12 +76,14 @@ def get_secret(
 
 
 @secret.command("delete")
-@pass_secrets_manager
 @click.argument("name", type=str)
 def delete_secret(
     secrets_manager: StackComponentType.SECRETS_MANAGER, name: str
 ) -> None:
     """Delete a secret, given its name."""
+    secrets_manager = Repository().active_stack.components.get(
+        StackComponentType.SECRETS_MANAGER, None
+    )
     confirmation_response = confirmation(
         f"This will delete the secret associated with `{name}`. "
         "Are you sure you want to proceed?"
@@ -115,7 +104,6 @@ def delete_secret(
 
 
 @secret.command("update")
-@pass_secrets_manager
 @click.argument("name", type=str)
 @click.option(
     "--secret",
@@ -131,6 +119,9 @@ def update_secret(
     secret_value: str,
 ) -> None:
     """Update a secret."""
+    secrets_manager = Repository().active_stack.components.get(
+        StackComponentType.SECRETS_MANAGER, None
+    )
     with console.status(f"Updating secret `{name}`..."):
         active_stack = Repository().active_stack
         secrets_manager = active_stack.components.get(
