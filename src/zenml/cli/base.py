@@ -47,7 +47,7 @@ def init(path: Optional[Path], storage_type: Optional[StorageType]) -> None:
         path = Path.cwd()
 
     if storage_type is None:
-        storage_type = StorageType.SQLITE_STORAGE
+        storage_type = StorageType.YAML_STORAGE
 
     with console.status(f"Initializing ZenML repository at {path}.\n"):
         try:

@@ -38,8 +38,7 @@ from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
 from zenml.stack_stores import BaseStackStore, LocalStackStore, SqlStackStore
 from zenml.stack_stores.models import (
-    StackComponentConfiguration,
-    StackConfiguration,
+    StackComponentWrapper,
     StackStoreModel,
     StackWrapper,
 )
@@ -72,7 +71,7 @@ class Repository:
     def __init__(
         self,
         root: Optional[Path] = None,
-        storage_type: StorageType = StorageType.SQLITE_STORAGE,
+        storage_type: StorageType = StorageType.YAML_STORAGE,
     ):
         """Initializes a repository instance.
 
@@ -170,7 +169,7 @@ class Repository:
     @track(event=AnalyticsEvent.INITIALIZE_REPO)
     def initialize(
         root: Path = Path.cwd(),
-        storage_type: StorageType = StorageType.SQLITE_STORAGE,
+        storage_type: StorageType = StorageType.YAML_STORAGE,
     ) -> None:
         """Initializes a new ZenML repository at the given path.
 
@@ -221,8 +220,8 @@ class Repository:
         return [self._stack_from_wrapper(s) for s in self.stack_store.stacks]
 
     @property
-    def stack_configurations(self) -> Dict[str, StackConfiguration]:
-        """Configuration objects for all stacks registered in this repository.
+    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
+        """Configuration dicts for all stacks registered in this repository.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
@@ -317,7 +316,7 @@ class Repository:
     ) -> List[StackComponent]:
         """Fetches all registered stack components of the given type."""
         return [
-            self._component_from_configuration(c)
+            self._component_from_wrapper(c)
             for c in self.stack_store.get_stack_components(component_type)
         ]
 
@@ -338,7 +337,7 @@ class Repository:
             component_type.value,
             name,
         )
-        return self._component_from_configuration(
+        return self._component_from_wrapper(
             self.stack_store.get_stack_component(component_type, name=name)
         )
 
@@ -356,7 +355,7 @@ class Repository:
                 and name already exists.
         """
         self.stack_store.register_stack_component(
-            StackComponentConfiguration.from_component(component)
+            StackComponentWrapper.from_component(component)
         )
         analytics_metadata = {
             "type": component.type.value,
@@ -488,29 +487,29 @@ class Repository:
 
         return _find_repo_helper(path).resolve()
 
-    def _component_from_configuration(
-        self, conf: StackComponentConfiguration
+    def _component_from_wrapper(
+        self, wrapper: StackComponentWrapper
     ) -> StackComponent:
         """Instantiate a StackComponent from the Configuration."""
         from zenml.stack.stack_component_class_registry import (
             StackComponentClassRegistry,
         )
 
-        flavor = StackComponentFlavor.for_type(conf.type)(conf.flavor)
+        flavor = StackComponentFlavor.for_type(wrapper.type)(wrapper.flavor)
         component_class = StackComponentClassRegistry.get_class(
-            component_type=conf.type, component_flavor=flavor
+            component_type=wrapper.type, component_flavor=flavor
         )
         component_config = yaml.safe_load(
-            base64.b64decode(conf.config).decode()
+            base64.b64decode(wrapper.config).decode()
         )
         return component_class.parse_obj(component_config)
 
     def _stack_from_wrapper(self, wrapper: StackWrapper) -> Stack:
         """Instantiate a Stack from the serializable Wrapper."""
         stack_components = {}
-        for component_config in wrapper.components:
-            component_type = component_config.type
-            component = self._component_from_configuration(component_config)
+        for component_wrapper in wrapper.components:
+            component_type = component_wrapper.type
+            component = self._component_from_wrapper(component_wrapper)
             stack_components[component_type] = component
 
         return Stack.from_components(

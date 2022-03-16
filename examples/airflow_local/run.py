@@ -11,8 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-
 from pipeline import (
     dynamic_importer,
     mnist_pipeline,
@@ -21,14 +19,13 @@ from pipeline import (
     sklearn_trainer,
 )
 
-if __name__ == "__main__":
-    # Initialize a new pipeline run
-    scikit_p = mnist_pipeline(
-        importer=dynamic_importer(),
-        normalizer=normalize_mnist(),
-        trainer=sklearn_trainer(),
-        evaluator=sklearn_evaluator(),
-    )
+# Initialize a new pipeline run
+scikit_p = mnist_pipeline(
+    importer=dynamic_importer(),
+    normalizer=normalize_mnist(),
+    trainer=sklearn_trainer(),
+    evaluator=sklearn_evaluator(),
+)
 
-    # Run the new pipeline
-    scikit_p.run()
+# Run the new pipeline
+DAG = scikit_p.run()

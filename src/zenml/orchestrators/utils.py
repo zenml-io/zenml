@@ -14,14 +14,16 @@
 
 import json
 import time
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, List, Optional, cast
 
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.orchestration.portable import data_types, launcher
+from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
@@ -149,3 +151,12 @@ def execute_step(
         f"Step `{pipeline_step_name}` has finished in {string_utils.get_human_readable_time(run_duration)}."
     )
     return execution_info
+
+
+def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:
+    """Finds the matching step for a tfx pipeline node."""
+    step_name = node.node_info.id
+    try:
+        return next(step for step in steps if step.name == step_name)
+    except StopIteration:
+        raise RuntimeError(f"Unable to find step with name '{step_name}'.")

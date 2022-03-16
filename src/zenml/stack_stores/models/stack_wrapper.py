@@ -16,21 +16,21 @@ from typing import List
 from pydantic import BaseModel
 
 from zenml.stack import Stack
-from zenml.stack_stores.models import StackComponentConfiguration
+from zenml.stack_stores.models import StackComponentWrapper
 
 
 class StackWrapper(BaseModel):
     """Network Serializable Wrapper describing a Stack."""
 
     name: str
-    components: List[StackComponentConfiguration]
+    components: List[StackComponentWrapper]
 
     @classmethod
     def from_stack(cls, stack: Stack) -> "StackWrapper":
         return cls(
             name=stack.name,
             components=[
-                StackComponentConfiguration.from_component(component)
+                StackComponentWrapper.from_component(component)
                 for t, component in stack.components.items()
             ],
         )

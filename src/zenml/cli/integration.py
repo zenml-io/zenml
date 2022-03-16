@@ -23,12 +23,13 @@ from zenml.cli.utils import (
     declare,
     error,
     format_integration_list,
-    install_package,
+    install_packages,
     print_table,
     title,
     uninstall_package,
     warning,
 )
+from zenml.console import console
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -125,11 +126,8 @@ def install(integrations: Tuple[str], force: bool = False) -> None:
             f"{requirements}"
         )
     ):
-        for n in track(
-            range(len(requirements)),
-            description="Installing integrations...\n",
-        ):
-            install_package(requirements[n])
+        with console.status("Installing integrations..."):
+            install_packages(requirements)
 
         for integration_name in integrations_to_install:
             track_event(

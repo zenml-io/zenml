@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Optional
 
 from zenml import __version__
 
@@ -91,7 +92,7 @@ K8S_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
 VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
 
 # Path utilities constants
-REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
+REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 
 # Segment
 SEGMENT_KEY_DEV = "mDBYI0m7GcCj59EZ4f9d016L1T3rh8J5"
@@ -104,3 +105,5 @@ SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
 
 # Repository Directory Path
 LOCAL_CONFIG_DIRECTORY_NAME = ".zen"
+
+USER_MAIN_MODULE: Optional[str] = None

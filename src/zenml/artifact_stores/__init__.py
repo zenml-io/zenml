@@ -12,17 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-An artifact store is a place where artifacts are stored. These artifacts may
-have been produced by the pipeline steps, or they may be the data first ingested
-into a pipeline via an ingestion step.
+## Artifact Stores
 
-Definitions of the ``BaseArtifactStore`` class and the ``LocalArtifactStore``
-that builds on it are in this module.
+In ZenML, the inputs and outputs which go through any step is treated as an
+artifact and as its name suggests, an `ArtifactStore` is a place where these
+artifacts get stored.
 
-Other artifact stores corresponding to specific integrations are to be found in
-the ``integrations`` module. For example, the ``GCPArtifactStore``, used when
-running ZenML on Google Cloud Platform, is defined in
-``integrations.gcp.artifact_stores``.
+Out of the box, ZenML comes with the `BaseArtifactStore` and
+`LocalArtifactStore` implementations. While the `BaseArtifactStore` establishes
+an interface for people who want to extend it to their needs, the
+`LocalArtifactStore` is a simple implementation for a local setup.
+
+Moreover, additional artifact stores can be found in specific `integrations`
+modules, such as the `GCPArtifactStore` in the `gcp` integration and the
+`AzureArtifactStore` in the `azure` integration.
 """
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore

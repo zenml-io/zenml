@@ -67,12 +67,21 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "-s",
+    "--step_operator",
+    "step_operator_name",
+    help="Name of the step operator for this stack.",
+    type=str,
+    required=False,
+)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
     artifact_store_name: str,
     orchestrator_name: str,
     container_registry_name: Optional[str] = None,
+    step_operator_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
     with console.status(f"Registering stack `{stack_name}`..."):
@@ -96,6 +105,14 @@ def register_stack(
             ] = repo.get_stack_component(
                 StackComponentType.CONTAINER_REGISTRY,
                 name=container_registry_name,
+            )
+
+        if step_operator_name:
+            stack_components[
+                StackComponentType.STEP_OPERATOR
+            ] = repo.get_stack_component(
+                StackComponentType.STEP_OPERATOR,
+                name=step_operator_name,
             )
 
         stack_ = Stack.from_components(
@@ -123,8 +140,8 @@ def list_stacks() -> None:
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack_name,
             **{
-                key.upper(): value
-                for key, value in stack_configuration.dict().items()
+                component_type.value.upper(): value
+                for component_type, value in stack_configuration.items()
             },
         }
         stack_dicts.append(stack_config)

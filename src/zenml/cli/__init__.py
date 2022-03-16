@@ -31,7 +31,7 @@ order to find out which version of ZenML you are running, type:
 If you ever need more information on exactly what a certain command will
 do, use the ``--help`` flag attached to the end of your command string.
 
-For example, to get a sense of all of the commands available to you
+For example, to get a sense of all the commands available to you
 while using the ``zenml`` command, type:
 
 ```bash
@@ -188,7 +188,7 @@ Customizing your Metadata Store
 -------------------------------
 
 The configuration of each pipeline, step, backend, and produced
-artifacts are all tracked within the metadata store. By default ZenML
+artifacts are all tracked within the metadata store. By default, ZenML
 initializes your repository with a metadata store kept on your local
 machine. If you wish to register a new metadata store, do so with the
 ``register`` command:
@@ -283,7 +283,7 @@ zenml container-registry list
 ```
 
 For details about a particular container registry, use the `describe` command.
-By default (without a specific registry name passed in) it will describe the
+By default, (without a specific registry name passed in) it will describe the
 active or currently used container registry:
 
 ```bash
