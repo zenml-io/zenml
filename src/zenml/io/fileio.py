@@ -225,7 +225,6 @@ def create_file_if_not_exists(
         file_contents: Contents of file.
 
     """
-    # TODO: [HIGH] Add test for this function.
     full_path = Path(file_path)
     if not file_exists(file_path):
         create_dir_recursive_if_not_exists(str(full_path.parent))
