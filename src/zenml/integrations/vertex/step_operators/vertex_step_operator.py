@@ -169,7 +169,8 @@ class VertexStepOperator(BaseStepOperator):
         if self.project:
             if self.project != project_id:
                 logger.warning(
-                    f"Authenticated with project {project_id}, but this operator is configured to use project {self.project}."
+                    f"Authenticated with project {project_id}, but this "
+                    f"operator is configured to use project {self.project}."
                 )
         else:
             self.project = project_id

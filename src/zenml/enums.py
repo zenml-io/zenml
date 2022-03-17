@@ -71,6 +71,7 @@ class OrchestratorFlavor(StackComponentFlavor):
     LOCAL = "local"
     KUBEFLOW = "kubeflow"
     AIRFLOW = "airflow"
+    VERTEX = "vertex"
 
 
 class StepOperatorFlavor(StackComponentFlavor):
