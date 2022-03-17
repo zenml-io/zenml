@@ -1,3 +1,16 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 from pathlib import Path
 from typing import Dict, List
 
@@ -7,7 +20,6 @@ from zenml.enums import StackComponentType
 from zenml.io.utils import get_global_config_directory
 from zenml.stack_stores import BaseStackStore, SqlStackStore
 from zenml.stack_stores.models import (
-    ActiveStackName,
     StackComponentWrapper,
     StackWrapper,
     Version,
@@ -38,16 +50,6 @@ async def echo(version: Version) -> Version:
 @app.get("/version", response_model=Version)
 async def version() -> Version:
     return Version(version=stack_store.version)
-
-
-@app.get("/stacks/active", response_model=ActiveStackName)
-async def active_stack_name() -> ActiveStackName:
-    return ActiveStackName(active_stack_name=stack_store.active_stack_name)
-
-
-@app.get("/stacks/activate/{name}")
-async def activate_stack(name: str) -> None:
-    stack_store.activate_stack(name)
 
 
 @app.get(
@@ -83,8 +85,6 @@ async def stacks() -> List[StackWrapper]:
 
 @app.post("/stacks/register", response_model=Dict[str, str])
 def register_stack(stack: StackWrapper) -> Dict[str, str]:
-    print(" ## Stack:")
-    print(stack)
     return stack_store.register_stack(stack)
 
 

@@ -20,7 +20,6 @@ from zenml.enums import StackComponentFlavor, StackComponentType
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import (
-    ActiveStackName,
     StackComponentWrapper,
     StackWrapper,
     Version,
@@ -45,17 +44,6 @@ class RestStackStore(BaseStackStore):
     def version(self) -> str:
         """Get the ZenML version."""
         return Version.parse_obj(self.get("/version")).version
-
-    @property
-    def active_stack_name(self) -> str:
-        """The name of the active stack for this repository."""
-        return ActiveStackName.parse_obj(
-            self.get("/stacks/active")
-        ).active_stack_name
-
-    def activate_stack(self, name: str) -> None:
-        """Activates the stack for the given name."""
-        self.get(f"/stacks/activate/{name}")
 
     def get_stack_configuration(
         self, name: str

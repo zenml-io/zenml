@@ -15,9 +15,5 @@
 from pydantic import BaseModel
 
 
-class ActiveStackName(BaseModel):
-    active_stack_name: str
-
-
 class Version(BaseModel):
     version: str
