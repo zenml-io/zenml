@@ -69,13 +69,14 @@ class ConfigKeys:
         unknown_keys = [
             k for k in config.keys() if k not in required and k not in optional
         ]
-        assert (
-            len(unknown_keys) == 0
-        ), "Unknown key(s) {} in {}. Required keys : {} " "Optional Keys: {}".format(
-            unknown_keys,
-            cls.__name__,
-            required,
-            optional,
+        assert len(unknown_keys) == 0, (
+            "Unknown key(s) {} in {}. Required keys : {} "
+            "Optional Keys: {}".format(
+                unknown_keys,
+                cls.__name__,
+                required,
+                optional,
+            )
         )
 
 

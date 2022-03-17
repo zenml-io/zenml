@@ -78,6 +78,7 @@ class StepOperatorFlavor(StackComponentFlavor):
 
     AZUREML = "azureml"
     SAGEMAKER = "sagemaker"
+    VERTEX = "vertex"
 
 
 class StackComponentType(StrEnum):
