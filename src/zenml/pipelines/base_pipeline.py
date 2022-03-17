@@ -28,6 +28,7 @@ from typing import (
     cast,
 )
 
+from zenml.io import utils
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
@@ -261,9 +262,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"'{integration_name}'."
                 ) from e
 
-        if self.requirements_file and fileio.file_exists(
-            self.requirements_file
-        ):
+        if self.requirements_file and fileio.exists(self.requirements_file):
             with fileio.open(self.requirements_file, "r") as f:
                 requirements.update(
                     {
@@ -345,7 +344,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # Path of the file where pipeline.run() was called. This is needed by
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
-        dag_filepath = fileio.resolve_relative_path(
+        dag_filepath = utils.resolve_relative_path(
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
         runtime_configuration = RuntimeConfiguration(

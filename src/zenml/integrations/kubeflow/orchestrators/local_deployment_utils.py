@@ -418,7 +418,7 @@ def stop_kfp_ui_daemon(pid_file_path: str) -> None:
     Args:
         pid_file_path: Path to the file with the daemons process ID.
     """
-    if fileio.file_exists(pid_file_path):
+    if fileio.exists(pid_file_path):
         if sys.platform == "win32":
             # Daemon functionality is not supported on Windows, so the PID
             # file won't exist. This if clause exists just for mypy to not

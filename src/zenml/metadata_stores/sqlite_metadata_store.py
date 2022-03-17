@@ -17,8 +17,8 @@ from ml_metadata.proto import metadata_store_pb2
 from pydantic import validator
 from tfx.orchestration import metadata
 
+from zenml.io import utils
 from zenml.enums import MetadataStoreFlavor
-from zenml.io import fileio
 from zenml.metadata_stores import BaseMetadataStore
 
 
@@ -46,7 +46,7 @@ class SQLiteMetadataStore(BaseMetadataStore):
     @validator("uri")
     def ensure_uri_is_local(cls, uri: str) -> str:
         """Ensures that the metadata store uri is local."""
-        if fileio.is_remote(uri):
+        if utils.is_remote(uri):
             raise ValueError(
                 f"Uri '{uri}' specified for SQLiteMetadataStore is not a "
                 f"local uri."

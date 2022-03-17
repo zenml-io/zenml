@@ -180,7 +180,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
-        fileio.make_dirs(self.pipeline_directory)
+        fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
             self.pipeline_directory, f"{pipeline.name}.yaml"
         )
@@ -395,7 +395,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
         logger.info("Provisioning local Kubeflow Pipelines deployment...")
-        fileio.make_dirs(self.root_directory)
+        fileio.makedirs(self.root_directory)
         container_registry_port = int(container_registry.uri.split(":")[-1])
         container_registry_name = self._get_k3d_registry_name(
             port=container_registry_port
@@ -447,7 +447,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             pid_file_path=self._pid_file_path
         )
 
-        if fileio.file_exists(self.log_file):
+        if fileio.exists(self.log_file):
             fileio.remove(self.log_file)
 
         logger.info("Local kubeflow pipelines deployment deprovisioned.")

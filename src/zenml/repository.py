@@ -20,6 +20,7 @@ from typing import DefaultDict, Dict, List, Optional
 from pydantic import BaseModel, validator
 
 import zenml
+from zenml.io import utils
 from zenml.constants import ENV_ZENML_REPOSITORY_PATH
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
@@ -132,7 +133,7 @@ class Repository:
         # load the repository configuration file if it exists, otherwise use
         # an empty configuration as default
         config_path = self._config_path()
-        if fileio.file_exists(config_path):
+        if fileio.exists(config_path):
             config_dict = yaml_utils.read_yaml(config_path)
             self.__config = RepositoryConfiguration.parse_obj(config_dict)
         else:
@@ -186,7 +187,7 @@ class Repository:
             )
 
         config_directory = str(root / LOCAL_CONFIG_DIRECTORY_NAME)
-        fileio.create_dir_recursive_if_not_exists(config_directory)
+        utils.create_dir_recursive_if_not_exists(config_directory)
 
         # register and activate a local stack
         repo = Repository(root=root)
@@ -457,7 +458,7 @@ class Repository:
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
-        fileio.create_dir_recursive_if_not_exists(
+        utils.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
         )
         yaml_utils.write_yaml(
@@ -519,7 +520,7 @@ class Repository:
             component_type=component_type, name=name
         )
 
-        if fileio.file_exists(component_config_path):
+        if fileio.exists(component_config_path):
             fileio.remove(component_config_path)
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
@@ -570,7 +571,7 @@ class Repository:
     def is_repository_directory(path: Path) -> bool:
         """Checks whether a ZenML repository exists at the given path."""
         config_dir = path / LOCAL_CONFIG_DIRECTORY_NAME
-        return fileio.is_dir(str(config_dir))
+        return fileio.isdir(str(config_dir))
 
     @staticmethod
     def find_repository(path: Optional[Path] = None) -> Path:
@@ -625,7 +626,9 @@ class Repository:
             if Repository.is_repository_directory(path_):
                 return path_
 
-            if not search_parent_directories or fileio.is_root(str(path_)):
+            if not search_parent_directories or utils.is_root(
+                str(path_)
+            ):
                 raise RepositoryNotFoundError(error_message)
 
             return _find_repo_helper(path_.parent)

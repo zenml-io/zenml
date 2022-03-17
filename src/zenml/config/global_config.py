@@ -18,8 +18,8 @@ from typing import Any, Dict, cast
 
 from pydantic import BaseModel, Field, ValidationError
 
+from zenml.io import utils
 from zenml.io import fileio
-from zenml.io.utils import get_global_config_directory
 from zenml.utils import yaml_utils
 
 LEGACY_CONFIG_FILE_NAME = ".zenglobal.json"
@@ -49,10 +49,12 @@ class GlobalConfig(BaseModel):
         config_values = self._read_config()
         super().__init__(**config_values)
 
-        if not fileio.file_exists(self.config_file()):
+        if not fileio.exists(self.config_file()):
             # the config file hasn't been written to disk, make sure to persist
             # the unique user id
-            fileio.create_dir_recursive_if_not_exists(self.config_directory())
+            utils.create_dir_recursive_if_not_exists(
+                self.config_directory()
+            )
             self._write_config()
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -95,11 +97,11 @@ class GlobalConfig(BaseModel):
         )
 
         config_values = {}
-        if fileio.file_exists(self.config_file()):
+        if fileio.exists(self.config_file()):
             config_values = cast(
                 Dict[str, Any], yaml_utils.read_yaml(self.config_file())
             )
-        elif fileio.file_exists(legacy_config_file):
+        elif fileio.exists(legacy_config_file):
             config_values = cast(
                 Dict[str, Any], yaml_utils.read_json(legacy_config_file)
             )
@@ -114,7 +116,7 @@ class GlobalConfig(BaseModel):
     @staticmethod
     def config_directory() -> str:
         """Path to the global configuration directory."""
-        return get_global_config_directory()
+        return utils.get_global_config_directory()
 
     @staticmethod
     def config_file() -> str:

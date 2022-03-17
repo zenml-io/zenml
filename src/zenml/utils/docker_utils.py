@@ -108,7 +108,7 @@ def create_custom_build_context(
     )
     if dockerignore_path:
         exclude_patterns = _parse_dockerignore(dockerignore_path)
-    elif fileio.file_exists(default_dockerignore_path):
+    elif fileio.exists(default_dockerignore_path):
         logger.info(
             "Using dockerignore found at path '%s' to create docker "
             "build context.",

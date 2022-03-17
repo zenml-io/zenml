@@ -35,7 +35,7 @@ logger = get_logger(__name__)
 class StackComponentClassRegistry:
     """Registry for stack component classes.
 
-    All stack component classes must be registered here so they can be
+    All stack component classes must be registered here, so they can be
     instantiated from the component type and flavor specified inside the
     ZenML repository configuration.
     """
