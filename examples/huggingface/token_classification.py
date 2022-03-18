@@ -1,23 +1,30 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
 import mlflow
 import tensorflow as tf
 from datasets import load_dataset
 from datasets.dataset_dict import DatasetDict
-from materializer_utils import (
-    DatasetMaterializer,
-    HFModelMaterializer,
-    HFTokenizerMaterializer,
-)
 from transformers import (
     DataCollatorForTokenClassification,
     DistilBertTokenizerFast,
     TFDistilBertForTokenClassification,
     create_optimizer,
 )
-from transformers import pipeline as hf_pipeline
 
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
 from zenml.pipelines import pipeline
-from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, step
 
 
@@ -25,11 +32,11 @@ class TokenClassificationConfig(BaseStepConfig):
     """Config for the token-classification"""
 
     task = "ner"  # Should be one of "ner", "pos" or "chunk"
-    model_checkpoint = "distilbert-base-uncased"
+    pretrained_model = "distilbert-base-uncased"
     batch_size = 16
     dataset_name = "conll2003"
     label_all_tokens = True
-    num_train_epochs = 3
+    epochs = 3
 
 
 @step
@@ -47,7 +54,7 @@ def load_tokenizer(
     config: TokenClassificationConfig,
 ) -> DistilBertTokenizerFast:
     """Load pretrained tokenizer"""
-    tokenizer = DistilBertTokenizerFast.from_pretrained(config.model_checkpoint)
+    tokenizer = DistilBertTokenizerFast.from_pretrained(config.pretrained_model)
     return tokenizer
 
 
@@ -111,7 +118,7 @@ def trainer(
 
     # Load pre-trained model from huggingface hub
     model = TFDistilBertForTokenClassification.from_pretrained(
-        config.model_checkpoint, num_labels=len(label_list)
+        config.pretrained_model, num_labels=len(label_list)
     )
 
     # Update label2id lookup
@@ -121,7 +128,7 @@ def trainer(
     # Prepare optimizer
     num_train_steps = (
         len(tokenized_datasets["train"]) // config.batch_size
-    ) * config.num_train_epochs
+    ) * config.epochs
     optimizer, _ = create_optimizer(
         init_lr=2e-5,
         num_train_steps=num_train_steps,
@@ -143,7 +150,7 @@ def trainer(
     )
 
     mlflow.tensorflow.autolog()
-    model.fit(train_set, epochs=config.num_train_epochs)
+    model.fit(train_set, epochs=config.epochs)
     return model
 
 
@@ -187,38 +194,3 @@ def train_eval_pipeline(
     evaluator(
         model=model, tokenized_datasets=tokenized_datasets, tokenizer=tokenizer
     )
-
-
-if __name__ == "__main__":
-
-    # Run Pipeline
-    pipeline = train_eval_pipeline(
-        importer=data_importer().with_return_materializers(DatasetMaterializer),
-        load_tokenizer=load_tokenizer().with_return_materializers(
-            HFTokenizerMaterializer
-        ),
-        tokenization=tokenization().with_return_materializers(
-            DatasetMaterializer
-        ),
-        trainer=trainer().with_return_materializers(HFModelMaterializer),
-        evaluator=evaluator(),
-    )
-
-    pipeline.run()
-
-    # Load latest runs
-    repo = Repository()
-    p = repo.get_pipeline(pipeline_name="train_eval_pipeline")
-    runs = p.runs
-    print(f"Pipeline `train_eval_pipeline` has {len(runs)} run(s)")
-    latest_run = runs[-1]
-    trainer_step = latest_run.get_step("trainer")
-    load_tokenizer_step = latest_run.get_step("load_tokenizer")
-
-    # Read trained model and tokenizer
-    model = trainer_step.output.read()
-    tokenizer = load_tokenizer_step.output.read()
-
-    # Use hf pipeline to check for a sample example
-    ner = hf_pipeline("token-classification", model=model, tokenizer=tokenizer)
-    print("Output: ", ner("Zenml-io is based out of Munich, Germany"))

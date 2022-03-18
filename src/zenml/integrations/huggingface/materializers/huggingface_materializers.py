@@ -90,7 +90,7 @@ class HFTFModelMaterializer(BaseMaterializer):
     def handle_return(self, model: Type[Any]) -> None:
         """Writes a Model to the specified dir.
         Args:
-            HFModel: The Model to write.
+            TFPreTrainedModel: The TF Model to write.
         """
         super().handle_return(model)
         model.save_pretrained(
@@ -127,7 +127,7 @@ class HFPTModelMaterializer(BaseMaterializer):
     def handle_return(self, model: Type[Any]) -> None:
         """Writes a Model to the specified dir.
         Args:
-            HFModel: The Model to write.
+            PreTrainedModel: The Torch Model to write.
         """
         super().handle_return(model)
         model.save_pretrained(
@@ -155,7 +155,7 @@ class HFTokenizerMaterializer(BaseMaterializer):
     def handle_return(self, tokenizer: Type[Any]) -> None:
         """Writes a Tokenizer to the specified dir.
         Args:
-            HFTokenizer: The Tokenizer to write.
+            PreTrainedTokenizerBase: The HFTokenizer to write.
         """
         super().handle_return(tokenizer)
         tokenizer.save_pretrained(
