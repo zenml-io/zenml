@@ -69,9 +69,7 @@ class HFTFModelMaterializer(BaseMaterializer):
 
     from transformers import TFPreTrainedModel
 
-    ASSOCIATED_TYPES = tuple(
-        TFPreTrainedModel,
-    )
+    ASSOCIATED_TYPES = (TFPreTrainedModel,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> TFPreTrainedModel:
@@ -106,14 +104,12 @@ DEFAULT_PT_MODEL_DIR = "hf_pt_model"
 class HFPTModelMaterializer(BaseMaterializer):
     """Materializer to read torch model to and from huggingface pretrained model."""
 
-    from transformers import TFPreTrainedModel
+    from transformers import PreTrainedModel
 
-    ASSOCIATED_TYPES = tuple(
-        TFPreTrainedModel,
-    )
+    ASSOCIATED_TYPES = (PreTrainedModel,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> Type[Any]:
+    def handle_input(self, data_type: Type[Any]) -> PreTrainedModel:
         """Reads HFModel"""
         super().handle_input(data_type)
 
