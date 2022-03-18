@@ -12,9 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import List, Optional, Dict
+from typing import List, Optional
 
 from zenml.enums import SecretsManagerFlavor
+from zenml.secret_sets.base_secret_set import BaseSecretSet
 from zenml.stack import StackComponent
 
 
@@ -31,9 +32,9 @@ class BaseSecretsManager(StackComponent, ABC):
         """Register secret."""
 
     @abstractmethod
-    def register_secret_set(self,
-                            secret_set_name: str,
-                            secret_set: Dict) -> None:
+    def register_secret_set(
+        self, secret_set_name: str, secret_set: "BaseSecretSet"
+    ) -> None:
         """Register secret set."""
 
     @abstractmethod

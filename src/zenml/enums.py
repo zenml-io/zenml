@@ -110,7 +110,7 @@ class SecretsManagerFlavor(StackComponentFlavor):
     """All supported orchestrator flavors."""
 
     LOCAL = "local"
-    VAULT = "vault"
+    AWS = "aws"
 
 
 class SecretSetFlavor(StrEnum):

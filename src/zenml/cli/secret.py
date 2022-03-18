@@ -12,24 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List
+import getpass
 
 import click
-import getpass
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, error
 from zenml.console import console
-from zenml.enums import StackComponentType, SecretSetFlavor
+from zenml.enums import StackComponentType
 from zenml.repository import Repository
+from zenml.secret_sets.secret_set_class_registry import SecretSetClassRegistry
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
-from zenml.secret_sets.secret_set_class_registry import \
-    SecretSetClassRegistry
+
 
 # Secrets
 @cli.group()
 @click.pass_context
-def secret(ctx) -> None:
+def secret(ctx: click.Context) -> None:
     """Secrets for storing key-value pairs for use in authentication."""
     # TODO [HIGH]: Ensure the stack actually contains an active secrets manager
     ctx.obj = Repository().active_stack.components.get(
@@ -81,7 +80,7 @@ def get_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
 
 @secret.command("list")
 @click.pass_obj
-def list_secrets(secrets_manager: "BaseSecretsManager") -> List[str]:
+def list_secrets(secrets_manager: "BaseSecretsManager") -> None:
     """Get a list of all the keys to secrets in the store."""
     with console.status("Getting secret keys..."):
         secret_keys = secrets_manager.get_all_secret_keys()
@@ -142,7 +141,7 @@ def update_secret(
     "secret_set_flavor",
     help="A registered secret set to create.",
     required=True,
-    type=str#click.option([i.value for i in SecretSetFlavor]),
+    type=str,  # click.option([i.value for i in SecretSetFlavor]),
 )
 @click.pass_obj
 def register_secret_set(
@@ -152,15 +151,15 @@ def register_secret_set(
 ) -> None:
     """Create a secret."""
     SecretSet = SecretSetClassRegistry.get_class(
-        component_flavor=secret_set_flavor)
+        component_flavor=secret_set_flavor
+    )
     secret_keys = [field for field in SecretSet.__fields__]
 
     secret_set_dict = {}
     for k in secret_keys:
-        secret_set_dict[k] = getpass.getpass(f'Secret value for {k}:')
+        secret_set_dict[k] = getpass.getpass(f"Secret value for {k}:")
 
     secret_set = SecretSet(**secret_set_dict)
-    secrets_manager.register_secret_set(secret_set_name=name,
-                                        secret_set=secret_set)
-
-
+    secrets_manager.register_secret_set(
+        secret_set_name=name, secret_set=secret_set
+    )

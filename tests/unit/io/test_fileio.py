@@ -79,9 +79,7 @@ def test_find_files_when_file_present(tmp_path):
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         assert (
-            next(
-                fileio.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX)
-            )
+            next(fileio.find_files(str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX))
             is not None
         )
 
@@ -383,9 +381,7 @@ def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
         os.path.join(tmp_path, "test_dir_moved"),
     )
     assert os.path.exists(os.path.join(tmp_path, "test_dir_moved"))
-    assert os.path.exists(
-        os.path.join(tmp_path, "test_dir_moved/new_file.txt")
-    )
+    assert os.path.exists(os.path.join(tmp_path, "test_dir_moved/new_file.txt"))
 
 
 def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
@@ -410,9 +406,5 @@ def test_get_parent_gets_the_parent_directory(tmp_path) -> None:
 
 def test_convert_to_str_converts_to_string(tmp_path) -> None:
     """Test that convert_to_str converts bytes to a string"""
-    assert isinstance(
-        fileio.convert_to_str(bytes(str(tmp_path), "ascii")), str
-    )
-    assert fileio.convert_to_str(bytes(str(tmp_path), "ascii")) == str(
-        tmp_path
-    )
+    assert isinstance(fileio.convert_to_str(bytes(str(tmp_path), "ascii")), str)
+    assert fileio.convert_to_str(bytes(str(tmp_path), "ascii")) == str(tmp_path)

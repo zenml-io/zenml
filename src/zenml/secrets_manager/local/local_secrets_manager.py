@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import base64
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from zenml.cli.utils import error
 from zenml.enums import SecretsManagerFlavor, StackComponentType
@@ -46,9 +46,9 @@ class LocalSecretsManager(BaseSecretsManager):
         get_global_config_directory(), LOCAL_SECRETS_FILENAME
     )
     supports_local_execution: bool = True
-    supports_remote_execution: bool = True
+    supports_remote_execution: bool = False
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         create_file_if_not_exists(self.secrets_file, "")
 
@@ -59,7 +59,7 @@ class LocalSecretsManager(BaseSecretsManager):
         except TypeError:
             return False
 
-    def _get_all_secrets(self) -> Dict[str, str]:
+    def _get_all_secrets(self) -> Dict[str, Union[str, Dict]]:
         return yaml_utils.read_yaml(self.secrets_file) or {}
 
     @property
@@ -72,9 +72,9 @@ class LocalSecretsManager(BaseSecretsManager):
         """The secrets manager type."""
         return StackComponentType.SECRETS_MANAGER
 
-    def register_secret_set(self,
-                            secret_set_name: str,
-                            secret_set: BaseSecretSet) -> None:
+    def register_secret_set(
+        self, secret_set_name: str, secret_set: BaseSecretSet
+    ) -> None:
         """Register secret."""
         if self._verify_key_exists(secret_set_name):
             raise KeyError(f"Secret `{secret_set_name}` already exists.")
