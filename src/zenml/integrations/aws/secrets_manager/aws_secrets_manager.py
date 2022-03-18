@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, ClassVar, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import boto3 as boto3
 from botocore.exceptions import ClientError
@@ -67,7 +67,9 @@ class AWSSecretsManager(BaseSecretsManager):
         """Register secret."""
         raise NotImplementedError
 
-    def register_secret(self, name: str, secret_value: str) -> None:
+    def register_secret(
+        self, name: str, secret_value: str, secret_set: Optional[str]
+    ) -> None:
         """
         Creates a new secret. The secret value can be a string or bytes.
         """
@@ -144,3 +146,17 @@ class AWSSecretsManager(BaseSecretsManager):
             SecretId=name, ForceDeleteWithoutRecovery=False
         )
         logger.debug(response)
+
+    def delete_secret_set_by_key(self, secret_set_name: str) -> None:
+        raise NotImplementedError
+
+    def get_all_secret_sets_keys(self) -> List[Optional[str]]:
+        raise NotImplementedError
+
+    def get_secret_set_by_key(self, secret_set_name: str) -> Optional[Dict]:
+        raise NotImplementedError
+
+    def update_secret_set_by_key(
+        self, secret_set_name: str, secret_set: Dict
+    ) -> None:
+        raise NotImplementedError

@@ -50,6 +50,16 @@ def secret(ctx: click.Context) -> None:
     hide_input=True,
     confirmation_prompt=False,
 )
+@click.option(
+    "--secret-set",
+    "-ss",
+    "secret_set",
+    help="The secret set to create.",
+    required=False,
+    type=str,
+    prompt=True,
+    default="default",
+)
 @click.pass_obj
 def register_secret(
     secrets_manager: "BaseSecretsManager",

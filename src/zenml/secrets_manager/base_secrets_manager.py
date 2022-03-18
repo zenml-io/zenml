@@ -53,7 +53,7 @@ class BaseSecretsManager(StackComponent, ABC):
 
     @abstractmethod
     def register_secret(
-        self, name: str, secret_value: str, secret_set: str
+        self, name: str, secret_value: str, secret_set: Optional[str] = None
     ) -> None:
         """Register secret."""
 
