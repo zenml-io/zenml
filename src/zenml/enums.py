@@ -14,6 +14,7 @@
 
 import logging
 from enum import Enum
+from unittest.mock import DEFAULT
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -115,5 +116,5 @@ class SecretsManagerFlavor(StackComponentFlavor):
 
 class SecretSetFlavor(StrEnum):
     """All supported secret set flavors."""
-
+    DEFAULT = "default"
     AWS = "aws"

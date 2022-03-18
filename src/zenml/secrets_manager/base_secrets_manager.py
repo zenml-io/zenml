@@ -27,17 +27,36 @@ class BaseSecretsManager(StackComponent, ABC):
         """The secrets manager flavor."""
 
     @abstractmethod
-    def register_secret(self, name: str, secret_value: str) -> None:
-        """Register secret."""
-
-    @abstractmethod
     def register_secret_set(self,
                             secret_set_name: str,
                             secret_set: Dict) -> None:
         """Register secret set."""
 
     @abstractmethod
-    def get_secret_by_key(self, name: str) -> Optional[str]:
+    def get_secret_set_by_key(self,
+                            secret_set_name: str) -> Optional[Dict]:
+        """Get secret set by key."""
+    
+    @abstractmethod
+    def get_all_secret_sets_keys(self) -> List[Optional[str]]:
+        """Get all secret set keys."""
+
+    @abstractmethod
+    def update_secret_set_by_key(self,
+                                secret_set_name: str,
+                                secret_set: Dict) -> None:
+        """Update secret set by key."""
+
+    @abstractmethod
+    def delete_secret_set_by_key(self, secret_set_name: str) -> None:
+        """Delete secret set by key."""
+
+    @abstractmethod
+    def register_secret(self, name: str, secret_value: str, secret_set:str) -> None:
+        """Register secret."""
+
+    @abstractmethod
+    def get_secret_by_key(self, name: str, secret_set:str) -> Optional[str]:
         """Get secret, given a name passed in to identify it."""
 
     @abstractmethod
@@ -45,9 +64,9 @@ class BaseSecretsManager(StackComponent, ABC):
         """Get all secret keys."""
 
     @abstractmethod
-    def update_secret_by_key(self, name: str, secret_value: str) -> None:
+    def update_secret_by_key(self, name: str, secret_value: str, secret_set:str) -> None:
         """Update existing secret."""
 
     @abstractmethod
-    def delete_secret_by_key(self, name: str) -> None:
+    def delete_secret_by_key(self, name: str, secret_set:str) -> None:
         """Delete existing secret."""
