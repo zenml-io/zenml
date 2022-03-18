@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 from zenml.integrations.huggingface.materializers.huggingface_materializers import (  # noqa
     HFDatasetMaterializer,
-    HFModelMaterializer,
+    HFPTModelMaterializer,
+    HFTFModelMaterializer,
     HFTokenizerMaterializer,
 )

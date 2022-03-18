@@ -61,38 +61,32 @@ class HFDatasetMaterializer(BaseMaterializer):
             ds.save_to_disk(filepath)
 
 
-DEFAULT_MODEL_DIR = "hf_model"
-
-framework_model_lookup = {
-    "tensorflow": "TFPreTrainedModel",
-    "torch": "PreTrainedModel",
-}
-hf_model_associated_types = [
-    getattr(importlib.import_module("transformers"), v)
-    for k, v in framework_model_lookup.items()
-    if importlib.util.find_spec(k) is not None
-]
+DEFAULT_TF_MODEL_DIR = "hf_tf_model"
 
 
-class HFModelMaterializer(BaseMaterializer):
-    """Materializer to read model to and from huggingface pretrained model."""
+class HFTFModelMaterializer(BaseMaterializer):
+    """Materializer to read tensorflow model to and from huggingface pretrained model."""
 
-    ASSOCIATED_TYPES = tuple(hf_model_associated_types)
+    from transformers import TFPreTrainedModel
+
+    ASSOCIATED_TYPES = tuple(
+        TFPreTrainedModel,
+    )
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> Type[Any]:
+    def handle_input(self, data_type: Type[Any]) -> TFPreTrainedModel:
         """Reads HFModel"""
         super().handle_input(data_type)
 
         config = AutoConfig.from_pretrained(
-            os.path.join(self.artifact.uri, DEFAULT_MODEL_DIR)
+            os.path.join(self.artifact.uri, DEFAULT_TF_MODEL_DIR)
         )
-        architecture = config.architectures[0]
+        architecture = "TF" + config.architectures[0]
         model_cls = getattr(
             importlib.import_module("transformers"), architecture
         )
         return model_cls.from_pretrained(
-            os.path.join(self.artifact.uri, DEFAULT_MODEL_DIR)
+            os.path.join(self.artifact.uri, DEFAULT_TF_MODEL_DIR)
         )
 
     def handle_return(self, model: Type[Any]) -> None:
@@ -102,7 +96,46 @@ class HFModelMaterializer(BaseMaterializer):
         """
         super().handle_return(model)
         model.save_pretrained(
-            os.path.join(self.artifact.uri, DEFAULT_MODEL_DIR)
+            os.path.join(self.artifact.uri, DEFAULT_TF_MODEL_DIR)
+        )
+
+
+DEFAULT_PT_MODEL_DIR = "hf_pt_model"
+
+
+class HFPTModelMaterializer(BaseMaterializer):
+    """Materializer to read torch model to and from huggingface pretrained model."""
+
+    from transformers import TFPreTrainedModel
+
+    ASSOCIATED_TYPES = tuple(
+        TFPreTrainedModel,
+    )
+    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+
+    def handle_input(self, data_type: Type[Any]) -> Type[Any]:
+        """Reads HFModel"""
+        super().handle_input(data_type)
+
+        config = AutoConfig.from_pretrained(
+            os.path.join(self.artifact.uri, DEFAULT_PT_MODEL_DIR)
+        )
+        architecture = config.architectures[0]
+        model_cls = getattr(
+            importlib.import_module("transformers"), architecture
+        )
+        return model_cls.from_pretrained(
+            os.path.join(self.artifact.uri, DEFAULT_PT_MODEL_DIR)
+        )
+
+    def handle_return(self, model: Type[Any]) -> None:
+        """Writes a Model to the specified dir.
+        Args:
+            HFModel: The Model to write.
+        """
+        super().handle_return(model)
+        model.save_pretrained(
+            os.path.join(self.artifact.uri, DEFAULT_PT_MODEL_DIR)
         )
 
 
