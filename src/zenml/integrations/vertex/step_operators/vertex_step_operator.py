@@ -15,6 +15,7 @@
 https://github.com/tensorflow/tfx/blob/master/tfx/extensions/
 google_cloud_ai_platform/training_clients.py"""
 
+import imp
 import time
 from typing import List, Optional, Tuple
 from google.cloud import aiplatform
@@ -35,20 +36,21 @@ from zenml.repository import Repository
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
+from zenml.integrations.vertex.constants import (
+    VERTEX_ENDPOINT_SUFFIX,
+    POLLING_INTERVAL_IN_SECONDS,
+    CONNECTION_ERROR_RETRY_LIMIT,
+)
 from zenml.step_operators import BaseStepOperator
 from zenml.logger import get_logger
+from zenml import __version__
 
 logger = get_logger(__name__)
 
 
-VERTEX_ENDPOINT_SUFFIX = "-aiplatform.googleapis.com"
-POLLING_INTERVAL_IN_SECONDS = 30
-CONNECTION_ERROR_RETRY_LIMIT = 5
-
-
 @register_stack_component_class(
     component_type=StackComponentType.STEP_OPERATOR,
-    component_flavor=StepOperatorFlavor.AZUREML,
+    component_flavor=StepOperatorFlavor.VERTEX,
 )
 class VertexStepOperator(BaseStepOperator):
     """Step operator to run a step on Vertex AI.
@@ -61,15 +63,13 @@ class VertexStepOperator(BaseStepOperator):
         instance_type: The instance type of the compute where jobs will run.
         base_image: [Optional] The base image to use for building the docker
             image that will be executed.
-        bucket: [Optional] Name of the S3 bucket to use for storing artifacts
-            from the job run. If not provided, a default bucket will be created
-            based on the following format: "sagemaker-{region}-{aws-account-id}".
         experiment_name: [Optional] The name for the experiment to which the job
             will be associated. If not provided, the job runs would be independent.
     """
-
+    supports_local_execution = True
+    supports_remote_execution = True
+    
     project: Optional[str] = None
-    staging_bucket: Optional[str] = None
 
     region: Optional[str] = "us-central1"
     # https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
@@ -86,16 +86,9 @@ class VertexStepOperator(BaseStepOperator):
     # environment default credentials used if not set
     service_account_path: Optional[str] = None
 
-    # the name of the experiment to use to track
-    # logged metrics and parameters
-    experiment: Optional[str] = None
-
-    # description of the experiment above
-    experiment_description: Optional[str] = None
-
     job_name: Optional[str] = None
     base_image: Optional[str] = None
-    job_labels: Optional[dict] = None
+    job_labels: dict = {"source": f"zenml-{__version__}"}
 
     @property
     def flavor(self) -> StepOperatorFlavor:
@@ -121,7 +114,7 @@ class VertexStepOperator(BaseStepOperator):
             custom_validation_function=_ensure_local_orchestrator,
         )
 
-    def _build_docker_image(
+    def _build_and_push_docker_image(
         self,
         pipeline_name: str,
         requirements: List[str],
@@ -176,7 +169,7 @@ class VertexStepOperator(BaseStepOperator):
             self.project = project_id
 
         # Step 2: Build and push image
-        image_name = self._build_docker_image(
+        image_name = self._build_and_push_docker_image(
             pipeline_name=pipeline_name,
             requirements=requirements,
             entrypoint_command=entrypoint_command,
@@ -188,7 +181,7 @@ class VertexStepOperator(BaseStepOperator):
         # Initialize client that will be used to create and send requests.
         # This client only needs to be created once, and can be reused for multiple requests.
         client = aiplatform.gapic.JobServiceClient(
-            client_options=client_options
+            credentials=credentials, client_options=client_options
         )
 
         custom_job = {
@@ -212,7 +205,7 @@ class VertexStepOperator(BaseStepOperator):
                     }
                 ]
             },
-            "labels": self.job_labels or {},
+            "labels": self.job_labels,
             "encryption_spec": {"kmsKeyName": self.encryption_spec_key_name}
             if self.encryption_spec_key_name
             else {},

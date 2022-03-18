@@ -71,6 +71,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+
 @register_stack_component_class(
     component_type=StackComponentType.ORCHESTRATOR,
     component_flavor=OrchestratorFlavor.VERTEX,
@@ -86,18 +87,6 @@ class VertexOrchestrator(KubeflowOrchestrator):
         """The orchestrator flavor."""
         return OrchestratorFlavor.VERTEX
 
-    @property
-    def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a container registry."""
-
-        def _ensure_kubeflow_orchestrator(stack: Stack) -> bool:
-            return stack.orchestrator.flavor == OrchestratorFlavor.KUBEFLOW
-
-        return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY},
-            custom_validation_function=_ensure_kubeflow_orchestrator,
-        )
-
     def run_pipeline(
         self,
         pipeline: "BasePipeline",
@@ -108,14 +97,11 @@ class VertexOrchestrator(KubeflowOrchestrator):
 
         super().run_pipeline(pipeline, stack, runtime_configuration)
 
-        # docs_infra: no_execute
+        aiplatform.init(
+            project=GOOGLE_CLOUD_PROJECT, location=GOOGLE_CLOUD_REGION
+        )
 
-        import logging
-        logging.getLogger().setLevel(logging.INFO)
-
-        aiplatform.init(project=GOOGLE_CLOUD_PROJECT,
-                        location=GOOGLE_CLOUD_REGION)
-
-        job = pipeline_jobs.PipelineJob(template_path=PIPELINE_DEFINITION_FILE,
-                                        display_name=PIPELINE_NAME)
+        job = pipeline_jobs.PipelineJob(
+            template_path=PIPELINE_DEFINITION_FILE, display_name=PIPELINE_NAME
+        )
         job.submit()
