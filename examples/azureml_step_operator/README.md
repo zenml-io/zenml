@@ -43,7 +43,7 @@ For the installation, you first need to install and initialize ZenML:
 pip install zenml
 
 # Install the required integrations
-zenml integration install azureml sklearn
+zenml integration install azure azureml sklearn
 
 # Pull example
 zenml example pull azureml_step_operator

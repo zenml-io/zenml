@@ -18,7 +18,7 @@ In order to run this example, you need to install and initialize ZenML and the n
 pip install zenml
 
 # install ZenML integrations
-zenml integration install aws sklearn 
+zenml integration install aws sagemaker sklearn
 
 # pull example
 zenml example pull sagemaker_step_resource

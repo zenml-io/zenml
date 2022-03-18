@@ -76,4 +76,5 @@ pipeline = mnist_pipeline(
     trainer=trainer(),
     evaluator=evaluator(),
 )
-pipeline.run()
+if __name__ == "__main__":
+    pipeline.run()
