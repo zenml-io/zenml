@@ -12,6 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from google.cloud.aiplatform_v1.types.job_state import JobState
+
 VERTEX_ENDPOINT_SUFFIX = "-aiplatform.googleapis.com"
 POLLING_INTERVAL_IN_SECONDS = 30
 CONNECTION_ERROR_RETRY_LIMIT = 5
+_VERTEX_JOB_STATE_SUCCEEDED = JobState.JOB_STATE_SUCCEEDED
+_VERTEX_JOB_STATE_FAILED = JobState.JOB_STATE_FAILED
+_VERTEX_JOB_STATE_CANCELLED = JobState.JOB_STATE_CANCELLED
+
+VERTEX_JOB_STATES_COMPLETED = (
+    _VERTEX_JOB_STATE_SUCCEEDED,
+    _VERTEX_JOB_STATE_FAILED,
+    _VERTEX_JOB_STATE_CANCELLED,
+)
+VERTEX_JOB_STATES_FAILED = (
+    _VERTEX_JOB_STATE_FAILED,
+    _VERTEX_JOB_STATE_CANCELLED,
+)

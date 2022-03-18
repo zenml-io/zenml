@@ -32,6 +32,8 @@ from zenml.integrations.vertex.constants import (
     CONNECTION_ERROR_RETRY_LIMIT,
     POLLING_INTERVAL_IN_SECONDS,
     VERTEX_ENDPOINT_SUFFIX,
+    VERTEX_JOB_STATES_COMPLETED,
+    VERTEX_JOB_STATES_FAILED,
 )
 from zenml.logger import get_logger
 from zenml.repository import Repository
@@ -181,7 +183,6 @@ class VertexStepOperator(BaseStepOperator):
         client = aiplatform.gapic.JobServiceClient(
             credentials=credentials, client_options=client_options
         )
-
         custom_job = {
             "display_name": self.job_name or run_name,
             "job_spec": {
@@ -222,9 +223,7 @@ class VertexStepOperator(BaseStepOperator):
         logger.debug("Vertex AI response:", response)
 
         # Step 4: Monitor the job
-        retry_count = 0
 
-        job_id = client.get_job_name()
         # Monitors the long-running operation by polling the job state periodically,
         # and retries the polling when a transient connectivity issue is encountered.
         #
@@ -242,10 +241,13 @@ class VertexStepOperator(BaseStepOperator):
         # for a detailed description of the problem. If the error persists for
         # _CONNECTION_ERROR_RETRY_LIMIT consecutive attempts, the function will raise
         # ConnectionError.
-        while client.get_job_state(response) not in client.JOB_STATES_COMPLETED:
+        retry_count = 0
+        job_id = response.name
+
+        while response.state not in VERTEX_JOB_STATES_COMPLETED:
             time.sleep(POLLING_INTERVAL_IN_SECONDS)
             try:
-                response = client.get_job()
+                response = client.get_custom_job(name=job_id)
                 retry_count = 0
             # Handle transient connection error.
             except ConnectionError as err:
@@ -268,14 +270,14 @@ class VertexStepOperator(BaseStepOperator):
                     )
                     raise
 
-            if client.get_job_state(response) in client.JOB_STATES_FAILED:
+            if response.state in VERTEX_JOB_STATES_FAILED:
                 err_msg = (
                     "Job '{}' did not succeed.  Detailed response {}.".format(
-                        client.get_job_name(), response
+                        job_id, response
                     )
                 )
                 logger.error(err_msg)
                 raise RuntimeError(err_msg)
 
         # Cloud training complete
-        logger.info("Job '%s' successful.", client.get_job_name())
+        logger.info("Job '%s' successful.", job_id)
