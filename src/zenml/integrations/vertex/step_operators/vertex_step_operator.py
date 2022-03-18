@@ -15,35 +15,32 @@
 https://github.com/tensorflow/tfx/blob/master/tfx/extensions/
 google_cloud_ai_platform/training_clients.py"""
 
-import imp
 import time
 from typing import List, Optional, Tuple
-from google.cloud import aiplatform
-from google.cloud.aiplatform_v1.types.job_state import JobState
 
-from google.auth import (
-    credentials as auth_credentials,
-    default,
-    load_credentials_from_file,
-)
+from google.auth import credentials as auth_credentials
+from google.auth import default, load_credentials_from_file
+from google.cloud import aiplatform
+
+from zenml import __version__
 from zenml.enums import (
     OrchestratorFlavor,
+    StackComponentType,
+    StepOperatorFlavor,
 )
-from zenml.stack import Stack, StackValidator
-from zenml.utils import docker_utils
-from zenml.enums import StackComponentType, StepOperatorFlavor
+from zenml.integrations.vertex.constants import (
+    CONNECTION_ERROR_RETRY_LIMIT,
+    POLLING_INTERVAL_IN_SECONDS,
+    VERTEX_ENDPOINT_SUFFIX,
+)
+from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.stack import Stack, StackValidator
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
-from zenml.integrations.vertex.constants import (
-    VERTEX_ENDPOINT_SUFFIX,
-    POLLING_INTERVAL_IN_SECONDS,
-    CONNECTION_ERROR_RETRY_LIMIT,
-)
 from zenml.step_operators import BaseStepOperator
-from zenml.logger import get_logger
-from zenml import __version__
+from zenml.utils import docker_utils
 
 logger = get_logger(__name__)
 
@@ -66,9 +63,10 @@ class VertexStepOperator(BaseStepOperator):
         experiment_name: [Optional] The name for the experiment to which the job
             will be associated. If not provided, the job runs would be independent.
     """
+
     supports_local_execution = True
     supports_remote_execution = True
-    
+
     project: Optional[str] = None
 
     region: Optional[str] = "us-central1"

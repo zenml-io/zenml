@@ -6,14 +6,14 @@ from mlflow.pyfunc.backend import PyFuncBackend  # type: ignore [import]
 
 from zenml.logger import get_logger
 from zenml.services import (
+    BaseService,
+    BaseServiceEndpoint,
     HTTPEndpointHealthMonitor,
     HTTPEndpointHealthMonitorConfig,
-    BaseServiceEndpoint,
+    ServiceConfig,
+    ServiceEndpointConfig,
     ServiceEndpointProtocol,
     ServiceType,
-    ServiceEndpointConfig,
-    ServiceConfig,
-    BaseService
 )
 
 if TYPE_CHECKING:

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from typing import Optional, Type, cast
+
 from zenml.environment import Environment
 from zenml.integrations.vertex.services.vertex_deployment import (
     VertexDeploymentConfig,
