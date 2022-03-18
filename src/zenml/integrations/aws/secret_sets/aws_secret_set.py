@@ -11,15 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.constants import VAULT
-from zenml.integrations.integration import Integration
+from typing import Optional
+
+from pydantic import BaseModel
+
+from zenml.enums import SecretSetFlavor
 
 
-class VaultIntegration(Integration):
-    """Definition of Graphviz integration for ZenML."""
+class AWSSecretSet(BaseModel):
 
-    NAME = VAULT
-    SYSTEM_REQUIREMENTS = {"vault": "vault"}
+    id: str
+    value: str
+    token: Optional[str]
 
-
-VaultIntegration.check_installation()
+    @property
+    def flavor(self) -> SecretSetFlavor:
+        """The secret set flavor."""
+        return SecretSetFlavor.AWS

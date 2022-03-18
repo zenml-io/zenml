@@ -111,3 +111,9 @@ class SecretsManagerFlavor(StackComponentFlavor):
 
     LOCAL = "local"
     VAULT = "vault"
+
+
+class SecretSetFlavor(StrEnum):
+    """All supported secret set flavors."""
+
+    AWS = "aws"

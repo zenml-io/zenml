@@ -11,14 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Secret Manager
+from abc import ABC, abstractmethod
 
-...
-"""
-from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
-from zenml.secrets_manager.local.local_secrets_manager import (
-    LocalSecretsManager,
-)
+from pydantic import BaseModel
 
-__all__ = ["BaseSecretsManager", "LocalSecretsManager"]
+from zenml.enums import SecretSetFlavor
+
+
+class BaseSecretSet(BaseModel, ABC):
+    @property
+    @abstractmethod
+    def flavor(self) -> SecretSetFlavor:
+        """The secret set flavor."""

@@ -15,20 +15,23 @@
 from typing import List
 
 import click
+import getpass
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, error
 from zenml.console import console
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, SecretSetFlavor
 from zenml.repository import Repository
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
-
+from zenml.secret_sets.secret_set_class_registry import \
+    SecretSetClassRegistry
 
 # Secrets
 @cli.group()
 @click.pass_context
 def secret(ctx) -> None:
     """Secrets for storing key-value pairs for use in authentication."""
+    # TODO [HIGH]: Ensure the stack actually contains an active secrets manager
     ctx.obj = Repository().active_stack.components.get(
         StackComponentType.SECRETS_MANAGER, None
     )
@@ -43,6 +46,9 @@ def secret(ctx) -> None:
     help="The secret to create.",
     required=True,
     type=str,
+    prompt=True,
+    hide_input=True,
+    confirmation_prompt=False,
 )
 @click.pass_obj
 def register_secret(
@@ -56,8 +62,8 @@ def register_secret(
         try:
             secrets_manager.register_secret(name, secret_value)
             console.print(f"Secret `{name.upper()}` registered.")
-        except KeyError as e:
-            error(e)
+        except KeyError:
+            error(f"Secret with name:`{name}` already exists.")
 
 
 @secret.command("get")
@@ -69,8 +75,8 @@ def get_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
         try:
             secret_value = secrets_manager.get_secret_by_key(name)
             console.print(f"Secret for `{name.upper()}` is `{secret_value}`.")
-        except KeyError as e:
-            error(e)
+        except KeyError:
+            error(f"Secret with name:`{name}` does not exist.")
 
 
 @secret.command("list")
@@ -78,12 +84,9 @@ def get_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
 def list_secrets(secrets_manager: "BaseSecretsManager") -> List[str]:
     """Get a list of all the keys to secrets in the store."""
     with console.status("Getting secret keys..."):
-        try:
-            secret_keys = secrets_manager.get_all_secret_keys()
-            # TODO: [HIGH] implement as a table?
-            console.print(secret_keys)
-        except KeyError as e:
-            error(e)
+        secret_keys = secrets_manager.get_all_secret_keys()
+        # TODO: [HIGH] implement as a table?
+        console.print(secret_keys)
 
 
 @secret.command("delete")
@@ -102,8 +105,8 @@ def delete_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
             try:
                 secrets_manager.delete_secret_by_key(name)
                 console.print(f"Deleted secret for `{name.upper()}`.")
-            except KeyError as e:
-                error(e)
+            except KeyError:
+                error(f"Secret with name:`{name}` already did not exist.")
 
 
 @secret.command("update")
@@ -127,5 +130,37 @@ def update_secret(
         try:
             secrets_manager.update_secret_by_key(name, secret_value)
             console.print(f"Secret `{name.upper()}` updated.")
-        except KeyError as e:
-            error(e)
+        except KeyError:
+            error(f"Secret with name:`{name}` doesn't exists.")
+
+
+@secret.command("register-set")
+@click.argument("name", type=click.STRING)
+@click.option(
+    "--flavor",
+    "-f",
+    "secret_set_flavor",
+    help="A registered secret set to create.",
+    required=True,
+    type=str#click.option([i.value for i in SecretSetFlavor]),
+)
+@click.pass_obj
+def register_secret_set(
+    secrets_manager: "BaseSecretsManager",
+    name: str,
+    secret_set_flavor: str,
+) -> None:
+    """Create a secret."""
+    SecretSet = SecretSetClassRegistry.get_class(
+        component_flavor=secret_set_flavor)
+    secret_keys = [field for field in SecretSet.__fields__]
+
+    secret_set_dict = {}
+    for k in secret_keys:
+        secret_set_dict[k] = getpass.getpass(f'Secret value for {k}:')
+
+    secret_set = SecretSet(**secret_set_dict)
+    secrets_manager.register_secret_set(secret_set_name=name,
+                                        secret_set=secret_set)
+
+

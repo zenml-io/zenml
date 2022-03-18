@@ -19,8 +19,12 @@ from zenml.cli.utils import error
 from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.io.fileio import create_file_if_not_exists
 from zenml.io.utils import get_global_config_directory
+from zenml.logger import get_logger
+from zenml.secret_sets.base_secret_set import BaseSecretSet
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
 from zenml.utils import yaml_utils
+
+logger = get_logger(__name__)
 
 LOCAL_SECRETS_FILENAME = "secrets.yaml"
 
@@ -50,7 +54,10 @@ class LocalSecretsManager(BaseSecretsManager):
 
     def _verify_key_exists(self, key: str) -> bool:
         secrets_store_items = yaml_utils.read_yaml(self.secrets_file)
-        return key in secrets_store_items
+        try:
+            return key in secrets_store_items
+        except TypeError:
+            return False
 
     def _get_all_secrets(self) -> Dict[str, str]:
         return yaml_utils.read_yaml(self.secrets_file) or {}
@@ -64,6 +71,21 @@ class LocalSecretsManager(BaseSecretsManager):
     def type(self) -> StackComponentType:
         """The secrets manager type."""
         return StackComponentType.SECRETS_MANAGER
+
+    def register_secret_set(self,
+                            secret_set_name: str,
+                            secret_set: BaseSecretSet) -> None:
+        """Register secret."""
+        if self._verify_key_exists(secret_set_name):
+            raise KeyError(f"Secret `{secret_set_name}` already exists.")
+        else:
+            encoded_secret_set = secret_set.__dict__
+            for k in encoded_secret_set:
+                encoded_secret_set[k] = encode_string(encoded_secret_set[k])
+
+            secrets_store_items = self._get_all_secrets()
+            secrets_store_items[secret_set_name] = encoded_secret_set
+            yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
 
     def register_secret(self, name: str, secret_value: str) -> None:
         """Register secret."""
@@ -92,7 +114,7 @@ class LocalSecretsManager(BaseSecretsManager):
         """Update existing secret."""
         secrets_store_items = self._get_all_secrets()
         if self._verify_key_exists(name):
-            secrets_store_items[name] = secret_value
+            secrets_store_items[name] = encode_string(secret_value)
             yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
         else:
             raise KeyError(f"Secret `{name}` does not exist.")
