@@ -14,7 +14,6 @@
 
 from typing import Optional, Type, cast
 
-from zenml.environment import Environment
 from zenml.integrations.vertex.services.vertex_deployment import (
     VertexDeploymentConfig,
     VertexDeploymentService,
@@ -25,13 +24,12 @@ from zenml.steps import (
     BaseStep,
     BaseStepConfig,
     StepContext,
-    StepEnvironment,
     step,
 )
 
 
 class VertexDeployerConfig(BaseStepConfig):
-    """Vertex model deployer step configuration
+    """Vertex model deployer step configuration.
 
     Attributes:
         model_name: the name of the vertex model logged in the vertex artifact
