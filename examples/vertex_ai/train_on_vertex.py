@@ -15,13 +15,14 @@
 import numpy as np
 from sklearn.base import ClassifierMixin
 
+from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.integrations.constants import SKLEARN
 from zenml.integrations.sklearn.helpers.digits import (
     get_digits,
     get_digits_model,
 )
 from zenml.pipelines import pipeline
-from zenml.steps import Output, step
+from zenml.steps import Output, StepContext, step
 
 
 @step
@@ -36,13 +37,18 @@ def importer() -> Output(
 # setting the custom_step_operator param will tell ZenML
 # to run this step on a custom backend defined by the name
 # of the operator you provide.
-@step(custom_step_operator="vertex-step-operator")
+# @step(custom_step_operator="vertex-step-operator")
+@step
 def trainer(
-    X_train: np.ndarray,
+    X_train: BaseArtifact,
     y_train: np.ndarray,
+    context: StepContext,
 ) -> ClassifierMixin:
     """Train a simple sklearn classifier for the digits dataset."""
     model = get_digits_model()
+    from zenml.materializers.numpy_materializer import NumpyMaterializer
+
+    X_train = NumpyMaterializer(X_train).handle_input(np.ndarray)
     model.fit(X_train, y_train)
     return model
 
@@ -59,7 +65,7 @@ def evaluator(
     return test_acc
 
 
-@pipeline(required_integrations=[SKLEARN])
+@pipeline(required_integrations=[SKLEARN], enable_cache=False)
 def mnist_pipeline(
     importer,
     trainer,

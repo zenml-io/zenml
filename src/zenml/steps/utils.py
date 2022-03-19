@@ -318,6 +318,10 @@ class _FunctionExecutor(BaseExecutor):
         Returns:
             Return the output of `handle_input()` of selected materializer.
         """
+        # Make an exception for BaseArtifact, return artifact
+        if data_type is BaseArtifact:
+            return artifact
+
         materializer = source_utils.load_source_path_class(
             artifact.materializer
         )(artifact)
@@ -335,6 +339,10 @@ class _FunctionExecutor(BaseExecutor):
             artifact: A TFX artifact type.
             data: The object to be passed to `handle_return()`.
         """
+        # Make an exception for BaseArtifact, return artifact
+        if type(data) is BaseArtifact:
+            return
+
         materializer_class = self.resolve_materializer_with_registry(
             param_name, artifact
         )
