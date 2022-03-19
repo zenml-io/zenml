@@ -58,12 +58,15 @@ class VertexStepOperator(BaseStepOperator):
     ZenML entrypoint command in it.
 
     Attributes:
-        role: The role that has to be assigned to jobs running in Sagemaker.
-        instance_type: The instance type of the compute where jobs will run.
-        base_image: [Optional] The base image to use for building the docker
-            image that will be executed.
-        experiment_name: [Optional] The name for the experiment to which the job
-            will be associated. If not provided, the job runs would be independent.
+        project: [Optional] GCP project name.
+        region: [Optional]  
+        accelerator_type: [Optional] 
+        accelerator_count: [Optional] 
+        encryption_spec_key_name: [Optional] 
+        service_account_path: [Optional] 
+        job_name: [Optional] 
+        base_image: [Optional] 
+        job_labels: [Optional] 
     """
 
     supports_local_execution = True
