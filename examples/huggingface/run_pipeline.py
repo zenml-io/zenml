@@ -54,7 +54,7 @@ def main(nlp_task: str, pretrained_model: str, batch_size: int, epochs: int):
             epochs=epochs,
             batch_size=batch_size,
         )
-        pipeline = token_classification.train_eval_pipeline(
+        pipeline = token_classification.token_classifier_train_eval_pipeline(
             importer=token_classification.data_importer(
                 token_classification_config
             ).with_return_materializers(HFDatasetMaterializer),
@@ -80,7 +80,7 @@ def main(nlp_task: str, pretrained_model: str, batch_size: int, epochs: int):
             epochs=epochs,
             batch_size=batch_size,
         )
-        pipeline = sequence_classification.train_eval_pipeline(
+        pipeline = sequence_classification.seq_classifier_train_eval_pipeline(
             importer=sequence_classification.data_importer(
                 sequence_classification_config
             ).with_return_materializers(HFDatasetMaterializer),

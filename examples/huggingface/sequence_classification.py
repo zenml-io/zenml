@@ -151,13 +151,14 @@ def evaluator(
     )
 
     # Calculate loss
-    test_loss = model.evaluate(validation_set, verbose=1)
+    test_loss, test_acc = model.evaluate(validation_set, verbose=1)
     mlflow.log_metric("val_loss", test_loss)
+    mlflow.log_metric("val_acc", test_acc)
     return test_loss
 
 
 @pipeline
-def train_eval_pipeline(
+def seq_classifier_train_eval_pipeline(
     importer, load_tokenizer, tokenization, trainer, evaluator
 ):
     """Train and Evaluation pipeline"""

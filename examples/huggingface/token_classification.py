@@ -185,7 +185,7 @@ def evaluator(
 
 
 @pipeline
-def train_eval_pipeline(
+def token_classifier_train_eval_pipeline(
     importer, load_tokenizer, tokenization, trainer, evaluator
 ):
     """Train and Evaluation pipeline"""
