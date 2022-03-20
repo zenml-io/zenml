@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 
 import click
+import sequence_classification
 import token_classification
+from sequence_classification import SequenceClassificationConfig
 from token_classification import TokenClassificationConfig
 
 from zenml.integrations.huggingface.materializers import (
@@ -67,6 +69,32 @@ def main(nlp_task: str, pretrained_model: str, batch_size: int, epochs: int):
             ).with_return_materializers(HFTFModelMaterializer),
             evaluator=token_classification.evaluator(
                 token_classification_config
+            ),
+        )
+        pipeline.run()
+
+    elif nlp_task == "sequence-classification":
+        # Run Pipeline
+        sequence_classification_config = SequenceClassificationConfig(
+            pretrained_model=pretrained_model,
+            epochs=epochs,
+            batch_size=batch_size,
+        )
+        pipeline = sequence_classification.train_eval_pipeline(
+            importer=sequence_classification.data_importer(
+                sequence_classification_config
+            ).with_return_materializers(HFDatasetMaterializer),
+            load_tokenizer=sequence_classification.load_tokenizer(
+                sequence_classification_config
+            ).with_return_materializers(HFTokenizerMaterializer),
+            tokenization=sequence_classification.tokenization(
+                sequence_classification_config
+            ).with_return_materializers(HFDatasetMaterializer),
+            trainer=sequence_classification.trainer(
+                sequence_classification_config
+            ).with_return_materializers(HFTFModelMaterializer),
+            evaluator=sequence_classification.evaluator(
+                sequence_classification_config
             ),
         )
         pipeline.run()

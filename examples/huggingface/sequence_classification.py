@@ -18,9 +18,9 @@ from datasets import load_dataset
 from datasets.dataset_dict import DatasetDict
 from transformers import (
     AutoTokenizer,
-    DataCollatorForTokenClassification,
+    DataCollatorWithPadding,
     PreTrainedTokenizerBase,
-    TFAutoModelForTokenClassification,
+    TFAutoModelForSequenceClassification,
     TFPreTrainedModel,
     create_optimizer,
 )
@@ -30,22 +30,21 @@ from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, step
 
 
-class TokenClassificationConfig(BaseStepConfig):
-    """Config for the token-classification"""
+class SequenceClassificationConfig(BaseStepConfig):
+    """Config for the sequence-classification"""
 
-    task = "ner"  # Should be one of "ner", "pos" or "chunk"
     pretrained_model = "distilbert-base-uncased"
     batch_size = 16
-    dataset_name = "conll2003"
-    label_all_tokens = True
+    dataset_name = "imdb"
     epochs = 3
+    max_seq_length = 128
 
 
 @step
 def data_importer(
-    config: TokenClassificationConfig,
+    config: SequenceClassificationConfig,
 ) -> DatasetDict:
-    """Load conll2003 using huggingface dataset"""
+    """Load imdb dataset using huggingface datasets"""
     datasets = load_dataset(config.dataset_name)
     print("Sample Example :", datasets["train"][0])
     return datasets
@@ -53,7 +52,7 @@ def data_importer(
 
 @step
 def load_tokenizer(
-    config: TokenClassificationConfig,
+    config: SequenceClassificationConfig,
 ) -> PreTrainedTokenizerBase:
     """Load pretrained tokenizer"""
     tokenizer = AutoTokenizer.from_pretrained(config.pretrained_model)
@@ -62,70 +61,39 @@ def load_tokenizer(
 
 @step
 def tokenization(
-    config: TokenClassificationConfig,
+    config: SequenceClassificationConfig,
     tokenizer: PreTrainedTokenizerBase,
     datasets: DatasetDict,
 ) -> DatasetDict:
     """Tokenizer dataset into tokens and then convert into encoded ids"""
 
-    def tokenize_and_align_labels(examples):
-        tokenized_inputs = tokenizer(
-            examples["tokens"], truncation=True, is_split_into_words=True
+    def preprocess_function(examples):
+        result = tokenizer(
+            examples["text"], max_length=config.max_seq_length, truncation=True
         )
+        result["label"] = examples["label"]
+        return result
 
-        labels = []
-        for i, label in enumerate(examples[f"{config.task}_tags"]):
-            word_ids = tokenized_inputs.word_ids(batch_index=i)
-            previous_word_idx = None
-            label_ids = []
-            for word_idx in word_ids:
-                # Special tokens have a word id that is None. We set the label to -100 so they are automatically
-                # ignored in the loss function.
-                if word_idx is None:
-                    label_ids.append(-100)
-                # We set the label for the first token of each word.
-                elif word_idx != previous_word_idx:
-                    label_ids.append(label[word_idx])
-                # For the other tokens in a word, we set the label to either the current label or -100, depending on
-                # the label_all_tokens flag.
-                else:
-                    label_ids.append(
-                        label[word_idx] if config.label_all_tokens else -100
-                    )
-                previous_word_idx = word_idx
-
-            labels.append(label_ids)
-
-        tokenized_inputs["labels"] = labels
-        return tokenized_inputs
-
-    tokenized_datasets = datasets.map(tokenize_and_align_labels, batched=True)
+    tokenized_datasets = datasets.map(preprocess_function, batched=True)
     return tokenized_datasets
 
 
 @enable_mlflow
 @step
 def trainer(
-    config: TokenClassificationConfig,
+    config: SequenceClassificationConfig,
     tokenized_datasets: DatasetDict,
     tokenizer: PreTrainedTokenizerBase,
 ) -> TFPreTrainedModel:
     """Build and Train token classification model"""
+
     # Get label list
-    label_list = (
-        tokenized_datasets["train"]
-        .features[f"{config.task}_tags"]
-        .feature.names
-    )
+    label_list = tokenized_datasets["train"].unique("label")
 
     # Load pre-trained model from huggingface hub
-    model = TFAutoModelForTokenClassification.from_pretrained(
+    model = TFAutoModelForSequenceClassification.from_pretrained(
         config.pretrained_model, num_labels=len(label_list)
     )
-
-    # Update label2id lookup
-    model.config.label2id = {l: i for i, l in enumerate(label_list)}
-    model.config.id2label = {i: l for i, l in enumerate(label_list)}
 
     # Prepare optimizer
     num_train_steps = (
@@ -139,16 +107,17 @@ def trainer(
     )
 
     # Compile model
-    model.compile(optimizer=optimizer)
+    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    metrics = ["accuracy"]
+    model.compile(optimizer=optimizer, loss=loss_fn, metrics=metrics)
 
     # Convert tokenized datasets into tf dataset
     train_set = tokenized_datasets["train"].to_tf_dataset(
-        columns=["attention_mask", "input_ids", "labels"],
+        columns=["attention_mask", "input_ids"],
         shuffle=True,
         batch_size=config.batch_size,
-        collate_fn=DataCollatorForTokenClassification(
-            tokenizer, return_tensors="tf"
-        ),
+        collate_fn=DataCollatorWithPadding(tokenizer, return_tensors="tf"),
+        label_cols="label",
     )
 
     mlflow.tensorflow.autolog()
@@ -159,23 +128,26 @@ def trainer(
 @enable_mlflow
 @step
 def evaluator(
-    config: TokenClassificationConfig,
+    config: SequenceClassificationConfig,
     model: TFPreTrainedModel,
     tokenized_datasets: DatasetDict,
     tokenizer: PreTrainedTokenizerBase,
 ) -> float:
     """Evaluate trained model on validation set"""
     # Needs to recompile because we are reloading model for evaluation
-    model.compile(optimizer=tf.keras.optimizers.Adam())
+    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    metrics = ["accuracy"]
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(), loss=loss_fn, metrics=metrics
+    )
 
     # Convert into tf dataset format
-    validation_set = tokenized_datasets["validation"].to_tf_dataset(
-        columns=["attention_mask", "input_ids", "labels"],
+    validation_set = tokenized_datasets["test"].to_tf_dataset(
+        columns=["attention_mask", "input_ids"],
         shuffle=False,
         batch_size=config.batch_size,
-        collate_fn=DataCollatorForTokenClassification(
-            tokenizer, return_tensors="tf"
-        ),
+        collate_fn=DataCollatorWithPadding(tokenizer, return_tensors="tf"),
+        label_cols="label",
     )
 
     # Calculate loss
