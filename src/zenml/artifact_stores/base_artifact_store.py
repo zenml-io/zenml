@@ -1,3 +1,17 @@
+# Copyright 2020 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,10 +25,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from abc import ABC, abstractmethod
 
-from zenml.enums import ArtifactStoreFlavor, StackComponentType
+from abc import ABC
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
+
+from pydantic import root_validator
+
+from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
+
+PathType = Union[bytes, str]
 
 
 class BaseArtifactStore(StackComponent, ABC):
@@ -24,14 +54,113 @@ class BaseArtifactStore(StackComponent, ABC):
         path: The root path of the artifact store.
     """
 
+    # Instance attributes
     path: str
 
-    @property
-    def type(self) -> StackComponentType:
-        """The component type."""
-        return StackComponentType.ARTIFACT_STORE
+    # Class attributes
+    TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
+    FLAVOR: ClassVar[str]
+    SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
-    @property
-    @abstractmethod
-    def flavor(self) -> ArtifactStoreFlavor:
-        """The artifact store flavor."""
+    @staticmethod
+    def open(name: PathType, mode: str = "r") -> Any:
+        raise NotImplementedError()
+
+    @staticmethod
+    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+        raise NotImplementedError()
+
+    @staticmethod
+    def exists(path: PathType) -> bool:
+        raise NotImplementedError()
+
+    @staticmethod
+    def glob(pattern: PathType) -> List[PathType]:
+        raise NotImplementedError()
+
+    @staticmethod
+    def isdir(path: PathType) -> bool:
+        raise NotImplementedError()
+
+    @staticmethod
+    def listdir(path: PathType) -> List[PathType]:
+        raise NotImplementedError()
+
+    @staticmethod
+    def makedirs(path: PathType) -> None:
+        raise NotImplementedError()
+
+    @staticmethod
+    def mkdir(path: PathType) -> None:
+        raise NotImplementedError()
+
+    @staticmethod
+    def remove(path: PathType) -> None:
+        raise NotImplementedError()
+
+    @staticmethod
+    def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+        raise NotImplementedError()
+
+    @staticmethod
+    def rmtree(path: PathType) -> None:
+        raise NotImplementedError()
+
+    @staticmethod
+    def stat(path: PathType) -> Any:
+        raise NotImplementedError()
+
+    @staticmethod
+    def walk(
+        top: PathType,
+        topdown: bool = True,
+        onerror: Optional[Callable[..., None]] = None,
+    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        raise NotImplementedError()
+
+    @root_validator
+    def _ensure_complete(cls, values) -> Any:
+        try:
+            getattr(cls, "FLAVOR")
+        except AttributeError:
+            print("Please set a FLAVOR for your artifact store.")
+
+        try:
+            getattr(cls, "SUPPORTED_SCHEMES")
+        except AttributeError:
+            print(
+                "Please set a list of SUPPORTED_SCHEMES for your artifact "
+                "store."
+            )
+
+        return values
+
+    def _register(self, priority: int = 5) -> None:
+        """create"""
+        from tfx.dsl.io.filesystem import Filesystem
+        from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
+
+        filesystem_class = type(
+            self.__class__.__name__,
+            (Filesystem,),
+            {
+                "SUPPORTED_SCHEMES": self.SUPPORTED_SCHEMES,
+                "open": staticmethod(self.open),
+                "copy": staticmethod(self.copy),
+                "exists": staticmethod(self.exists),
+                "glob": staticmethod(self.glob),
+                "isdir": staticmethod(self.isdir),
+                "listdir": staticmethod(self.listdir),
+                "makedirs": staticmethod(self.makedirs),
+                "mkdir": staticmethod(self.mkdir),
+                "remove": staticmethod(self.remove),
+                "rename": staticmethod(self.rename),
+                "rmtree": staticmethod(self.rmtree),
+                "stat": staticmethod(self.stat),
+                "walk": staticmethod(self.walk),
+            },
+        )
+
+        DEFAULT_FILESYSTEM_REGISTRY.register(
+            filesystem_class, priority=priority
+        )
