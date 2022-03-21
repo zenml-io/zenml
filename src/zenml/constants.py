@@ -110,5 +110,5 @@ USER_MAIN_MODULE: Optional[str] = None
 
 # Rich config
 ENABLE_RICH_TRACEBACK = handle_bool_env_var(
-    ENV_ZENML_ENABLE_RICH_TRACEBACK, "True"
+    ENV_ZENML_ENABLE_RICH_TRACEBACK, True
 )
