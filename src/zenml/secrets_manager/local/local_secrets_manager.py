@@ -50,7 +50,7 @@ class LocalSecretsManager(BaseSecretsManager):
 
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        create_file_if_not_exists(self.secrets_file, {"default": {}})
+        create_file_if_not_exists(self.secrets_file, "{default:{}}")
 
     def _verify_set_key_exists(self, set_key: str) -> bool:
         secrets_store_items = yaml_utils.read_yaml(self.secrets_file)
@@ -59,16 +59,14 @@ class LocalSecretsManager(BaseSecretsManager):
         except TypeError:
             return False
 
-    def _verify_secret_key_exists(self, set_key: str, secret_key: str) -> bool:
+    def _verify_secret_key_exists(self, secret_key: str, set_key: str) -> bool:
         secrets_store_items = yaml_utils.read_yaml(self.secrets_file)
-        if not self._verify_set_key_exists(secret_key):
-            raise KeyError(f"Secret set `{secret_key}` does not exists.")
         try:
             return secret_key in secrets_store_items.get(set_key)
         except TypeError:
             return False
 
-    def _get_all_secret_sets(self) -> Dict[str, List[Dict[str, str]]]:
+    def _get_all_secret_sets(self) -> Dict[str, Dict[str, str]]:
         return yaml_utils.read_yaml(self.secrets_file) or {}
 
     def _get_secrets_within_set(self, set_key: str) -> Dict[str, str]:
@@ -100,11 +98,11 @@ class LocalSecretsManager(BaseSecretsManager):
         else:
             raise KeyError(f"Secret set `{secret_set_name}` already exists.")
 
-    def get_secret_set_by_key(self, secret_set_name: str) -> Optional[Dict]:
+    def get_secret_set_by_key(self, secret_set_name: str) -> Dict[str, str]:
         """Get secret set, given a name passed in to identify it."""
         secret_sets_store_items = self._get_all_secret_sets()
         if self._verify_set_key_exists(secret_set_name):
-            return secret_sets_store_items.get(secret_set_name)
+            return secret_sets_store_items[secret_set_name]
         else:
             raise KeyError(f"Secret set `{secret_set_name}` does not exists.")
 
@@ -114,7 +112,9 @@ class LocalSecretsManager(BaseSecretsManager):
         return list(secrets_store_items.keys())
 
     def update_secret_set_by_key(
-        self, secret_set_name: str, secret_set: Dict
+        self,
+        secret_set_name: str,
+        secret_set: BaseSecretSet,
     ) -> None:
         """Update Existing secret set, given a name passed in to identify it."""
         if self._verify_set_key_exists(secret_set_name):
@@ -123,8 +123,8 @@ class LocalSecretsManager(BaseSecretsManager):
             for k in encoded_secret_set:
                 encoded_secret_set[k] = encode_string(encoded_secret_set[k])
 
-            secrets_store_items = self._get_all_secret_sets(secret_set)
-            secrets_store_items[secret_set_name] = secret_set
+            secrets_store_items = self._get_all_secret_sets()
+            secrets_store_items[secret_set_name] = encoded_secret_set
             yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
         else:
             raise KeyError(f"Secret `{secret_set_name}` does not exists.")
@@ -158,8 +158,8 @@ class LocalSecretsManager(BaseSecretsManager):
         """Get secret, given a name passed in to identify it."""
         secrets_store_items = self._get_all_secret_sets()
         if self._verify_secret_key_exists(name, secret_set):
-            secrets_set_items = secrets_store_items.get(secret_set)
-            return decode_string(secrets_set_items.get(name))
+            secrets_set_items = secrets_store_items[secret_set]
+            return decode_string(secrets_set_items[name])
         else:
             raise KeyError(f"Secret `{name}` does not exist.")
 
@@ -183,11 +183,8 @@ class LocalSecretsManager(BaseSecretsManager):
     def delete_secret_by_key(self, name: str, secret_set: str) -> None:
         """Delete existing secret."""
         secrets_store_items = self._get_all_secret_sets()
-        if self._verify_secret_key_exists(name, secret_set):
-            try:
-                secrets_store_items[secret_set].pop(name)
-                yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
-            except KeyError:
-                error(f"Secret {name} does not exist.")
-        else:
-            raise KeyError(f"Secret `{name}` does not exist.")
+        try:
+            secrets_store_items[secret_set].pop(name)
+            yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
+        except KeyError:
+            error(f"Secret {name} does not exist.")

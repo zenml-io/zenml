@@ -102,7 +102,7 @@ def get_secret(
         f"Getting secret `{name}` from the `{secret_set}` secret set..."
     ):
         try:
-            secret_value = secrets_manager.get_secret_by_key(name)
+            secret_value = secrets_manager.get_secret_by_key(name, secret_set)
             console.print(f"Secret for `{name.upper()}` is `{secret_value}`.")
         except KeyError:
             error(f"Secret with name:`{name}` does not exist.")
@@ -161,7 +161,7 @@ def delete_secret(
                     f"Deleted secret for `{name.upper()}` from the `{secret_set}` secret set."
                 )
             except KeyError:
-                error(f"Secret with name:`{name}` already did not exist.")
+                error(f"Secret with name:`{name}` did not exist.")
 
 
 @secret.command("update")

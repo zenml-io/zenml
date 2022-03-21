@@ -34,7 +34,7 @@ class BaseSecretsManager(StackComponent, ABC):
         """Register secret set."""
 
     @abstractmethod
-    def get_secret_set_by_key(self, secret_set_name: str) -> Optional[Dict]:
+    def get_secret_set_by_key(self, secret_set_name: str) -> Dict[str, str]:
         """Get secret set by key."""
 
     @abstractmethod
@@ -43,7 +43,7 @@ class BaseSecretsManager(StackComponent, ABC):
 
     @abstractmethod
     def update_secret_set_by_key(
-        self, secret_set_name: str, secret_set: Dict
+        self, secret_set_name: str, secret_set: "BaseSecretSet"
     ) -> None:
         """Update secret set by key."""
 
@@ -53,7 +53,7 @@ class BaseSecretsManager(StackComponent, ABC):
 
     @abstractmethod
     def register_secret(
-        self, name: str, secret_value: str, secret_set: Optional[str] = None
+        self, name: str, secret_value: str, secret_set: str
     ) -> None:
         """Register secret."""
 
@@ -62,7 +62,7 @@ class BaseSecretsManager(StackComponent, ABC):
         """Get secret, given a name passed in to identify it."""
 
     @abstractmethod
-    def get_all_secret_keys(self) -> List[Optional[str]]:
+    def get_all_secret_keys(self, secret_set: str) -> List[Optional[str]]:
         """Get all secret keys."""
 
     @abstractmethod
