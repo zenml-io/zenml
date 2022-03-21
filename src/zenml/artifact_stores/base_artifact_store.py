@@ -44,7 +44,19 @@ from pydantic import root_validator
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
+from tfx.dsl.io.fileio import NotFoundError
+
 PathType = Union[bytes, str]
+
+
+def _catch_not_found_error(_func: Callable):
+    def inner_function(*args, **kwargs):
+        try:
+            _func(*args, **kwargs)
+        except FileNotFoundError as e:
+            raise NotFoundError() from e
+
+    return inner_function
 
 
 class BaseArtifactStore(StackComponent, ABC):
@@ -145,19 +157,19 @@ class BaseArtifactStore(StackComponent, ABC):
             (Filesystem,),
             {
                 "SUPPORTED_SCHEMES": self.SUPPORTED_SCHEMES,
-                "open": staticmethod(self.open),
-                "copy": staticmethod(self.copy),
+                "open": staticmethod(_catch_not_found_error(self.open)),
+                "copy": staticmethod(_catch_not_found_error(self.copy)),
                 "exists": staticmethod(self.exists),
                 "glob": staticmethod(self.glob),
                 "isdir": staticmethod(self.isdir),
-                "listdir": staticmethod(self.listdir),
+                "listdir": staticmethod(_catch_not_found_error(self.listdir)),
                 "makedirs": staticmethod(self.makedirs),
-                "mkdir": staticmethod(self.mkdir),
-                "remove": staticmethod(self.remove),
-                "rename": staticmethod(self.rename),
-                "rmtree": staticmethod(self.rmtree),
-                "stat": staticmethod(self.stat),
-                "walk": staticmethod(self.walk),
+                "mkdir": staticmethod(_catch_not_found_error(self.mkdir)),
+                "remove": staticmethod(_catch_not_found_error(self.remove)),
+                "rename": staticmethod(_catch_not_found_error(self.rename)),
+                "rmtree": staticmethod(_catch_not_found_error(self.rmtree)),
+                "stat": staticmethod(_catch_not_found_error(self.stat)),
+                "walk": staticmethod(_catch_not_found_error(self.walk)),
             },
         )
 
