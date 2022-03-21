@@ -31,8 +31,6 @@ import os
 import shutil
 from typing import Any, Callable, Iterable, List, Optional, Set, Tuple, Union
 
-from tfx.dsl.io.fileio import NotFoundError
-
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import ArtifactStoreFlavor
 
@@ -56,10 +54,7 @@ class LocalArtifactStore(BaseArtifactStore):
 
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
-        try:
-            return open(name, mode=mode)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        return open(name, mode=mode)
 
     @staticmethod
     def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
@@ -71,10 +66,7 @@ class LocalArtifactStore(BaseArtifactStore):
                 )
                 % dst
             )
-        try:
-            shutil.copyfile(src, dst)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        shutil.copyfile(src, dst)
 
     @staticmethod
     def exists(path: PathType) -> bool:
@@ -90,10 +82,7 @@ class LocalArtifactStore(BaseArtifactStore):
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
-        try:
-            return os.listdir(path)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        return os.listdir(path)
 
     @staticmethod
     def makedirs(path: PathType) -> None:
@@ -101,17 +90,11 @@ class LocalArtifactStore(BaseArtifactStore):
 
     @staticmethod
     def mkdir(path: PathType) -> None:
-        try:
-            os.mkdir(path)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        os.mkdir(path)
 
     @staticmethod
     def remove(path: PathType) -> None:
-        try:
-            os.remove(path)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        os.remove(path)
 
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
@@ -123,24 +106,15 @@ class LocalArtifactStore(BaseArtifactStore):
                 )
                 % dst
             )
-        try:
-            os.rename(src, dst)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        os.rename(src, dst)
 
     @staticmethod
     def rmtree(path: PathType) -> None:
-        try:
-            shutil.rmtree(path)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        shutil.rmtree(path)
 
     @staticmethod
     def stat(path: PathType) -> Any:
-        try:
-            return os.stat(path)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        return os.stat(path)
 
     @staticmethod
     def walk(
@@ -148,7 +122,4 @@ class LocalArtifactStore(BaseArtifactStore):
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
-        try:
-            yield from os.walk(top, topdown=topdown, onerror=onerror)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        yield from os.walk(top, topdown=topdown, onerror=onerror)
