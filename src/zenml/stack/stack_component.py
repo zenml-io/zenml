@@ -11,12 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import textwrap
 from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 
+from zenml.enums import StackComponentType
+from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.utils import get_requirements_for_module
 
 if TYPE_CHECKING:
@@ -147,6 +150,60 @@ class StackComponent(BaseModel, ABC):
     def __str__(self) -> str:
         """String representation of the stack component."""
         return self.__repr__()
+
+    @root_validator
+    def _ensure_stack_component_complete(cls, values) -> Any:
+        try:
+            stack_component_type = getattr(cls, "TYPE")
+            assert stack_component_type in StackComponentType
+        except (AttributeError, AssertionError):
+            raise StackComponentInterfaceError(
+                textwrap.dedent(
+                    """ 
+        When you are working with any classes which subclass from 
+        zenml.stack.StackComponent please make sure that your class 
+        has a ClassVar named `TYPE` and its value is set to a 
+        `StackComponentType` from `from zenml.enums import StackComponentType`.
+        
+        In most of the cases, this is already done for you within the 
+        implementation of the base concept.
+                
+        Example:       
+                
+        class BaseArtifactStore(StackComponent):
+            # Instance Variables
+            path: str
+                                
+            # Class Variables
+            TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
+        """
+                ))
+
+        try:
+            getattr(cls, "FLAVOR")
+        except AttributeError:
+            raise StackComponentInterfaceError(
+                textwrap.dedent(
+                    """ 
+        When you are working with any classes which subclass from 
+        zenml.stack.StackComponent please make sure that your class 
+        has a defined ClassVar `FLAVOR`.
+
+        Example:       
+
+        class LocalArtifactStore(BaseArtifactStore):
+            
+            ...
+            
+            # Define flavor as a ClassVar
+            FLAVOR: ClassVar[str] = "local"
+            
+            ...
+        """
+                )
+            )
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
