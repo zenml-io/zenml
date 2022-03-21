@@ -28,7 +28,6 @@ from typing import (
     cast,
 )
 
-from zenml.io import utils
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
@@ -43,7 +42,7 @@ from zenml.exceptions import (
     StackValidationError,
 )
 from zenml.integrations.registry import integration_registry
-from zenml.io import fileio
+from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository

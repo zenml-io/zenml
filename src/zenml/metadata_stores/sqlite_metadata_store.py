@@ -17,8 +17,8 @@ from ml_metadata.proto import metadata_store_pb2
 from pydantic import validator
 from tfx.orchestration import metadata
 
-from zenml.io import utils
 from zenml.enums import MetadataStoreFlavor
+from zenml.io import utils
 from zenml.metadata_stores import BaseMetadataStore
 
 

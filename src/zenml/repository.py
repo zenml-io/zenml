@@ -20,7 +20,6 @@ from typing import DefaultDict, Dict, List, Optional
 from pydantic import BaseModel, validator
 
 import zenml
-from zenml.io import utils
 from zenml.constants import ENV_ZENML_REPOSITORY_PATH
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
@@ -31,7 +30,7 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
-from zenml.io import fileio
+from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
@@ -626,9 +625,7 @@ class Repository:
             if Repository.is_repository_directory(path_):
                 return path_
 
-            if not search_parent_directories or utils.is_root(
-                str(path_)
-            ):
+            if not search_parent_directories or utils.is_root(str(path_)):
                 raise RepositoryNotFoundError(error_message)
 
             return _find_repo_helper(path_.parent)

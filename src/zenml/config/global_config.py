@@ -18,8 +18,7 @@ from typing import Any, Dict, cast
 
 from pydantic import BaseModel, Field, ValidationError
 
-from zenml.io import utils
-from zenml.io import fileio
+from zenml.io import fileio, utils
 from zenml.utils import yaml_utils
 
 LEGACY_CONFIG_FILE_NAME = ".zenglobal.json"
@@ -52,9 +51,7 @@ class GlobalConfig(BaseModel):
         if not fileio.exists(self.config_file()):
             # the config file hasn't been written to disk, make sure to persist
             # the unique user id
-            utils.create_dir_recursive_if_not_exists(
-                self.config_directory()
-            )
+            utils.create_dir_recursive_if_not_exists(self.config_directory())
             self._write_config()
 
     def __setattr__(self, key: str, value: Any) -> None:
