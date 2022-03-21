@@ -177,7 +177,8 @@ class StackComponent(BaseModel, ABC):
             # Class Variables
             TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
         """
-                ))
+                )
+            )
 
         try:
             getattr(cls, "FLAVOR")
