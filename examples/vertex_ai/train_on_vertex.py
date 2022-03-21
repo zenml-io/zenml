@@ -40,15 +40,12 @@ def importer() -> Output(
 # @step(custom_step_operator="vertex-step-operator")
 @step
 def trainer(
-    X_train: BaseArtifact,
+    X_train: np.ndarray,
     y_train: np.ndarray,
     context: StepContext,
 ) -> ClassifierMixin:
     """Train a simple sklearn classifier for the digits dataset."""
     model = get_digits_model()
-    from zenml.materializers.numpy_materializer import NumpyMaterializer
-
-    X_train = NumpyMaterializer(X_train).handle_input(np.ndarray)
     model.fit(X_train, y_train)
     return model
 
