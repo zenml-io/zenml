@@ -40,11 +40,10 @@ from typing import (
 )
 
 from pydantic import root_validator
+from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
-
-from tfx.dsl.io.fileio import NotFoundError
 
 PathType = Union[bytes, str]
 
@@ -52,7 +51,7 @@ PathType = Union[bytes, str]
 def _catch_not_found_error(_func: Callable):
     def inner_function(*args, **kwargs):
         try:
-            _func(*args, **kwargs)
+            return _func(*args, **kwargs)
         except FileNotFoundError as e:
             raise NotFoundError() from e
 
@@ -73,6 +72,11 @@ class BaseArtifactStore(StackComponent, ABC):
     TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
     FLAVOR: ClassVar[str]
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
+
+    def __init__(self, *args, **kwargs):
+        # Initiate the pydantic object and register the corresponding filesystem
+        super(BaseArtifactStore, self).__init__(*args, **kwargs)
+        self._register()
 
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
@@ -158,7 +162,7 @@ class BaseArtifactStore(StackComponent, ABC):
             {
                 "SUPPORTED_SCHEMES": self.SUPPORTED_SCHEMES,
                 "open": staticmethod(_catch_not_found_error(self.open)),
-                "copy": staticmethod(_catch_not_found_error(self.copy)),
+                "copy": staticmethod(_catch_not_found_error(self.copyfile)),
                 "exists": staticmethod(self.exists),
                 "glob": staticmethod(self.glob),
                 "isdir": staticmethod(self.isdir),
