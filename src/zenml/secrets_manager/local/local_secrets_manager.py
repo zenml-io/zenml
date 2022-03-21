@@ -22,6 +22,9 @@ from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.secret_sets.base_secret_set import BaseSecretSet
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
+from zenml.stack.stack_component_class_registry import (
+    register_stack_component_class,
+)
 from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
@@ -39,6 +42,10 @@ def decode_string(secret: str) -> str:
     return str(decoded_bytes, "utf-8")
 
 
+@register_stack_component_class(
+    component_type=StackComponentType.SECRETS_MANAGER,
+    component_flavor=SecretsManagerFlavor.LOCAL,
+)
 class LocalSecretsManager(BaseSecretsManager):
     """Local class for ZenML secret manager."""
 

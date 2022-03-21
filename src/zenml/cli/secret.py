@@ -18,7 +18,7 @@ from typing import List
 import click
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, error
+from zenml.cli.utils import confirmation, error, print_table
 from zenml.console import console
 from zenml.enums import SecretSetFlavor, StackComponentType
 from zenml.repository import Repository
@@ -247,13 +247,16 @@ def get_secret_set(
             secret_set = secrets_manager.get_secret_set_by_key(
                 secret_set_name=name
             )
-            console.print(
-                f"SecretSet with name `{name}` contains the following Secrets :."
-            )
-            for k in secret_set.keys():
-                console.print(
-                    f"Secret key `{k.upper()}` with value `**********`."
+            stack_dicts = []
+            for secret, value in secret_set.items():
+                stack_dicts.append(
+                    {
+                        "SECRET SET": name,
+                        "SECRET_KEY": secret,
+                        "SECRET_VALUE": "********",  # value,
+                    }
                 )
+            print_table(stack_dicts)
         except KeyError:
             error(f"Secret Set with name:`{name}` does not exist.")
 
