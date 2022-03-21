@@ -12,18 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from collections import defaultdict
-from typing import Callable, ClassVar, DefaultDict, Dict, Type, TypeVar, Union
+from typing import ClassVar, DefaultDict, Dict, Type, TypeVar, Union
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.container_registries import BaseContainerRegistry
-from zenml.enums import (
-    ArtifactStoreFlavor,
-    ContainerRegistryFlavor,
-    MetadataStoreFlavor,
-    OrchestratorFlavor,
-    StackComponentFlavor,
-    StackComponentType,
-)
+from zenml.enums import StackComponentFlavor, StackComponentType
 from zenml.logger import get_logger
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
@@ -47,32 +40,24 @@ class StackComponentClassRegistry:
     @classmethod
     def register_class(
         cls,
-        component_type: StackComponentType,
-        component_flavor: StackComponentFlavor,
         component_class: Type[StackComponent],
     ) -> None:
-        """Registers a stack component class.
-
-        Args:
-            component_type: The type of the component class to register.
-            component_flavor: The flavor of the component class to register.
-            component_class: The component class to register.
-        """
-        component_flavor = component_flavor.value
-        flavors = cls.component_classes[component_type]
+        """Registers a stack component class."""
+        component_flavor = component_class.FLAVOR
+        flavors = cls.component_classes[component_class.TYPE.value]
         if component_flavor in flavors:
             logger.warning(
                 "Overwriting previously registered stack component class `%s` "
                 "for type '%s' and flavor '%s'.",
                 flavors[component_flavor].__class__.__name__,
-                component_type.value,
-                component_flavor,
+                component_class.TYPE.value,
+                component_class.FLAVOR,
             )
 
         flavors[component_flavor] = component_class
         logger.debug(
             "Registered stack component class for type '%s' and flavor '%s'.",
-            component_type.value,
+            component_class.TYPE.value,
             component_flavor,
         )
 
@@ -121,52 +106,14 @@ class StackComponentClassRegistry:
 C = TypeVar("C", bound=StackComponent)
 
 
-def register_stack_component_class(
-    component_type: StackComponentType, component_flavor: StackComponentFlavor
-) -> Callable[[Type[C]], Type[C]]:
-    """Parametrized decorator function to register stack component classes.
-
-    Args:
-        component_type: The type of the component class to register.
-        component_flavor: The flavor of the component class to register.
-
-    Returns:
-        A decorator function that registers and returns the decorated stack
-        component class.
-    """
-
-    def decorator_function(cls: Type[C]) -> Type[C]:
-        """Registers the stack component class and returns it unmodified."""
-        StackComponentClassRegistry.register_class(
-            component_type=component_type,
-            component_flavor=component_flavor,
-            component_class=cls,
-        )
-        return cls
-
-    return decorator_function
+def register_stack_component_class(cls: Type[C]) -> Type[C]:
+    """Registers the stack component class and returns it unmodified."""
+    StackComponentClassRegistry.register_class(component_class=cls)
+    return cls
 
 
-StackComponentClassRegistry.register_class(
-    StackComponentType.ORCHESTRATOR, OrchestratorFlavor.LOCAL, LocalOrchestrator
-)
-StackComponentClassRegistry.register_class(
-    StackComponentType.METADATA_STORE,
-    MetadataStoreFlavor.SQLITE,
-    SQLiteMetadataStore,
-)
-StackComponentClassRegistry.register_class(
-    StackComponentType.METADATA_STORE,
-    MetadataStoreFlavor.MYSQL,
-    MySQLMetadataStore,
-)
-StackComponentClassRegistry.register_class(
-    StackComponentType.ARTIFACT_STORE,
-    ArtifactStoreFlavor.LOCAL,
-    LocalArtifactStore,
-)
-StackComponentClassRegistry.register_class(
-    StackComponentType.CONTAINER_REGISTRY,
-    ContainerRegistryFlavor.DEFAULT,
-    BaseContainerRegistry,
-)
+StackComponentClassRegistry.register_class(LocalOrchestrator)
+StackComponentClassRegistry.register_class(SQLiteMetadataStore)
+StackComponentClassRegistry.register_class(MySQLMetadataStore)
+StackComponentClassRegistry.register_class(LocalArtifactStore)
+StackComponentClassRegistry.register_class(BaseContainerRegistry)
