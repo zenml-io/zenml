@@ -11,13 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set
+from abc import ABC
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
 
-from zenml.enums import StackComponentFlavor, StackComponentType
 from zenml.integrations.utils import get_requirements_for_module
 
 if TYPE_CHECKING:
@@ -32,24 +31,15 @@ class StackComponent(BaseModel, ABC):
     Attributes:
         name: The name of the component.
         uuid: Unique identifier of the component.
-        supports_local_execution: If the component supports running locally.
-        supports_remote_execution: If the component supports running remotely.
     """
 
+    # Instance Variables
     name: str
     uuid: UUID = Field(default_factory=uuid4)
-    supports_local_execution: bool
-    supports_remote_execution: bool
 
-    @property
-    @abstractmethod
-    def type(self) -> StackComponentType:
-        """The component type."""
-
-    @property
-    @abstractmethod
-    def flavor(self) -> StackComponentFlavor:
-        """The component flavor."""
+    # Class Variables
+    TYPE: ClassVar[str]
+    FLAVOR: ClassVar[str]
 
     @property
     def log_file(self) -> Optional[str]:
@@ -150,8 +140,8 @@ class StackComponent(BaseModel, ABC):
             f"{key}={value}" for key, value in self.dict().items()
         )
         return (
-            f"{self.__class__.__qualname__}(type={self.type}, "
-            f"flavor={self.flavor}, {attribute_representation})"
+            f"{self.__class__.__qualname__}(type={self.TYPE}, "
+            f"flavor={self.FLAVOR}, {attribute_representation})"
         )
 
     def __str__(self) -> str:
