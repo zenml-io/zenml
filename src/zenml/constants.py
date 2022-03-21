@@ -23,6 +23,8 @@ def handle_bool_env_var(var: str, default: bool = False) -> bool:
     value = os.getenv(var)
     if value in ["1", "y", "yes", "True", "true"]:
         return True
+    elif value in ["0", "n", "no", "False", "false"]:
+        return False
     return default
 
 
@@ -46,6 +48,7 @@ ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
 ENV_ABSL_LOGGING_VERBOSITY = "ZENML_ABSL_LOGGING_VERBOSITY"
 ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
 ENV_ZENML_PREVENT_PIPELINE_EXECUTION = "ZENML_PREVENT_PIPELINE_EXECUTION"
+ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -104,3 +107,8 @@ SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
 )
 
 USER_MAIN_MODULE: Optional[str] = None
+
+# Rich config
+ENABLE_RICH_TRACEBACK = handle_bool_env_var(
+    ENV_ZENML_ENABLE_RICH_TRACEBACK, "True"
+)
