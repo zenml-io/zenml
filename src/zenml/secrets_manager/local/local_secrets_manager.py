@@ -105,7 +105,9 @@ class LocalSecretsManager(BaseSecretsManager):
         else:
             raise KeyError(f"Secret set `{secret_set_name}` already exists.")
 
-    def get_secret_set_by_key(self, secret_set_name: str) -> Dict[str, str]:
+    def get_secret_set_by_key(
+        self, secret_set_name: str
+    ) -> Optional[Dict[str, str]]:
         """Get secret set, given a name passed in to identify it."""
         secret_sets_store_items = self._get_all_secret_sets()
         if self._verify_set_key_exists(secret_set_name):
@@ -121,7 +123,7 @@ class LocalSecretsManager(BaseSecretsManager):
     def update_secret_set_by_key(
         self,
         secret_set_name: str,
-        secret_set: BaseSecretSet,
+        secret_set: Dict[str, str],
     ) -> None:
         """Update Existing secret set, given a name passed in to identify it."""
         if self._verify_set_key_exists(secret_set_name):
@@ -150,29 +152,31 @@ class LocalSecretsManager(BaseSecretsManager):
             raise KeyError(f"Secret `{secret_set_name}` does not exists.")
 
     def register_secret(
-        self, name: str, secret_value: str, secret_set: str
+        self, name: str, secret_value: str, secret_set_name: str
     ) -> None:
         """Register secret."""
-        if not self._verify_secret_key_exists(name, secret_set):
+        if not self._verify_secret_key_exists(name, secret_set_name):
             encoded_secret = encode_string(secret_value)
             secrets_store_items = self._get_all_secret_sets()
-            secrets_store_items[secret_set].update({name: encoded_secret})
+            secrets_store_items[secret_set_name].update({name: encoded_secret})
             yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
         else:
             raise KeyError(f"Secret `{name}` already exists.")
 
-    def get_secret_by_key(self, name: str, secret_set: str) -> Optional[str]:
+    def get_secret_by_key(
+        self, name: str, secret_set_name: str
+    ) -> Optional[str]:
         """Get secret, given a name passed in to identify it."""
         secrets_store_items = self._get_all_secret_sets()
-        if self._verify_secret_key_exists(name, secret_set):
-            secrets_set_items = secrets_store_items[secret_set]
+        if self._verify_secret_key_exists(name, secret_set_name):
+            secrets_set_items = secrets_store_items[secret_set_name]
             return decode_string(secrets_set_items[name])
         else:
             raise KeyError(f"Secret `{name}` does not exist.")
 
-    def get_all_secret_keys(self, secret_set: str) -> List[Optional[str]]:
+    def get_all_secret_keys(self, secret_set_name: str) -> List[Optional[str]]:
         """Get all secret keys."""
-        secrets_store_items = self._get_secrets_within_set(secret_set)
+        secrets_store_items = self._get_secrets_within_set(secret_set_name)
         return list(secrets_store_items.keys())
 
     def update_secret_by_key(

@@ -53,11 +53,10 @@ def secret(ctx: click.Context) -> None:
 @click.option(
     "--secret-set",
     "-ss",
-    "secret_set",
+    "secret_set_name",
     help="The secret set to create.",
     required=False,
     type=str,
-    prompt=True,
     default="default",
 )
 @click.pass_obj
@@ -65,20 +64,24 @@ def register_secret(
     secrets_manager: "BaseSecretsManager",
     name: str,
     secret_value: str,
-    secret_set: str,
+    secret_set_name: str,
 ) -> None:
     """Create a secret."""
     # TODO [MEDIUM] Implement interactive mode for registering secrets
     with console.status(
-        f"Creating secret `{name}` whitin the `{secret_set}` secret set..."
+        f"Creating secret `{name}` whitin the `{secret_set_name}` secret set..."
     ):
         try:
-            secrets_manager.register_secret(name, secret_value, secret_set)
+            secrets_manager.register_secret(name, secret_value, secret_set_name)
             console.print(
-                f"Secret `{name.upper()}` registered whitin the `{secret_set}` secret set."
+                f"Secret `{name.upper()}` registered whitin the "
+                f"`{secret_set_name}` secret set."
             )
         except KeyError:
-            error(f"Secret with name:`{name}` already exists.")
+            error(
+                f"Secret `{name}` already exists in secret-set "
+                f"'{secret_set_name}'."
+            )
 
 
 @secret.command("get")
@@ -86,46 +89,49 @@ def register_secret(
 @click.option(
     "--secret-set",
     "-ss",
-    "secret_set",
+    "secret_set_name",
     help="The secret set to create.",
     required=False,
     type=str,
-    prompt=True,
     default="default",
 )
 @click.pass_obj
 def get_secret(
-    secrets_manager: "BaseSecretsManager", name: str, secret_set: str
+    secrets_manager: "BaseSecretsManager", name: str, secret_set_name: str
 ) -> None:
     """Get a secret, given its name."""
     with console.status(
-        f"Getting secret `{name}` from the `{secret_set}` secret set..."
+        f"Getting secret `{name}` from the `{secret_set_name}` secret set..."
     ):
         try:
-            secret_value = secrets_manager.get_secret_by_key(name, secret_set)
+            secret_value = secrets_manager.get_secret_by_key(
+                name, secret_set_name
+            )
             console.print(f"Secret for `{name.upper()}` is `{secret_value}`.")
         except KeyError:
-            error(f"Secret with name:`{name}` does not exist.")
+            error(
+                "Secret `{name}` does not exist in secret-set "
+                f"'{secret_set_name}'."
+            )
 
 
 @secret.command("list")
 @click.option(
     "--secret-set",
     "-ss",
-    "secret_set",
+    "secret_set_name",
     help="The secret set to create.",
     required=False,
     type=str,
-    prompt=True,
     default="default",
 )
 @click.pass_obj
 def list_secrets(
-    secrets_manager: "BaseSecretsManager", secret_set: str
+    secrets_manager: "BaseSecretsManager", secret_set_name: str
 ) -> None:
     """Get a list of all the keys to secrets in the store."""
     with console.status("Getting secret keys..."):
-        secret_keys = secrets_manager.get_all_secret_keys(secret_set)
+        secret_keys = secrets_manager.get_all_secret_keys(secret_set_name)
         # TODO: [HIGH] implement as a table?
         console.print(secret_keys)
 
@@ -135,20 +141,20 @@ def list_secrets(
 @click.option(
     "--secret-set",
     "-ss",
-    "secret_set",
+    "secret_set_name",
     help="The secret set to create.",
     required=False,
     type=str,
-    prompt=True,
     default="default",
 )
 @click.pass_obj
 def delete_secret(
-    secrets_manager: "BaseSecretsManager", name: str, secret_set: str
+    secrets_manager: "BaseSecretsManager", name: str, secret_set_name: str
 ) -> None:
     """Delete a secret, given its name."""
     confirmation_response = confirmation(
-        f"This will delete the secret associated with `{name}` from the `{secret_set}` secret set. "
+        f"This will delete the secret associated with `{name}` from the "
+        f"`{secret_set_name}` secret set. "
         "Are you sure you want to proceed?"
     )
     if not confirmation_response:
@@ -156,12 +162,16 @@ def delete_secret(
     else:
         with console.status(f"Deleting secret `{name}`..."):
             try:
-                secrets_manager.delete_secret_by_key(name, secret_set)
+                secrets_manager.delete_secret_by_key(name, secret_set_name)
                 console.print(
-                    f"Deleted secret for `{name.upper()}` from the `{secret_set}` secret set."
+                    f"Deleted secret for `{name.upper()}` from the "
+                    f"`{secret_set_name}` secret set."
                 )
             except KeyError:
-                error(f"Secret with name:`{name}` did not exist.")
+                error(
+                    f"Secret `{name}` did not exist in secret-set "
+                    f"'{secret_set_name}'."
+                )
 
 
 @secret.command("update")
@@ -173,15 +183,16 @@ def delete_secret(
     help="The new secret value to update for a specific name.",
     required=True,
     type=str,
+    prompt=True,
+    hide_input=True,
 )
 @click.option(
     "--secret-set",
     "-ss",
-    "secret_set",
+    "secret_set_name",
     help="The secret set to create.",
     required=False,
     type=str,
-    prompt=True,
     default="default",
 )
 @click.pass_obj
@@ -189,17 +200,22 @@ def update_secret(
     secrets_manager: "BaseSecretsManager",
     name: str,
     secret_value: str,
-    secret_set: str,
+    secret_set_name: str,
 ) -> None:
     """Update a secret."""
     with console.status(
-        f"Updating secret `{name}` from the `{secret_set}` secret set..."
+        f"Updating secret `{name}` from the `{secret_set_name}` secret set..."
     ):
         try:
-            secrets_manager.update_secret_by_key(name, secret_value, secret_set)
+            secrets_manager.update_secret_by_key(
+                name, secret_value, secret_set_name
+            )
             console.print(f"Secret `{name.upper()}` updated.")
         except KeyError:
-            error(f"Secret with name:`{name}` doesn't exists.")
+            error(
+                f"Secret `{name}` does not exist in secret-set "
+                f"'{secret_set_name}'."
+            )
 
 
 @secret.command("register-set")
@@ -271,6 +287,37 @@ def list_secret_sets(
         secret_keys = secrets_manager.get_all_secret_sets_keys()
         # TODO: [HIGH] implement as a table?
         console.print(secret_keys)
+
+
+@secret.command("update-set")
+@click.argument("name", type=click.STRING)
+@click.pass_obj
+def update_secret_set(secrets_manager: "BaseSecretsManager", name: str) -> None:
+    """Update a secret set, given its name."""
+    with console.status(f"Getting secret set `{name}`..."):
+        try:
+            secret_set = secrets_manager.get_secret_set_by_key(
+                secret_set_name=name
+            )
+        except KeyError:
+            error(f"Secret Set with name:`{name}` does not exist.")
+
+    click.echo(
+        "You will now have a chance to overwrite each secret "
+        "one by one. Press enter to skip."
+    )
+    for secret, value in secret_set.items():
+        new_value = getpass.getpass(f"New value for " f"{secret}:")
+        if new_value:
+            secret_set[secret] = new_value
+
+    with console.status(f"Updating secret set `{name}`..."):
+        try:
+            secrets_manager.update_secret_set_by_key(
+                secret_set_name=name, secret_set=secret_set
+            )
+        except KeyError:
+            error(f"Secret Set with name:`{name}` already exists.")
 
 
 @secret.command("delete-set")
