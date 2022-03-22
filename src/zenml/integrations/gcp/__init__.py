@@ -31,7 +31,6 @@ class GcpIntegration(Integration):
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.gcp import artifact_stores  # noqa
-        from zenml.integrations.gcp import io  # noqa
 
 
 GcpIntegration.check_installation()

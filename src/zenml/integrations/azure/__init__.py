@@ -31,7 +31,6 @@ class AzureIntegration(Integration):
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.azure import artifact_stores  # noqa
-        from zenml.integrations.azure import io  # noqa
         from zenml.integrations.azure import step_operators  # noqa
 
 
