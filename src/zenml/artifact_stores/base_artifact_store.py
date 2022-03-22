@@ -26,6 +26,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import textwrap
 from abc import ABC
 from typing import (
     Any,
@@ -44,9 +45,15 @@ from pydantic import root_validator
 from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.enums import StackComponentType
+from zenml.exceptions import ZenMLBaseException
 from zenml.stack import StackComponent
 
 PathType = Union[bytes, str]
+
+
+class ArtifactStoreInterfaceError(ZenMLBaseException):
+    """Raises exception when interacting with the Artifact Store interface
+    in an unsupported way."""
 
 
 def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
@@ -159,9 +166,40 @@ class BaseArtifactStore(StackComponent, ABC):
         try:
             getattr(cls, "SUPPORTED_SCHEMES")
         except AttributeError:
-            print(
-                "Please set a list of SUPPORTED_SCHEMES for your artifact "
-                "store."
+            raise ArtifactStoreInterfaceError(
+                textwrap.dedent(
+                    """
+                    When you are working with any classes which subclass from
+                    zenml.artifact_store.BaseArtifactStore please make sure that your class
+                    has a ClassVar named `SUPPORTED_SCHEMES` which should hold a set of 
+                    supported file schemes such as {"s3://"} or {"gcs://"}.
+
+                    Example:
+
+                    class S3ArtifactStore(StackComponent):
+                        ...
+
+                        # Class Variables
+                        ...
+                        SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
+                        ...
+                    """
+                )
+            )
+        try:
+            assert any(
+                values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
+            )
+        except AssertionError:
+            raise ArtifactStoreInterfaceError(
+                textwrap.dedent(
+                    f"""
+                     The path: "{values["path"]}" you defined for your artifact store is 
+                     not supported by the implementation of {cls.schema()["title"]}, 
+                     because it does not start with one of its supported schemes: 
+                     {cls.SUPPORTED_SCHEMES}.
+                     """
+                )
             )
 
         return values
