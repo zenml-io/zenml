@@ -18,12 +18,6 @@ import token_classification
 from sequence_classification import SequenceClassificationConfig
 from token_classification import TokenClassificationConfig
 
-from zenml.integrations.huggingface.materializers import (
-    HFDatasetMaterializer,
-    HFTFModelMaterializer,
-    HFTokenizerMaterializer,
-)
-
 
 @click.command()
 @click.option(
@@ -64,9 +58,7 @@ def main(nlp_task: str, pretrained_model: str, batch_size: int, epochs: int):
             tokenization=token_classification.tokenization(
                 token_classification_config
             ),
-            trainer=token_classification.trainer(
-                token_classification_config
-            ),
+            trainer=token_classification.trainer(token_classification_config),
             evaluator=token_classification.evaluator(
                 token_classification_config
             ),
