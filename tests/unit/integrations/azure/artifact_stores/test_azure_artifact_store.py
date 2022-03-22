@@ -16,7 +16,7 @@
 import pytest
 from pydantic import ValidationError
 
-from zenml.enums import ArtifactStoreFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.integrations.azure.artifact_stores.azure_artifact_store import (
     AzureArtifactStore,
 )
@@ -26,10 +26,8 @@ def test_azure_artifact_store_attributes():
     """Tests that the basic attributes of the azure artifact store are set
     correctly."""
     artifact_store = AzureArtifactStore(name="", path="az://tmp")
-    assert artifact_store.supports_local_execution is True
-    assert artifact_store.supports_remote_execution is True
     assert artifact_store.type == StackComponentType.ARTIFACT_STORE
-    assert artifact_store.flavor == ArtifactStoreFlavor.AZURE
+    assert artifact_store.flavor == "azure"
 
 
 def test_must_be_azure_path():

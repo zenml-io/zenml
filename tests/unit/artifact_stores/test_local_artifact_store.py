@@ -16,17 +16,15 @@ import pydantic
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.enums import ArtifactStoreFlavor, StackComponentType
+from zenml.enums import StackComponentType
 
 
 def test_local_artifact_store_attributes():
     """Tests that the basic attributes of the local artifact store are set
     correctly."""
     artifact_store = LocalArtifactStore(name="", path="/tmp")
-    assert artifact_store.supports_local_execution is True
-    assert artifact_store.supports_remote_execution is False
-    assert artifact_store.type == StackComponentType.ARTIFACT_STORE
-    assert artifact_store.flavor == ArtifactStoreFlavor.LOCAL
+    assert artifact_store.TYPE == StackComponentType.ARTIFACT_STORE
+    assert artifact_store.FLAVOR == "local"
 
 
 def test_local_artifact_store_only_supports_local_paths():

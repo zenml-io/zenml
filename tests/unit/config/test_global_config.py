@@ -23,12 +23,12 @@ from zenml.io import fileio
 def test_global_config_file_creation():
     """Tests whether a config file gets created when instantiating a global
     config object."""
-    if fileio.file_exists(GlobalConfig.config_file()):
+    if fileio.exists(GlobalConfig.config_file()):
         fileio.remove(GlobalConfig.config_file())
 
     GlobalConfig()
 
-    assert fileio.file_exists(GlobalConfig.config_file())
+    assert fileio.exists(GlobalConfig.config_file())
 
 
 def test_global_config_user_id_is_immutable():
@@ -40,7 +40,7 @@ def test_global_config_user_id_is_immutable():
 def test_global_config_returns_value_from_environment_variable(mocker):
     """Tests that global config attributes can be overwritten by environment
     variables."""
-    if fileio.file_exists(GlobalConfig.config_file()):
+    if fileio.exists(GlobalConfig.config_file()):
         fileio.remove(GlobalConfig.config_file())
 
     config = GlobalConfig()

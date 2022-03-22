@@ -16,7 +16,7 @@
 import pytest
 from pydantic import ValidationError
 
-from zenml.enums import ArtifactStoreFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.integrations.aws.artifact_stores.s3_artifact_store import (
     S3ArtifactStore,
 )
@@ -26,10 +26,8 @@ def test_s3_artifact_store_attributes():
     """Tests that the basic attributes of the s3 artifact store are set
     correctly."""
     artifact_store = S3ArtifactStore(name="", path="s3://tmp")
-    assert artifact_store.supports_local_execution is True
-    assert artifact_store.supports_remote_execution is True
-    assert artifact_store.type == StackComponentType.ARTIFACT_STORE
-    assert artifact_store.flavor == ArtifactStoreFlavor.S3
+    assert artifact_store.TYPE == StackComponentType.ARTIFACT_STORE
+    assert artifact_store.FLAVOR == "s3"
 
 
 def test_must_be_s3_path():
