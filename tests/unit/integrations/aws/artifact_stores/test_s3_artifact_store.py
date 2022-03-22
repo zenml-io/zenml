@@ -14,8 +14,10 @@
 
 
 import pytest
-from pydantic import ValidationError
 
+from zenml.artifact_stores.base_artifact_store import (
+    ArtifactStoreInterfaceError,
+)
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.artifact_stores.s3_artifact_store import (
     S3ArtifactStore,
@@ -33,10 +35,10 @@ def test_s3_artifact_store_attributes():
 def test_must_be_s3_path():
     """Checks that a s3 artifact store can only be initialized with a s3
     path."""
-    with pytest.raises(ValidationError):
+    with pytest.raises(ArtifactStoreInterfaceError):
         S3ArtifactStore(name="", path="/local/path")
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ArtifactStoreInterfaceError):
         S3ArtifactStore(name="", path="gs://mybucket")
 
     artifact_store = S3ArtifactStore(name="", path="s3://mybucket")

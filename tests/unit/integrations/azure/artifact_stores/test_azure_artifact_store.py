@@ -14,8 +14,10 @@
 
 
 import pytest
-from pydantic import ValidationError
 
+from zenml.artifact_stores.base_artifact_store import (
+    ArtifactStoreInterfaceError,
+)
 from zenml.enums import StackComponentType
 from zenml.integrations.azure.artifact_stores.azure_artifact_store import (
     AzureArtifactStore,
@@ -26,17 +28,17 @@ def test_azure_artifact_store_attributes():
     """Tests that the basic attributes of the azure artifact store are set
     correctly."""
     artifact_store = AzureArtifactStore(name="", path="az://tmp")
-    assert artifact_store.type == StackComponentType.ARTIFACT_STORE
-    assert artifact_store.flavor == "azure"
+    assert artifact_store.TYPE == StackComponentType.ARTIFACT_STORE
+    assert artifact_store.FLAVOR == "azure"
 
 
 def test_must_be_azure_path():
     """Checks that an azure artifact store can only be initialized with a valid
     path."""
-    with pytest.raises(ValidationError):
+    with pytest.raises(ArtifactStoreInterfaceError):
         AzureArtifactStore(name="", path="/local/path")
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ArtifactStoreInterfaceError):
         AzureArtifactStore(name="", path="s3://mybucket")
 
     artifact_store = AzureArtifactStore(name="", path="az://mycontainer")
