@@ -50,6 +50,10 @@ PathType = Union[bytes, str]
 
 
 def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
+    """Utility decorator used for catching a `FileNotFoundError` and
+    converting it to a `NotFoundError` in order to deal with the TFX exception
+    handling."""
+
     def inner_function(*args: Any, **kwargs: Any) -> Any:
         try:
             return _func(*args, **kwargs)
@@ -74,56 +78,69 @@ class BaseArtifactStore(StackComponent, ABC):
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        # Initiate the pydantic object and register the corresponding filesystem
+        """Initiate the pydantic object and register the corresponding
+        filesystem."""
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
 
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
+        """Open a file at the given path."""
         raise NotImplementedError()
 
     @staticmethod
     def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+        """Copy a file from the source to the destination."""
         raise NotImplementedError()
 
     @staticmethod
     def exists(path: PathType) -> bool:
+        """Returns `True` if the given path exists."""
         raise NotImplementedError()
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
+        """Return the paths that match a glob pattern."""
         raise NotImplementedError()
 
     @staticmethod
     def isdir(path: PathType) -> bool:
+        """Returns whether the given path points to a directory."""
         raise NotImplementedError()
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
+        """Returns a list of files under a given directory in the filesystem."""
         raise NotImplementedError()
 
     @staticmethod
     def makedirs(path: PathType) -> None:
+        """Make a directory at the given path, recursively creating parents."""
         raise NotImplementedError()
 
     @staticmethod
     def mkdir(path: PathType) -> None:
+        """Make a directory at the given path; parent directory must exist."""
         raise NotImplementedError()
 
     @staticmethod
     def remove(path: PathType) -> None:
+        """Remove the file at the given path. Dangerous operation."""
         raise NotImplementedError()
 
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+        """Rename source file to destination file."""
         raise NotImplementedError()
 
     @staticmethod
     def rmtree(path: PathType) -> None:
+        """Deletes dir recursively. Dangerous operation."""
         raise NotImplementedError()
 
     @staticmethod
     def stat(path: PathType) -> Any:
+        """Return the stat descriptor for a given file path."""
         raise NotImplementedError()
 
     @staticmethod
@@ -132,10 +149,13 @@ class BaseArtifactStore(StackComponent, ABC):
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        """Return an iterator that walks the contents of the given directory."""
         raise NotImplementedError()
 
     @root_validator
     def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
+        """Validator function for the Artifact Stores. Checks whether
+        supported schemes are defined and the given path is supported"""
         try:
             getattr(cls, "SUPPORTED_SCHEMES")
         except AttributeError:
@@ -147,7 +167,7 @@ class BaseArtifactStore(StackComponent, ABC):
         return values
 
     def _register(self, priority: int = 5) -> None:
-        """create"""
+        """Create and register a filesystem within the TFX registry"""
         from tfx.dsl.io.filesystem import Filesystem
         from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
 
