@@ -38,48 +38,6 @@ class LoggingLevels(Enum):
     CRITICAL = logging.CRITICAL
 
 
-class StackComponentFlavor(StrEnum):
-    """Abstract base class for all stack component flavors."""
-
-
-class ArtifactStoreFlavor(StackComponentFlavor):
-    """All supported artifact store flavors."""
-
-    AZURE = "azure"
-    LOCAL = "local"
-    GCP = "gcp"
-    S3 = "s3"
-
-
-class MetadataStoreFlavor(StackComponentFlavor):
-    """All supported metadata store flavors."""
-
-    SQLITE = "sqlite"
-    MYSQL = "mysql"
-    KUBEFLOW = "kubeflow"
-
-
-class ContainerRegistryFlavor(StackComponentFlavor):
-    """All supported container registry flavors."""
-
-    DEFAULT = "default"
-
-
-class OrchestratorFlavor(StackComponentFlavor):
-    """All supported orchestrator flavors."""
-
-    LOCAL = "local"
-    KUBEFLOW = "kubeflow"
-    AIRFLOW = "airflow"
-
-
-class StepOperatorFlavor(StackComponentFlavor):
-    """All supported step operator flavors."""
-
-    AZUREML = "azureml"
-    SAGEMAKER = "sagemaker"
-
-
 class StackComponentType(StrEnum):
     """All possible types a `StackComponent` can have."""
 
