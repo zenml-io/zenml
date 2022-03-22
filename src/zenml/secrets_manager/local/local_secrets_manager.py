@@ -105,9 +105,7 @@ class LocalSecretsManager(BaseSecretsManager):
         else:
             raise KeyError(f"Secret set `{secret_set_name}` already exists.")
 
-    def get_secret_set_by_key(
-        self, secret_set_name: str
-    ) -> Optional[Dict[str, str]]:
+    def get_secret_set_by_key(self, secret_set_name: str) -> Dict[str, str]:
         """Get secret set, given a name passed in to identify it."""
         secret_sets_store_items = self._get_all_secret_sets()
         if self._verify_set_key_exists(secret_set_name):

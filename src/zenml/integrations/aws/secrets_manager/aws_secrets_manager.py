@@ -84,51 +84,21 @@ class AWSSecretsManager(BaseSecretsManager):
             secrets.append(secret["Name"])
         return secrets
 
-    def get_secret_set_by_key(
-        self, secret_set_name: str
-    ) -> Optional[Dict[str, str]]:
+    def get_secret_set_by_key(self, secret_set_name: str) -> Dict[str, str]:
         """Gets the value of a secret."""
         self._ensure_client_connected(self.region_name)
-        try:
-            get_secret_value_response = self.CLIENT.get_secret_value(
-                SecretId=secret_set_name
+        get_secret_value_response = self.CLIENT.get_secret_value(
+            SecretId=secret_set_name
+        )
+        if "SecretString" in get_secret_value_response:
+            secret_dict: Dict[str, str] = json.loads(
+                get_secret_value_response["SecretString"]
             )
-        except ClientError as e:
-            if e.response["Error"]["Code"] == "DecryptionFailureException":
-                # Secrets Manager can't decrypt the protected secret
-                # text using the provided KMS key. Deal with the exception here,
-                # and/or rethrow at your discretion.
-                raise e
-            elif e.response["Error"]["Code"] == "InternalServiceErrorException":
-                # An error occurred on the server side.
-                # Deal with the exception here, and/or
-                # rethrow at your discretion.
-                raise e
-            elif e.response["Error"]["Code"] == "InvalidParameterException":
-                # You provided an invalid value for a parameter.
-                # Deal with the exception here, and/or rethrow
-                # at your discretion.
-                raise e
-            elif e.response["Error"]["Code"] == "InvalidRequestException":
-                # You provided a parameter value that is not valid for
-                # the current state of the resource. Deal with the exception
-                # here, and/or rethrow at your discretion.
-                raise e
-            elif e.response["Error"]["Code"] == "ResourceNotFoundException":
-                # We can't find the resource that you asked for.
-                # Deal with the exception here, and/or rethrow
-                # at your discretion.
-                raise e
+            return secret_dict
         else:
-            # Decrypts secret using the associated KMS key.
-            # Depending on whether the secret is a string or binary,
-            # one of these fields will be populated.
-            if "SecretString" in get_secret_value_response:
-                secret_dict = json.loads(
-                    get_secret_value_response["SecretString"]
-                )
-                return secret_dict
-        return
+            raise RuntimeError(
+                f"No secrets found within the" f" {secret_set_name}"
+            )
 
     def update_secret_set_by_key(
         self, secret_set_name: str, secret_set: Dict[str, str]
@@ -203,7 +173,7 @@ class AWSSecretsManager(BaseSecretsManager):
                 f"'{secret_set_name}'."
             )
 
-    def delete_secret_by_key(self, name: str, secret_set_name) -> None:
+    def delete_secret_by_key(self, name: str, secret_set_name: str) -> None:
         secret_set_contents = self.get_secret_set_by_key(secret_set_name)
 
         if name in secret_set_contents:

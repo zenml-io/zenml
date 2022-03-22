@@ -16,8 +16,14 @@ from typing import Optional
 from pydantic import BaseModel
 
 from zenml.enums import SecretSetFlavor
+# from zenml.secret_sets.secret_set_class_registry import (
+#     register_secret_set_class,
+# )
 
 
+# @register_secret_set_class(
+#     SecretSetFlavor.AWS,
+# )
 class AWSSecretSet(BaseModel):
 
     id: str

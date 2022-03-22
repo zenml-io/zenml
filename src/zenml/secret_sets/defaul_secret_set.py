@@ -14,8 +14,14 @@
 
 from zenml.enums import SecretSetFlavor
 from zenml.secret_sets.base_secret_set import BaseSecretSet
+# from zenml.secret_sets.secret_set_class_registry import (
+#     register_secret_set_class,
+# )
 
 
+# @register_secret_set_class(
+#     SecretSetFlavor.DEFAULT,
+# )
 class DefaultSecretSet(BaseSecretSet):
     @property
     def flavor(self) -> SecretSetFlavor:

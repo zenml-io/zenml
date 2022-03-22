@@ -34,9 +34,7 @@ class BaseSecretsManager(StackComponent, ABC):
         """Register secret set."""
 
     @abstractmethod
-    def get_secret_set_by_key(
-        self, secret_set_name: str
-    ) -> Optional[Dict[str, str]]:
+    def get_secret_set_by_key(self, secret_set_name: str) -> Dict[str, str]:
         """Get secret set by key."""
 
     @abstractmethod

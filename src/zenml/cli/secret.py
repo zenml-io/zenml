@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 import getpass
-from typing import List
 
 import click
 
@@ -236,7 +235,7 @@ def register_secret_set(
 ) -> None:
     """Create a secret."""
     SecretSet = SecretSetClassRegistry.get_class(
-        component_flavor=secret_set_flavor
+        secret_set_flavor=secret_set_flavor
     )
     secret_keys = [field for field in SecretSet.__fields__]
 
@@ -279,9 +278,7 @@ def get_secret_set(
 
 @secret.command("list-sets")
 @click.pass_obj
-def list_secret_sets(
-    secrets_manager: "BaseSecretsManager",
-) -> List[str]:
+def list_secret_sets(secrets_manager: "BaseSecretsManager") -> None:
     """Get a list of all the keys to secrets sets in the store."""
     with console.status("Getting secret keys..."):
         secret_keys = secrets_manager.get_all_secret_sets_keys()
