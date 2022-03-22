@@ -40,8 +40,7 @@ Token Classification is an NLP/NLU task, where we assign labels to tokens in a 
 pip install zenml transformers datasets
 
 # install ZenML integrations
-zenml integration install mlflow
-zenml integration install tensorflow
+zenml integration install mlflow tensorflow
 
 # pull example
 cd zenml/examples/huggingface
