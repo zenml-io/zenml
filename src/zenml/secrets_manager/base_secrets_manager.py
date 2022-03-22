@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from zenml.enums import SecretsManagerFlavor
-from zenml.secret.base_secret import Secret
+from zenml.secret.base_secret import BaseSecretSchema
 from zenml.stack import StackComponent
 
 
@@ -28,11 +28,11 @@ class BaseSecretsManager(StackComponent, ABC):
         """The secrets manager flavor."""
 
     @abstractmethod
-    def register_secret(self, secret: "Secret") -> None:
+    def register_secret(self, secret: "BaseSecretSchema") -> None:
         """Register secret set."""
 
     @abstractmethod
-    def get_secret(self, secret_name: str) -> Secret:
+    def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Get secret set by key."""
 
     @abstractmethod
@@ -40,7 +40,7 @@ class BaseSecretsManager(StackComponent, ABC):
         """Get all secret set keys."""
 
     @abstractmethod
-    def update_secret(self, secret: Secret) -> None:
+    def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update secret set by key."""
 
     @abstractmethod

@@ -11,30 +11,45 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, Optional, Union
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List
 
 from pydantic import BaseModel
 
-from zenml.enums import SecretSchema
-from zenml.secret.base_secret_schema import BaseSecretSchema
+from zenml.enums import SecretSchemaType
 
 
-class Secret(BaseModel):
+class BaseSecretSchema(BaseModel, ABC):
     name: str
-    contents: Union[BaseSecretSchema, Dict[str, str]]
 
     @property
-    def get_contents(self) -> Dict[str, str]:
-        return (
-            self.contents.dict() if self.has_defined_schema else self.contents
-        )
+    @abstractmethod
+    def type(self) -> SecretSchemaType:
+        """The schema type."""
 
     @property
-    def has_defined_schema(self) -> bool:
-        return isinstance(self.contents, BaseSecretSchema)
+    def content(self) -> Dict[str, Any]:
+        """The concept of SecretSchemas supports strongly typed
+        secret schemas as well as arbitrary collections of key-value pairs.
+        This property unifies all attributes into a content dictionary.
+        """
+        fields_dict = self.dict()
+        fields_dict.pop('name')
+        if "arbitrary_kv_pairs" in fields_dict:
+            arbitrary_kv_pairs = fields_dict.pop("arbitrary_kv_pairs")
+            fields_dict.update(arbitrary_kv_pairs)
+        return fields_dict
 
-    @property
-    def defined_schema_type(self) -> Optional[SecretSchema]:
-        return None if not self.has_defined_schema else self.contents.type
+    @classmethod
+    def get_schema_keys(cls) -> List[str]:
+        """Get all attribute keys that are not part of the ignored set.
+        These schema keys can be used to define all
+        required key-value pairs of a secret schema"""
+
+        ignored_keys = ['name', 'arbitrary_kv_pairs']
+        schema_keys = [schema_key
+                       for schema_key in cls.__fields__.keys()
+                       if schema_key not in ignored_keys]
+        return schema_keys
 
     # TODO [HIGH]: Validate that Secret contents conform to schema

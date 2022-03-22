@@ -114,7 +114,8 @@ class SecretsManagerFlavor(StackComponentFlavor):
     AWS = "aws"
 
 
-class SecretSchema(StrEnum):
-    """All supported secret set flavors."""
+class SecretSchemaType(StrEnum):
+    """All supported secret schema types."""
 
     AWS = "aws"
+    ARBITRARY = "arbitrary"

@@ -13,10 +13,11 @@
 #  permissions and limitations under the License.
 from typing import Callable, ClassVar, Dict, Type, TypeVar, Union
 
-from zenml.enums import SecretSchema
+from zenml.enums import SecretSchemaType
 from zenml.integrations.aws.secret_schemas import AWSSecretSchema
 from zenml.logger import get_logger
-from zenml.secret.base_secret_schema import BaseSecretSchema
+from zenml.secret import BaseSecretSchema
+from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 
 logger = get_logger(__name__)
 
@@ -30,13 +31,13 @@ class SecretSchemaClassRegistry:
     """
 
     secret_schema_classes: ClassVar[
-        Dict[SecretSchema, Type[BaseSecretSchema]]
+        Dict[SecretSchemaType, Type[BaseSecretSchema]]
     ] = dict()
 
     @classmethod
     def register_class(
         cls,
-        secret_schema: SecretSchema,
+        secret_schema: SecretSchemaType,
         secret: Type[BaseSecretSchema],
     ) -> None:
         """Registers a stack component class.
@@ -64,7 +65,7 @@ class SecretSchemaClassRegistry:
     @classmethod
     def get_class(
         cls,
-        secret_schema: Union[SecretSchema, str],
+        secret_schema: Union[SecretSchemaType, str],
     ) -> Type[BaseSecretSchema]:
         """Returns the stack component class for the given type and flavor.
 
@@ -75,7 +76,7 @@ class SecretSchemaClassRegistry:
             KeyError: If no component class is registered for the given type
                 and flavor.
         """
-        if isinstance(secret_schema, SecretSchema):
+        if isinstance(secret_schema, SecretSchemaType):
             secret_schema = secret_schema.value
 
         available_schemas = cls.secret_schema_classes
@@ -102,7 +103,7 @@ C = TypeVar("C", bound=BaseSecretSchema)
 
 
 def register_secret_schema_class(
-    secret_schema: SecretSchema,
+    secret_schema: SecretSchemaType,
 ) -> Callable[[Type[C]], Type[C]]:
     """Parametrized decorator function to register secret set classes.
 
@@ -126,6 +127,10 @@ def register_secret_schema_class(
 
 
 SecretSchemaClassRegistry.register_class(
-    SecretSchema.AWS,
+    SecretSchemaType.AWS,
     AWSSecretSchema,
+)
+SecretSchemaClassRegistry.register_class(
+    SecretSchemaType.ARBITRARY,
+    ArbitrarySecretSchema,
 )

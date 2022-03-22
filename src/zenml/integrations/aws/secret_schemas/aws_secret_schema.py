@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 from typing import Optional
 
-from zenml.enums import SecretSchema
-from zenml.secret.base_secret_schema import BaseSecretSchema
+from zenml.enums import SecretSchemaType
+from zenml.secret.base_secret import BaseSecretSchema
 
 
 class AWSSecretSchema(BaseSecretSchema):
@@ -23,6 +23,6 @@ class AWSSecretSchema(BaseSecretSchema):
     aws_session_token: Optional[str]
 
     @property
-    def type(self) -> SecretSchema:
+    def type(self) -> SecretSchemaType:
         """The component type."""
-        return SecretSchema.AWS
+        return SecretSchemaType.AWS

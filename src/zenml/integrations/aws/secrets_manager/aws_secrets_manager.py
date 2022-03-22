@@ -19,7 +19,7 @@ from botocore.exceptions import ClientError  # type: ignore
 
 from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.logger import get_logger
-from zenml.secret.base_secret import Secret
+from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
 from zenml.stack.stack_component_class_registry import (
@@ -30,6 +30,23 @@ logger = get_logger(__name__)
 
 DEFAULT_AWS_REGION = "us-east-1"
 ZENML_SCHEMA_NAME = "zenml_schema_name"
+
+
+def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
+    """Adds the secret type to the secret contents to persist the schema
+    type in the secrets backend, so that the correct Secret Schema can be
+    retrieved when the secret is queried from the backend.
+
+    Args:
+        secret which should be a subclass of the BaseSecretSchema class
+
+    Returns:
+        jsonified dictionary containing all key-value pairs and the zenml schema
+        type
+        """
+    secret_contents = secret.content
+    secret_contents[ZENML_SCHEMA_NAME] = secret.type
+    return json.dumps(secret_contents)
 
 
 @register_stack_component_class(
@@ -64,19 +81,18 @@ class AWSSecretsManager(BaseSecretsManager):
         """The secrets manager type."""
         return StackComponentType.SECRETS_MANAGER
 
-    def register_secret(self, secret: Secret) -> None:
+    def register_secret(self, secret: BaseSecretSchema) -> None:
         """
-        Creates a new secret. The secret value can be a string or bytes.
+        Creates a new secret.
         """
         self._ensure_client_connected(self.region_name)
-        secret_contents = secret.get_contents
-        if secret.has_defined_schema:
-            secret_contents[ZENML_SCHEMA_NAME] = secret.contents.type
-        secret_value = json.dumps(secret_contents)
+
+        secret_value = jsonify_secret_contents(secret)
+
         kwargs = {"Name": secret.name, "SecretString": secret_value}
         self.CLIENT.create_secret(**kwargs)
 
-    def get_secret(self, secret_name: str) -> Secret:
+    def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Gets the value of a secret."""
         self._ensure_client_connected(self.region_name)
         get_secret_value_response = self.CLIENT.get_secret_value(
@@ -87,21 +103,13 @@ class AWSSecretsManager(BaseSecretsManager):
                 get_secret_value_response["SecretString"]
             )
 
-            try:
-                zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
-            except KeyError:
-                secret = Secret(
-                    name=secret_name,
-                    contents=secret_contents,
-                )
-            else:
-                secret_schema = SecretSchemaClassRegistry.get_class(
-                    secret_schema=zenml_schema_name
-                )
-                secret = Secret(
-                    name=secret_name,
-                    contents=secret_schema(**secret_contents),
-                )
+            zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
+            secret_contents['name'] = secret_name
+
+            secret_schema = SecretSchemaClassRegistry.get_class(
+                secret_schema=zenml_schema_name
+            )
+            secret = secret_schema(**secret_contents)
 
             return secret
         else:
@@ -119,14 +127,11 @@ class AWSSecretsManager(BaseSecretsManager):
             secrets.append(secret["Name"])
         return secrets
 
-    def update_secret(self, secret: Secret) -> None:
+    def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update existing secret."""
         self._ensure_client_connected(self.region_name)
 
-        secret_contents = secret.get_contents
-        if secret.has_defined_schema:
-            secret_contents[ZENML_SCHEMA_NAME] = secret.contents.type
-        secret_value = json.dumps(secret_contents)
+        secret_value = jsonify_secret_contents(secret)
 
         kwargs = {"SecretId": secret.name, "SecretString": secret_value}
 
@@ -151,7 +156,7 @@ class AWSSecretsManager(BaseSecretsManager):
         """Get value at key within secret"""
         secret = self.get_secret(secret_name)
 
-        secret_contents = secret.get_contents
+        secret_contents = secret.content
         if key in secret_contents:
             secret_value = secret_contents[key]
             return secret_value

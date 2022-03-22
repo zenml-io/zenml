@@ -16,8 +16,10 @@
 
 ...
 """
-from zenml.secret.base_secret import Secret
-from zenml.secret.base_secret_schema import BaseSecretSchema
+from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 
-__all__ = ["Secret", "BaseSecretSchema", "SecretSchemaClassRegistry"]
+__all__ = [
+    "BaseSecretSchema",
+    "SecretSchemaClassRegistry",
+]

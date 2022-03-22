@@ -19,16 +19,26 @@ import click
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, error, print_table
 from zenml.console import console
-from zenml.enums import SecretSchema, StackComponentType
+from zenml.enums import SecretSchemaType, StackComponentType
 from zenml.repository import Repository
-from zenml.secret.base_secret import Secret
+from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
 
 
-def pretty_print_secret(secret: Secret, hide_secret: bool = True) -> None:
+def pretty_print_secret(
+    secret: BaseSecretSchema,
+    hide_secret: bool = True
+) -> None:
+    """Given a secret set print all key value pairs associated with the secret
+
+    Args:
+        secret: Secret of type BaseSecretSchema
+        hide_secret: boolean that configures if the secret values are shown
+            on the CLI
+    """
     stack_dicts = []
-    for key, value in secret.get_contents.items():
+    for key, value in secret.content.items():
         stack_dicts.append(
             {
                 "SECRET_NAME": secret.name,
@@ -55,28 +65,39 @@ def secret(ctx: click.Context) -> None:
 @click.option(
     "--schema",
     "-s",
-    "secret_schema_name",
-    help="A registered secret to create with a schema.",
-    type=click.Choice(SecretSchema.value_list()),
+    "secret_schema_type",
+    default=SecretSchemaType.ARBITRARY,
+    help="Register a secret with an optional schema.",
+    type=click.Choice(SecretSchemaType.value_list()),
 )
 @click.pass_obj
 def register_secret(
     secrets_manager: "BaseSecretsManager",
     name: str,
-    secret_schema_name: str,
+    secret_schema_type: str,
 ) -> None:
-    """Create a secret."""
-    # TODO [HIGH]: Verify secret_name does not exist already
-    # TODO [HIGH]: Allow passing in json/dict when registering a secret
+    """Register a secret with the given name as key
 
-    secret_contents = {}
+    Args:
+        secrets_manager: Stack component that implements the interface to the
+            underlying secrets engine
+        name: Name of the secret
+        secret_schema_type: Type of the secret schema - make sure the schema of
+            choice is registered with the secret_schema_class_registry
+        """
+    # TODO [HIGH]: Verify secret_name does not exist already before querying
+    #   user input
 
-    if secret_schema_name:
-        secret_schema = SecretSchemaClassRegistry.get_class(
-            secret_schema=secret_schema_name
-        )
-        secret_keys = [field for field in secret_schema.__fields__]
+    # TODO [HIGH]: Allow passing in json/dict when registering a secret as an
+    #   additional option for the user on top the the interactive more
 
+    secret_schema = SecretSchemaClassRegistry.get_class(
+        secret_schema=secret_schema_type
+    )
+    secret_keys = secret_schema.get_schema_keys()
+
+    secret_contents = {'name': name}
+    if secret_keys:
         click.echo(
             "You have supplied a secret_set_schema with predefined keys. "
             "You can fill these out sequentially now. Just press ENTER to skip"
@@ -86,14 +107,6 @@ def register_secret(
             v = getpass.getpass(f"Secret value for {k}:")
             secret_contents[k] = v
 
-        secret_schema_contents = secret_schema(**secret_contents)
-
-        click.echo("The following secret will be registered.")
-
-        secret = Secret(
-            name=name,
-            contents=secret_schema_contents,
-        )
     else:
         click.echo(
             "You have not supplied a secret_set_schema with any"
@@ -110,10 +123,8 @@ def register_secret(
             ):
                 break
 
-        click.echo("The following secret will be registered.")
-
-        secret = Secret(name=name, contents=secret_contents)
-
+    click.echo("The following secret will be registered.")
+    secret = secret_schema(**secret_contents)
     pretty_print_secret(secret=secret, hide_secret=True)
 
     with console.status(f"Saving secret set `{name}`..."):
@@ -127,7 +138,13 @@ def get_secret(
     secrets_manager: "BaseSecretsManager",
     name: str,
 ) -> None:
-    """Get a secret set, given its name."""
+    """Get a secret set, given its name.
+
+    Args:
+        secrets_manager: Stack component that implements the interface to the
+            underlying secrets engine
+        name: Name of the secret
+    """
     # with console.status(f"Getting secret set `{name}`..."):
     try:
         secret = secrets_manager.get_secret(secret_name=name)
@@ -139,7 +156,11 @@ def get_secret(
 @secret.command("list")
 @click.pass_obj
 def list_secret(secrets_manager: "BaseSecretsManager") -> None:
-    """Get a list of all the keys to secrets sets in the store."""
+    """Get a list of all the keys to secrets sets in the store.
+    Args:
+        secrets_manager: Stack component that implements the interface to the
+            underlying secrets engine
+    """
     with console.status("Getting secret keys..."):
         secret_keys = secrets_manager.get_all_secret_keys()
         # TODO: [HIGH] implement as a table?
@@ -150,7 +171,13 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
 @click.argument("name", type=click.STRING)
 @click.pass_obj
 def update_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
-    """Update a secret set, given its name."""
+    """Update a secret set, given its name.
+
+    Args:
+        secrets_manager: Stack component that implements the interface to the
+            underlying secrets engine
+        name: Name of the secret
+    """
     # TODO [HIGH] - Implement a fine grained User Interface for the update
     #  secrets method that allows for deleting, adding and modifying specific
     #  keys, pass in dict
@@ -165,21 +192,21 @@ def update_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
         "You will now have a chance to overwrite each secret "
         "one by one. Press enter to skip."
     )
-    updated_contents = dict()
-    for key, value in secret.get_contents.items():
+    updated_contents = {'name': name}
+    for key, value in secret.content.items():
         new_value = getpass.getpass(f"New value for " f"{key}:")
         if new_value:
             updated_contents[key] = new_value
         else:
             updated_contents[key] = value
 
-    secret.contents = updated_contents
+    updated_secret = secret.__class__(**updated_contents)
 
-    pretty_print_secret(secret, hide_secret=True)
+    pretty_print_secret(updated_secret, hide_secret=True)
 
     with console.status(f"Updating secret set `{name}`..."):
         try:
-            secrets_manager.update_secret(secret=secret)
+            secrets_manager.update_secret(secret=updated_secret)
             console.print(f"Secret with name '{name}' has been updated")
         except KeyError:
             error(f"Secret Set with name:`{name}` already exists.")
@@ -192,7 +219,13 @@ def delete_secret_set(
     secrets_manager: "BaseSecretsManager",
     name: str,
 ) -> None:
-    """Delete a secret set."""
+    """Delete a secret set given its name.
+
+    Args:
+        secrets_manager: Stack component that implements the interface to the
+            underlying secrets engine
+        name: Name of the secret
+    """
     confirmation_response = confirmation(
         f"This will delete the secret associated with `{name}`. "
         "Are you sure you want to proceed?"
@@ -221,7 +254,15 @@ def delete_secret_set(
 def delete_all_secrets(
     secrets_manager: "BaseSecretsManager", force: bool
 ) -> None:
-    """Delete a secret set."""
+    """Delete all secrets.
+
+    Args:
+        secrets_manager: Stack component that implements the interface to the
+            underlying secrets engine
+        force: Specify if force should be applied when deleting all secrets.
+            This might have differing implications depending on the underlying
+            secrets manager
+    """
     confirmation_response = confirmation(
         "This will delete the all secrets. Are you sure you want to proceed?"
     )
