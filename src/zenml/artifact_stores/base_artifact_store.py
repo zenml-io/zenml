@@ -50,7 +50,7 @@ PathType = Union[bytes, str]
 
 
 def _catch_not_found_error(_func: Callable) -> Callable:
-    def inner_function(*args, **kwargs) -> Any:
+    def inner_function(*args: Any, **kwargs: Any) -> Any:
         try:
             return _func(*args, **kwargs)
         except FileNotFoundError as e:
@@ -73,7 +73,7 @@ class BaseArtifactStore(StackComponent, ABC):
     FLAVOR: ClassVar[str]
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         # Initiate the pydantic object and register the corresponding filesystem
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
