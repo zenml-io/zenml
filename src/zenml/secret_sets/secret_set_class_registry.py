@@ -18,7 +18,7 @@ from zenml.enums import SecretSetFlavor
 from zenml.integrations.aws.secret_sets.aws_secret_set import AWSSecretSet
 from zenml.logger import get_logger
 from zenml.secret_sets.base_secret_set import BaseSecretSet
-from zenml.secret_sets.defaul_secret_set import DefaultSecretSet
+from zenml.secret_sets.default_secret_set import DefaultSecretSet
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
