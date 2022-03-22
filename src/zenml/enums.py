@@ -110,6 +110,7 @@ class SecretsManagerFlavor(StackComponentFlavor):
     """All supported orchestrator flavors."""
 
     LOCAL = "local"
+    LOCAL_SQL = "local_sql"
     AWS = "aws"
 
 
