@@ -1,4 +1,8 @@
-# Implementation of NLP algorithms using Zenml
+# Implementation of NLP algorithms using Huggingface & Zenml
+
+These examples demonstrate how we can use zenml and huggingface transformers to build, train, & test NLP models.
+
+Huggingface; one of our favorite emoji to express thankfulness, love, or appreciation. In the world of AI/ML, [`Hugging Face`](https://huggingface.co/) is a startup in the Natural Language Processing (NLP) domain (now they are expanding to computer vision and RL) , offering its library of SOTA models in particular around the Transformers. More than a thousand companies using their library in production including Bing, Apple, Microsoft etc. Do checkout thier [`Transformers Library`](https://github.com/huggingface/transformers), [`Datasets Library`](https://github.com/huggingface/datasets) and [`Model Hub`](https://huggingface.co/models)
 
 NLP is a branch of machine learning that is about helping systems to understand natural text and spoken words in the same way that humans do.
 
@@ -10,25 +14,64 @@ The following is a list of common NLP tasks:
 - Text generation using prompt: text-generation
 - Translation: text-translation
 
-These examples demonstrate how we can use zenml and huggingface transformers to build, train, & test NLP models.
-
 ## Sequence Classification
 
-Sequence Classification is an NLP/NLU task, where we assign labels to a given text, i.e. sentiment classification, natural langauge inference etc. In this example, we will train a sentiment classification model using the [`imdb`](https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews) dataset.
+Sequence Classification is an NLP/NLU task, where we assign labels to a given text, i.e. sentiment classification, natural langauge inference etc. In this example, we will train a sentiment classification model using the [`imdb`](https://huggingface.co/datasets/imdb) dataset.
 
 - Load dataset: Load sequence-classification dataset in this case it is the `imdb` dataset
+```python
+    from datasets import load_dataset
+    datasets = load_dataset("imdb")
+    print(datasets['train'][0])
+
+    {'label': 0, # Sentiment label i.e. 0->Negative 1->Positive
+ 'text': 'I rented I AM CURIOUS-YELLOW from my video store because of all the controversy that surrounded it when it was first released in 1967. I also heard that at first it was seized by U.S. customs if it ever tried to enter this country, therefore being a fan of films considered "controversial" I really had to see this for myself.......'}
+```
+
 - Load pre-trained tokenizer: Load pre-trained tokenizer from huggingface transformers.
+
+```python
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+```
+
 - Tokenize and Prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along with labels
 - Build and Train Model: You can build model or use pre-trained models from huggingface transformers. Use encoded dataset to train model.
 - Evaluate: Evaluate model loss and accuracy
-
 
 ## Token Classification
 
 Token Classification is an NLP/NLU task, where we assign labels to tokens in a text, i.e. Name entity recognition, Part of speech tagging etc. In this example, we will train a NER model using the [`conll2003`](https://huggingface.co/datasets/conll2003) dataset.
 
 - Load dataset: Load token-classification dataset in this case it is `conll2003` dataset
+
+```python
+    from datasets import load_dataset
+    datasets = load_dataset("conll2003")
+    print(datasets['train'][0])
+
+    {'chunk_tags': [11, 21, 11, 12, 21, 22, 11, 12, 0],
+        'id': '0',
+        'ner_tags': [3, 0, 7, 0, 0, 0, 7, 0, 0], #list of token classification labels
+        'pos_tags': [22, 42, 16, 21, 35, 37, 16, 21, 7],
+        'tokens': ['EU',
+        'rejects',
+        'German',
+        'call',
+        'to',
+        'boycott',
+        'British',
+        'lamb',
+        '.']}
+```
+
 - Load pre-trained tokenizer: Load pre-trained tokenizer from huggingface transformers.
+
+```python
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+```
+
 - Tokenize and Prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along with labels
 - Build and Train Model: You can build model or use pre-trained models from huggingface transformers. Use encoded dataset to train model.
 - Evaluate: Evaluate model loss and accuracy
