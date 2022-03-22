@@ -57,16 +57,16 @@ def main(nlp_task: str, pretrained_model: str, batch_size: int, epochs: int):
         pipeline = token_classification.token_classifier_train_eval_pipeline(
             importer=token_classification.data_importer(
                 token_classification_config
-            ).with_return_materializers(HFDatasetMaterializer),
+            ),
             load_tokenizer=token_classification.load_tokenizer(
                 token_classification_config
-            ).with_return_materializers(HFTokenizerMaterializer),
+            ),
             tokenization=token_classification.tokenization(
                 token_classification_config
-            ).with_return_materializers(HFDatasetMaterializer),
+            ),
             trainer=token_classification.trainer(
                 token_classification_config
-            ).with_return_materializers(HFTFModelMaterializer),
+            ),
             evaluator=token_classification.evaluator(
                 token_classification_config
             ),
