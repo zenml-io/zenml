@@ -36,12 +36,11 @@ class StackComponent(BaseModel, ABC):
         uuid: Unique identifier of the component.
     """
 
-    # Instance Variables
     name: str
     uuid: UUID = Field(default_factory=uuid4)
 
-    # Class Variables
-    TYPE: ClassVar[str]
+    # Class Configuration
+    TYPE: ClassVar[StackComponentType]
     FLAVOR: ClassVar[str]
 
     @property
@@ -214,9 +213,3 @@ class StackComponent(BaseModel, ABC):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
-
-        # exclude these two fields from being serialized
-        fields = {
-            "supports_local_execution": {"exclude": True},
-            "supports_remote_execution": {"exclude": True},
-        }

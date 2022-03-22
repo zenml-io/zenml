@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from collections import defaultdict
-from typing import ClassVar, DefaultDict, Dict, Type, TypeVar, Union
+from typing import ClassVar, DefaultDict, Dict, Type, TypeVar
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.container_registries import BaseContainerRegistry
-from zenml.enums import StackComponentFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
@@ -65,7 +65,7 @@ class StackComponentClassRegistry:
     def get_class(
         cls,
         component_type: StackComponentType,
-        component_flavor: Union[StackComponentFlavor, str],
+        component_flavor: str,
     ) -> Type[StackComponent]:
         """Returns the stack component class for the given type and flavor.
 
@@ -77,8 +77,6 @@ class StackComponentClassRegistry:
             KeyError: If no component class is registered for the given type
                 and flavor.
         """
-        if isinstance(component_flavor, StackComponentFlavor):
-            component_flavor = component_flavor.value
 
         available_flavors = cls.component_classes[component_type]
         try:
