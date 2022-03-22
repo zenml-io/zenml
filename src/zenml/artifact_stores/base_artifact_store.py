@@ -171,7 +171,7 @@ class BaseArtifactStore(StackComponent, ABC):
                     """
                     When you are working with any classes which subclass from
                     zenml.artifact_store.BaseArtifactStore please make sure that your class
-                    has a ClassVar named `SUPPORTED_SCHEMES` which should hold a set of 
+                    has a ClassVar named `SUPPORTED_SCHEMES` which should hold a set of
                     supported file schemes such as {"s3://"} or {"gcs://"}.
 
                     Example:
@@ -194,9 +194,9 @@ class BaseArtifactStore(StackComponent, ABC):
             raise ArtifactStoreInterfaceError(
                 textwrap.dedent(
                     f"""
-                     The path: "{values["path"]}" you defined for your artifact store is 
-                     not supported by the implementation of {cls.schema()["title"]}, 
-                     because it does not start with one of its supported schemes: 
+                     The path: "{values["path"]}" you defined for your artifact store is
+                     not supported by the implementation of {cls.schema()["title"]},
+                     because it does not start with one of its supported schemes:
                      {cls.SUPPORTED_SCHEMES}.
                      """
                 )
