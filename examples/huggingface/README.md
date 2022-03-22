@@ -16,7 +16,7 @@ These examples demonstrate how we can use zenml and huggingface transformers to 
 
 Sequence Classification is an NLP/NLU task, where we assign labels to a given text, i.e. sentiment classification, natural langauge inference etc. In this example, we will train a sentiment classification model using the [`imdb`](https://www.kaggle.com/lakshmi25npathi/imdb-dataset-of-50k-movie-reviews) dataset.
 
-- Load dataset: Load sequence-classification dataset in this case it is `imdb` dataset
+- Load dataset: Load sequence-classification dataset in this case it is the `imdb` dataset
 - Load pre-trained tokenizer: Load pre-trained tokenizer from huggingface transformers.
 - Tokenize and Prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along with labels
 - Build and Train Model: You can build model or use pre-trained models from huggingface transformers. Use encoded dataset to train model.
