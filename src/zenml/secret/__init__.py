@@ -11,26 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Optional
+"""
+## Secret
 
-from pydantic import BaseModel
+...
+"""
+from zenml.secret.base_secret import Secret
+from zenml.secret.base_secret_schema import BaseSecretSchema
+from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 
-from zenml.enums import SecretSetFlavor
-# from zenml.secret_sets.secret_set_class_registry import (
-#     register_secret_set_class,
-# )
-
-
-# @register_secret_set_class(
-#     SecretSetFlavor.AWS,
-# )
-class AWSSecretSet(BaseModel):
-
-    id: str
-    value: str
-    token: Optional[str]
-
-    @property
-    def flavor(self) -> SecretSetFlavor:
-        """The secret set flavor."""
-        return SecretSetFlavor.AWS
+__all__ = ["Secret", "BaseSecretSchema", "SecretSchemaClassRegistry"]

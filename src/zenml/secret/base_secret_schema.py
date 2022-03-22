@@ -15,11 +15,15 @@ from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
-from zenml.enums import SecretSetFlavor
+from zenml.enums import SecretSchema
 
 
-class BaseSecretSet(BaseModel, ABC):
+class BaseSecretSchema(BaseModel, ABC):
+
+    # TODO [MEDIUM]: Validate that all obligatory secrets are set for all
+    #  Subclasses of the BaseSecretSchema
+
     @property
     @abstractmethod
-    def flavor(self) -> SecretSetFlavor:
-        """The secret set flavor."""
+    def type(self) -> SecretSchema:
+        """The component type."""

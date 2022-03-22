@@ -12,7 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Secret Set
+## Secret Schema
 
 ...
 """
+from zenml.integrations.aws.secret_schemas.aws_secret_schema import (
+    AWSSecretSchema,
+)
+
+__all__ = ["AWSSecretSchema"]

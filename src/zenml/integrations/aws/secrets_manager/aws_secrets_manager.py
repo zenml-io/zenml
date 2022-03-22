@@ -19,7 +19,8 @@ from botocore.exceptions import ClientError  # type: ignore
 
 from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.logger import get_logger
-from zenml.secret_sets.base_secret_set import BaseSecretSet
+from zenml.secret.base_secret import Secret
+from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
@@ -28,6 +29,7 @@ from zenml.stack.stack_component_class_registry import (
 logger = get_logger(__name__)
 
 DEFAULT_AWS_REGION = "us-east-1"
+ZENML_SCHEMA_NAME = "zenml_schema_name"
 
 
 @register_stack_component_class(
@@ -62,127 +64,99 @@ class AWSSecretsManager(BaseSecretsManager):
         """The secrets manager type."""
         return StackComponentType.SECRETS_MANAGER
 
-    def register_secret_set(
-        self, secret_set_name: str, secret_set: BaseSecretSet
-    ) -> None:
+    def register_secret(self, secret: Secret) -> None:
         """
         Creates a new secret. The secret value can be a string or bytes.
         """
         self._ensure_client_connected(self.region_name)
-        secret_value = json.dumps(secret_set.dict())
-        kwargs = {"Name": secret_set_name, "SecretString": secret_value}
+        secret_contents = secret.get_contents
+        if secret.has_defined_schema:
+            secret_contents[ZENML_SCHEMA_NAME] = secret.contents.type
+        secret_value = json.dumps(secret_contents)
+        kwargs = {"Name": secret.name, "SecretString": secret_value}
         self.CLIENT.create_secret(**kwargs)
 
-    def get_all_secret_sets_keys(self) -> List[Optional[str]]:
+    def get_secret(self, secret_name: str) -> Secret:
+        """Gets the value of a secret."""
+        self._ensure_client_connected(self.region_name)
+        get_secret_value_response = self.CLIENT.get_secret_value(
+            SecretId=secret_name
+        )
+        if "SecretString" in get_secret_value_response:
+            secret_contents: Dict[str, str] = json.loads(
+                get_secret_value_response["SecretString"]
+            )
+
+            try:
+                zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
+            except KeyError:
+                secret = Secret(
+                    name=secret_name,
+                    contents=secret_contents,
+                )
+            else:
+                secret_schema = SecretSchemaClassRegistry.get_class(
+                    secret_schema=zenml_schema_name
+                )
+                secret = Secret(
+                    name=secret_name,
+                    contents=secret_schema(**secret_contents),
+                )
+
+            return secret
+        else:
+            raise RuntimeError(f"No secrets found within the" f" {secret_name}")
+
+    def get_all_secret_keys(self) -> List[str]:
         """Get all secret keys."""
         self._ensure_client_connected(self.region_name)
 
-        response = self.CLIENT.list_secrets()
-
+        # TODO [MEDIUM]: Deal with pagination in the aws secret manager when
+        #  listing all secrets
+        response = self.CLIENT.list_secrets(MaxResults=100)
         secrets = []
         for secret in response["SecretList"]:
             secrets.append(secret["Name"])
         return secrets
 
-    def get_secret_set_by_key(self, secret_set_name: str) -> Dict[str, str]:
-        """Gets the value of a secret."""
-        self._ensure_client_connected(self.region_name)
-        get_secret_value_response = self.CLIENT.get_secret_value(
-            SecretId=secret_set_name
-        )
-        if "SecretString" in get_secret_value_response:
-            secret_dict: Dict[str, str] = json.loads(
-                get_secret_value_response["SecretString"]
-            )
-            return secret_dict
-        else:
-            raise RuntimeError(
-                f"No secrets found within the" f" {secret_set_name}"
-            )
-
-    def update_secret_set_by_key(
-        self, secret_set_name: str, secret_set: Dict[str, str]
-    ) -> None:
+    def update_secret(self, secret: Secret) -> None:
         """Update existing secret."""
         self._ensure_client_connected(self.region_name)
 
-        kwargs = {
-            "SecretId": secret_set_name,
-            "SecretString": json.dumps(secret_set),
-        }
+        secret_contents = secret.get_contents
+        if secret.has_defined_schema:
+            secret_contents[ZENML_SCHEMA_NAME] = secret.contents.type
+        secret_value = json.dumps(secret_contents)
+
+        kwargs = {"SecretId": secret.name, "SecretString": secret_value}
+
         self.CLIENT.put_secret_value(**kwargs)
 
-    def delete_secret_set_by_key(self, secret_set_name: str) -> None:
+    def delete_secret(self, secret_name: str) -> None:
         """Delete existing secret."""
         self._ensure_client_connected(self.region_name)
         self.CLIENT.delete_secret(
-            SecretId=secret_set_name, ForceDeleteWithoutRecovery=False
+            SecretId=secret_name, ForceDeleteWithoutRecovery=False
         )
 
-    def register_secret(
-        self, name: str, secret_value: str, secret_set_name: str
-    ) -> None:
-        """Register secret within a secret set."""
-        secret_set_contents = self.get_secret_set_by_key(secret_set_name)
-
-        if name not in secret_set_contents:
-            secret_set_contents[name] = secret_value
-            self.update_secret_set_by_key(
-                secret_set_name=secret_set_name, secret_set=secret_set_contents
-            )
-        else:
-            raise KeyError(
-                f"Secret `{name}` already exists in secret-set "
-                f"'{secret_set_name}'."
+    def delete_all_secrets(self, force: bool = False) -> None:
+        """Delete existing secret."""
+        self._ensure_client_connected(self.region_name)
+        for secret_name in self.get_all_secret_keys():
+            self.CLIENT.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=force
             )
 
-    def get_secret_by_key(
-        self, name: str, secret_set_name: str
-    ) -> Optional[str]:
-        """Get secret within secret set by key."""
-        secret_set_contents = self.get_secret_set_by_key(secret_set_name)
+    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
+        """Get value at key within secret"""
+        secret = self.get_secret(secret_name)
 
-        if name in secret_set_contents:
-            secret_value = secret_set_contents[name]
+        secret_contents = secret.get_contents
+        if key in secret_contents:
+            secret_value = secret_contents[key]
             return secret_value
         else:
             raise KeyError(
-                f"Secret `{name}` does not exist in secret-set "
-                f"'{secret_set_name}'."
-            )
-
-    def get_all_secret_keys(self, secret_set_name: str) -> List[Optional[str]]:
-        """Get secret within secret set by key."""
-        secret_set_contents = self.get_secret_set_by_key(secret_set_name)
-        return list(secret_set_contents.keys())
-
-    def update_secret_by_key(
-        self, name: str, secret_value: str, secret_set_name: str
-    ) -> None:
-        """Register secret within a secret set."""
-        secret_set_contents = self.get_secret_set_by_key(secret_set_name)
-
-        if name in secret_set_contents:
-            secret_set_contents[name] = secret_value
-            self.update_secret_set_by_key(
-                secret_set_name=secret_set_name, secret_set=secret_set_contents
-            )
-        else:
-            raise KeyError(
-                f"Secret `{name}` does not exist in secret-set "
-                f"'{secret_set_name}'."
-            )
-
-    def delete_secret_by_key(self, name: str, secret_set_name: str) -> None:
-        secret_set_contents = self.get_secret_set_by_key(secret_set_name)
-
-        if name in secret_set_contents:
-            secret_set_contents.pop(name)
-            self.update_secret_set_by_key(
-                secret_set_name=secret_set_name, secret_set=secret_set_contents
-            )
-        else:
-            raise KeyError(
-                f"Secret `{name}` did not exist in secret-set "
-                f"'{secret_set_name}'."
+                f"Secret `{key}` does not exist in secret-set "
+                f"'{secret_name}'."
             )

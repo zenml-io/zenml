@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from zenml.enums import SecretsManagerFlavor
-from zenml.secret_sets.base_secret_set import BaseSecretSet
+from zenml.secret.base_secret import Secret
 from zenml.stack import StackComponent
 
 
@@ -28,51 +28,29 @@ class BaseSecretsManager(StackComponent, ABC):
         """The secrets manager flavor."""
 
     @abstractmethod
-    def register_secret_set(
-        self, secret_set_name: str, secret_set: "BaseSecretSet"
-    ) -> None:
+    def register_secret(self, secret: "Secret") -> None:
         """Register secret set."""
 
     @abstractmethod
-    def get_secret_set_by_key(self, secret_set_name: str) -> Dict[str, str]:
+    def get_secret(self, secret_name: str) -> Secret:
         """Get secret set by key."""
 
     @abstractmethod
-    def get_all_secret_sets_keys(self) -> List[Optional[str]]:
+    def get_all_secret_keys(self) -> List[str]:
         """Get all secret set keys."""
 
     @abstractmethod
-    def update_secret_set_by_key(
-        self, secret_set_name: str, secret_set: Dict[str, str]
-    ) -> None:
+    def update_secret(self, secret: Secret) -> None:
         """Update secret set by key."""
 
     @abstractmethod
-    def delete_secret_set_by_key(self, secret_set_name: str) -> None:
+    def delete_secret(self, secret_name: str) -> None:
         """Delete secret set by key."""
 
     @abstractmethod
-    def register_secret(
-        self, name: str, secret_value: str, secret_set_name: str
-    ) -> None:
-        """Register secret."""
+    def delete_all_secrets(self, force: bool = False) -> None:
+        """Delete all existing secrets."""
 
     @abstractmethod
-    def get_secret_by_key(
-        self, name: str, secret_set_name: str
-    ) -> Optional[str]:
-        """Get secret, given a name passed in to identify it."""
-
-    @abstractmethod
-    def get_all_secret_keys(self, secret_set_name: str) -> List[Optional[str]]:
-        """Get all secret keys."""
-
-    @abstractmethod
-    def update_secret_by_key(
-        self, name: str, secret_value: str, secret_set: str
-    ) -> None:
-        """Update existing secret."""
-
-    @abstractmethod
-    def delete_secret_by_key(self, name: str, secret_set: str) -> None:
-        """Delete existing secret."""
+    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
+        """Get value at key within secret"""

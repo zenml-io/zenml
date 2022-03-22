@@ -11,19 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Optional
 
-from zenml.enums import SecretSetFlavor
-from zenml.secret_sets.base_secret_set import BaseSecretSet
-# from zenml.secret_sets.secret_set_class_registry import (
-#     register_secret_set_class,
-# )
+from zenml.enums import SecretSchema
+from zenml.secret.base_secret_schema import BaseSecretSchema
 
 
-# @register_secret_set_class(
-#     SecretSetFlavor.DEFAULT,
-# )
-class DefaultSecretSet(BaseSecretSet):
+class AWSSecretSchema(BaseSecretSchema):
+    aws_access_key_id: str
+    aws_secret_access_key: str
+    aws_session_token: Optional[str]
+
     @property
-    def flavor(self) -> SecretSetFlavor:
-        """The secret set flavor."""
-        return SecretSetFlavor.DEFAULT
+    def type(self) -> SecretSchema:
+        """The component type."""
+        return SecretSchema.AWS

@@ -21,13 +21,14 @@ from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
 from zenml.secrets_manager.local.local_secrets_manager import (
     LocalSecretsManager,
 )
-from zenml.secrets_manager.local.local_sql_secrets_manager import (
-    LocalSqlSecretsManager,
-)
+
+# from zenml.secrets_manager.local.local_sql_secrets_manager import (
+#     LocalSqlSecretsManager,
+# )
 
 __all__ = [
     "BaseSecretsManager",
     "LocalSecretsManager",
     "AWSSecretsManager",
-    "LocalSqlSecretsManager",
+    # "LocalSqlSecretsManager",
 ]

@@ -13,16 +13,15 @@
 #  permissions and limitations under the License.
 from typing import Callable, ClassVar, Dict, Type, TypeVar, Union
 
-from zenml.enums import SecretSetFlavor
-from zenml.integrations.aws.secret_sets.aws_secret_set import AWSSecretSet
+from zenml.enums import SecretSchema
+from zenml.integrations.aws.secret_schemas import AWSSecretSchema
 from zenml.logger import get_logger
-from zenml.secret_sets.base_secret_set import BaseSecretSet
-from zenml.secret_sets.default_secret_set import DefaultSecretSet
+from zenml.secret.base_secret_schema import BaseSecretSchema
 
 logger = get_logger(__name__)
 
 
-class SecretSetClassRegistry:
+class SecretSchemaClassRegistry:
     """Registry for stack component classes.
 
     All stack component classes must be registered here so they can be
@@ -30,56 +29,58 @@ class SecretSetClassRegistry:
     ZenML repository configuration.
     """
 
-    secret_set_classes: ClassVar[Dict[str, Type[BaseSecretSet]]] = dict()
+    secret_schema_classes: ClassVar[
+        Dict[SecretSchema, Type[BaseSecretSchema]]
+    ] = dict()
 
     @classmethod
     def register_class(
         cls,
-        secret_set_flavor: "SecretSetFlavor",
-        secret_set: Type[BaseSecretSet],
+        secret_schema: SecretSchema,
+        secret: Type[BaseSecretSchema],
     ) -> None:
         """Registers a stack component class.
 
         Args:
-            secret_set_flavor: The flavor of the component class to register.
-            secret_set: The component class to register.
+            secret_schema: The flavor of the component class to register.
+            secret: The component class to register.
         """
-        secret_set_flavor = secret_set_flavor.value
-        flavors = cls.secret_set_classes
-        if secret_set_flavor in flavors:
+        secret_schema = secret_schema.value
+        flavors = cls.secret_schema_classes
+        if secret_schema in flavors:
             logger.warning(
                 "Overwriting previously registered stack component class `%s` "
                 "for type '%s' and flavor '%s'.",
-                flavors[secret_set_flavor].__class__.__name__,
-                secret_set_flavor,
+                flavors[secret_schema].__class__.__name__,
+                secret_schema,
             )
 
-        flavors[secret_set_flavor] = secret_set
+        flavors[secret_schema] = secret
         logger.debug(
             "Registered stack component class for type '%s' and flavor '%s'.",
-            secret_set_flavor,
+            secret_schema,
         )
 
     @classmethod
     def get_class(
         cls,
-        secret_set_flavor: Union[SecretSetFlavor, str],
-    ) -> Type[BaseSecretSet]:
+        secret_schema: Union[SecretSchema, str],
+    ) -> Type[BaseSecretSchema]:
         """Returns the stack component class for the given type and flavor.
 
         Args:
-            secret_set_flavor: The flavor of the component class to return.
+            secret_schema: The flavor of the component class to return.
 
         Raises:
             KeyError: If no component class is registered for the given type
                 and flavor.
         """
-        if isinstance(secret_set_flavor, SecretSetFlavor):
-            secret_set_flavor = secret_set_flavor.value
+        if isinstance(secret_schema, SecretSchema):
+            secret_schema = secret_schema.value
 
-        available_flavors = cls.secret_set_classes
+        available_schemas = cls.secret_schema_classes
         try:
-            return available_flavors[secret_set_flavor]
+            return available_schemas[secret_schema]
         except KeyError:
             # The stack component might be part of an integration
             # -> Activate the integrations and try again
@@ -88,25 +89,25 @@ class SecretSetClassRegistry:
             integration_registry.activate_integrations()
 
             try:
-                return available_flavors[secret_set_flavor]
+                return available_schemas[secret_schema]
             except KeyError:
                 raise KeyError(
                     f"No stack component class found for SecretSet  "
-                    f"of flavor {secret_set_flavor}. Registered flavors are:"
-                    f" {set(available_flavors)}."
+                    f"of flavor {secret_schema}. Registered flavors are:"
+                    f" {set(available_schemas)}."
                 ) from None
 
 
-C = TypeVar("C", bound=BaseSecretSet)
+C = TypeVar("C", bound=BaseSecretSchema)
 
 
-def register_secret_set_class(
-    secret_set_flavor: SecretSetFlavor,
+def register_secret_schema_class(
+    secret_schema: SecretSchema,
 ) -> Callable[[Type[C]], Type[C]]:
     """Parametrized decorator function to register secret set classes.
 
     Args:
-        secret_set_flavor: The flavor of the component class to register.
+        secret_schema: The flavor of the component class to register.
 
     Returns:
         A decorator function that registers and returns the decorated stack
@@ -115,21 +116,16 @@ def register_secret_set_class(
 
     def decorator_function(cls: Type[C]) -> Type[C]:
         """Registers the stack component class and returns it unmodified."""
-        SecretSetClassRegistry.register_class(
-            secret_set_flavor=secret_set_flavor,
-            secret_set=cls,
+        SecretSchemaClassRegistry.register_class(
+            secret_schema=secret_schema,
+            secret=cls,
         )
         return cls
 
     return decorator_function
 
 
-SecretSetClassRegistry.register_class(
-    SecretSetFlavor.AWS,
-    AWSSecretSet,
-)
-
-SecretSetClassRegistry.register_class(
-    SecretSetFlavor.DEFAULT,
-    DefaultSecretSet,
+SecretSchemaClassRegistry.register_class(
+    SecretSchema.AWS,
+    AWSSecretSchema,
 )

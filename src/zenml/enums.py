@@ -114,8 +114,7 @@ class SecretsManagerFlavor(StackComponentFlavor):
     AWS = "aws"
 
 
-class SecretSetFlavor(StrEnum):
+class SecretSchema(StrEnum):
     """All supported secret set flavors."""
 
-    DEFAULT = "default"
     AWS = "aws"
