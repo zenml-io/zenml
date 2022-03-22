@@ -351,7 +351,7 @@ class Repository:
                 self.register_stack_component(component)
 
             components[component_type.value] = component.name
-            metadata[component_type.value] = component.flavor.value
+            metadata[component_type.value] = component.FLAVOR
 
         stack_configuration = StackConfiguration(**components)
         self.__config.stacks[stack.name] = stack_configuration
@@ -445,17 +445,17 @@ class Repository:
             StackComponentExistsError: If a stack component with the same type
                 and name already exists.
         """
-        components = self.__config.stack_components[component.type]
+        components = self.__config.stack_components[component.TYPE]
         if component.name in components:
             raise StackComponentExistsError(
-                f"Unable to register stack component (type: {component.type}) "
+                f"Unable to register stack component (type: {component.TYPE}) "
                 f"with name '{component.name}': Found existing stack component "
                 f"with this name."
             )
 
         # write the component configuration file
         component_config_path = self._get_stack_component_config_path(
-            component_type=component.type, name=component.name
+            component_type=component.TYPE, name=component.name
         )
         utils.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
@@ -465,15 +465,15 @@ class Repository:
         )
 
         # add the component to the repository configuration and write it to disk
-        components[component.name] = component.flavor.value
+        components[component.name] = component.FLAVOR
         self._write_config()
         logger.info(
             "Registered stack component with name '%s'.", component.name
         )
 
         analytics_metadata = {
-            "type": component.type.value,
-            "flavor": component.flavor.value,
+            "type": component.TYPE.value,
+            "flavor": component.FLAVOR,
         }
         track_event(
             AnalyticsEvent.REGISTERED_STACK_COMPONENT,
@@ -530,7 +530,7 @@ class Repository:
 
         Args:
             stack_name: If specified, pipelines in the metadata store of the
-                given stack are returned. Otherwise pipelines in the metadata
+                given stack are returned. Otherwise, pipelines in the metadata
                 store of the currently active stack are returned.
 
         Returns:
@@ -552,7 +552,7 @@ class Repository:
         Args:
             pipeline_name: Name of the pipeline.
             stack_name: If specified, pipelines in the metadata store of the
-                given stack are returned. Otherwise pipelines in the metadata
+                given stack are returned. Otherwise, pipelines in the metadata
                 store of the currently active stack are returned.
 
         Returns:
