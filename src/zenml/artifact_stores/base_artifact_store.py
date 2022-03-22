@@ -31,6 +31,7 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Dict,
     Iterable,
     List,
     Optional,
@@ -48,8 +49,8 @@ from zenml.stack import StackComponent
 PathType = Union[bytes, str]
 
 
-def _catch_not_found_error(_func: Callable):
-    def inner_function(*args, **kwargs):
+def _catch_not_found_error(_func: Callable) -> Callable:
+    def inner_function(*args, **kwargs) -> Any:
         try:
             return _func(*args, **kwargs)
         except FileNotFoundError as e:
@@ -72,7 +73,7 @@ class BaseArtifactStore(StackComponent, ABC):
     FLAVOR: ClassVar[str]
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         # Initiate the pydantic object and register the corresponding filesystem
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
@@ -134,7 +135,7 @@ class BaseArtifactStore(StackComponent, ABC):
         raise NotImplementedError()
 
     @root_validator
-    def _ensure_artifact_store(cls, values) -> Any:
+    def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
         try:
             getattr(cls, "SUPPORTED_SCHEMES")
         except AttributeError:

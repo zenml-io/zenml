@@ -151,7 +151,7 @@ class StackComponent(BaseModel, ABC):
         return self.__repr__()
 
     @root_validator
-    def _ensure_stack_component_complete(cls, values) -> Any:
+    def _ensure_stack_component_complete(cls, values: Dict[str, Any]) -> Any:
         try:
             stack_component_type = getattr(cls, "TYPE")
             assert stack_component_type in StackComponentType

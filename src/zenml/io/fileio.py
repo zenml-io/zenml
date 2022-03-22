@@ -26,3 +26,19 @@ from tfx.dsl.io.fileio import (  # noqa
     stat,
     walk,
 )
+
+__all__ = [
+    "copy",
+    "exists",
+    "glob",
+    "isdir",
+    "listdir",
+    "makedirs",
+    "mkdir",
+    "open",
+    "remove",
+    "rename",
+    "rmtree",
+    "stat",
+    "walk",
+]

@@ -188,7 +188,7 @@ class Stack:
     def components(self) -> Dict[StackComponentType, "StackComponent"]:
         """All components of the stack."""
         return {
-            component.type: component
+            component.TYPE: component
             for component in [
                 self.orchestrator,
                 self.metadata_store,
@@ -278,7 +278,7 @@ class Stack:
         requirements = [
             component.requirements
             for component in self.components.values()
-            if component.type not in exclude_components
+            if component.TYPE not in exclude_components
         ]
         return set.union(*requirements) if requirements else set()
 

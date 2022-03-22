@@ -75,7 +75,8 @@ class AzureArtifactStore(BaseArtifactStore):
 
         return prefix, path
 
-    def open(self, path: PathType, mode: str = "r") -> Any:
+    @staticmethod
+    def open(path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
         Args:
             path: Path of the file to open.
@@ -84,9 +85,8 @@ class AzureArtifactStore(BaseArtifactStore):
         """
         return AzureArtifactStore.FILESYSTEM.open(path=path, mode=mode)
 
-    def copyfile(
-        self, src: PathType, dst: PathType, overwrite: bool = False
-    ) -> None:
+    @staticmethod
+    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Copy a file.
         Args:
             src: The path to copy from.
@@ -109,11 +109,13 @@ class AzureArtifactStore(BaseArtifactStore):
         #  manually remove it first
         AzureArtifactStore.FILESYSTEM.copy(path1=src, path2=dst)
 
-    def exists(self, path: PathType) -> bool:
+    @staticmethod
+    def exists(path: PathType) -> bool:
         """Check whether a path exists."""
         return AzureArtifactStore.FILESYSTEM.exists(path=path)  # type: ignore[no-any-return]
 
-    def glob(self, pattern: PathType) -> List[PathType]:
+    @staticmethod
+    def glob(pattern: PathType) -> List[PathType]:
         """Return all paths that match the given glob pattern.
         The glob pattern may include:
         - '*' to match any number of characters
@@ -132,11 +134,13 @@ class AzureArtifactStore(BaseArtifactStore):
             for path in AzureArtifactStore.FILESYSTEM.glob(path=pattern)
         ]
 
-    def isdir(self, path: PathType) -> bool:
+    @staticmethod
+    def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
         return AzureArtifactStore.FILESYSTEM.isdir(path=path)  # type: ignore[no-any-return]
 
-    def listdir(self, path: PathType) -> List[PathType]:
+    @staticmethod
+    def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
         _, path = AzureArtifactStore._split_path(path)
 
@@ -152,22 +156,24 @@ class AzureArtifactStore(BaseArtifactStore):
             for dict_ in AzureArtifactStore.FILESYSTEM.listdir(path=path)
         ]
 
-    def makedirs(self, path: PathType) -> None:
+    @staticmethod
+    def makedirs(path: PathType) -> None:
         """Create a directory at the given path. If needed also
         create missing parent directories."""
         AzureArtifactStore.FILESYSTEM.makedirs(path=path, exist_ok=True)
 
-    def mkdir(self, path: PathType) -> None:
+    @staticmethod
+    def mkdir(path: PathType) -> None:
         """Create a directory at the given path."""
         AzureArtifactStore.FILESYSTEM.makedir(path=path)
 
-    def remove(self, path: PathType) -> None:
+    @staticmethod
+    def remove(path: PathType) -> None:
         """Remove the file at the given path."""
         AzureArtifactStore.FILESYSTEM.rm_file(path=path)
 
-    def rename(
-        self, src: PathType, dst: PathType, overwrite: bool = False
-    ) -> None:
+    @staticmethod
+    def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Rename source file to destination file.
         Args:
             src: The path of the file to rename.
@@ -190,16 +196,18 @@ class AzureArtifactStore(BaseArtifactStore):
         #  to manually remove it first
         AzureArtifactStore.FILESYSTEM.rename(path1=src, path2=dst)
 
-    def rmtree(self, path: PathType) -> None:
+    @staticmethod
+    def rmtree(path: PathType) -> None:
         """Remove the given directory."""
         AzureArtifactStore.FILESYSTEM.delete(path=path, recursive=True)
 
-    def stat(self, path: PathType) -> Dict[str, Any]:
+    @staticmethod
+    def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
         return AzureArtifactStore.FILESYSTEM.stat(path=path)  # type: ignore[no-any-return]
 
+    @staticmethod
     def walk(
-        self,
         top: PathType,
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
