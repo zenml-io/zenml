@@ -23,7 +23,6 @@ import pytest
 from hypothesis import given
 from hypothesis.strategies import text
 from tfx.dsl.io.filesystem import NotFoundError
-from tfx.dsl.io.plugins.local import LocalFilesystem
 
 import zenml.io.utils
 from zenml.constants import REMOTE_FS_PREFIX

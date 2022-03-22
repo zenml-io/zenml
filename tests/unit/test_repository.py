@@ -347,8 +347,7 @@ def test_getting_a_stack_component(clean_repo):
 
     with does_not_raise():
         registered_component = clean_repo.get_stack_component(
-            component_type=component.TYPE,
-            name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
     assert component == registered_component
@@ -399,8 +398,7 @@ def test_registering_a_new_stack_component(clean_repo):
 
     with does_not_raise():
         registered_artifact_store = new_repo.get_stack_component(
-            component_type=new_artifact_store.TYPE,
-            name=new_artifact_store.name
+            component_type=new_artifact_store.TYPE, name=new_artifact_store.name
         )
 
     assert registered_artifact_store == new_artifact_store
@@ -412,22 +410,19 @@ def test_deregistering_a_stack_component(clean_repo):
     clean_repo.register_stack_component(component)
 
     clean_repo.deregister_stack_component(
-        component_type=component.TYPE,
-        name=component.name
+        component_type=component.TYPE, name=component.name
     )
 
     with pytest.raises(KeyError):
         clean_repo.get_stack_component(
-            component_type=component.TYPE,
-            name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
     new_repo = Repository(clean_repo.root)
 
     with pytest.raises(KeyError):
         new_repo.get_stack_component(
-            component_type=component.TYPE,
-            name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
 
@@ -440,8 +435,7 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
 
     with pytest.raises(ValueError):
         clean_repo.deregister_stack_component(
-            component_type=component.TYPE,
-            name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
 
