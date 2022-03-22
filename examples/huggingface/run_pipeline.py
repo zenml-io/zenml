@@ -83,16 +83,16 @@ def main(nlp_task: str, pretrained_model: str, batch_size: int, epochs: int):
         pipeline = sequence_classification.seq_classifier_train_eval_pipeline(
             importer=sequence_classification.data_importer(
                 sequence_classification_config
-            ).with_return_materializers(HFDatasetMaterializer),
+            ),
             load_tokenizer=sequence_classification.load_tokenizer(
                 sequence_classification_config
-            ).with_return_materializers(HFTokenizerMaterializer),
+            ),
             tokenization=sequence_classification.tokenization(
                 sequence_classification_config
-            ).with_return_materializers(HFDatasetMaterializer),
+            ),
             trainer=sequence_classification.trainer(
                 sequence_classification_config
-            ).with_return_materializers(HFTFModelMaterializer),
+            ),
             evaluator=sequence_classification.evaluator(
                 sequence_classification_config
             ),
