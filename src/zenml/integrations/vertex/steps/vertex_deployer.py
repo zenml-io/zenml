@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 
 from typing import Optional, Type, cast
+from zenml.artifacts.base_artifact import BaseArtifact
 
 from zenml.integrations.vertex.services.vertex_deployment import (
     VertexDeploymentConfig,
     VertexDeploymentService,
 )
+from zenml.environment import Environment
 from zenml.services import load_last_service_from_step
 from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
     BaseStep,
     BaseStepConfig,
     StepContext,
@@ -53,9 +54,10 @@ def vertex_deployer_step(
     on to Vertex AI.
 
     The returned step can be used in a pipeline to implement continuous
-    deployment for an vertex model.
+    deployment for a model.
 
     Args:
+        name: Name of the step.
         enable_cache: Specify whether caching is enabled for this step. If no
             value is passed, caching is enabled by default
     Returns:
@@ -69,7 +71,7 @@ def vertex_deployer_step(
 
     @step(enable_cache=enable_cache, name=name)
     def vertex_model_deployer(
-        model: Model,
+        model: BaseArtifact,
         deploy_decision: bool,
         config: VertexDeployerConfig,
         context: StepContext,
@@ -86,7 +88,7 @@ def vertex_deployer_step(
         """
 
         # Find a service created by a previous run of this step
-        step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
+        step_env = Environment().step_environment
         last_service = cast(
             VertexDeploymentService,
             load_last_service_from_step(
