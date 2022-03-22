@@ -41,7 +41,12 @@ from typing import (
     Union,
 )
 
+from pydantic import validator
+
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifact_stores.base_artifact_store import (
+    ArtifactStoreInterfaceError,
+)
 
 PathType = Union[bytes, str]
 
@@ -153,3 +158,13 @@ class LocalArtifactStore(BaseArtifactStore):
             directory.
         """
         yield from os.walk(top, topdown=topdown, onerror=onerror)  # type: ignore[type-var, misc]
+
+    @validator("path")
+    def ensure_path_local(cls, path):
+        remote_prefixes = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
+        if any(path.startswith(prefix) for prefix in remote_prefixes):
+            raise ArtifactStoreInterfaceError(
+                f"The path:{path} you defined for your local artifact store "
+                f"start with one of the remote prefixes."
+            )
+        return path

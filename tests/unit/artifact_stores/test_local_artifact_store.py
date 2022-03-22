@@ -12,10 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pydantic
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
+from zenml.artifact_stores.base_artifact_store import (
+    ArtifactStoreInterfaceError,
+)
 from zenml.enums import StackComponentType
 
 
@@ -30,13 +32,13 @@ def test_local_artifact_store_attributes():
 def test_local_artifact_store_only_supports_local_paths():
     """Checks that a local artifact store can only be initialized with a local
     path."""
-    with pytest.raises(pydantic.ValidationError):
+    with pytest.raises(ArtifactStoreInterfaceError):
         LocalArtifactStore(name="", path="gs://remote/path")
 
-    with pytest.raises(pydantic.ValidationError):
+    with pytest.raises(ArtifactStoreInterfaceError):
         LocalArtifactStore(name="", path="s3://remote/path")
 
-    with pytest.raises(pydantic.ValidationError):
+    with pytest.raises(ArtifactStoreInterfaceError):
         LocalArtifactStore(name="", path="hdfs://remote/path")
 
     artifact_store = LocalArtifactStore(name="", path="/local/path")
