@@ -25,7 +25,7 @@ Sequence Classification is an NLP/NLU task, where we assign labels to a given te
 
 ## Token Classification
 
-Token Classification is an NLP/NLU task, where we assign labels to tokens in a text, i.e. Name entity recognition, Part of speech tagging etc. In this example, we will train a NER model using the `conll2003` dataset.
+Token Classification is an NLP/NLU task, where we assign labels to tokens in a text, i.e. Name entity recognition, Part of speech tagging etc. In this example, we will train a NER model using the [`conll2003`](https://huggingface.co/datasets/conll2003) dataset.
 
 - Load dataset: Load token-classification dataset in this case it is `conll2003` dataset
 - Load pre-trained tokenizer: Load pre-trained tokenizer from huggingface transformers.
