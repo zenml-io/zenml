@@ -49,6 +49,7 @@ PathType = Union[bytes, str]
 class LocalArtifactStore(BaseArtifactStore):
     """Artifact Store for local artifacts."""
 
+    # Class Configuration
     FLAVOR: ClassVar[str] = "local"
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
 
@@ -108,11 +109,11 @@ class LocalArtifactStore(BaseArtifactStore):
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Rename source file to destination file.
-            Args:
-                src: The path of the file to rename.
-                dst: The path to rename the source file to.
-                overwrite: If a file already exists at the destination, this
-                    method will overwrite it if overwrite=`True`
+        Args:
+            src: The path of the file to rename.
+            dst: The path to rename the source file to.
+            overwrite: If a file already exists at the destination, this
+                method will overwrite it if overwrite=`True`
         """
         if not overwrite and os.path.exists(dst):
             raise OSError(
@@ -141,14 +142,14 @@ class LocalArtifactStore(BaseArtifactStore):
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
         """Return an iterator that walks the contents of the given directory.
-            Args:
-                top: Path of directory to walk.
-                topdown: Whether to walk directories topdown or bottom-up.
-                onerror: Callable that gets called if an error occurs.
-            Returns:
-                An Iterable of Tuples, each of which contain the path of the
-                current directory path, a list of directories inside the
-                current directory and a list of files inside the current
-                directory.
+        Args:
+            top: Path of directory to walk.
+            topdown: Whether to walk directories topdown or bottom-up.
+            onerror: Callable that gets called if an error occurs.
+        Returns:
+            An Iterable of Tuples, each of which contain the path of the
+            current directory path, a list of directories inside the
+            current directory and a list of files inside the current
+            directory.
         """
         yield from os.walk(top, topdown=topdown, onerror=onerror)

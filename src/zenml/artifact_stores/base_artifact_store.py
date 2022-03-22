@@ -65,10 +65,9 @@ class BaseArtifactStore(StackComponent, ABC):
         path: The root path of the artifact store.
     """
 
-    # Instance attributes
     path: str
 
-    # Class attributes
+    # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
     FLAVOR: ClassVar[str]
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
@@ -135,12 +134,7 @@ class BaseArtifactStore(StackComponent, ABC):
         raise NotImplementedError()
 
     @root_validator
-    def _ensure_complete(cls, values) -> Any:
-        try:
-            getattr(cls, "FLAVOR")
-        except AttributeError:
-            print("Please set a FLAVOR for your artifact store.")
-
+    def _ensure_artifact_store(cls, values) -> Any:
         try:
             getattr(cls, "SUPPORTED_SCHEMES")
         except AttributeError:

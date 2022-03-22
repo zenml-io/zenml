@@ -14,7 +14,7 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
 
 import kfp
 import urllib3
@@ -22,7 +22,7 @@ from kfp_server_api.exceptions import ApiException
 
 import zenml.io.utils
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.enums import OrchestratorFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
@@ -52,10 +52,7 @@ logger = get_logger(__name__)
 DEFAULT_KFP_UI_PORT = 8080
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.ORCHESTRATOR,
-    component_flavor=OrchestratorFlavor.KUBEFLOW,
-)
+@register_stack_component_class
 class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow.
 
@@ -81,13 +78,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubernetes_context: Optional[str] = None
     synchronous = False
-    supports_local_execution = True
-    supports_remote_execution = True
 
-    @property
-    def flavor(self) -> OrchestratorFlavor:
-        """The orchestrator flavor."""
-        return OrchestratorFlavor.KUBEFLOW
+    # Class Configuration
+    FLAVOR: ClassVar[str] = "kubeflow"
 
     @property
     def validator(self) -> Optional[StackValidator]:

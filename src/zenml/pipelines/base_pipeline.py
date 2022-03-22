@@ -355,7 +355,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         stack = Repository().active_stack
 
         stack_metadata = {
-            component_type.value: component.flavor.value
+            component_type.value: component.FLAVOR
             for component_type, component in stack.components.items()
         }
         track_event(

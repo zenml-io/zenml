@@ -15,12 +15,11 @@
 import datetime
 import os
 import time
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, ClassVar, Dict
 
 from pydantic import root_validator
 
 import zenml.io.utils
-from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
     AirflowDagRunner,
     AirflowPipelineConfig,
@@ -45,26 +44,19 @@ AIRFLOW_ROOT_DIR = "airflow_root"
 DAG_FILEPATH_OPTION_KEY = "dag_filepath"
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.ORCHESTRATOR,
-    component_flavor=OrchestratorFlavor.AIRFLOW,
-)
+@register_stack_component_class
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     airflow_home: str = ""
-    supports_local_execution = True
-    supports_remote_execution = False
+
+    # Class Configuration
+    FLAVOR: ClassVar[str] = "airflow"
 
     def __init__(self, **values: Any):
         """Sets environment variables to configure airflow."""
         super().__init__(**values)
         self._set_env()
-
-    @property
-    def flavor(self) -> OrchestratorFlavor:
-        """The orchestrator flavor."""
-        return OrchestratorFlavor.AIRFLOW
 
     @root_validator
     def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
