@@ -155,10 +155,10 @@ def copy_dir(
         overwrite: Boolean. If false, function throws an error before overwrite.
     """
     for source_file in listdir(source_dir):
-        source_file_path = Path(source_file)
+        source_file_path = Path(source_file)  # type: ignore[arg-type]
         destination_name = os.path.join(destination_dir, source_file_path.name)
         if isdir(source_file):
-            copy_dir(source_file, destination_name, overwrite)
+            copy_dir(source_file, destination_name, overwrite)  # type: ignore[arg-type]
         else:
             create_dir_recursive_if_not_exists(
                 str(Path(destination_name).parent)

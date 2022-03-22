@@ -69,7 +69,7 @@ class LocalArtifactStore(BaseArtifactStore):
                 )
                 % dst
             )
-        shutil.copyfile(src, dst)
+        shutil.copyfile(src, dst)  # type: ignore[type-var, arg-type]
 
     @staticmethod
     def exists(path: PathType) -> bool:
@@ -79,7 +79,7 @@ class LocalArtifactStore(BaseArtifactStore):
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
         """Return the paths that match a glob pattern."""
-        return glob.glob(pattern)
+        return glob.glob(pattern)  # type: ignore[type-var]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
@@ -89,7 +89,7 @@ class LocalArtifactStore(BaseArtifactStore):
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
         """Returns a list of files under a given directory in the filesystem."""
-        return os.listdir(path)
+        return os.listdir(path)  # type:ignore[return-value]
 
     @staticmethod
     def makedirs(path: PathType) -> None:
@@ -152,4 +152,4 @@ class LocalArtifactStore(BaseArtifactStore):
             current directory and a list of files inside the current
             directory.
         """
-        yield from os.walk(top, topdown=topdown, onerror=onerror)
+        yield from os.walk(top, topdown=topdown, onerror=onerror)  # type: ignore[type-var, misc]

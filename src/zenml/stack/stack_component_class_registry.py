@@ -44,7 +44,7 @@ class StackComponentClassRegistry:
     ) -> None:
         """Registers a stack component class."""
         component_flavor = component_class.FLAVOR
-        flavors = cls.component_classes[component_class.TYPE.value]
+        flavors = cls.component_classes[component_class.TYPE]
         if component_flavor in flavors:
             logger.warning(
                 "Overwriting previously registered stack component class `%s` "

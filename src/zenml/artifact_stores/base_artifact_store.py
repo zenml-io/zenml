@@ -49,7 +49,7 @@ from zenml.stack import StackComponent
 PathType = Union[bytes, str]
 
 
-def _catch_not_found_error(_func: Callable) -> Callable:
+def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
     def inner_function(*args: Any, **kwargs: Any) -> Any:
         try:
             return _func(*args, **kwargs)
