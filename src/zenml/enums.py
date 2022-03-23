@@ -47,6 +47,7 @@ class StackComponentType(StrEnum):
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
     STEP_OPERATOR = "step_operator"
+    FEATURE_STORE = "feature_store"
 
     @property
     def plural(self) -> str:
@@ -75,6 +76,8 @@ class StackComponentFlavor(StrEnum):
             return OrchestratorFlavor
         elif component_type == StackComponentType.STEP_OPERATOR:
             return StepOperatorFlavor
+        elif component_type == StackComponentType.FEATURE_STORE:
+            return FeatureStoreFlavor
         else:
             raise ValueError(
                 f"Unsupported Stack Component Type {component_type.value}"
@@ -117,6 +120,12 @@ class StepOperatorFlavor(StackComponentFlavor):
 
     AZUREML = "azureml"
     SAGEMAKER = "sagemaker"
+
+
+class FeatureStoreFlavor(StackComponentFlavor):
+    """All supported feature store flavors."""
+
+    FEAST = "feast"
 
 
 class MetadataContextTypes(Enum):

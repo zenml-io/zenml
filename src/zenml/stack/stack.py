@@ -39,6 +39,7 @@ from zenml.utils import string_utils
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
+    from zenml.feature_stores import BaseFeatureStore
     from zenml.metadata_stores import BaseMetadataStore
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
@@ -68,6 +69,7 @@ class Stack:
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
         step_operator: Optional["BaseStepOperator"] = None,
+        feature_store: Optional["BaseFeatureStore"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -80,6 +82,7 @@ class Stack:
         self._artifact_store = artifact_store
         self._container_registry = container_registry
         self._step_operator = step_operator
+        self._feature_store = feature_store
 
         self.validate()
 
@@ -102,6 +105,7 @@ class Stack:
         """
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
+        from zenml.feature_stores import BaseFeatureStore
         from zenml.metadata_stores import BaseMetadataStore
         from zenml.orchestrators import BaseOrchestrator
         from zenml.step_operators import BaseStepOperator
@@ -142,6 +146,12 @@ class Stack:
         ):
             _raise_type_error(step_operator, BaseStepOperator)
 
+        feature_store = components.get(StackComponentType.FEATURE_STORE)
+        if feature_store is not None and not isinstance(
+            feature_store, BaseFeatureStore
+        ):
+            _raise_type_error(feature_store, BaseFeatureStore)
+
         return Stack(
             name=name,
             orchestrator=orchestrator,
@@ -149,6 +159,7 @@ class Stack:
             artifact_store=artifact_store,
             container_registry=container_registry,
             step_operator=step_operator,
+            feature_store=feature_store,
         )
 
     @classmethod
@@ -195,6 +206,7 @@ class Stack:
                 self.artifact_store,
                 self.container_registry,
                 self.step_operator,
+                self.feature_store,
             ]
             if component is not None
         }
@@ -228,6 +240,11 @@ class Stack:
     def step_operator(self) -> Optional["BaseStepOperator"]:
         """The step operator of the stack."""
         return self._step_operator
+
+    @property
+    def feature_store(self) -> Optional["BaseFeatureStore"]:
+        """The feature store of the stack."""
+        return self._feature_store
 
     @property
     def runtime_options(self) -> Dict[str, Any]:
