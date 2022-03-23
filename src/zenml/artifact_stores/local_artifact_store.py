@@ -160,7 +160,7 @@ class LocalArtifactStore(BaseArtifactStore):
         yield from os.walk(top, topdown=topdown, onerror=onerror)  # type: ignore[type-var, misc]
 
     @validator("path")
-    def ensure_path_local(cls, path):
+    def ensure_path_local(cls, path: str) -> str:
         remote_prefixes = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
         if any(path.startswith(prefix) for prefix in remote_prefixes):
             raise ArtifactStoreInterfaceError(
