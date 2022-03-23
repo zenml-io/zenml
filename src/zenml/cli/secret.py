@@ -27,8 +27,7 @@ from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
 
 
 def pretty_print_secret(
-    secret: BaseSecretSchema,
-    hide_secret: bool = True
+    secret: BaseSecretSchema, hide_secret: bool = True
 ) -> None:
     """Given a secret set print all key value pairs associated with the secret
 
@@ -84,7 +83,7 @@ def register_secret(
         name: Name of the secret
         secret_schema_type: Type of the secret schema - make sure the schema of
             choice is registered with the secret_schema_class_registry
-        """
+    """
     # TODO [HIGH]: Verify secret_name does not exist already before querying
     #   user input
 
@@ -96,7 +95,7 @@ def register_secret(
     )
     secret_keys = secret_schema.get_schema_keys()
 
-    secret_contents = {'name': name}
+    secret_contents = {"name": name}
     if secret_keys:
         click.echo(
             "You have supplied a secret_set_schema with predefined keys. "
@@ -109,7 +108,7 @@ def register_secret(
 
     else:
         click.echo(
-            "You have not supplied a secret_set_schema with any"
+            "You have not supplied a secret_set_schema with any "
             "predefined keys. Entering interactive mode:"
         )
         while True:
@@ -178,9 +177,11 @@ def update_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
             underlying secrets engine
         name: Name of the secret
     """
-    # TODO [HIGH] - Implement a fine grained User Interface for the update
+    # TODO [HIGH]: Implement a fine grained User Interface for the update
     #  secrets method that allows for deleting, adding and modifying specific
     #  keys, pass in dict
+
+    # TODO [HIGH]: Allow for non-interactive use of this method
 
     with console.status(f"Getting secret set `{name}`..."):
         try:
@@ -192,7 +193,7 @@ def update_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
         "You will now have a chance to overwrite each secret "
         "one by one. Press enter to skip."
     )
-    updated_contents = {'name': name}
+    updated_contents = {"name": name}
     for key, value in secret.content.items():
         new_value = getpass.getpass(f"New value for " f"{key}:")
         if new_value:

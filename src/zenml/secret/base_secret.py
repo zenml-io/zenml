@@ -34,7 +34,7 @@ class BaseSecretSchema(BaseModel, ABC):
         This property unifies all attributes into a content dictionary.
         """
         fields_dict = self.dict()
-        fields_dict.pop('name')
+        fields_dict.pop("name")
         if "arbitrary_kv_pairs" in fields_dict:
             arbitrary_kv_pairs = fields_dict.pop("arbitrary_kv_pairs")
             fields_dict.update(arbitrary_kv_pairs)
@@ -46,10 +46,12 @@ class BaseSecretSchema(BaseModel, ABC):
         These schema keys can be used to define all
         required key-value pairs of a secret schema"""
 
-        ignored_keys = ['name', 'arbitrary_kv_pairs']
-        schema_keys = [schema_key
-                       for schema_key in cls.__fields__.keys()
-                       if schema_key not in ignored_keys]
+        ignored_keys = ["name", "arbitrary_kv_pairs"]
+        schema_keys = [
+            schema_key
+            for schema_key in cls.__fields__.keys()
+            if schema_key not in ignored_keys
+        ]
         return schema_keys
 
     # TODO [HIGH]: Validate that Secret contents conform to schema

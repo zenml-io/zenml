@@ -83,6 +83,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     synchronous = False
     supports_local_execution = True
     supports_remote_execution = True
+    secrets: Optional[list[str]] = None
 
     @property
     def flavor(self) -> OrchestratorFlavor:
