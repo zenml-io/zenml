@@ -21,6 +21,7 @@ from typing import List, Optional, Tuple
 from google.auth import credentials as auth_credentials
 from google.auth import default, load_credentials_from_file
 from google.cloud import aiplatform
+from pydantic import validator as property_validator
 
 from zenml import __version__
 from zenml.enums import (
@@ -59,27 +60,25 @@ class VertexStepOperator(BaseStepOperator):
 
     Attributes:
         project: [Optional] GCP project name.
-        region: [Optional]
-        accelerator_type: [Optional]
-        accelerator_count: [Optional]
-        encryption_spec_key_name: [Optional]
-        service_account_path: [Optional]
-        job_name: [Optional]
-        base_image: [Optional]
-        job_labels: [Optional]
+        region: [Optional] Region name, e.g., `europe-west1`.
+        accelerator_type: [Optional] Accelerator type from list: https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
+        accelerator_count: [Optional] Defines number of accelerators to be used for the job.
+        machine_type: [Optional] Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
+        base_image: [Optional] Base image for building the custom job container.
+        encryption_spec_key_name: [Optional]: Encryption spec key name.
+        service_account_path: [Optional]: Path to service account file specifiying credentials of the GCP user. If not provided, falls back
+        to Default Credentials.
     """
 
     supports_local_execution = True
     supports_remote_execution = True
 
     project: Optional[str] = None
-
-    region: Optional[str] = "us-central1"
-    # https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
-    accelerator_type: Optional[aiplatform.gapic.AcceleratorType] = None
+    region: str = "us-central1"
+    accelerator_type: Optional[str] = None
     accelerator_count: int = 0
-    # https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
     machine_type: str = "n1-standard-4"
+    base_image: Optional[str] = None
 
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set
@@ -89,21 +88,10 @@ class VertexStepOperator(BaseStepOperator):
     # environment default credentials used if not set
     service_account_path: Optional[str] = None
 
-    job_name: Optional[str] = None
-    base_image: Optional[str] = None
-    job_labels: dict = {"source": f"zenml-{__version__}"}
-
     @property
     def flavor(self) -> StepOperatorFlavor:
         """The step operator flavor."""
         return StepOperatorFlavor.VERTEX
-
-    def _get_authentication(
-        self,
-    ) -> Tuple[Optional[auth_credentials.Credentials], Optional[str]]:
-        if self.service_account_path:
-            return load_credentials_from_file(self.service_account_path)
-        return default()
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -116,6 +104,23 @@ class VertexStepOperator(BaseStepOperator):
             required_components={StackComponentType.CONTAINER_REGISTRY},
             custom_validation_function=_ensure_local_orchestrator,
         )
+
+    @property_validator
+    def validate_accelerator_enum(cls, v):
+        accepted_vals = list(
+            aiplatform.gapic.AcceleratorType.__members__.keys()
+        )
+        if v.upper() not in accepted_vals:
+            raise RuntimeError(
+                f"Accelerator must be one of the following: {accepted_vals}"
+            )
+
+    def _get_authentication(
+        self,
+    ) -> Tuple[Optional[auth_credentials.Credentials], Optional[str]]:
+        if self.service_account_path:
+            return load_credentials_from_file(self.service_account_path)
+        return default()
 
     def _build_and_push_docker_image(
         self,
@@ -160,6 +165,8 @@ class VertexStepOperator(BaseStepOperator):
             requirements: List of pip requirements that must be installed
                 inside the step operator environment.
         """
+        job_labels = {"source": f"zenml-{__version__}"}
+
         # Step 1: Authenticate with Google
         credentials, project_id = self._get_authentication()
         if self.project:
@@ -187,13 +194,13 @@ class VertexStepOperator(BaseStepOperator):
             credentials=credentials, client_options=client_options
         )
         custom_job = {
-            "display_name": self.job_name or run_name,
+            "display_name": run_name,
             "job_spec": {
                 "worker_pool_specs": [
                     {
                         "machine_spec": {
                             "machine_type": self.machine_type,
-                            "accelerator_type": self.accelerator_type or None,
+                            "accelerator_type": accelerator_type or None,
                             "accelerator_count": self.accelerator_count
                             if self.accelerator_type
                             else 0,
@@ -207,7 +214,7 @@ class VertexStepOperator(BaseStepOperator):
                     }
                 ]
             },
-            "labels": self.job_labels,
+            "labels": job_labels,
             "encryption_spec": {"kmsKeyName": self.encryption_spec_key_name}
             if self.encryption_spec_key_name
             else {},

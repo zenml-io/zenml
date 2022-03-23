@@ -15,7 +15,6 @@
 import numpy as np
 from sklearn.base import ClassifierMixin
 
-from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.integrations.constants import SKLEARN
 from zenml.integrations.sklearn.helpers.digits import (
     get_digits,

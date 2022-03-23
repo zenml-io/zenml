@@ -30,9 +30,6 @@
 
 from typing import TYPE_CHECKING, Any
 
-# from google.cloud import aiplatform
-# from google.cloud.aiplatform import pipeline_jobs
-
 from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.logger import get_logger
@@ -40,6 +37,10 @@ from zenml.stack import Stack
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
+
+# from google.cloud import aiplatform
+# from google.cloud.aiplatform import pipeline_jobs
+
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
