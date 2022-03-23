@@ -20,7 +20,6 @@ from docker.client import DockerClient
 from docker.utils import build as docker_build_utils
 
 import zenml
-from zenml import environment
 import zenml.io.utils
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -71,7 +70,7 @@ def generate_dockerfile_contents(
         Content of a dockerfile.
     """
     lines = [f"FROM {base_image}", "WORKDIR /app"]
-    
+
     if environment_vars:
         for key, value in environment_vars.items():
             lines.append(f"ENV {key}={value}")
@@ -200,7 +199,7 @@ def build_docker_image(
             are included in the build context.
         requirements: Optional list of pip requirements to install. This
             will only be used if no value is given for `dockerfile_path`.
-        environment_vars: Optional dict of key value pairs that need to be 
+        environment_vars: Optional dict of key value pairs that need to be
             embedded as environment variables in the image.
         use_local_requirements: If `True` and no values are given for
             `dockerfile_path` and `requirements`, then the packages installed
