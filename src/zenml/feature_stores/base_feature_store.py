@@ -11,20 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from abc import ABC, abstractmethod
+
 from zenml.enums import FeatureStoreFlavor, StackComponentType
 from zenml.stack import StackComponent
 
 
-class BaseFeatureStore(StackComponent):
-    """Base class for all ZenML feature stores.
-
-    # Attributes:
-        # uri: The URI of the container registry.
-    """
-
-    # uri: str
-    supports_local_execution = True
-    supports_remote_execution = True
+class BaseFeatureStore(StackComponent, ABC):
+    """Base class for all ZenML feature stores."""
 
     @property
     def type(self) -> StackComponentType:
@@ -32,6 +27,6 @@ class BaseFeatureStore(StackComponent):
         return StackComponentType.FEATURE_STORE
 
     @property
+    @abstractmethod
     def flavor(self) -> FeatureStoreFlavor:
-        """The feature store flavor."""
-        return FeatureStoreFlavor.FEAST
+        """The step operator flavor."""
