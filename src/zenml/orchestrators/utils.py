@@ -79,7 +79,7 @@ def get_cache_status(
 
     status = False
     repository = Repository()
-    # TODO [HIGH]: Get the current running stack instead of just the active
+    # TODO [ENG-706]: Get the current running stack instead of just the active
     #   stack
     metadata_store = repository.get_stack(
         repository.active_stack_name

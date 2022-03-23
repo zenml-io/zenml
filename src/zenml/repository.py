@@ -177,7 +177,7 @@ class Repository:
                 f"sqlite:///{self.config_directory / 'stackstore.db'}"
             )
         else:
-            # TODO[HIGH]: implement other stack store backends (rest, mysql?)
+            # TODO[ENG-695]: implement other stack store backends (rest, mysql?)
             raise ValueError(
                 f"Unsupported StackStore StorageType {self.__config.storage_type.value}"
             )

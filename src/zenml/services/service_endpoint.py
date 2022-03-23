@@ -98,7 +98,7 @@ class BaseServiceEndpoint(BaseTypedModel):
     admin_state: ServiceState = ServiceState.INACTIVE
     config: ServiceEndpointConfig
     status: ServiceEndpointStatus
-    # TODO [MEDIUM]: allow multiple monitors per endpoint
+    # TODO [ENG-701]: allow multiple monitors per endpoint
     monitor: Optional[BaseServiceEndpointHealthMonitor] = None
 
     def __init__(
