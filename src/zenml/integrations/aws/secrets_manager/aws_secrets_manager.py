@@ -82,9 +82,7 @@ class AWSSecretsManager(BaseSecretsManager):
         return StackComponentType.SECRETS_MANAGER
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
-        """
-        Creates a new secret.
-        """
+        """Registers a new secret."""
         self._ensure_client_connected(self.region_name)
 
         secret_value = jsonify_secret_contents(secret)
@@ -124,7 +122,7 @@ class AWSSecretsManager(BaseSecretsManager):
         return [secret["Name"] for secret in response["SecretList"]]
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
-        """Update existing secret."""
+        """Update an existing secret."""
         self._ensure_client_connected(self.region_name)
 
         secret_value = jsonify_secret_contents(secret)
@@ -134,14 +132,14 @@ class AWSSecretsManager(BaseSecretsManager):
         self.CLIENT.put_secret_value(**kwargs)
 
     def delete_secret(self, secret_name: str) -> None:
-        """Delete existing secret."""
+        """Delete an existing secret."""
         self._ensure_client_connected(self.region_name)
         self.CLIENT.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=False
         )
 
     def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete existing secret."""
+        """Delete all existing secrets."""
         self._ensure_client_connected(self.region_name)
         for secret_name in self.get_all_secret_keys():
             self.CLIENT.delete_secret(
@@ -149,7 +147,7 @@ class AWSSecretsManager(BaseSecretsManager):
             )
 
     def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
-        """Get value at key within secret"""
+        """Get value for a particular key within a Secret."""
         secret = self.get_secret(secret_name)
 
         secret_contents = secret.content
