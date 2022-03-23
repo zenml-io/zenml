@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import base64
-from zenml import secret
-from zenml.secret.base_secret import BaseSecretSchema
+from typing import Dict
+
 from zenml.constants import ZENML_SCHEMA_NAME
-from typing import Any, List, Optional, Dict
+from zenml.secret.base_secret import BaseSecretSchema
 
 
 def encode_string(string: str) -> str:

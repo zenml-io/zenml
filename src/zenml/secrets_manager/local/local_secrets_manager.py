@@ -11,12 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import base64
 import os
 from typing import Any, Dict, List, Optional
 
 from zenml.cli.utils import error
-from zenml.constants import ZENML_SCHEMA_NAME
 from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.io.fileio import create_file_if_not_exists
 from zenml.io.utils import get_global_config_directory
@@ -24,14 +22,11 @@ from zenml.logger import get_logger
 from zenml.secret import SecretSchemaClassRegistry
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_manager.utils import decode_secret_dict, encode_secret
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.utils import yaml_utils
-from zenml.secrets_manager.utils import (
-    encode_secret,
-    decode_secret_dict,
-)
 
 logger = get_logger(__name__)
 
@@ -102,9 +97,7 @@ class LocalSecretsManager(BaseSecretsManager):
             raise KeyError(f"Secret set `{secret_name}` does not exists.")
         secret_dict = secret_sets_store_items[secret_name]
 
-        decoded_secret_dict, zenml_schema_name = decode_secret_dict(
-            secret_dict
-        )
+        decoded_secret_dict, zenml_schema_name = decode_secret_dict(secret_dict)
         decoded_secret_dict["name"] = secret_name
 
         secret_schema = SecretSchemaClassRegistry.get_class(
