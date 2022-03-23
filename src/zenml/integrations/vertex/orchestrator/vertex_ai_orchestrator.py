@@ -30,8 +30,8 @@
 
 from typing import TYPE_CHECKING, Any
 
-from google.cloud import aiplatform
-from google.cloud.aiplatform import pipeline_jobs
+# from google.cloud import aiplatform
+# from google.cloud.aiplatform import pipeline_jobs
 
 from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
@@ -72,14 +72,14 @@ class VertexOrchestrator(KubeflowOrchestrator):
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline on Vertex AI using the Kubeflow orchestrator."""
+        raise NotImplementedError("Vertex AI orchestration is coming soon!")
+        # super().run_pipeline(pipeline, stack, runtime_configuration)
 
-        super().run_pipeline(pipeline, stack, runtime_configuration)
+        # aiplatform.init(
+        #     project=GOOGLE_CLOUD_PROJECT, location=GOOGLE_CLOUD_REGION
+        # )
 
-        aiplatform.init(
-            project=GOOGLE_CLOUD_PROJECT, location=GOOGLE_CLOUD_REGION
-        )
-
-        job = pipeline_jobs.PipelineJob(
-            template_path=PIPELINE_DEFINITION_FILE, display_name=PIPELINE_NAME
-        )
-        job.submit()
+        # job = pipeline_jobs.PipelineJob(
+        #     template_path=PIPELINE_DEFINITION_FILE, display_name=PIPELINE_NAME
+        # )
+        # job.submit()

@@ -59,14 +59,14 @@ class VertexStepOperator(BaseStepOperator):
 
     Attributes:
         project: [Optional] GCP project name.
-        region: [Optional]  
-        accelerator_type: [Optional] 
-        accelerator_count: [Optional] 
-        encryption_spec_key_name: [Optional] 
-        service_account_path: [Optional] 
-        job_name: [Optional] 
-        base_image: [Optional] 
-        job_labels: [Optional] 
+        region: [Optional]
+        accelerator_type: [Optional]
+        accelerator_count: [Optional]
+        encryption_spec_key_name: [Optional]
+        service_account_path: [Optional]
+        job_name: [Optional]
+        base_image: [Optional]
+        job_labels: [Optional]
     """
 
     supports_local_execution = True
