@@ -35,36 +35,45 @@ ZENML_SCHEMA_NAME = "zenml_schema_name"
 
 
 def encode_string(string: str) -> str:
+    """Base64 encode a string.
+
+    Args:
+        string: String to encode
+    """
     encoded_bytes = base64.b64encode(string.encode("utf-8"))
     return str(encoded_bytes, "utf-8")
 
 
 def encode_secret(secret: BaseSecretSchema) -> Dict[str, str]:
-    """Base64 Encode all values within a secret
+    """Base64 encode all values within a secret.
 
     Args:
         secret: Secret containing key-value pairs
     """
-    encoded_secret = dict()
-    for k, v in secret.content.items():
-        encoded_secret[k] = encode_string(v)
-
+    encoded_secret = {k: encode_string(v) for k, v in secret.content.items()}
     encoded_secret[ZENML_SCHEMA_NAME] = secret.type.value
     return encoded_secret
 
 
-def decode_string(secret: str) -> str:
-    decoded_bytes = base64.b64decode(secret)
+def decode_string(string: str) -> str:
+    """Base64 decode a string.
+
+    Args:
+        string: String to decode
+    """
+    decoded_bytes = base64.b64decode(string)
     return str(decoded_bytes, "utf-8")
 
 
 def decode_secret_dict(secret_dict: Dict[str, str]) -> Dict[str, str]:
+    """Base64 decode a Secret.
+
+    Args:
+        secret_dict: dict containing key-value pairs to decode
+    """
     zenml_schema_name = secret_dict.pop(ZENML_SCHEMA_NAME)
 
-    decoded_secret = dict()
-    for k, v in secret_dict.items():
-        decoded_secret[k] = decode_string(v)
-
+    decoded_secret = {k: decode_string(v) for k, v in secret_dict.items()}
     return decoded_secret, zenml_schema_name
 
 
@@ -73,7 +82,7 @@ def decode_secret_dict(secret_dict: Dict[str, str]) -> Dict[str, str]:
     component_flavor=SecretsManagerFlavor.LOCAL,
 )
 class LocalSecretsManager(BaseSecretsManager):
-    """Local class for ZenML secret manager."""
+    """Class for ZenML local filebased secret manager."""
 
     secrets_file: str = os.path.join(
         get_global_config_directory(), LOCAL_SECRETS_FILENAME
@@ -86,17 +95,19 @@ class LocalSecretsManager(BaseSecretsManager):
         create_file_if_not_exists(self.secrets_file)
 
     def _verify_secret_exists(self, set_key: str) -> bool:
+        """Checks if a secret exists."""
         secrets_store_items = yaml_utils.read_yaml(self.secrets_file)
         return set_key in secrets_store_items
 
     def _verify_secret_key_exists(self, secret_name: str) -> bool:
+        """Checks if a secret key exists."""
         secrets_store_items = yaml_utils.read_yaml(self.secrets_file)
         try:
             return secret_name in secrets_store_items
         except TypeError:
             return False
 
-    def _get_all_secret_sets(self) -> Dict[str, Dict[str, str]]:
+    def _get_all_secrets(self) -> Dict[str, Dict[str, str]]:
         return yaml_utils.read_yaml(self.secrets_file) or {}
 
     def _get_secrets_within_set(self, set_key: str) -> Dict[str, str]:
@@ -118,7 +129,7 @@ class LocalSecretsManager(BaseSecretsManager):
         if not self._verify_secret_key_exists(secret_name=secret.name):
             encoded_secret = encode_secret(secret)
 
-            secrets_store_items = self._get_all_secret_sets()
+            secrets_store_items = self._get_all_secrets()
             secrets_store_items[secret.name] = encoded_secret
             yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
         else:
@@ -126,7 +137,7 @@ class LocalSecretsManager(BaseSecretsManager):
 
     def get_secret(self, secret_name: str) -> Dict[str, str]:
         """Get secret set, given a name passed in to identify it."""
-        secret_sets_store_items = self._get_all_secret_sets()
+        secret_sets_store_items = self._get_all_secrets()
         if self._verify_secret_key_exists(secret_name=secret_name):
             secret_dict = secret_sets_store_items[secret_name]
 
@@ -146,7 +157,7 @@ class LocalSecretsManager(BaseSecretsManager):
 
     def get_all_secret_keys(self) -> List[str]:
         """Get all secret keys."""
-        secrets_store_items = self._get_all_secret_sets()
+        secrets_store_items = self._get_all_secrets()
         return list(secrets_store_items.keys())
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
@@ -154,7 +165,7 @@ class LocalSecretsManager(BaseSecretsManager):
         if self._verify_secret_key_exists(secret_name=secret.name):
             encoded_secret = encode_secret(secret)
 
-            secrets_store_items = self._get_all_secret_sets()
+            secrets_store_items = self._get_all_secrets()
             secrets_store_items[secret.name] = encoded_secret
             yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
         else:
@@ -163,7 +174,7 @@ class LocalSecretsManager(BaseSecretsManager):
     def delete_secret(self, secret_name: str) -> None:
         """Delete Existing secret, given a name passed in to identify it."""
         if self._verify_secret_key_exists(secret_name=secret_name):
-            secrets_store_items = self._get_all_secret_sets()
+            secrets_store_items = self._get_all_secrets()
 
             try:
                 secrets_store_items.pop(secret_name)
