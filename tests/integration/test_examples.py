@@ -119,9 +119,58 @@ examples = [
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
     ),
-    # TODO [HIGH]: Enable running the whylogs example on kubeflow
+    # TODO [ENG-708]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(
         name="whylogs", validation_function=whylogs_example_validation
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="statistics",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=3,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="lineage",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=4,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="dag_visualizer",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=3,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="standard_interfaces",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="TrainingPipeline",
+            step_count=6,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="airflow_local",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline",
+            step_count=4,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="class_based_api",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="TrainingPipeline",
+            step_count=6,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="functional_api",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline",
+            step_count=4,
+        ),
     ),
 ]
 

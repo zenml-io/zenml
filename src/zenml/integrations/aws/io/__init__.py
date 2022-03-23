@@ -16,4 +16,4 @@ from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
 
 from zenml.integrations.aws.io.s3_plugin import ZenS3
 
-DEFAULT_FILESYSTEM_REGISTRY.register(ZenS3, 15)
+DEFAULT_FILESYSTEM_REGISTRY.register(ZenS3, priority=5)

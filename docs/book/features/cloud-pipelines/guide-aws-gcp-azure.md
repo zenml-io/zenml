@@ -117,6 +117,82 @@ If you are doing a manual install of the Kubeflow Pipelines, make sure that the 
 {% endtab %}
 {% endtabs %}
 
+### Step Operators
+
+{% tabs %}
+{% tab title="AzureML" %}
+* First, you require a `Machine learning` [resource on Azure](https://docs.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources). 
+If you don't already have one, you can create it through the `All resources` 
+page on the Azure portal. 
+* Once your resource is created, you can head over to the `Azure Machine 
+Learning Studio` and [create a compute cluster](https://docs.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources#cluster) 
+to run your pipelines. 
+* Next, you will need an `environment` for your pipelines. You can simply 
+create one following the guide [here](https://docs.microsoft.com/en-us/azure/machine-learning/how-to-manage-environments-in-studio).
+* Finally, we have to set up our artifact store. In order to do this, we need 
+to [create a blob container](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal)
+on Azure. 
+
+Optionally, you can also create a [Service Principal for authentication](https://docs.microsoft.com/en-us/azure/developer/java/sdk/identity-service-principal-auth). 
+This might especially be useful if you are planning to orchestrate your 
+pipelines in a non-local setup such as Kubeflow where your local authentication 
+won't be accessible.
+
+The command to register the stack component would like the following.
+
+```bash
+zenml step-operator register azureml \
+    --type=azureml \
+    --subscription_id=<AZURE_SUBSCRIPTION_ID> \
+    --resource_group=<AZURE_RESOURCE_GROUP> \
+    --workspace_name=<AZURE_WORKSPACE_NAME> \
+    --compute_target_name=<AZURE_COMPUTE_TARGET_NAME> \
+    --environment_name=<AZURE_ENVIRONMENT_NAME> 
+```
+
+{% endtab %}
+
+{% tab title="Amazon SageMaker" %}
+* First, you need to create a role in the IAM console that you want the jobs running in Sagemaker to assume. This role should at least have the `AmazonS3FullAccess` and `AmazonSageMakerFullAccess` policies applied. Check [this link](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) to learn how to create a role.
+
+* Next, you need to choose what instance type needs to be used to run your jobs. You can get the list [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html).
+
+* Optionally, you can choose an S3 bucket to which Sagemaker should output any artifacts from your training run. 
+
+* You can also supply an experiment name if you have one created already. Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-create.html) to know how. If not provided, the job runs would be independent.
+
+* You can also choose a custom docker image that you want ZenML to use as a base image for creating an environment to run your jobs in Sagemaker. 
+
+* You need to have the `aws` cli set up with the right credentials. Make sure you have the permissions to create and manage Sagemaker runs. 
+
+* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Sagemaker will run. Check out the [cloud guide](https://docs.zenml.io/features/cloud-pipelines/guide-aws-gcp-azure) to learn how you can set up an elastic container registry. 
+
+Once you have all these values handy, you can proceed to setting up the components required for your stack.
+
+The command to register the stack component would like the following.
+
+```bash
+zenml step-operator register sagemaker \
+    --type=sagemaker
+    --role=<SAGEMAKER_ROLE> \
+    --instance_type=<SAGEMAKER_INSTANCE_TYPE>
+    --base_image=<CUSTOM_BASE_IMAGE>
+    --bucket_name=<S3_BUCKET_NAME>
+    --experiment_name=<SAGEMAKER_EXPERIMENT_NAME>
+```
+
+{% endtab %}
+
+Once registered and activated, it can be used for a step by simply adding the `custom_step_operator` parameter to the step decorator.
+
+```python
+@step(custom_step_operator="some_step_operator")
+def step_with_step_operator():
+	pass
+```
+
+
+
 ## Integrating with ZenML
 
 To run our pipeline on Kubeflow Pipelines deployed to cloud, we will create a new stack with these components that you have just created.
@@ -135,6 +211,7 @@ To run our pipeline on Kubeflow Pipelines deployed to cloud, we will create a ne
     zenml orchestrator register cloud_orchestrator --type=kubeflow --custom_docker_base_image_name=YOUR_IMAGE
     zenml metadata-store register kubeflow_metadata_store --type=kubeflow
     zenml artifact-store register cloud_artifact_store --type=<s3/gcp/azure> --path=$PATH_TO_YOUR_BUCKET
+    zenml step-operator register ...
 
     # Register the cloud stack
     zenml stack register cloud_kubeflow_stack -m kubeflow_metadata_store -a cloud_artifact_store -o cloud_orchestrator -c cloud_registry

@@ -19,32 +19,32 @@ ML workflows, from [`scikit-learn`](https://scikit-learn.org/stable/) to [`PyTor
 
 These are the third-party integrations that ZenML currently supports:
 
-| Integration | Status | Type | Implementation Notes | Example |
-| ----------- | ------ | ---- | -------------------- | ------- |
-| Apache Airflow | ✅ | Orchestrator | Works for local environment | [airflow_local](https://github.com/zenml-io/zenml/tree/main/examples/airflow_local) |
-| Apache Beam | ✅ | Distributed Processing |   |   |
-| AWS | ✅ | Cloud | Use S3 buckets as ZenML artifact stores |   |
-| Azure | ✅ | Cloud | Use Azure Blob Storage buckets as ZenML artifact stores |   |
-| BentoML | ⛏ | Cloud | Looking for community implementors |   |
-| Dash | ✅ | Visualizer | For Pipeline and PipelineRun visualization objects. | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage) |
-| Evidently | ✅ | Monitoring | Allows for visualization of drift as well as export of a `Profile` object | [drift_detection](https://github.com/zenml-io/zenml/tree/release/0.5.7/examples/drift_detection) |
-| Facets | ✅ | Visualizer |   | [statistics](https://github.com/zenml-io/zenml/tree/main/examples/statistics) |
-| GCP | ✅ | Cloud | Use Google Cloud Storage buckets as ZenML artifact stores |   |
-| Graphviz | ✅ | Visualizer | For Pipeline and PipelineRun visualization objects. | [dag_visualizer](https://github.com/zenml-io/zenml/tree/main/examples/dag_visualizer) |
-| Great Expectations | ⛏ | Data Validation | Looking for community implementors |   |
-| KServe | ⛏ | Inference | Looking for community implementors |   |
-| Kubeflow | ✅ | Orchestrator | Either full Kubeflow or Kubeflow Pipelines. Works for local environments currently. | [kubeflow](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) |
-| MLflow Tracking | ✅ | Experiment Tracking | Tracks your pipelines and your training runs. | [mlflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_tracking) |
-| MLflow Deployment | ✅ | Deployment | Deploys models with the MLflow scoring server. | [mlflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment) |
-| numpy | ✅ | Exploration |   |   |
-| pandas | ✅ | Exploration |   |   |
-| Plotly | ✅ | Visualizer | For Pipeline and PipelineRun visualization objects. | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage) |
-| PyTorch | ✅ | Training |   |   |
-| PyTorch Lightning | ✅ | Training |   |   |
-| scikit-learn | ✅ | Training |   | [caching chapter](https://docs.zenml.io/v/docs/guides/functional-api/caching) |
-| Seldon | ⛏ | Cloud | Looking for community implementors |   |
-| Tensorflow | ✅ | Training |   | [quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) |
-| whylogs | ✅ | Logging | Integration fully implemented for data logging | [whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs) |
+| Integration | Status | Type                   | Implementation Notes                                                                          | Example                                                                                                                                                  |
+| ----------- | ------ |------------------------|-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Apache Airflow | ✅ | Orchestrator           | Works for local environment.                                                                  | [airflow_local](https://github.com/zenml-io/zenml/tree/main/examples/airflow_local)                                                                      |
+| Apache Beam | ✅ | Distributed Processing |                                                                                               |                                                                                                                                                          |
+| AWS | ✅ | Cloud                  | Use S3 buckets as ZenML artifact stores and Sagemaker as a ZenML step operator.               | [sagemaker_step_operator](https://github.com/zenml-io/zenml/tree/main/examples/sagemaker_step_operator)                                                                                                                       |
+| Azure | ✅ | Cloud                  | Use Azure Blob Storage buckets as ZenML artifact stores and AzureML as a ZenML step operator. | [azureml_step_operator](https://github.com/zenml-io/zenml/tree/main/examples/azureml_step_operator)                                                                                                                         |
+| BentoML | ⛏ | Cloud                  | Looking for community implementors.                                                           |                                                                                                                                                          |
+| Dash | ✅ | Visualizer             | For Pipeline and PipelineRun visualization objects.                                           | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage)                                                                                  |
+| Evidently | ✅ | Monitoring             | Allows for visualization of drift as well as export of a `Profile` object.                    | [drift_detection](https://github.com/zenml-io/zenml/tree/release/0.5.7/examples/drift_detection)                                                         |
+| Facets | ✅ | Visualizer             |                                                                                               | [statistics](https://github.com/zenml-io/zenml/tree/main/examples/statistics)                                                                            |
+| GCP | ✅ | Cloud                  | Use Google Cloud Storage buckets as ZenML artifact stores.                                    |                                                                                                                                                          |
+| Graphviz | ✅ | Visualizer             | For Pipeline and PipelineRun visualization objects.                                           | [dag_visualizer](https://github.com/zenml-io/zenml/tree/main/examples/dag_visualizer)                                                                    |
+| Great Expectations | ⛏ | Data Validation        | Looking for community implementors.                                                           |                                                                                                                                                          |
+| KServe | ⛏ | Inference              | Looking for community implementors.                                                           |                                                                                                                                                          |
+| Kubeflow | ✅ | Orchestrator           | Either full Kubeflow or Kubeflow Pipelines. Works for local environments currently.           | [kubeflow](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow)                                                                                |
+| MLflow Tracking | ✅ | Experiment Tracking    | Tracks your pipelines and your training runs.                                                 | [mlflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_tracking)                                                                           |
+| MLflow Deployment | ✅ | Deployment             | Deploys models with the MLflow scoring server.                                                | [mlflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment)                                                                         |
+| numpy | ✅ | Exploration            |                                                                                               |                                                                                                                                                          |
+| pandas | ✅ | Exploration            |                                                                                               |                                                                                                                                                          |
+| Plotly | ✅ | Visualizer             | For Pipeline and PipelineRun visualization objects.                                           | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage)                                                                                  |
+| PyTorch | ✅ | Training               |                                                                                               |                                                                                                                                                          |
+| PyTorch Lightning | ✅ | Training               |                                                                                               |                                                                                                                                                          |
+| scikit-learn | ✅ | Training               |                                                                                               | [caching chapter](https://docs.zenml.io/v/docs/guides/functional-api/caching)                                                                            |
+| Seldon | ⛏ | Cloud                  | Looking for community implementors.                                                           |                                                                                                                                                          |
+| Tensorflow | ✅ | Training, Visualizer   | Tensorboard support.                                                                          | [quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart). [kubeflow](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) |
+| whylogs | ✅ | Logging                | Integration fully implemented for data logging.                                               | [whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs)                                                                                  |
 
 ✅ means the integration is already implemented.
 ⛏ means we are looking to implement the integration soon.

@@ -12,15 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
-from typing import Optional
+from typing import Dict, List, Optional
 
 import pytest
+from tfx.orchestration.portable.python_executor_operator import (
+    PythonExecutorOperator,
+)
 
 from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.pipelines import pipeline
+from zenml.step_operators.step_executor_operator import StepExecutorOperator
 from zenml.steps import BaseStepConfig, Output, StepContext, step
 
 
@@ -246,6 +251,41 @@ def test_unrecognized_output_in_output_artifact_types():
 
     with pytest.raises(StepInterfaceError):
         some_step()
+
+
+def test_enabling_a_custom_step_operator_for_a_step():
+    """Tests that step operators are disabled by default and can be enabled
+    using the step decorator."""
+
+    @step
+    def step_without_step_operator():
+        pass
+
+    @step(custom_step_operator="some_step_operator")
+    def step_with_step_operator():
+        pass
+
+    assert step_without_step_operator().custom_step_operator is None
+    assert (
+        step_with_step_operator().custom_step_operator == "some_step_operator"
+    )
+
+
+def test_step_executor_operator():
+    """Tests that the step returns the correct executor operator."""
+
+    @step(custom_step_operator=None)
+    def step_without_step_operator():
+        pass
+
+    @step(custom_step_operator="some_step_operator")
+    def step_with_step_operator():
+        pass
+
+    assert (
+        step_without_step_operator().executor_operator is PythonExecutorOperator
+    )
+    assert step_with_step_operator().executor_operator is StepExecutorOperator
 
 
 def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
@@ -786,3 +826,40 @@ def test_returning_wrong_amount_of_objects_raises_an_error(
 
         with pytest.raises(StepInterfaceError):
             pipeline_.run()
+
+
+def test_step_can_output_generic_types(clean_repo, one_step_pipeline):
+    """Tests that a step can output generic typing classes."""
+
+    @step
+    def some_step_1() -> Dict:
+        return {}
+
+    @step
+    def some_step_2() -> List:
+        return []
+
+    for step_function in [some_step_1, some_step_2]:
+        pipeline_ = one_step_pipeline(step_function())
+
+        with does_not_raise():
+            pipeline_.run()
+
+
+def test_step_can_have_generic_input_types(clean_repo):
+    """Tests that a step can have generic typing classes as input."""
+
+    @step
+    def step_1() -> Output(dict_output=Dict, list_output=List):
+        return {}, []
+
+    @step
+    def step_2(dict_input: Dict, list_input: List) -> None:
+        pass
+
+    @pipeline
+    def p(s1, s2):
+        s2(*s1())
+
+    with does_not_raise():
+        p(step_1(), step_2()).run()

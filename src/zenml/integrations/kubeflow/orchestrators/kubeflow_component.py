@@ -52,12 +52,12 @@ CONTAINER_ENTRYPOINT_COMMAND = [
 def _encode_runtime_parameter(param: data_types.RuntimeParameter) -> str:
     """Encode a runtime parameter into a placeholder for value substitution."""
     if param.ptype is int:
-        type_enum = pipeline_pb2.RuntimeParameter.INT  # type: ignore[attr-defined] # noqa
+        type_enum = pipeline_pb2.RuntimeParameter.INT
     elif param.ptype is float:
-        type_enum = pipeline_pb2.RuntimeParameter.DOUBLE  # type: ignore[attr-defined] # noqa
+        type_enum = pipeline_pb2.RuntimeParameter.DOUBLE
     else:
-        type_enum = pipeline_pb2.RuntimeParameter.STRING  # type: ignore[attr-defined] # noqa
-    type_str = pipeline_pb2.RuntimeParameter.Type.Name(type_enum)  # type: ignore[attr-defined] # noqa
+        type_enum = pipeline_pb2.RuntimeParameter.STRING
+    type_str = pipeline_pb2.RuntimeParameter.Type.Name(type_enum)
     return f"{param.name}={type_str}:{str(dsl.PipelineParam(name=param.name))}"
 
 
@@ -90,7 +90,7 @@ class KubeflowComponent:
         component: tfx_base_component.BaseComponent,
         depends_on: Set[dsl.ContainerOp],
         image: str,
-        tfx_ir: pipeline_pb2.Pipeline,  # type: ignore[valid-type]
+        tfx_ir: pipeline_pb2.Pipeline,
         pod_labels_to_attach: Dict[str, str],
         main_module: str,
         step_module: str,
@@ -226,6 +226,20 @@ class KubeflowComponent:
                 name=ENV_ZENML_PREVENT_PIPELINE_EXECUTION, value="True"
             )
         )
+        # Add environment variables for Azure Blob Storage to pod in case they
+        # are set locally
+        # TODO [ENG-699]: remove this as soon as we implement credential handling
+        for key in [
+            "AZURE_STORAGE_ACCOUNT_KEY",
+            "AZURE_STORAGE_ACCOUNT_NAME",
+            "AZURE_STORAGE_CONNECTION_STRING",
+            "AZURE_STORAGE_SAS_TOKEN",
+        ]:
+            value = os.getenv(key)
+            if value:
+                self.container_op.container.add_env_variable(
+                    k8s_client.V1EnvVar(name=key, value=value)
+                )
 
         for k, v in pod_labels_to_attach.items():
             self.container_op.add_pod_label(k, v)

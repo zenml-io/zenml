@@ -19,7 +19,7 @@ import logging
 import os
 import sys
 import textwrap
-from typing import Dict, List, MutableMapping, Optional, Tuple
+from typing import Dict, List, MutableMapping, Optional, Tuple, cast
 
 import kfp
 from google.protobuf import json_format
@@ -29,7 +29,6 @@ from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.portable import (
     data_types,
-    kubernetes_executor_operator,
     launcher,
     runtime_parameter_utils,
 )
@@ -37,12 +36,16 @@ from tfx.proto.orchestration import executable_spec_pb2, pipeline_pb2
 from tfx.types import artifact, channel, standard_artifacts
 from tfx.types.channel import Property
 
+import zenml.constants
+from zenml.artifact_stores import LocalArtifactStore
 from zenml.artifacts.base_artifact import BaseArtifact
+from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.exceptions import RepositoryNotFoundError
 from zenml.integrations.registry import integration_registry
 from zenml.orchestrators.utils import execute_step
 from zenml.repository import Repository
+from zenml.steps import BaseStep
 from zenml.steps.utils import generate_component_class
 from zenml.utils import source_utils
 
@@ -146,7 +149,7 @@ def _render_artifact_as_mdstr(single_artifact: artifact.Artifact) -> str:
 
 
 def _dump_ui_metadata(
-    node: pipeline_pb2.PipelineNode,  # type: ignore[valid-type]
+    node: pipeline_pb2.PipelineNode,
     execution_info: data_types.ExecutionInfo,
     ui_metadata_path: str = "/tmp/mlpipeline-ui-metadata.json",
 ) -> None:
@@ -172,7 +175,7 @@ def _dump_ui_metadata(
     )
 
     def _dump_input_populated_artifacts(
-        node_inputs: MutableMapping[str, pipeline_pb2.InputSpec],  # type: ignore[valid-type] # noqa
+        node_inputs: MutableMapping[str, pipeline_pb2.InputSpec],
         name_to_artifacts: Dict[str, List[artifact.Artifact]],
     ) -> List[str]:
         """Dump artifacts markdown string for inputs.
@@ -195,7 +198,7 @@ def _dump_ui_metadata(
             )
             # There must be at least a channel in a input, and all channels in
             # a input share the same artifact type.
-            artifact_type = spec.channels[0].artifact_query.type.name  # type: ignore[attr-defined] # noqa
+            artifact_type = spec.channels[0].artifact_query.type.name
             rendered_list.append(
                 "## {name}\n\n**Type**: {channel_type}\n\n{artifacts}".format(
                     name=_sanitize_underscore(name),
@@ -207,7 +210,7 @@ def _dump_ui_metadata(
         return rendered_list
 
     def _dump_output_populated_artifacts(
-        node_outputs: MutableMapping[str, pipeline_pb2.OutputSpec],  # type: ignore[valid-type] # noqa
+        node_outputs: MutableMapping[str, pipeline_pb2.OutputSpec],
         name_to_artifacts: Dict[str, List[artifact.Artifact]],
     ) -> List[str]:
         """Dump artifacts markdown string for outputs.
@@ -230,7 +233,7 @@ def _dump_ui_metadata(
             )
             # There must be at least a channel in a input, and all channels
             # in a input share the same artifact type.
-            artifact_type = spec.artifact_spec.type.name  # type: ignore[attr-defined] # noqa
+            artifact_type = spec.artifact_spec.type.name
             rendered_list.append(
                 "## {name}\n\n**Type**: {channel_type}\n\n{artifacts}".format(
                     name=_sanitize_underscore(name),
@@ -244,7 +247,7 @@ def _dump_ui_metadata(
     src_str_inputs = "# Inputs:\n{}".format(
         "".join(
             _dump_input_populated_artifacts(
-                node_inputs=node.inputs.inputs,  # type: ignore[attr-defined] # noqa
+                node_inputs=node.inputs.inputs,
                 name_to_artifacts=execution_info.input_dict or {},
             )
         )
@@ -254,7 +257,7 @@ def _dump_ui_metadata(
     src_str_outputs = "# Outputs:\n{}".format(
         "".join(
             _dump_output_populated_artifacts(
-                node_outputs=node.outputs.outputs,  # type: ignore[attr-defined] # noqa
+                node_outputs=node.outputs.outputs,
                 name_to_artifacts=execution_info.output_dict or {},
             )
         )
@@ -273,17 +276,25 @@ def _dump_ui_metadata(
         }
     ]
     # Add Tensorboard view for ModelRun outputs.
-    for name, spec in node.outputs.outputs.items():  # type: ignore[attr-defined] # noqa
+    for name, spec in node.outputs.outputs.items():
         if (
             spec.artifact_spec.type.name
             == standard_artifacts.ModelRun.TYPE_NAME
+            or spec.artifact_spec.type.name == ModelArtifact.TYPE_NAME
         ):
             output_model = execution_info.output_dict[name][0]
+            source = output_model.uri
 
+            # For local artifact repository, use a path that is relative to
+            # the point where the local artifact folder is mounted as a volume
+            artifact_store = Repository().active_stack.artifact_store
+            if isinstance(artifact_store, LocalArtifactStore):
+                source = os.path.relpath(source, artifact_store.path)
+                source = f"volume://local-artifact-store/{source}"
             # Add Tensorboard view.
             tensorboard_output = {
                 "type": "tensorboard",
-                "source": output_model.uri,
+                "source": source,
             }
             outputs.append(tensorboard_output)
 
@@ -294,11 +305,11 @@ def _dump_ui_metadata(
 
 
 def _get_pipeline_node(
-    pipeline: pipeline_pb2.Pipeline, node_id: str  # type: ignore[valid-type] # noqa
-) -> pipeline_pb2.PipelineNode:  # type: ignore[valid-type]
+    pipeline: pipeline_pb2.Pipeline, node_id: str
+) -> pipeline_pb2.PipelineNode:
     """Gets node of a certain node_id from a pipeline."""
-    result: Optional[pipeline_pb2.PipelineNode] = None  # type: ignore[valid-type] # noqa
-    for node in pipeline.nodes:  # type: ignore[attr-defined] # noqa
+    result: Optional[pipeline_pb2.PipelineNode] = None
+    for node in pipeline.nodes:
         if (
             node.WhichOneof("node") == "pipeline_node"
             and node.pipeline_node.node_info.id == node_id
@@ -318,25 +329,19 @@ def _parse_runtime_parameter_str(param: str) -> Tuple[str, Property]:
     # Runtime parameter format: "{name}=(INT|DOUBLE|STRING):{value}"
     name, value_and_type = param.split("=", 1)
     value_type, value = value_and_type.split(":", 1)
-    if (
-        value_type
-        == pipeline_pb2.RuntimeParameter.Type.Name(  # type: ignore[attr-defined] # noqa
-            pipeline_pb2.RuntimeParameter.INT  # type: ignore[attr-defined]
-        )
+    if value_type == pipeline_pb2.RuntimeParameter.Type.Name(
+        pipeline_pb2.RuntimeParameter.INT
     ):
         return name, int(value)
-    elif (
-        value_type
-        == pipeline_pb2.RuntimeParameter.Type.Name(  # type: ignore[attr-defined] # noqa
-            pipeline_pb2.RuntimeParameter.DOUBLE  # type: ignore[attr-defined]
-        )
+    elif value_type == pipeline_pb2.RuntimeParameter.Type.Name(
+        pipeline_pb2.RuntimeParameter.DOUBLE
     ):
         return name, float(value)
     return name, value
 
 
 def _resolve_runtime_parameters(
-    tfx_ir: pipeline_pb2.Pipeline,  # type: ignore[valid-type] # noqa
+    tfx_ir: pipeline_pb2.Pipeline,
     run_name: str,
     parameters: Optional[List[str]],
 ) -> None:
@@ -359,8 +364,7 @@ def _resolve_runtime_parameters(
 
 
 def _create_executor_class(
-    step_source_module_name: str,
-    step_function_name: str,
+    step: BaseStep,
     executor_class_target_module_name: str,
     input_artifact_type_mapping: Dict[str, str],
 ) -> None:
@@ -368,19 +372,13 @@ def _create_executor_class(
     module.
 
     Args:
-        step_source_module_name: Name of the module in which the step function
-            is defined.
-        step_function_name: Name of the step function.
+        step: The step for which the executor should be created.
         executor_class_target_module_name: Name of the module to which the
             executor class should be added.
         input_artifact_type_mapping: A dictionary mapping input names to
             a string representation of their artifact classes.
     """
-    step_module = importlib.import_module(step_source_module_name)
-    step_class = getattr(step_module, step_function_name)
-    step_instance = step_class()
-
-    materializers = step_instance.get_materializers(ensure_complete=True)
+    materializers = step.get_materializers(ensure_complete=True)
 
     input_spec = {}
     for input_name, class_path in input_artifact_type_mapping.items():
@@ -393,21 +391,21 @@ def _create_executor_class(
         input_spec[input_name] = artifact_class
 
     output_spec = {}
-    for key, value in step_class.OUTPUT_SIGNATURE.items():
+    for key, value in step.OUTPUT_SIGNATURE.items():
         output_spec[key] = type_registry.get_artifact_type(value)[0]
 
     execution_parameters = {
-        **step_instance.PARAM_SPEC,
-        **step_instance._internal_execution_parameters,
+        **step.PARAM_SPEC,
+        **step._internal_execution_parameters,
     }
 
     generate_component_class(
-        step_name=step_instance.name,
+        step_name=step.name,
         step_module=executor_class_target_module_name,
         input_spec=input_spec,
         output_spec=output_spec,
         execution_parameter_names=set(execution_parameters),
-        step_function=step_instance.entrypoint,
+        step_function=step.entrypoint,
         materializers=materializers,
     )
 
@@ -468,9 +466,6 @@ def main() -> None:
     custom_driver_spec = runner_utils.extract_custom_driver_spec(
         deployment_config, node_id
     )
-    custom_executor_operators = {
-        executable_spec_pb2.ContainerExecutableSpec: kubernetes_executor_operator.KubernetesExecutorOperator
-    }
 
     # make sure all integrations are activated so all materializers etc. are
     # available
@@ -495,13 +490,17 @@ def main() -> None:
 
     # import the user main module to register all the materializers
     importlib.import_module(args.main_module)
+    zenml.constants.USER_MAIN_MODULE = args.main_module
+
+    step_module = importlib.import_module(args.step_module)
+    step_class = getattr(step_module, args.step_function_name)
+    step_instance = cast(BaseStep, step_class())
 
     if hasattr(executor_spec, "class_path"):
         executor_module_parts = getattr(executor_spec, "class_path").split(".")
         executor_class_target_module_name = ".".join(executor_module_parts[:-1])
         _create_executor_class(
-            step_source_module_name=args.step_module,
-            step_function_name=args.step_function_name,
+            step=step_instance,
             executor_class_target_module_name=executor_class_target_module_name,
             input_artifact_type_mapping=json.loads(args.input_artifact_types),
         )
@@ -509,6 +508,10 @@ def main() -> None:
         raise RuntimeError(
             f"No class path found inside executor spec: {executor_spec}."
         )
+
+    custom_executor_operators = {
+        executable_spec_pb2.PythonClassExecutableSpec: step_instance.executor_operator
+    }
 
     component_launcher = launcher.Launcher(
         pipeline_node=pipeline_node,

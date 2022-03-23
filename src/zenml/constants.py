@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+from typing import Optional
 
 from zenml import __version__
 
@@ -22,6 +23,8 @@ def handle_bool_env_var(var: str, default: bool = False) -> bool:
     value = os.getenv(var)
     if value in ["1", "y", "yes", "True", "true"]:
         return True
+    elif value in ["0", "n", "no", "False", "false"]:
+        return False
     return default
 
 
@@ -45,6 +48,7 @@ ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
 ENV_ABSL_LOGGING_VERBOSITY = "ZENML_ABSL_LOGGING_VERBOSITY"
 ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
 ENV_ZENML_PREVENT_PIPELINE_EXECUTION = "ZENML_PREVENT_PIPELINE_EXECUTION"
+ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -91,7 +95,7 @@ K8S_ENTRYPOINT: str = "zenml.backends.orchestrator.entrypoint"
 VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
 
 # Path utilities constants
-REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://"]
+REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 
 # Segment
 SEGMENT_KEY_DEV = "mDBYI0m7GcCj59EZ4f9d016L1T3rh8J5"
@@ -100,4 +104,14 @@ SEGMENT_KEY_PROD = "sezE77zEoxHPFDXuyFfILx6fBnJFZ4p7"
 # Container utils
 SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION
+)
+
+# Repository Directory Path
+LOCAL_CONFIG_DIRECTORY_NAME = ".zen"
+
+USER_MAIN_MODULE: Optional[str] = None
+
+# Rich config
+ENABLE_RICH_TRACEBACK = handle_bool_env_var(
+    ENV_ZENML_ENABLE_RICH_TRACEBACK, True
 )

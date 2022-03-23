@@ -170,9 +170,8 @@ class AirflowOrchestrator(BaseOrchestrator):
         """
         if not self.is_running:
             raise RuntimeError(
-                "Airflow orchestrator is currently not running. "
-                "Run `zenml orchestrator up` to start the "
-                "orchestrator of the active stack."
+                "Airflow orchestrator is currently not running. Run `zenml "
+                "stack up` to provision resources for the active stack."
             )
 
         try:

@@ -28,6 +28,7 @@ from __future__ import absolute_import, division, print_function
 import inspect
 import json
 import sys
+import typing
 from typing import (
     Any,
     Callable,
@@ -48,12 +49,15 @@ import pydantic
 from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
+from tfx.orchestration.portable import outputs_utils
+from tfx.proto.orchestration import execution_result_pb2
 from tfx.types import component_spec
 from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.base_step_config import BaseStepConfig
@@ -70,6 +74,7 @@ PARAM_STEP_NAME: str = "step_name"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_PIPELINE_PARAMETER_NAME: str = "pipeline_parameter_name"
 PARAM_CREATED_BY_FUNCTIONAL_API: str = "created_by_functional_api"
+PARAM_CUSTOM_STEP_OPERATOR: str = "custom_step_operator"
 INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
 INSTANCE_CONFIGURATION: str = "INSTANCE_CONFIGURATION"
 OUTPUT_SPEC: str = "OUTPUT_SPEC"
@@ -88,6 +93,20 @@ def do_types_match(type_a: Type[Any], type_b: Type[Any]) -> bool:
     # TODO [ENG-158]: Check more complicated cases where type_a can be a sub-type
     #  of type_b
     return type_a == type_b
+
+
+def resolve_type_annotation(obj: Any) -> Any:
+    """Returns the non-generic class for generic aliases of the typing module.
+
+    If the input is no generic typing alias, the input itself is returned.
+
+    Example: if the input object is `typing.Dict`, this method will return the
+    concrete class `dict`.
+    """
+    if isinstance(obj, typing._GenericAlias):  # type: ignore[attr-defined]
+        return obj.__origin__
+    else:
+        return obj
 
 
 def generate_component_spec_class(
@@ -379,6 +398,8 @@ class _FunctionExecutor(BaseExecutor):
 
         for arg in args:
             arg_type = spec.annotations.get(arg, None)
+            arg_type = resolve_type_annotation(arg_type)
+
             if issubclass(arg_type, BaseStepConfig):
                 try:
                     config_object = arg_type.parse_obj(exec_properties)
@@ -419,7 +440,7 @@ class _FunctionExecutor(BaseExecutor):
         # the pipeline runtime, such as the current step name and the current
         # pipeline run ID
         with StepEnvironment(
-            pipeline_name=self._context.pipeline_info.id,  # type: ignore[attr-defined]
+            pipeline_name=self._context.pipeline_info.id,
             pipeline_run_id=self._context.pipeline_run_id,
             step_name=getattr(self, PARAM_STEP_NAME),
         ):
@@ -470,3 +491,16 @@ class _FunctionExecutor(BaseExecutor):
                 self.resolve_output_artifact(
                     output_name, output_dict[output_name][0], return_value
                 )
+
+        # Write the executor output to the artifact store so the executor
+        # operator (potentially not running on the same machine) can read it
+        # to populate the metadata store
+        executor_output = execution_result_pb2.ExecutorOutput()
+        outputs_utils.populate_output_artifact(executor_output, output_dict)
+
+        logger.debug(
+            "Writing executor output to '%s'.",
+            self._context.executor_output_uri,
+        )
+        with fileio.open(self._context.executor_output_uri, "wb") as f:
+            f.write(executor_output.SerializeToString())

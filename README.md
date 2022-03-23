@@ -8,7 +8,7 @@
 
 At its core, **ZenML pipelines execute ML-specific workflows** from sourcing data to splitting, preprocessing, training, all the way to the evaluation of results and even serving. There are many built-in batteries to support common ML development tasks. ZenML is not here to replace the great tools that solve these individual problems. Rather, it **integrates natively with popular ML tooling** and gives standard abstraction to write your workflows.
 
-🎉 **Version 0.6.2 out now!** [Check out the release notes here](https://github.com/zenml-io/zenml/releases).
+🎉 **Version 0.6.3 out now!** [Check out the release notes here](https://github.com/zenml-io/zenml/releases).
 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
@@ -52,10 +52,11 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
 | 🗃 **[Functional API Guide]** | Build production ML pipelines with simple functions. |
-| 🚀 **[New in v0.6.2]** | New features, bug fixes. |
+| 🚀 **[New in v0.6.3]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
 | 📒 **[API Reference]** | The detailed reference for ZenML's API. |
+| 🗂️️ **[ZenFiles]** | End-to-end projects using ZenML. |
 | ⚽️ **[Examples]** | Learn best through examples where ZenML is used? We've got you covered. |
 | 📬 **[Blog]** | Use cases of ZenML and technical deep dives on how we built it. |
 | 🔈 **[Podcast]** | Conversations with leaders in ML, released every 2 weeks. |
@@ -67,10 +68,11 @@ ZenML pipelines are designed to be written early on the development lifecycle. D
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
 [Functional API Guide]: https://docs.zenml.io/v/docs/guides/functional-api
-[New in v0.6.2]: https://github.com/zenml-io/zenml/releases
+[New in v0.6.3]: https://github.com/zenml-io/zenml/releases
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
 [API Reference]: https://apidocs.zenml.io/
+[ZenFiles]: https://github.com/zenml-io/zenfiles
 [Examples]: https://github.com/zenml-io/zenml/tree/main/examples
 [Blog]: https://blog.zenml.io/
 [Podcast]: https://podcast.zenml.io/
@@ -246,6 +248,13 @@ pipeline = mnist_pipeline(
 )
 pipeline.run()
 ```
+
+# 🗂️ ZenFiles
+
+ZenFiles are production-grade ML use-cases powered by ZenML. They are fully fleshed out, end-to-end, projects that showcase 
+ZenML's capabilities. They can also serve as a template from which to start similar projects.
+
+The ZenFiles project is fully maintained and can be viewed as a sister repository of ZenML. Check it out [here](https://github.com/zenml-io/zenfiles).
 
 # 🗺 Roadmap
 

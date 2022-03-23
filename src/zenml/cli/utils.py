@@ -14,7 +14,7 @@
 import datetime
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import click
 from dateutil import tz
@@ -23,8 +23,8 @@ from rich.text import Text
 
 from zenml.console import console
 from zenml.constants import IS_DEBUG_ENV
+from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.repository import StackConfiguration
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -108,11 +108,14 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     Args:
       obj: A List containing dictionaries.
     """
-    rich_table = table.Table(box=box.HEAVY_EDGE)
-    for key, _ in obj[0].items():
-        rich_table.add_column(key.upper())
-    for item in obj:
-        rich_table.add_row(*list(item.values()))
+    columns = {key.upper(): None for dict_ in obj for key in dict_.keys()}
+    rich_table = table.Table(*columns.keys(), box=box.HEAVY_EDGE)
+
+    for dict_ in obj:
+        values = columns.copy()
+        values.update(dict_)
+        rich_table.add_row(*list(values.values()))
+
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
     console.print(rich_table)
@@ -137,7 +140,8 @@ def format_integration_list(
 
 
 def print_stack_component_list(
-    components: List[StackComponent], active_component_name: str
+    components: List[StackComponent],
+    active_component_name: Optional[str] = None,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
@@ -163,7 +167,7 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    component: StackConfiguration, active: bool, stack_name: str
+    config: Dict[StackComponentType, str], active: bool, stack_name: str
 ) -> None:
     """Prints the configuration options of a stack."""
     stack_caption = f"'{stack_name}' stack"
@@ -177,7 +181,7 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE")
     rich_table.add_column("COMPONENT_NAME")
-    items = component.dict().items()
+    items = {typ.value: name for typ, name in config.items()}
     for item in items:
         rich_table.add_row(*list(item))
 
@@ -268,15 +272,14 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     return r_args
 
 
-def install_package(package: str) -> None:
-    """Installs pypi package into the current environment with pip"""
+def install_packages(packages: List[str]) -> None:
+    """Installs pypi packages into the current environment with pip"""
     command = [
         sys.executable,
         "-m",
         "pip",
         "install",
-        package,
-    ]
+    ] + packages
 
     if not IS_DEBUG_ENV:
         command += [

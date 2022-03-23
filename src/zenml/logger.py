@@ -20,10 +20,12 @@ from logging.handlers import TimedRotatingFileHandler
 from typing import Any, Dict
 
 from absl import logging as absl_logging
+from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ABSL_LOGGING_VERBOSITY,
     APP_NAME,
+    ENABLE_RICH_TRACEBACK,
     ZENML_LOGGING_VERBOSITY,
 )
 from zenml.enums import LoggingLevels
@@ -103,6 +105,9 @@ def set_root_verbosity() -> None:
     """Set the root verbosity."""
     level = get_logging_level()
     if level != LoggingLevels.NOTSET:
+        if ENABLE_RICH_TRACEBACK:
+            rich_tb_install(show_locals=(level == LoggingLevels.DEBUG))
+
         logging.basicConfig(level=level.value)
         get_logger(__name__).debug(
             f"Logging set to level: " f"{logging.getLevelName(level.value)}"
