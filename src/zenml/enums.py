@@ -47,6 +47,7 @@ class StackComponentType(StrEnum):
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
     STEP_OPERATOR = "step_operator"
+    SECRETS_MANAGER = "secrets_manager"
 
     @property
     def plural(self) -> str:
@@ -75,6 +76,8 @@ class StackComponentFlavor(StrEnum):
             return OrchestratorFlavor
         elif component_type == StackComponentType.STEP_OPERATOR:
             return StepOperatorFlavor
+        elif component_type == StackComponentType.SECRETS_MANAGER:
+            return SecretsManagerFlavor
         else:
             raise ValueError(
                 f"Unsupported Stack Component Type {component_type.value}"
