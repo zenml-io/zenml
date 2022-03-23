@@ -14,6 +14,7 @@
 
 import logging
 from enum import Enum
+from typing import Type
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -38,8 +39,46 @@ class LoggingLevels(Enum):
     CRITICAL = logging.CRITICAL
 
 
+class StackComponentType(StrEnum):
+    """All possible types a `StackComponent` can have."""
+
+    ORCHESTRATOR = "orchestrator"
+    METADATA_STORE = "metadata_store"
+    ARTIFACT_STORE = "artifact_store"
+    CONTAINER_REGISTRY = "container_registry"
+    STEP_OPERATOR = "step_operator"
+
+    @property
+    def plural(self) -> str:
+        """Returns the plural of the enum value."""
+        if self == StackComponentType.CONTAINER_REGISTRY:
+            return "container_registries"
+
+        return f"{self.value}s"
+
+
 class StackComponentFlavor(StrEnum):
     """Abstract base class for all stack component flavors."""
+
+    @staticmethod
+    def for_type(
+        component_type: StackComponentType,
+    ) -> Type["StackComponentFlavor"]:
+        """Get the corresponding flavor child-type for a component type."""
+        if component_type == StackComponentType.ARTIFACT_STORE:
+            return ArtifactStoreFlavor
+        elif component_type == StackComponentType.METADATA_STORE:
+            return MetadataStoreFlavor
+        elif component_type == StackComponentType.CONTAINER_REGISTRY:
+            return ContainerRegistryFlavor
+        elif component_type == StackComponentType.ORCHESTRATOR:
+            return OrchestratorFlavor
+        elif component_type == StackComponentType.STEP_OPERATOR:
+            return StepOperatorFlavor
+        else:
+            raise ValueError(
+                f"Unsupported Stack Component Type {component_type.value}"
+            )
 
 
 class ArtifactStoreFlavor(StackComponentFlavor):
@@ -80,26 +119,17 @@ class StepOperatorFlavor(StackComponentFlavor):
     SAGEMAKER = "sagemaker"
 
 
-class StackComponentType(StrEnum):
-    """All possible types a `StackComponent` can have."""
-
-    ORCHESTRATOR = "orchestrator"
-    METADATA_STORE = "metadata_store"
-    ARTIFACT_STORE = "artifact_store"
-    CONTAINER_REGISTRY = "container_registry"
-    STEP_OPERATOR = "step_operator"
-
-    @property
-    def plural(self) -> str:
-        """Returns the plural of the enum value."""
-        if self == StackComponentType.CONTAINER_REGISTRY:
-            return "container_registries"
-
-        return f"{self.value}s"
-
-
 class MetadataContextTypes(Enum):
     """All possible types that contexts can have within pipeline nodes"""
 
     STACK = "stack"
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
+
+
+class StorageType(StrEnum):
+    """Storage Backend Types"""
+
+    YAML_STORAGE = "yaml_storage"
+    SQLITE_STORAGE = "sqlite_storage"
+    MYSQL_STORAGE = "mysql_storage"
+    REST_STORAGE = "rest_storage"

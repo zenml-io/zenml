@@ -106,6 +106,9 @@ SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 )
 
+# Repository Directory Path
+LOCAL_CONFIG_DIRECTORY_NAME = ".zen"
+
 USER_MAIN_MODULE: Optional[str] = None
 
 # Rich config

@@ -15,22 +15,17 @@
 import click
 from pipeline import (
     TrainerConfig,
-    mnist_pipeline,
-    importer,
-    trainer,
     evaluator,
+    importer,
+    mnist_pipeline,
     normalizer,
+    trainer,
 )
-from rich import print
-from zenml.integrations.tensorflow.services import (
-    TensorboardService,
-    TensorboardServiceConfig,
-)
+
 from zenml.integrations.tensorflow.visualizers import (
-    visualize_tensorboard,
     stop_tensorboard_server,
+    visualize_tensorboard,
 )
-from zenml.repository import Repository
 
 
 @click.command()

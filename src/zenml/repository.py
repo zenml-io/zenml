@@ -11,55 +11,42 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import base64
 import json
 import os
 from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Dict, List, Optional
+from typing import Dict, List, Optional
 
-from pydantic import BaseModel, validator
+import yaml
+from pydantic import BaseModel, ValidationError
 
 import zenml
-from zenml.constants import ENV_ZENML_REPOSITORY_PATH
-from zenml.enums import StackComponentType
+from zenml.constants import (
+    ENV_ZENML_REPOSITORY_PATH,
+    LOCAL_CONFIG_DIRECTORY_NAME,
+)
+from zenml.enums import StackComponentFlavor, StackComponentType, StorageType
 from zenml.environment import Environment
 from zenml.exceptions import (
     ForbiddenRepositoryAccessError,
     InitializationException,
     RepositoryNotFoundError,
-    StackComponentExistsError,
-    StackExistsError,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
+from zenml.stack_stores import BaseStackStore, LocalStackStore, SqlStackStore
+from zenml.stack_stores.models import (
+    StackComponentWrapper,
+    StackStoreModel,
+    StackWrapper,
+)
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
 
 logger = get_logger(__name__)
-LOCAL_CONFIG_DIRECTORY_NAME = ".zen"
-
-
-class StackConfiguration(BaseModel):
-    """Pydantic object used for serializing stack configuration options."""
-
-    orchestrator: str
-    metadata_store: str
-    artifact_store: str
-    container_registry: Optional[str]
-    step_operator: Optional[str]
-
-    def contains_component(
-        self, component_type: StackComponentType, name: str
-    ) -> bool:
-        """Checks if the stack contains a specific component."""
-        return self.dict().get(component_type.value) == name
-
-    class Config:
-        """Pydantic configuration class."""
-
-        allow_mutation = False
 
 
 class RepositoryConfiguration(BaseModel):
@@ -67,34 +54,35 @@ class RepositoryConfiguration(BaseModel):
 
     Attributes:
         version: Version of ZenML that was used to create the repository.
+        storage_type: Type of Storage backend to persist the repository.
         active_stack_name: Optional name of the active stack.
-        stacks: Maps stack names to a configuration object containing the
-            names and flavors of all stack components.
-        stack_components: Contains names and flavors of all registered stack
-            components.
     """
 
     version: str
     active_stack_name: Optional[str]
-    stacks: Dict[str, StackConfiguration]
-    stack_components: DefaultDict[StackComponentType, Dict[str, str]]
+    storage_type: StorageType
 
-    @classmethod
-    def empty_configuration(cls) -> "RepositoryConfiguration":
-        """Helper method to create an empty configuration object."""
-        return cls(
-            version=zenml.__version__,
-            stacks={},
-            stack_components={},
+
+class LegacyRepositoryConfig(BaseModel):
+    version: str
+    active_stack_name: Optional[str]
+    stacks: Dict[str, Dict[StackComponentType, Optional[str]]]
+    stack_components: Dict[StackComponentType, Dict[str, str]]
+
+    def get_stack_data(self) -> StackStoreModel:
+        """Extract stack data from Legacy Repository file."""
+        return StackStoreModel(
+            stacks={
+                name: {
+                    component_type: value
+                    for component_type, value in stack.items()
+                    if value is not None  # filter out null components
+                }
+                for name, stack in self.stacks.items()
+            },
+            stack_components=defaultdict(dict, self.stack_components),
+            **self.dict(exclude={"stacks", "stack_components"}),
         )
-
-    @validator("stack_components")
-    def _construct_defaultdict(
-        cls, stack_components: Dict[StackComponentType, Dict[str, str]]
-    ) -> DefaultDict[StackComponentType, Dict[str, str]]:
-        """Ensures that `stack_components` is a defaultdict so stack
-        components of a new component type can be added without issues."""
-        return defaultdict(dict, stack_components)
 
 
 class Repository:
@@ -104,7 +92,11 @@ class Repository:
     their components.
     """
 
-    def __init__(self, root: Optional[Path] = None):
+    def __init__(
+        self,
+        root: Optional[Path] = None,
+        storage_type: StorageType = StorageType.YAML_STORAGE,
+    ):
         """Initializes a repository instance.
 
         Args:
@@ -113,6 +105,8 @@ class Repository:
                 environment variable `ZENML_REPOSITORY_PATH` (if set) and
                 recursively searching in the parent directories of the current
                 working directory.
+            storage_type: Optionally specify how to persist stacks. Valid
+                options: SQLITE_STORAGE, YAML_STORAGE
 
         Raises:
             RepositoryNotFoundError: If no ZenML repository directory is found.
@@ -128,15 +122,40 @@ class Repository:
             )
 
         self._root = Repository.find_repository(root)
+        logger.debug("Initializing %s repo at %s", storage_type, self._root)
 
         # load the repository configuration file if it exists, otherwise use
         # an empty configuration as default
         config_path = self._config_path()
         if fileio.file_exists(config_path):
             config_dict = yaml_utils.read_yaml(config_path)
-            self.__config = RepositoryConfiguration.parse_obj(config_dict)
+            try:
+                self.__config = RepositoryConfiguration.parse_obj(config_dict)
+                stack_data = None
+                logger.debug("Found new_style repository, load from disk.")
+            except ValidationError:
+                # if we have an old style repository in place already, split
+                # config and stack store out into separate entities:
+                logger.info(
+                    "Found old style repository, converting to "
+                    "minimal repository config with separate stack store file."
+                )
+                legacy_config = LegacyRepositoryConfig.parse_obj(config_dict)
+                stack_data = legacy_config.get_stack_data()
+                self.__config = RepositoryConfiguration(
+                    version=legacy_config.version,
+                    active_stack_name=legacy_config.active_stack_name,
+                    storage_type=storage_type,
+                )
+                self._write_config()
         else:
-            self.__config = RepositoryConfiguration.empty_configuration()
+            stack_data = None
+            logger.debug(
+                "No repo found, creating new repository configuration."
+            )
+            self.__config = RepositoryConfiguration(
+                version=zenml.__version__, storage_type=storage_type
+            )
 
         if self.version != zenml.__version__:
             logger.warning(
@@ -148,16 +167,24 @@ class Repository:
                 zenml.__version__,
             )
 
+        self.stack_store: BaseStackStore
+        if self.__config.storage_type == StorageType.YAML_STORAGE:
+            self.stack_store = LocalStackStore(
+                base_directory=str(self.root), stack_data=stack_data
+            )
+        elif self.__config.storage_type == StorageType.SQLITE_STORAGE:
+            self.stack_store = SqlStackStore(
+                f"sqlite:///{self.config_directory / 'stackstore.db'}"
+            )
+        else:
+            # TODO[HIGH]: implement other stack store backends (rest, mysql?)
+            raise ValueError(
+                f"Unsupported StackStore StorageType {self.__config.storage_type.value}"
+            )
+
     def _config_path(self) -> str:
         """Path to the repository configuration file."""
         return str(self.config_directory / "config.yaml")
-
-    def _get_stack_component_config_path(
-        self, component_type: StackComponentType, name: str
-    ) -> str:
-        """Path to the configuration file of a stack component."""
-        path = self.config_directory / component_type.plural / f"{name}.yaml"
-        return str(path)
 
     def _write_config(self) -> None:
         """Writes the repository configuration file."""
@@ -166,7 +193,10 @@ class Repository:
 
     @staticmethod
     @track(event=AnalyticsEvent.INITIALIZE_REPO)
-    def initialize(root: Path = Path.cwd()) -> None:
+    def initialize(
+        root: Path = Path.cwd(),
+        storage_type: StorageType = StorageType.YAML_STORAGE,
+    ) -> None:
         """Initializes a new ZenML repository at the given path.
 
         The newly created repository will contain a single stack with a local
@@ -189,10 +219,11 @@ class Repository:
         fileio.create_dir_recursive_if_not_exists(config_directory)
 
         # register and activate a local stack
-        repo = Repository(root=root)
+        repo = Repository(root=root, storage_type=storage_type)
         stack = Stack.default_local_stack()
         repo.register_stack(stack)
         repo.activate_stack(stack.name)
+        repo._write_config()
 
     @property
     def version(self) -> str:
@@ -212,11 +243,11 @@ class Repository:
     @property
     def stacks(self) -> List[Stack]:
         """All stacks registered in this repository."""
-        return [self.get_stack(name=name) for name in self.__config.stacks]
+        return [self._stack_from_wrapper(s) for s in self.stack_store.stacks]
 
     @property
-    def stack_configurations(self) -> Dict[str, StackConfiguration]:
-        """Configuration objects for all stacks registered in this repository.
+    def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
+        """Configuration dicts for all stacks registered in this repository.
 
         This property is intended as a quick way to get information about the
         components of the registered stacks without loading all installed
@@ -228,7 +259,7 @@ class Repository:
         register/deregister stacks, use `repo.register_stack(...)` or
         `repo.deregister_stack(...)` instead.
         """
-        return self.__config.stacks.copy()
+        return self.stack_store.stack_configurations
 
     @property
     def active_stack(self) -> Stack:
@@ -239,12 +270,11 @@ class Repository:
             KeyError: If no stack was found for the configured name or one
                 of the stack components is not registered.
         """
-        if not self.__config.active_stack_name:
+        if self.__config.active_stack_name is None:
             raise RuntimeError(
                 "No active stack name configured. Run "
                 "`zenml stack set STACK_NAME` to update the active stack."
             )
-
         return self.get_stack(name=self.__config.active_stack_name)
 
     @property
@@ -254,7 +284,7 @@ class Repository:
         Raises:
             RuntimeError: If no active stack name is configured.
         """
-        if not self.__config.active_stack_name:
+        if self.__config.active_stack_name is None:
             raise RuntimeError(
                 "No active stack name configured. Run "
                 "`zenml stack set STACK_NAME` to update the active stack."
@@ -271,9 +301,7 @@ class Repository:
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        if name not in self.__config.stacks:
-            raise KeyError(f"Unable to find stack for name '{name}'.")
-
+        self.stack_store.get_stack_configuration(name)  # raises KeyError
         self.__config.active_stack_name = name
         self._write_config()
 
@@ -287,30 +315,7 @@ class Repository:
             KeyError: If no stack exists for the given name or one of the
                 stacks components is not registered.
         """
-        logger.debug("Fetching stack with name '%s'.", name)
-        if name not in self.__config.stacks:
-            raise KeyError(
-                f"Unable to find stack with name '{name}'. Available names: "
-                f"{set(self.__config.stacks)}."
-            )
-
-        stack_configuration = self.__config.stacks[name]
-        stack_components = {}
-        for (
-            component_type_name,
-            component_name,
-        ) in stack_configuration.dict().items():
-            component_type = StackComponentType(component_type_name)
-            if not component_name:
-                # optional component which is not set, continue
-                continue
-            component = self.get_stack_component(
-                component_type=component_type,
-                name=component_name,
-            )
-            stack_components[component_type] = component
-
-        return Stack.from_components(name=name, components=stack_components)
+        return self._stack_from_wrapper(self.stack_store.get_stack(name))
 
     def register_stack(self, stack: Stack) -> None:
         """Registers a stack and it's components.
@@ -327,36 +332,9 @@ class Repository:
                 registered and a different component with the same name
                 already exists.
         """
-        if stack.name in self.__config.stacks:
-            raise StackExistsError(
-                f"Unable to register stack with name '{stack.name}': Found "
-                f"existing stack with this name."
-            )
-
-        components = {}
-        metadata = {}
-        for component_type, component in stack.components.items():
-            try:
-                existing_component = self.get_stack_component(
-                    component_type=component_type, name=component.name
-                )
-                if existing_component.uuid != component.uuid:
-                    raise StackComponentExistsError(
-                        f"Unable to register one of the stacks components: "
-                        f"A component of type '{component_type}' and name "
-                        f"'{component.name}' already exists."
-                    )
-            except KeyError:
-                # a component of the stack isn't registered yet -> register it
-                self.register_stack_component(component)
-
-            components[component_type.value] = component.name
-            metadata[component_type.value] = component.flavor.value
-
-        stack_configuration = StackConfiguration(**components)
-        self.__config.stacks[stack.name] = stack_configuration
-        self._write_config()
-        logger.info("Registered stack with name '%s'.", stack.name)
+        metadata = self.stack_store.register_stack(
+            StackWrapper.from_stack(stack)
+        )
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
     def deregister_stack(self, name: str) -> None:
@@ -371,26 +349,15 @@ class Repository:
         """
         if name == self.active_stack_name:
             raise ValueError(f"Unable to deregister active stack '{name}'.")
-
-        try:
-            del self.__config.stacks[name]
-            self._write_config()
-            logger.info("Deregistered stack with name '%s'.", name)
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack with name '%s': No stack exists "
-                "with this name.",
-                name,
-            )
+        self.stack_store.deregister_stack(name)
 
     def get_stack_components(
         self, component_type: StackComponentType
     ) -> List[StackComponent]:
         """Fetches all registered stack components of the given type."""
-        component_names = self.__config.stack_components[component_type].keys()
         return [
-            self.get_stack_component(component_type=component_type, name=name)
-            for name in component_names
+            self._component_from_wrapper(c)
+            for c in self.stack_store.get_stack_components(component_type)
         ]
 
     def get_stack_component(
@@ -410,27 +377,9 @@ class Repository:
             component_type.value,
             name,
         )
-
-        components = self.__config.stack_components[component_type]
-        if name not in components:
-            raise KeyError(
-                f"Unable to find stack component (type: {component_type}) "
-                f"with name '{name}'. Available names: {set(components)}."
-            )
-
-        from zenml.stack.stack_component_class_registry import (
-            StackComponentClassRegistry,
+        return self._component_from_wrapper(
+            self.stack_store.get_stack_component(component_type, name=name)
         )
-
-        component_flavor = components[name]
-        component_class = StackComponentClassRegistry.get_class(
-            component_type=component_type, component_flavor=component_flavor
-        )
-        component_config_path = self._get_stack_component_config_path(
-            component_type=component_type, name=name
-        )
-        component_config = yaml_utils.read_yaml(component_config_path)
-        return component_class.parse_obj(component_config)
 
     def register_stack_component(
         self,
@@ -445,32 +394,9 @@ class Repository:
             StackComponentExistsError: If a stack component with the same type
                 and name already exists.
         """
-        components = self.__config.stack_components[component.type]
-        if component.name in components:
-            raise StackComponentExistsError(
-                f"Unable to register stack component (type: {component.type}) "
-                f"with name '{component.name}': Found existing stack component "
-                f"with this name."
-            )
-
-        # write the component configuration file
-        component_config_path = self._get_stack_component_config_path(
-            component_type=component.type, name=component.name
+        self.stack_store.register_stack_component(
+            StackComponentWrapper.from_component(component)
         )
-        fileio.create_dir_recursive_if_not_exists(
-            os.path.dirname(component_config_path)
-        )
-        yaml_utils.write_yaml(
-            component_config_path, json.loads(component.json())
-        )
-
-        # add the component to the repository configuration and write it to disk
-        components[component.name] = component.flavor.value
-        self._write_config()
-        logger.info(
-            "Registered stack component with name '%s'.", component.name
-        )
-
         analytics_metadata = {
             "type": component.type.value,
             "flavor": component.flavor.value,
@@ -489,38 +415,7 @@ class Repository:
             component_type: The type of the component to deregister.
             name: The name of the component to deregister.
         """
-        for stack_name, stack_config in self.stack_configurations.items():
-            if stack_config.contains_component(
-                component_type=component_type, name=name
-            ):
-                raise ValueError(
-                    f"Unable to deregister stack component (type: "
-                    f"{component_type}, name: {name}) that is part of a "
-                    f"registered stack (stack name: '{stack_name}')."
-                )
-
-        components = self.__config.stack_components[component_type]
-        try:
-            del components[name]
-            self._write_config()
-            logger.info(
-                "Deregistered stack component (type: %s) with name '%s'.",
-                component_type.value,
-                name,
-            )
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack component (type: %s) with name "
-                "'%s': No stack component exists with this name.",
-                component_type.value,
-                name,
-            )
-        component_config_path = self._get_stack_component_config_path(
-            component_type=component_type, name=name
-        )
-
-        if fileio.file_exists(component_config_path):
-            fileio.remove(component_config_path)
+        self.stack_store.deregister_stack_component(component_type, name=name)
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(
@@ -631,3 +526,32 @@ class Repository:
             return _find_repo_helper(path_.parent)
 
         return _find_repo_helper(path).resolve()
+
+    def _component_from_wrapper(
+        self, wrapper: StackComponentWrapper
+    ) -> StackComponent:
+        """Instantiate a StackComponent from the Configuration."""
+        from zenml.stack.stack_component_class_registry import (
+            StackComponentClassRegistry,
+        )
+
+        flavor = StackComponentFlavor.for_type(wrapper.type)(wrapper.flavor)
+        component_class = StackComponentClassRegistry.get_class(
+            component_type=wrapper.type, component_flavor=flavor
+        )
+        component_config = yaml.safe_load(
+            base64.b64decode(wrapper.config).decode()
+        )
+        return component_class.parse_obj(component_config)
+
+    def _stack_from_wrapper(self, wrapper: StackWrapper) -> Stack:
+        """Instantiate a Stack from the serializable Wrapper."""
+        stack_components = {}
+        for component_wrapper in wrapper.components:
+            component_type = component_wrapper.type
+            component = self._component_from_wrapper(component_wrapper)
+            stack_components[component_type] = component
+
+        return Stack.from_components(
+            name=wrapper.name, components=stack_components
+        )

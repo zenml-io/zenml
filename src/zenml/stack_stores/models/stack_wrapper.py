@@ -4,31 +4,33 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+#       https://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-from enum import Enum
 from typing import List
 
+from pydantic import BaseModel
 
-class StrEnum(str, Enum):
-    """Base enum type for string enum values"""
+from zenml.stack import Stack
+from zenml.stack_stores.models import StackComponentWrapper
 
-    def __str__(self) -> str:
-        """Returns the enum string value."""
-        return self.value  # type: ignore
+
+class StackWrapper(BaseModel):
+    """Network Serializable Wrapper describing a Stack."""
+
+    name: str
+    components: List[StackComponentWrapper]
 
     @classmethod
-    def names(cls) -> List[str]:
-        """Get all enum names as a list of strings"""
-        return [c.name for c in cls]
-
-    @classmethod
-    def values(cls) -> List[str]:
-        """Get all enum values as a list of strings"""
-        return [c.value for c in cls]
+    def from_stack(cls, stack: Stack) -> "StackWrapper":
+        return cls(
+            name=stack.name,
+            components=[
+                StackComponentWrapper.from_component(component)
+                for t, component in stack.components.items()
+            ],
+        )

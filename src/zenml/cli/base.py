@@ -20,6 +20,7 @@ import click
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error
 from zenml.console import console
+from zenml.enums import StorageType
 from zenml.exceptions import InitializationException
 from zenml.repository import Repository
 
@@ -31,9 +32,8 @@ from zenml.repository import Repository
         exists=True, file_okay=False, dir_okay=True, path_type=Path
     ),
 )
-def init(
-    path: Optional[Path],
-) -> None:
+@click.option("--storage-type", type=click.Choice(StorageType.names()))
+def init(path: Optional[Path], storage_type: Optional[StorageType]) -> None:
     """Initialize ZenML on given path.
 
     Args:
@@ -45,9 +45,12 @@ def init(
     if path is None:
         path = Path.cwd()
 
+    if storage_type is None:
+        storage_type = StorageType.YAML_STORAGE
+
     with console.status(f"Initializing ZenML repository at {path}.\n"):
         try:
-            Repository.initialize(root=path)
+            Repository.initialize(root=path, storage_type=storage_type)
             declare(f"ZenML repository initialized at {path}.")
         except InitializationException as e:
             error(f"{e}")
