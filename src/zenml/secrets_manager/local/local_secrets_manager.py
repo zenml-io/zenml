@@ -134,7 +134,7 @@ class LocalSecretsManager(BaseSecretsManager):
         secrets_store_items[secret.name] = encoded_secret
         yaml_utils.append_yaml(self.secrets_file, secrets_store_items)
 
-    def get_secret(self, secret_name: str) -> Dict[str, str]:
+    def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Gets the value of a secret."""
         secret_sets_store_items = self._get_all_secrets()
         if not self._verify_secret_key_exists(secret_name=secret_name):
