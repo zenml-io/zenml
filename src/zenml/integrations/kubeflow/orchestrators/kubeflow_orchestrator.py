@@ -34,6 +34,7 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.secret.base_secret import BaseSecretSchema
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
 from zenml.stack import StackValidator
@@ -83,6 +84,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     synchronous = False
     supports_local_execution = True
     supports_remote_execution = True
+    secrets: Optional[list[BaseSecretSchema]] = None
 
     @property
     def flavor(self) -> OrchestratorFlavor:
