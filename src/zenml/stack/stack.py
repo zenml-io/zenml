@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from zenml.metadata_stores import BaseMetadataStore
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
-    from zenml.secrets_manager import BaseSecretsManager
+    from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
 
@@ -107,7 +107,7 @@ class Stack:
         from zenml.container_registries import BaseContainerRegistry
         from zenml.metadata_stores import BaseMetadataStore
         from zenml.orchestrators import BaseOrchestrator
-        from zenml.secrets_manager import BaseSecretsManager
+        from zenml.secrets_managers import BaseSecretsManager
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(

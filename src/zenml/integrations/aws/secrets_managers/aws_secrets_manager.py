@@ -21,7 +21,7 @@ from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_manager.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -96,7 +96,9 @@ class AWSSecretsManager(BaseSecretsManager):
             SecretId=secret_name
         )
         if "SecretString" not in get_secret_value_response:
-            raise RuntimeError(f"No secrets found within the" f" {secret_name}")
+            raise RuntimeError(
+                f"No secrets found within the" f" {secret_name}"
+            )
         secret_contents: Dict[str, str] = json.loads(
             get_secret_value_response["SecretString"]
         )

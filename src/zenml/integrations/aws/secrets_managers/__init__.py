@@ -16,7 +16,7 @@
 
 ...
 """
-from zenml.integrations.aws.secrets_manager.aws_secrets_manager import (
+from zenml.integrations.aws.secrets_managers.aws_secrets_manager import (
     AWSSecretsManager,
 )
 
