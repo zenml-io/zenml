@@ -41,7 +41,7 @@ def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
         secret which should be a subclass of the BaseSecretSchema class
 
     Returns:
-        jsonified dictionary containing all key-value pairs and the zenml schema
+        jsonified dictionary containing all key-value pairs and the ZenML schema
         type
     """
     secret_contents = secret.content
@@ -98,22 +98,21 @@ class AWSSecretsManager(BaseSecretsManager):
         get_secret_value_response = self.CLIENT.get_secret_value(
             SecretId=secret_name
         )
-        if "SecretString" in get_secret_value_response:
-            secret_contents: Dict[str, str] = json.loads(
-                get_secret_value_response["SecretString"]
+        if "SecretString" not in get_secret_value_response:
+            raise RuntimeError(
+                f"No secrets found within the" f" {secret_name}"
             )
+        secret_contents: Dict[str, str] = json.loads(
+            get_secret_value_response["SecretString"]
+        )
 
-            zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
-            secret_contents["name"] = secret_name
+        zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
+        secret_contents["name"] = secret_name
 
-            secret_schema = SecretSchemaClassRegistry.get_class(
-                secret_schema=zenml_schema_name
-            )
-            secret = secret_schema(**secret_contents)
-
-            return secret
-        else:
-            raise RuntimeError(f"No secrets found within the" f" {secret_name}")
+        secret_schema = SecretSchemaClassRegistry.get_class(
+            secret_schema=zenml_schema_name
+        )
+        return secret_schema(**secret_contents)
 
     def get_all_secret_keys(self) -> List[str]:
         """Get all secret keys."""
@@ -122,10 +121,7 @@ class AWSSecretsManager(BaseSecretsManager):
         # TODO [MEDIUM]: Deal with pagination in the aws secret manager when
         #  listing all secrets
         response = self.CLIENT.list_secrets(MaxResults=100)
-        secrets = []
-        for secret in response["SecretList"]:
-            secrets.append(secret["Name"])
-        return secrets
+        return [secret["Name"] for secret in response["SecretList"]]
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update existing secret."""
@@ -158,8 +154,7 @@ class AWSSecretsManager(BaseSecretsManager):
 
         secret_contents = secret.content
         if key in secret_contents:
-            secret_value = secret_contents[key]
-            return secret_value
+            return secret_contents[key]
         else:
             raise KeyError(
                 f"Secret `{key}` does not exist in secret-set "
