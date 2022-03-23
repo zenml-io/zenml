@@ -1,7 +1,7 @@
 # Get up and running on AzureML
 
 This example shows how you can use the `StepOperator` class to run your training 
-jobs on AzureML.
+jobs on [AzureML](https://azure.microsoft.com/en-us/services/machine-learning/).
 
 AzureML offers specialized compute instances to run your training jobs and 
 has a beautiful UI to track and manage your models and logs. You can now use 

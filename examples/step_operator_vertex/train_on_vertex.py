@@ -36,7 +36,7 @@ def importer() -> Output(
 # setting the custom_step_operator param will tell ZenML
 # to run this step on a custom backend defined by the name
 # of the operator you provide.
-@step(custom_step_operator="vertex-step-operator")
+@step(custom_step_operator="vertex")
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,

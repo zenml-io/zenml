@@ -1,13 +1,14 @@
-# Get up and running quickly on Sagemaker
-This example shows how you can use the `StepOperator` class to run your training jobs on Sagemaker.
+# Train your model on Vertex AI
+This example shows how you can use the `StepOperator` class to run your training jobs on [Vertex AI](https://cloud.google.com/vertex-ai).
 
-Sagemaker offers specialised compute instances to run your training jobs and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit individual steps to be run on compute instances managed by Amazon Sagemaker. 
+Vertex AI offers specialised compute to run [custom training jobs](https://cloud.google.com/vertex-ai/docs/training/custom-training) 
+and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit an individual step to 
+run on a managed training job managed on Vertex AI. 
 
 ## Overview
-Here we train a simple sklearn classifier on the MNIST dataset using Amazon Sagemaker.
+Here we train a simple sklearn classifier on the digits dataset using Vertex AI.
 
 ## Run it locally
-
 Currently, step operators only work with a local orchestrator but support for cloud orchestrators is on the way soon!
 
 ### Installation
@@ -18,11 +19,11 @@ In order to run this example, you need to install and initialize ZenML and the n
 pip install zenml
 
 # install ZenML integrations
-zenml integration install aws sklearn 
+zenml integration install aws vertex 
 
 # pull example
-zenml example pull sagemaker_step_resource
-cd zenml_examples/sagemaker_step_resource
+zenml example pull step_operator_vertex
+cd zenml_examples/step_operator_vertex
 
 # initialize
 zenml init
@@ -36,7 +37,7 @@ In order to run the example, you need to setup a few things to allow ZenML to in
 
 * Next, you need to choose what instance type needs to be used to run your jobs. You can get the list [here]()
 
-* You can choose an GCP bucket to which Sagemaker should output any artifacts from your training run. 
+* You can choose an GCP bucket to which Vertex should output any artifacts from your training run. 
 
 * You can also choose a custom docker image that you want ZenML to use as a base image for creating an environment to run your jobs on Vertex AI. 
 
@@ -61,7 +62,7 @@ zenml artifact-store register gcp-store \
     --path=$PATH_TO_YOUR_GCS_BUCKET
 
 # create the vertex step operator
-zenml step-operator register vertex-step-operator \
+zenml step-operator register vertex \
     --type=vertex \
     --project=zenml-core \
     --region=eu-west1 \
@@ -79,7 +80,7 @@ zenml stack register vertex_training_stack \
     -o local_orchestrator \
     -c gcr_registry \
     -a gcs-store \
-    -s vertex-step-operator
+    -s vertex
 
 # activate the stack
 zenml stack set vertex_training_stack
@@ -89,7 +90,7 @@ zenml stack set vertex_training_stack
 Now we're ready. Execute:
 
 ```shell
-python train_on_sagemaker.py
+python train_on_vertex.py
 ```
 
 
