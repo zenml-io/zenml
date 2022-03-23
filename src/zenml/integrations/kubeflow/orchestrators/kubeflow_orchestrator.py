@@ -83,7 +83,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     synchronous = False
     supports_local_execution = True
     supports_remote_execution = True
-    secrets: Optional["list[str]"] = None
+    secrets: Optional[List[str]] = None
 
     @property
     def flavor(self) -> OrchestratorFlavor:
@@ -152,7 +152,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
             environment_vars=self._get_environment_vars_from_secrets(
-                self.secrets
+                pipeline.secrets
             ),
         )
 
