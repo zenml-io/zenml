@@ -115,16 +115,7 @@ def test_is_remote_when_using_non_remote_prefix(filesystem):
 def test_listdir_returns_a_list_of_file_names(tmp_path):
     """listdir should return a list of file names inside the queried dir"""
     with NamedTemporaryFile(dir=tmp_path) as temp_file:
-        assert fileio.listdir(str(tmp_path)) == [temp_file.name]
-
-
-def test_listdir_returns_a_list_of_file_paths(tmp_path):
-    """list_dir should return a list of file paths inside
-    the queried directory"""
-    with NamedTemporaryFile(dir=tmp_path) as temp_file:
-        assert fileio.listdir(str(tmp_path)) == [
-            os.path.join(tmp_path, temp_file.name)
-        ]
+        assert fileio.listdir(str(tmp_path)) == [Path(temp_file.name).name]
 
 
 def test_listdir_returns_one_result_for_one_file(tmp_path):

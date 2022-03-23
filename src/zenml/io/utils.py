@@ -155,15 +155,17 @@ def copy_dir(
         overwrite: Boolean. If false, function throws an error before overwrite.
     """
     for source_file in listdir(source_dir):
-        source_file_path = Path(source_file)  # type: ignore[arg-type]
-        destination_name = os.path.join(destination_dir, source_file_path.name)
+        source_path = os.path.join(source_dir, convert_to_str(source_file))
+        destination_path = os.path.join(
+            destination_dir, convert_to_str(source_file)
+        )
         if isdir(source_file):
-            copy_dir(source_file, destination_name, overwrite)  # type: ignore[arg-type]
+            copy_dir(convert_to_str(source_file), destination_path, overwrite)
         else:
             create_dir_recursive_if_not_exists(
-                str(Path(destination_name).parent)
+                str(Path(destination_path).parent)
             )
-            copy(str(source_file_path), str(destination_name), overwrite)
+            copy(str(source_path), str(destination_path), overwrite)
 
 
 def get_grandparent(dir_path: str) -> str:
