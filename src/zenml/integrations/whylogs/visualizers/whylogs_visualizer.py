@@ -95,7 +95,7 @@ class WhylogsVisualizer(BaseStepVisualizer):
             raise ValueError(
                 f"Invalid whylogs plot type: {plot} \n\n"
                 f"Valid and supported options are: {nl}- "
-                f'{f"{nl}- ".join(WhylogsPlots.list())}'
+                f'{f"{nl}- ".join(WhylogsPlots.names())}'
             )
         return plot_method
 

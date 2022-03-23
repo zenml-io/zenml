@@ -23,8 +23,8 @@ from rich.text import Text
 
 from zenml.console import console
 from zenml.constants import IS_DEBUG_ENV
+from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.repository import StackConfiguration
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -167,7 +167,7 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    component: StackConfiguration, active: bool, stack_name: str
+    config: Dict[StackComponentType, str], active: bool, stack_name: str
 ) -> None:
     """Prints the configuration options of a stack."""
     stack_caption = f"'{stack_name}' stack"
@@ -181,7 +181,7 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE")
     rich_table.add_column("COMPONENT_NAME")
-    items = component.dict().items()
+    items = {typ.value: name for typ, name in config.items()}
     for item in items:
         rich_table.add_row(*list(item))
 
