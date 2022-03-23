@@ -122,7 +122,7 @@ class Repository:
             )
 
         self._root = Repository.find_repository(root)
-        logger.debug(" + Initializing %s repo at %s", storage_type, self._root)
+        logger.debug("Initializing %s repo at %s", storage_type, self._root)
 
         # load the repository configuration file if it exists, otherwise use
         # an empty configuration as default
