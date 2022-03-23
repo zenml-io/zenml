@@ -66,7 +66,7 @@ def secret(ctx: click.Context) -> None:
     "secret_schema_type",
     default=SecretSchemaType.ARBITRARY,
     help="Register a secret with an optional schema.",
-    type=click.Choice(SecretSchemaType.value_list()),
+    type=click.Choice(SecretSchemaType.values()),
 )
 @click.pass_obj
 def register_secret(

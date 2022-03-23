@@ -14,7 +14,7 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import kfp
 import urllib3
@@ -495,8 +495,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             pid_file_path=self._pid_file_path
         )
 
-    def _get_environment_vars_from_secrets(self, secrets: List[str]) -> None:
-        """Get key value pairs from list of secrets provided by the user"""
+    def _get_environment_vars_from_secrets(
+        self, secrets: List[str]
+    ) -> Dict[str, str]:
+        """Get key-value pairs from list of secrets provided by the user."""
 
         secret_manager = Repository().active_stack.secrets_manager
         if not secret_manager:
@@ -504,8 +506,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Missing secrets manager in current stack."
             )
-        else:
-            environment_vars = {}
-            for secret in secrets:
-                environment_vars.update(secret_manager.get_secret(secret))
-            return environment_vars
+        environment_vars = {}
+        for secret in secrets:
+            environment_vars.update(secret_manager.get_secret(secret))
+        return environment_vars
