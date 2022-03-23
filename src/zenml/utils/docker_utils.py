@@ -55,7 +55,7 @@ def generate_dockerfile_contents(
     base_image: str,
     entrypoint: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
-    environment_vars: Optional[Dict[str, str]] = None,
+    user_environment_vars: Optional[Dict[str, str]] = None,
 ) -> str:
     """Generates a Dockerfile.
 
@@ -71,9 +71,16 @@ def generate_dockerfile_contents(
     """
     lines = [f"FROM {base_image}", "WORKDIR /app"]
 
-    if environment_vars:
-        for key, value in environment_vars.items():
-            lines.append(f"ENV {key}={value}")
+    # by default, embed this environment variable in the Kubeflow image
+    environment_vars = {"ZENML_ANALYTICS_OPT_IN": False}
+
+    if user_environment_vars:
+        # if user has provided a set of env vars, add them to the existing
+        # dict, overriding exisiting keys.
+        environment_vars.update(user_environment_vars)
+
+    for key, value in environment_vars.items():
+        lines.append(f"ENV {key}={value}")
 
     if requirements:
         lines.append(
