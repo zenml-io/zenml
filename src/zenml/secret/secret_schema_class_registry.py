@@ -23,9 +23,9 @@ logger = get_logger(__name__)
 
 
 class SecretSchemaClassRegistry:
-    """Registry for stack component classes.
+    """Registry for SecretSchema classes.
 
-    All stack component classes must be registered here so they can be
+    All SecretSchema classes must be registered here so they can be
     instantiated from the component type and flavor specified inside the
     ZenML repository configuration.
     """
@@ -40,11 +40,11 @@ class SecretSchemaClassRegistry:
         secret_schema: SecretSchemaType,
         secret: Type[BaseSecretSchema],
     ) -> None:
-        """Registers a stack component class.
+        """Registers a SecretSchema class.
 
         Args:
-            secret_schema: The flavor of the component class to register.
-            secret: The component class to register.
+            secret_schema: The flavor of the SecretSchema class to register.
+            secret: The SecretSchema class to register.
         """
         secret_schema = secret_schema.value
         flavors = cls.secret_schema_classes
@@ -67,13 +67,13 @@ class SecretSchemaClassRegistry:
         cls,
         secret_schema: Union[SecretSchemaType, str],
     ) -> Type[BaseSecretSchema]:
-        """Returns the stack component class for the given type and flavor.
+        """Returns the SecretSchema class for the given type and flavor.
 
         Args:
-            secret_schema: The flavor of the component class to return.
+            secret_schema: The flavor of the SecretSchema class to return.
 
         Raises:
-            KeyError: If no component class is registered for the given type
+            KeyError: If no SecretSchema class is registered for the given type
                 and flavor.
         """
         if isinstance(secret_schema, SecretSchemaType):
@@ -83,7 +83,9 @@ class SecretSchemaClassRegistry:
         try:
             return available_schemas[secret_schema]
         except KeyError:
-            # The stack component might be part of an integration
+            # TODO [HIGH]: Propably remove this exception catch. Doesn't apply
+            # to SecretSchema
+            # The SecretSchema might be part of an integration
             # -> Activate the integrations and try again
             from zenml.integrations.registry import integration_registry
 
@@ -93,7 +95,7 @@ class SecretSchemaClassRegistry:
                 return available_schemas[secret_schema]
             except KeyError:
                 raise KeyError(
-                    f"No stack component class found for SecretSet  "
+                    f"No SecretSchema class found for SecretSet  "
                     f"of flavor {secret_schema}. Registered flavors are:"
                     f" {set(available_schemas)}."
                 ) from None
@@ -105,18 +107,17 @@ C = TypeVar("C", bound=BaseSecretSchema)
 def register_secret_schema_class(
     secret_schema: SecretSchemaType,
 ) -> Callable[[Type[C]], Type[C]]:
-    """Parametrized decorator function to register secret set classes.
+    """Parametrized decorator function to register SecretSchema classes.
 
     Args:
-        secret_schema: The flavor of the component class to register.
+        secret_schema: The flavor of the SecretSchema class to register.
 
     Returns:
-        A decorator function that registers and returns the decorated stack
-        component class.
+        A decorator function that registers and returns the decorated SecretSchema class.
     """
 
     def decorator_function(cls: Type[C]) -> Type[C]:
-        """Registers the stack component class and returns it unmodified."""
+        """Registers the SecretSchema class and returns it unmodified."""
         SecretSchemaClassRegistry.register_class(
             secret_schema=secret_schema,
             secret=cls,
