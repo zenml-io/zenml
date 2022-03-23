@@ -96,9 +96,7 @@ class AWSSecretsManager(BaseSecretsManager):
             SecretId=secret_name
         )
         if "SecretString" not in get_secret_value_response:
-            raise RuntimeError(
-                f"No secrets found within the" f" {secret_name}"
-            )
+            raise RuntimeError(f"No secrets found within the" f" {secret_name}")
         secret_contents: Dict[str, str] = json.loads(
             get_secret_value_response["SecretString"]
         )
