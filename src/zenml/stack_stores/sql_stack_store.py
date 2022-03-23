@@ -11,14 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-# type: ignore
-# ^ this is needed here in order to keep SQLModel from blowing up mypy.
-# TODO[HIGH]: Get mypy working on SQLModel. Currently the entire file must be
-#  ignored.
-
 import datetime as dt
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
@@ -28,9 +22,6 @@ from zenml.exceptions import StackComponentExistsError
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper
-
-# from sqlalchemy import select
-
 
 logger = get_logger(__name__)
 
@@ -72,17 +63,17 @@ class ZenConfig(SQLModel, table=True):
         default_factory=dt.datetime.now, primary_key=True
     )
     version: str
-    active_stack: Optional[str]
 
 
 class SqlStackStore(BaseStackStore):
     """Repository Implementation that uses SQL database backend"""
 
-    def __init__(self, url: str, *args, **kwargs) -> None:
+    def __init__(self, url: str, *args: Any, **kwargs: Any) -> None:
         """Create a new SqlStackStore.
 
         Args:
             url: odbc path to a database.
+            args, kwargs: additional parameters for SQLModel.
         """
 
         logger.debug("Initializing SqlStackStore at %s", url)
@@ -103,36 +94,6 @@ class SqlStackStore(BaseStackStore):
         with Session(self.engine) as session:
             conf = session.exec(select(ZenConfig)).one()
         return conf.version
-
-    @property
-    def active_stack_name(self) -> str:
-        """The name of the active stack for this stack store.
-
-        Raises:
-            RuntimeError: If no active stack name is configured.
-        """
-        with Session(self.engine) as session:
-            conf = session.exec(select(ZenConfig)).first()
-        if conf.active_stack is None:
-            raise RuntimeError("No active stack")
-        return conf.active_stack
-
-    def activate_stack(self, name: str) -> None:
-        """Activate the stack for the given name.
-
-        Args:
-            name: Name of the stack to activate.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
-        """
-        with Session(self.engine) as session:
-            # modify the single row of ZenConfig in place
-            conf = session.exec(select(ZenConfig)).one()
-            _ = self.get_stack(name)
-            conf.active_stack = name
-            session.add(conf)
-            session.commit()
 
     def get_stack_configuration(
         self, name: str
@@ -232,6 +193,13 @@ class SqlStackStore(BaseStackStore):
                 select(ZenStack).where(ZenStack.name == name)
             ).one()
             session.delete(stack)
+            definitions = session.exec(
+                select(ZenStackDefinition).where(
+                    ZenStackDefinition.stack_name == name
+                )
+            ).all()
+            for definition in definitions:
+                session.delete(definition)
             session.commit()
 
     # Private interface implementations:
