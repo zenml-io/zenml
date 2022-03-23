@@ -43,7 +43,7 @@ def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
     Returns:
         jsonified dictionary containing all key-value pairs and the zenml schema
         type
-        """
+    """
     secret_contents = secret.content
     secret_contents[ZENML_SCHEMA_NAME] = secret.type
     return json.dumps(secret_contents)
@@ -104,7 +104,7 @@ class AWSSecretsManager(BaseSecretsManager):
             )
 
             zenml_schema_name = secret_contents.pop(ZENML_SCHEMA_NAME)
-            secret_contents['name'] = secret_name
+            secret_contents["name"] = secret_name
 
             secret_schema = SecretSchemaClassRegistry.get_class(
                 secret_schema=zenml_schema_name
