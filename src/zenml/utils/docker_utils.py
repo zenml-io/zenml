@@ -200,6 +200,8 @@ def build_docker_image(
             are included in the build context.
         requirements: Optional list of pip requirements to install. This
             will only be used if no value is given for `dockerfile_path`.
+        environment_vars: Optional dict of key value pairs that need to be 
+            embedded as environment variables in the image.
         use_local_requirements: If `True` and no values are given for
             `dockerfile_path` and `requirements`, then the packages installed
             in the environment of the current python processed will be
