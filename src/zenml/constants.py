@@ -113,6 +113,7 @@ USER_MAIN_MODULE: Optional[str] = None
 
 # Secrets Manager
 ZENML_SCHEMA_NAME = "zenml_schema_name"
+LOCAL_SECRETS_FILENAME = "secrets.yaml"
 
 # Rich config
 ENABLE_RICH_TRACEBACK = handle_bool_env_var(

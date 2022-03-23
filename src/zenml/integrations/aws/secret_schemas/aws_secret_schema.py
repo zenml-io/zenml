@@ -24,5 +24,5 @@ class AWSSecretSchema(BaseSecretSchema):
 
     @property
     def type(self) -> SecretSchemaType:
-        """The component type."""
+        """The SecretSchema type."""
         return SecretSchemaType.AWS

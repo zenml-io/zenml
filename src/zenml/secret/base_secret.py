@@ -47,11 +47,11 @@ class BaseSecretSchema(BaseModel, ABC):
         required key-value pairs of a secret schema"""
 
         ignored_keys = ["name", "arbitrary_kv_pairs"]
-        schema_keys = [
+        return [
             schema_key
             for schema_key in cls.__fields__.keys()
             if schema_key not in ignored_keys
         ]
-        return schema_keys
 
-    # TODO [HIGH]: Validate that Secret contents conform to schema
+
+# TODO [HIGH]: Validate that Secret contents conform to schema

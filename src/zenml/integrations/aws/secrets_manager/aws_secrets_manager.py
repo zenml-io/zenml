@@ -34,11 +34,11 @@ ZENML_SCHEMA_NAME = "zenml_schema_name"
 
 def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
     """Adds the secret type to the secret contents to persist the schema
-    type in the secrets backend, so that the correct Secret Schema can be
+    type in the secrets backend, so that the correct SecretSchema can be
     retrieved when the secret is queried from the backend.
 
     Args:
-        secret which should be a subclass of the BaseSecretSchema class
+        secret: should be a subclass of the BaseSecretSchema class
 
     Returns:
         jsonified dictionary containing all key-value pairs and the ZenML schema
@@ -54,7 +54,7 @@ def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
     component_flavor=SecretsManagerFlavor.AWS,
 )
 class AWSSecretsManager(BaseSecretsManager):
-    """Class to interact with the AWS secret manager."""
+    """Class to interact with the AWS secrets manager."""
 
     supports_local_execution: bool = True
     supports_remote_execution: bool = True
@@ -84,7 +84,6 @@ class AWSSecretsManager(BaseSecretsManager):
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret."""
         self._ensure_client_connected(self.region_name)
-
         secret_value = jsonify_secret_contents(secret)
 
         kwargs = {"Name": secret.name, "SecretString": secret_value}
@@ -97,7 +96,9 @@ class AWSSecretsManager(BaseSecretsManager):
             SecretId=secret_name
         )
         if "SecretString" not in get_secret_value_response:
-            raise RuntimeError(f"No secrets found within the" f" {secret_name}")
+            raise RuntimeError(
+                f"No secrets found within the" f" {secret_name}"
+            )
         secret_contents: Dict[str, str] = json.loads(
             get_secret_value_response["SecretString"]
         )
@@ -116,6 +117,7 @@ class AWSSecretsManager(BaseSecretsManager):
 
         # TODO [MEDIUM]: Deal with pagination in the aws secret manager when
         #  listing all secrets
+        # TODO [HIGH]: take out this magic maxresults number
         response = self.CLIENT.list_secrets(MaxResults=100)
         return [secret["Name"] for secret in response["SecretList"]]
 
@@ -145,7 +147,7 @@ class AWSSecretsManager(BaseSecretsManager):
             )
 
     def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
-        """Get value for a particular key within a Secret."""
+        """Get value for a particular key within a secret."""
         secret = self.get_secret(secret_name)
 
         secret_contents = secret.content
@@ -153,6 +155,5 @@ class AWSSecretsManager(BaseSecretsManager):
             return secret_contents[key]
         else:
             raise KeyError(
-                f"Secret `{key}` does not exist in secret-set "
-                f"'{secret_name}'."
+                f"Secret `{key}` does not exist in secret '{secret_name}'."
             )

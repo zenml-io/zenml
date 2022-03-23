@@ -21,14 +21,16 @@ from zenml.secret import BaseSecretSchema
 
 class ArbitrarySecretSchema(BaseSecretSchema):
     """Schema for arbitrary collections of key value pairs with no
-    predefined schema"""
+    predefined schema."""
 
     arbitrary_kv_pairs: Dict[str, Any]
 
     @root_validator(pre=True)
-    def build_arbitrary_kv_pairs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def build_arbitrary_kv_pairs(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Pydantic root_validator that takes all unused passed kwargs
-        and passes them into the arbitrary_kv_pairs attribute
+        and passes them into the arbitrary_kv_pairs attribute.
 
         Args:
             values: Values passed to the object constructor
@@ -39,14 +41,16 @@ class ArbitrarySecretSchema(BaseSecretSchema):
             if field.alias != "arbitrary_kv_pairs"
         }
 
-        arbitrary_kv_pairs: Dict[str, Any] = {}
-        for field_name in list(values):
-            if field_name not in all_required_field_names:
-                arbitrary_kv_pairs[field_name] = values.pop(field_name)
+        arbitrary_kv_pairs: Dict[str, Any] = {
+            field_name: values.pop(field_name)
+            for field_name in list(values)
+            if field_name not in all_required_field_names
+        }
+
         values["arbitrary_kv_pairs"] = arbitrary_kv_pairs
         return values
 
     @property
     def type(self) -> SecretSchemaType:
-        """The schema type."""
+        """The SecretSchema type."""
         return SecretSchemaType.ARBITRARY
