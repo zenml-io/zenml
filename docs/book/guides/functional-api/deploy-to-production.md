@@ -108,6 +108,15 @@ There is one minor change we need to make to run the pipeline from the previous 
 def mnist_pipeline(...)
 ```
 
+Additionally, you might also want to define a `.dockerignore` to make sure only relevant parts of your
+project are added to the docker images that are used for kubeflow pipelines. Make sure to not add the `.zen` 
+folder to the dockerignore.
+
+```python
+@pipeline(requirements_file="path_to_requirements.txt", dockerignore_file="path_to_dockerignore")
+def mnist_pipeline(...)
+```
+
 We can now run the pipeline by simply executing the Python script:
 
 ```bash

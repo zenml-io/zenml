@@ -157,8 +157,8 @@ def list_stacks() -> None:
             "ACTIVE": ":point_right:" if is_active else "",
             "STACK NAME": stack_name,
             **{
-                key.upper(): value
-                for key, value in stack_configuration.dict().items()
+                component_type.value.upper(): value
+                for component_type, value in stack_configuration.items()
             },
         }
         stack_dicts.append(stack_config)

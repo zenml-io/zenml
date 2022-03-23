@@ -42,7 +42,7 @@ class ServiceConfig(BaseTypedModel):
         description: description of the service
     """
 
-    # TODO [MEDIUM]: add pipeline metadata (name, run id, step etc) to the base
+    # TODO [ENG-702]: add pipeline metadata (name, run id, step etc) to the base
     #   service configuration
     name: str = ""
     description: str = ""
@@ -146,7 +146,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
     admin_state: ServiceState = ServiceState.INACTIVE
     config: ServiceConfig
     status: ServiceStatus
-    # TODO [MEDIUM]: allow multiple endpoints per service
+    # TODO [ENG-703]: allow multiple endpoints per service
     endpoint: Optional[BaseServiceEndpoint]
 
     def __init__(
