@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import base64
-from typing import Dict
+from typing import Dict, Tuple
 
 from zenml.constants import ZENML_SCHEMA_NAME
 from zenml.secret.base_secret import BaseSecretSchema
@@ -49,7 +49,9 @@ def decode_string(string: str) -> str:
     return str(decoded_bytes, "utf-8")
 
 
-def decode_secret_dict(secret_dict: Dict[str, str]) -> Dict[str, str]:
+def decode_secret_dict(
+    secret_dict: Dict[str, str]
+) -> Tuple[Dict[str, str], str]:
     """Base64 decode a Secret.
 
     Args:
