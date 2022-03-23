@@ -20,6 +20,7 @@ from docker.client import DockerClient
 from docker.utils import build as docker_build_utils
 
 import zenml
+from zenml import environment
 import zenml.io.utils
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -55,6 +56,7 @@ def generate_dockerfile_contents(
     base_image: str,
     entrypoint: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
+    environment_vars: Optional[Dict[str, str]] = None,
 ) -> str:
     """Generates a Dockerfile.
 
@@ -63,11 +65,16 @@ def generate_dockerfile_contents(
         entrypoint: The default entrypoint command that gets executed when
             running a container of an image created by this dockerfile.
         requirements: Optional list of pip requirements to install.
+        environment_vars: Optional dict of environment variables to set.
 
     Returns:
         Content of a dockerfile.
     """
     lines = [f"FROM {base_image}", "WORKDIR /app"]
+    
+    if environment_vars:
+        for key, value in environment_vars.items():
+            lines.append(f"ENV {key}={value}")
 
     if requirements:
         lines.append(
@@ -173,6 +180,7 @@ def build_docker_image(
     dockerfile_path: Optional[str] = None,
     dockerignore_path: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
+    environment_vars: Optional[Dict[str, str]] = None,
     use_local_requirements: bool = False,
     base_image: Optional[str] = None,
 ) -> None:
@@ -220,6 +228,7 @@ def build_docker_image(
             base_image=base_image or DEFAULT_BASE_IMAGE,
             entrypoint=entrypoint,
             requirements=requirements,
+            environment_vars=environment_vars,
         )
 
     build_context = create_custom_build_context(
