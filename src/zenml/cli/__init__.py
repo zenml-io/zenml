@@ -297,6 +297,61 @@ command:
 zenml container-registry delete
 ```
 
+Setting up a Secrets Manager
+----------------------------
+
+ZenML offers a way to securely store secrets associated with your project. To
+set up a local file-based secrets manager, use the following CLI command:
+
+```bash
+zenml secrets-manager register SECRETS_MANAGER_NAME -t local
+```
+
+This can then be used as part of your Stack (see below).
+
+Using Secrets
+-------------
+
+Secrets are administered by the Secrets Manager. You must first register that
+and then register a stack that includes the secrets manager before you can start
+to use it. To get a full list of all the possible commands, type `zenml secret
+--help`. A ZenML Secret is a collection or grouping of key-value pairs. These
+Secret groupings come in different types, and certain types have predefined keys
+that should be used. For example, an AWS secret has predefined keys of
+`aws_access_key_id` and `aws_secret_access_key` (and an optional
+`aws_session_token`). If you do not have a specific secret type you wish to use,
+ZenML will use the `arbitrary` type to store your key-value pairs.
+
+To register a secret, use the `register` command:
+
+```bash
+zenml secret register SECRET_NAME
+```
+
+To list all the secrets available, use the `list` command:
+
+```bash
+zenml secret list
+```
+
+To get the key-value pairs for a particular secret, use the `get` command:
+
+```bash
+zenml secret get SECRET_NAME
+```
+
+To update a secret, use the `update` command:
+
+```bash
+zenml secret update SECRET_NAME
+```
+
+Finally, to delete a secret, use the `delete` command:
+
+```bash
+zenml secret delete SECRET_NAME
+```
+
 Administering the Stack
 -----------------------
 
@@ -319,7 +374,8 @@ zenml stack register STACK_NAME \
 ```
 Each corresponding argument should be the name you passed in as an
 identifier for the artifact store, metadata store or orchestrator when
-you originally registered it.
+you originally registered it. (If you want to use your secrets manager, you
+should pass its name in with the `-x` option flag.)
 
 To list the stacks that you have registered within your current ZenML
 project, type:
@@ -346,10 +402,6 @@ To see which stack is currently set as the default active stack, type:
 ```bash
 zenml stack get
 ```
-
-Registering Secrets
--------------------
-# TODO: [HIGH]
 """
 
 from zenml.cli.base import *  # noqa
