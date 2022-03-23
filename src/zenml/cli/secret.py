@@ -126,8 +126,8 @@ def register_secret(
     secret = secret_schema(**secret_contents)
     pretty_print_secret(secret=secret, hide_secret=True)
 
-    with console.status(f"Saving secret set `{name}`..."):
-        secrets_manager.register_secret(secret=secret)
+    # with console.status(f"Saving secret set `{name}`..."):
+    secrets_manager.register_secret(secret=secret)
 
 
 @secret.command("get")

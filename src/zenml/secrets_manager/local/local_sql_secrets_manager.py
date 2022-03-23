@@ -16,11 +16,10 @@
 
 import base64
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
-from sqlmodel import Field, SQLModel, create_engine
+from sqlmodel import Field, Session, SQLModel, create_engine
 
-from zenml.console import console
 from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
@@ -36,16 +35,16 @@ LOCAL_SQLITE_FILENAME = "local_sql_secret_store.db"
 LOCAL_SQLITE_URL = f"sqlite:///{os.path.join(get_global_config_directory(),LOCAL_SQLITE_FILENAME)}"
 
 
-class SecretSet(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    set_name: str
-
-
 class Secret(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    secret_key: str
-    secret_value: str
-    secret_set: Optional[int] = Field(default=None, foreign_key="secretset.id")
+    name: str
+
+
+class SecretPair(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    key: str
+    value: str
+    secret: Optional[int] = Field(default=None, foreign_key="secret.id")
 
 
 def initialize_secret_store_db() -> None:
@@ -91,10 +90,27 @@ class LocalSqlSecretsManager(BaseSecretsManager):
         """The secrets manager type."""
         return StackComponentType.SECRETS_MANAGER
 
-    def register_secret(self, secret: BaseSecretSchema) -> None:
+    def _get_keys(self, secret: BaseSecretSchema) -> List[str]:
+        return list(secret.content.keys())
 
-        console.print(f"THIS REALLY WORKED {secret}!")
-        # raise NotImplementedError
+    def _get_secret_names(self) -> List[str]:
+        """Get all the names of all the secrets."""
+        raise NotImplementedError
+
+    def register_secret(self, secret: BaseSecretSchema) -> None:
+        """Register a secret in the SQLite database."""
+        # verify the secret isn't already registered
+        # if it is, raise an exception
+        with Session(self._get_engine()) as session:
+            sql_secret = Secret(name=secret.name)
+            session.add(sql_secret)
+            session.commit()
+            for k, v in secret.content.items():
+                sql_secret_pair = SecretPair(
+                    key=k, value=encode_string(v), secret=sql_secret.id
+                )
+                session.add(sql_secret_pair)
+            session.commit()
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
         raise NotImplementedError
