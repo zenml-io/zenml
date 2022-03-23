@@ -16,6 +16,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 from zenml.cli.utils import error
+from zenml.constants import ZENML_SCHEMA_NAME
 from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.io.fileio import create_file_if_not_exists
 from zenml.io.utils import get_global_config_directory
@@ -27,54 +28,14 @@ from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.utils import yaml_utils
+from zenml.secrets_manager.utils import (
+    encode_secret,
+    decode_secret_dict,
+)
 
 logger = get_logger(__name__)
 
 LOCAL_SECRETS_FILENAME = "secrets.yaml"
-ZENML_SCHEMA_NAME = "zenml_schema_name"
-
-
-def encode_string(string: str) -> str:
-    """Base64 encode a string.
-
-    Args:
-        string: String to encode
-    """
-    encoded_bytes = base64.b64encode(string.encode("utf-8"))
-    return str(encoded_bytes, "utf-8")
-
-
-def encode_secret(secret: BaseSecretSchema) -> Dict[str, str]:
-    """Base64 encode all values within a secret.
-
-    Args:
-        secret: Secret containing key-value pairs
-    """
-    encoded_secret = {k: encode_string(v) for k, v in secret.content.items()}
-    encoded_secret[ZENML_SCHEMA_NAME] = secret.type.value
-    return encoded_secret
-
-
-def decode_string(string: str) -> str:
-    """Base64 decode a string.
-
-    Args:
-        string: String to decode
-    """
-    decoded_bytes = base64.b64decode(string)
-    return str(decoded_bytes, "utf-8")
-
-
-def decode_secret_dict(secret_dict: Dict[str, str]) -> Dict[str, str]:
-    """Base64 decode a Secret.
-
-    Args:
-        secret_dict: dict containing key-value pairs to decode
-    """
-    zenml_schema_name = secret_dict.pop(ZENML_SCHEMA_NAME)
-
-    decoded_secret = {k: decode_string(v) for k, v in secret_dict.items()}
-    return decoded_secret, zenml_schema_name
 
 
 @register_stack_component_class(
@@ -141,7 +102,9 @@ class LocalSecretsManager(BaseSecretsManager):
             raise KeyError(f"Secret set `{secret_name}` does not exists.")
         secret_dict = secret_sets_store_items[secret_name]
 
-        decoded_secret_dict, zenml_schema_name = decode_secret_dict(secret_dict)
+        decoded_secret_dict, zenml_schema_name = decode_secret_dict(
+            secret_dict
+        )
         decoded_secret_dict["name"] = secret_name
 
         secret_schema = SecretSchemaClassRegistry.get_class(
