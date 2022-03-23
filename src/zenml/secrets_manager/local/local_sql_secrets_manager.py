@@ -91,33 +91,8 @@ class LocalSqlSecretsManager(BaseSecretsManager):
         """The secrets manager type."""
         return StackComponentType.SECRETS_MANAGER
 
-    def _verify_set_key_exists(self, set_key: str) -> bool:
-        pass
-        # secrets_store_items = yaml_utils.read_yaml(self.secrets_file)
-        # try:
-        #     return set_key in secrets_store_items
-        # except TypeError:
-        #     return False
-
-    def _get_all_secret_sets(self) -> Dict[str, Dict[str, str]]:
-        pass
-        # return yaml_utils.read_yaml(self.secrets_file) or {}
-
-    def _verify_secret_key_exists(self, set_key: str, secret_key: str) -> bool:
-        pass
-        # with Session(self._get_engine()) as session:
-        #     statement = select(Secret)
-        #     secrets_store_items = session.exec(statement)
-        #     # TODO [HIGH] : FIX THIS
-        #     try:
-        #         return secret_key in secrets_store_items.get(set_key)
-        #     except TypeError:
-        #         return False
-
-    def _get_secrets_within_set(self, set_key: str) -> Dict[str, str]:
-        raise NotImplementedError
-
     def register_secret(self, secret: BaseSecretSchema) -> None:
+
         console.print(f"THIS REALLY WORKED {secret}!")
         # raise NotImplementedError
 
