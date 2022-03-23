@@ -14,7 +14,7 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, Optional, List
+from typing import TYPE_CHECKING, Any, List, Optional
 
 import kfp
 import urllib3
@@ -151,7 +151,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
             dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
-            environment_vars = self._get_environment_vars_from_secrets(self.secrets),
+            environment_vars=self._get_environment_vars_from_secrets(
+                self.secrets
+            ),
         )
 
         if stack.container_registry:
@@ -493,9 +495,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
             pid_file_path=self._pid_file_path
         )
 
-    def _get_environment_vars_from_secrets(self, secrets:List[str] ) -> None:
+    def _get_environment_vars_from_secrets(self, secrets: List[str]) -> None:
         """Get key value pairs from list of secrets provided by the user"""
-        
+
         secret_manager = Repository().active_stack.secrets_manager
         if not secret_manager:
             raise ProvisioningError(
@@ -503,8 +505,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "Missing secrets manager in current stack."
             )
         else:
-            environment_vars={}
+            environment_vars = {}
             for secret in secrets:
                 environment_vars.update(secret_manager.get_secret(secret))
             return environment_vars
-

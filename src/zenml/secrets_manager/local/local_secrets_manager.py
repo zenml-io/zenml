@@ -141,9 +141,7 @@ class LocalSecretsManager(BaseSecretsManager):
             raise KeyError(f"Secret set `{secret_name}` does not exists.")
         secret_dict = secret_sets_store_items[secret_name]
 
-        decoded_secret_dict, zenml_schema_name = decode_secret_dict(
-            secret_dict
-        )
+        decoded_secret_dict, zenml_schema_name = decode_secret_dict(secret_dict)
         decoded_secret_dict["name"] = secret_name
 
         secret_schema = SecretSchemaClassRegistry.get_class(
