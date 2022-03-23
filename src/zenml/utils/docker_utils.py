@@ -55,7 +55,7 @@ def generate_dockerfile_contents(
     base_image: str,
     entrypoint: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
-    environment_variables: Optional[Dict[str, str]] = None,
+    environment_vars: Optional[Dict[str, str]] = None,
 ) -> str:
     """Generates a Dockerfile.
 
@@ -71,16 +71,9 @@ def generate_dockerfile_contents(
     """
     lines = [f"FROM {base_image}", "WORKDIR /app"]
 
-    # by default, embed this environment variable in the Kubeflow image
-    environment_vars = {"ZENML_ANALYTICS_OPT_IN": False}
-
-    if environment_variables:
-        # if user has provided a set of env vars, add them to the existing
-        # dict, overriding exisiting keys.
-        environment_vars.update(environment_variables)
-
-    for key, value in environment_vars.items():
-        lines.append(f"ENV {key}={value}")
+    if environment_vars:
+        for key, value in environment_vars.items():
+            lines.append(f"ENV {key}={value}")
 
     if requirements:
         lines.append(
@@ -186,7 +179,7 @@ def build_docker_image(
     dockerfile_path: Optional[str] = None,
     dockerignore_path: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
-    environment_variables: Optional[Dict[str, str]] = None,
+    environment_vars: Optional[Dict[str, str]] = None,
     use_local_requirements: bool = False,
     base_image: Optional[str] = None,
 ) -> None:
@@ -206,7 +199,7 @@ def build_docker_image(
             are included in the build context.
         requirements: Optional list of pip requirements to install. This
             will only be used if no value is given for `dockerfile_path`.
-        environment_variables: Optional dict of key value pairs that need to be
+        environment_vars: Optional dict of key value pairs that need to be
             embedded as environment variables in the image.
         use_local_requirements: If `True` and no values are given for
             `dockerfile_path` and `requirements`, then the packages installed
@@ -236,7 +229,7 @@ def build_docker_image(
             base_image=base_image or DEFAULT_BASE_IMAGE,
             entrypoint=entrypoint,
             requirements=requirements,
-            environment_variables=environment_variables,
+            environment_vars=environment_vars,
         )
 
     build_context = create_custom_build_context(
