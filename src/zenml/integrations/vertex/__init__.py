@@ -30,7 +30,7 @@ class VertexIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.vertex import step_operators   # noqa
+        from zenml.integrations.vertex import step_operators  # noqa
 
 
 VertexIntegration.check_installation()

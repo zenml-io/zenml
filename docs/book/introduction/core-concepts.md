@@ -188,7 +188,7 @@ remote container registry like the [Elastic Container Registry](https://aws.amaz
 
 ## Stack
 
-The stack is essentially all the configuration of all infrastructure of your MLOps platform.
+The stack is essentially all the configuration for the infrastructure of your MLOps platform.
 
 A stack is made up of multiple components. Some examples are:
 
@@ -208,6 +208,30 @@ zenml stack register STACK_NAME \
     -s STEP_OPERATOR_NAME \
     -c CONTAINER_REGISTRY_NAME \
     ...
+```
+
+## Step Operator
+
+While an orchestrator defines how and where your entire pipeline runs, a step operator defines how and where an individual 
+step runs. This can be useful in a variety of scenarios. An example could be if one step within a pipeline should run on a 
+separate environment equipped with a GPU (like a trainer step).
+
+An example is as follows. Let's say we want to run training as a custom [AWS Sagemaker](https://aws.amazon.com/pm/sagemaker/) 
+job. 
+
+This operator can be registered as follows:
+
+```bash
+zenml step-operator register sagemaker \
+    --type=sagemaker
+    ...
+```
+
+```python
+@step(custom_step_operator="sagemaker")
+def trainer(...) -> ...:
+    """Train a model"""
+    # This will run on Sagemaker with a GPU configured above.
 ```
 
 ## Service
