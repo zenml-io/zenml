@@ -1,5 +1,5 @@
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
-#
+# `
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
@@ -30,5 +30,5 @@ class StrEnum(str, Enum):
 
     @classmethod
     def values(cls) -> List[str]:
-        """Get all enum names as a list of strings"""
+        """Get all enum values as a list of strings"""
         return [c.value for c in cls]

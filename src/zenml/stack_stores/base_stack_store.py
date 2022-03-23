@@ -171,6 +171,9 @@ class BaseStackStore(ABC):
         Args:
             stack: The stack to register.
 
+        Returns:
+            metadata dict for telemetry or logging.
+
         Raises:
             StackExistsError: If a stack with the same name already exists.
             StackComponentExistsError: If a component of the stack wasn't

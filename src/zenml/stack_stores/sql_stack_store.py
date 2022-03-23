@@ -63,7 +63,6 @@ class ZenConfig(SQLModel, table=True):
         default_factory=dt.datetime.now, primary_key=True
     )
     version: str
-    active_stack: Optional[str]
 
 
 class SqlStackStore(BaseStackStore):
@@ -194,6 +193,13 @@ class SqlStackStore(BaseStackStore):
                 select(ZenStack).where(ZenStack.name == name)
             ).one()
             session.delete(stack)
+            definitions = session.exec(
+                select(ZenStackDefinition).where(
+                    ZenStackDefinition.stack_name == name
+                )
+            ).all()
+            for definition in definitions:
+                session.delete(definition)
             session.commit()
 
     # Private interface implementations:
