@@ -25,6 +25,7 @@ from pydantic import validator as property_validator
 
 from zenml import __version__
 from zenml.enums import (
+    ArtifactStoreFlavor,
     OrchestratorFlavor,
     StackComponentType,
     StepOperatorFlavor,
@@ -98,7 +99,11 @@ class VertexStepOperator(BaseStepOperator):
         """Validates that the stack contains a container registry."""
 
         def _ensure_local_orchestrator(stack: Stack) -> bool:
-            return stack.orchestrator.flavor == OrchestratorFlavor.LOCAL
+            # For now this only works on local orchestrator and GCP artifact
+            #  store
+            return (stack.orchestrator.flavor == OrchestratorFlavor.LOCAL) and (
+                stack.artifact_store.flavor == ArtifactStoreFlavor.GCP
+            )
 
         return StackValidator(
             required_components={StackComponentType.CONTAINER_REGISTRY},
