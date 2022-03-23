@@ -18,7 +18,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
 from zenml.io import fileio
 from zenml.io.utils import (
@@ -72,6 +72,11 @@ class LocalStackStore(BaseStackStore):
         return self
 
     # Public interface implementations:
+
+    @property
+    def type(self) -> StoreType:
+        """The type of stack store."""
+        return StoreType.LOCAL
 
     @property
     def url(self) -> str:

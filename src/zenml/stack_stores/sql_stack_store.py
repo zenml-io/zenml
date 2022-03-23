@@ -19,7 +19,7 @@ from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -97,6 +97,11 @@ class SqlStackStore(BaseStackStore):
         return self
 
     # Public interface implementations:
+
+    @property
+    def type(self) -> StoreType:
+        """The type of stack store."""
+        return StoreType.SQL
 
     @property
     def url(self) -> str:

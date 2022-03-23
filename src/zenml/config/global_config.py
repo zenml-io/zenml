@@ -29,6 +29,7 @@ from zenml.io import fileio
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
@@ -542,6 +543,10 @@ class GlobalConfig(
         profile._config = self
         if profile.name not in self.profiles:
             profile.initialize()
+            track_event(
+                AnalyticsEvent.INITIALIZED_PROFILE,
+                {"store_type": profile.store_type.value},
+            )
         self.profiles[profile.name] = profile
         self._write_config()
         return profile

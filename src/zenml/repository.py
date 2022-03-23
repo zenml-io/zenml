@@ -787,6 +787,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
         metadata = self.stack_store.register_stack(
             StackWrapper.from_stack(stack)
         )
+        metadata["store_type"] = self.active_profile.store_type.value
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
     def deregister_stack(self, name: str) -> None:

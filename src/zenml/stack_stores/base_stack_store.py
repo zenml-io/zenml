@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.stack import Stack
@@ -41,9 +41,15 @@ class BaseStackStore(ABC):
         # register the default stack
         stack = Stack.default_local_stack()
         metadata = self.register_stack(StackWrapper.from_stack(stack))
+        metadata["store_type"] = self.type.value
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
     # Public Interface:
+
+    @property
+    @abstractmethod
+    def type(self) -> StoreType:
+        """The type of stack store."""
 
     @abstractmethod
     def initialize(
