@@ -104,3 +104,6 @@ SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
 )
 
 USER_MAIN_MODULE: Optional[str] = None
+
+# Secrets Manager
+ZENML_SCHEMA_NAME = "zenml_schema_name"

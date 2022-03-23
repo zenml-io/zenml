@@ -36,15 +36,14 @@ def pretty_print_secret(
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
     """
-    stack_dicts = []
-    for key, value in secret.content.items():
-        stack_dicts.append(
-            {
-                "SECRET_NAME": secret.name,
-                "SECRET_KEY": key,
-                "SECRET_VALUE": "***" if hide_secret else value,
-            }
-        )
+    stack_dicts = [
+        {
+            "SECRET_NAME": secret.name,
+            "SECRET_KEY": key,
+            "SECRET_VALUE": "***" if hide_secret else value,
+        }
+        for key, value in secret.content.items()
+    ]
     print_table(stack_dicts)
 
 
