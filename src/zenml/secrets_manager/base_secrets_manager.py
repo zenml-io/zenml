@@ -28,7 +28,7 @@ class BaseSecretsManager(StackComponent, ABC):
         """The secrets manager flavor."""
 
     @abstractmethod
-    def register_secret(self, secret: "BaseSecretSchema") -> None:
+    def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret."""
 
     @abstractmethod
