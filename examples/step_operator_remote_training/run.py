@@ -66,7 +66,7 @@ def evaluator(
     return test_acc
 
 
-@pipeline(required_integrations=[SKLEARN], enable_cache=False)
+@pipeline(required_integrations=[SKLEARN])
 def mnist_pipeline(
     importer,
     trainer,
