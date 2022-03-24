@@ -17,7 +17,7 @@ from typing import Any, Dict, List
 from zenml.cli.utils import error
 from zenml.constants import LOCAL_SECRETS_FILENAME
 from zenml.enums import SecretsManagerFlavor, StackComponentType
-from zenml.io.fileio import create_file_if_not_exists
+from zenml.io.fileio import create_file_if_not_exists, remove
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.secret import SecretSchemaClassRegistry
@@ -33,7 +33,8 @@ class LocalSecretsManager(BaseSecretsManager):
     """Class for ZenML local filebased secret manager."""
 
     secrets_file: str = os.path.join(
-        get_global_config_directory(), LOCAL_SECRETS_FILENAME
+        get_global_config_directory(),
+        LOCAL_SECRETS_FILENAME,
     )
     supports_local_execution: bool = True
     supports_remote_execution: bool = False
@@ -126,7 +127,12 @@ class LocalSecretsManager(BaseSecretsManager):
 
     def delete_all_secrets(self, force: bool = False) -> None:
         """Delete all existing secrets."""
-        raise NotImplementedError
+        if not force:
+            raise ValueError(
+                "This operation will delete all secrets. "
+                "To confirm, please pass `--force`."
+            )
+        remove(self.secrets_file)
 
 
 #    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:

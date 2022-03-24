@@ -333,7 +333,7 @@ def delete_all_secrets(
             secrets manager
     """
     confirmation_response = confirmation(
-        "This will delete the all secrets. Are you sure you want to proceed?"
+        "This will delete all secrets and the `secrets.yaml` file. Are you sure you want to proceed?"
     )
     if not confirmation_response:
         console.print("Aborting secret set deletion...")
