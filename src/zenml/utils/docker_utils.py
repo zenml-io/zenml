@@ -73,7 +73,7 @@ def generate_dockerfile_contents(
 
     if environment_vars:
         for key, value in environment_vars.items():
-            lines.append(f"ENV {key}={value}")
+            lines.append(f"ENV {key.upper()}={value}")
 
     if requirements:
         lines.append(

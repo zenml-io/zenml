@@ -232,6 +232,7 @@ def update_secret(
         name: Name of the secret
     """
     # TODO [MEDIUM]: allow users to pass in dict or json
+    # TODO [MEDIUM]: allow adding new key value pairs to the secret
 
     with console.status(f"Getting secret set `{name}`..."):
         try:
