@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 
 import os
-import pydantic
-import pytest
 
 from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
@@ -39,6 +37,7 @@ def test_local_secrets_manager_creates_file():
     assert(os.path.exists(secrets_file))
 
 def test_local_secrets_manager_creates_key_value():
+    """Tests that the local secrets manager creates a secret."""
     test_secrets_manager = LocalSecretsManager()
     some_secret_name = 'test'
     some_arbitary_schema = ArbitrarySecretSchema(
@@ -49,7 +48,8 @@ def test_local_secrets_manager_creates_key_value():
     secret_store_items = yaml_utils.read_yaml(test_secrets_manager.secrets_file)
     assert(secret_store_items[some_secret_name] is not None)
 
-def test_local_secrets_manager_fetches_key_value(secret_key, secret_value):
+def test_local_secrets_manager_fetches_key_value():
+    """Tests that a local secrets manager can fetch the right secret value."""
     test_secrets_manager = LocalSecretsManager()
     some_secret_name = 'test'
     some_arbitary_schema = ArbitrarySecretSchema(
