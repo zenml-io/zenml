@@ -181,9 +181,10 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE")
     rich_table.add_column("COMPONENT_NAME")
-    items = [[typ.value, name] for typ, name in config.items()]
+    items = ([typ.value, name] for typ, name in config.items())
     for item in items:
-        rich_table.add_row(*list(item))
+        rich_table.add_row(*item)
+
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
         component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]

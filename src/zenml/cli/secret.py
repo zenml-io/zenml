@@ -67,7 +67,11 @@ def secret(ctx: click.Context) -> None:
     ctx.obj = Repository().active_stack.components.get(
         StackComponentType.SECRETS_MANAGER, None
     )
-
+    if ctx.obj is None:
+        error(
+            "No active secrets manager found. Please create a secrets manager "
+            "first and add it to your stack."
+        )
 
 @secret.command("register")
 @click.argument("name", type=click.STRING)
@@ -118,6 +122,9 @@ def register_secret(
         error(
             "To directly pass in key-value pairs, you must pass in values for both."
         )
+
+    if name == "name":
+        error("Secret names cannot be named 'name'.")
 
     secret_schema = SecretSchemaClassRegistry.get_class(
         secret_schema=secret_schema_type
@@ -223,7 +230,7 @@ def update_secret(
     name: str,
     secret_key: Optional[str],
     secret_value: Optional[str],
-) -> None:
+) -> None:  # sourcery skip: use-named-expression
     """Update a secret set, given its name.
 
     Args:
@@ -232,6 +239,7 @@ def update_secret(
         name: Name of the secret
     """
     # TODO [MEDIUM]: allow users to pass in dict or json
+    # TODO [MEDIUM]: allow adding new key value pairs to the secret
 
     with console.status(f"Getting secret set `{name}`..."):
         try:
@@ -254,7 +262,8 @@ def update_secret(
             "one by one. Press enter to skip."
         )
         for key, value in secret.content.items():
-            if new_value := getpass.getpass(f"New value for " f"{key}:"):
+            new_value = getpass.getpass(f"New value for " f"{key}:")
+            if new_value:
                 updated_contents[key] = new_value
             else:
                 updated_contents[key] = value

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import json
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 
 import boto3 as boto3  # type: ignore
 from botocore.exceptions import ClientError  # type: ignore
@@ -144,14 +144,15 @@ class AWSSecretsManager(BaseSecretsManager):
                 SecretId=secret_name, ForceDeleteWithoutRecovery=force
             )
 
-    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
-        """Get value for a particular key within a secret."""
-        secret = self.get_secret(secret_name)
 
-        secret_contents = secret.content
-        if key in secret_contents:
-            return secret_contents[key]
-        else:
-            raise KeyError(
-                f"Secret `{key}` does not exist in secret '{secret_name}'."
-            )
+#    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
+#        """Get value for a particular key within a secret."""
+#        secret = self.get_secret(secret_name)
+#
+#        secret_contents = secret.content
+#        if key in secret_contents:
+#            return str(secret_contents[key])
+#        else:
+#            raise KeyError(
+#                f"Secret `{key}` does not exist in secret '{secret_name}'."
+#            )
