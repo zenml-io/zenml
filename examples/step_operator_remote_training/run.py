@@ -79,8 +79,7 @@ def main(step_operator: str):
         model = get_digits_model()
         model.fit(X_train, y_train)
         return model
-    
-    
+
     pipeline = mnist_pipeline(
         importer=importer(),
         trainer=trainer(),
