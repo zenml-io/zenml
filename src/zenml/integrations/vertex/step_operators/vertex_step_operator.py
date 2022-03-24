@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Code heavily inspired by TFX Implementation: 
+"""Code heavily inspired by TFX Implementation:
 https://github.com/tensorflow/tfx/blob/master/tfx/extensions/
 google_cloud_ai_platform/training_clients.py"""
 
@@ -111,11 +111,11 @@ class VertexStepOperator(BaseStepOperator):
         )
 
     @property_validator("accelerator_type")
-    def validate_accelerator_enum(cls, v):
+    def validate_accelerator_enum(cls, accelerator_type: Optional[str]) -> None:
         accepted_vals = list(
             aiplatform.gapic.AcceleratorType.__members__.keys()
         )
-        if v.upper() not in accepted_vals:
+        if accelerator_type and accelerator_type.upper() not in accepted_vals:
             raise RuntimeError(
                 f"Accelerator must be one of the following: {accepted_vals}"
             )
@@ -124,8 +124,12 @@ class VertexStepOperator(BaseStepOperator):
         self,
     ) -> Tuple[Optional[auth_credentials.Credentials], Optional[str]]:
         if self.service_account_path:
-            return load_credentials_from_file(self.service_account_path)
-        return default()
+            credentials, project_id = load_credentials_from_file(
+                self.service_account_path
+            )
+        else:
+            credentials, project_id = default()
+        return credentials, project_id
 
     def _build_and_push_docker_image(
         self,
@@ -205,7 +209,7 @@ class VertexStepOperator(BaseStepOperator):
                     {
                         "machine_spec": {
                             "machine_type": self.machine_type,
-                            "accelerator_type": accelerator_type or None,
+                            "accelerator_type": self.accelerator_type,
                             "accelerator_count": self.accelerator_count
                             if self.accelerator_type
                             else 0,

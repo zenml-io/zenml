@@ -31,7 +31,9 @@
 from typing import TYPE_CHECKING, Any
 
 from zenml.enums import OrchestratorFlavor, StackComponentType
-from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
+from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
+    KubeflowOrchestrator,
+)
 from zenml.logger import get_logger
 from zenml.stack import Stack
 from zenml.stack.stack_component_class_registry import (
@@ -45,7 +47,6 @@ from zenml.stack.stack_component_class_registry import (
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack
 
 
 logger = get_logger(__name__)

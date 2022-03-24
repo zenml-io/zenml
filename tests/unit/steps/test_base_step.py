@@ -869,22 +869,22 @@ def test_step_can_have_raw_artifacts(clean_repo):
     """Check that you can bypass materialization with raw artifacts."""
 
     @step
-    def step_1() -> Output(d=Dict, l=List):
+    def step_1() -> Output(dict_=Dict, list_=List):
         return {"some": "data"}, []
 
     @step
-    def step_2() -> Output(d=Dict, l=List):
+    def step_2() -> Output(dict_=Dict, list_=List):
         return {"some": "data"}, []
 
     @step
-    def step_3(d: DataArtifact, l: ModelArtifact) -> None:
-        assert hasattr(d, "uri")
-        assert hasattr(l, "uri")
+    def step_3(dict_: DataArtifact, list_: ModelArtifact) -> None:
+        assert hasattr(dict_, "uri")
+        assert hasattr(list_, "uri")
 
     @step
-    def step_4(d: Dict, l: List) -> None:
-        assert type(d) is dict
-        assert type(l) is list
+    def step_4(dict_: Dict, list_: List) -> None:
+        assert type(dict_) is dict
+        assert type(list_) is list
 
     @pipeline
     def p(s1, s2, s3, s4):
