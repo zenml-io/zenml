@@ -43,6 +43,7 @@ def enable_wandb(
     *,
     project_name: Optional[str] = None,
     experiment_name: Optional[str] = None,
+    entity: Optional[str] = None,
 ) -> Callable[[S], S]:
     """Type annotations for wandb step decorator in case of arguments."""
     ...
@@ -53,6 +54,7 @@ def enable_wandb(
     *,
     project_name: Optional[str] = None,
     experiment_name: Optional[str] = None,
+    entity: Optional[str] = None,
 ) -> Union[S, Callable[[S], S]]:
     """Decorator to enable wandb for a step function.
 
@@ -111,7 +113,7 @@ def enable_wandb(
                 (_step,),
                 {
                     STEP_INNER_FUNC_NAME: staticmethod(
-                        wandb_step_entrypoint(project_name, experiment_name)(source_fn)
+                        wandb_step_entrypoint(project_name, experiment_name, entity)(source_fn)
                     ),
                     "__module__": _step.__module__,
                 },
@@ -127,6 +129,7 @@ def enable_wandb(
 def wandb_step_entrypoint(
     project_name: str = None,
     experiment_name: Optional[str] = None,
+    entity: Optional[str] = None,
 ) -> Callable[[F], F]:
     """Decorator for a step entrypoint to enable wandb.
 
@@ -156,7 +159,7 @@ def wandb_step_entrypoint(
             step_env = Environment().step_environment
             experiment = experiment_name or step_env.pipeline_name
             step_wandb_env = WandbStepEnvironment(
-                project_name=project_name, experiment_name=experiment, run_name=step_env.pipeline_run_id
+                project_name=project_name, experiment_name=experiment, run_name=step_env.pipeline_run_id, entity=entity
             )
             with step_wandb_env:
 

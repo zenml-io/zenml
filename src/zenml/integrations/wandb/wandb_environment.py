@@ -110,7 +110,7 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
 
     NAME = WANDB_STEP_ENVIRONMENT_NAME
 
-    def __init__(self, project_name: str, experiment_name: str, run_name: str):
+    def __init__(self, project_name: str, experiment_name: str, run_name: str, entity: Optional[str] = None,):
         """Initialize a wandb step environment component.
 
         Args:
@@ -128,6 +128,7 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
         self._project_name = project_name
         self._experiment = None
         self._run_name = run_name
+        self._entity = entity
         self._run = None
 
     def _create_or_reuse_wandb_run(self) -> None:
@@ -147,7 +148,7 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
         )
         api = wandb.Api()
         run_exists = False
-        entity = api.user('@').entity
+        entity = os.getenv('WANDB_ENTITY') if self._entity is None else self._entity
         runs = api.runs(f"{entity}/{self._project_name}")
         for run in runs:
             if run.name == self._run_name:
@@ -157,7 +158,7 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
         if not run_exists:
             # Create a new run
             wandb.finish()
-            self._run = wandb.init(project=self._project_name, group=self._experiment_name, name=self._run_name)
+            self._run = wandb.init(project=self._project_name, group=self._experiment_name, name=self._run_name, entity=entity)
 
     def activate(self) -> None:
         """Activate the wandb environment for the current step."""
