@@ -15,6 +15,15 @@ location for the storage of secrets across your project. ZenML offers a basic
 local secrets manager and an integration with the managed [AWS Secrets
 Manager](https://aws.amazon.com/secrets-manager).
 
+A ZenML Secret is a grouping of key-value pairs. These are accessed and
+administered via the ZenML Secret Manager (a stack component).
+
+Secrets are distinguished by having different schemas. An AWS SecretSchema, for
+example, has key-value pairs for `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+as well as an optional `AWS_SESSION_TOKEN`. If you don't specify a schema at the
+point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a kind
+of default schema where things that aren't attached to a grouping can be stored.
+
 ## Registering a secrets manager
 
 The local secrets manager currently exists in a YAML- and filesystem-based
@@ -44,7 +53,56 @@ zenml stack set STACK_NAME
 A full guide on using the CLI interface to register, access, update and delete
 secrets is available [here](https://apidocs.zenml.io/latest/cli/).
 
+Note that there are two ways you can register or update your secrets. If you
+wish to do so interactively, simply passing the secret name in as an argument
+(as in the following example) will initiate an interactive process:
+
+```shell
+zenml secret register SECRET_NAME
+```
+
+If you wish to specify a single key-value pair and pass it in as a
+non-interactive process, you can type:
+
+```shell
+zenml secret register SECRET_NAME -k KEY -v VALUE
+```
+
 ## Using Secrets in a Kubeflow environment
+
+ZenML will handle passing secrets down through the various stages of a Kubeflow
+pipeline, so your secrets will be accessible wherever your code is running.
+
+Note: The Secrets Manager as currently implemented does not work with our
+Airflow orchestrator integration. [Let us know](https://zenml.io/slack-invite/)
+if you would like us to prioritize adding this in!
+
+To pass a particular secret as part of the environment available to a pipeline,
+include a list of your secret names as an extra argument when you are defining
+your pipeline, as in the following example (taken from the corresponding
+Kubeflow example):
+
+```python
+@pipeline(required_integrations=[TENSORFLOW], secrets=["aws"], enable_cache=True)
+def mnist_pipeline(
+    importer,
+    normalizer,
+    trainer,
+    evaluator,
+):
+    # Link all the steps together
+    X_train, X_test, y_train, y_test = importer()
+    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
+    model = trainer(X_train=X_trained_normed, y_train=y_train)
+    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
+```
 
 ## Using the AWS Secrets Manager integration
 
+Using the AWS Secrets Manager is just as easy as using the local version. Make
+sure that the integration is installed first, and then register your secrets
+manager in the following way:
+
+```shell
+zenml secrets-manager register AWS_SECRETS_MANAGER_NAME -t aws
+```
