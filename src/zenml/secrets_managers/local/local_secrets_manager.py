@@ -75,7 +75,7 @@ class LocalSecretsManager(BaseSecretsManager):
         """Registers a new secret."""
 
         if self._verify_secret_key_exists(secret_name=secret.name):
-            raise KeyError(f"Secret set `{secret.name}` already exists.")
+            raise KeyError(f"Secret `{secret.name}` already exists.")
         encoded_secret = encode_secret(secret)
 
         secrets_store_items = self._get_all_secrets()
@@ -84,10 +84,10 @@ class LocalSecretsManager(BaseSecretsManager):
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Gets a specific secret."""
-        secret_sets_store_items = self._get_all_secrets()
+        secret_store_items = self._get_all_secrets()
         if not self._verify_secret_key_exists(secret_name=secret_name):
-            raise KeyError(f"Secret set `{secret_name}` does not exists.")
-        secret_dict = secret_sets_store_items[secret_name]
+            raise KeyError(f"Secret `{secret_name}` does not exists.")
+        secret_dict = secret_store_items[secret_name]
 
         decoded_secret_dict, zenml_schema_name = decode_secret_dict(secret_dict)
         decoded_secret_dict["name"] = secret_name
@@ -105,7 +105,7 @@ class LocalSecretsManager(BaseSecretsManager):
     def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update an existing secret."""
         if not self._verify_secret_key_exists(secret_name=secret.name):
-            raise KeyError(f"Secret set `{secret.name}` did not exist.")
+            raise KeyError(f"Secret `{secret.name}` did not exist.")
         encoded_secret = encode_secret(secret)
 
         secrets_store_items = self._get_all_secrets()
@@ -122,7 +122,7 @@ class LocalSecretsManager(BaseSecretsManager):
             secrets_store_items.pop(secret_name)
             yaml_utils.write_yaml(self.secrets_file, secrets_store_items)
         except KeyError:
-            error(f"Secret Set {secret_name} does not exist.")
+            error(f"Secret {secret_name} does not exist.")
 
     def delete_all_secrets(self, force: bool = False) -> None:
         """Delete all existing secrets."""
