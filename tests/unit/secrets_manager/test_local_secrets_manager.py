@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
+import zenml
 
 from hypothesis import given
 from hypothesis.strategies import text
@@ -21,6 +21,7 @@ from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.secrets_managers.local.local_secrets_manager import LocalSecretsManager
 from zenml.utils import yaml_utils
+from zenml.utils.secrets_manager_utils import decode_secret_dict
 
 def test_local_secrets_manager_attributes():
     """Tests that the basic attributes of the local secrets manager are set
@@ -37,7 +38,7 @@ def test_local_secrets_manager_creates_file():
     test_secrets_manager = LocalSecretsManager()
     
     secrets_file = test_secrets_manager.secrets_file
-    assert(os.path.exists(secrets_file))
+    assert(zenml.io.fileio.file_exists(secrets_file))
 
 @given(name=text(min_size=1), key=text(min_size=1), value=text(min_size=1))
 def test_create_key_value(name: str, key: str, value: str):
@@ -50,7 +51,9 @@ def test_create_key_value(name: str, key: str, value: str):
     test_secrets_manager.register_secret(some_arbitary_schema)
 
     secret_store_items = yaml_utils.read_yaml(test_secrets_manager.secrets_file)
-    assert(secret_store_items[some_secret_name] is not None)
+    encoded_secret = secret_store_items[some_secret_name]
+    decoded_secret = decode_secret_dict(encoded_secret)
+    assert(decoded_secret[key] == value)
 
 @given(name=text(min_size=1), key=text(min_size=1), value=text(min_size=1))
 def test_fetch_key_value(name: str, key: str, value: str):
