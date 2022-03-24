@@ -201,8 +201,29 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
 
 @secret.command("update")
 @click.argument("name", type=click.STRING)
+@click.option(
+    "--key",
+    "-k",
+    "secret_key",
+    default=None,
+    help="The key to update.",
+    type=click.STRING,
+)
+@click.option(
+    "--value",
+    "-v",
+    "secret_value",
+    default=None,
+    help="The new value to associate with the secret key.",
+    type=click.STRING,
+)
 @click.pass_obj
-def update_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
+def update_secret(
+    secrets_manager: "BaseSecretsManager",
+    name: str,
+    secret_key: Optional[str],
+    secret_value: Optional[str],
+) -> None:
     """Update a secret set, given its name.
 
     Args:
@@ -210,11 +231,7 @@ def update_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
             underlying secrets engine
         name: Name of the secret
     """
-    # TODO [HIGH]: Implement a fine grained User Interface for the update
-    #  secrets method that allows for deleting, adding and modifying specific
-    #  keys, pass in dict
-
-    # TODO [HIGH]: Allow for non-interactive use of this method
+    # TODO [MEDIUM]: allow users to pass in dict or json
 
     with console.status(f"Getting secret set `{name}`..."):
         try:
@@ -222,17 +239,25 @@ def update_secret(secrets_manager: "BaseSecretsManager", name: str) -> None:
         except KeyError:
             error(f"Secret Set with name:`{name}` does not exist.")
 
-    click.echo(
-        "You will now have a chance to overwrite each secret "
-        "one by one. Press enter to skip."
-    )
+    if not validate_kv_pairs(secret_key, secret_value):
+        error(
+            "To directly pass in a key-value pair for updating, you must pass in values for both."
+        )
+
     updated_contents = {"name": name}
-    for key, value in secret.content.items():
-        new_value = getpass.getpass(f"New value for " f"{key}:")
-        if new_value:
-            updated_contents[key] = new_value
-        else:
-            updated_contents[key] = value
+
+    if secret_key and secret_value:
+        updated_contents[secret_key] = secret_value
+    else:
+        click.echo(
+            "You will now have a chance to overwrite each secret "
+            "one by one. Press enter to skip."
+        )
+        for key, value in secret.content.items():
+            if new_value := getpass.getpass(f"New value for " f"{key}:"):
+                updated_contents[key] = new_value
+            else:
+                updated_contents[key] = value
 
     updated_secret = secret.__class__(**updated_contents)
 
