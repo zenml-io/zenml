@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List
 
 from zenml.enums import SecretsManagerFlavor
 from zenml.secret.base_secret import BaseSecretSchema
@@ -51,6 +51,7 @@ class BaseSecretsManager(StackComponent, ABC):
     def delete_all_secrets(self, force: bool = False) -> None:
         """Delete all existing secrets."""
 
-    @abstractmethod
-    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
-        """Get value for a particular key within a Secret."""
+
+#    @abstractmethod
+#    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
+#        """Get value for a particular key within a Secret."""

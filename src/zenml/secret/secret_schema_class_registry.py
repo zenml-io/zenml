@@ -30,9 +30,7 @@ class SecretSchemaClassRegistry:
     ZenML repository configuration.
     """
 
-    secret_schema_classes: ClassVar[
-        Dict[SecretSchemaType, Type[BaseSecretSchema]]
-    ] = dict()
+    secret_schema_classes: ClassVar[Dict[str, Type[BaseSecretSchema]]] = dict()
 
     @classmethod
     def register_class(
@@ -46,20 +44,20 @@ class SecretSchemaClassRegistry:
             secret_schema: The flavor of the SecretSchema class to register.
             secret: The SecretSchema class to register.
         """
-        secret_schema = secret_schema.value
+        secret_schema_value = secret_schema.value
         flavors = cls.secret_schema_classes
-        if secret_schema in flavors:
+        if secret_schema_value in flavors:
             logger.warning(
                 "Overwriting previously registered stack component class `%s` "
                 "for type '%s' and flavor '%s'.",
-                flavors[secret_schema].__class__.__name__,
-                secret_schema,
+                flavors[secret_schema_value].__class__.__name__,
+                secret_schema_value,
             )
 
-        flavors[secret_schema] = secret
+        flavors[secret_schema_value] = secret
         logger.debug(
             "Registered stack component class for type '%s' and flavor '%s'.",
-            secret_schema,
+            secret_schema_value,
         )
 
     @classmethod

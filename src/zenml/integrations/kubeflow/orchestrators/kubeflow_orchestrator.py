@@ -505,7 +505,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Missing secrets manager in current stack."
             )
-        environment_vars = {}
+        environment_vars: Dict[str, str] = {}
         for secret in secrets:
             environment_vars.update(secret_manager.get_secret(secret))
         return environment_vars

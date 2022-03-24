@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from zenml.cli.utils import error
 from zenml.constants import LOCAL_SECRETS_FILENAME
@@ -128,14 +128,15 @@ class LocalSecretsManager(BaseSecretsManager):
         """Delete all existing secrets."""
         raise NotImplementedError
 
-    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
-        """Get value for a particular key within a Secret."""
-        secret = self.get_secret(secret_name)
 
-        secret_contents = secret.content
-        if key in secret_contents:
-            return secret_contents[key]
-        else:
-            raise KeyError(
-                f"Secret `{key}` does not exist in Secret `{secret_name}`."
-            )
+#    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
+#        """Get value for a particular key within a Secret."""
+#        secret = self.get_secret(secret_name)
+#
+#        secret_contents = secret.content
+#        if key in secret_contents:
+#            return str(secret_contents[key])
+#        else:
+#            raise KeyError(
+#                f"Secret `{key}` does not exist in Secret `{secret_name}`."
+#            )

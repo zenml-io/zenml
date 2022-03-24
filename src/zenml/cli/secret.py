@@ -119,6 +119,9 @@ def register_secret(
             "To directly pass in key-value pairs, you must pass in values for both."
         )
 
+    if name == "name":
+        error("Secret names cannot be named 'name'.")
+
     secret_schema = SecretSchemaClassRegistry.get_class(
         secret_schema=secret_schema_type
     )
