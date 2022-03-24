@@ -186,6 +186,31 @@ the basis for the deployed 'run'. E.g. When you are running a local container-ba
 container registry which stores the container images you create that bundle up your pipeline code. You could also use a 
 remote container registry like the [Elastic Container Registry](https://aws.amazon.com/ecr/) at AWS in a more production setting.
 
+## Secrets
+
+A ZenML Secret is a grouping of key-value pairs. These are accessed and
+administered via the ZenML Secret Manager (a stack component).
+
+Secrets are distinguished by having different schemas. An AWS SecretSchema, for
+example, has key-value pairs for `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+as well as an optional `AWS_SESSION_TOKEN`. If you don't specify a schema at the
+point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a
+kind of default schema where things that aren't attached to a grouping can be
+stored.
+
+## Secrets Manager
+
+Most projects involving either cloud infrastructure or of a certain complexity
+will involve secrets of some kind. You use secrets, for example, when connecting
+to AWS, which requires an `access_key_id` and a `secret_access_key` which it
+(usually) stores in your `~/.aws/credentials` file.
+
+You might find you need to access those secrets from within your Kubernetes
+cluster as it runs individual steps, or you might just want a centralized
+location for the storage of secrets across your project. ZenML offers a local
+secrets manager and an integration with the managed [AWS Secrets
+Manager](https://aws.amazon.com/secrets-manager).
+
 ## Stack
 
 The stack is essentially all the configuration of all infrastructure of your MLOps platform.
