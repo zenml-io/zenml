@@ -83,6 +83,7 @@ class AzureArtifactStore(BaseArtifactStore):
             mode: Mode in which to open the file. Currently, only
                 'rb' and 'wb' to read and write binary files are supported.
         """
+        AzureArtifactStore._ensure_filesystem_set()
         return AzureArtifactStore.FILESYSTEM.open(path=path, mode=mode)
 
     @staticmethod
@@ -99,6 +100,7 @@ class AzureArtifactStore(BaseArtifactStore):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
+        AzureArtifactStore._ensure_filesystem_set()
         if not overwrite and AzureArtifactStore.FILESYSTEM.exists(dst):
             raise FileExistsError(
                 f"Unable to copy to destination '{convert_to_str(dst)}', "
@@ -112,6 +114,7 @@ class AzureArtifactStore(BaseArtifactStore):
     @staticmethod
     def exists(path: PathType) -> bool:
         """Check whether a path exists."""
+        AzureArtifactStore._ensure_filesystem_set()
         return AzureArtifactStore.FILESYSTEM.exists(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
@@ -128,6 +131,7 @@ class AzureArtifactStore(BaseArtifactStore):
         Returns:
             A list of paths that match the given glob pattern.
         """
+        AzureArtifactStore._ensure_filesystem_set()
         prefix, _ = AzureArtifactStore._split_path(pattern)
         return [
             f"{prefix}{path}"
@@ -137,11 +141,13 @@ class AzureArtifactStore(BaseArtifactStore):
     @staticmethod
     def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
+        AzureArtifactStore._ensure_filesystem_set()
         return AzureArtifactStore.FILESYSTEM.isdir(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
+        AzureArtifactStore._ensure_filesystem_set()
         _, path = AzureArtifactStore._split_path(path)
 
         def _extract_basename(file_dict: Dict[str, Any]) -> str:
@@ -160,16 +166,19 @@ class AzureArtifactStore(BaseArtifactStore):
     def makedirs(path: PathType) -> None:
         """Create a directory at the given path. If needed also
         create missing parent directories."""
+        AzureArtifactStore._ensure_filesystem_set()
         AzureArtifactStore.FILESYSTEM.makedirs(path=path, exist_ok=True)
 
     @staticmethod
     def mkdir(path: PathType) -> None:
         """Create a directory at the given path."""
+        AzureArtifactStore._ensure_filesystem_set()
         AzureArtifactStore.FILESYSTEM.makedir(path=path)
 
     @staticmethod
     def remove(path: PathType) -> None:
         """Remove the file at the given path."""
+        AzureArtifactStore._ensure_filesystem_set()
         AzureArtifactStore.FILESYSTEM.rm_file(path=path)
 
     @staticmethod
@@ -186,6 +195,7 @@ class AzureArtifactStore(BaseArtifactStore):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
+        AzureArtifactStore._ensure_filesystem_set()
         if not overwrite and AzureArtifactStore.FILESYSTEM.exists(dst):
             raise FileExistsError(
                 f"Unable to rename file to '{convert_to_str(dst)}', "
@@ -199,11 +209,13 @@ class AzureArtifactStore(BaseArtifactStore):
     @staticmethod
     def rmtree(path: PathType) -> None:
         """Remove the given directory."""
+        AzureArtifactStore._ensure_filesystem_set()
         AzureArtifactStore.FILESYSTEM.delete(path=path, recursive=True)
 
     @staticmethod
     def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
+        AzureArtifactStore._ensure_filesystem_set()
         return AzureArtifactStore.FILESYSTEM.stat(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
@@ -222,6 +234,7 @@ class AzureArtifactStore(BaseArtifactStore):
             directory path, a list of directories inside the current directory
             and a list of files inside the current directory.
         """
+        AzureArtifactStore._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
         prefix, _ = AzureArtifactStore._split_path(top)
         for (
