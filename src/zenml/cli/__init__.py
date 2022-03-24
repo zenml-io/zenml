@@ -328,6 +328,16 @@ To register a secret, use the `register` command:
 zenml secret register SECRET_NAME
 ```
 
+If you wish to register a single secret non-interactively, you can
+pass in a key-value pair at the command line, as in the following example:
+
+```shell
+zenml secret register SECRET_NAME -k KEY -v VALUE
+```
+
+Note that the key and value will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `register` command instead.
+
 To list all the secrets available, use the `list` command:
 
 ```bash
@@ -345,6 +355,16 @@ To update a secret, use the `update` command:
 ```bash
 zenml secret update SECRET_NAME
 ```
+
+If you wish to update a single secret non-interactively, you can
+pass in a key-value pair at the command line, as in the following example:
+
+```shell
+zenml secret update SECRET_NAME -k KEY -v NEW_VALUE
+```
+
+Note that the key and value will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `update` command instead.
 
 Finally, to delete a secret, use the `delete` command:
 
