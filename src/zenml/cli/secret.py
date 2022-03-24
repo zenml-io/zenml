@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import getpass
+from typing import Optional
 
 import click
 
@@ -47,6 +48,16 @@ def pretty_print_secret(
     print_table(stack_dicts)
 
 
+def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
+    """Check that the key and value are valid
+
+    Args:
+        key: key of the secret
+        value: value of the secret
+    """
+    return bool((not key or value) and (not value or key))
+
+
 # Secrets
 @cli.group()
 @click.pass_context
@@ -68,11 +79,29 @@ def secret(ctx: click.Context) -> None:
     help="Register a secret with an optional schema.",
     type=click.Choice(SecretSchemaType.values()),
 )
+@click.option(
+    "--key",
+    "-k",
+    "secret_key",
+    default=None,
+    help="The key to associate with the secret.",
+    type=click.STRING,
+)
+@click.option(
+    "--value",
+    "-v",
+    "secret_value",
+    default=None,
+    help="The value to associate with the secret key.",
+    type=click.STRING,
+)
 @click.pass_obj
 def register_secret(
     secrets_manager: "BaseSecretsManager",
     name: str,
     secret_schema_type: str,
+    secret_key: Optional[str],
+    secret_value: Optional[str],
 ) -> None:
     """Register a secret with the given name as key
 
@@ -83,11 +112,12 @@ def register_secret(
         secret_schema_type: Type of the secret schema - make sure the schema of
             choice is registered with the secret_schema_class_registry
     """
-    # TODO [HIGH]: Verify secret_name does not exist already before querying
-    #   user input
-
-    # TODO [HIGH]: Allow passing in json/dict when registering a secret as an
-    #   additional option for the user on top the the interactive more
+    # TODO [MEDIUM]: Allow passing in json/dict when registering a secret as an
+    #   additional option for the user on top of the interactive
+    if not validate_kv_pairs(secret_key, secret_value):
+        error(
+            "To directly pass in key-value pairs, you must pass in values for both."
+        )
 
     secret_schema = SecretSchemaClassRegistry.get_class(
         secret_schema=secret_schema_type
@@ -95,6 +125,7 @@ def register_secret(
     secret_keys = secret_schema.get_schema_keys()
 
     secret_contents = {"name": name}
+
     if secret_keys:
         click.echo(
             "You have supplied a secret_set_schema with predefined keys. "
@@ -104,6 +135,9 @@ def register_secret(
         for k in secret_keys:
             v = getpass.getpass(f"Secret value for {k}:")
             secret_contents[k] = v
+
+    elif secret_key and secret_value:
+        secret_contents[secret_key] = secret_value
 
     else:
         click.echo(
@@ -125,8 +159,8 @@ def register_secret(
     secret = secret_schema(**secret_contents)
     pretty_print_secret(secret=secret, hide_secret=True)
 
-    # with console.status(f"Saving secret set `{name}`..."):
-    secrets_manager.register_secret(secret=secret)
+    with console.status(f"Saving secret set `{name}`..."):
+        secrets_manager.register_secret(secret=secret)
 
 
 @secret.command("get")
