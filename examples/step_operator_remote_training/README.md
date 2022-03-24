@@ -221,7 +221,7 @@ zenml stack set vertex_training_stack
 Now we're ready. Execute:
 
 ```shell
-python run.py --step_operator STEP_OPERATOR_TYPE  # can be sagemaker, vertex, azureml
+python run.py --step_operator <STEP_OPERATOR_TYPE>  # can be sagemaker, vertex, azureml
 ```
 
 
