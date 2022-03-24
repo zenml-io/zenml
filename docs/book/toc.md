@@ -41,6 +41,7 @@
 * [Convenient Step Fixtures](features/step-fixtures.md)
 * [Continuous Training and Deployment](features/continous-training-and-deployment.md)
 * [Managing External Services](features/services.md)
+* [Managing Secrets][features/secrets.md]
 
 ## Support
 
