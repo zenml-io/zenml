@@ -40,7 +40,7 @@ def test_local_secrets_manager_creates_file():
     assert(os.path.exists(secrets_file))
 
 @given(name=text(min_size=1), key=text(min_size=1), value=text(min_size=1))
-def test_local_secrets_manager_creates_key_value(name: str, key: str, value: str):
+def test_create_key_value(name: str, key: str, value: str):
     """Tests that the local secrets manager creates a secret."""
     test_secrets_manager = LocalSecretsManager()
     some_secret_name = name
@@ -53,7 +53,7 @@ def test_local_secrets_manager_creates_key_value(name: str, key: str, value: str
     assert(secret_store_items[some_secret_name] is not None)
 
 @given(name=text(min_size=1), key=text(min_size=1), value=text(min_size=1))
-def test_local_secrets_manager_fetches_key_value(name: str, key: str, value: str):
+def test_fetch_key_value(name: str, key: str, value: str):
     """Tests that a local secrets manager can fetch the right secret value."""
     test_secrets_manager = LocalSecretsManager()
     some_secret_name = name
@@ -66,7 +66,7 @@ def test_local_secrets_manager_fetches_key_value(name: str, key: str, value: str
     assert(fetched_schema.content[key] == value)
 
 @given(name=text(min_size=1), new_value=text(min_size=1), old_value=text(min_size=1))
-def test_local_secrets_manager_updates_key_value(name:str, old_value: str, new_value: str):
+def test_update_key_value(name:str, old_value: str, new_value: str):
     """Tests that a local secrets manager updates a key's secret value."""
     test_secrets_manager = LocalSecretsManager()
     some_secret_name = name
@@ -82,7 +82,7 @@ def test_local_secrets_manager_updates_key_value(name:str, old_value: str, new_v
     assert(fetched_schema.content["key1"] == new_value)
 
 @given(name=text(min_size=1), key=text(min_size=1), value=text(min_size=1))
-def test_local_secrets_manager_deletes_key_value(name: str, key: str, value: str):
+def test_delete_key_value(name: str, key: str, value: str):
     """Tests that a local secret manager deletes a secret."""
     test_secrets_manager = LocalSecretsManager()
     some_secret_name = name
