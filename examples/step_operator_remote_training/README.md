@@ -1,10 +1,15 @@
-# Get up and running quickly on Sagemaker
-This example shows how you can use the `StepOperator` class to run your training jobs on Sagemaker.
+# Train models on remote environments
 
-Sagemaker offers specialised compute instances to run your training jobs and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit individual steps to be run on compute instances managed by Amazon Sagemaker. 
+This example shows how you can use the `StepOperator` class to run your training jobs on remote backends.
+
+The step operator defers the execution of individual steps in a pipeline to specialized runtime environments that are optimized for Machine Learning workloads.
 
 ## Overview
-Here we train a simple sklearn classifier on the MNIST dataset using Amazon Sagemaker.
+Here we train a simple sklearn classifier on the MNIST dataset using one of three step operators:
+
+- AWS Sagemaker
+- GCP Vertex AI
+- Microsoft AzureML
 
 ## Run it locally
 
@@ -18,17 +23,23 @@ In order to run this example, you need to install and initialize ZenML and the n
 pip install zenml
 
 # install ZenML integrations
-zenml integration install aws sagemaker sklearn
+zenml integration install aws sagemaker sklearn vertex gcp azure azureml
 
 # pull example
-zenml example pull sagemaker_step_resource
-cd zenml_examples/sagemaker_step_resource
+zenml example pull step_operator_remote_training
+cd zenml_examples/step_operator_remote_training
 
 # initialize
 zenml init
 ```
 
-### Pre-requisites
+### Pre-requisites 
+
+Each type of step operator has their own pre-requisites. Please jump to the section of 
+the step operator you would like to run on:
+
+#### Sagemaker
+Sagemaker offers specialised compute instances to run your training jobs and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit individual steps to be run on compute instances managed by Amazon Sagemaker. 
 
 In order to run the example, you need to setup a few things to allow ZenML to interact with Sagemaker.
 
@@ -47,8 +58,6 @@ In order to run the example, you need to setup a few things to allow ZenML to in
 * A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Sagemaker will run. Check out the [cloud guide](https://docs.zenml.io/features/cloud-pipelines/guide-aws-gcp-azure) to learn how you can set up an elastic container registry. 
 
 Once you have all these values handy, you can proceed to setting up the components required for your stack.
-
-### Creating the stack
 
 The stack will consist of:
 - The local metadata store
@@ -85,36 +94,13 @@ zenml stack register sagemaker_stack \
 zenml stack set sagemaker_stack
 ```
 
-### Run the project
-Now we're ready. Execute:
+#### Microsoft AzureML
 
-```shell
-python train_on_sagemaker.py
-```
-
-
-### Clean up
-In order to clean up, delete the remaining zenml references.
-
-```shell
-rm -rf zenml_examples
-```
-
-
-# Get up and running on AzureML
-
-This example shows how you can use the `StepOperator` class to run your training 
-jobs on [AzureML](https://azure.microsoft.com/en-us/services/machine-learning/).
-
-AzureML offers specialized compute instances to run your training jobs and 
+[AzureML](https://azure.microsoft.com/en-us/services/machine-learning/) 
+offers specialized compute instances to run your training jobs and 
 has a beautiful UI to track and manage your models and logs. You can now use 
 ZenML to submit individual steps to be run on compute instances managed by 
 AzureML.
-
-## Overview
-Here we train a simple sklearn classifier on the MNIST dataset on AzureML.
-
-## Pre-requisites
 
 In order to run this example, we have to set up a few things to allow ZenML to 
 interact with AzureML:
@@ -137,26 +123,6 @@ pipelines in a non-local setup such as Kubeflow where your local authentication
 won't be accessible. However, for the sake of simplicity, this is considered to 
 be out of the scope of this example.
 
-## Installation
-
-For the installation, you first need to install and initialize ZenML:
-
-```bash
-# Install ZenML
-pip install zenml
-
-# Install the required integrations
-zenml integration install azure azureml sklearn
-
-# Pull example
-zenml example pull azureml_step_operator
-cd zenml_examples/azureml_step_operator
-
-# Initialize
-zenml init
-```
-
-## Creating the stack
 The stack will consist of: 
 
 * The **local metadata store** which will track the configuration of your 
@@ -189,52 +155,13 @@ zenml stack register azureml_stack \
 zenml stack set azureml_stack
 ```
 
-### Run your pipeline
-Now we're ready. Execute:
 
-```shell
-python pipeline.py
-```
+#### GCP Vertex AI
 
-### Clean up
-In order to clean up, delete the remaining zenml references.
-
-```shell
-rm -rf zenml_examples
-```
-
-# Get up and running on Vertex AI
-This example shows how you can use the `StepOperator` class to run your training jobs on [Vertex AI](https://cloud.google.com/vertex-ai).
-
-Vertex AI offers specialised compute to run [custom training jobs](https://cloud.google.com/vertex-ai/docs/training/custom-training) 
+[Vertex AI](https://cloud.google.com/vertex-ai) offers specialised compute to run 
+[custom training jobs](https://cloud.google.com/vertex-ai/docs/training/custom-training) 
 and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit an individual step to 
 run on a managed training job managed on Vertex AI. 
-
-## Overview
-Here we train a simple sklearn classifier on the digits dataset using Vertex AI.
-
-## Run it locally
-Currently, step operators only work with a local orchestrator but support for cloud orchestrators is on the way soon!
-
-### Installation
-In order to run this example, you need to install and initialize ZenML and the necessary integrations:
-
-```shell
-# install CLI
-pip install zenml
-
-# install ZenML integrations
-zenml integration install aws vertex 
-
-# pull example
-zenml example pull step_operator_vertex
-cd zenml_examples/step_operator_vertex
-
-# initialize
-zenml init
-```
-
-### Pre-requisites
 
 In order to run the example, you need to setup a few things to allow ZenML to interact with GCP.
 
@@ -251,8 +178,6 @@ In order to run the example, you need to setup a few things to allow ZenML to in
 * A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Vertex will use. Check out the [cloud guide](https://docs.zenml.io/features/cloud-pipelines/guide-aws-gcp-azure) to learn how you can set up an GCP container registry. 
 
 Once you have all these values handy, you can proceed to setting up the components required for your stack.
-
-### Creating the stack
 
 The stack will consist of:
 - The local metadata store
@@ -291,11 +216,12 @@ zenml stack register vertex_training_stack \
 zenml stack set vertex_training_stack
 ```
 
+
 ### Run the project
 Now we're ready. Execute:
 
 ```shell
-python train_on_vertex.py
+python run.py --step_operator STEP_OPERATOR_TYPE  # can be aws, vertex, azureml
 ```
 
 
