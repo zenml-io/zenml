@@ -62,7 +62,7 @@ def mnist_pipeline(
     "--step_operator",
     default="sagemaker",
     type=click.Choice(["sagemaker", "azureml", "vertex"], case_sensitive=True),
-    help="Type of operator, choice from 'azureml', 'sagemaker', or 'vertex'",
+    help="Should be the same as the name of the registered operator.",
 )
 def main(step_operator: str):
     """Run the pipeline with the specified operator."""
