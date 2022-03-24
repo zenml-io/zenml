@@ -39,7 +39,7 @@ Each type of step operator has their own pre-requisites. Please jump to the sect
 the step operator you would like to run on:
 
 #### Sagemaker
-Sagemaker offers specialised compute instances to run your training jobs and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit individual steps to be run on compute instances managed by Amazon Sagemaker. 
+Sagemaker offers specialized compute instances to run your training jobs and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit individual steps to be run on compute instances managed by Amazon Sagemaker. 
 
 In order to run the example, you need to setup a few things to allow ZenML to interact with Sagemaker.
 
@@ -68,7 +68,7 @@ The stack will consist of:
 ```bash
 zenml artifact-store register s3-store \
     --type=s3
-    --path=$PATH_TO_YOUR_S3_BUCKET
+    --path=<S3_BUCKET_PATH>
 
 # create the sagemaker step operator
 zenml step-operator register sagemaker \
@@ -158,7 +158,7 @@ zenml stack set azureml_stack
 
 #### GCP Vertex AI
 
-[Vertex AI](https://cloud.google.com/vertex-ai) offers specialised compute to run 
+[Vertex AI](https://cloud.google.com/vertex-ai) offers specialized compute to run 
 [custom training jobs](https://cloud.google.com/vertex-ai/docs/training/custom-training) 
 and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit an individual step to 
 run on a managed training job managed on Vertex AI. 
@@ -189,7 +189,7 @@ The stack will consist of:
 
 zenml artifact-store register gcp-store \
     --type=gcp
-    --path=$PATH_TO_YOUR_GCS_BUCKET
+    --path=<GCS_BUCKET_PATH>
 
 # create the vertex step operator
 zenml step-operator register vertex \
@@ -221,7 +221,7 @@ zenml stack set vertex_training_stack
 Now we're ready. Execute:
 
 ```shell
-python run.py --step_operator STEP_OPERATOR_TYPE  # can be aws, vertex, azureml
+python run.py --step_operator STEP_OPERATOR_TYPE  # can be sagemaker, vertex, azureml
 ```
 
 
