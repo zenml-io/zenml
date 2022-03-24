@@ -16,7 +16,6 @@
 
 ...
 """
-from zenml.integrations.aws.secrets_managers import AWSSecretsManager
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
@@ -27,5 +26,4 @@ from zenml.secrets_managers.local.local_secrets_manager import (
 __all__ = [
     "BaseSecretsManager",
     "LocalSecretsManager",
-    "AWSSecretsManager",
 ]
