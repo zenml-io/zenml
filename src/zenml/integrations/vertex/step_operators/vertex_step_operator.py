@@ -110,7 +110,7 @@ class VertexStepOperator(BaseStepOperator):
             custom_validation_function=_ensure_local_orchestrator,
         )
 
-    @property_validator('accelerator_type')
+    @property_validator("accelerator_type")
     def validate_accelerator_enum(cls, v):
         accepted_vals = list(
             aiplatform.gapic.AcceleratorType.__members__.keys()
