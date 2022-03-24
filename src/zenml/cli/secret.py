@@ -226,7 +226,7 @@ def update_secret(
     name: str,
     secret_key: Optional[str],
     secret_value: Optional[str],
-) -> None:
+) -> None:  # sourcery skip: use-named-expression
     """Update a secret set, given its name.
 
     Args:
@@ -258,7 +258,8 @@ def update_secret(
             "one by one. Press enter to skip."
         )
         for key, value in secret.content.items():
-            if new_value := getpass.getpass(f"New value for " f"{key}:"):
+            new_value = getpass.getpass(f"New value for " f"{key}:")
+            if new_value:
                 updated_contents[key] = new_value
             else:
                 updated_contents[key] = value
