@@ -16,21 +16,20 @@ The AWS integration submodule provides a way to run ZenML pipelines in a cloud
 environment. Specifically, it allows the use of cloud artifact stores,
 and an `io` module to handle file operations on S3 buckets.
 """
-
-from zenml.integrations.constants import AWS
+from zenml.integrations.constants import S3
 from zenml.integrations.integration import Integration
 
 
-class AWSIntegration(Integration):
-    """Definition of AWS integration for ZenML."""
+class S3Integration(Integration):
+    """Definition of S3 integration for ZenML."""
 
-    NAME = AWS
-    REQUIREMENTS = ["sagemaker==2.77.1"]
+    NAME = S3
+    REQUIREMENTS = ["s3fs==2022.2.0"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.aws import step_operators  # noqa
+        from zenml.integrations.s3 import artifact_stores  # noqa
 
 
-AWSIntegration.check_installation()
+S3Integration.check_installation()

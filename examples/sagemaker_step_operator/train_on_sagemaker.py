@@ -15,7 +15,7 @@
 import numpy as np
 from sklearn.base import ClassifierMixin
 
-from zenml.integrations.constants import SKLEARN
+from zenml.integrations.constants import S3, SKLEARN
 from zenml.integrations.sklearn.helpers.digits import (
     get_digits,
     get_digits_model,
@@ -59,7 +59,7 @@ def evaluator(
     return test_acc
 
 
-@pipeline(required_integrations=[SKLEARN])
+@pipeline(required_integrations=[SKLEARN, S3])
 def mnist_pipeline(
     importer,
     trainer,

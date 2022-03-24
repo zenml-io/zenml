@@ -12,6 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.aws.artifact_stores.s3_artifact_store import (  # noqa
+from zenml.integrations.s3.artifact_stores.s3_artifact_store import (  # noqa
     S3ArtifactStore,
 )

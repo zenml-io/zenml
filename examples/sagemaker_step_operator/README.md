@@ -1,7 +1,7 @@
 # Get up and running quickly on Sagemaker
 This example shows how you can use the `StepOperator` class to run your training jobs on Sagemaker.
 
-Sagemaker offers specialised compute instances to run your training jobs and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit individual steps to be run on compute instances managed by Amazon Sagemaker. 
+Sagemaker offers specialized compute instances to run your training jobs and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit individual steps to be run on compute instances managed by Amazon Sagemaker. 
 
 ## Overview
 Here we train a simple sklearn classifier on the MNIST dataset using Amazon Sagemaker.
@@ -18,7 +18,7 @@ In order to run this example, you need to install and initialize ZenML and the n
 pip install zenml
 
 # install ZenML integrations
-zenml integration install aws sklearn 
+zenml integration install aws s3 sklearn 
 
 # pull example
 zenml example pull sagemaker_step_resource
@@ -30,7 +30,7 @@ zenml init
 
 ### Pre-requisites
 
-In order to run the example, you need to setup a few things to allow ZenML to interact with Sagemaker.
+In order to run the example, you need to set up a few things to allow ZenML to interact with Sagemaker.
 
 * First, you need to create a role in the IAM console that you want the jobs running in Sagemaker to assume. This role should at least have the `AmazonS3FullAccess` and `AmazonSageMakerFullAccess` policies applied. Check [this link](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) to learn how to create a role.
 
