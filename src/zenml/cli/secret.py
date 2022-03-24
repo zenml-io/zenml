@@ -67,7 +67,11 @@ def secret(ctx: click.Context) -> None:
     ctx.obj = Repository().active_stack.components.get(
         StackComponentType.SECRETS_MANAGER, None
     )
-
+    if ctx.obj is None:
+        error(
+            "No active secrets manager found. Please create a secrets manager "
+            "first and add it to your stack."
+        )
 
 @secret.command("register")
 @click.argument("name", type=click.STRING)
