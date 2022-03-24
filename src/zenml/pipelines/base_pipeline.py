@@ -61,7 +61,7 @@ PARAM_REQUIRED_INTEGRATIONS: str = "required_integrations"
 PARAM_REQUIREMENTS_FILE: str = "requirements_file"
 PARAM_DOCKERIGNORE_FILE: str = "dockerignore_file"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
-PARAM_SECRETS_LIST: str = "secrets"
+PARAM_SECRETS: str = "secrets"
 
 
 class BasePipelineMeta(type):
@@ -115,7 +115,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.required_integrations = kwargs.pop(PARAM_REQUIRED_INTEGRATIONS, ())
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
         self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
-        self.secrets = kwargs.pop(PARAM_SECRETS_LIST, None)
+        self.secrets = kwargs.pop(PARAM_SECRETS, None)
 
         self.name = self.__class__.__name__
         logger.info("Creating run for pipeline: `%s`", self.name)
