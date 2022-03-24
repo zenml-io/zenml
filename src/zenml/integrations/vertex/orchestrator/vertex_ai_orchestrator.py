@@ -30,15 +30,16 @@
 
 from typing import TYPE_CHECKING, Any
 
-from zenml.enums import OrchestratorFlavor, StackComponentType
+from zenml.enums import OrchestratorFlavor
 from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
     KubeflowOrchestrator,
 )
 from zenml.logger import get_logger
 from zenml.stack import Stack
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
+
+# from zenml.stack.stack_component_class_registry import (
+#     register_stack_component_class,
+# )
 
 # from google.cloud import aiplatform
 # from google.cloud.aiplatform import pipeline_jobs
@@ -52,10 +53,10 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.ORCHESTRATOR,
-    component_flavor=OrchestratorFlavor.VERTEX,
-)
+# @register_stack_component_class(
+#     component_type=StackComponentType.ORCHESTRATOR,
+#     component_flavor=OrchestratorFlavor.VERTEX,
+# )
 class VertexOrchestrator(KubeflowOrchestrator):
     """Orchestrator responsible for running pipelines on Vertex AI."""
 

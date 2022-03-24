@@ -12,9 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The GCP integration submodule provides a way to run ZenML pipelines in a cloud
-environment. Specifically, it allows the use of cloud artifact stores, metadata
-stores, and an `io` module to handle file operations on Google Cloud Storage (GCS).
+The Vertex integration submodule provides a way to run ZenML pipelines in a 
+Vertex AI environment.
 """
 
 from zenml.integrations.constants import VERTEX
@@ -25,7 +24,7 @@ class VertexIntegration(Integration):
     """Definition of Vertex AI integration for ZenML."""
 
     NAME = VERTEX
-    REQUIREMENTS = ["google-cloud-aiplatform"]
+    REQUIREMENTS = ["google-cloud-aiplatform>=1.11.0"]
 
     @classmethod
     def activate(cls) -> None:
