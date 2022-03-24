@@ -863,3 +863,33 @@ def test_step_can_have_generic_input_types(clean_repo):
 
     with does_not_raise():
         p(step_1(), step_2()).run()
+
+
+def test_step_can_have_raw_artifacts(clean_repo):
+    """Check that you can bypass materialization with raw artifacts."""
+
+    @step
+    def step_1() -> Output(d=Dict, l=List):
+        return {"some": "data"}, []
+
+    @step
+    def step_2() -> Output(d=Dict, l=List):
+        return {"some": "data"}, []
+
+    @step
+    def step_3(d: DataArtifact, l: ModelArtifact) -> None:
+        assert hasattr(d, "uri")
+        assert hasattr(l, "uri")
+
+    @step
+    def step_4(d: Dict, l: List) -> None:
+        assert type(d) is dict
+        assert type(l) is list
+
+    @pipeline
+    def p(s1, s2, s3, s4):
+        s3(*s1())
+        s4(*s2())
+
+    with does_not_raise():
+        p(step_1(), step_2(), step_3(), step_4()).run()

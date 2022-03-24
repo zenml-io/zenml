@@ -320,7 +320,14 @@ class _FunctionExecutor(BaseExecutor):
         """
         # Make an exception for all BaseArtifact, return artifact
         if issubclass(data_type, BaseArtifact):
-            return
+            if data_type != type(artifact):
+                logger.warning(
+                    f"You specified the data_type `{data_type}` but the actual "
+                    f"artifact type from the previous step is "
+                    f"`{type(artifact)}`. Ignoring this for now, but please be "
+                    f"aware of this in your step code."
+                )
+            return artifact
 
         materializer = source_utils.load_source_path_class(
             artifact.materializer
