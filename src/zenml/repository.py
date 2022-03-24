@@ -627,6 +627,9 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             profile_name: name of the profile to add
+
+        Raises:
+            KeyError: If the profile with the given name does not exist.
         """
         global_cfg = GlobalConfig()
         profile = global_cfg.get_profile(profile_name)

@@ -95,6 +95,9 @@ class BaseGlobalConfiguration(ABC):
 
         Args:
             profile_name: The name of the profile to set as active.
+
+        Raises:
+            KeyError: If the profile with the given name does not exist.
         """
 
     @property
@@ -121,6 +124,9 @@ class BaseGlobalConfiguration(ABC):
 
         Args:
             stack_name: name of the stack to activate
+
+        Raises:
+            KeyError: If the stack with the given name does not exist.
         """
 
     @property
@@ -174,10 +180,7 @@ class ConfigProfile(BaseModel):
     def __init__(
         self, config: Optional["GlobalConfig"] = None, **kwargs: Any
     ) -> None:
-        """Initializes a GlobalConfig object using values from the config file.
-
-        If the config file doesn't exist yet, we try to read values from the
-        legacy (ZenML version < 0.6) config file.
+        """Initializes a ConfigProfile object.
 
         Args:
             config: global configuration to which this profile belongs. When not
@@ -578,6 +581,9 @@ class GlobalConfig(
 
         Args:
             profile_name: name of the profile to add
+
+        Raises:
+            KeyError: If the profile with the given name does not exist.
         """
         if profile_name not in self.profiles:
             raise KeyError(f"Profile '{profile_name}' not found.")

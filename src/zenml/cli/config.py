@@ -136,7 +136,7 @@ def create_profile_command(
     cfg.add_or_update_profile(
         ConfigProfile(name=name, store_url=url, store_type=store_type)
     )
-    cli_utils.declare(f"Profile `{name}` successfully created.")
+    cli_utils.declare(f"Profile '{name}' successfully created.")
 
 
 @profile.command("list")
@@ -156,30 +156,17 @@ def list_profiles_command() -> None:
 
     profile_dicts = []
     for profile_name, profile in profiles.items():
-        active_str = ""
-        local_stack = ""
-        if profile_name == cfg.active_profile_name:
-            active_str += ":crown:"
-        if profile_name == repo.active_profile_name:
-            active_str += ":point_right:"
-            local_stack = repo.active_stack_name or ""
-        store_type = "N/A"
-        if profile.store_type:
-            store_type = profile.store_type.value
+        is_active = profile_name == repo.active_profile_name
         profile_config = {
-            "ACTIVE": active_str,
+            "ACTIVE": ":point_right:" if is_active else "",
             "PROFILE NAME": profile_name,
-            "STORE TYPE": store_type,
+            "STORE TYPE": profile.store_type.value,
             "URL": profile.store_url,
-            "GLOBAL ACTIVE STACK": profile.active_stack,
-            "LOCAL ACTIVE STACK": local_stack,
+            "ACTIVE STACK": repo.active_stack_name,
         }
         profile_dicts.append(profile_config)
 
-    cli_utils.print_table(
-        profile_dicts,
-        caption=":crown: = globally active, :point_right: = locally active",
-    )
+    cli_utils.print_table(profile_dicts)
 
 
 @profile.command(
@@ -191,44 +178,21 @@ def list_profiles_command() -> None:
     type=click.STRING,
     required=False,
 )
-@click.option(
-    "--global",
-    "-g",
-    "global_profile",
-    is_flag=True,
-    help="Describe the global active profile",
-)
-def describe_profile(name: Optional[str], global_profile: bool = False) -> None:
-    """Show details about a named profile or the active profile.
-
-    If the `--global` flag is set, the global active profile will be shown,
-    otherwise the repository local active profile is shown.
-    """
+def describe_profile(name: Optional[str]) -> None:
+    """Show details about a named profile or the active profile."""
     cli_utils.print_active_profile()
 
     repo = Repository()
-    cfg = GlobalConfig()
-    if global_profile:
-        name = name or cfg.active_profile_name
-    else:
-        name = name or repo.active_profile_name
-
-    if len(GlobalConfig().profiles) == 0:
-        cli_utils.warning("No profiles registered!")
-        return
-    if not name:
-        cli_utils.warning("No profile is set as active!")
-        return
+    name = name or repo.active_profile_name
 
     profile = GlobalConfig().get_profile(name)
     if not profile:
-        cli_utils.error(f"Profile `{name}` does not exist.")
+        cli_utils.error(f"Profile '{name}' does not exist.")
         return
 
     cli_utils.print_profile(
         profile,
-        locally_active=name == repo.active_profile_name,
-        globally_active=name == cfg.active_profile_name,
+        active=name == repo.active_profile_name,
     )
 
 
@@ -241,7 +205,7 @@ def delete_profile(name: str) -> None:
     """
     cli_utils.print_active_profile()
 
-    with console.status(f"Deleting profile `{name}`...\n"):
+    with console.status(f"Deleting profile '{name}'...\n"):
 
         cfg = GlobalConfig()
         repo = Repository()
@@ -250,22 +214,22 @@ def delete_profile(name: str) -> None:
             return
         if cfg.active_profile_name == name:
             cli_utils.error(
-                f"Profile {name} cannot be deleted because it's globally active. "
-                f"Please choose a different active global profile first by running "
-                "`zenml profile set --global PROFILE`."
+                f"Profile '{name}' cannot be deleted because it's globally "
+                f" active. Please choose a different active global profile "
+                f"first by running 'zenml profile set --global PROFILE'."
             )
             return
 
         if repo.active_profile_name == name:
             cli_utils.error(
-                f"Profile {name} cannot be deleted because it's locally active. "
-                f"Please choose a different active profile first by running "
-                "`zenml profile set PROFILE`."
+                f"Profile '{name}' cannot be deleted because it's locally "
+                f"active. Please choose a different active profile first by "
+                f"running 'zenml profile set PROFILE'."
             )
             return
 
         cfg.delete_profile(name)
-        cli_utils.declare(f"Deleted profile {name}.")
+        cli_utils.declare(f"Deleted profile '{name}'.")
 
 
 @profile.command("set")
@@ -280,64 +244,53 @@ def delete_profile(name: str) -> None:
 def set_active_profile(name: str, global_profile: bool = False) -> None:
     """Set a profile as active.
 
-    If the `--global` flag is set, the profile will be set as the global
+    If the '--global' flag is set, the profile will be set as the global
     active profile, otherwise as the repository local active profile.
     """
     cli_utils.print_active_profile()
+    scope = " global" if global_profile else ""
 
-    with console.status(f"Setting the active profile to `{name}`..."):
+    with console.status(f"Setting the{scope} active profile to '{name}'..."):
 
-        cfg: BaseGlobalConfiguration
-        if global_profile:
-            cfg = GlobalConfig()
-        else:
-            cfg = Repository()
+        cfg: BaseGlobalConfiguration = (
+            GlobalConfig() if global_profile else Repository()
+        )
 
         current_profile_name = cfg.active_profile_name
         if current_profile_name == name:
-            cli_utils.declare(f"Profile `{name}` is already active.")
+            cli_utils.declare(f"Profile '{name}' is already{scope}ly active.")
             return
 
         try:
             cfg.activate_profile(name)
         except Exception as e:
-            cli_utils.error(f"Error activating profile: {str(e)}. ")
+            cli_utils.error(f"Error activating{scope} profile: {str(e)}. ")
             if current_profile_name:
                 cli_utils.declare(
-                    f"Keeping current profile: {current_profile_name}."
+                    f"Keeping current{scope} profile: '{current_profile_name}'."
                 )
                 cfg.activate_profile(current_profile_name)
             return
-        cli_utils.declare(f"Active profile changed to: {name}")
+        cli_utils.declare(f"Active{scope} profile changed to: '{name}'")
 
 
 @profile.command("get")
 def get_active_profile() -> None:
     """Get the active profile."""
     with console.status("Getting the active profile..."):
-
-        cfg = GlobalConfig()
-        repo = Repository()
-
-        active_profile_name = cfg.active_profile_name
-        if active_profile_name:
-            cli_utils.declare(
-                f"Globally active profile is: {active_profile_name}"
-            )
-        active_profile_name = repo.active_profile_name
-        if active_profile_name:
-            cli_utils.declare(
-                f"Locally active profile is: {active_profile_name}"
-            )
+        cli_utils.declare(
+            f"Active profile is: {Repository().active_profile_name}"
+        )
 
 
 @profile.command("explain")
 def explain_profile() -> None:
     """Explains the concept of ZenML profiles."""
 
-    console.print(
-        Markdown(
-            """
+    with console.pager():
+        console.print(
+            Markdown(
+                """
 Profiles are configuration contexts that can be used to manage multiple
 individual ZenML global configurations on the same machine. ZenML Stacks and
 Stack Components, as well as the active Stack can be configured for a Profile
@@ -348,10 +301,6 @@ first time ZenML runs on a machine:
 
 ```
 $ zenml profile list
-Unable to find ZenML repository in your current working directory (/home/stefan)
-or any parent directories. If you want to use an existing repository which is in
-a different location, set the environment variable 'ZENML_REPOSITORY_PATH'. If
-you want to create a new repository, run `zenml init`.
 Creating default profile...
 Initializing profile `default`...
 Initializing store...
@@ -361,15 +310,13 @@ Registered stack component with type 'artifact_store' and name 'default'.
 Registered stack with name 'default'.
 Created and activated default profile.
 Runnning without an active repository root.
-Running with active profile: `default` (global)
-┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┓
-┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL                                                │ GLOBAL ACTIVE STACK │ LOCAL ACTIVE STACK ┃
-┠────────┼──────────────┼────────────┼────────────────────────────────────────────────────┼─────────────────────┼────────────────────┨
-┃  👑👉  │ default      │ local      │ file:///home/stefan/.config/zenml/profiles/default │ default             │ default            ┃
-┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┛
-👑 = globally active, 👉 = locally active
+Running with active profile: 'default' (global)
+┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL               │ ACTIVE STACK ┃
+┠────────┼──────────────┼────────────┼───────────────────┼──────────────┨
+┃   👉   │ default      │ local      │ file:///home/ste… │ default      ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
-
 
 Additional Profiles can be created by running `zenml profile create`. Every
 Profile, including the `default` profile will have a `default` local Stack
@@ -378,14 +325,24 @@ automatically registered and set as the active Stack for that Profile.
 ```
 $ zenml profile create zenml
 Runnning without an active repository root.
-Running with active profile: `default` (global)
+Running with active profile: 'default' (global)
 Initializing profile `zenml`...
 Initializing store...
 Registered stack component with type 'orchestrator' and name 'default'.
 Registered stack component with type 'metadata_store' and name 'default'.
 Registered stack component with type 'artifact_store' and name 'default'.
 Registered stack with name 'default'.
-Profile `zenml` successfully created.
+Profile 'zenml' successfully created.
+
+$ zenml profile list
+Runnning without an active repository root.
+Running with active profile: 'default' (global)
+┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL               │ ACTIVE STACK ┃
+┠────────┼──────────────┼────────────┼───────────────────┼──────────────┨
+┃   👉   │ default      │ local      │ file:///home/ste… │ default      ┃
+┃        │ zenml        │ local      │ file:///home/ste… │ default      ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
 
 Any Profile can be set as the active Profile by running `zenml profile set`.
@@ -397,30 +354,29 @@ available as long as that Profile is active.
 ```
 $ zenml profile set zenml
 Runnning without an active repository root.
-Running with active profile: `default` (global)
-Active profile changed to: zenml
+Running with active profile: 'default' (global)
+Active profile changed to: 'zenml'
 
 $ zenml stack register local -m default -a default -o default
 Runnning without an active repository root.
-Running with active profile: `zenml` (global)
+Running with active profile: 'zenml' (global)
 Registered stack with name 'local'.
-Stack `local` successfully registered!
+Stack 'local' successfully registered!
 
 $ zenml stack set local
 Runnning without an active repository root.
-Running with active profile: `zenml` (global)
-Active local stack for active profile `zenml`: `local`
+Running with active profile: 'zenml' (global)
+Active stack set to: 'local'
 
 $ zenml stack list
 Runnning without an active repository root.
-Running with active profile: `zenml` (global)
+Running with active profile: 'zenml' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
 ┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
 ┃        │ default    │ default        │ default        │ default      ┃
-┃  👑👉  │ local      │ default        │ default        │ default      ┃
+┃   👉   │ local      │ default        │ default        │ default      ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-👑 = globally active, 👉 = locally active
 ```
 
 All other ZenML commands and the ZenML pipeline themselves will run
@@ -435,31 +391,45 @@ those configured for the active Profile.
 ```
 /tmp/zenml$ zenml init
 ZenML repository initialized at /tmp/zenml.
+The local active profile was initialized to 'zenml' and the local active stack
+to 'local'. This local configuration will only take effect when you're running
+ZenML from the initialized repository root, or from a subdirectory. For more
+information on profile and stack configuration, please run 'zenml profile
+explain'.
 
 /tmp/zenml$ zenml stack list
-Running with active profile: `zenml` (local)
+Running with active profile: 'zenml' (local)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
 ┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
 ┃        │ default    │ default        │ default        │ default      ┃
-┃  👑👉  │ local      │ default        │ default        │ default      ┃
+┃   👉   │ local      │ default        │ default        │ default      ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-👑 = globally active, 👉 = locally active
 
 /tmp/zenml$ zenml stack set default
-Running with active profile: `zenml` (local)
-Active local stack for active profile `zenml`: `default`
+Running with active profile: 'zenml' (local)
+Active stack set to: 'default'
 
 /tmp/zenml$ zenml stack list
-Running with active profile: `zenml` (local)
+Running with active profile: 'zenml' (local)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
 ┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
 ┃   👉   │ default    │ default        │ default        │ default      ┃
-┃   👑   │ local      │ default        │ default        │ default      ┃
+┃        │ local      │ default        │ default        │ default      ┃
 ┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
-👑 = globally active, 👉 = locally active
+
+/tmp/zenml$ cd ..
+/tmp$ zenml stack list
+Runnning without an active repository root.
+Running with active profile: 'zenml' (global)
+┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
+┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
+┃        │ default    │ default        │ default        │ default      ┃
+┃   👉   │ local      │ default        │ default        │ default      ┃
+┗━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
-     """
+"""
+            )
         )
-    )

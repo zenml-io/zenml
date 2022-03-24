@@ -38,7 +38,6 @@ def _component_display_name(
 def _get_stack_component(
     component_type: StackComponentType,
     component_name: Optional[str] = None,
-    active_stack_name: Optional[str] = None,
 ) -> StackComponent:
     """Gets a stack component for a given type and name.
 
@@ -46,8 +45,6 @@ def _get_stack_component(
         component_type: Type of the component to get.
         component_name: Name of the component to get. If `None`, the
             component of the active stack gets returned.
-        active_stack_name: Name of the active stack. If `None`, the
-            local repository active stack is used.
 
     Returns:
         A stack component of the given type.
@@ -59,11 +56,7 @@ def _get_stack_component(
     if component_name:
         return repo.get_stack_component(component_type, name=component_name)
 
-    if active_stack_name:
-        active_stack = repo.get_stack(active_stack_name)
-    else:
-        active_stack = repo.active_stack
-    component = active_stack.components[component_type]
+    component = repo.active_stack.components[component_type]
     cli_utils.declare(
         f"No component name given, using `{component.name}` "
         f"from active stack."
@@ -76,83 +69,45 @@ def generate_stack_component_get_command(
 ) -> Callable[[], None]:
     """Generates a `get` command for the specific stack component type."""
 
-    display_name = _component_display_name(component_type)
-
     def get_stack_component_command() -> None:
         """Prints the name of the active component."""
 
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        repo = Repository()
-
-        local_stack = repo.active_stack_name
-        global_stack = repo.active_profile.active_stack or ""
-
-        stacks = {
-            "global": global_stack,
-            "local": local_stack,
-        }
-
-        for scope, stack_name in stacks.items():
-            if not stack_name:
-                continue
-            active_stack = repo.get_stack(stack_name)
-            component = active_stack.components.get(component_type, None)
-
-            if component:
-                cli_utils.declare(
-                    f"Active {scope} {display_name}: {component.name}"
-                )
-            else:
-                cli_utils.warning(
-                    f"No {display_name} set for {scope} active stack "
-                    f"({active_stack.name})."
-                )
+        active_stack = Repository().active_stack
+        component = active_stack.components.get(component_type, None)
+        display_name = _component_display_name(component_type)
+        if component:
+            cli_utils.declare(f"Active {display_name}: '{component.name}'")
+        else:
+            cli_utils.warning(
+                f"No {display_name} set for active stack ('{active_stack.name}')."
+            )
 
     return get_stack_component_command
 
 
 def generate_stack_component_describe_command(
     component_type: StackComponentType,
-) -> Callable[[Optional[str], bool], None]:
+) -> Callable[[Optional[str]], None]:
     """Generates a `describe` command for the specific stack component type."""
-
-    singular_display_name = _component_display_name(component_type)
 
     @click.argument(
         "name",
         type=str,
         required=False,
     )
-    @click.option(
-        "--global",
-        "-g",
-        "global_profile",
-        is_flag=True,
-        help=f"Show the global active {singular_display_name}.",
-    )
-    def describe_stack_component_command(
-        name: Optional[str], global_profile: bool = False
-    ) -> None:
+    def describe_stack_component_command(name: Optional[str]) -> None:
         """Prints details about the active/specified component."""
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        repo = Repository()
-
-        if global_profile:
-            active_stack_name = repo.active_profile.active_stack
-        else:
-            active_stack_name = repo.active_stack_name
-
-        if not active_stack_name and not name:
-            cli_utils.warning("No stack is set as active!")
-            return
-
+        singular_display_name = _component_display_name(component_type)
         plural_display_name = _component_display_name(
             component_type, plural=True
         )
+        repo = Repository()
         components = repo.get_stack_components(component_type)
         if len(components) == 0:
             cli_utils.warning(f"No {plural_display_name} registered.")
@@ -160,9 +115,7 @@ def generate_stack_component_describe_command(
 
         try:
             component = _get_stack_component(
-                component_type,
-                component_name=name,
-                active_stack_name=active_stack_name,
+                component_type, component_name=name
             )
         except KeyError:
             if name:
@@ -175,18 +128,14 @@ def generate_stack_component_describe_command(
                 )
             return
 
-        is_active = False
-        if active_stack_name:
-            try:
-                active_component_name = (
-                    repo.get_stack(active_stack_name)
-                    .components[component_type]
-                    .name
-                )
-                is_active = active_component_name == component.name
-            except KeyError:
-                # there is no component of this type in the active stack
-                pass
+        try:
+            active_component_name = repo.active_stack.components[
+                component_type
+            ].name
+            is_active = active_component_name == component.name
+        except KeyError:
+            # there is no component of this type in the active stack
+            is_active = False
 
         cli_utils.print_stack_component_configuration(
             component, singular_display_name, is_active
@@ -213,32 +162,15 @@ def generate_stack_component_list_command(
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
             return
-
-        local_stack = repo.active_stack_name
-        global_stack = repo.active_profile.active_stack or ""
-
-        global_active_component_name = None
-        if global_stack:
-            try:
-                global_active_component_name = (
-                    repo.get_stack(global_stack).components[component_type].name
-                )
-            except KeyError:
-                pass
-
-        local_active_component_name = None
-        if local_stack:
-            try:
-                local_active_component_name = (
-                    repo.get_stack(local_stack).components[component_type].name
-                )
-            except KeyError:
-                pass
+        try:
+            active_component_name = repo.active_stack.components[
+                component_type
+            ].name
+        except KeyError:
+            active_component_name = None
 
         cli_utils.print_stack_component_list(
-            components,
-            global_active_component_name=global_active_component_name,
-            local_active_component_name=local_active_component_name,
+            components, active_component_name=active_component_name
         )
 
     return list_stack_components_command
