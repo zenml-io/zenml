@@ -65,11 +65,11 @@ def test_local_secrets_manager_fetches_key_value(name: str, key: str, value: str
     fetched_schema = test_secrets_manager.get_secret(some_secret_name)
     assert(fetched_schema.content[key] == value)
 
-@given(new_value=text(min_size=1), old_value=text(min_size=1))
-def test_local_secrets_manager_updates_key_value(old_value: str, new_value: str):
+@given(name=text(min_size=1), new_value=text(min_size=1), old_value=text(min_size=1))
+def test_local_secrets_manager_updates_key_value(name:str, old_value: str, new_value: str):
     """Tests that a local secrets manager updates a key's secret value."""
     test_secrets_manager = LocalSecretsManager()
-    some_secret_name = 'test'
+    some_secret_name = name
     some_arbitary_schema = ArbitrarySecretSchema(
         name=some_secret_name, arbitrary_kv_pairs={"key1" : old_value})
 
@@ -81,10 +81,11 @@ def test_local_secrets_manager_updates_key_value(old_value: str, new_value: str)
     fetched_schema = test_secrets_manager.get_secret(some_secret_name)
     assert(fetched_schema.content["key1"] == new_value)
 
-@given(key=text(min_size=1), value=text(min_size=1))
-def test_local_secrets_manager_deletes_key_value(key: str, value: str):
+@given(name=text(min_size=1), key=text(min_size=1), value=text(min_size=1))
+def test_local_secrets_manager_deletes_key_value(name: str, key: str, value: str):
+    """Tests that a local secret manager deletes a secret."""
     test_secrets_manager = LocalSecretsManager()
-    some_secret_name = 'test'
+    some_secret_name = name
     some_arbitary_schema = ArbitrarySecretSchema(
         name=some_secret_name, arbitrary_kv_pairs={key: value})
 
