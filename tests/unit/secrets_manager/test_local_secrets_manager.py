@@ -30,6 +30,7 @@ def test_local_secrets_manager_attributes():
     assert test_secrets_manager.supports_remote_execution is False
     assert test_secrets_manager.type == StackComponentType.SECRETS_MANAGER
     assert test_secrets_manager.flavor == SecretsManagerFlavor.LOCAL
+    test_secrets_manager.delete_all_secrets(force=True)
 
 
 def test_local_secrets_manager_creates_file():
@@ -39,6 +40,7 @@ def test_local_secrets_manager_creates_file():
 
     secrets_file = test_secrets_manager.secrets_file
     assert file_exists(secrets_file)
+    test_secrets_manager.delete_all_secrets(force=True)
 
 
 def test_create_key_value():
@@ -57,7 +59,7 @@ def test_create_key_value():
     encoded_secret = secret_store_items[some_secret_name]
     decoded_secret = decode_secret_dict(encoded_secret)
     assert decoded_secret[0][key] == value
-    test_secrets_manager.delete_secret(some_secret_name)
+    test_secrets_manager.delete_all_secrets(force=True)
 
 
 def test_fetch_key_value():
@@ -74,7 +76,7 @@ def test_fetch_key_value():
 
     fetched_schema = test_secrets_manager.get_secret(some_secret_name)
     assert fetched_schema.content[key] == value
-    test_secrets_manager.delete_secret(some_secret_name)
+    test_secrets_manager.delete_all_secrets(force=True)
 
 
 def test_update_key_value():
@@ -96,7 +98,7 @@ def test_update_key_value():
 
     fetched_schema = test_secrets_manager.get_secret(some_secret_name)
     assert fetched_schema.content["key1"] == new_value
-    test_secrets_manager.delete_secret(some_secret_name)
+    test_secrets_manager.delete_all_secrets(force=True)
 
 
 def test_delete_key_value():
@@ -114,3 +116,4 @@ def test_delete_key_value():
 
     secret_store_items = yaml_utils.read_yaml(test_secrets_manager.secrets_file)
     assert secret_store_items.get(some_secret_name) is None
+    test_secrets_manager.delete_all_secrets(force=True)
