@@ -75,7 +75,7 @@ class TensorboardService(LocalDaemonService):
         **attrs: Any,
     ) -> None:
         # ensure that the endpoint is created before the service is initialized
-        # TODO [HIGH]: implement a service factory or builder for Tensorboard
+        # TODO [ENG-697]: implement a service factory or builder for Tensorboard
         #   deployment services
         if (
             isinstance(config, TensorboardServiceConfig)

@@ -119,7 +119,7 @@ examples = [
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
     ),
-    # TODO [HIGH]: Enable running the whylogs example on kubeflow
+    # TODO [ENG-708]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(
         name="whylogs", validation_function=whylogs_example_validation
     ),

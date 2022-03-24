@@ -61,3 +61,12 @@ class MetadataContextTypes(Enum):
 
     STACK = "stack"
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
+
+
+class StorageType(StrEnum):
+    """Storage Backend Types"""
+
+    YAML_STORAGE = "yaml_storage"
+    SQLITE_STORAGE = "sqlite_storage"
+    MYSQL_STORAGE = "mysql_storage"
+    REST_STORAGE = "rest_storage"

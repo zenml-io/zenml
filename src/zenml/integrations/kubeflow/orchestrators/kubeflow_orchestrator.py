@@ -265,7 +265,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
 
                 if self.synchronous:
-                    # TODO [MEDIUM]: Allow configuration of the timeout as a
+                    # TODO [ENG-698]: Allow configuration of the timeout as a
                     #  runtime option
                     client.wait_for_run_completion(
                         run_id=result.run_id, timeout=1200
