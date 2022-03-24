@@ -73,6 +73,7 @@ def secret(ctx: click.Context) -> None:
             "first and add it to your stack."
         )
 
+
 @secret.command("register")
 @click.argument("name", type=click.STRING)
 @click.option(
