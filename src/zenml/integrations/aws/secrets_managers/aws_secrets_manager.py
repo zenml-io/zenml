@@ -72,16 +72,25 @@ class AWSSecretsManager(BaseSecretsManager):
 
     @property
     def flavor(self) -> SecretsManagerFlavor:
-        """The secrets manager flavor."""
+        """The secrets manager flavor.
+
+        Returns:
+            The secrets manager flavor."""
         return SecretsManagerFlavor.AWS
 
     @property
     def type(self) -> StackComponentType:
-        """The secrets manager type."""
+        """The secrets manager type.
+
+        Returns:
+            The secrets manager type."""
         return StackComponentType.SECRETS_MANAGER
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
-        """Registers a new secret."""
+        """Registers a new secret.
+
+        Args:
+            secret: the secret to register"""
         self._ensure_client_connected(self.region_name)
         secret_value = jsonify_secret_contents(secret)
 
@@ -89,13 +98,22 @@ class AWSSecretsManager(BaseSecretsManager):
         self.CLIENT.create_secret(**kwargs)
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
-        """Gets the value of a secret."""
+        """Gets a secret.
+
+        Args:
+            secret_name: the name of the secret to get
+
+        Returns:
+            The secret.
+
+        Raises:
+            RuntimeError: if the secret does not exist"""
         self._ensure_client_connected(self.region_name)
         get_secret_value_response = self.CLIENT.get_secret_value(
             SecretId=secret_name
         )
         if "SecretString" not in get_secret_value_response:
-            raise RuntimeError(f"No secrets found within the" f" {secret_name}")
+            raise RuntimeError(f"No secrets found within the {secret_name}")
         secret_contents: Dict[str, str] = json.loads(
             get_secret_value_response["SecretString"]
         )
@@ -109,7 +127,10 @@ class AWSSecretsManager(BaseSecretsManager):
         return secret_schema(**secret_contents)
 
     def get_all_secret_keys(self) -> List[str]:
-        """Get all secret keys."""
+        """Get all secret keys.
+
+        Returns:
+            A list of all secret keys."""
         self._ensure_client_connected(self.region_name)
 
         # TODO [MEDIUM]: Deal with pagination in the aws secret manager when
@@ -119,7 +140,10 @@ class AWSSecretsManager(BaseSecretsManager):
         return [secret["Name"] for secret in response["SecretList"]]
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
-        """Update an existing secret."""
+        """Update an existing secret.
+
+        Args:
+            secret: the secret to update"""
         self._ensure_client_connected(self.region_name)
 
         secret_value = jsonify_secret_contents(secret)
@@ -129,14 +153,20 @@ class AWSSecretsManager(BaseSecretsManager):
         self.CLIENT.put_secret_value(**kwargs)
 
     def delete_secret(self, secret_name: str) -> None:
-        """Delete an existing secret."""
+        """Delete an existing secret.
+
+        Args:
+            secret_name: the name of the secret to delete"""
         self._ensure_client_connected(self.region_name)
         self.CLIENT.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=False
         )
 
     def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete all existing secrets."""
+        """Delete all existing secrets.
+
+        Args:
+            force: whether to force delete all secrets"""
         self._ensure_client_connected(self.region_name)
         for secret_name in self.get_all_secret_keys():
             self.CLIENT.delete_secret(
