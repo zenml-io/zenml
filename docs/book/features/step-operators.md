@@ -18,7 +18,7 @@ In order to run the example, you need to setup a few things to allow ZenML to in
 
 * You need to have the `aws` cli set up with the right credentials. Make sure you have the permissions to create and manage Sagemaker runs. 
 
-* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Sagemaker will run. Check out the [cloud guide](https://docs.zenml.io/features/cloud-pipelines/guide-aws-gcp-azure) to learn how you can set up an elastic container registry. 
+* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Sagemaker will run. Check out the [cloud guide](../features/guide-aws-gcp-azure.md) to learn how you can set up an elastic container registry. 
 
 Once you have all these values handy, you can proceed to setting up the components required for your stack.
 
@@ -58,11 +58,9 @@ In order to run the example, you need to setup a few things to allow ZenML to in
 
 * You need to have the `gcp` cli set up with the right credentials. Make sure you have the permissions to create and manage Vertex AI custom jobs. 
 
-* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Vertex will use. Check out the [cloud guide](https://docs.zenml.io/features/cloud-pipelines/guide-aws-gcp-azure) to learn how you can set up an GCP container registry. 
+* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Vertex will use. Check out the [cloud guide](../features/guide-aws-gcp-azure.md) to learn how you can set up an GCP container registry. 
 
 Once you have all these values handy, you can proceed to setting up the components required for your stack.
-
-
 
 # Run steps in specialized environments with step operators
 
