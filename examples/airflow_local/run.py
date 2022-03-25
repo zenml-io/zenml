@@ -19,7 +19,6 @@ from pipeline import (
     sklearn_trainer,
 )
 
-
 # Initialize a new pipeline run
 scikit_p = mnist_pipeline(
     importer=dynamic_importer(),
