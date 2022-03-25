@@ -321,12 +321,13 @@ def test_create_file_if_not_exists(tmp_path) -> None:
 
 def test_create_file_if_not_exists_does_not_overwrite(tmp_path) -> None:
     """Test that create_file_if_not_exists doesn't overwrite an existing file"""
-    with NamedTemporaryFile(dir=tmp_path) as temp_file:
-        with open(temp_file.name, "w") as f:
-            f.write("Aria is a good cat")
-        fileio.create_file_if_not_exists(temp_file.name)
-        with open(temp_file.name, "r") as f:
-            assert f.read() == "Aria is a good cat"
+    temporary_file = os.path.join(tmp_path, "new_file.txt")
+    fileio.create_file_if_not_exists(temporary_file)
+    with open(temporary_file, "w") as f:
+        f.write("Aria is a good cat")
+    fileio.create_file_if_not_exists(temporary_file)
+    with open(temporary_file, "r") as f:
+        assert f.read() == "Aria is a good cat"
 
 
 def test_create_dir_if_not_exists(tmp_path) -> None:
