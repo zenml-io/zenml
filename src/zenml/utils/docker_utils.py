@@ -207,9 +207,10 @@ def build_docker_image(
     try:
 
         # Save a copy of the current global configuration with the
-        # active profile contents into the build context, to have
-        # the configured stacks accessible from within the container.
-        GlobalConfiguration().copy_config_with_active_profile(
+        # active profile and the active stack configuration into the build
+        # context, to have the active profile and active stack accessible from
+        # within the container.
+        GlobalConfiguration().copy_active_configuration(
             config_path,
             load_config_path=f"/app/{CONTAINER_ZENML_CONFIG_DIR}",
         )
