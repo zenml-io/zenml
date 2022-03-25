@@ -19,9 +19,9 @@ from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.config.global_config import (
-    BaseConfiguration,
-    GlobalConfiguration,
+from zenml.config.base_config import BaseConfiguration
+from zenml.config.global_config import GlobalConfiguration
+from zenml.config.profile_config import (
     ProfileConfiguration,
     get_default_store_type,
 )

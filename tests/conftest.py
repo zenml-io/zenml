@@ -24,7 +24,8 @@ from pytest_mock import MockerFixture
 
 from tests.venv_clone_utils import clone_virtualenv
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.config.global_config import GlobalConfiguration, ProfileConfiguration
+from zenml.config.global_config import GlobalConfiguration
+from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline

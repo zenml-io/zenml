@@ -15,7 +15,6 @@ import json
 import os
 import shutil
 import uuid
-from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, cast
 
 from pydantic import BaseModel, Field, ValidationError, validator
@@ -23,8 +22,11 @@ from pydantic.main import ModelMetaclass
 from semver import VersionInfo  # type: ignore [import]
 
 from zenml import __version__
-from zenml.constants import ENV_ZENML_DEFAULT_STORE_TYPE
-from zenml.enums import StoreType
+from zenml.config.base_config import BaseConfiguration
+from zenml.config.profile_config import (
+    DEFAULT_PROFILE_NAME,
+    ProfileConfiguration,
+)
 from zenml.io import fileio
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
@@ -35,7 +37,6 @@ logger = get_logger(__name__)
 
 
 LEGACY_CONFIG_FILE_NAME = ".zenglobal.json"
-DEFAULT_PROFILE_NAME = "default"
 CONFIG_ENV_VAR_PREFIX = "ZENML_"
 
 
@@ -79,175 +80,6 @@ class GlobalConfigMetaClass(ModelMetaclass):
             cls._global_config._add_and_activate_default_profile()
 
         return cls._global_config
-
-
-class BaseConfiguration(ABC):
-    """Base class for global configuration management.
-
-    This class defines the common interface related to profile and stack
-    management that all global configuration classes must implement.
-    Both the GlobalConfiguration and Repository classes implement this class,
-    since they share similarities concerning the management of active profiles
-    and stacks.
-    """
-
-    @abstractmethod
-    def activate_profile(self, profile_name: str) -> None:
-        """Set the active profile
-
-        Args:
-            profile_name: The name of the profile to set as active.
-
-        Raises:
-            KeyError: If the profile with the given name does not exist.
-        """
-
-    @property
-    @abstractmethod
-    def active_profile(self) -> Optional["ProfileConfiguration"]:
-        """Return the profile set as active for the repository.
-
-        Returns:
-            The active profile or None, if no active profile is set.
-        """
-
-    @property
-    @abstractmethod
-    def active_profile_name(self) -> Optional[str]:
-        """Return the name of the profile set as active.
-
-        Returns:
-            The active profile name or None, if no active profile is set.
-        """
-
-    @abstractmethod
-    def activate_stack(self, stack_name: str) -> None:
-        """Set the active stack for the active profile.
-
-        Args:
-            stack_name: name of the stack to activate
-
-        Raises:
-            KeyError: If the stack with the given name does not exist.
-        """
-
-    @property
-    @abstractmethod
-    def active_stack_name(self) -> Optional[str]:
-        """Get the active stack name from the active profile.
-
-        Returns:
-            The active stack name or None if no active stack is set or if
-            no active profile is set.
-        """
-
-
-def get_default_store_type() -> StoreType:
-    """Return the default store type.
-
-    The default store type can be set via the environment variable
-    ZENML_DEFAULT_STORE_TYPE. If this variable is not set, the default
-    store type is set to 'LOCAL'.
-
-    NOTE: this is a global function instead of a default
-    `ProfileConfiguration.store_type` value because it makes it easier to mock
-    in the unit tests.
-
-    Returns:
-        The default store type.
-    """
-    store_type = os.getenv(ENV_ZENML_DEFAULT_STORE_TYPE)
-    if store_type and store_type in StoreType.values():
-        return StoreType(store_type)
-    return StoreType.LOCAL
-
-
-class ProfileConfiguration(BaseModel):
-    """Stores configuration profile options.
-
-    Attributes:
-        name: Name of the profile.
-        store_url: URL pointing to the ZenML store backend.
-        store_type: Type of the store backend.
-        active_stack: Optional name of the active stack.
-        _config: global configuration to which this profile belongs.
-    """
-
-    name: str
-    store_url: Optional[str]
-    store_type: StoreType = Field(default_factory=get_default_store_type)
-    active_stack: Optional[str]
-    _config: Optional["GlobalConfiguration"]
-
-    def __init__(
-        self, config: Optional["GlobalConfiguration"] = None, **kwargs: Any
-    ) -> None:
-        """Initializes a ProfileConfiguration object.
-
-        Args:
-            config: global configuration to which this profile belongs. When not
-                specified, the default global configuration path is used.
-            **kwargs: additional keyword arguments are passed to the
-                BaseModel constructor.
-        """
-        self._config = config
-        super().__init__(**kwargs)
-
-    @property
-    def config_directory(self) -> str:
-        """Directory where the profile configuration is stored."""
-        return os.path.join(
-            self.global_config.config_directory, "profiles", self.name
-        )
-
-    def initialize(self) -> None:
-        """Initialize the profile."""
-
-        # import here to avoid circular dependency
-        from zenml.repository import Repository
-
-        logger.info("Initializing profile `%s`...", self.name)
-
-        # Create and initialize the profile using a special repository instance.
-        # This also validates and updates the store URL configuration and creates
-        # all necessary resources (e.g. paths, initial DB, default stacks).
-        repo = Repository(profile=self)
-
-        if not self.active_stack:
-            stacks = repo.stacks
-            if stacks:
-                self.active_stack = stacks[0].name
-
-    def cleanup(self) -> None:
-        """Cleanup the profile directory."""
-        if fileio.is_dir(self.config_directory):
-            fileio.rm_dir(self.config_directory)
-
-    @property
-    def global_config(self) -> "GlobalConfiguration":
-        """Return the global configuration to which this profile belongs."""
-        return self._config or GlobalConfiguration()
-
-    def activate_stack(self, stack_name: str) -> None:
-        """Set the active stack for the profile.
-
-        Args:
-            stack_name: name of the stack to activate
-        """
-        self.active_stack = stack_name
-        self.global_config._write_config()
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # Validate attributes when assigning them. We need to set this in order
-        # to have a mix of mutable and immutable attributes
-        validate_assignment = True
-        # Ignore extra attributes from configs of previous ZenML versions
-        extra = "ignore"
-        # all attributes with leading underscore are private and therefore
-        # are mutable and not included in serialization
-        underscore_attrs_are_private = True
 
 
 class GlobalConfiguration(

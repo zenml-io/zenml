@@ -23,11 +23,9 @@ from typing import Any, Dict, List, Optional, Type, cast
 import yaml
 from pydantic import BaseModel, ValidationError
 
-from zenml.config.global_config import (
-    BaseConfiguration,
-    GlobalConfiguration,
-    ProfileConfiguration,
-)
+from zenml.config.base_config import BaseConfiguration
+from zenml.config.global_config import GlobalConfiguration
+from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REPOSITORY_DIRECTORY_NAME
 from zenml.enums import StackComponentFlavor, StackComponentType, StoreType
 from zenml.environment import Environment
