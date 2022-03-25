@@ -175,20 +175,6 @@ with ZenML. Metadata are stored inside the metadata store.
 An orchestrator manages the running of each step of the pipeline, administering the actual pipeline runs. The orchestrator is especially important, as it defines **where** the actual pipeline job runs. Think of it as the 
 `root` of any pipeline job, that controls how and where each individual step within a pipeline is executed. Therefore, the orchestrator can be used to great effect to scale jobs in production.
 
-## Step Operator
-
-The step operator defers the execution of individual steps in a pipeline to specialized runtime environments that are optimized for Machine Learning workloads.
-
-Thjs is helpful when there is a requirement for specialized cloud backends ✨ for different steps. One example could be using powerful GPU instances for training jobs or distributed compute for ingestion streams.
-
-### How is it different from an orchestrator?
-
-An orchestrator is a higher level entity than a step operator. It is what executes the 
-entire ZenML pipeline code and decides what specifications and backends to use for each step. 
-
-The orchestrator runs the code which launches your step in a backend of your choice. If you don’t specify a step operator, then the step code runs on the same compute instance as your orchestrator.
-
-
 ## Container Registry
 
 A container registry is a store for (Docker) containers. A ZenML workflow involving a container registry would automatically 
@@ -227,11 +213,13 @@ cloud-based stack, which they can configure. After a stack has been set as activ
 
 ## Step Operator
 
+The step operator defers the execution of individual steps in a pipeline to specialized runtime environments that are optimized for Machine Learning workloads. This is helpful when there is a requirement for specialized cloud backends ✨ for different steps. One example could be using powerful GPU instances for training jobs or distributed compute for ingestion streams.
+
 While an orchestrator defines how and where your entire pipeline runs, a step operator defines how and where an individual 
 step runs. This can be useful in a variety of scenarios. An example could be if one step within a pipeline should run on a 
 separate environment equipped with a GPU (like a trainer step).
 
-An example is as follows. Let's say we want to run training as a custom [AWS Sagemaker](https://aws.amazon.com/pm/sagemaker/) 
+A concrete example is as follows. Let's say we want to run training as a custom [AWS Sagemaker](https://aws.amazon.com/pm/sagemaker/) 
 job. 
 
 This operator can be registered as follows:

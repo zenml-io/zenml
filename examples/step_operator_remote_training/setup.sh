@@ -7,5 +7,5 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install aws sagemaker sklearn -f
+  zenml integration install aws s3 sagemaker sklearn -f
 }

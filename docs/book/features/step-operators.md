@@ -1,0 +1,166 @@
+---
+description: Execute individual steps in specialized environments.
+---
+# From example (TO BE REMOVED)
+From Sagemaker Example:
+
+In order to run the example, you need to setup a few things to allow ZenML to interact with Sagemaker.
+
+* First, you need to create a role in the IAM console that you want the jobs running in Sagemaker to assume. This role should at least have the `AmazonS3FullAccess` and `AmazonSageMakerFullAccess` policies applied. Check [this link](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) to learn how to create a role.
+
+* Next, you need to choose what instance type needs to be used to run your jobs. You can get the list [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html).
+
+* Optionally, you can choose an S3 bucket to which Sagemaker should output any artifacts from your training run. 
+
+* You can also supply an experiment name if you have one created already. Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-create.html) to know how. If not provided, the job runs would be independent.
+
+* You can also choose a custom docker image that you want ZenML to use as a base image for creating an environment to run your jobs in Sagemaker. 
+
+* You need to have the `aws` cli set up with the right credentials. Make sure you have the permissions to create and manage Sagemaker runs. 
+
+* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Sagemaker will run. Check out the [cloud guide](https://docs.zenml.io/features/cloud-pipelines/guide-aws-gcp-azure) to learn how you can set up an elastic container registry. 
+
+Once you have all these values handy, you can proceed to setting up the components required for your stack.
+
+In order to run this example, we have to set up a few things to allow ZenML to 
+interact with AzureML:
+
+From Azure:
+* First, you require a `Machine learning` [resource on Azure](https://docs.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources). 
+If you don't already have one, you can create it through the `All resources` 
+page on the Azure portal. 
+* Once your resource is created, you can head over to the `Azure Machine 
+Learning Studio` and [create a compute cluster](https://docs.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources#cluster) 
+to run your pipelines. 
+* Next, you will need an `environment` for your pipelines. You can simply 
+create one following the guide [here](https://docs.microsoft.com/en-us/azure/machine-learning/how-to-manage-environments-in-studio).
+* Finally, we have to set up our artifact store. In order to do this, we need 
+to [create a blob container](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal)
+on Azure. 
+
+Optionally, you can also create a [Service Principal for authentication](https://docs.microsoft.com/en-us/azure/developer/java/sdk/identity-service-principal-auth). 
+This might especially be useful if you are planning to orchestrate your 
+pipelines in a non-local setup such as Kubeflow where your local authentication 
+won't be accessible. However, for the sake of simplicity, this is considered to 
+be out of the scope of this example.
+
+From GCP:
+
+In order to run the example, you need to setup a few things to allow ZenML to interact with GCP.
+
+* First, you should create a service account
+
+* Next, you need to choose what instance type needs to be used to run your jobs. You can get the list [here]()
+
+* You can choose an GCP bucket to which Vertex should output any artifacts from your training run. 
+
+* You can also choose a custom docker image that you want ZenML to use as a base image for creating an environment to run your jobs on Vertex AI. 
+
+* You need to have the `gcp` cli set up with the right credentials. Make sure you have the permissions to create and manage Vertex AI custom jobs. 
+
+* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Vertex will use. Check out the [cloud guide](https://docs.zenml.io/features/cloud-pipelines/guide-aws-gcp-azure) to learn how you can set up an GCP container registry. 
+
+Once you have all these values handy, you can proceed to setting up the components required for your stack.
+
+
+
+# Run steps in specialized environments with step operators
+
+The step operator defers the execution of individual steps in a pipeline to specialized runtime environments that are optimized for Machine Learning workloads. This is helpful when there is a requirement for specialized cloud backends ✨ for different steps. One example could be using powerful GPU instances for training jobs or distributed compute for ingestion streams.
+
+While an orchestrator defines how and where your entire pipeline runs, a step operator defines how and where an individual 
+step runs. This can be useful in a variety of scenarios. An example could be if one step within a pipeline should run on a 
+separate environment equipped with a GPU (like a trainer step).
+
+An operator can be registered as follows:
+
+```bash
+zenml step-operator register OPERATOR_NAME \
+    --type=OPERATOR_TYPE
+    ...
+```
+
+```python
+@step(custom_step_operator=OPERATOR_NAME)
+def trainer(...) -> ...:
+    """Train a model"""
+    # This step will run in environment specified by operator
+```
+
+## Pre-built Step Operators
+
+ZenML has support for some pre-built step operators, namely:
+
+- AWS Sagemaker 
+- AzureML
+- Vertex AI
+
+These operators are all to be used for the use-case of running a training job on specialized cloud backends.
+
+{% tabs %}
+{% tab title="AzureML" %}
+* First, you require a `Machine learning` [resource on Azure](https://docs.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources). 
+If you don't already have one, you can create it through the `All resources` 
+page on the Azure portal. 
+* Once your resource is created, you can head over to the `Azure Machine 
+Learning Studio` and [create a compute cluster](https://docs.microsoft.com/en-us/azure/machine-learning/quickstart-create-resources#cluster) 
+to run your pipelines. 
+* Next, you will need an `environment` for your pipelines. You can simply 
+create one following the guide [here](https://docs.microsoft.com/en-us/azure/machine-learning/how-to-manage-environments-in-studio).
+* Finally, we have to set up our artifact store. In order to do this, we need 
+to [create a blob container](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-quickstart-blobs-portal)
+on Azure. 
+
+Optionally, you can also create a [Service Principal for authentication](https://docs.microsoft.com/en-us/azure/developer/java/sdk/identity-service-principal-auth). 
+This might especially be useful if you are planning to orchestrate your 
+pipelines in a non-local setup such as Kubeflow where your local authentication 
+won't be accessible.
+
+The command to register the stack component would like the following.
+
+```bash
+zenml step-operator register azureml \
+    --type=azureml \
+    --subscription_id=<AZURE_SUBSCRIPTION_ID> \
+    --resource_group=<AZURE_RESOURCE_GROUP> \
+    --workspace_name=<AZURE_WORKSPACE_NAME> \
+    --compute_target_name=<AZURE_COMPUTE_TARGET_NAME> \
+    --environment_name=<AZURE_ENVIRONMENT_NAME> 
+```
+
+{% endtab %}
+
+{% tab title="Amazon SageMaker" %}
+* First, you need to create a role in the IAM console that you want the jobs running in Sagemaker to assume. This role should at least have the `AmazonS3FullAccess` and `AmazonSageMakerFullAccess` policies applied. Check [this link](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) to learn how to create a role.
+
+* Next, you need to choose what instance type needs to be used to run your jobs. You can get the list [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html).
+
+* Optionally, you can choose an S3 bucket to which Sagemaker should output any artifacts from your training run. 
+
+* You can also supply an experiment name if you have one created already. Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-create.html) to know how. If not provided, the job runs would be independent.
+
+* You can also choose a custom docker image that you want ZenML to use as a base image for creating an environment to run your jobs in Sagemaker. 
+
+* You need to have the `aws` cli set up with the right credentials. Make sure you have the permissions to create and manage Sagemaker runs. 
+
+* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Sagemaker will run.
+
+Once you have all these values handy, you can proceed to setting up the components required for your stack.
+
+The command to register the stack component would like the following.
+
+```bash
+zenml step-operator register sagemaker \
+    --type=sagemaker
+    --role=<SAGEMAKER_ROLE> \
+    --instance_type=<SAGEMAKER_INSTANCE_TYPE>
+    --base_image=<CUSTOM_BASE_IMAGE>
+    --bucket_name=<S3_BUCKET_NAME>
+    --experiment_name=<SAGEMAKER_EXPERIMENT_NAME>
+```
+
+{% endtab %}
+
+A concrete example of using these step operators can be found in the [GitHub repository](https://github.com/zenml-io/zenml/tree/main/examples)
+
+## How to create your own step operator

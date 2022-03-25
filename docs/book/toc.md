@@ -38,10 +38,11 @@
 * [Run Your Pipelines in the Cloud](features/guide-aws-gcp-azure.md)
 * [Pipeline Configuration](features/pipeline-configuration.md)
 * [Caching](features/caching.md)
-* [Standardized Artifacts](features/artifacts.md)
+* [Run steps in specialized environments](features/step-operators.md)
 * [Convenient Step Fixtures](features/step-fixtures.md)
 * [Continuous Training and Deployment](features/continous-training-and-deployment.md)
 * [Managing External Services](features/services.md)
+* [Standardized Artifacts](features/artifacts.md)
 
 ## Support
 
