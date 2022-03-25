@@ -174,7 +174,7 @@ class VertexStepOperator(BaseStepOperator):
             requirements: List of pip requirements that must be installed
                 inside the step operator environment.
         """
-        job_labels = {"source": f"zenml-{__version__}"}
+        job_labels = {"source": f"zenml-{__version__.replace('.', '_')}"}
 
         # Step 1: Authenticate with Google
         credentials, project_id = self._get_authentication()
