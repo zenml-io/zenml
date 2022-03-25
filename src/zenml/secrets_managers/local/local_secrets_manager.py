@@ -12,10 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import uuid
 from typing import Any, Dict, List
 
 from zenml.cli.utils import error
-from zenml.constants import LOCAL_SECRETS_FILENAME
+from zenml.constants import LOCAL_SECRETS_FILENAME, LOCAL_STORES_DIRECTORY_NAME
 from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.io.fileio import create_file_if_not_exists, remove
 from zenml.io.utils import get_global_config_directory
@@ -29,19 +30,30 @@ from zenml.utils.secrets_manager_utils import decode_secret_dict, encode_secret
 logger = get_logger(__name__)
 
 
+def get_secret_store_path(uuid: uuid.UUID) -> str:
+    """Get the path to the secret store."""
+    return os.path.join(
+        get_global_config_directory(),
+        LOCAL_STORES_DIRECTORY_NAME,
+        str(uuid),
+        LOCAL_SECRETS_FILENAME,
+    )
+
+
 class LocalSecretsManager(BaseSecretsManager):
     """Class for ZenML local filebased secret manager."""
 
-    secrets_file: str = os.path.join(
-        get_global_config_directory(),
-        LOCAL_SECRETS_FILENAME,
-    )
+    secrets_file: str
     supports_local_execution: bool = True
     supports_remote_execution: bool = False
 
     def __init__(self, *args: Any, **kwargs: Any):
+        if "secrets_file" not in kwargs:
+            temp_uuid = uuid.uuid4()
+            kwargs["secrets_file"] = get_secret_store_path(temp_uuid)
+            kwargs["uuid"] = temp_uuid
+            create_file_if_not_exists(kwargs["secrets_file"])
         super().__init__(*args, **kwargs)
-        create_file_if_not_exists(self.secrets_file)
 
     def _verify_secret_exists(self, set_key: str) -> bool:
         """Checks if a secret exists."""
