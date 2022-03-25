@@ -161,4 +161,40 @@ zenml step-operator register sagemaker \
 
 A concrete example of using these step operators can be found in the [GitHub repository](https://github.com/zenml-io/zenml/tree/main/examples)
 
-## How to create your own step operator
+## Building your own StepOperator
+
+To have ZenML run your steps in your own backend, all you need to do is implement the [BaseStepOperator](https://apidocs.zenml.io) class with the code that sets up your environment and submits the ZenML entrypoint command to it. 
+
+```python
+class BaseStepOperator(StackComponent, ABC):
+    """Base class for all ZenML step operators."""
+
+    ...
+        ...
+    @abstractmethod
+    def launch(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        requirements: List[str],
+        entrypoint_command: List[str],
+    ) -> None:
+        """Abstract method to execute a step.
+        Concrete step operator subclasses must implement the following
+        functionality in this method:
+        - Prepare the execution environment and install all the necessary
+          `requirements`
+        - Launch a **synchronous** job that executes the `entrypoint_command`
+        Args:
+            pipeline_name: Name of the pipeline which the step to be executed
+                is part of.
+            run_name: Name of the pipeline run which the step to be executed
+                is part of.
+            entrypoint_command: Command that executes the step.
+            requirements: List of pip requirements that must be installed
+                inside the step operator environment.
+        """
+        # Write custom logic here.
+```
+
+The launch method is what gets called when ZenML is executing your step and it is responsible for any logic that pertains to your custom backend.
