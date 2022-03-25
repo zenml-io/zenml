@@ -497,7 +497,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
     def _get_environment_vars_from_secrets(
         self, secrets: List[str]
     ) -> Dict[str, str]:
-        """Get key-value pairs from list of secrets provided by the user."""
+        """Get key-value pairs from list of secrets provided by the user.
+
+        Args:
+            secrets: List of secrets provided by the user.
+
+        Returns:
+            A dictionary of key-value pairs.
+
+        Raises:
+            ProvisioningError: If the stack has no secrets manager."""
 
         secret_manager = Repository().active_stack.secrets_manager
         if not secret_manager:
