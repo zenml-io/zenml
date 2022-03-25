@@ -4,7 +4,7 @@ description: Deploy pipelines to the public cloud.
 
 # Guide for cloud-specific deployments
 
-This guide will show how you can run the a pipeline in Kubeflow Pipelines deployed to a public cloud cluster. We will start with some pre-requisites and then move on to show the integration of your cloud provider's components with your ZenML stack.
+This guide will show how you can run the a pipeline in Kubeflow Pipelines deployed to a public cloud cluster. We will start with some pre-requisites and then move on to show the integration of your cloud provider's components with your ZenML stack. In addition to configuring the stack components in this guide, you can optionally run a pipeline step on a specialized cloud backend too. Check out the step operators [guide](../features/step-operators.md) for that!
 
 ## Pre-requisites
 

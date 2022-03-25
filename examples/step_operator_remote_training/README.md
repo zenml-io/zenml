@@ -44,10 +44,12 @@ the step operator you would like to run on:
 Sagemaker offers specialized compute instances to run your training jobs and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit individual steps to be run on compute instances managed by Amazon Sagemaker. 
 
 The stack will consist of:
-- The local metadata store
-- The local orchestrator
-- An S3 artifact store
-- The Sagemaker step operator
+* The **local metadata store** which will track the configuration of your 
+executions.
+* The **local orchestrator** which will be executing your pipelines steps.
+* An **S3 artifact store** which will be responsible for storing the
+artifacts of your pipeline.
+* The **Sagemaker step operator** which will be utilized to run the training step on Sagemaker.
 
 To configure resources for the step operators, please follow [this guide](https://docs.zenml.io/features/step-operators) and then proceed with the following steps:
 
@@ -93,10 +95,9 @@ The stack will consist of:
 * The **local metadata store** which will track the configuration of your 
 executions.
 * The **local orchestrator** which will be executing your pipelines steps.
-* The **azure artifact store** which will be responsible for storing the
+* An **azure artifact store** which will be responsible for storing the
 artifacts of your pipeline.
-* The **azureml step operator** which will be utilized to run the training step 
-on Azure.
+* The **azureml step operator** which will be utilized to run the training step on Azure.
 
 To configure resources for the step operators, please follow [this guide](https://docs.zenml.io/features/step-operators) and then proceed with the following steps:
 
@@ -130,10 +131,13 @@ and has a beautiful UI to track and manage your models and logs. You can now use
 run on a managed training job managed on Vertex AI. 
 
 The stack will consist of:
-- The local metadata store
-- The local orchestrator
-- An GCP artifact store
-- The Vertex AI step operator
+* The **local metadata store** which will track the configuration of your 
+executions.
+* The **local orchestrator** which will be executing your pipelines steps.
+* A **GCP Bucket artifact store** which will be responsible for storing the
+artifacts of your pipeline.
+* The **Vertex AI step operator** which will be utilized to run the training step 
+on GCP.
 
 To configure resources for the step operators, please follow [this guide](https://docs.zenml.io/features/step-operators) and then proceed with the following steps:
 
@@ -149,11 +153,10 @@ zenml step-operator register vertex \
     --region=eu-west1 \
     --machine_type=n1-standard-4 \
     --base_image=<CUSTOM_BASE_IMAGE>
-    --bucket_name=<S3_BUCKET_NAME>
-    --experiment_name=<SAGEMAKER_EXPERIMENT_NAME>
+    --accelerator_type=...
 
 # register the container registry
-zenml container-registry register gcr_registry --type=default --uri=<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+zenml container-registry register gcr_registry --type=default --uri=gcr.io/<PROJECT-ID>/<IMAGE>
 
 # register the sagemaker stack
 zenml stack register vertex_training_stack \
