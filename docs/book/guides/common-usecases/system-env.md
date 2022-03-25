@@ -36,3 +36,8 @@ Set to `false` to disable the rich traceback:
 ```bash
 ZENML_ENABLE_RICH_TRACEBACK=true
 ```
+
+Path to global ZenML config:
+```bash
+ZENML_CONFIG_PATH
+```
