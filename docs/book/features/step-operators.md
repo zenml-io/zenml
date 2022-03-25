@@ -101,15 +101,13 @@ zenml step-operator register sagemaker \
 
 {% tab title="GCP Vertex AI" %}
 
-* First, you should create a [service account](https://cloud.google.com/iam/docs/service-accounts).
+* You need to have the `gcp` cli set up with the right credentials. Make sure you have the permissions to create and manage Vertex AI custom jobs. Preferably, you should create a [service account](https://cloud.google.com/iam/docs/service-accounts) with the right permissions to create Vertex AI jobs (`roles/aiplatform.admin`) and push to the Artifact/Container registry (`roles/(roles/storage.admin`). Then set the `GOOGLE_APPLICATION_CREDENTIALS` env variable to point to the service account file. 
 
 * Next, you need to choose what instance type needs to be used to run your jobs. You can get the list [here]( https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types).
 
 * You can choose a [GCP bucket](https://cloud.google.com/storage/docs/creating-buckets) to which Vertex should output any artifacts from your training run. 
 
 * You can also choose a custom docker image that you want ZenML to use as a base image for creating an environment to run your jobs on Vertex AI. 
-
-* You need to have the `gcp` cli set up with the right credentials. Make sure you have the permissions to create and manage Vertex AI custom jobs. 
 
 * A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Vertex will use. Check out the [cloud guide](../features/guide-aws-gcp-azure.md) to learn how you can set up an GCP container registry. 
 
@@ -122,7 +120,7 @@ zenml step-operator register vertex \
     --type=vertex \
     --project=zenml-core \
     --service_account_path=... \
-    --region=eu-west1 \
+    --region=europe-west1 \
     --machine_type=n1-standard-4 \
     --base_image=<CUSTOM_BASE_IMAGE> \
     --accelerator_type=...
