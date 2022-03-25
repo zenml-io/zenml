@@ -318,7 +318,7 @@ class _FunctionExecutor(BaseExecutor):
         Returns:
             Return the output of `handle_input()` of selected materializer.
         """
-        # Make an exception for all BaseArtifact, return artifact
+        # Skip materialization for BaseArtifact and its subtypes.
         if issubclass(data_type, BaseArtifact):
             if data_type != type(artifact):
                 logger.warning(
@@ -346,7 +346,7 @@ class _FunctionExecutor(BaseExecutor):
             artifact: A TFX artifact type.
             data: The object to be passed to `handle_return()`.
         """
-        # Make an exception for BaseArtifact, return artifact
+        # Skip materialization for BaseArtifact and subclasses.
         if issubclass(type(data), BaseArtifact):
             return
 
