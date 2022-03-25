@@ -23,6 +23,8 @@ class ArbitrarySecretSchema(BaseSecretSchema):
     """Schema for arbitrary collections of key value pairs with no
     predefined schema."""
 
+    schema_type: SecretSchemaType = SecretSchemaType.ARBITRARY
+
     arbitrary_kv_pairs: Dict[str, Any]
 
     @root_validator(pre=True)
@@ -47,8 +49,3 @@ class ArbitrarySecretSchema(BaseSecretSchema):
 
         values["arbitrary_kv_pairs"] = arbitrary_kv_pairs
         return values
-
-    @property
-    def type(self) -> SecretSchemaType:
-        """The SecretSchema type."""
-        return SecretSchemaType.ARBITRARY

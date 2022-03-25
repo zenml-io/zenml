@@ -21,8 +21,4 @@ class AWSSecretSchema(BaseSecretSchema):
     aws_access_key_id: str
     aws_secret_access_key: str
     aws_session_token: Optional[str]
-
-    @property
-    def type(self) -> SecretSchemaType:
-        """The SecretSchema type."""
-        return SecretSchemaType.AWS
+    schema_type: SecretSchemaType = SecretSchemaType.AWS

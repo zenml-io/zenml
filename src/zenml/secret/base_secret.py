@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Any, Dict, List
 
 from pydantic import BaseModel
@@ -21,11 +21,7 @@ from zenml.enums import SecretSchemaType
 
 class BaseSecretSchema(BaseModel, ABC):
     name: str
-
-    @property
-    @abstractmethod
-    def type(self) -> SecretSchemaType:
-        """The schema type."""
+    schema_type: SecretSchemaType
 
     @property
     def content(self) -> Dict[str, Any]:
