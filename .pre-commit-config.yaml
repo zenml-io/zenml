@@ -27,3 +27,8 @@ repos:
         files: ^src/zenml/|^tests/
         types: [file, python]
         pass_filenames: false
+
+  -   repo: https://github.com/terrencepreilly/darglint
+      rev: master
+      hooks:
+      - id: darglint
