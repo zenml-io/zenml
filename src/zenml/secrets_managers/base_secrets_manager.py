@@ -29,11 +29,19 @@ class BaseSecretsManager(StackComponent, ABC):
 
     @abstractmethod
     def register_secret(self, secret: BaseSecretSchema) -> None:
-        """Registers a new secret."""
+        """Registers a new secret.
+
+        Args:
+            secret: The secret to register.
+        """
 
     @abstractmethod
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
-        """Gets the value of a secret."""
+        """Gets the value of a secret.
+
+        Args:
+            secret_name: The name of the secret to get.
+        """
 
     @abstractmethod
     def get_all_secret_keys(self) -> List[str]:
@@ -41,12 +49,24 @@ class BaseSecretsManager(StackComponent, ABC):
 
     @abstractmethod
     def update_secret(self, secret: BaseSecretSchema) -> None:
-        """Update an existing secret."""
+        """Update an existing secret.
+
+        Args:
+            secret: The secret to update.
+        """
 
     @abstractmethod
     def delete_secret(self, secret_name: str) -> None:
-        """Delete an existing secret."""
+        """Delete an existing secret.
+
+        Args:
+            secret_name: The name of the secret to delete.
+        """
 
     @abstractmethod
     def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete all existing secrets."""
+        """Delete all existing secrets.
+
+        Args:
+            force: Whether to force deletion of secrets.
+        """

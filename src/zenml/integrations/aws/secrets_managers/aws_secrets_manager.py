@@ -15,7 +15,6 @@ import json
 from typing import Any, ClassVar, Dict, List
 
 import boto3 as boto3  # type: ignore
-from botocore.exceptions import ClientError  # type: ignore
 
 from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.logger import get_logger
