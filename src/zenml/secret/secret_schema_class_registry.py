@@ -70,6 +70,9 @@ class SecretSchemaClassRegistry:
         Args:
             secret_schema: The flavor of the SecretSchema class to return.
 
+        Returns:
+            The SecretSchema class for the given type and flavor.
+
         Raises:
             KeyError: If no SecretSchema class is registered for the given type
                 and flavor.
@@ -81,7 +84,7 @@ class SecretSchemaClassRegistry:
         try:
             return available_schemas[secret_schema]
         except KeyError:
-            # TODO [HIGH]: Propably remove this exception catch. Doesn't apply
+            # TODO [HIGH]: Probably remove this exception catch. Doesn't apply
             # to SecretSchema
             # The SecretSchema might be part of an integration
             # -> Activate the integrations and try again
@@ -115,7 +118,14 @@ def register_secret_schema_class(
     """
 
     def decorator_function(cls: Type[C]) -> Type[C]:
-        """Registers the SecretSchema class and returns it unmodified."""
+        """Registers the SecretSchema class and returns it unmodified.
+
+        Args:
+            cls: The SecretSchema class to register.
+
+        Returns:
+            The (unmodified) SecretSchema class to register.
+        """
         SecretSchemaClassRegistry.register_class(
             secret_schema=secret_schema,
             secret=cls,

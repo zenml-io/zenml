@@ -34,6 +34,9 @@ class ArbitrarySecretSchema(BaseSecretSchema):
 
         Args:
             values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the object constructor
         """
         all_required_field_names = {
             field.alias

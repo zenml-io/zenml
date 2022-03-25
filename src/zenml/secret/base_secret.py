@@ -28,6 +28,9 @@ class BaseSecretSchema(BaseModel, ABC):
         """The concept of SecretSchemas supports strongly typed
         secret schemas as well as arbitrary collections of key-value pairs.
         This property unifies all attributes into a content dictionary.
+
+        Returns:
+            A dictionary containing the content of the SecretSchema.
         """
         fields_dict = self.dict()
         fields_dict.pop("name")
@@ -40,7 +43,11 @@ class BaseSecretSchema(BaseModel, ABC):
     def get_schema_keys(cls) -> List[str]:
         """Get all attribute keys that are not part of the ignored set.
         These schema keys can be used to define all
-        required key-value pairs of a secret schema"""
+        required key-value pairs of a secret schema
+
+        Returns:
+            A list of all attribute keys that are not part of the ignored set.
+        """
 
         ignored_keys = ["name", "arbitrary_kv_pairs"]
         return [
