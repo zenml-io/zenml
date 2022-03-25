@@ -28,6 +28,7 @@ from zenml.stack.stack_component_class_registry import (
 )
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
+from zenml.utils.source_utils import get_source_root_path
 
 
 @register_stack_component_class(
@@ -95,7 +96,7 @@ class SagemakerStepOperator(BaseStepOperator):
         image_name = f"{registry_uri}/zenml-sagemaker:{pipeline_name}"
 
         docker_utils.build_docker_image(
-            build_context_path=str(repo.root),
+            build_context_path=get_source_root_path(),
             image_name=image_name,
             entrypoint=" ".join(entrypoint_command),
             requirements=set(requirements),

@@ -41,7 +41,6 @@ from zenml.artifact_stores import LocalArtifactStore
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.artifacts.type_registry import type_registry
-from zenml.exceptions import RepositoryNotFoundError
 from zenml.integrations.registry import integration_registry
 from zenml.orchestrators.utils import execute_step
 from zenml.repository import Repository
@@ -471,18 +470,7 @@ def main() -> None:
     # available
     integration_registry.activate_integrations()
 
-    try:
-        repo = Repository()
-    except RepositoryNotFoundError:
-        raise RepositoryNotFoundError(
-            "Unable to find ZenML repository in docker container. Make sure "
-            "your ZenML repository (.zen directory) is not included in the "
-            "dockerignore file used when building the docker image to run this "
-            "pipeline using Kubeflow Pipelines. This dockerignore might be "
-            "specified using the `@pipeline` decorator or a file named "
-            "'.dockerignore' at the root of your local ZenML repository."
-        ) from None
-
+    repo = Repository()
     metadata_store = repo.active_stack.metadata_store
     metadata_connection = metadata.Metadata(
         metadata_store.get_tfx_metadata_config()

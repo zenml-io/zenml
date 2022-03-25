@@ -67,35 +67,37 @@ class Chapter2Pipeline(BasePipeline):
         )
 
 
-# Create an instance of the pipeline and run it
-pipeline_instance = Chapter2Pipeline(
-    required_integrations=[SKLEARN],
-    datasource=builtin_steps.PandasDatasource(
-        config=builtin_steps.PandasDatasourceConfig(path=DATASET_PATH)
-    ),
-    splitter=sklearn_steps.SklearnSplitter(
-        config=sklearn_steps.SklearnSplitterConfig(
-            ratios={"train": 0.7, "test": 0.15, "validation": 0.15}
-        )
-    ),
-    analyzer=builtin_steps.PandasAnalyzer(
-        config=builtin_steps.PandasAnalyzerConfig(
-            percentiles=[0.2, 0.4, 0.6, 0.8, 1.0]
-        )
-    ),
-    preprocessor=sklearn_steps.SklearnStandardScaler(
-        config=sklearn_steps.SklearnStandardScalerConfig(
-            ignore_columns=["has_diabetes"]
-        )
-    ),
-)
+if __name__ == "__main__":
 
-pipeline_instance.run()
+    # Create an instance of the pipeline and run it
+    pipeline_instance = Chapter2Pipeline(
+        required_integrations=[SKLEARN],
+        datasource=builtin_steps.PandasDatasource(
+            config=builtin_steps.PandasDatasourceConfig(path=DATASET_PATH)
+        ),
+        splitter=sklearn_steps.SklearnSplitter(
+            config=sklearn_steps.SklearnSplitterConfig(
+                ratios={"train": 0.7, "test": 0.15, "validation": 0.15}
+            )
+        ),
+        analyzer=builtin_steps.PandasAnalyzer(
+            config=builtin_steps.PandasAnalyzerConfig(
+                percentiles=[0.2, 0.4, 0.6, 0.8, 1.0]
+            )
+        ),
+        preprocessor=sklearn_steps.SklearnStandardScaler(
+            config=sklearn_steps.SklearnStandardScalerConfig(
+                ignore_columns=["has_diabetes"]
+            )
+        ),
+    )
 
-# Post-execution
-repo = Repository()
-p = repo.get_pipeline(pipeline_name="Chapter2Pipeline")
-runs = p.runs
-print(f"Pipeline `Chapter2Pipeline` has {len(runs)} run(s)")
-run = runs[-1]
-print(f"The run you just made has {len(run.steps)} step(s).")
+    pipeline_instance.run()
+
+    # Post-execution
+    repo = Repository()
+    p = repo.get_pipeline(pipeline_name="Chapter2Pipeline")
+    runs = p.runs
+    print(f"Pipeline `Chapter2Pipeline` has {len(runs)} run(s)")
+    run = runs[-1]
+    print(f"The run you just made has {len(run.steps)} step(s).")

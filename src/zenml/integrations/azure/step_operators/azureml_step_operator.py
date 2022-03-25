@@ -30,11 +30,11 @@ from azureml.core.conda_dependencies import CondaDependencies
 
 from zenml.enums import StackComponentType, StepOperatorFlavor
 from zenml.environment import Environment as ZenMLEnvironment
-from zenml.repository import Repository
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.step_operators import BaseStepOperator
+from zenml.utils.source_utils import get_source_root_path
 
 
 @register_stack_component_class(
@@ -190,7 +190,7 @@ class AzureMLStepOperator(BaseStepOperator):
         )
 
         run_config = ScriptRunConfig(
-            source_directory=str(Repository().root),
+            source_directory=get_source_root_path(),
             environment=environment,
             compute_target=compute_target,
             command=entrypoint_command,

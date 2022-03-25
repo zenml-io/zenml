@@ -12,13 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import datetime as dt
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from sqlalchemy.engine.url import make_url
+from sqlalchemy.exc import ArgumentError
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-from zenml import __version__
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper
@@ -56,44 +59,103 @@ class ZenStackDefinition(SQLModel, table=True):
     )
 
 
-class ZenConfig(SQLModel, table=True):
-    """ "Singleton" Table with only one row storing config."""
-
-    create_time: Optional[dt.datetime] = Field(
-        default_factory=dt.datetime.now, primary_key=True
-    )
-    version: str
-
-
 class SqlStackStore(BaseStackStore):
     """Repository Implementation that uses SQL database backend"""
 
-    def __init__(self, url: str, *args: Any, **kwargs: Any) -> None:
-        """Create a new SqlStackStore.
+    def initialize(
+        self,
+        url: str,
+        *args: Any,
+        **kwargs: Any,
+    ) -> "SqlStackStore":
+        """Initialize a new SqlStackStore.
 
         Args:
             url: odbc path to a database.
             args, kwargs: additional parameters for SQLModel.
+
+        Returns:
+            The initialized stack store instance.
         """
 
         logger.debug("Initializing SqlStackStore at %s", url)
+        self._url = url
+
+        local_path = self.get_path_from_url(url)
+        if local_path:
+            fileio.create_dir_recursive_if_not_exists(str(local_path.parent))
+
         self.engine = create_engine(url, *args, **kwargs)
         SQLModel.metadata.create_all(self.engine)
         with Session(self.engine) as session:
-            if not session.exec(select(ZenConfig)).first():
-                session.add(ZenConfig(version=__version__))
             if not session.exec(select(ZenUser)).first():
                 session.add(ZenUser(id=1, name="LocalZenUser"))
             session.commit()
 
+        super().initialize(url, *args, **kwargs)
+
+        return self
+
     # Public interface implementations:
 
     @property
-    def version(self) -> str:
-        """Get the ZenML version."""
+    def type(self) -> StoreType:
+        """The type of stack store."""
+        return StoreType.SQL
+
+    @property
+    def url(self) -> str:
+        """URL of the repository."""
+        if not self._url:
+            raise RuntimeError(
+                "SQL stack store has not been initialized. Call `initialize` "
+                "before using the store."
+            )
+        return self._url
+
+    @staticmethod
+    def get_path_from_url(url: str) -> Optional[Path]:
+        """Get the local path from a URL, if it points to a local sqlite file.
+
+        This method first checks that the URL is a valid SQLite URL, which is
+        backed by a file in the local filesystem. All other types of supported
+        SQLAlchemy connection URLs are considered non-local and won't return
+        a valid local path.
+
+        Args:
+            url: The URL to get the path from.
+
+        Returns:
+            The path extracted from the URL, or None, if the URL does not
+            point to a local sqlite file.
+        """
+        if not SqlStackStore.is_valid_url(url):
+            raise ValueError(f"Invalid URL for SQL store: {url}")
+        if not url.startswith("sqlite:///"):
+            return None
+        url = url.replace("sqlite:///", "")
+        return Path(url)
+
+    @staticmethod
+    def get_local_url(path: str) -> str:
+        """Get a local SQL url for a given local path."""
+        return f"sqlite:///{path}/zenml.db"
+
+    @staticmethod
+    def is_valid_url(url: str) -> bool:
+        """Check if the given url is a valid SQL url."""
+        try:
+            make_url(url)
+        except ArgumentError:
+            logger.debug("Invalid SQL URL: %s", url)
+            return False
+
+        return True
+
+    def is_empty(self) -> bool:
+        """Check if the stack store is empty."""
         with Session(self.engine) as session:
-            conf = session.exec(select(ZenConfig)).one()
-        return conf.version
+            return session.exec(select(ZenStack)).first() is None
 
     def get_stack_configuration(
         self, name: str

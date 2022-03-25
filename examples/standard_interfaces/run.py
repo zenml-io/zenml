@@ -69,15 +69,18 @@ evaluator = sklearn_steps.SklearnEvaluator(
     sklearn_steps.SklearnEvaluatorConfig(label_class_column="has_diabetes")
 )
 
-# Create the pipeline and run it
-pipeline_instance = TrainingPipeline(
-    enable_cache=False,
-    required_integrations=[SKLEARN, TENSORFLOW],
-    datasource=datasource,
-    splitter=splitter,
-    analyzer=analyzer,
-    preprocessor=preprocessor,
-    trainer=trainer,
-    evaluator=evaluator,
-)
-pipeline_instance.run()
+
+if __name__ == "__main__":
+
+    # Create the pipeline and run it
+    pipeline_instance = TrainingPipeline(
+        enable_cache=False,
+        required_integrations=[SKLEARN, TENSORFLOW],
+        datasource=datasource,
+        splitter=splitter,
+        analyzer=analyzer,
+        preprocessor=preprocessor,
+        trainer=trainer,
+        evaluator=evaluator,
+    )
+    pipeline_instance.run()
