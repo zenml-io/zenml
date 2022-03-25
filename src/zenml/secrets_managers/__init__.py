@@ -21,8 +21,6 @@ from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
 )
 
-# TODO [MEDIUM]: Lazy load the AWSSecretsManager instead of importing it here.
-
 __all__ = [
     "BaseSecretsManager",
     "LocalSecretsManager",

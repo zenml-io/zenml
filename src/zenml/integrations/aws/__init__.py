@@ -32,6 +32,7 @@ class AWSIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.aws import artifact_stores  # noqa
         from zenml.integrations.aws import io  # noqa
+        from zenml.integrations.aws import secrets_managers  # noqa
         from zenml.integrations.aws import step_operators  # noqa
 
 
