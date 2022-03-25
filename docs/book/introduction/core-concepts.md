@@ -19,6 +19,19 @@ manages the lifecycle of a pipeline, either as a single **run** or a recurring r
 
 You can fetch these **steps** and their output **artifacts** in a post-execution workflow via the **Repository**. 
 
+## Profiles
+
+Profiles are configuration contexts stored on the machine where ZenML is used to run pipelines.
+They can be used to manage multiple individual ZenML global configurations on the same machine. Profiles control
+where the ZenML [Stacks](../guides/functional-api/deploy-to-production.md) are stored.
+
+A `default` Profile is created automatically and set as the active Profile the first time ZenML runs. It is
+sufficient for most use cases that require configuring Stacks used to run ZenML pipelines. However, if you need to
+maintain multiple sets of Stacks independently of each other, you can create additional Profiles and switch between
+them when needed.
+
+Profiles are also a way to customize the storage backend where the information about Stacks is persisted.
+
 ## Repository
 
 Every ZenML project starts inside a ZenML repository and, it is at the core of all ZenML activity. Every action that 
@@ -31,7 +44,8 @@ zenml init
 ```
 
 The initialization creates a local `.zen` folder where various information about your local configuration lives, 
-e.g., the [Stack](../guides/functional-api/deploy-to-production.md) that you are using to run pipelines.
+e.g., the Profile and the active [Stack](../guides/functional-api/deploy-to-production.md) that you are using to run
+pipelines.
 
 ## Pipeline
 

@@ -1,9 +1,11 @@
+import os
 import tarfile
+from pathlib import Path
 from typing import Callable, Optional
 
 import click
 
-from zenml.constants import APP_NAME
+from zenml.constants import APP_NAME, ENV_ZENML_CONFIG_PATH
 from zenml.io.fileio import file_exists, is_remote, open
 
 
@@ -60,6 +62,9 @@ def extract_tarfile(source_tar: str, output_dir: str) -> None:
 
 def get_global_config_directory() -> str:
     """Returns the global config directory for ZenML."""
+    env_var_path = os.getenv(ENV_ZENML_CONFIG_PATH)
+    if env_var_path:
+        return str(Path(env_var_path).resolve())
     return click.get_app_dir(APP_NAME)
 
 

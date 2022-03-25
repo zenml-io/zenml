@@ -43,6 +43,7 @@
 * [Continuous Training and Deployment](features/continous-training-and-deployment.md)
 * [Managing External Services](features/services.md)
 * [Standardized Artifacts](features/artifacts.md)
+* [Profiles and Centralized Stack Management](features/profiles.md)
 
 ## Support
 

@@ -721,9 +721,7 @@ def test_calling_a_step_twice_raises_an_exception():
         step_instance()
 
 
-def test_step_sets_global_execution_status_on_environment(
-    clean_repo, one_step_pipeline
-):
+def test_step_sets_global_execution_status_on_environment(one_step_pipeline):
     """Tests that the `Environment.step_is_running` value is set to
     True during step execution."""
 
@@ -737,7 +735,7 @@ def test_step_sets_global_execution_status_on_environment(
 
 
 def test_step_resets_global_execution_status_even_if_the_step_crashes(
-    clean_repo, one_step_pipeline
+    one_step_pipeline,
 ):
     """Tests that the `Environment.step_is_running` value is set to
     False after step execution even if the step crashes."""
@@ -753,7 +751,7 @@ def test_step_resets_global_execution_status_even_if_the_step_crashes(
 
 
 def test_returning_an_object_of_the_wrong_type_raises_an_error(
-    clean_repo, one_step_pipeline
+    one_step_pipeline,
 ):
     """Tests that returning an object of a type that wasn't specified (either
     directly or as part of the `Output` tuple annotation) raises an error."""
@@ -777,9 +775,7 @@ def test_returning_an_object_of_the_wrong_type_raises_an_error(
             pipeline_.run()
 
 
-def test_returning_wrong_amount_of_objects_raises_an_error(
-    clean_repo, one_step_pipeline
-):
+def test_returning_wrong_amount_of_objects_raises_an_error(one_step_pipeline):
     """Tests that returning a different amount of objects than defined (either
     directly or as part of the `Output` tuple annotation) raises an error."""
 
@@ -828,7 +824,7 @@ def test_returning_wrong_amount_of_objects_raises_an_error(
             pipeline_.run()
 
 
-def test_step_can_output_generic_types(clean_repo, one_step_pipeline):
+def test_step_can_output_generic_types(one_step_pipeline):
     """Tests that a step can output generic typing classes."""
 
     @step
@@ -846,7 +842,7 @@ def test_step_can_output_generic_types(clean_repo, one_step_pipeline):
             pipeline_.run()
 
 
-def test_step_can_have_generic_input_types(clean_repo):
+def test_step_can_have_generic_input_types():
     """Tests that a step can have generic typing classes as input."""
 
     @step
