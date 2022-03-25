@@ -26,10 +26,10 @@ from typing import (
     Type,
 )
 
-from zenml.config.global_config import GlobalConfig
-from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
@@ -170,27 +170,28 @@ class Stack:
         from zenml.metadata_stores import SQLiteMetadataStore
         from zenml.orchestrators import LocalOrchestrator
 
-        orchestrator = LocalOrchestrator(name="local_orchestrator")
+        orchestrator = LocalOrchestrator(name="default")
 
         artifact_store_uuid = uuid.uuid4()
         artifact_store_path = os.path.join(
-            GlobalConfig.config_directory(),
-            LOCAL_STORES_DIRECTORY_NAME,
+            GlobalConfiguration().config_directory,
+            "local_stores",
             str(artifact_store_uuid),
         )
+        fileio.create_dir_recursive_if_not_exists(artifact_store_path)
         artifact_store = LocalArtifactStore(
-            name="local_artifact_store",
+            name="default",
             uuid=artifact_store_uuid,
             path=artifact_store_path,
         )
 
         metadata_store_path = os.path.join(artifact_store_path, "metadata.db")
         metadata_store = SQLiteMetadataStore(
-            name="local_metadata_store", uri=metadata_store_path
+            name="default", uri=metadata_store_path
         )
 
         return cls(
-            name="local_stack",
+            name="default",
             orchestrator=orchestrator,
             metadata_store=metadata_store,
             artifact_store=artifact_store,

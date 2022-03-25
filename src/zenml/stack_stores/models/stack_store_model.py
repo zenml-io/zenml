@@ -17,7 +17,6 @@ from typing import DefaultDict, Dict
 
 from pydantic import BaseModel, validator
 
-import zenml
 from zenml.enums import StackComponentType
 
 
@@ -25,14 +24,12 @@ class StackStoreModel(BaseModel):
     """Pydantic object used for serializing a ZenML Stack Store.
 
     Attributes:
-        active_stack_name: Optional name of the active stack.
         stacks: Maps stack names to a configuration object containing the
             names and flavors of all stack components.
         stack_components: Contains names and flavors of all registered stack
             components.
     """
 
-    version: str
     stacks: Dict[str, Dict[StackComponentType, str]]
     stack_components: DefaultDict[StackComponentType, Dict[str, str]]
 
@@ -47,4 +44,13 @@ class StackStoreModel(BaseModel):
     @classmethod
     def empty_store(cls) -> "StackStoreModel":
         """Initialize a new empty stack store with current zen version."""
-        return cls(version=zenml.__version__, stacks={}, stack_components={})
+        return cls(stacks={}, stack_components={})
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them. We need to set this in order
+        # to have a mix of mutable and immutable attributes
+        validate_assignment = True
+        # Ignore extra attributes from configs of previous ZenML versions
+        extra = "ignore"

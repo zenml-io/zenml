@@ -42,6 +42,7 @@
 * [Continuous Training and Deployment](features/continous-training-and-deployment.md)
 * [Managing External Services](features/services.md)
 * [Managing Secrets](features/secrets.md)
+* [Profiles and Centralized Stack Management](features/profiles.md)
 
 ## Support
 

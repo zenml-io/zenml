@@ -144,10 +144,9 @@ class SecretSchemaType(StrEnum):
     ARBITRARY = "arbitrary"
 
 
-class StorageType(StrEnum):
-    """Storage Backend Types"""
+class StoreType(StrEnum):
+    """Repository Store Backend Types"""
 
-    YAML_STORAGE = "yaml_storage"
-    SQLITE_STORAGE = "sqlite_storage"
-    MYSQL_STORAGE = "mysql_storage"
-    REST_STORAGE = "rest_storage"
+    LOCAL = "local"
+    SQL = "sql"
+    REST = "rest"
