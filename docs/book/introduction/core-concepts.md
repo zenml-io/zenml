@@ -104,7 +104,7 @@ about more of that
 ## Artifact Store
 
 An artifact store is a place where artifacts are stored. These artifacts may have been produced by the pipeline 
-steps, or they may be the data first ingested into a pipeline via an ingestion step.
+steps, or they may be the data first ingested into a pipeline via an ingestion step. An artifact store will store all intermediary pipeline step results, which in turn will be tracked in the metadata store.
 
 ## Artifact
 
@@ -163,6 +163,8 @@ def my_step(params: MyStepConfig):
 The configuration of each pipeline, step and produced artifacts are all tracked within the metadata store. 
 The metadata store is an SQL database, and can be `sqlite` or `mysql`.
 
+ZenML puts a lot of emphasis on guaranteed tracking of inputs across pipeline steps. The strict, fully automated, and deeply built-in tracking enables some powerful features - e.g. reproducibility.
+
 ## Metadata
 
 Metadata are the pieces of information tracked about the pipelines, experiments and configurations that you are running 
@@ -170,12 +172,22 @@ with ZenML. Metadata are stored inside the metadata store.
 
 ## Orchestrator
 
-An orchestrator manages the running of each step of the pipeline, administering the actual pipeline runs. You can 
-think of it as the 'root' of any pipeline job that you run during your experimentation.
+An orchestrator manages the running of each step of the pipeline, administering the actual pipeline runs. The orchestrator is especially important, as it defines **where** the actual pipeline job runs. Think of it as the 
+`root` of any pipeline job, that controls how and where each individual step within a pipeline is executed. Therefore, the orchestrator can be used to great effect to scale jobs in production.
 
 ## Step Operator
 
 The step operator defers the execution of individual steps in a pipeline to specialized runtime environments that are optimized for Machine Learning workloads.
+
+Thjs is helpful when there is a requirement for specialized cloud backends ✨ for different steps. One example could be using powerful GPU instances for training jobs or distributed compute for ingestion streams.
+
+### How is it different from an orchestrator?
+
+An orchestrator is a higher level entity than a step operator. It is what executes the 
+entire ZenML pipeline code and decides what specifications and backends to use for each step. 
+
+The orchestrator runs the code which launches your step in a backend of your choice. If you don’t specify a step operator, then the step code runs on the same compute instance as your orchestrator.
+
 
 ## Container Registry
 
@@ -209,6 +221,9 @@ zenml stack register STACK_NAME \
     -c CONTAINER_REGISTRY_NAME \
     ...
 ```
+
+When users want to run pipelines on remote architecture, all they need to do is swap out a `local` stack with a 
+cloud-based stack, which they can configure. After a stack has been set as active, just running a pipeline will run that pipeline on the that stack.
 
 ## Step Operator
 

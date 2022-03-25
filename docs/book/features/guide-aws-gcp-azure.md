@@ -165,7 +165,7 @@ zenml step-operator register azureml \
 
 * You need to have the `aws` cli set up with the right credentials. Make sure you have the permissions to create and manage Sagemaker runs. 
 
-* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Sagemaker will run. Check out the [cloud guide](https://docs.zenml.io/features/cloud-pipelines/guide-aws-gcp-azure) to learn how you can set up an elastic container registry. 
+* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Sagemaker will run.
 
 Once you have all these values handy, you can proceed to setting up the components required for your stack.
 

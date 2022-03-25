@@ -135,7 +135,7 @@ going on under the hood that is mighty helpful:
 
 With just a little more work, one can:
 
-- Deploy this pipeline [in production on the cloud](../features/cloud-pipelines) with a production ready orchestrator like Kubeflow.
+- Deploy this pipeline [in production on the cloud](../features/guide-aws-gcp-azure.md) with a production ready orchestrator like Kubeflow.
 - Useful metadata like [statistics, schemas and drifts](../guides/common-usecases/visualizers.md) can be inferred from the model and data flowing through these steps.
 - Models trained this way can be set up to be easily deployed, run batch inference on, or set up in continuous 
 training loops with automatic deployments.
