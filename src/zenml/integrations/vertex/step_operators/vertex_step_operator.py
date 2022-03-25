@@ -60,8 +60,8 @@ class VertexStepOperator(BaseStepOperator):
     ZenML entrypoint command in it.
 
     Attributes:
-        project: [Optional] GCP project name.
-        region: [Optional] Region name, e.g., `europe-west1`.
+        region: Region name, e.g., `europe-west1`.
+        project: [Optional] GCP project name. If left None, inferred from the environment.
         accelerator_type: [Optional] Accelerator type from list: https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
         accelerator_count: [Optional] Defines number of accelerators to be used for the job.
         machine_type: [Optional] Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
@@ -74,8 +74,8 @@ class VertexStepOperator(BaseStepOperator):
     supports_local_execution = True
     supports_remote_execution = True
 
+    region: str
     project: Optional[str] = None
-    region: str = "us-central1"
     accelerator_type: Optional[str] = None
     accelerator_count: int = 0
     machine_type: str = "n1-standard-4"
