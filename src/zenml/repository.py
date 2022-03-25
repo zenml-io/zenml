@@ -24,9 +24,9 @@ import yaml
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.global_config import (
-    BaseGlobalConfiguration,
-    ConfigProfile,
-    GlobalConfig,
+    BaseConfiguration,
+    GlobalConfiguration,
+    ProfileConfiguration,
 )
 from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REPOSITORY_DIRECTORY_NAME
 from zenml.enums import StackComponentFlavor, StackComponentType, StoreType
@@ -145,7 +145,7 @@ class RepositoryMetaClass(ABCMeta):
         return cls._global_repository
 
 
-class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
+class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     """ZenML repository class.
 
     The ZenML repository manages configuration options for ZenML stacks as well
@@ -155,7 +155,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
     def __init__(
         self,
         root: Optional[Path] = None,
-        profile: Optional[ConfigProfile] = None,
+        profile: Optional[ProfileConfiguration] = None,
     ) -> None:
         """Initializes the global repository instance.
 
@@ -194,7 +194,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
         """
 
         self._root: Optional[Path] = None
-        self._profile: Optional[ConfigProfile] = None
+        self._profile: Optional[ProfileConfiguration] = None
         self.__config: Optional[RepositoryConfiguration] = None
 
         # The repository constructor is called with a custom profile only when
@@ -251,7 +251,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
 
         self._root = self.find_repository(root, enable_warnings=True)
 
-        global_cfg = GlobalConfig()
+        global_cfg = GlobalConfiguration()
         new_profile = self._profile
 
         if not self._root:
@@ -288,7 +288,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
         # profile
         self._sanitize_config()
 
-    def _set_active_profile(self, profile: ConfigProfile) -> None:
+    def _set_active_profile(self, profile: ProfileConfiguration) -> None:
         """Set the supplied configuration profile as the active profile for
         this repository.
 
@@ -332,7 +332,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
         if not self.__config:
             return
 
-        global_cfg = GlobalConfig()
+        global_cfg = GlobalConfiguration()
 
         # Sanitize the repository active profile
         if self.__config.active_profile_name != self.active_profile_name:
@@ -385,7 +385,9 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
         self._write_config()
 
     @staticmethod
-    def _migrate_legacy_repository(config_file: str) -> Optional[ConfigProfile]:
+    def _migrate_legacy_repository(
+        config_file: str,
+    ) -> Optional[ProfileConfiguration]:
         """Migrate a legacy repository configuration to the new format and
         create a new Profile out of it.
 
@@ -431,7 +433,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
         store = LocalStackStore()
         store.initialize(url=config_path, stack_data=stack_data)
         store._write_store()
-        profile = ConfigProfile(
+        profile = ProfileConfiguration(
             name=profile_name,
             store_url=config_path,
             active_stack=legacy_config.active_stack_name,
@@ -443,7 +445,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
         )
         new_config_dict = json.loads(new_config.json())
         yaml_utils.write_yaml(config_file, new_config_dict)
-        GlobalConfig().add_or_update_profile(profile)
+        GlobalConfiguration().add_or_update_profile(profile)
 
         return profile
 
@@ -509,7 +511,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
         }.get(type)
 
     @staticmethod
-    def create_store(profile: ConfigProfile) -> BaseStackStore:
+    def create_store(profile: ProfileConfiguration) -> BaseStackStore:
         """Create the repository persistance back-end store from a configuration
         profile.
 
@@ -631,7 +633,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
         Raises:
             KeyError: If the profile with the given name does not exist.
         """
-        global_cfg = GlobalConfig()
+        global_cfg = GlobalConfiguration()
         profile = global_cfg.get_profile(profile_name)
         if not profile:
             raise KeyError(f"Profile '{profile_name}' not found.")
@@ -648,7 +650,7 @@ class Repository(BaseGlobalConfiguration, metaclass=RepositoryMetaClass):
             global_cfg.activate_profile(profile_name)
 
     @property
-    def active_profile(self) -> ConfigProfile:
+    def active_profile(self) -> ProfileConfiguration:
         """Return the profile set as active for the repository.
 
         Returns:

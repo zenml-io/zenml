@@ -20,7 +20,7 @@ from docker.client import DockerClient
 from docker.utils import build as docker_build_utils
 
 import zenml
-from zenml.config.global_config import GlobalConfig
+from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.io import fileio
 from zenml.io.utils import read_file_contents_as_string
@@ -209,7 +209,7 @@ def build_docker_image(
         # Save a copy of the current global configuration with the
         # active profile contents into the build context, to have
         # the configured stacks accessible from within the container.
-        GlobalConfig().copy_config_with_active_profile(
+        GlobalConfiguration().copy_config_with_active_profile(
             config_path,
             load_config_path=f"/app/{CONTAINER_ZENML_CONFIG_DIR}",
         )

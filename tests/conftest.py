@@ -24,7 +24,7 @@ from pytest_mock import MockerFixture
 
 from tests.venv_clone_utils import clone_virtualenv
 from zenml.artifacts.base_artifact import BaseArtifact
-from zenml.config.global_config import ConfigProfile, GlobalConfig
+from zenml.config.global_config import GlobalConfiguration, ProfileConfiguration
 from zenml.constants import ENV_ZENML_DEBUG
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.pipelines import pipeline
@@ -43,7 +43,7 @@ def base_repo(
 
     # the global configuration and repository must not have been instantiated
     # yet, otherwise the current working configuration might be affected
-    assert GlobalConfig.get_instance() is None
+    assert GlobalConfiguration.get_instance() is None
     assert Repository.get_instance() is None
 
     # original working directory
@@ -82,7 +82,7 @@ def base_repo(
     shutil.rmtree(tmp_path)
 
     # reset the global configuration and the repository
-    GlobalConfig._reset_instance()
+    GlobalConfiguration._reset_instance()
     Repository._reset_instance()
 
 
@@ -101,11 +101,11 @@ def base_profile(
     Yields:
         The input repository with a provisioned profile.
     """
-    gc = GlobalConfig()
+    gc = GlobalConfiguration()
 
     profile_name = request.node.name
     profile_name = profile_name.replace(".", "_")
-    profile = ConfigProfile(name=profile_name)
+    profile = ProfileConfiguration(name=profile_name)
 
     gc.add_or_update_profile(profile)
 
@@ -155,9 +155,9 @@ def clean_repo(
 
     # save the current global configuration and repository singleton instances
     # to restore them later, then reset them
-    original_config = GlobalConfig.get_instance()
+    original_config = GlobalConfiguration.get_instance()
     original_repository = Repository.get_instance()
-    GlobalConfig._reset_instance()
+    GlobalConfiguration._reset_instance()
     Repository._reset_instance()
 
     # set the ZENML_CONFIG_PATH environment variable to ensure that the global
@@ -194,7 +194,7 @@ def clean_repo(
     os.environ["ZENML_CONFIG_PATH"] = orig_config_path
 
     # restore the original global configuration and the repository singleton
-    GlobalConfig._reset_instance(original_config)
+    GlobalConfiguration._reset_instance(original_config)
     Repository._reset_instance(original_repository)
 
 

@@ -42,36 +42,38 @@ CONFIG_ENV_VAR_PREFIX = "ZENML_"
 class GlobalConfigMetaClass(ModelMetaclass):
     """Global configuration metaclass.
 
-    This metaclass is used to enforce a singleton instance of the GlobalConfig
-    class with the following additional properties:
+    This metaclass is used to enforce a singleton instance of the
+    GlobalConfiguration class with the following additional properties:
 
-    * the GlobalConfig is initialized automatically on import with the
+    * the GlobalConfiguration is initialized automatically on import with the
     default configuration, if no config file exists yet.
     * an empty default profile is added to the global config on initialization
     if no other profiles are configured yet.
-    * the GlobalConfig undergoes a schema migration if the version of the
+    * the GlobalConfiguration undergoes a schema migration if the version of the
     config file is older than the current version of the ZenML package.
     """
 
     def __init__(cls, *args: Any, **kwargs: Any) -> None:
         """Initialize a singleton class."""
         super().__init__(*args, **kwargs)
-        cls._global_config: Optional["GlobalConfig"] = None
+        cls._global_config: Optional["GlobalConfiguration"] = None
 
-    def __call__(cls, *args: Any, **kwargs: Any) -> "GlobalConfig":
+    def __call__(cls, *args: Any, **kwargs: Any) -> "GlobalConfiguration":
         """Create or return the default global config instance.
 
-        If the GlobalConfig constructor is called with custom arguments,
+        If the GlobalConfiguration constructor is called with custom arguments,
         the singleton functionality of the metaclass is bypassed: a new
-        GlobalConfig instance is created and returned immediately and without
-        saving it as the global GlobalConfig singleton.
+        GlobalConfiguration instance is created and returned immediately and
+        without saving it as the global GlobalConfiguration singleton.
         """
         if args or kwargs:
-            return cast("GlobalConfig", super().__call__(*args, **kwargs))
+            return cast(
+                "GlobalConfiguration", super().__call__(*args, **kwargs)
+            )
 
         if not cls._global_config:
             cls._global_config = cast(
-                "GlobalConfig", super().__call__(*args, **kwargs)
+                "GlobalConfiguration", super().__call__(*args, **kwargs)
             )
             cls._global_config._migrate_config()
             cls._global_config._add_and_activate_default_profile()
@@ -79,14 +81,14 @@ class GlobalConfigMetaClass(ModelMetaclass):
         return cls._global_config
 
 
-class BaseGlobalConfiguration(ABC):
+class BaseConfiguration(ABC):
     """Base class for global configuration management.
 
     This class defines the common interface related to profile and stack
     management that all global configuration classes must implement.
-    Both the GlobalConfig and Repository classes implement this class, since
-    they share similarities concerning the management of active profiles and
-    stacks.
+    Both the GlobalConfiguration and Repository classes implement this class,
+    since they share similarities concerning the management of active profiles
+    and stacks.
     """
 
     @abstractmethod
@@ -102,7 +104,7 @@ class BaseGlobalConfiguration(ABC):
 
     @property
     @abstractmethod
-    def active_profile(self) -> Optional["ConfigProfile"]:
+    def active_profile(self) -> Optional["ProfileConfiguration"]:
         """Return the profile set as active for the repository.
 
         Returns:
@@ -148,8 +150,8 @@ def get_default_store_type() -> StoreType:
     store type is set to 'LOCAL'.
 
     NOTE: this is a global function instead of a default
-    `ConfigProfile.store_type` value because it makes it easier to mock in the
-    unit tests.
+    `ProfileConfiguration.store_type` value because it makes it easier to mock
+    in the unit tests.
 
     Returns:
         The default store type.
@@ -160,7 +162,7 @@ def get_default_store_type() -> StoreType:
     return StoreType.LOCAL
 
 
-class ConfigProfile(BaseModel):
+class ProfileConfiguration(BaseModel):
     """Stores configuration profile options.
 
     Attributes:
@@ -175,12 +177,12 @@ class ConfigProfile(BaseModel):
     store_url: Optional[str]
     store_type: StoreType = Field(default_factory=get_default_store_type)
     active_stack: Optional[str]
-    _config: Optional["GlobalConfig"]
+    _config: Optional["GlobalConfiguration"]
 
     def __init__(
-        self, config: Optional["GlobalConfig"] = None, **kwargs: Any
+        self, config: Optional["GlobalConfiguration"] = None, **kwargs: Any
     ) -> None:
-        """Initializes a ConfigProfile object.
+        """Initializes a ProfileConfiguration object.
 
         Args:
             config: global configuration to which this profile belongs. When not
@@ -222,9 +224,9 @@ class ConfigProfile(BaseModel):
             fileio.rm_dir(self.config_directory)
 
     @property
-    def global_config(self) -> "GlobalConfig":
+    def global_config(self) -> "GlobalConfiguration":
         """Return the global configuration to which this profile belongs."""
-        return self._config or GlobalConfig()
+        return self._config or GlobalConfiguration()
 
     def activate_stack(self, stack_name: str) -> None:
         """Set the active stack for the profile.
@@ -248,14 +250,14 @@ class ConfigProfile(BaseModel):
         underscore_attrs_are_private = True
 
 
-class GlobalConfig(
-    BaseModel, BaseGlobalConfiguration, metaclass=GlobalConfigMetaClass
+class GlobalConfiguration(
+    BaseModel, BaseConfiguration, metaclass=GlobalConfigMetaClass
 ):
     """Stores global configuration options.
 
     Configuration options are read from a config file, but can be overwritten
-    by environment variables. See `GlobalConfig.__getattribute__` for more
-    details.
+    by environment variables. See `GlobalConfiguration.__getattribute__` for
+    more details.
 
     Attributes:
         user_id: Unique user id.
@@ -271,22 +273,22 @@ class GlobalConfig(
     analytics_opt_in: bool = True
     version: Optional[str]
     activated_profile: Optional[str]
-    profiles: Dict[str, ConfigProfile] = Field(default_factory=dict)
+    profiles: Dict[str, ProfileConfiguration] = Field(default_factory=dict)
     _config_path: str
 
     def __init__(self, config_path: Optional[str] = None) -> None:
-        """Initializes a GlobalConfig object using values from the config file.
+        """Initializes a GlobalConfiguration object using values from the config file.
 
-        GlobalConfig is a singleton class: only one instance can exist. Calling
-        this constructor multiple times will always yield the same instance (see
-        the exception below).
+        GlobalConfiguration is a singleton class: only one instance can exist.
+        Calling this constructor multiple times will always yield the same
+        instance (see the exception below).
 
         The `config_path` argument is only meant for internal use and testing
         purposes. User code must never pass it to the constructor. When a custom
-        `config_path` value is passed, an anonymous GlobalConfig instance is
-        created and returned independently of the GlobalConfig singleton and
-        that will have no effect as far as the rest of the ZenML core code is
-        concerned.
+        `config_path` value is passed, an anonymous GlobalConfiguration instance
+        is created and returned independently of the GlobalConfiguration
+        singleton and that will have no effect as far as the rest of the ZenML
+        core code is concerned.
 
         If the config file doesn't exist yet, we try to read values from the
         legacy (ZenML version < 0.6) config file.
@@ -308,25 +310,27 @@ class GlobalConfig(
             self._write_config()
 
     @classmethod
-    def get_instance(cls) -> Optional["GlobalConfig"]:
-        """Return the GlobalConfig singleton instance.
+    def get_instance(cls) -> Optional["GlobalConfiguration"]:
+        """Return the GlobalConfiguration singleton instance.
 
         Returns:
-            The GlobalConfig singleton instance or None, if the GlobalConfig
-            hasn't been initialized yet.
+            The GlobalConfiguration singleton instance or None, if the
+            GlobalConfiguration hasn't been initialized yet.
         """
         return cls._global_config
 
     @classmethod
-    def _reset_instance(cls, config: Optional["GlobalConfig"] = None) -> None:
-        """Reset the GlobalConfig singleton instance.
+    def _reset_instance(
+        cls, config: Optional["GlobalConfiguration"] = None
+    ) -> None:
+        """Reset the GlobalConfiguration singleton instance.
 
         This method is only meant for internal use and testing purposes.
 
         Args:
-            repo: The GlobalConfig instance to set as the global singleton.
-                If None, the global GlobalConfig singleton is reset to an empty
-                value.
+            repo: The GlobalConfiguration instance to set as the global
+                singleton. If None, the global GlobalConfiguration singleton is
+                reset to an empty value.
         """
         cls._global_config = config
 
@@ -466,7 +470,7 @@ class GlobalConfig(
         self,
         config_path: str,
         load_config_path: Optional[str] = None,
-    ) -> "GlobalConfig":
+    ) -> "GlobalConfiguration":
         """Create a copy of the global config and the active repository profile
         using a different config path.
 
@@ -483,7 +487,7 @@ class GlobalConfig(
 
         self._write_config(config_path)
 
-        config_copy = GlobalConfig(config_path=config_path)
+        config_copy = GlobalConfiguration(config_path=config_path)
         config_copy.profiles = {}
         profile = Repository().active_profile
 
@@ -536,7 +540,9 @@ class GlobalConfig(
         """Directory where the global configuration file is located."""
         return self._config_path
 
-    def add_or_update_profile(self, profile: ConfigProfile) -> ConfigProfile:
+    def add_or_update_profile(
+        self, profile: ProfileConfiguration
+    ) -> ProfileConfiguration:
         """Adds or updates a profile in the global configuration.
 
         Args:
@@ -554,7 +560,7 @@ class GlobalConfig(
         self._write_config()
         return profile
 
-    def get_profile(self, profile_name: str) -> Optional[ConfigProfile]:
+    def get_profile(self, profile_name: str) -> Optional[ProfileConfiguration]:
         """Get a global configuration profile.
 
         Args:
@@ -590,7 +596,9 @@ class GlobalConfig(
         self.activated_profile = profile_name
         self._write_config()
 
-    def _add_and_activate_default_profile(self) -> Optional[ConfigProfile]:
+    def _add_and_activate_default_profile(
+        self,
+    ) -> Optional[ProfileConfiguration]:
         """Creates and activates the default configuration profile if no
         profiles are configured.
 
@@ -602,7 +610,7 @@ class GlobalConfig(
         if self.profiles:
             return None
         logger.info("Creating default profile...")
-        default_profile = ConfigProfile(
+        default_profile = ProfileConfiguration(
             name=DEFAULT_PROFILE_NAME,
         )
         self.add_or_update_profile(default_profile)
@@ -612,7 +620,7 @@ class GlobalConfig(
         return default_profile
 
     @property
-    def active_profile(self) -> Optional[ConfigProfile]:
+    def active_profile(self) -> Optional[ProfileConfiguration]:
         """Return the active profile.
 
         Returns:

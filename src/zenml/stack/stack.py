@@ -26,7 +26,7 @@ from typing import (
     Type,
 )
 
-from zenml.config.global_config import GlobalConfig
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.io import fileio
@@ -163,7 +163,7 @@ class Stack:
 
         artifact_store_uuid = uuid.uuid4()
         artifact_store_path = os.path.join(
-            GlobalConfig().config_directory,
+            GlobalConfiguration().config_directory,
             "local_stores",
             str(artifact_store_uuid),
         )

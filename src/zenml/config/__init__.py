@@ -14,12 +14,16 @@
 """
 The ``config`` module contains classes and functions that manage user-specific
 configuration. ZenML's configuration is stored in a file called
-``.zenglobal.json``, located on the user's directory for configuration files.
+``config.yaml``, located on the user's directory for configuration files.
 (The exact location differs from operating system to operating system.)
 
-The ``GlobalConfig`` class is the main class in this module. It provides a
-Pydantic configuration object that is used to store and retrieve configuration.
-This ``GlobalConfig`` object handles the serialization and deserialization of
-the configuration options that are stored in the file in order to persist the
-configuration across sessions.
+The ``GlobalConfiguration`` class is the main class in this module. It provides
+a Pydantic configuration object that is used to store and retrieve
+configuration. This ``GlobalConfiguration`` object handles the serialization and
+deserialization of the configuration options that are stored in the file in
+order to persist the configuration across sessions.
+
+The ``ProfileConfiguration`` class is used to model the configuration of a
+Profile. A ``GlobalConfiguration`` object can contain multiple
+``ProfileConfiguration`` instances.
 """

@@ -19,7 +19,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.config.global_config import GlobalConfig
+from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
@@ -201,7 +201,7 @@ def delete_stack(stack_name: str) -> None:
 
     with console.status(f"Deleting stack '{stack_name}'...\n"):
 
-        cfg = GlobalConfig()
+        cfg = GlobalConfiguration()
         repo = Repository()
 
         if cfg.active_stack_name == stack_name:

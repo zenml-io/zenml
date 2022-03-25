@@ -20,9 +20,9 @@ from rich.markdown import Markdown
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.config.global_config import (
-    BaseGlobalConfiguration,
-    ConfigProfile,
-    GlobalConfig,
+    BaseConfiguration,
+    GlobalConfiguration,
+    ProfileConfiguration,
     get_default_store_type,
 )
 from zenml.console import console
@@ -43,14 +43,14 @@ def analytics() -> None:
 @analytics.command("get")
 def is_analytics_opted_in() -> None:
     """Check whether user is opt-in or opt-out of analytics."""
-    gc = GlobalConfig()
+    gc = GlobalConfiguration()
     cli_utils.declare(f"Analytics opt-in: {gc.analytics_opt_in}")
 
 
 @analytics.command("opt-in", context_settings=dict(ignore_unknown_options=True))
 def opt_in() -> None:
     """Opt-in to analytics"""
-    gc = GlobalConfig()
+    gc = GlobalConfiguration()
     gc.analytics_opt_in = True
     cli_utils.declare("Opted in to analytics.")
     track_event(AnalyticsEvent.OPT_IN_ANALYTICS)
@@ -61,7 +61,7 @@ def opt_in() -> None:
 )
 def opt_out() -> None:
     """Opt-out to analytics"""
-    gc = GlobalConfig()
+    gc = GlobalConfiguration()
     gc.analytics_opt_in = False
     cli_utils.declare("Opted out of analytics.")
     track_event(AnalyticsEvent.OPT_OUT_ANALYTICS)
@@ -128,13 +128,13 @@ def create_profile_command(
 
     cli_utils.print_active_profile()
 
-    cfg = GlobalConfig()
+    cfg = GlobalConfiguration()
 
     if cfg.get_profile(name):
         cli_utils.error(f"Profile {name} already exists.")
         return
     cfg.add_or_update_profile(
-        ConfigProfile(name=name, store_url=url, store_type=store_type)
+        ProfileConfiguration(name=name, store_url=url, store_type=store_type)
     )
     cli_utils.declare(f"Profile '{name}' successfully created.")
 
@@ -145,7 +145,7 @@ def list_profiles_command() -> None:
 
     cli_utils.print_active_profile()
 
-    cfg = GlobalConfig()
+    cfg = GlobalConfiguration()
     repo = Repository()
 
     profiles = cfg.profiles
@@ -185,7 +185,7 @@ def describe_profile(name: Optional[str]) -> None:
     repo = Repository()
     name = name or repo.active_profile_name
 
-    profile = GlobalConfig().get_profile(name)
+    profile = GlobalConfiguration().get_profile(name)
     if not profile:
         cli_utils.error(f"Profile '{name}' does not exist.")
         return
@@ -207,7 +207,7 @@ def delete_profile(name: str) -> None:
 
     with console.status(f"Deleting profile '{name}'...\n"):
 
-        cfg = GlobalConfig()
+        cfg = GlobalConfiguration()
         repo = Repository()
         if not cfg.get_profile(name):
             cli_utils.error(f"Profile {name} doesn't exist.")
@@ -252,8 +252,8 @@ def set_active_profile(name: str, global_profile: bool = False) -> None:
 
     with console.status(f"Setting the{scope} active profile to '{name}'..."):
 
-        cfg: BaseGlobalConfiguration = (
-            GlobalConfig() if global_profile else Repository()
+        cfg: BaseConfiguration = (
+            GlobalConfiguration() if global_profile else Repository()
         )
 
         current_profile_name = cfg.active_profile_name

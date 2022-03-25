@@ -21,7 +21,7 @@ from dateutil import tz
 from rich import box, table
 from rich.text import Text
 
-from zenml.config.global_config import ConfigProfile
+from zenml.config.global_config import ProfileConfiguration
 from zenml.console import console
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType
@@ -238,7 +238,7 @@ def print_active_stack() -> None:
 
 
 def print_profile(
-    profile: ConfigProfile,
+    profile: ProfileConfiguration,
     active: bool,
 ) -> None:
     """Prints the configuration options of a profile.

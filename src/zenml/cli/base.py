@@ -19,7 +19,7 @@ import click
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error
-from zenml.config.global_config import GlobalConfig
+from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.exceptions import InitializationException
 from zenml.repository import Repository
@@ -51,7 +51,7 @@ def init(path: Optional[Path]) -> None:
         except InitializationException as e:
             error(f"{e}")
 
-    cfg = GlobalConfig()
+    cfg = GlobalConfiguration()
     declare(
         f"The local active profile was initialized to "
         f"'{cfg.active_profile_name}' and the local active stack to "

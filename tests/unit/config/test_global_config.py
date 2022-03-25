@@ -16,25 +16,25 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.config.global_config import GlobalConfig
+from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
 
 
 def test_global_config_file_creation(clean_repo):
     """Tests whether a config file gets created when the global
     config object is first instantiated."""
-    if fileio.file_exists(GlobalConfig()._config_file()):
-        fileio.remove(GlobalConfig()._config_file())
+    if fileio.file_exists(GlobalConfiguration()._config_file()):
+        fileio.remove(GlobalConfiguration()._config_file())
 
-    GlobalConfig._reset_instance()
+    GlobalConfiguration._reset_instance()
 
-    assert fileio.file_exists(GlobalConfig()._config_file())
+    assert fileio.file_exists(GlobalConfiguration()._config_file())
 
 
 def test_global_config_user_id_is_immutable(clean_repo):
     """Tests that the global config user id attribute is immutable."""
     with pytest.raises(TypeError):
-        GlobalConfig().user_id = uuid4()
+        GlobalConfiguration().user_id = uuid4()
 
 
 def test_global_config_returns_value_from_environment_variable(
@@ -42,11 +42,11 @@ def test_global_config_returns_value_from_environment_variable(
 ):
     """Tests that global config attributes can be overwritten by environment
     variables."""
-    if fileio.file_exists(GlobalConfig()._config_file()):
-        fileio.remove(GlobalConfig()._config_file())
+    if fileio.file_exists(GlobalConfiguration()._config_file()):
+        fileio.remove(GlobalConfiguration()._config_file())
 
-    GlobalConfig()._reset_instance()
-    config = GlobalConfig()
+    GlobalConfiguration()._reset_instance()
+    config = GlobalConfiguration()
 
     # delete the environment variable that is set at the beginning of all tests
     mocker.patch.dict(os.environ, values={}, clear=True)
