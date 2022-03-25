@@ -143,16 +143,3 @@ class AWSSecretsManager(BaseSecretsManager):
             self.CLIENT.delete_secret(
                 SecretId=secret_name, ForceDeleteWithoutRecovery=force
             )
-
-
-#    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
-#        """Get value for a particular key within a secret."""
-#        secret = self.get_secret(secret_name)
-#
-#        secret_contents = secret.content
-#        if key in secret_contents:
-#            return str(secret_contents[key])
-#        else:
-#            raise KeyError(
-#                f"Secret `{key}` does not exist in secret '{secret_name}'."
-#            )

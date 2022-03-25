@@ -133,16 +133,3 @@ class LocalSecretsManager(BaseSecretsManager):
                 "To confirm, please pass `--force`."
             )
         remove(self.secrets_file)
-
-
-#    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
-#        """Get value for a particular key within a Secret."""
-#        secret = self.get_secret(secret_name)
-#
-#        secret_contents = secret.content
-#        if key in secret_contents:
-#            return str(secret_contents[key])
-#        else:
-#            raise KeyError(
-#                f"Secret `{key}` does not exist in Secret `{secret_name}`."
-#            )

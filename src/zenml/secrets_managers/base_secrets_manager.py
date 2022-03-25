@@ -50,8 +50,3 @@ class BaseSecretsManager(StackComponent, ABC):
     @abstractmethod
     def delete_all_secrets(self, force: bool = False) -> None:
         """Delete all existing secrets."""
-
-
-#    @abstractmethod
-#    def get_value_by_key(self, key: str, secret_name: str) -> Optional[str]:
-#        """Get value for a particular key within a Secret."""
