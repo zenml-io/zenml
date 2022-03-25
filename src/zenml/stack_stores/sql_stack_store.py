@@ -115,7 +115,12 @@ class SqlStackStore(BaseStackStore):
 
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
-        """Get the local path from a URL, it points to a local sqlite file.
+        """Get the local path from a URL, if it points to a local sqlite file.
+
+        This method first checks that the URL is a valid SQLite URL, which is
+        backed by a file in the local filesystem. All other types of supported
+        SQLAlchemy connection URLs are considered non-local and won't return
+        a valid local path.
 
         Args:
             url: The URL to get the path from.
