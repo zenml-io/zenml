@@ -23,7 +23,6 @@ from pipeline import (
 
 from zenml.pipelines import Schedule
 
-
 # Initialize a new pipeline run
 scikit_p = mnist_pipeline(
     importer=dynamic_importer(),
