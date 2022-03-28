@@ -2,7 +2,7 @@
 set -e
 set -x
 
-SRC=${1:-"src/zenml tests"}
+SRC=${1:-"src/zenml tests examples"}
 SRC_NO_TESTS=${1:-"src/zenml"}
 
 export ZENML_DEBUG=1
