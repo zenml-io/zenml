@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,24 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+## Secret Schema
 
-AIRFLOW = "airflow"
-AWS = "aws"
-AZURE = "azure"
-AZUREML = "azureml"
-DASH = "dash"
-EVIDENTLY = "evidently"
-FACETS = "facets"
-GCP = "gcp"
-GRAPHVIZ = "graphviz"
-KUBEFLOW = "kubeflow"
-MLFLOW = "mlflow"
-PLOTLY = "plotly"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-SAGEMAKER = "sagemaker"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-VAULT = "vault"
-WHYLOGS = "whylogs"
-VERTEX = "vertex"
+...
+"""
+from zenml.integrations.aws.secret_schemas.aws_secret_schema import (
+    AWSSecretSchema,
+)
+
+__all__ = ["AWSSecretSchema"]
