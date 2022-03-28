@@ -106,6 +106,7 @@ is just as easy as using the local version. Make sure that the integration is
 installed first, and then register your secrets manager in the following way:
 
 ```shell
+zenml integration install s3
 zenml secrets-manager register AWS_SECRETS_MANAGER_NAME -t aws
 ```
 
