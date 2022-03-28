@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from zenml.constants import LOCAL_CONFIG_DIRECTORY_NAME
-from zenml.enums import StackComponentType, StorageType
+from zenml.constants import REPOSITORY_DIRECTORY_NAME
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
@@ -26,34 +26,27 @@ from zenml.stack_stores import BaseStackStore, LocalStackStore, SqlStackStore
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
 
 
-def _stack_store_for_type(
-    store_type: StorageType, path: Path
-) -> BaseStackStore:
-    if store_type == StorageType.YAML_STORAGE:
-        return LocalStackStore(str(path))
-    elif store_type == StorageType.SQLITE_STORAGE:
-        return SqlStackStore(f"sqlite:///{path / 'store.db'}")
+def _stack_store_for_type(store_type: StoreType, path: Path) -> BaseStackStore:
+    if store_type == StoreType.LOCAL:
+        return LocalStackStore().initialize(str(path))
+    elif store_type == StoreType.SQL:
+        return SqlStackStore().initialize(f"sqlite:///{path / 'store.db'}")
     else:
         raise NotImplementedError(f"No StackStore for {store_type}")
 
 
-@pytest.mark.parametrize(
-    "store_type", [StorageType.YAML_STORAGE, StorageType.SQLITE_STORAGE]
-)
+@pytest.mark.parametrize("store_type", [StoreType.LOCAL, StoreType.SQL])
 def test_register_deregister_stacks(
-    tmp_path_factory: pytest.TempPathFactory, store_type: StorageType
+    tmp_path_factory: pytest.TempPathFactory, store_type: StoreType
 ):
-    """Test creating a new stack store and adding default local stack."""
+    """Test creating a new stack store."""
     tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_stack_store")
-    os.mkdir(tmp_path / LOCAL_CONFIG_DIRECTORY_NAME)
+    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
 
-    # stack store starts off empty
-    stack_store = _stack_store_for_type(store_type, tmp_path)
-    assert len(stack_store.stacks) == 0
-
-    # add the default stack
     stack = Stack.default_local_stack()
-    stack_store.register_stack(StackWrapper.from_stack(stack))
+
+    # stack store is pre-initialized with the default stack
+    stack_store = _stack_store_for_type(store_type, tmp_path)
     assert len(stack_store.stacks) == 1
     assert len(stack_store.stack_configurations) == 1
 
@@ -66,10 +59,7 @@ def test_register_deregister_stacks(
         "metadata_store",
         "artifact_store",
     }
-    assert (
-        stack_configuration[StackComponentType.ORCHESTRATOR]
-        == "local_orchestrator"
-    )
+    assert stack_configuration[StackComponentType.ORCHESTRATOR] == "default"
 
     # can't register the same stack twice or another stack with the same name
     with pytest.raises(StackExistsError):
@@ -77,7 +67,7 @@ def test_register_deregister_stacks(
     with pytest.raises(StackExistsError):
         stack_store.register_stack(StackWrapper(name=stack.name, components=[]))
 
-    # remove the stack again
+    # remove the default stack
     stack_store.deregister_stack(stack.name)
     assert len(stack_store.stacks) == 0
     with pytest.raises(KeyError):
@@ -91,30 +81,22 @@ def test_register_deregister_stacks(
     shutil.rmtree(tmp_path)
 
 
-@pytest.mark.parametrize(
-    "store_type", [StorageType.YAML_STORAGE, StorageType.SQLITE_STORAGE]
-)
+@pytest.mark.parametrize("store_type", [StoreType.LOCAL, StoreType.SQL])
 def test_register_deregister_components(
-    tmp_path_factory: pytest.TempPathFactory, store_type: StorageType
+    tmp_path_factory: pytest.TempPathFactory, store_type: StoreType
 ):
     """Test adding and removing stack components."""
     tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_stack_store")
-    os.mkdir(tmp_path / LOCAL_CONFIG_DIRECTORY_NAME)
-
-    # stack store starts off empty
-    stack_store = _stack_store_for_type(store_type, tmp_path)
-    for component_type in StackComponentType:
-        assert len(stack_store.get_stack_components(component_type)) == 0
-
-    # add the default stack
-    stack = Stack.default_local_stack()
-    stack_store.register_stack(StackWrapper.from_stack(stack))
+    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
 
     required_components = {
         StackComponentType.ARTIFACT_STORE,
         StackComponentType.METADATA_STORE,
         StackComponentType.ORCHESTRATOR,
     }
+
+    # stack store starts off with the default stack
+    stack_store = _stack_store_for_type(store_type, tmp_path)
     for component_type in StackComponentType:
         component_type = StackComponentType(component_type)
         if component_type in required_components:
@@ -124,17 +106,18 @@ def test_register_deregister_components(
 
     # get a component
     orchestrator = stack_store.get_stack_component(
-        StackComponentType.ORCHESTRATOR, "local_orchestrator"
+        StackComponentType.ORCHESTRATOR, "default"
     )
+
     assert orchestrator.flavor == "local"
-    assert orchestrator.name == "local_orchestrator"
+    assert orchestrator.name == "default"
 
     # can't add another orchestrator of same name
     with pytest.raises(StackComponentExistsError):
         stack_store.register_stack_component(
             StackComponentWrapper.from_component(
                 LocalOrchestrator(
-                    name="local_orchestrator",
+                    name="default",
                 )
             )
         )
@@ -155,13 +138,13 @@ def test_register_deregister_components(
     # can't delete an orchestrator that's part of a stack
     with pytest.raises(ValueError):
         stack_store.deregister_stack_component(
-            StackComponentType.ORCHESTRATOR, "local_orchestrator"
+            StackComponentType.ORCHESTRATOR, "default"
         )
 
     # but can if the stack is deleted first
-    stack_store.deregister_stack("local_stack")
+    stack_store.deregister_stack("default")
     stack_store.deregister_stack_component(
-        StackComponentType.ORCHESTRATOR, "local_orchestrator"
+        StackComponentType.ORCHESTRATOR, "default"
     )
     assert (
         len(stack_store.get_stack_components(StackComponentType.ORCHESTRATOR))

@@ -14,18 +14,13 @@
 import base64
 import json
 import os
+import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from zenml.constants import LOCAL_CONFIG_DIRECTORY_NAME
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
-from zenml.io import fileio
-from zenml.io.utils import (
-    create_dir_recursive_if_not_exists,
-    read_file_contents_as_string,
-    write_file_contents_as_string,
-)
+from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper, StackStoreModel
@@ -35,35 +30,84 @@ logger = get_logger(__name__)
 
 
 class LocalStackStore(BaseStackStore):
-    def __init__(
+    def initialize(
         self,
-        base_directory: str,
+        url: str,
+        *args: Any,
         stack_data: Optional[StackStoreModel] = None,
-    ) -> None:
+        **kwargs: Any,
+    ) -> "LocalStackStore":
         """Initializes a local stack store instance.
 
         Args:
-            base_directory: root directory of the stack store to use for
+            url: URL of local directory of the repository to use for
                 stack storage.
             stack_data: optional stack data store object to pre-populate the
                 stack store with.
+            args: additional positional arguments (ignored).
+            kwargs: additional keyword arguments (ignored).
+
+        Returns:
+            The initialized stack store instance.
         """
-        self._root = base_directory
+        self._url = url
+        self._root = self.get_path_from_url(url)
+        utils.create_dir_recursive_if_not_exists(str(self._root))
+
         if stack_data is not None:
             self.__store = stack_data
+            self._write_store()
         elif fileio.exists(self._store_path()):
             config_dict = yaml_utils.read_yaml(self._store_path())
             self.__store = StackStoreModel.parse_obj(config_dict)
         else:
             self.__store = StackStoreModel.empty_store()
-        self._write_store()
+            self._write_store()
+
+        super().initialize(url, *args, **kwargs)
+        return self
 
     # Public interface implementations:
 
     @property
-    def version(self) -> str:
-        """Get the ZenML version."""
-        return self.__store.version
+    def type(self) -> StoreType:
+        """The type of stack store."""
+        return StoreType.LOCAL
+
+    @property
+    def url(self) -> str:
+        """URL of the repository."""
+        return self._url
+
+    @staticmethod
+    def get_path_from_url(url: str) -> Optional[Path]:
+        """Get the path from a URL.
+
+        Args:
+            url: The URL to get the path from.
+
+        Returns:
+            The path from the URL.
+        """
+        if not LocalStackStore.is_valid_url(url):
+            raise ValueError(f"Invalid URL for local store: {url}")
+        url = url.replace("file://", "")
+        return Path(url)
+
+    @staticmethod
+    def get_local_url(path: str) -> str:
+        """Get a local URL for a given local path."""
+        return f"file://{path}"
+
+    @staticmethod
+    def is_valid_url(url: str) -> bool:
+        """Check if the given url is a valid local path."""
+        scheme = re.search("^([a-z0-9]+://)", url)
+        return not scheme or scheme.group() == "file://"
+
+    def is_empty(self) -> bool:
+        """Check if the stack store is empty."""
+        return len(self.__store.stacks) == 0
 
     def get_stack_configuration(
         self, name: str
@@ -122,10 +166,10 @@ class LocalStackStore(BaseStackStore):
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
-        create_dir_recursive_if_not_exists(
+        utils.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
         )
-        write_file_contents_as_string(
+        utils.write_file_contents_as_string(
             component_config_path,
             base64.b64decode(component.config).decode(),
         )
@@ -134,7 +178,9 @@ class LocalStackStore(BaseStackStore):
         components[component.name] = component.flavor
         self._write_store()
         logger.info(
-            "Registered stack component with name '%s'.", component.name
+            "Registered stack component with type '%s' and name '%s'.",
+            component.type,
+            component.name,
         )
 
     def deregister_stack(self, name: str) -> None:
@@ -199,7 +245,7 @@ class LocalStackStore(BaseStackStore):
         )
         flavor = components[name]
         config = base64.b64encode(
-            read_file_contents_as_string(component_config_path).encode()
+            utils.read_file_contents_as_string(component_config_path).encode()
         )
         return flavor, config
 
@@ -243,26 +289,26 @@ class LocalStackStore(BaseStackStore):
 
     # Implementation-specific internal methods:
 
+    @property
+    def root(self) -> Path:
+        """The root directory of the stack store."""
+        if not self._root:
+            raise RuntimeError(
+                "Local stack store has not been initialized. Call `initialize` "
+                "before using the store."
+            )
+        return self._root
+
     def _get_stack_component_config_path(
         self, component_type: StackComponentType, name: str
     ) -> str:
         """Path to the configuration file of a stack component."""
-        path = self.config_directory / component_type.plural / f"{name}.yaml"
+        path = self.root / component_type.plural / f"{name}.yaml"
         return str(path)
 
-    @property
-    def root(self) -> Path:
-        """The root directory of this stack store."""
-        return Path(self._root)
-
-    @property
-    def config_directory(self) -> Path:
-        """The configuration directory of this stack store."""
-        return self.root / LOCAL_CONFIG_DIRECTORY_NAME
-
     def _store_path(self) -> str:
-        """Path to the stack store yaml file."""
-        return str(self.config_directory / "stacks.yaml")
+        """Path to the repository configuration file."""
+        return str(self.root / "stacks.yaml")
 
     def _write_store(self) -> None:
         """Writes the stack store yaml file."""

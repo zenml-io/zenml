@@ -20,7 +20,7 @@ from typing import Iterable
 import click
 from tfx.dsl.io.filesystem import PathType
 
-from zenml.constants import APP_NAME, REMOTE_FS_PREFIX
+from zenml.constants import APP_NAME, ENV_ZENML_CONFIG_PATH, REMOTE_FS_PREFIX
 from zenml.io.fileio import (
     copy,
     exists,
@@ -35,6 +35,9 @@ from zenml.io.fileio import (
 
 def get_global_config_directory() -> str:
     """Returns the global config directory for ZenML."""
+    env_var_path = os.getenv(ENV_ZENML_CONFIG_PATH)
+    if env_var_path:
+        return str(Path(env_var_path).resolve())
     return click.get_app_dir(APP_NAME)
 
 

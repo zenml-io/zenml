@@ -136,9 +136,8 @@ class StepExecutorOperator(BaseExecutorOperator):
         """
         main_module_path = zenml.constants.USER_MAIN_MODULE
         if not main_module_path:
-            main_module_file = cast(str, sys.modules["__main__"].__file__)
-            main_module_path = source_utils.get_module_source_from_file_path(
-                os.path.abspath(main_module_file)
+            main_module_path = source_utils.get_module_source_from_module(
+                sys.modules["__main__"]
             )
 
         step_type = cast(str, pipeline_node.node_info.type.name)

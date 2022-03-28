@@ -19,7 +19,7 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.cli.utils import print_stack_configuration
+from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
@@ -84,7 +84,9 @@ def register_stack(
     step_operator_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
-    with console.status(f"Registering stack `{stack_name}`..."):
+    cli_utils.print_active_profile()
+
+    with console.status(f"Registering stack '{stack_name}'..."):
         repo = Repository()
 
         stack_components = {
@@ -119,12 +121,14 @@ def register_stack(
             name=stack_name, components=stack_components
         )
         repo.register_stack(stack_)
-        cli_utils.declare(f"Stack `{stack_name}` successfully registered!")
+        cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
 
 @stack.command("list")
 def list_stacks() -> None:
-    """List all available stacks from service."""
+    """List all available stacks in the active profile."""
+    cli_utils.print_active_profile()
+
     repo = Repository()
 
     if len(repo.stack_configurations) == 0:
@@ -159,10 +163,17 @@ def list_stacks() -> None:
     required=False,
 )
 def describe_stack(stack_name: Optional[str]) -> None:
-    """Show details about the current active stack."""
+    """Show details about a named stack or the active stack."""
+    cli_utils.print_active_profile()
+
     repo = Repository()
+
     active_stack_name = repo.active_stack_name
     stack_name = stack_name or active_stack_name
+
+    if not stack_name:
+        cli_utils.warning("No stack is set as active!")
+        return
 
     stack_configurations = repo.stack_configurations
     if len(stack_configurations) == 0:
@@ -172,10 +183,10 @@ def describe_stack(stack_name: Optional[str]) -> None:
     try:
         stack_configuration = stack_configurations[stack_name]
     except KeyError:
-        cli_utils.error(f"Stack `{stack_name}` does not exist.")
+        cli_utils.error(f"Stack '{stack_name}' does not exist.")
         return
 
-    print_stack_configuration(
+    cli_utils.print_stack_configuration(
         stack_configuration,
         active=stack_name == active_stack_name,
         stack_name=stack_name,
@@ -186,32 +197,86 @@ def describe_stack(stack_name: Optional[str]) -> None:
 @click.argument("stack_name", type=str)
 def delete_stack(stack_name: str) -> None:
     """Delete a stack."""
-    with console.status(f"Deleting stack `{stack_name}`...\n"):
+    cli_utils.print_active_profile()
+
+    with console.status(f"Deleting stack '{stack_name}'...\n"):
+
+        cfg = GlobalConfiguration()
+        repo = Repository()
+
+        if cfg.active_stack_name == stack_name:
+            cli_utils.error(
+                f"Stack {stack_name} cannot be deleted while it is globally "
+                f"active. Please choose a different active global stack first "
+                f"by running 'zenml stack set --global STACK'."
+            )
+            return
+
+        if repo.active_stack_name == stack_name:
+            cli_utils.error(
+                f"Stack {stack_name} cannot be deleted while it is "
+                f"active. Please choose a different active stack first by "
+                f"running 'zenml stack set STACK'."
+            )
+            return
+
         Repository().deregister_stack(stack_name)
-        cli_utils.declare(f"Deleted stack {stack_name}.")
+        cli_utils.declare(f"Deleted stack '{stack_name}'.")
 
 
 @stack.command("set")
 @click.argument("stack_name", type=str)
-def set_active_stack(stack_name: str) -> None:
-    """Sets a stack active."""
-    with console.status(f"Setting the active stack to `{stack_name}`..."):
-        Repository().activate_stack(stack_name)
-        cli_utils.declare(f"Active stack: {stack_name}")
+@click.option(
+    "--global",
+    "-g",
+    "global_profile",
+    is_flag=True,
+    help="Set the active stack globally.",
+)
+def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
+    """Sets a stack as active.
+
+    If the '--global' flag is set, the global active stack will be set,
+    otherwise the repository active stack takes precedence.
+    """
+    cli_utils.print_active_profile()
+
+    scope = " global" if global_profile else ""
+
+    repo = Repository()
+
+    with console.status(
+        f"Setting the{scope} active stack to '{stack_name}'..."
+    ):
+
+        if global_profile:
+            repo.active_profile.activate_stack(stack_name)
+        else:
+            repo.activate_stack(stack_name)
+
+        cli_utils.declare(f"Active{scope} stack set to: '{stack_name}'")
 
 
 @stack.command("get")
 def get_active_stack() -> None:
     """Gets the active stack."""
+    cli_utils.print_active_profile()
+
     with console.status("Getting the active stack..."):
-        cli_utils.declare(f"Active stack: {Repository().active_stack_name}")
+
+        repo = Repository()
+        cli_utils.declare(f"The active stack is: '{repo.active_stack_name}'")
 
 
 @stack.command("up")
 def up_stack() -> None:
-    """Provisions resources for the stack."""
+    """Provisions resources for the active stack."""
+    cli_utils.print_active_profile()
+
     stack_ = Repository().active_stack
-    cli_utils.declare(f"Provisioning resources for stack '{stack_.name}'.")
+    cli_utils.declare(
+        f"Provisioning resources for active stack '{stack_.name}'."
+    )
     try:
         stack_.provision()
         stack_.resume()
@@ -227,14 +292,18 @@ def up_stack() -> None:
     help="Deprovisions local resources instead of suspending them.",
 )
 def down_stack(force: bool = False) -> None:
-    """Suspends resources of the local stack deployment."""
+    """Suspends resources of the active stack deployment."""
+    cli_utils.print_active_profile()
+
     stack_ = Repository().active_stack
 
     if force:
         cli_utils.declare(
-            f"Deprovisioning resources for stack '{stack_.name}'."
+            f"Deprovisioning resources for active stack '{stack_.name}'."
         )
         stack_.deprovision()
     else:
-        cli_utils.declare(f"Suspending resources for stack '{stack_.name}'.")
+        cli_utils.declare(
+            f"Suspending resources for active stack '{stack_.name}'."
+        )
         stack_.suspend()
