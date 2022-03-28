@@ -80,6 +80,9 @@ tox = "^3.24.3"
 hypothesis = "^6.23.0"
 typing-extensions = ">=3.7.4"
 pytest-randomly = "^3.10.1"
+pytest-mock = "^3.6.1"
+codespell = "^2.1.0"
+darglint = "^1.8.1"
 
 # mkdocs including plugins
 mkdocs="^1.2.3"
@@ -88,7 +91,6 @@ mkdocs-awesome-pages-plugin="^2.6.1"
 mkdocstrings="^0.17.0"
 pydocstyle="^6.1.1"
 mike="^1.1.2"
-
 
 # mypy type stubs
 types-certifi = "^2021.10.8.0"
@@ -104,8 +106,6 @@ types-setuptools = "^57.4.2"
 types-six = "^1.16.2"
 types-termcolor = "^1.1.2"
 types-psutil = "^5.8.13"
-pytest-mock = "^3.6.1"
-codespell = "^2.1.0"
 
 [build-system]
 requires = ["poetry-core"]
