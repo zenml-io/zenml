@@ -99,10 +99,29 @@ def mnist_pipeline(
 
 ## Using the AWS Secrets Manager integration
 
-Using the AWS Secrets Manager is just as easy as using the local version. Make
-sure that the integration is installed first, and then register your secrets
-manager in the following way:
+Amazon offers a managed secrets manager to store and use for AWS services. If
+your stack is primarily running on AWS, you can use our integration to interact
+with it. Using the [AWS Secrets Manager](https://aws.amazon.com/secrets-manager)
+is just as easy as using the local version. Make sure that the integration is
+installed first, and then register your secrets manager in the following way:
 
 ```shell
 zenml secrets-manager register AWS_SECRETS_MANAGER_NAME -t aws
 ```
+
+If you are using the [ZenML Kubeflow
+integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) for
+your orchestrator, you can then access the keys and their corresponding values
+for all the secrets you imported in the pipeline definition (as mentioned
+above). The keys that you used when creating the secret will be capitalized when
+they are passed down into the images used by Kubeflow. For example, in the case
+of accessing the `aws` secret referenced above, you would get the value for the
+`aws_secret_access_key` key with the following code (within a step):
+
+```python
+os.environ.get('AWS_SECRET_ACCESS_KEY')
+```
+
+Note that some of the secrets will get used by your stack implicitly. For
+example, in the case of when you are using an AWS S3 artifact store, the
+environment variables passed down will be used to confirm access.
