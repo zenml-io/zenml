@@ -23,7 +23,7 @@ class AzureMLIntegration(Integration):
     """Definition of AzureML integration for ZenML."""
 
     NAME = AZUREML
-    REQUIREMENTS = ["azureml-core==1.39.0"]
+    REQUIREMENTS = ["azureml-core==1.39.0.post1"]
 
     @classmethod
     def activate(cls) -> None:
