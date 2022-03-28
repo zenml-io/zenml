@@ -509,7 +509,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         }.get(type)
 
     @staticmethod
-    def create_store(profile: ProfileConfiguration) -> BaseStackStore:
+    def create_store(
+        profile: ProfileConfiguration, skip_default_stack: bool = False
+    ) -> BaseStackStore:
         """Create the repository persistance back-end store from a configuration
         profile.
 
@@ -519,6 +521,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             profile: The configuration profile to use for persisting the
                 repository information.
+            skip_default_stack: If True, the creation of the default stack in
+                the store will be skipped.
 
         Returns:
             The initialized repository store.
@@ -542,7 +546,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         if store_class.is_valid_url(profile.store_url):
             store = store_class()
-            store.initialize(url=profile.store_url)
+            store.initialize(
+                url=profile.store_url, skip_default_stack=skip_default_stack
+            )
             return store
 
         raise ValueError(
