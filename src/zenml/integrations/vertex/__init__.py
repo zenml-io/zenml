@@ -11,23 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+The Vertex integration submodule provides a way to run ZenML pipelines in a 
+Vertex AI environment.
+"""
 
-AIRFLOW = "airflow"
-AWS = "aws"
-AZURE = "azure"
-AZUREML = "azureml"
-DASH = "dash"
-EVIDENTLY = "evidently"
-FACETS = "facets"
-GCP = "gcp"
-GRAPHVIZ = "graphviz"
-KUBEFLOW = "kubeflow"
-MLFLOW = "mlflow"
-PLOTLY = "plotly"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-SAGEMAKER = "sagemaker"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-WHYLOGS = "whylogs"
-VERTEX = "vertex"
+from zenml.integrations.constants import VERTEX
+from zenml.integrations.integration import Integration
+
+
+class VertexIntegration(Integration):
+    """Definition of Vertex AI integration for ZenML."""
+
+    NAME = VERTEX
+    REQUIREMENTS = ["google-cloud-aiplatform>=1.11.0"]
+
+    @classmethod
+    def activate(cls) -> None:
+        """Activates the integration."""
+        from zenml.integrations.vertex import step_operators  # noqa
+
+
+VertexIntegration.check_installation()

@@ -53,7 +53,6 @@ class BaseArtifact(Artifact):
         PROPERTIES which will be tracked throughout your pipeline runs.
     """
 
-    # TODO [ENG-172]: Write about the materializers
     TYPE_NAME: str = "BaseArtifact"  # type: ignore[assignment]
     PROPERTIES: Dict[str, Property] = {  # type: ignore[assignment]
         MATERIALIZER_PROPERTY_KEY: MATERIALIZER_PROPERTY,

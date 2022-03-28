@@ -110,6 +110,7 @@ class OrchestratorFlavor(StackComponentFlavor):
     LOCAL = "local"
     KUBEFLOW = "kubeflow"
     AIRFLOW = "airflow"
+    VERTEX = "vertex"
 
 
 class StepOperatorFlavor(StackComponentFlavor):
@@ -117,6 +118,7 @@ class StepOperatorFlavor(StackComponentFlavor):
 
     AZUREML = "azureml"
     SAGEMAKER = "sagemaker"
+    VERTEX = "vertex"
 
 
 class MetadataContextTypes(Enum):

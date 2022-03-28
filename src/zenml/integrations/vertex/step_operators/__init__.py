@@ -12,6 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.aws.step_operators.sagemaker_step_operator import (  # noqa
-    SagemakerStepOperator,
+from zenml.integrations.vertex.step_operators.vertex_step_operator import (  # noqa
+    VertexStepOperator,
 )
