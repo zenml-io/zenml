@@ -18,7 +18,7 @@ from typing import Optional
 import click
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, error, print_table
+from zenml.cli.utils import confirmation, error, print_table, warning
 from zenml.console import console
 from zenml.enums import SecretSchemaType, StackComponentType
 from zenml.repository import Repository
@@ -80,7 +80,7 @@ def secret(ctx: click.Context) -> None:
     "--schema",
     "-s",
     "secret_schema_type",
-    default=SecretSchemaType.ARBITRARY,
+    default=SecretSchemaType.ARBITRARY.value,
     help="Register a secret with an optional schema.",
     type=click.Choice(SecretSchemaType.values()),
 )
@@ -116,12 +116,15 @@ def register_secret(
         name: Name of the secret
         secret_schema_type: Type of the secret schema - make sure the schema of
             choice is registered with the secret_schema_class_registry
+        secret_key: Key of the secret key-value pair
+        secret_value: Value of the secret Key-value pair
     """
     # TODO [MEDIUM]: Allow passing in json/dict when registering a secret as an
     #   additional option for the user on top of the interactive
     if not validate_kv_pairs(secret_key, secret_value):
         error(
-            "To directly pass in key-value pairs, you must pass in values for both."
+            "To directly pass in key-value pairs, you must pass in values"
+            " for both."
         )
 
     if name == "name":
@@ -137,7 +140,7 @@ def register_secret(
     if secret_keys:
         click.echo(
             "You have supplied a secret_set_schema with predefined keys. "
-            "You can fill these out sequentially now. Just press ENTER to skip"
+            "You can fill these out sequentially now. Just press ENTER to skip "
             "optional secrets that you do not want to set"
         )
         for k in secret_keys:
@@ -154,9 +157,16 @@ def register_secret(
         )
         while True:
             k = click.prompt("Please enter a secret-key")
-            secret_contents[k] = getpass.getpass(
-                f"Please enter the secret_value " f"for the key [{k}]:"
-            )
+            if k not in secret_contents:
+                secret_contents[k] = getpass.getpass(
+                    f"Please enter the secret_value " f"for the key [{k}]:"
+                )
+            else:
+                warning(f"Key {k} already in this secret. Please restart this"
+                        f" process or use "
+                        f"'zenml secret update {name} --{secret_schema_type}'"
+                        f" to update this key. "
+                        f"Skipping ...")
 
             if not click.confirm(
                 "Do you want to add another key-value pair to this secret?"
