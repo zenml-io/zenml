@@ -180,6 +180,3 @@ zenml_examples/
 # mutmut / hammet incidental files
 .hammett-db
 .mutmut-cache
-
-# Darglint config file
-.darglint
