@@ -12,4 +12,5 @@ autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in
 isort $SRC scripts --check-only
 black $SRC  --check
 interrogate $SRC_NO_TESTS -c pyproject.toml
+darglint -v 2 $SRC_NO_TESTS
 mypy $SRC_NO_TESTS
