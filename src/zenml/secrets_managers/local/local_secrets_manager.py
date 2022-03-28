@@ -58,8 +58,12 @@ class LocalSecretsManager(BaseSecretsManager):
             temp_uuid = uuid.uuid4()
             kwargs["secrets_file"] = get_secret_store_path(temp_uuid)
             kwargs["uuid"] = temp_uuid
-            create_file_if_not_exists(kwargs["secrets_file"])
+            self._create_secrets_file__if_not_exists()
         super().__init__(*args, **kwargs)
+
+    def _create_secrets_file__if_not_exists(self) -> None:
+        """Makes sure the secrets yaml file exists"""
+        create_file_if_not_exists(self.secrets_file)
 
     def _verify_secret_key_exists(self, secret_name: str) -> bool:
         """Checks if a secret key exists.
@@ -69,6 +73,7 @@ class LocalSecretsManager(BaseSecretsManager):
 
         Returns:
             True if the secret key exists, False otherwise."""
+        self._create_secrets_file__if_not_exists()
         secrets_store_items = yaml_utils.read_yaml(self.secrets_file)
         try:
             return secret_name in secrets_store_items
@@ -76,6 +81,7 @@ class LocalSecretsManager(BaseSecretsManager):
             return False
 
     def _get_all_secrets(self) -> Dict[str, Dict[str, str]]:
+        self._create_secrets_file__if_not_exists()
         return yaml_utils.read_yaml(self.secrets_file) or {}
 
     @property
@@ -102,6 +108,7 @@ class LocalSecretsManager(BaseSecretsManager):
 
         Raises:
             KeyError: If the secret already exists."""
+        self._create_secrets_file__if_not_exists()
 
         if self._verify_secret_key_exists(secret_name=secret.name):
             raise KeyError(f"Secret `{secret.name}` already exists.")
@@ -122,6 +129,8 @@ class LocalSecretsManager(BaseSecretsManager):
 
         Raises:
             KeyError: If the secret does not exist."""
+        self._create_secrets_file__if_not_exists()
+
         secret_store_items = self._get_all_secrets()
         if not self._verify_secret_key_exists(secret_name=secret_name):
             raise KeyError(f"Secret `{secret_name}` does not exists.")
@@ -140,6 +149,8 @@ class LocalSecretsManager(BaseSecretsManager):
 
         Returns:
             A list of all secret keys."""
+        self._create_secrets_file__if_not_exists()
+
         secrets_store_items = self._get_all_secrets()
         return list(secrets_store_items.keys())
 
@@ -151,6 +162,8 @@ class LocalSecretsManager(BaseSecretsManager):
 
         Raises:
             KeyError: If the secret does not exist."""
+        self._create_secrets_file__if_not_exists()
+
         if not self._verify_secret_key_exists(secret_name=secret.name):
             raise KeyError(f"Secret `{secret.name}` did not exist.")
         encoded_secret = encode_secret(secret)
@@ -167,6 +180,8 @@ class LocalSecretsManager(BaseSecretsManager):
 
         Raises:
             KeyError: If the secret does not exist."""
+        self._create_secrets_file__if_not_exists()
+
         if not self._verify_secret_key_exists(secret_name=secret_name):
             raise KeyError(f"Secret `{secret_name}` does not exists.")
         secrets_store_items = self._get_all_secrets()
@@ -185,6 +200,8 @@ class LocalSecretsManager(BaseSecretsManager):
 
         Raises:
             ValueError: If force is False."""
+        self._create_secrets_file__if_not_exists()
+
         if not force:
             raise ValueError(
                 "This operation will delete all secrets. "

@@ -18,34 +18,18 @@ from typing import Optional
 import click
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, error, print_table, warning
+from zenml.cli.utils import (
+    confirmation,
+    error,
+    pretty_print_secret,
+    print_secrets,
+    warning,
+)
 from zenml.console import console
 from zenml.enums import SecretSchemaType, StackComponentType
 from zenml.repository import Repository
-from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
-
-
-def pretty_print_secret(
-    secret: BaseSecretSchema, hide_secret: bool = True
-) -> None:
-    """Given a secret set print all key value pairs associated with the secret
-
-    Args:
-        secret: Secret of type BaseSecretSchema
-        hide_secret: boolean that configures if the secret values are shown
-            on the CLI
-    """
-    stack_dicts = [
-        {
-            "SECRET_NAME": secret.name,
-            "SECRET_KEY": key,
-            "SECRET_VALUE": "***" if hide_secret else value,
-        }
-        for key, value in secret.content.items()
-    ]
-    print_table(stack_dicts)
 
 
 def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
@@ -162,11 +146,13 @@ def register_secret(
                     f"Please enter the secret_value " f"for the key [{k}]:"
                 )
             else:
-                warning(f"Key {k} already in this secret. Please restart this"
-                        f" process or use "
-                        f"'zenml secret update {name} --{secret_schema_type}'"
-                        f" to update this key. "
-                        f"Skipping ...")
+                warning(
+                    f"Key {k} already in this secret. Please restart this"
+                    f" process or use "
+                    f"'zenml secret update {name} --{secret_schema_type}'"
+                    f" to update this key. "
+                    f"Skipping ..."
+                )
 
             if not click.confirm(
                 "Do you want to add another key-value pair to this secret?"
@@ -211,10 +197,10 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
         secrets_manager: Stack component that implements the interface to the
             underlying secrets engine
     """
-    with console.status("Getting secret keys..."):
-        secret_keys = secrets_manager.get_all_secret_keys()
+    with console.status("Getting secret names..."):
+        secret_names = secrets_manager.get_all_secret_keys()
         # TODO: [HIGH] implement as a table?
-        console.print(secret_keys)
+        print_secrets(secret_names)
 
 
 @secret.command("update")
