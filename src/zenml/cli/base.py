@@ -58,7 +58,8 @@ def init(path: Optional[Path]) -> None:
         f"'{cfg.active_stack_name}'. This local configuration will only take "
         f"effect when you're running ZenML from the initialized repository "
         f"root, or from a subdirectory. For more information on profile "
-        f"and stack configuration, please run 'zenml profile explain'."
+        f"and stack configuration, please visit "
+        f"https://docs.zenml.io/features/profiles."
     )
 
 

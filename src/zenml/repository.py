@@ -397,6 +397,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             if a legacy repository configuration was not found at the supplied
             path.
         """
+        from zenml.cli import utils as cli_utils
+
         if not fileio.file_exists(config_file):
             return None
 
@@ -412,19 +414,21 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         profile_name = f"legacy-repository-{random.getrandbits(32):08x}"
 
         # a legacy repository configuration was detected
-        logger.warning(
-            "A legacy ZenML repository with locally configured stacks was "
-            "found at `%s`.\n"
-            "The stacks configured in this repository will be automatically "
-            "migrated to a newly created profile: `%s`.\n\n"
-            "If you no longer need to use the stacks configured in this "
-            "repository, please delete the profile using the following "
-            "command:\n\n"
-            "`zenml profile delete %s`\n\n"
-            "This warning will not be shown again.",
-            config_path,
-            profile_name,
-            profile_name,
+        cli_utils.warning(
+            f"A legacy ZenML repository with locally configured stacks was "
+            f"found at '{config_path}'.\n"
+            f"Beginning with ZenML 0.7.0, stacks are no longer stored inside "
+            f"the ZenML repository root, they are stored globally using the "
+            f"newly introduced concept of Profiles.\n\n"
+            f"The stacks configured in this repository will be automatically "
+            f"migrated to a newly created profile: '{profile_name}'.\n\n"
+            f"If you no longer need to use the stacks configured in this "
+            f"repository, please delete the profile using the following "
+            f"command:\n\n"
+            f"'zenml profile delete {profile_name}'\n\n"
+            f"More information about Profiles can be found at "
+            f"https://docs.zenml.io/features/profiles.\n"
+            f"This warning will not be shown again for this Repository."
         )
 
         stack_data = legacy_config.get_stack_data()
@@ -433,7 +437,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         store._write_store()
         profile = ProfileConfiguration(
             name=profile_name,
-            store_url=config_path,
+            store_url=store.url,
             active_stack=legacy_config.active_stack_name,
         )
 
