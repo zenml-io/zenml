@@ -84,7 +84,7 @@ class SecretSchemaClassRegistry:
         try:
             return available_schemas[secret_schema]
         except KeyError:
-            # TODO [HIGH]: Probably remove this exception catch. Doesn't apply
+            # TODO [ENG-722]: Probably remove this exception catch. Doesn't apply
             # to SecretSchema
             # The SecretSchema might be part of an integration
             # -> Activate the integrations and try again

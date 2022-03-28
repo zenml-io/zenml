@@ -47,7 +47,7 @@ def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
 @click.pass_context
 def secret(ctx: click.Context) -> None:
     """Secrets for storing key-value pairs for use in authentication."""
-    # TODO [HIGH]: Ensure the stack actually contains an active secrets manager
+    # TODO [ENG-724]: Ensure the stack actually contains an active secrets manager
     ctx.obj = Repository().active_stack.components.get(
         StackComponentType.SECRETS_MANAGER, None
     )
@@ -103,7 +103,7 @@ def register_secret(
         secret_key: Key of the secret key-value pair
         secret_value: Value of the secret Key-value pair
     """
-    # TODO [MEDIUM]: Allow passing in json/dict when registering a secret as an
+    # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
     #   additional option for the user on top of the interactive
     if not validate_kv_pairs(secret_key, secret_value):
         error(
@@ -235,8 +235,8 @@ def update_secret(
             underlying secrets engine
         name: Name of the secret
     """
-    # TODO [MEDIUM]: allow users to pass in dict or json
-    # TODO [MEDIUM]: allow adding new key value pairs to the secret
+    # TODO [ENG-726]: allow users to pass in dict or json
+    # TODO [ENG-727]: allow adding new key value pairs to the secret
 
     with console.status(f"Getting secret set `{name}`..."):
         try:

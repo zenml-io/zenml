@@ -133,9 +133,9 @@ class AWSSecretsManager(BaseSecretsManager):
             A list of all secret keys."""
         self._ensure_client_connected(self.region_name)
 
-        # TODO [MEDIUM]: Deal with pagination in the aws secret manager when
+        # TODO [ENG-720]: Deal with pagination in the aws secret manager when
         #  listing all secrets
-        # TODO [HIGH]: take out this magic maxresults number
+        # TODO [ENG-721]: take out this magic maxresults number
         response = self.CLIENT.list_secrets(MaxResults=100)
         return [secret["Name"] for secret in response["SecretList"]]
 
