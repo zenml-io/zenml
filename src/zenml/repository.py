@@ -397,7 +397,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             if a legacy repository configuration was not found at the supplied
             path.
         """
-        from zenml.cli import utils as cli_utils
+        from zenml.console import console
 
         if not fileio.file_exists(config_file):
             return None
@@ -414,7 +414,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         profile_name = f"legacy-repository-{random.getrandbits(32):08x}"
 
         # a legacy repository configuration was detected
-        cli_utils.warning(
+        console.print(
             f"A legacy ZenML repository with locally configured stacks was "
             f"found at '{config_path}'.\n"
             f"Beginning with ZenML 0.7.0, stacks are no longer stored inside "
@@ -427,7 +427,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             f"command:\n\n"
             f"'zenml profile delete {profile_name}'\n\n"
             f"More information about Profiles can be found at "
-            f"https://docs.zenml.io/features/profiles.\n"
+            f"https://docs.zenml.io.\n"
             f"This warning will not be shown again for this Repository."
         )
 
