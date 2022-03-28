@@ -12,8 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import datetime as dt
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from uuid import UUID, uuid4
 
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
@@ -24,7 +26,14 @@ from zenml.exceptions import StackComponentExistsError
 from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
-from zenml.stack_stores.models import StackComponentWrapper
+from zenml.stack_stores.models import (
+    Project,
+    Role,
+    RoleAssignment,
+    StackComponentWrapper,
+    Team,
+    User,
+)
 
 logger = get_logger(__name__)
 
@@ -56,6 +65,44 @@ class ZenStackDefinition(SQLModel, table=True):
     )
     component_name: str = Field(
         primary_key=True, foreign_key="zenstackcomponent.name"
+    )
+
+
+class UserTable(User, SQLModel, table=True):
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+
+
+class TeamTable(Team, SQLModel, table=True):
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+
+
+class ProjectTable(Project, SQLModel, table=True):
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    creation_date: datetime = Field(default_factory=datetime.now)
+
+
+class RoleTable(SQLModel, table=True):
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    creation_date: datetime = Field(default_factory=datetime.now)
+    name: str
+
+
+class TeamAssignmentTable(SQLModel, table=True):
+    user_id: UUID = Field(primary_key=True, foreign_key="usertable.id")
+    team_id: UUID = Field(primary_key=True, foreign_key="teamtable.id")
+
+
+class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
+    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    role_id: UUID = Field(primary_key=True, foreign_key="roletable.id")
+    user_id: Optional[UUID] = Field(
+        default=None, primary_key=True, foreign_key="usertable.id"
+    )
+    team_id: Optional[UUID] = Field(
+        default=None, primary_key=True, foreign_key="teamtable.id"
+    )
+    project_id: Optional[UUID] = Field(
+        primary_key=True, foreign_key="projecttable.id"
     )
 
 
@@ -370,6 +417,467 @@ class SqlStackStore(BaseStackStore):
                     "component exists with this name."
                 )
 
+    # User, project and role management
+
+    @property
+    def users(self) -> List[User]:
+        """All registered users.
+
+        Returns:
+            A list of all registered users.
+        """
+        with Session(self.engine) as session:
+            return session.exec(select(UserTable)).all()
+
+    def create_user(self, user_name: str) -> User:
+        """Creates a new user.
+
+        Args:
+            user_name: Unique username.
+
+        Returns:
+             The newly created user.
+        """
+        with Session(self.engine) as session:
+            existing_user = session.exec(
+                select(UserTable).where(UserTable.name == user_name)
+            ).first()
+            if existing_user:
+                raise RuntimeError(
+                    f"User with name '{user_name}' already exists."
+                )
+            user = UserTable(name=user_name)
+            session.add(user)
+            session.commit()
+        return user
+
+    def delete_user(self, user_name: str) -> None:
+        """Deletes a user.
+
+        Args:
+            user_name: Name of the user to delete.
+        """
+        with Session(self.engine) as session:
+            user = session.exec(
+                select(UserTable).where(UserTable.name == user_name)
+            ).one()
+            session.delete(user)
+            session.commit()
+            self._delete_query_results(
+                select(RoleAssignmentTable).where(
+                    RoleAssignmentTable.user_id == user.id
+                )
+            )
+            self._delete_query_results(
+                select(TeamAssignmentTable).where(
+                    TeamAssignmentTable.user_id == user.id
+                )
+            )
+
+    @property
+    def teams(self) -> List[Team]:
+        """All registered teams.
+
+        Returns:
+            A list of all registered teams.
+        """
+        with Session(self.engine) as session:
+            sql_teams = session.exec(select(TeamTable)).all()
+            teams = []
+            for team in sql_teams:
+                teams.append(Team(**team.dict()))
+            return teams
+
+    def create_team(self, team_name: str) -> Team:
+        """Creates a new team.
+
+        Args:
+            team_name: Unique team name.
+
+        Returns:
+             The newly created team.
+        """
+        with Session(self.engine) as session:
+            existing_team = session.exec(
+                select(TeamTable).where(TeamTable.name == team_name)
+            ).first()
+            if existing_team:
+                raise RuntimeError(
+                    f"Team with name '{team_name}' already exists."
+                )
+            sql_team = TeamTable(name=team_name)
+            team = Team(**sql_team.dict())
+            session.add(sql_team)
+            session.commit()
+        return team
+
+    def delete_team(self, team_name: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_name: Name of the team to delete.
+        """
+        with Session(self.engine) as session:
+            team = session.exec(
+                select(TeamTable).where(TeamTable.name == team_name)
+            ).one()
+            session.delete(team)
+            session.commit()
+            self._delete_query_results(
+                select(RoleAssignmentTable).where(
+                    RoleAssignmentTable.team_id == team.id
+                )
+            )
+            self._delete_query_results(
+                select(TeamAssignmentTable).where(
+                    TeamAssignmentTable.team_id == team.id
+                )
+            )
+
+    def add_user_to_team(self, team_name: str, user_name: str) -> None:
+        """Adds a user to a team.
+
+        Args:
+            team_name: Name of the team.
+            user_name: Name of the user.
+        """
+        with Session(self.engine) as session:
+            team = session.exec(
+                select(TeamTable).where(TeamTable.name == team_name)
+            ).one()
+            user = session.exec(
+                select(UserTable).where(UserTable.name == user_name)
+            ).one()
+            assignment = TeamAssignmentTable(user_id=user.id, team_id=team.id)
+            session.add(assignment)
+            session.commit()
+
+    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
+        """Removes a user from a team.
+
+        Args:
+            team_name: Name of the team.
+            user_name: Name of the user.
+        """
+        with Session(self.engine) as session:
+            assignment = session.exec(
+                select(TeamAssignmentTable)
+                .where(TeamAssignmentTable.team_id == TeamTable.id)
+                .where(TeamAssignmentTable.user_id == UserTable.id)
+                .where(UserTable.name == user_name)
+                .where(TeamTable.name == team_name)
+            ).one_or_none()
+            if assignment:
+                session.delete(assignment)
+                session.commit()
+
+    @property
+    def projects(self) -> List[Project]:
+        """All registered projects.
+
+        Returns:
+            A list of all registered projects.
+        """
+        with Session(self.engine) as session:
+            return session.exec(select(ProjectTable)).all()
+
+    def create_project(
+        self, project_name: str, description: Optional[str] = None
+    ) -> Project:
+        """Creates a new project.
+
+        Args:
+            project_name: Unique project name.
+            description: Optional project description.
+
+        Returns:
+             The newly created project.
+        """
+        with Session(self.engine) as session:
+            existing_project = session.exec(
+                select(ProjectTable).where(ProjectTable.name == project_name)
+            ).first()
+            if existing_project:
+                raise RuntimeError(
+                    f"Project with name '{project_name}' already exists."
+                )
+            sql_project = ProjectTable(name=project_name)
+            project = Project(**sql_project.dict())
+            session.add(sql_project)
+            session.commit()
+        return project
+
+    def delete_project(self, project_name: str) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name: Name of the project to delete.
+        """
+        with Session(self.engine) as session:
+            project = session.exec(
+                select(ProjectTable).where(ProjectTable.name == project_name)
+            ).one()
+            session.delete(project)
+            session.commit()
+            self._delete_query_results(
+                select(RoleAssignmentTable).where(
+                    RoleAssignmentTable.project_id == project.id
+                )
+            )
+
+    @property
+    def roles(self) -> List[Role]:
+        """All registered roles.
+
+        Returns:
+            A list of all registered roles.
+        """
+        with Session(self.engine) as session:
+            return [
+                Role(**role.dict())
+                for role in session.exec(select(RoleTable)).all()
+            ]
+
+    @property
+    def role_assignments(self) -> List[RoleAssignment]:
+        """All registered role assignments.
+
+        Returns:
+            A list of all registered role assignments.
+        """
+        with Session(self.engine) as session:
+            return session.exec(select(RoleAssignmentTable)).all()
+
+    def create_role(self, role_name: str) -> Role:
+        """Creates a new role.
+
+        Args:
+            role_name: Unique role name.
+
+        Returns:
+             The newly created role.
+        """
+        with Session(self.engine) as session:
+            existing_role = session.exec(
+                select(RoleTable).where(RoleTable.name == role_name)
+            ).first()
+            if existing_role:
+                raise RuntimeError(
+                    f"Role with name '{role_name}' already exists."
+                )
+            sql_role = RoleTable(name=role_name)
+            role = Role(**sql_role.dict())
+            session.add(sql_role)
+            session.commit()
+        return role
+
+    def delete_role(self, role_name: str) -> None:
+        """Deletes a role.
+
+        Args:
+            role_name: Name of the role to delete.
+        """
+        with Session(self.engine) as session:
+            role = session.exec(
+                select(RoleTable).where(RoleTable.name == role_name)
+            ).one()
+            session.delete(role)
+            session.commit()
+            self._delete_query_results(
+                select(RoleAssignmentTable).where(
+                    RoleAssignmentTable.role_id == role.id
+                )
+            )
+
+    def assign_role(
+        self,
+        role_name: str,
+        entity_name: str,
+        project_name: Optional[str] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Assigns a role to a user or team.
+
+        Args:
+            role_name: Name of the role to assign.
+            entity_name: User or team name.
+            project_name: Optional project name.
+            is_user: Boolean indicating whether the given `entity_name` refers
+                to a user.
+        """
+        with Session(self.engine) as session:
+            entity_class = UserTable if is_user else TeamTable
+            entity = session.exec(
+                select(entity_class).where(entity_class.name == entity_name)
+            ).one()
+
+            role = session.exec(
+                select(RoleTable).where(RoleTable.name == role_name)
+            ).one()
+
+            project_id = (
+                session.exec(
+                    select(ProjectTable.id).where(
+                        ProjectTable.name == project_name
+                    )
+                ).one()
+                if project_name
+                else None
+            )
+
+            if is_user:
+                assignment = RoleAssignmentTable(
+                    role_id=role.id, project_id=project_id, user_id=entity.id
+                )
+            else:
+                assignment = RoleAssignmentTable(
+                    role_id=role.id, project_id=project_id, team_id=entity.id
+                )
+            session.add(assignment)
+            session.commit()
+
+    def revoke_role(
+        self,
+        role_name: str,
+        entity_name: str,
+        project_name: Optional[str] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Revokes a role from a user or team.
+
+        Args:
+            role_name: Name of the role to revoke.
+            entity_name: User or team name.
+            project_name: Optional project name.
+            is_user: Boolean indicating whether the given `entity_name` refers
+                to a user.
+        """
+        with Session(self.engine) as session:
+            statement = (
+                select(RoleAssignmentTable)
+                .where(RoleAssignmentTable.role_id == RoleTable.id)
+                .where(RoleTable.name == role_name)
+            )
+
+            if project_name:
+                statement = statement.where(
+                    RoleAssignmentTable.project_id == ProjectTable.id
+                ).where(ProjectTable.name == project_name)
+
+            if is_user:
+                statement = statement.where(
+                    RoleAssignmentTable.user_id == UserTable.id
+                ).where(UserTable.name == entity_name)
+            else:
+                statement = statement.where(
+                    RoleAssignmentTable.team_id == TeamTable.id
+                ).where(TeamTable.name == entity_name)
+
+            assignment = session.exec(statement).one_or_none()
+
+            if assignment:
+                session.delete(assignment)
+                session.commit()
+
+    def get_users_for_team(self, team_name: str) -> List[User]:
+        """Fetches all users of a team.
+
+        Args:
+            team_name: Name of the team.
+
+        Returns:
+            List of users that are part of the team.
+        """
+        with Session(self.engine) as session:
+            return session.exec(
+                select(UserTable)
+                .where(UserTable.id == TeamAssignmentTable.user_id)
+                .where(TeamAssignmentTable.team_id == TeamTable.id)
+                .where(TeamTable.name == team_name)
+            ).all()
+
+    def get_teams_for_user(self, user_name: str) -> List[Team]:
+        """Fetches all teams for a user.
+
+        Args:
+            user_name: Name of the user.
+
+        Returns:
+            List of teams that the user is part of.
+        """
+        with Session(self.engine) as session:
+            return session.exec(
+                select(TeamTable)
+                .where(TeamTable.id == TeamAssignmentTable.team_id)
+                .where(TeamAssignmentTable.user_id == UserTable.id)
+                .where(UserTable.name == user_name)
+            ).all()
+
+    def get_role_assignments_for_user(
+        self,
+        user_name: str,
+        project_name: Optional[str] = None,
+        include_team_roles: bool = True,
+    ) -> List[RoleAssignment]:
+        """Fetches all role assignments for a user.
+
+        Args:
+            user_name: Name of the user.
+            project_name: Optional filter to only return roles assigned for
+                this project.
+            include_team_roles: If `True`, includes roles for all teams that
+                the user is part of.
+
+        Returns:
+            List of role assignments for this user.
+        """
+        with Session(self.engine) as session:
+            statement = (
+                select(RoleAssignmentTable)
+                .where(RoleAssignmentTable.user_id == UserTable.id)
+                .where(UserTable.name == user_name)
+            )
+            if project_name:
+                statement = statement.where(
+                    RoleAssignmentTable.project_id == ProjectTable.id
+                ).where(ProjectTable.name == project_name)
+
+            assignments = session.exec(statement).all()
+            if include_team_roles:
+                for team in self.get_teams_for_user(user_name):
+                    assignments += self.get_role_assignments_for_team(
+                        team.name, project_name=project_name
+                    )
+
+            return assignments
+
+    def get_role_assignments_for_team(
+        self,
+        team_name: str,
+        project_name: Optional[str] = None,
+    ) -> List[RoleAssignment]:
+        """Fetches all role assignments for a team.
+
+        Args:
+            team_name: Name of the user.
+            project_name: Optional filter to only return roles assigned for
+                this project.
+
+        Returns:
+            List of role assignments for this team.
+        """
+        with Session(self.engine) as session:
+            statement = (
+                select(RoleAssignmentTable)
+                .where(RoleAssignmentTable.team_id == TeamTable.id)
+                .where(TeamTable.name == team_name)
+            )
+            if project_name:
+                statement = statement.where(
+                    RoleAssignmentTable.project_id == ProjectTable.id
+                ).where(ProjectTable.name == project_name)
+            return session.exec(statement).all()
+
     # Implementation-specific internal methods:
 
     @property
@@ -377,3 +885,10 @@ class SqlStackStore(BaseStackStore):
         """Names of all stacks registered in this StackStore."""
         with Session(self.engine) as session:
             return [s.name for s in session.exec(select(ZenStack))]
+
+    def _delete_query_results(self, query: Any) -> None:
+        """Deletes all rows returned by the input query."""
+        with Session(self.engine) as session:
+            for result in session.exec(query).all():
+                session.delete(result)
+            session.commit()
