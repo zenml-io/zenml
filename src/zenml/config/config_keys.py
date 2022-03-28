@@ -49,34 +49,29 @@ class ConfigKeys:
             config: The configuration dict to verify.
 
         Raises:
-            AssertionError: If the dictionary contains unknown keys or
-                is missing any required key.
+            TypeError: If no config dictionary is passed.
+            ValueError: If required keys are missing or unknown keys are found.
         """
-        assert isinstance(config, dict), "Please specify a dict for {}".format(
-            cls.__name__
-        )
+        if not isinstance(config, dict):
+            raise TypeError(f"Please specify a dict for {cls.__name__}")
 
         # Required and optional keys for the config dict
         required, optional = cls.get_keys()
 
         # Check for missing keys
         missing_keys = [k for k in required if k not in config.keys()]
-        assert len(missing_keys) == 0, "Missing key(s) {} in {}".format(
-            missing_keys, cls.__name__
-        )
+        if missing_keys:
+            raise ValueError(f"Missing key(s) {missing_keys} in {cls.__name__}")
 
         # Check for unknown keys
         unknown_keys = [
             k for k in config.keys() if k not in required and k not in optional
         ]
-        assert (
-            len(unknown_keys) == 0
-        ), "Unknown key(s) {} in {}. Required keys : {} " "Optional Keys: {}".format(
-            unknown_keys,
-            cls.__name__,
-            required,
-            optional,
-        )
+        if unknown_keys:
+            raise ValueError(
+                f"Unknown key(s) {unknown_keys} in {cls.__name__}. "
+                f"Required keys: {required}, optional keys: {optional}."
+            )
 
 
 class PipelineConfigurationKeys(ConfigKeys):

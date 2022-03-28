@@ -318,6 +318,17 @@ class _FunctionExecutor(BaseExecutor):
         Returns:
             Return the output of `handle_input()` of selected materializer.
         """
+        # Skip materialization for BaseArtifact and its subtypes.
+        if issubclass(data_type, BaseArtifact):
+            if data_type != type(artifact):
+                logger.warning(
+                    f"You specified the data_type `{data_type}` but the actual "
+                    f"artifact type from the previous step is "
+                    f"`{type(artifact)}`. Ignoring this for now, but please be "
+                    f"aware of this in your step code."
+                )
+            return artifact
+
         materializer = source_utils.load_source_path_class(
             artifact.materializer
         )(artifact)
@@ -335,6 +346,10 @@ class _FunctionExecutor(BaseExecutor):
             artifact: A TFX artifact type.
             data: The object to be passed to `handle_return()`.
         """
+        # Skip materialization for BaseArtifact and subclasses.
+        if issubclass(type(data), BaseArtifact):
+            return
+
         materializer_class = self.resolve_materializer_with_registry(
             param_name, artifact
         )

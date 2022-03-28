@@ -36,7 +36,7 @@ my_pipeline(
 ).run(schedule=schedule)
 ```
 
-The above deploys a pipeline, potentially on a [production stack](cloud-pipelines), on a defined schedule. If the 
+The above deploys a pipeline, potentially on a [production stack](guide-aws-gcp-azure.md), on a defined schedule. If the 
 pipeline has a well-defined data loading/importing step, then one can deploy it to run and train new models on fresh data 
 on a regular basis. This enables Continuous Training with ZenML.
 

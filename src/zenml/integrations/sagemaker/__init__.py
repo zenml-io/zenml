@@ -12,26 +12,24 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The Azure integration submodule provides a way to run ZenML pipelines in a cloud
-environment. Specifically, it allows the use of cloud artifact stores,
-and an `io` module to handle file operations on Azure Blob Storage.
+The Sagemaker integration submodule provides a way to run ZenML steps in
+Sagemaker.
 """
 
-from zenml.integrations.constants import AZURE
+from zenml.integrations.constants import SAGEMAKER
 from zenml.integrations.integration import Integration
 
 
-class AzureIntegration(Integration):
-    """Definition of Azure integration for ZenML."""
+class SagemakerIntegration(Integration):
+    """Definition of Sagemaker integration for ZenML."""
 
-    NAME = AZURE
-    REQUIREMENTS = ["adlfs==2021.10.0"]
+    NAME = SAGEMAKER
+    REQUIREMENTS = ["sagemaker==2.77.1"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.azure import artifact_stores  # noqa
-        from zenml.integrations.azure import io  # noqa
+        from zenml.integrations.sagemaker import step_operators  # noqa
 
 
-AzureIntegration.check_installation()
+SagemakerIntegration.check_installation()
