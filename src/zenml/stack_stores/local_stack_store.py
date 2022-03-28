@@ -54,8 +54,11 @@ class LocalStackStore(BaseStackStore):
         Returns:
             The initialized stack store instance.
         """
-        self._url = url
+        if not self.is_valid_url(url):
+            raise ValueError(f"Invalid URL for local store: {url}")
+
         self._root = self.get_path_from_url(url)
+        self._url = f"file://{self._root}"
         fileio.create_dir_recursive_if_not_exists(str(self._root))
 
         if stack_data is not None:
