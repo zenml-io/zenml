@@ -28,12 +28,16 @@ from azureml.core.authentication import (
 )
 from azureml.core.conda_dependencies import CondaDependencies
 
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.enums import StackComponentType, StepOperatorFlavor
 from zenml.environment import Environment as ZenMLEnvironment
+from zenml.io import fileio
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.step_operators import BaseStepOperator
+from zenml.utils.docker_utils import CONTAINER_ZENML_CONFIG_DIR
 from zenml.utils.source_utils import get_source_root_path
 
 
@@ -154,6 +158,10 @@ class AzureMLStepOperator(BaseStepOperator):
             if value:
                 environment_variables[key] = value
 
+        environment_variables[
+            ENV_ZENML_CONFIG_PATH
+        ] = f"./{CONTAINER_ZENML_CONFIG_DIR}"
+
         environment.environment_variables = environment_variables
         return environment
 
@@ -182,21 +190,41 @@ class AzureMLStepOperator(BaseStepOperator):
             auth=self._get_authentication(),
         )
 
-        environment = self._prepare_environment(
-            workspace=workspace, requirements=requirements, run_name=run_name
-        )
-        compute_target = ComputeTarget(
-            workspace=workspace, name=self.compute_target_name
-        )
+        source_directory = get_source_root_path()
+        config_path = os.path.join(source_directory, CONTAINER_ZENML_CONFIG_DIR)
+        try:
 
-        run_config = ScriptRunConfig(
-            source_directory=get_source_root_path(),
-            environment=environment,
-            compute_target=compute_target,
-            command=entrypoint_command,
-        )
+            # Save a copy of the current global configuration with the
+            # active profile contents into the build context, to have
+            # the configured stacks accessible from within the Azure ML
+            # environment.
+            GlobalConfiguration().copy_config_with_active_profile(
+                config_path,
+                load_config_path=f"./{CONTAINER_ZENML_CONFIG_DIR}",
+            )
 
-        experiment = Experiment(workspace=workspace, name=pipeline_name)
-        run = experiment.submit(config=run_config)
+            environment = self._prepare_environment(
+                workspace=workspace,
+                requirements=requirements,
+                run_name=run_name,
+            )
+            compute_target = ComputeTarget(
+                workspace=workspace, name=self.compute_target_name
+            )
+
+            run_config = ScriptRunConfig(
+                source_directory=source_directory,
+                environment=environment,
+                compute_target=compute_target,
+                command=entrypoint_command,
+            )
+
+            experiment = Experiment(workspace=workspace, name=pipeline_name)
+            run = experiment.submit(config=run_config)
+
+        finally:
+            # Clean up the temporary build files
+            fileio.rm_dir(config_path)
+
         run.display_name = run_name
         run.wait_for_completion(show_output=True)
