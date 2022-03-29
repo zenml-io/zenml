@@ -52,7 +52,7 @@ metadata = {'store_type': 'local', 'orchestrator': 'local',
             'total_steps': 3, 'schedule': False, 'os': 'linux',
             'linux_distro': 'ubuntu', 'linux_distro_like': 'debian',
             'linux_distro_version': '20.04', 'environment': 'gh_action_test',
-            'python_version': '3.8.10', 'version': '0.2.0'}
+            'python_version': '3.8.10', 'version': '0.7.0'}
 
 # Used as a way to choose the days on which weekly or monthly users post
 days_since_epoch = (
