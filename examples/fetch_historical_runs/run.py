@@ -82,9 +82,11 @@ def mnist_pipeline(
     evaluator(X_test=X_test, y_test=y_test, model=model)
 
 
-pipeline = mnist_pipeline(
-    importer=importer(),
-    trainer=trainer(),
-    evaluator=evaluate_and_store_best_model(),
-)
-pipeline.run()
+if __name__ == "__main__":
+
+    pipeline = mnist_pipeline(
+        importer=importer(),
+        trainer=trainer(),
+        evaluator=evaluate_and_store_best_model(),
+    )
+    pipeline.run()

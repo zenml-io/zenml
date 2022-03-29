@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
 import numpy as np
 from sklearn.base import ClassifierMixin
 
@@ -21,7 +20,15 @@ from zenml.integrations.sklearn.helpers.digits import (
     get_digits_model,
 )
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import Output, step
+
+step_operator = Repository().active_stack.step_operator
+if not step_operator:
+    raise RuntimeError(
+        "Your active stack needs to contain a step operator for this example "
+        "to work."
+    )
 
 
 @step
@@ -36,7 +43,7 @@ def importer() -> Output(
 # setting the custom_step_operator param will tell ZenML
 # to run this step on a custom backend defined by the name
 # of the operator you provide.
-@step(custom_step_operator="sagemaker")
+@step(custom_step_operator=step_operator.name)
 def trainer(
     X_train: np.ndarray,
     y_train: np.ndarray,
@@ -71,9 +78,10 @@ def mnist_pipeline(
     evaluator(X_test=X_test, y_test=y_test, model=model)
 
 
-pipeline = mnist_pipeline(
-    importer=importer(),
-    trainer=trainer(),
-    evaluator=evaluator(),
-)
-pipeline.run()
+if __name__ == "__main__":
+    pipeline = mnist_pipeline(
+        importer=importer(),
+        trainer=trainer(),
+        evaluator=evaluator(),
+    )
+    pipeline.run()

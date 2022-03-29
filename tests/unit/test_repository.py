@@ -19,13 +19,11 @@ from typing import Optional
 
 import pytest
 
-import zenml
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.exceptions import (
     ForbiddenRepositoryAccessError,
     InitializationException,
-    RepositoryNotFoundError,
     StackComponentExistsError,
     StackExistsError,
 )
@@ -73,15 +71,18 @@ def test_repository_detection(tmp_path):
     assert Repository.is_repository_directory(tmp_path) is True
 
 
-def test_initializing_repo_creates_directory_and_registers_local_stack(
-    tmp_path,
+def test_initializing_repo_creates_directory_and_uses_default_stack(
+    tmp_path, clean_repo
 ):
-    """Tests that repo initialization creates a .zen directory and registers a
-    local stack."""
+    """Tests that repo initialization creates a .zen directory and uses the
+    default local stack."""
     Repository.initialize(tmp_path)
     assert fileio.file_exists(str(tmp_path / ".zen"))
 
-    repo = Repository(tmp_path)
+    repo = Repository()
+    # switch to the new repo root
+    repo.activate_root(tmp_path)
+
     assert len(repo.stacks) == 1
 
     stack = repo.active_stack
@@ -105,10 +106,9 @@ def test_freshly_initialized_repo_attributes(tmp_path):
     repo = Repository(tmp_path)
 
     assert repo.root == tmp_path
-    assert repo.version == zenml.__version__
 
 
-def test_finding_repository_directory_with_explicit_path(tmp_path):
+def test_finding_repository_directory_with_explicit_path(tmp_path, clean_repo):
     """Tests that a repository can be found using an explicit path, an
     environment variable and the current working directory."""
     subdirectory_path = tmp_path / "some_other_directory"
@@ -116,26 +116,19 @@ def test_finding_repository_directory_with_explicit_path(tmp_path):
     os.chdir(str(subdirectory_path))
 
     # no repo exists and explicit path passed
-    with pytest.raises(RepositoryNotFoundError):
-        Repository.find_repository(tmp_path)
-
-    with pytest.raises(RepositoryNotFoundError):
-        Repository(tmp_path)
+    assert Repository.find_repository(tmp_path) is None
+    assert Repository(tmp_path).root is None
 
     # no repo exists and no path passed (=uses current working directory)
-    with pytest.raises(RepositoryNotFoundError):
-        Repository.find_repository()
-
-    with pytest.raises(RepositoryNotFoundError):
-        Repository()
+    assert Repository.find_repository() is None
+    Repository._reset_instance()
+    assert Repository().root is None
 
     # no repo exists and explicit path set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(tmp_path)
-    with pytest.raises(RepositoryNotFoundError):
-        Repository.find_repository()
-
-    with pytest.raises(RepositoryNotFoundError):
-        Repository()
+    assert Repository.find_repository() is None
+    Repository._reset_instance()
+    assert Repository().root is None
 
     del os.environ["ZENML_REPOSITORY_PATH"]
 
@@ -143,35 +136,29 @@ def test_finding_repository_directory_with_explicit_path(tmp_path):
     Repository.initialize(tmp_path)
 
     # repo exists and explicit path passed
-    with does_not_raise():
-        Repository.find_repository(tmp_path)
-        Repository(tmp_path)
+    assert Repository.find_repository(tmp_path) == tmp_path
+    assert Repository(tmp_path).root == tmp_path
 
     # repo exists and explicit path to subdirectory passed
-    with pytest.raises(RepositoryNotFoundError):
-        Repository.find_repository(subdirectory_path)
-
-    with pytest.raises(RepositoryNotFoundError):
-        Repository(subdirectory_path)
+    assert Repository.find_repository(subdirectory_path) is None
+    assert Repository(subdirectory_path).root is None
 
     # repo exists and no path passed (=uses current working directory)
-    with does_not_raise():
-        Repository.find_repository()
-        Repository()
+    assert Repository.find_repository() == tmp_path
+    Repository._reset_instance()
+    assert Repository().root == tmp_path
 
     # repo exists and explicit path set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(tmp_path)
-    with does_not_raise():
-        Repository.find_repository()
-        Repository()
+    assert Repository.find_repository() == tmp_path
+    Repository._reset_instance()
+    assert Repository().root == tmp_path
 
     # repo exists and explicit path to subdirectory set via environment variable
     os.environ["ZENML_REPOSITORY_PATH"] = str(subdirectory_path)
-    with pytest.raises(RepositoryNotFoundError):
-        Repository.find_repository()
-
-    with pytest.raises(RepositoryNotFoundError):
-        Repository()
+    assert Repository.find_repository() is None
+    Repository._reset_instance()
+    assert Repository().root is None
 
     del os.environ["ZENML_REPOSITORY_PATH"]
 
@@ -182,12 +169,9 @@ def test_repo_without_configuration_file_falls_back_to_empty_config(tmp_path):
     fileio.create_dir_recursive_if_not_exists(str(tmp_path / ".zen"))
     repo = Repository(tmp_path)
 
-    assert len(repo.stacks) == 0
-    with pytest.raises(RuntimeError):
-        _ = repo.active_stack_name
-
-    with pytest.raises(RuntimeError):
-        _ = repo.active_stack
+    assert len(repo.stacks) == 1
+    assert repo.active_stack_name == "default"
+    assert repo.active_stack is not None
 
 
 def test_creating_repository_instance_during_step_execution_fails(mocker):

@@ -14,7 +14,7 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import kfp
 import urllib3
@@ -41,6 +41,7 @@ from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.utils import networking_utils
+from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -145,11 +146,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
         logger.debug("Kubeflow docker container requirements: %s", requirements)
 
         build_docker_image(
-            build_context_path=str(Repository().root),
+            build_context_path=get_source_root_path(),
             image_name=image_name,
             dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
+            environment_vars=self._get_environment_vars_from_secrets(
+                pipeline.secrets
+            ),
         )
 
         if stack.container_registry:
@@ -490,3 +494,28 @@ class KubeflowOrchestrator(BaseOrchestrator):
         local_deployment_utils.stop_kfp_ui_daemon(
             pid_file_path=self._pid_file_path
         )
+
+    def _get_environment_vars_from_secrets(
+        self, secrets: List[str]
+    ) -> Dict[str, str]:
+        """Get key-value pairs from list of secrets provided by the user.
+
+        Args:
+            secrets: List of secrets provided by the user.
+
+        Returns:
+            A dictionary of key-value pairs.
+
+        Raises:
+            ProvisioningError: If the stack has no secrets manager."""
+
+        secret_manager = Repository().active_stack.secrets_manager
+        if not secret_manager:
+            raise ProvisioningError(
+                "Unable to provision local Kubeflow Pipelines deployment: "
+                "Missing secrets manager in current stack."
+            )
+        environment_vars: Dict[str, str] = {}
+        for secret in secrets:
+            environment_vars.update(secret_manager.get_secret(secret))
+        return environment_vars

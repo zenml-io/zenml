@@ -31,7 +31,6 @@ All credits go to the TFX team for the core implementation"""
 import collections
 import copy
 import json
-import os
 import sys
 from typing import (
     TYPE_CHECKING,
@@ -44,7 +43,6 @@ from typing import (
     Set,
     Type,
     Union,
-    cast,
 )
 
 from kfp import compiler, dsl, gcp
@@ -75,6 +73,7 @@ from zenml.integrations.kubeflow.orchestrators.kubeflow_component import (
 from zenml.logger import get_logger
 from zenml.orchestrators import context_utils
 from zenml.orchestrators.utils import create_tfx_pipeline
+from zenml.utils.source_utils import get_module_source_from_module
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -350,12 +349,7 @@ class KubeflowDagRunner:
             # remove the extra pipeline node information
             tfx_node_ir = self._dehydrate_tfx_ir(tfx_ir, component.id)
 
-            from zenml.utils import source_utils
-
-            main_module_file = cast(str, sys.modules["__main__"].__file__)
-            main_module = source_utils.get_module_source_from_file_path(
-                os.path.abspath(main_module_file)
-            )
+            main_module = get_module_source_from_module(sys.modules["__main__"])
 
             step_module = component.component_type.split(".")[:-1]
             if step_module[0] == "__main__":

@@ -23,7 +23,7 @@ class Schedule(BaseModel):
 
     Attributes:
         start_time: Datetime object to indicate when to start the schedule.
-        end_time: Datetime object to indicate when to start the schedule.
+        end_time: Datetime object to indicate when to end the schedule.
         interval_second: Integer indicating the seconds between two recurring
             runs in for a periodic schedule.
         catchup: Whether the recurring run should catch up if behind schedule.

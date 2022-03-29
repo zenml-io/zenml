@@ -48,6 +48,7 @@ class StackComponentType(StrEnum):
     CONTAINER_REGISTRY = "container_registry"
     STEP_OPERATOR = "step_operator"
     FEATURE_STORE = "feature_store"
+    SECRETS_MANAGER = "secrets_manager"
 
     @property
     def plural(self) -> str:
@@ -76,6 +77,8 @@ class StackComponentFlavor(StrEnum):
             return OrchestratorFlavor
         elif component_type == StackComponentType.STEP_OPERATOR:
             return StepOperatorFlavor
+        elif component_type == StackComponentType.SECRETS_MANAGER:
+            return SecretsManagerFlavor
         elif component_type == StackComponentType.FEATURE_STORE:
             return FeatureStoreFlavor
         else:
@@ -113,6 +116,7 @@ class OrchestratorFlavor(StackComponentFlavor):
     LOCAL = "local"
     KUBEFLOW = "kubeflow"
     AIRFLOW = "airflow"
+    VERTEX = "vertex"
 
 
 class StepOperatorFlavor(StackComponentFlavor):
@@ -120,6 +124,7 @@ class StepOperatorFlavor(StackComponentFlavor):
 
     AZUREML = "azureml"
     SAGEMAKER = "sagemaker"
+    VERTEX = "vertex"
 
 
 class FeatureStoreFlavor(StackComponentFlavor):
@@ -135,10 +140,24 @@ class MetadataContextTypes(Enum):
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
 
 
-class StorageType(StrEnum):
-    """Storage Backend Types"""
+class SecretsManagerFlavor(StackComponentFlavor):
+    """All supported orchestrator flavors."""
 
-    YAML_STORAGE = "yaml_storage"
-    SQLITE_STORAGE = "sqlite_storage"
-    MYSQL_STORAGE = "mysql_storage"
-    REST_STORAGE = "rest_storage"
+    LOCAL = "local"
+    LOCAL_SQLITE = "local_sqlite"
+    AWS = "aws"
+
+
+class SecretSchemaType(StrEnum):
+    """All supported secret schema types."""
+
+    AWS = "aws"
+    ARBITRARY = "arbitrary"
+
+
+class StoreType(StrEnum):
+    """Repository Store Backend Types"""
+
+    LOCAL = "local"
+    SQL = "sql"
+    REST = "rest"

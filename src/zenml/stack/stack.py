@@ -26,9 +26,10 @@ from typing import (
     Type,
 )
 
-from zenml.config.global_config import GlobalConfig
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
@@ -43,6 +44,7 @@ if TYPE_CHECKING:
     from zenml.metadata_stores import BaseMetadataStore
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
+    from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
 
@@ -68,6 +70,7 @@ class Stack:
         metadata_store: "BaseMetadataStore",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
+        secrets_manager: Optional["BaseSecretsManager"] = None,
         step_operator: Optional["BaseStepOperator"] = None,
         feature_store: Optional["BaseFeatureStore"] = None,
     ):
@@ -82,6 +85,7 @@ class Stack:
         self._artifact_store = artifact_store
         self._container_registry = container_registry
         self._step_operator = step_operator
+        self._secrets_manager = secrets_manager
         self._feature_store = feature_store
 
         self.validate()
@@ -108,6 +112,7 @@ class Stack:
         from zenml.feature_stores import BaseFeatureStore
         from zenml.metadata_stores import BaseMetadataStore
         from zenml.orchestrators import BaseOrchestrator
+        from zenml.secrets_managers import BaseSecretsManager
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
@@ -140,6 +145,12 @@ class Stack:
         ):
             _raise_type_error(container_registry, BaseContainerRegistry)
 
+        secrets_manager = components.get(StackComponentType.SECRETS_MANAGER)
+        if secrets_manager is not None and not isinstance(
+            secrets_manager, BaseSecretsManager
+        ):
+            _raise_type_error(secrets_manager, BaseSecretsManager)
+
         step_operator = components.get(StackComponentType.STEP_OPERATOR)
         if step_operator is not None and not isinstance(
             step_operator, BaseStepOperator
@@ -158,6 +169,7 @@ class Stack:
             metadata_store=metadata_store,
             artifact_store=artifact_store,
             container_registry=container_registry,
+            secrets_manager=secrets_manager,
             step_operator=step_operator,
             feature_store=feature_store,
         )
@@ -169,27 +181,28 @@ class Stack:
         from zenml.metadata_stores import SQLiteMetadataStore
         from zenml.orchestrators import LocalOrchestrator
 
-        orchestrator = LocalOrchestrator(name="local_orchestrator")
+        orchestrator = LocalOrchestrator(name="default")
 
         artifact_store_uuid = uuid.uuid4()
         artifact_store_path = os.path.join(
-            GlobalConfig.config_directory(),
+            GlobalConfiguration().config_directory,
             "local_stores",
             str(artifact_store_uuid),
         )
+        fileio.create_dir_recursive_if_not_exists(artifact_store_path)
         artifact_store = LocalArtifactStore(
-            name="local_artifact_store",
+            name="default",
             uuid=artifact_store_uuid,
             path=artifact_store_path,
         )
 
         metadata_store_path = os.path.join(artifact_store_path, "metadata.db")
         metadata_store = SQLiteMetadataStore(
-            name="local_metadata_store", uri=metadata_store_path
+            name="default", uri=metadata_store_path
         )
 
         return cls(
-            name="local_stack",
+            name="default",
             orchestrator=orchestrator,
             metadata_store=metadata_store,
             artifact_store=artifact_store,
@@ -205,6 +218,7 @@ class Stack:
                 self.metadata_store,
                 self.artifact_store,
                 self.container_registry,
+                self.secrets_manager,
                 self.step_operator,
                 self.feature_store,
             ]
@@ -235,6 +249,11 @@ class Stack:
     def container_registry(self) -> Optional["BaseContainerRegistry"]:
         """The container registry of the stack."""
         return self._container_registry
+
+    @property
+    def secrets_manager(self) -> Optional["BaseSecretsManager"]:
+        """The secrets manager of the stack."""
+        return self._secrets_manager
 
     @property
     def step_operator(self) -> Optional["BaseStepOperator"]:

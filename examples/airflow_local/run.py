@@ -27,5 +27,10 @@ scikit_p = mnist_pipeline(
     evaluator=sklearn_evaluator(),
 )
 
+# NOTE: the airflow DAG object returned by the scikit_p.run() call actually
+# needs to be a global object (airflow imports this file and does a for-loop
+# over globals() that checks if there are any DAG instances). That's why the
+# airflow example can't have the `__name__=="__main__"` condition
+
 # Run the new pipeline
 DAG = scikit_p.run()

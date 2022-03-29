@@ -26,7 +26,7 @@ def test_stack_describe_contains_local_stack() -> None:
     runner = CliRunner()
     result = runner.invoke(describe_stack)
     assert result.exit_code == 0
-    assert "local_stack" in result.output
+    assert "default" in result.output
 
 
 @pytest.mark.parametrize("not_a_stack", NOT_STACKS)

@@ -110,13 +110,15 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialize the pipeline
-scikit_p = mnist_pipeline(
-    importer=dynamic_importer(),
-    normalizer=normalize_mnist(),
-    trainer=sklearn_trainer(),
-    evaluator=sklearn_evaluator(),
-)
+if __name__ == "__main__":
 
-# Run the new pipeline
-DAG = scikit_p.run()
+    # Initialize the pipeline
+    scikit_p = mnist_pipeline(
+        importer=dynamic_importer(),
+        normalizer=normalize_mnist(),
+        trainer=sklearn_trainer(),
+        evaluator=sklearn_evaluator(),
+    )
+
+    # Run the new pipeline
+    DAG = scikit_p.run()

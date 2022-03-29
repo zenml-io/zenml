@@ -11,7 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Optional
 
-from zenml.integrations.aws.step_operators.sagemaker_step_operator import (  # noqa
-    SagemakerStepOperator,
-)
+from zenml.enums import SecretSchemaType
+from zenml.secret.base_secret import BaseSecretSchema
+
+
+class AWSSecretSchema(BaseSecretSchema):
+    aws_access_key_id: str
+    aws_secret_access_key: str
+    aws_session_token: Optional[str]
+    schema_type: SecretSchemaType = SecretSchemaType.AWS

@@ -50,6 +50,9 @@ GET_PIPELINE = "Pipeline fetched"
 # Repo
 INITIALIZE_REPO = "ZenML initialized"
 
+# Profile
+INITIALIZED_PROFILE = "Profile initialized"
+
 # Components
 REGISTERED_STACK_COMPONENT = "Stack component registered"
 
