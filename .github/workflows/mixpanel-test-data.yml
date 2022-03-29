@@ -6,7 +6,6 @@ on:
     # run this on a schedule at 5:30 in the morning every day
     - cron:  '30 5 * * *'
 
-name: pr-label
 jobs:
   pr-labeler:
     runs-on: ubuntu-latest
