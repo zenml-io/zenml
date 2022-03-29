@@ -1,0 +1,19 @@
+on:
+  workflow_dispatch:
+  schedule:
+    # run this on a schedule at 5:30 in the morning every day
+    - cron:  '30 5 * * *'
+
+name: pr-label
+jobs:
+  pr-labeler:
+    runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Post fake metadata to segment
+        run: python scripts/mixpanel_filters_test.py
