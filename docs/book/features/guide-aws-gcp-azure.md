@@ -1,11 +1,10 @@
 ---
-description: Deploy pipelines to public cloud
+description: Deploy pipelines to the public cloud.
 ---
 
 # Guide for cloud-specific deployments
 
-This guide will show how you can run the a pipeline in Kubeflow Pipelines deployed to a public cloud cluster. We will start with some pre-requisites and then move on to show the integration of your cloud provider's components with your ZenML stack.
-
+This guide will show how you can run the a pipeline in Kubeflow Pipelines deployed to a public cloud cluster. We will start with some pre-requisites and then move on to show the integration of your cloud provider's components with your ZenML stack. In addition to configuring the stack components in this guide, you can optionally run a pipeline step on a specialized cloud backend too. Check out the step operators [guide](../features/step-operators.md) for that!
 
 ## Pre-requisites
 
@@ -93,6 +92,7 @@ If you are doing a manual install of the Kubeflow Pipelines, make sure that the 
 
 {% tabs %}
 {% tab title="AWS" %}
+
 * [Create](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html) an Amazon S3 bucket in a region of your choice.
 * Make sure that your EKS cluster is authorized to access the S3 bucket. This can be done in one of the following ways:
   * A simple way is to add an [`AmazonS3FullAccess`](https://console.aws.amazon.com/iam/home#/policies/arn:aws:iam::aws:policy/AmazonS3FullAccess) policy to your cluster node group's IAM role.
@@ -116,6 +116,7 @@ If you are doing a manual install of the Kubeflow Pipelines, make sure that the 
 * The path for your bucket should be in this format `az://<CONTAINER-NAME>`.
 {% endtab %}
 {% endtabs %}
+
 
 ## Integrating with ZenML
 

@@ -1,3 +1,72 @@
+# 0.7.0
+
+With ZenML 0.7.0, a lot has been revamped under the hood about how things are stored. Importantly what this means is that ZenML now has [system-wide profiles](https://docs.zenml.io/features/profiles) that let you register stacks to share across several of your projects! If you still want to manage your stacks for each project folder individually, profiles still let you do that as well.
+
+Most projects of any complexity will require passwords or tokens to access data and infrastructure, and for this purpose ZenML 0.7.0 introduces [the Secrets Manager](https://docs.zenml.io/features/secrets) stack component to seamlessly pass around these values to your steps. Our AWS integration also allows you to use AWS Secrets Manager as a backend to handle all your secret persistence needs.
+
+Finally, in addition to the new AzureML and Sagemaker Step Operators that version 0.6.3 brought, this release also adds the ability to [run individual steps on GCP's Vertex AI](https://docs.zenml.io/v/docs/features/step-operators).
+
+Beyond this, some smaller bugfixes and documentation changes combine to make ZenML 0.7.0 a more pleasant user experience.
+
+## What's Changed
+* Added quick mention of how to use dockerignore by @AlexejPenner in https://github.com/zenml-io/zenml/pull/468
+* Made rich traceback optional with ENV variable by @htahir1 in https://github.com/zenml-io/zenml/pull/472
+* Separate stack persistence from repo implementation by @jwwwb in https://github.com/zenml-io/zenml/pull/462
+* Adding safoine username to github team by @safoinme in https://github.com/zenml-io/zenml/pull/475
+* Fix `zenml stack describe` bug by @strickvl in https://github.com/zenml-io/zenml/pull/476
+* ZenProfiles and centralized ZenML repositories by @stefannica in https://github.com/zenml-io/zenml/pull/471
+* Add `examples` folder to linting script by @strickvl in https://github.com/zenml-io/zenml/pull/482
+* Vertex AI integration and numerous other changes by @htahir1 in https://github.com/zenml-io/zenml/pull/477
+* Fix profile handing in the Azure ML step operator by @stefannica in https://github.com/zenml-io/zenml/pull/483
+* Copy the entire stack configuration into containers by @stefannica in https://github.com/zenml-io/zenml/pull/480
+* Improve some things with the Profiles CLI output by @stefannica in https://github.com/zenml-io/zenml/pull/484
+* Secrets manager stack component and interface by @AlexejPenner in https://github.com/zenml-io/zenml/pull/470
+* Update schedule.py (#485) by @avramdj in https://github.com/zenml-io/zenml/pull/485 
+
+## New Contributors
+* @avramdj in https://github.com/zenml-io/zenml/pull/485 
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.6.3...0.7.0rc
+
+
+# 0.6.3
+
+With ZenML 0.6.3, you can now run your ZenML steps on Sagemaker and AzureML! It's normal to have certain steps that require specific hardware on which to run model training, for example, and this latest release gives you the power to switch out hardware for individual steps to support this.
+
+We added a new Tensorboard visualisation that you can make use of when using our Kubeflow Pipelines integration. We handle the background processes needed to spin up this interactive web interface that you can use to visualise your model's performance over time.
+
+Behind the scenes we gave our integration testing suite a massive upgrade, fixed a number of smaller bugs and made documentation updates. For a detailed look at what's changed, give [our full release notes](https://github.com/zenml-io/zenml/releases/tag/0.6.3) a glance.
+
+## What's Changed
+* Fix typo by @wjayesh in https://github.com/zenml-io/zenml/pull/432
+* Remove tabulate dependency (replaced by rich) by @jwwwb in https://github.com/zenml-io/zenml/pull/436
+* Fix potential issue with local integration tests by @schustmi in https://github.com/zenml-io/zenml/pull/428
+* Remove support for python 3.6 by @schustmi in https://github.com/zenml-io/zenml/pull/437
+* Create clean test repos in separate folders by @michael-zenml in https://github.com/zenml-io/zenml/pull/430
+* Copy explicit materializers before modifying, log correct class by @schustmi in https://github.com/zenml-io/zenml/pull/434
+* Fix typo in mysql password parameter by @pafpixel in https://github.com/zenml-io/zenml/pull/438
+* Pytest-fixture for separate virtual environments for each integration test by @AlexejPenner in https://github.com/zenml-io/zenml/pull/405
+* Bugfix/fix failing tests due to comments step by @AlexejPenner in https://github.com/zenml-io/zenml/pull/444
+* Added --use-virtualenvs option to allow choosing envs to run by @AlexejPenner in https://github.com/zenml-io/zenml/pull/445
+* Log whether a step was cached by @strickvl in https://github.com/zenml-io/zenml/pull/435
+* Added basic integration tests for remaining examples by @strickvl in https://github.com/zenml-io/zenml/pull/439
+* Improve error message when provisioning local kubeflow resources with a non-local container registry. by @schustmi in https://github.com/zenml-io/zenml/pull/442
+* Enable generic step inputs and outputs by @schustmi in https://github.com/zenml-io/zenml/pull/440
+* Removed old reference to a step that no longer exists by @AlexejPenner in https://github.com/zenml-io/zenml/pull/452
+* Correctly use custom kubernetes context if specified by @schustmi in https://github.com/zenml-io/zenml/pull/451
+* Fix CLI stack component describe/list commands by @schustmi in https://github.com/zenml-io/zenml/pull/450
+* Ignore type of any tfx proto file by @schustmi in https://github.com/zenml-io/zenml/pull/453
+* Another boyscout pr on the gh actions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/455
+* Upgrade TFX to 1.6.1 by @jwwwb in https://github.com/zenml-io/zenml/pull/441
+* Added ZenFiles to README by @htahir1 in https://github.com/zenml-io/zenml/pull/457
+* Upgrade `rich` from 11.0 to 12.0 by @strickvl in https://github.com/zenml-io/zenml/pull/458
+* Add Kubeflow tensorboard viz and fix tensorflow file IO for cloud back-ends by @stefannica in https://github.com/zenml-io/zenml/pull/447
+* Implementing the `explain` subcommand by @bcdurak in https://github.com/zenml-io/zenml/pull/460
+* Implement AzureML and Sagemaker step operators by @schustmi in https://github.com/zenml-io/zenml/pull/456
+
+## New Contributors
+* @pafpixel made their first contribution in https://github.com/zenml-io/zenml/pull/438
+
 # 0.6.2
 
 ZenML 0.6.2 brings you the ability to serve models using MLflow deployments as well as an updated CLI interface! For a real continuous deployment cycle, we know that ZenML pipelines should be able to handle everything — from pre-processing to training to serving to monitoring and then potentially re-training and re-serving. The interfaces we created in this release are the foundation on which all of this will build.

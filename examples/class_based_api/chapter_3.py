@@ -74,22 +74,25 @@ evaluator = sklearn_steps.SklearnEvaluator(
     sklearn_steps.SklearnEvaluatorConfig(label_class_column="has_diabetes")
 )
 
-# Create the pipeline and run it
-pipeline_instance = TrainingPipeline(
-    required_integrations=[SKLEARN, TENSORFLOW],
-    datasource=datasource,
-    splitter=splitter,
-    analyzer=analyzer,
-    preprocessor=preprocessor,
-    trainer=trainer,
-    evaluator=evaluator,
-)
-pipeline_instance.run()
 
-# Post-execution
-repo = Repository()
-p = repo.get_pipeline(pipeline_name="TrainingPipeline")
-runs = p.runs
-print(f"Pipeline `TrainingPipeline` has {len(runs)} run(s)")
-run = runs[-1]
-print(f"The run you just made has {len(run.steps)} step(s).")
+if __name__ == "__main__":
+
+    # Create the pipeline and run it
+    pipeline_instance = TrainingPipeline(
+        required_integrations=[SKLEARN, TENSORFLOW],
+        datasource=datasource,
+        splitter=splitter,
+        analyzer=analyzer,
+        preprocessor=preprocessor,
+        trainer=trainer,
+        evaluator=evaluator,
+    )
+    pipeline_instance.run()
+
+    # Post-execution
+    repo = Repository()
+    p = repo.get_pipeline(pipeline_name="TrainingPipeline")
+    runs = p.runs
+    print(f"Pipeline `TrainingPipeline` has {len(runs)} run(s)")
+    run = runs[-1]
+    print(f"The run you just made has {len(run.steps)} step(s).")

@@ -49,12 +49,15 @@ import pydantic
 from tfx.dsl.component.experimental.decorators import _SimpleComponent
 from tfx.dsl.components.base.base_executor import BaseExecutor
 from tfx.dsl.components.base.executor_spec import ExecutorClassSpec
+from tfx.orchestration.portable import outputs_utils
+from tfx.proto.orchestration import execution_result_pb2
 from tfx.types import component_spec
 from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps.base_step_config import BaseStepConfig
@@ -71,6 +74,7 @@ PARAM_STEP_NAME: str = "step_name"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_PIPELINE_PARAMETER_NAME: str = "pipeline_parameter_name"
 PARAM_CREATED_BY_FUNCTIONAL_API: str = "created_by_functional_api"
+PARAM_CUSTOM_STEP_OPERATOR: str = "custom_step_operator"
 INTERNAL_EXECUTION_PARAMETER_PREFIX: str = "zenml-"
 INSTANCE_CONFIGURATION: str = "INSTANCE_CONFIGURATION"
 OUTPUT_SPEC: str = "OUTPUT_SPEC"
@@ -314,6 +318,17 @@ class _FunctionExecutor(BaseExecutor):
         Returns:
             Return the output of `handle_input()` of selected materializer.
         """
+        # Skip materialization for BaseArtifact and its subtypes.
+        if issubclass(data_type, BaseArtifact):
+            if data_type != type(artifact):
+                logger.warning(
+                    f"You specified the data_type `{data_type}` but the actual "
+                    f"artifact type from the previous step is "
+                    f"`{type(artifact)}`. Ignoring this for now, but please be "
+                    f"aware of this in your step code."
+                )
+            return artifact
+
         materializer = source_utils.load_source_path_class(
             artifact.materializer
         )(artifact)
@@ -331,6 +346,10 @@ class _FunctionExecutor(BaseExecutor):
             artifact: A TFX artifact type.
             data: The object to be passed to `handle_return()`.
         """
+        # Skip materialization for BaseArtifact and subclasses.
+        if issubclass(type(data), BaseArtifact):
+            return
+
         materializer_class = self.resolve_materializer_with_registry(
             param_name, artifact
         )
@@ -436,7 +455,7 @@ class _FunctionExecutor(BaseExecutor):
         # the pipeline runtime, such as the current step name and the current
         # pipeline run ID
         with StepEnvironment(
-            pipeline_name=self._context.pipeline_info.id,  # type: ignore[attr-defined]
+            pipeline_name=self._context.pipeline_info.id,
             pipeline_run_id=self._context.pipeline_run_id,
             step_name=getattr(self, PARAM_STEP_NAME),
         ):
@@ -487,3 +506,16 @@ class _FunctionExecutor(BaseExecutor):
                 self.resolve_output_artifact(
                     output_name, output_dict[output_name][0], return_value
                 )
+
+        # Write the executor output to the artifact store so the executor
+        # operator (potentially not running on the same machine) can read it
+        # to populate the metadata store
+        executor_output = execution_result_pb2.ExecutorOutput()
+        outputs_utils.populate_output_artifact(executor_output, output_dict)
+
+        logger.debug(
+            "Writing executor output to '%s'.",
+            self._context.executor_output_uri,
+        )
+        with fileio.open(self._context.executor_output_uri, "wb") as f:
+            f.write(executor_output.SerializeToString())

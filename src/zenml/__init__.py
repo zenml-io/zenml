@@ -14,10 +14,6 @@
 
 import os
 
-from rich.traceback import install
-
-install(show_locals=True)
-
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:

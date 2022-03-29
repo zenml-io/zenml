@@ -38,13 +38,18 @@ from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.pipeline import Pipeline as TfxPipeline
 from tfx.orchestration.portable import launcher, runtime_parameter_utils
+from tfx.proto.orchestration import executable_spec_pb2
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.enums import MetadataContextTypes, OrchestratorFlavor
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator, context_utils
-from zenml.orchestrators.utils import create_tfx_pipeline, execute_step
+from zenml.orchestrators.utils import (
+    create_tfx_pipeline,
+    execute_step,
+    get_step_for_node,
+)
 from zenml.repository import Repository
 
 if TYPE_CHECKING:
@@ -87,13 +92,18 @@ class LocalOrchestrator(BaseOrchestrator):
                 "and the pipeline will be run directly"
             )
 
+        pipeline_root = tfx_pipeline.pipeline_info.pipeline_root
+        if not isinstance(pipeline_root, str):
+            raise TypeError(
+                "TFX Pipeline root may not be a Placeholder, "
+                "but must be a specific string."
+            )
+
         for component in tfx_pipeline.components:
             if isinstance(component, base_component.BaseComponent):
-                component._resolve_pip_dependencies(
-                    tfx_pipeline.pipeline_info.pipeline_root
-                )
+                component._resolve_pip_dependencies(pipeline_root)
 
-        pb2_pipeline: Pb2Pipeline = Compiler().compile(tfx_pipeline)  # type: ignore[valid-type]
+        pb2_pipeline: Pb2Pipeline = Compiler().compile(tfx_pipeline)
 
         # Substitute the runtime parameter to be a concrete run_id
         runtime_parameter_utils.substitute_runtime_parameter(
@@ -115,8 +125,8 @@ class LocalOrchestrator(BaseOrchestrator):
 
         # Run each component. Note that the pipeline.components list is in
         # topological order.
-        for node in pb2_pipeline.nodes:  # type: ignore[attr-defined]
-            pipeline_node: PipelineNode = node.pipeline_node  # type: ignore[valid-type]
+        for node in pb2_pipeline.nodes:
+            pipeline_node: PipelineNode = node.pipeline_node
 
             # fill out that context
             context_utils.add_context_to_node(
@@ -131,7 +141,16 @@ class LocalOrchestrator(BaseOrchestrator):
                 pipeline_node, runtime_configuration
             )
 
-            node_id = pipeline_node.node_info.id  # type:ignore[attr-defined]
+            # Add pipeline requirements as a context
+            requirements = " ".join(sorted(pipeline.requirements))
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.PIPELINE_REQUIREMENTS.value,
+                name=str(hash(requirements)),
+                properties={"pipeline_requirements": requirements},
+            )
+
+            node_id = pipeline_node.node_info.id
             executor_spec = runner_utils.extract_executor_spec(
                 deployment_config, node_id
             )
@@ -139,8 +158,17 @@ class LocalOrchestrator(BaseOrchestrator):
                 deployment_config, node_id
             )
 
-            p_info = pb2_pipeline.pipeline_info  # type:ignore[attr-defined]
-            r_spec = pb2_pipeline.runtime_spec  # type:ignore[attr-defined]
+            p_info = pb2_pipeline.pipeline_info
+            r_spec = pb2_pipeline.runtime_spec
+
+            # set custom executor operator to allow custom execution logic for
+            # each step
+            step = get_step_for_node(
+                pipeline_node, steps=list(pipeline.steps.values())
+            )
+            custom_executor_operators = {
+                executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator
+            }
 
             component_launcher = launcher.Launcher(
                 pipeline_node=pipeline_node,
@@ -149,5 +177,6 @@ class LocalOrchestrator(BaseOrchestrator):
                 pipeline_runtime_spec=r_spec,
                 executor_spec=executor_spec,
                 custom_driver_spec=custom_driver_spec,
+                custom_executor_operators=custom_executor_operators,
             )
             execute_step(component_launcher)

@@ -111,21 +111,23 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialize a new pipeline run
-scikit_p = mnist_pipeline(
-    importer=dynamic_importer(),
-    normalizer=normalize_mnist(),
-    trainer=sklearn_trainer(),
-    evaluator=sklearn_evaluator(),
-)
+if __name__ == "__main__":
 
-# Run the new pipeline
-scikit_p.run()
+    # Initialize a new pipeline run
+    scikit_p = mnist_pipeline(
+        importer=dynamic_importer(),
+        normalizer=normalize_mnist(),
+        trainer=sklearn_trainer(),
+        evaluator=sklearn_evaluator(),
+    )
 
-# Post-execution
-repo = Repository()
-p = repo.get_pipeline(pipeline_name="mnist_pipeline")
-print(f"Pipeline `mnist_pipeline` has {len(p.runs)} run(s)")
-eval_step = p.runs[-1].get_step("evaluator")
-val = eval_step.output.read()
-print(f"We scored an accuracy of {val} on the latest run!")
+    # Run the new pipeline
+    scikit_p.run()
+
+    # Post-execution
+    repo = Repository()
+    p = repo.get_pipeline(pipeline_name="mnist_pipeline")
+    print(f"Pipeline `mnist_pipeline` has {len(p.runs)} run(s)")
+    eval_step = p.runs[-1].get_step("evaluator")
+    val = eval_step.output.read()
+    print(f"We scored an accuracy of {val} on the latest run!")

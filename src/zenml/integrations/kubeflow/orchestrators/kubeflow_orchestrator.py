@@ -14,13 +14,14 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import kfp
 import urllib3
 from kfp_server_api.exceptions import ApiException
 
 import zenml.io.utils
+from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
@@ -40,6 +41,7 @@ from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.utils import networking_utils
+from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -132,7 +134,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
         """
-        from zenml.integrations.kubeflow.docker_utils import (
+        from zenml.utils.docker_utils import (
             build_docker_image,
             push_docker_image,
         )
@@ -144,11 +146,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
         logger.debug("Kubeflow docker container requirements: %s", requirements)
 
         build_docker_image(
-            build_context_path=str(Repository().root),
+            build_context_path=get_source_root_path(),
             image_name=image_name,
             dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
+            environment_vars=self._get_environment_vars_from_secrets(
+                pipeline.secrets
+            ),
         )
 
         if stack.container_registry:
@@ -161,7 +166,20 @@ class KubeflowOrchestrator(BaseOrchestrator):
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Runs a pipeline on Kubeflow Pipelines."""
-        from zenml.integrations.kubeflow.docker_utils import get_image_digest
+        # First check whether its running in a notebok
+        from zenml.environment import Environment
+
+        if Environment.in_notebook():
+            raise RuntimeError(
+                "The Kubeflow orchestrator cannot run pipelines in a notebook "
+                "environment. The reason is that it is non-trivial to create "
+                "a Docker image of a notebook. Please consider refactoring "
+                "your notebook cells into separate scripts in a Python module "
+                "and run the code outside of a notebook when using this "
+                "orchestrator."
+            )
+
+        from zenml.utils.docker_utils import get_image_digest
 
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
@@ -258,7 +276,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
 
                 if self.synchronous:
-                    # TODO [MEDIUM]: Allow configuration of the timeout as a
+                    # TODO [ENG-698]: Allow configuration of the timeout as a
                     #  runtime option
                     client.wait_for_run_completion(
                         run_id=result.run_id, timeout=1200
@@ -403,6 +421,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 kubernetes_context=kubernetes_context
             )
 
+            artifact_store = Repository().active_stack.artifact_store
+            if isinstance(artifact_store, LocalArtifactStore):
+                local_deployment_utils.add_hostpath_to_kubeflow_pipelines(
+                    kubernetes_context=kubernetes_context,
+                    local_path=artifact_store.path,
+                )
+
             local_deployment_utils.start_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path,
                 log_file_path=self.log_file,
@@ -469,3 +494,28 @@ class KubeflowOrchestrator(BaseOrchestrator):
         local_deployment_utils.stop_kfp_ui_daemon(
             pid_file_path=self._pid_file_path
         )
+
+    def _get_environment_vars_from_secrets(
+        self, secrets: List[str]
+    ) -> Dict[str, str]:
+        """Get key-value pairs from list of secrets provided by the user.
+
+        Args:
+            secrets: List of secrets provided by the user.
+
+        Returns:
+            A dictionary of key-value pairs.
+
+        Raises:
+            ProvisioningError: If the stack has no secrets manager."""
+
+        secret_manager = Repository().active_stack.secrets_manager
+        if not secret_manager:
+            raise ProvisioningError(
+                "Unable to provision local Kubeflow Pipelines deployment: "
+                "Missing secrets manager in current stack."
+            )
+        environment_vars: Dict[str, str] = {}
+        for secret in secrets:
+            environment_vars.update(secret_manager.get_secret(secret))
+        return environment_vars

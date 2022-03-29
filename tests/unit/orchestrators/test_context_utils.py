@@ -25,9 +25,7 @@ from zenml.repository import Repository
 from zenml.steps import step
 
 
-def test_pipeline_storing_stack_in_the_metadata_store(
-    clean_repo, one_step_pipeline
-):
+def test_pipeline_storing_stack_in_the_metadata_store(one_step_pipeline):
     """Tests that returning an object of a type that wasn't specified (either
     directly or as part of the `Output` tuple annotation) raises an error."""
 

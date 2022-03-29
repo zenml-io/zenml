@@ -31,6 +31,12 @@ from typing import (
     cast,
 )
 
+from tfx.orchestration.portable.base_executor_operator import (
+    BaseExecutorOperator,
+)
+from tfx.orchestration.portable.python_executor_operator import (
+    PythonExecutorOperator,
+)
 from tfx.types.channel import Channel
 
 from zenml.artifacts.base_artifact import BaseArtifact
@@ -41,6 +47,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.default_materializer_registry import (
     default_materializer_registry,
 )
+from zenml.step_operators.step_executor_operator import StepExecutorOperator
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_output import Output
@@ -48,6 +55,7 @@ from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_CREATED_BY_FUNCTIONAL_API,
+    PARAM_CUSTOM_STEP_OPERATOR,
     PARAM_ENABLE_CACHE,
     PARAM_PIPELINE_PARAMETER_NAME,
     SINGLE_RETURN_OUT_NAME,
@@ -201,6 +209,8 @@ class BaseStep(metaclass=BaseStepMeta):
         pipeline_parameter_name: The name of the pipeline parameter for which
             this step was passed as an argument.
         enable_cache: A boolean indicating if caching is enabled for this step.
+        custom_step_operator: Optional name of a custom step operator to use
+            for this step.
         requires_context: A boolean indicating if this step requires a
             `StepContext` object during execution.
     """
@@ -228,6 +238,7 @@ class BaseStep(metaclass=BaseStepMeta):
         self._created_by_functional_api = kwargs.pop(
             PARAM_CREATED_BY_FUNCTIONAL_API, False
         )
+        self.custom_step_operator = kwargs.pop(PARAM_CUSTOM_STEP_OPERATOR, None)
 
         enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)
         if enable_cache is None:
@@ -316,7 +327,8 @@ class BaseStep(metaclass=BaseStepMeta):
     def _internal_execution_parameters(self) -> Dict[str, Any]:
         """ZenML internal execution parameters for this step."""
         parameters = {
-            PARAM_PIPELINE_PARAMETER_NAME: self.pipeline_parameter_name
+            PARAM_PIPELINE_PARAMETER_NAME: self.pipeline_parameter_name,
+            PARAM_CUSTOM_STEP_OPERATOR: self.custom_step_operator,
         }
 
         if self.enable_cache:
@@ -580,7 +592,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         self.INPUT_SPEC = {
-            arg_name: artifact_type.type  # type:ignore[misc]
+            arg_name: artifact_type.type
             for arg_name, artifact_type in input_artifacts.items()
         }
 
@@ -624,7 +636,7 @@ class BaseStep(metaclass=BaseStepMeta):
         )
 
         # Resolve the returns in the right order.
-        returns = [self.component.outputs[key] for key in self.OUTPUT_SPEC]
+        returns = [self.component.outputs[key] for key in self.OUTPUT_SIGNATURE]
 
         # If its one return we just return the one channel not as a list
         if len(returns) == 1:
@@ -641,6 +653,14 @@ class BaseStep(metaclass=BaseStepMeta):
                 "before creating it via calling the step."
             )
         return self._component
+
+    @property
+    def executor_operator(self) -> Type[BaseExecutorOperator]:
+        """Executor operator class that should be used to run this step."""
+        if self.custom_step_operator:
+            return StepExecutorOperator
+        else:
+            return PythonExecutorOperator
 
     def with_return_materializers(
         self: T,

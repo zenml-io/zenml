@@ -101,7 +101,7 @@ def mlflow_tracking_example_validation(repository: Repository):
     from zenml.integrations.mlflow.mlflow_environment import MLFlowEnvironment
 
     # Create and activate the global MLflow environment
-    MLFlowEnvironment(repo_root=repository.root).activate()
+    MLFlowEnvironment().activate()
 
     # fetch the MLflow experiment created for the pipeline runs
     mlflow_experiment = mlflow.get_experiment_by_name(pipeline.name)
@@ -176,7 +176,7 @@ def mlflow_deployment_example_validation(repository: Repository):
     from zenml.integrations.mlflow.mlflow_environment import MLFlowEnvironment
 
     # create and activate the global MLflow environment
-    MLFlowEnvironment(repo_root=repository.root).activate()
+    MLFlowEnvironment().activate()
 
     # fetch the MLflow experiment created for the pipeline runs
     mlflow_experiment = mlflow.get_experiment_by_name(deployment_pipeline.name)

@@ -21,10 +21,13 @@ from dateutil import tz
 from rich import box, table
 from rich.text import Text
 
+from zenml.config.profile_config import ProfileConfiguration
 from zenml.console import console
 from zenml.constants import IS_DEBUG_ENV
+from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.repository import StackConfiguration
+from zenml.repository import Repository
+from zenml.secret import BaseSecretSchema
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -150,7 +153,8 @@ def print_stack_component_list(
 
     Args:
         components: List of stack components to print.
-        active_component_name: Name of the component that is currently active.
+        active_component_name: Name of the component that is currently
+            active.
     """
     configurations = []
     for component in components:
@@ -167,7 +171,9 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    component: StackConfiguration, active: bool, stack_name: str
+    config: Dict[StackComponentType, str],
+    active: bool,
+    stack_name: str,
 ) -> None:
     """Prints the configuration options of a stack."""
     stack_caption = f"'{stack_name}' stack"
@@ -181,9 +187,9 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE")
     rich_table.add_column("COMPONENT_NAME")
-    items = component.dict().items()
+    items = ([typ.value, name] for typ, name in config.items())
     for item in items:
-        rich_table.add_row(*list(item))
+        rich_table.add_row(*item)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -207,6 +213,54 @@ def print_stack_component_configuration(
     rich_table.add_column("COMPONENT_PROPERTY")
     rich_table.add_column("VALUE")
     items = component.dict().items()
+    for item in items:
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+    ]
+    console.print(rich_table)
+
+
+def print_active_profile() -> None:
+    """Print active profile."""
+    repo = Repository()
+    scope = "local" if repo.root else "global"
+    declare(
+        f"Running with active profile: '{repo.active_profile_name}' ({scope})"
+    )
+
+
+def print_active_stack() -> None:
+    """Print active stack."""
+    repo = Repository()
+    declare(f"Running with active stack: '{repo.active_stack_name}'")
+
+
+def print_profile(
+    profile: ProfileConfiguration,
+    active: bool,
+) -> None:
+    """Prints the configuration options of a profile.
+
+    Args:
+        profile: Profile to print.
+        active: Whether the profile is active.
+        name: Name of the profile.
+    """
+    profile_title = f"'{profile.name}' Profile Configuration"
+    if active:
+        profile_title += " (ACTIVE)"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=profile_title,
+        show_lines=True,
+    )
+    rich_table.add_column("PROPERTY")
+    rich_table.add_column("VALUE")
+    items = profile.dict().items()
     for item in items:
         rich_table.add_row(*[str(elem) for elem in item])
 
@@ -272,15 +326,14 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     return r_args
 
 
-def install_package(package: str) -> None:
-    """Installs pypi package into the current environment with pip"""
+def install_packages(packages: List[str]) -> None:
+    """Installs pypi packages into the current environment with pip"""
     command = [
         sys.executable,
         "-m",
         "pip",
         "install",
-        package,
-    ]
+    ] + packages
 
     if not IS_DEBUG_ENV:
         command += [
@@ -304,3 +357,43 @@ def uninstall_package(package: str) -> None:
             package,
         ]
     )
+
+
+def pretty_print_secret(
+    secret: BaseSecretSchema, hide_secret: bool = True
+) -> None:
+    """Given a secret set print all key value pairs associated with the secret
+
+    Args:
+        secret: Secret of type BaseSecretSchema
+        hide_secret: boolean that configures if the secret values are shown
+            on the CLI
+    """
+    stack_dicts = [
+        {
+            "SECRET_NAME": secret.name,
+            "SECRET_KEY": key,
+            "SECRET_VALUE": "***" if hide_secret else value,
+        }
+        for key, value in secret.content.items()
+    ]
+    print_table(stack_dicts)
+
+
+def print_secrets(secrets: List[str]) -> None:
+    """Prints the configuration options of a stack.
+
+    Args:
+        secrets: List of secrets
+    """
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title="Secrets",
+        show_lines=True,
+    )
+    rich_table.add_column("SECRET_NAME")
+    secrets.sort()
+    for item in secrets:
+        rich_table.add_row(item)
+
+    console.print(rich_table)

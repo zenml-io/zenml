@@ -16,4 +16,4 @@ from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
 
 from zenml.integrations.azure.io.azure_plugin import ZenAzure
 
-DEFAULT_FILESYSTEM_REGISTRY.register(ZenAzure, 15)
+DEFAULT_FILESYSTEM_REGISTRY.register(ZenAzure, priority=5)

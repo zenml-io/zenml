@@ -21,12 +21,16 @@ from zenml.enums import (
     ContainerRegistryFlavor,
     MetadataStoreFlavor,
     OrchestratorFlavor,
+    SecretsManagerFlavor,
     StackComponentFlavor,
     StackComponentType,
 )
 from zenml.logger import get_logger
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
+from zenml.secrets_managers.local.local_secrets_manager import (
+    LocalSecretsManager,
+)
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -148,7 +152,9 @@ def register_stack_component_class(
 
 
 StackComponentClassRegistry.register_class(
-    StackComponentType.ORCHESTRATOR, OrchestratorFlavor.LOCAL, LocalOrchestrator
+    StackComponentType.ORCHESTRATOR,
+    OrchestratorFlavor.LOCAL,
+    LocalOrchestrator,
 )
 StackComponentClassRegistry.register_class(
     StackComponentType.METADATA_STORE,
@@ -169,4 +175,9 @@ StackComponentClassRegistry.register_class(
     StackComponentType.CONTAINER_REGISTRY,
     ContainerRegistryFlavor.DEFAULT,
     BaseContainerRegistry,
+)
+StackComponentClassRegistry.register_class(
+    StackComponentType.SECRETS_MANAGER,
+    SecretsManagerFlavor.LOCAL,
+    LocalSecretsManager,
 )

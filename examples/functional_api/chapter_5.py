@@ -156,23 +156,25 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialize a new pipeline run
-scikit_p = mnist_pipeline(
-    importer=importer_mnist(),
-    normalizer=normalize_mnist(),
-    trainer=sklearn_trainer(config=TrainerConfig()),
-    evaluator=sklearn_evaluator().with_return_materializers(
-        SQLALchemyMaterializerForSQLite
-    ),
-)
+if __name__ == "__main__":
 
-# Run the new pipeline
-scikit_p.run()
+    # Initialize a new pipeline run
+    scikit_p = mnist_pipeline(
+        importer=importer_mnist(),
+        normalizer=normalize_mnist(),
+        trainer=sklearn_trainer(config=TrainerConfig()),
+        evaluator=sklearn_evaluator().with_return_materializers(
+            SQLALchemyMaterializerForSQLite
+        ),
+    )
 
-# Post-execution
-repo = Repository()
-p = repo.get_pipeline(pipeline_name="mnist_pipeline")
-print(f"Pipeline `mnist_pipeline` has {len(p.runs)} run(s)")
-eval_step = p.runs[-1].get_step("evaluator")
-val = eval_step.output.read(float, SQLALchemyMaterializerForSQLite)
-print(f"The evaluator stored the value: {val} in a SQLite database!")
+    # Run the new pipeline
+    scikit_p.run()
+
+    # Post-execution
+    repo = Repository()
+    p = repo.get_pipeline(pipeline_name="mnist_pipeline")
+    print(f"Pipeline `mnist_pipeline` has {len(p.runs)} run(s)")
+    eval_step = p.runs[-1].get_step("evaluator")
+    val = eval_step.output.read(float, SQLALchemyMaterializerForSQLite)
+    print(f"The evaluator stored the value: {val} in a SQLite database!")

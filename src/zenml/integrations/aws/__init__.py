@@ -25,13 +25,14 @@ class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
 
     NAME = AWS
-    REQUIREMENTS = ["s3fs"]
+    REQUIREMENTS = ["s3fs==2022.2.0"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.aws import artifact_stores  # noqa
         from zenml.integrations.aws import io  # noqa
+        from zenml.integrations.aws import secrets_managers  # noqa
 
 
 AWSIntegration.check_installation()

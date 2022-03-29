@@ -14,6 +14,7 @@
 
 import logging
 from enum import Enum
+from typing import Type
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -38,8 +39,49 @@ class LoggingLevels(Enum):
     CRITICAL = logging.CRITICAL
 
 
+class StackComponentType(StrEnum):
+    """All possible types a `StackComponent` can have."""
+
+    ORCHESTRATOR = "orchestrator"
+    METADATA_STORE = "metadata_store"
+    ARTIFACT_STORE = "artifact_store"
+    CONTAINER_REGISTRY = "container_registry"
+    STEP_OPERATOR = "step_operator"
+    SECRETS_MANAGER = "secrets_manager"
+
+    @property
+    def plural(self) -> str:
+        """Returns the plural of the enum value."""
+        if self == StackComponentType.CONTAINER_REGISTRY:
+            return "container_registries"
+
+        return f"{self.value}s"
+
+
 class StackComponentFlavor(StrEnum):
     """Abstract base class for all stack component flavors."""
+
+    @staticmethod
+    def for_type(
+        component_type: StackComponentType,
+    ) -> Type["StackComponentFlavor"]:
+        """Get the corresponding flavor child-type for a component type."""
+        if component_type == StackComponentType.ARTIFACT_STORE:
+            return ArtifactStoreFlavor
+        elif component_type == StackComponentType.METADATA_STORE:
+            return MetadataStoreFlavor
+        elif component_type == StackComponentType.CONTAINER_REGISTRY:
+            return ContainerRegistryFlavor
+        elif component_type == StackComponentType.ORCHESTRATOR:
+            return OrchestratorFlavor
+        elif component_type == StackComponentType.STEP_OPERATOR:
+            return StepOperatorFlavor
+        elif component_type == StackComponentType.SECRETS_MANAGER:
+            return SecretsManagerFlavor
+        else:
+            raise ValueError(
+                f"Unsupported Stack Component Type {component_type.value}"
+            )
 
 
 class ArtifactStoreFlavor(StackComponentFlavor):
@@ -71,26 +113,42 @@ class OrchestratorFlavor(StackComponentFlavor):
     LOCAL = "local"
     KUBEFLOW = "kubeflow"
     AIRFLOW = "airflow"
+    VERTEX = "vertex"
 
 
-class StackComponentType(StrEnum):
-    """All possible types a `StackComponent` can have."""
+class StepOperatorFlavor(StackComponentFlavor):
+    """All supported step operator flavors."""
 
-    ORCHESTRATOR = "orchestrator"
-    METADATA_STORE = "metadata_store"
-    ARTIFACT_STORE = "artifact_store"
-    CONTAINER_REGISTRY = "container_registry"
-
-    @property
-    def plural(self) -> str:
-        """Returns the plural of the enum value."""
-        if self == StackComponentType.CONTAINER_REGISTRY:
-            return "container_registries"
-
-        return f"{self.value}s"
+    AZUREML = "azureml"
+    SAGEMAKER = "sagemaker"
+    VERTEX = "vertex"
 
 
 class MetadataContextTypes(Enum):
     """All possible types that contexts can have within pipeline nodes"""
 
     STACK = "stack"
+    PIPELINE_REQUIREMENTS = "pipeline_requirements"
+
+
+class SecretsManagerFlavor(StackComponentFlavor):
+    """All supported orchestrator flavors."""
+
+    LOCAL = "local"
+    LOCAL_SQLITE = "local_sqlite"
+    AWS = "aws"
+
+
+class SecretSchemaType(StrEnum):
+    """All supported secret schema types."""
+
+    AWS = "aws"
+    ARBITRARY = "arbitrary"
+
+
+class StoreType(StrEnum):
+    """Repository Store Backend Types"""
+
+    LOCAL = "local"
+    SQL = "sql"
+    REST = "rest"
