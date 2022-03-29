@@ -18,7 +18,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Post fake metadata to segment
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           python -m pip install analytics
-          python scripts/mixpanel_filters_test.py
+
+      - name: Post fake metadata to segment
+        run: python3 scripts/mixpanel_filters_test.py
