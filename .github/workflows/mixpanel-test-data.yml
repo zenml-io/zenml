@@ -2,6 +2,8 @@ name: Post mocked events to Segment
 
 on:
   workflow_dispatch:
+  pull_request:
+    types: [ opened, synchronize ]
   schedule:
     # run this on a schedule at 5:30 in the morning every day
     - cron:  '30 5 * * *'
