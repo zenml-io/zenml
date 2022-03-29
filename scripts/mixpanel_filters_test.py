@@ -2,7 +2,6 @@ from typing import Dict, Any
 
 import analytics
 import datetime
-from zenml.constants import SEGMENT_KEY_DEV
 
 """ 
 Test script to verify our North Star Metrics and Telemetry
@@ -12,7 +11,7 @@ Daily users, weekly users and monthly users that post with different
 frequencies.
 """
 
-analytics.write_key = SEGMENT_KEY_DEV
+analytics.write_key = "mDBYI0m7GcCj59EZ4f9d016L1T3rh8J5"
 
 
 def mock_4_pipeline_run_posts(user: str, metadata: Dict[str, Any]):

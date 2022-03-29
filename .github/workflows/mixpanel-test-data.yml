@@ -17,4 +17,6 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Post fake metadata to segment
-        run: python scripts/mixpanel_filters_test.py
+        run: |
+          python -m pip install analytics
+          python scripts/mixpanel_filters_test.py
