@@ -155,6 +155,7 @@ class ModelDeployerFlavor(StackComponentFlavor):
     LOCAL = "local"
     SELDON = "seldon"
     KSERVE = "kserve"
+    MLFLOW = "mlflow"
 
 
 class StoreType(StrEnum):
