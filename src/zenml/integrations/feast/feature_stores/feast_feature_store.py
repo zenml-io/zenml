@@ -30,7 +30,7 @@ logger = get_logger(__name__)
 class FeastFeatureStore(BaseFeatureStore):
     """Class to interact with the Feast feature store."""
 
-    supports_local_execution: bool = False
+    supports_local_execution: bool = True
     supports_remote_execution: bool = True
 
     @property
