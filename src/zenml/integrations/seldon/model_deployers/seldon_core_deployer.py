@@ -12,15 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional, Type, cast
 
 from zenml.enums import ModelDeployerFlavor, StackComponentType
+from zenml.environment import Environment
+from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.services import BaseService, ServiceConfig
+from zenml.services import load_last_service_from_step
 from zenml.stack import StackComponent
+from zenml.steps import step_environment, STEP_ENVIRONMENT_NAME
+from zenml.steps.step_context import StepContext
 
 
-class BaseModelDeployer(StackComponent, ABC):
-    """Base class for all ZenML model deployers."""
+class SeldonCoreDeployer(BaseModelDeployer):
+    """Seldon Core implementation of the BaseModelDeployer"""
 
     @property
     def type(self) -> StackComponentType:
@@ -42,9 +47,14 @@ class BaseModelDeployer(StackComponent, ABC):
         model_uri: str,
         model_type: str,
         config: ServiceConfig,
+        context: StepContext
     ) -> BaseService:
-        """Abstract method to deploy a model.
+        """
 
+        We assume that the deployment decision is made at the step level and 
+        here we have to delete any older services that are running and start 
+        a new one.
+        
         Concrete model deployer subclasses must implement the following
         functionality in this method:
         - Detect if there is an existing model server instance running serving
@@ -68,10 +78,36 @@ class BaseModelDeployer(StackComponent, ABC):
             model_type: Type/format of the model to be deployed.
             config: Custom Service configuration parameters for the model
                 deployer.
+            context: The step context.
 
         Returns:
             The deployment Service object.
         """
+
+        # check if there's an older service running
+        step_env = cast(step_environment, Environment()[STEP_ENVIRONMENT_NAME])
+        last_service = cast(
+            SeldonCoreDeploymentService,
+            load_last_service_from_step(
+                pipeline_name=step_env.pipeline_name,
+                step_name=step_env.step_name,
+                step_context=context,
+            ),
+        )
+        if last_service and not isinstance(
+            last_service, SeldonCoreDeploymentService
+        ):
+            raise ValueError(
+                f"Last service deployed by step {step_env.step_name} and "
+                f"pipeline {step_env.pipeline_name} has invalid type. Expected "
+                f"SeldonCoreDeploymentService, found {type(last_service)}."
+            )
+        
+        # stop the service created during the last step run (will be replaced
+        # by a new one to serve the new model)
+        if last_service:
+            last_service.stop(timeout=10)
+
 
     @abstractmethod
     def find_model_server(
