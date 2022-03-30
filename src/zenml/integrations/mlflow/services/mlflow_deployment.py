@@ -1,3 +1,4 @@
+import json
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
@@ -184,10 +185,11 @@ class MLFlowDeploymentService(LocalDaemonService):
                 "MLflow prediction service is not running. "
                 "Please start the service before making predictions."
             )
-
+        json_data = {"instances": request.tolist()}
+        logger.info("JSON data is: %s", json.dumps(json_data, indent=4))
         response = requests.post(
             self.endpoint.prediction_uri,
-            json={"instances": request.tolist()},
+            json=json_data,
         )
         response.raise_for_status()
         return np.array(response.json())

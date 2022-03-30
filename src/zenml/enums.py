@@ -48,6 +48,7 @@ class StackComponentType(StrEnum):
     CONTAINER_REGISTRY = "container_registry"
     STEP_OPERATOR = "step_operator"
     SECRETS_MANAGER = "secrets_manager"
+    MODEL_DEPLOYER = "model_deployer"
 
     @property
     def plural(self) -> str:
@@ -78,6 +79,8 @@ class StackComponentFlavor(StrEnum):
             return StepOperatorFlavor
         elif component_type == StackComponentType.SECRETS_MANAGER:
             return SecretsManagerFlavor
+        elif component_type == StackComponentType.MODEL_DEPLOYER:
+            return ModelDeployerFlavor
         else:
             raise ValueError(
                 f"Unsupported Stack Component Type {component_type.value}"
@@ -144,6 +147,14 @@ class SecretSchemaType(StrEnum):
 
     AWS = "aws"
     ARBITRARY = "arbitrary"
+
+
+class ModelDeployerFlavor(StackComponentFlavor):
+    """All supported model deployer flavors."""
+
+    LOCAL = "local"
+    SELDON = "seldon"
+    KSERVE = "kserve"
 
 
 class StoreType(StrEnum):

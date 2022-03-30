@@ -31,6 +31,7 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
     RuntimeConfiguration,
@@ -152,6 +153,12 @@ class Stack:
             step_operator, BaseStepOperator
         ):
             _raise_type_error(step_operator, BaseStepOperator)
+
+        model_deployer = components.get(StackComponentType.MODEL_DEPLOYER)
+        if model_deployer is not None and not isinstance(
+            model_deployer, BaseModelDeployer
+        ):
+            _raise_type_error(model_deployer, BaseModelDeployer)
 
         return Stack(
             name=name,
