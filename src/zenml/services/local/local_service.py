@@ -242,7 +242,8 @@ class LocalDaemonService(BaseService):
             self.status.runtime_path = os.path.join(
                 get_global_config_directory(),
                 LOCAL_STORES_DIRECTORY_NAME,
-                str(self.config.caller_uuid)
+                str(self.config.caller_uuid),
+                str(self.uuid)
             )
 
         assert self.status.config_file is not None
