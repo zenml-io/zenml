@@ -104,39 +104,49 @@ class MLflowDeployer(BaseModelDeployer):
             The deployment Service object.
         """
 
-        service_config_file = os.path.join(
-                get_global_config_directory(),
-                LOCAL_STORES_DIRECTORY_NAME,
-                str(self.uuid),
-                SERVICE_DAEMON_CONFIG_FILE_NAME
-            )
-        logger.info(
-            "Loading service daemon configuration from %s", service_config_file
+        services_path = os.path.join(
+            get_global_config_directory(),
+            LOCAL_STORES_DIRECTORY_NAME,
+            str(self.uuid),
         )
-        try:
-            config = None
-            with open(service_config_file, "r") as f:
-                config = f.read()
-            if(self._new_service_needed(config)):
-                return self._create_new_service()
-            else:
-                mlflow_service = ServiceRegistry().load_service_from_json(config)
-                if not isinstance(mlflow_service, MLFlowDeploymentService):
-                    raise TypeError(
-                        f"Expected service type LocalDaemonService but got "
-                        f"{type(mlflow_service)} instead"
+        
+        for root, dirs, files in os.walk(services_path):
+            for file in files:
+                if(file == SERVICE_DAEMON_CONFIG_FILE_NAME):
+                    service_config_path = os.path.join(root, file)                    
+                    logger.info(
+                        "Loading service daemon configuration from %s", service_config_path
                     )
+                    old_config = None
+                    with open(service_config_path, "r") as f:
+                        old_config = f.read()
+                    mlflow_service = ServiceRegistry().load_service_from_json(old_config)
+                    if not isinstance(mlflow_service, MLFlowDeploymentService):
+                        raise TypeError(
+                            f"Expected service type LocalDaemonService but got "
+                            f"{type(mlflow_service)} instead"
+                        )
+                    if(self._old_service_exists(mlflow_service, config)):
+                        return mlflow_service.stop(timeout=10)
+                    else:
+                        return mlflow_service       
 
-        except FileNotFoundError:
-            # file doesn't exist. create a new service
-            return self._create_new_service()
-
+        self._create_new_service(config)
     
-    def _new_service_needed(config: str) -> bool:
-        """Returns true if a new service should be created and deletes the 
-        older service, returns false otherwise."""
-        config = json.loads(config)
-        # wip
+    def _old_service_exists(
+        old_service: BaseService, 
+        config: ServiceConfig
+        ) -> bool:
+        """Returns true if an old service with the same pipeline name,
+        step name and model name exists.
+        
+        Args:
+            old_service: The materialized Service instance derived from the config
+            of the older (existing) service
+            config: The ServiceConfig object passed to the deploy_model function holding 
+            parameters of the new service to be created."""
+        
+        # wip - investigate how to get pipeline, step and model name from service.
 
         return False
     
@@ -196,7 +206,7 @@ class MLflowDeployer(BaseModelDeployer):
             the input search criteria.
         """
 
-        
+
 
     def stop_model_server(self) -> None:
         """Abstract method to stop a model server.
