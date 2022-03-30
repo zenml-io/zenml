@@ -102,7 +102,7 @@ class MLFlowDeploymentService(LocalDaemonService):
         **attrs: Any,
     ) -> None:
         # ensure that the endpoint is created before the service is initialized
-        # TODO [HIGH]: implement a service factory or builder for MLflow
+        # TODO [ENG-700]: implement a service factory or builder for MLflow
         #   deployment services
         if (
             isinstance(config, MLFlowDeploymentConfig)

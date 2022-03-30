@@ -53,21 +53,22 @@ def load_and_normalize_pipeline(
     normalizer(X_train=X_train, X_test=X_test)
 
 
-# Run the pipeline
-load_and_normalize_pipeline(
-    importer=importer_mnist(), normalizer=normalize_mnist()
-).run()
+if __name__ == "__main__":
 
+    # Run the pipeline
+    load_and_normalize_pipeline(
+        importer=importer_mnist(), normalizer=normalize_mnist()
+    ).run()
 
-# Post-execution
-repo = Repository()
-p = repo.get_pipeline(pipeline_name="load_and_normalize_pipeline")
-runs = p.runs
-print(f"Pipeline `load_and_normalize_pipeline` has {len(runs)} run(s)")
-run = runs[-1]
-print(f"The run you just made has {len(run.steps)} steps.")
-step = run.get_step("normalizer")
-print(f"The `normalizer` step has {len(step.outputs)} output artifacts.")
-for k, o in step.outputs.items():
-    arr = o.read()
-    print(f"Output '{k}' is an array with shape: {arr.shape}")
+    # Post-execution
+    repo = Repository()
+    p = repo.get_pipeline(pipeline_name="load_and_normalize_pipeline")
+    runs = p.runs
+    print(f"Pipeline `load_and_normalize_pipeline` has {len(runs)} run(s)")
+    run = runs[-1]
+    print(f"The run you just made has {len(run.steps)} steps.")
+    step = run.get_step("normalizer")
+    print(f"The `normalizer` step has {len(step.outputs)} output artifacts.")
+    for k, o in step.outputs.items():
+        arr = o.read()
+        print(f"Output '{k}' is an array with shape: {arr.shape}")

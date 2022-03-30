@@ -17,7 +17,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from zenml.cli.base import init
-from zenml.repository import LOCAL_CONFIG_DIRECTORY_NAME
+from zenml.constants import LOCAL_CONFIG_DIRECTORY_NAME
 
 
 def test_init_creates_zen_folder(tmp_path: Path) -> None:

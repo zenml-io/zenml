@@ -79,11 +79,16 @@ def get_cache_status(
 
     status = False
     repository = Repository()
-    # TODO [HIGH]: Get the current running stack instead of just the active
+    # TODO [ENG-706]: Get the current running stack instead of just the active
     #   stack
-    metadata_store = repository.get_stack(
-        repository.active_stack_name
-    ).metadata_store
+    active_stack = repository.active_stack
+    if not active_stack:
+        raise RuntimeError(
+            "No active stack is configured for the repository. Run "
+            "`zenml stack set STACK_NAME` to update the active stack."
+        )
+
+    metadata_store = active_stack.metadata_store
 
     step_name_param = (
         INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME

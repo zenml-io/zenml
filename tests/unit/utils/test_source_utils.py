@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 
 import inspect
+import os
 import sys
 from contextlib import ExitStack as does_not_raise
 
 import pytest
 
+from zenml.repository import Repository
 from zenml.utils import source_utils
 
 
@@ -52,9 +54,14 @@ def test_prepend_python_path():
     assert path_element not in sys.path
 
 
-def test_loading_class_by_path_prepends_repo_path(clean_repo, mocker):
+def test_loading_class_by_path_prepends_repo_path(clean_repo, mocker, tmp_path):
     """Tests that loading a class always prepends the active repository root to
     the python path."""
+
+    os.chdir(str(tmp_path))
+
+    Repository.initialize()
+    clean_repo.activate_root()
 
     python_file = clean_repo.root / "some_directory" / "python_file.py"
     python_file.parent.mkdir()

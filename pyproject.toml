@@ -64,6 +64,8 @@ pyparsing = "<3,>=2.4.0"
 sqlmodel = "~0.0.6"
 fastapi = "~0.75.0"
 uvicorn = { extras = ["standard"], version = "~0.17.5" }
+semver = "^2.13.0"
+
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"

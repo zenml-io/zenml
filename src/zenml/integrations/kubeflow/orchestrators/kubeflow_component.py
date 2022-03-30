@@ -228,7 +228,7 @@ class KubeflowComponent:
         )
         # Add environment variables for Azure Blob Storage to pod in case they
         # are set locally
-        # TODO [HIGH]: remove this as soon as we implement credential handling
+        # TODO [ENG-699]: remove this as soon as we implement credential handling
         for key in [
             "AZURE_STORAGE_ACCOUNT_KEY",
             "AZURE_STORAGE_ACCOUNT_NAME",

@@ -33,6 +33,9 @@ class AnalyticsEvent(str, Enum):
     # Repo
     INITIALIZE_REPO = "ZenML initialized"
 
+    # Profile
+    INITIALIZED_PROFILE = "Profile initialized"
+
     # Components
     REGISTERED_STACK_COMPONENT = "Stack component registered"
 
@@ -98,7 +101,7 @@ def track_event(
     try:
         import analytics
 
-        from zenml.config.global_config import GlobalConfig
+        from zenml.config.global_config import GlobalConfiguration
 
         if analytics.write_key is None:
             analytics.write_key = get_segment_key()
@@ -110,7 +113,7 @@ def track_event(
         # Set this to 1 to avoid backoff loop
         analytics.max_retries = 1
 
-        gc = GlobalConfig()
+        gc = GlobalConfiguration()
         if isinstance(event, AnalyticsEvent):
             event = event.value
 
