@@ -12,13 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 from pydantic import Field
 
 from zenml.logger import get_logger
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
+from zenml.services.service_type import ServiceType
 
 logger = get_logger(__name__)
 
@@ -57,8 +58,8 @@ class SeldonDeploymentConfig(ServiceConfig):
     pipeline_run_id: Optional[str] = None
     pipeline_step_name: Optional[str] = None
     replicas: int = 1
-    model_metadata: Dict[str, str]
-    extra_args: Dict[str, str]
+    model_metadata: Dict[str, str] = Field(default_factory=dict)
+    extra_args: Dict[str, str] = Field(default_factory=dict)
 
     # configuration attributes that are not part of the service configuration
     # but are required for the service to function. These must be moved to the
@@ -75,7 +76,7 @@ class SeldonDeploymentServiceStatus(ServiceStatus):
         predition_url: the prediction URI exposed by the prediction service
     """
 
-    prediction_url: str
+    prediction_url: Optional[str] = None
 
 
 class SeldonDeploymentService(BaseService):
@@ -86,6 +87,13 @@ class SeldonDeploymentService(BaseService):
         config: service configuration
         status: service status
     """
+
+    SERVICE_TYPE = ServiceType(
+        name="seldon-deployment",
+        type="model-serving",
+        flavor="seldon",
+        description="Seldon Core prediction service",
+    )
 
     config: SeldonDeploymentConfig = Field(
         default_factory=SeldonDeploymentConfig
@@ -103,6 +111,7 @@ class SeldonDeploymentService(BaseService):
             providing additional information about that state (e.g. a
             description of the error, if one is encountered).
         """
+        return ServiceState.ACTIVE, "Seldon Core deployment is active"
 
     def provision(self) -> None:
         """Provision or update the remote Seldon Core deployment instance to
