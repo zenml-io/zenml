@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from pandas import DataFrame
 
 from zenml.enums import FeatureStoreFlavor, StackComponentType
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
@@ -37,3 +38,11 @@ class FeastFeatureStore(BaseFeatureStore):
     def flavor(self) -> FeatureStoreFlavor:
         """The feature store flavor."""
         return FeatureStoreFlavor.FEAST
+
+    def get_historical_features(self) -> DataFrame:
+        """Returns the historical features for training or batch scoring."""
+        return NotImplementedError
+
+    def get_online_features(self) -> DataFrame:
+        """Returns the latest online feature data."""
+        return NotImplementedError

@@ -14,6 +14,8 @@
 
 from abc import ABC, abstractmethod
 
+from pandas import DataFrame
+
 from zenml.enums import FeatureStoreFlavor, StackComponentType
 from zenml.stack import StackComponent
 
@@ -30,3 +32,13 @@ class BaseFeatureStore(StackComponent, ABC):
     @abstractmethod
     def flavor(self) -> FeatureStoreFlavor:
         """The step operator flavor."""
+
+    @abstractmethod
+    def get_historical_features(self) -> DataFrame:
+        """Returns the historical features for training or batch scoring."""
+        return NotImplementedError
+
+    @abstractmethod
+    def get_online_features(self) -> DataFrame:
+        """Returns the latest online feature data."""
+        return NotImplementedError
