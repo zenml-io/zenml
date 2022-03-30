@@ -19,9 +19,12 @@ import sys
 import tempfile
 from abc import abstractmethod
 from typing import Dict, List, Optional, Tuple
+from uuid import UUID
 
 import psutil
 from pydantic import Field
+from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
+from zenml.io.utils import get_global_config_directory
 
 from zenml.logger import get_logger
 from zenml.services.local.local_service_endpoint import (
@@ -45,9 +48,11 @@ class LocalDaemonServiceConfig(ServiceConfig):
         silent_daemon: set to True to suppress the output of the daemon
             (i.e. redirect stdout and stderr to /dev/null). If False, the
             daemon output will be redirected to a logfile.
+        uuid: UUID of the stack component that creates the service.
     """
 
     silent_daemon: bool = False
+    caller_uuid: Optional[UUID] = None
 
 
 class LocalDaemonServiceStatus(ServiceStatus):
@@ -232,7 +237,13 @@ class LocalDaemonService(BaseService):
         if not self.status.runtime_path or not os.path.exists(
             self.status.runtime_path
         ):
-            self.status.runtime_path = tempfile.mkdtemp(prefix="zenml-service-")
+            # runtimepath points to zenml local stores with uuid to make it 
+            # easy to track from other locations.
+            self.status.runtime_path = os.path.join(
+                get_global_config_directory(),
+                LOCAL_STORES_DIRECTORY_NAME,
+                str(self.config.caller_uuid)
+            )
 
         assert self.status.config_file is not None
         assert self.status.pid_file is not None
