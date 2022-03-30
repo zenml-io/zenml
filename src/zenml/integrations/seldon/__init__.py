@@ -30,7 +30,7 @@ class SeldonIntegration(Integration):
     @staticmethod
     def activate() -> None:
         """Activate the Seldon Core integration."""
-        # from zenml.integrations.seldon import services  # noqa
+        from zenml.integrations.seldon import services  # noqa
 
 
 SeldonIntegration.check_installation()
