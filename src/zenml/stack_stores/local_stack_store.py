@@ -18,7 +18,6 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from zenml.constants import LOCAL_CONFIG_DIRECTORY_NAME
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
 from zenml.io import fileio
@@ -55,8 +54,11 @@ class LocalStackStore(BaseStackStore):
         Returns:
             The initialized stack store instance.
         """
-        self._url = url
+        if not self.is_valid_url(url):
+            raise ValueError(f"Invalid URL for local store: {url}")
+
         self._root = self.get_path_from_url(url)
+        self._url = f"file://{self._root}"
         fileio.create_dir_recursive_if_not_exists(str(self._root))
 
         if stack_data is not None:
@@ -78,11 +80,6 @@ class LocalStackStore(BaseStackStore):
     def type(self) -> StoreType:
         """The type of stack store."""
         return StoreType.LOCAL
-
-    @property
-    def version(self) -> str:
-        """Get the ZenML version."""
-        return self.__store.version
 
     @property
     def url(self) -> str:
@@ -115,6 +112,7 @@ class LocalStackStore(BaseStackStore):
         scheme = re.search("^([a-z0-9]+://)", url)
         return not scheme or scheme.group() == "file://"
 
+    @property
     def is_empty(self) -> bool:
         """Check if the stack store is empty."""
         return len(self.__store.stacks) == 0

@@ -319,6 +319,17 @@ def test_create_file_if_not_exists(tmp_path) -> None:
     assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
 
 
+def test_create_file_if_not_exists_does_not_overwrite(tmp_path) -> None:
+    """Test that create_file_if_not_exists doesn't overwrite an existing file"""
+    temporary_file = os.path.join(tmp_path, "new_file.txt")
+    fileio.create_file_if_not_exists(temporary_file)
+    with open(temporary_file, "w") as f:
+        f.write("Aria is a good cat")
+    fileio.create_file_if_not_exists(temporary_file)
+    with open(temporary_file, "r") as f:
+        assert f.read() == "Aria is a good cat"
+
+
 def test_create_dir_if_not_exists(tmp_path) -> None:
     """Test that create_dir_if_not_exists creates a directory"""
     fileio.create_dir_if_not_exists(os.path.join(tmp_path, "new_dir"))

@@ -26,10 +26,7 @@ from pydantic import BaseModel, ValidationError
 from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
-from zenml.constants import (
-    ENV_ZENML_REPOSITORY_PATH,
-    LOCAL_CONFIG_DIRECTORY_NAME,
-)
+from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REPOSITORY_DIRECTORY_NAME
 from zenml.enums import StackComponentFlavor, StackComponentType, StoreType
 from zenml.environment import Environment
 from zenml.exceptions import (
@@ -193,9 +190,11 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 initialized), the default global profile is used. Only used to
                 initialize new profiles internally.
         """
+
         self._root: Optional[Path] = None
         self._profile: Optional[ProfileConfiguration] = None
         self.__config: Optional[RepositoryConfiguration] = None
+
         # The repository constructor is called with a custom profile only when
         # the profile needs to be initialized, in which case all matters related
         # to repository initialization, like the repository active root and the
@@ -249,6 +248,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
 
         self._root = self.find_repository(root, enable_warnings=True)
+
         global_cfg = GlobalConfiguration()
         new_profile = self._profile
 
@@ -397,6 +397,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             if a legacy repository configuration was not found at the supplied
             path.
         """
+        from zenml.console import console
+
         if not fileio.file_exists(config_file):
             return None
 
@@ -412,19 +414,21 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         profile_name = f"legacy-repository-{random.getrandbits(32):08x}"
 
         # a legacy repository configuration was detected
-        logger.warning(
-            "A legacy ZenML repository with locally configured stacks was "
-            "found at `%s`.\n"
-            "The stacks configured in this repository will be automatically "
-            "migrated to a newly created profile: `%s`.\n\n"
-            "If you no longer need to use the stacks configured in this "
-            "repository, please delete the profile using the following "
-            "command:\n\n"
-            "`zenml profile delete %s`\n\n"
-            "This warning will not be shown again.",
-            config_path,
-            profile_name,
-            profile_name,
+        console.print(
+            f"A legacy ZenML repository with locally configured stacks was "
+            f"found at '{config_path}'.\n"
+            f"Beginning with ZenML 0.7.0, stacks are no longer stored inside "
+            f"the ZenML repository root, they are stored globally using the "
+            f"newly introduced concept of Profiles.\n\n"
+            f"The stacks configured in this repository will be automatically "
+            f"migrated to a newly created profile: '{profile_name}'.\n\n"
+            f"If you no longer need to use the stacks configured in this "
+            f"repository, please delete the profile using the following "
+            f"command:\n\n"
+            f"'zenml profile delete {profile_name}'\n\n"
+            f"More information about Profiles can be found at "
+            f"https://docs.zenml.io.\n"
+            f"This warning will not be shown again for this Repository."
         )
 
         stack_data = legacy_config.get_stack_data()
@@ -433,7 +437,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         store._write_store()
         profile = ProfileConfiguration(
             name=profile_name,
-            store_url=config_path,
+            store_url=store.url,
             active_stack=legacy_config.active_stack_name,
         )
 
@@ -509,7 +513,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         }.get(type)
 
     @staticmethod
-    def create_store(profile: ProfileConfiguration) -> BaseStackStore:
+    def create_store(
+        profile: ProfileConfiguration, skip_default_stack: bool = False
+    ) -> BaseStackStore:
         """Create the repository persistance back-end store from a configuration
         profile.
 
@@ -519,6 +525,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             profile: The configuration profile to use for persisting the
                 repository information.
+            skip_default_stack: If True, the creation of the default stack in
+                the store will be skipped.
 
         Returns:
             The initialized repository store.
@@ -542,7 +550,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         if store_class.is_valid_url(profile.store_url):
             store = store_class()
-            store.initialize(url=profile.store_url)
+            store.initialize(
+                url=profile.store_url, skip_default_stack=skip_default_stack
+            )
             return store
 
         raise ValueError(
@@ -571,7 +581,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 f"Found existing ZenML repository at path '{root}'."
             )
 
-        config_directory = str(root / LOCAL_CONFIG_DIRECTORY_NAME)
+        config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
         fileio.create_dir_recursive_if_not_exists(config_directory)
         # Initialize the repository configuration at the custom path
         Repository(root=root)
@@ -608,7 +618,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
         if not self.root:
             return None
-        return self.root / LOCAL_CONFIG_DIRECTORY_NAME
+        return self.root / REPOSITORY_DIRECTORY_NAME
 
     def activate_root(self, root: Optional[Path] = None) -> None:
         """Set the active repository root directory.
@@ -934,7 +944,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     @staticmethod
     def is_repository_directory(path: Path) -> bool:
         """Checks whether a ZenML repository exists at the given path."""
-        config_dir = path / LOCAL_CONFIG_DIRECTORY_NAME
+        config_dir = path / REPOSITORY_DIRECTORY_NAME
         return fileio.is_dir(str(config_dir))
 
     @staticmethod

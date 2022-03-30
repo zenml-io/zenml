@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.6.3"
+version = "0.7.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -177,9 +177,9 @@ follow_imports = "skip"
 
 # end of fix
 
-# import all tfx.proto.* files as `Any`
+# import all tfx.proto.* and google files as `Any`
 [[tool.mypy.overrides]]
-module = "tfx.proto.*"
+module = ["tfx.proto.*", "google.*"]
 follow_imports = "skip"
 
 [[tool.mypy.overrides]]
@@ -215,6 +215,7 @@ module = [
     "kfp_server_api.*",
     "sagemaker.*",
     "azureml.*",
+    "google.*",
 ]
 ignore_missing_imports = true
 

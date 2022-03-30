@@ -21,7 +21,6 @@ import yaml
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
-
 from zenml.stack import Stack
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -63,11 +62,6 @@ class BaseStackStore(ABC):
     @abstractmethod
     def type(self) -> StoreType:
         """The type of stack store."""
-
-    @property
-    @abstractmethod
-    def version(self) -> str:
-        """Get the ZenML version."""
 
     @property
     @abstractmethod
@@ -321,21 +315,27 @@ class BaseStackStore(ABC):
         self._delete_stack_component(component_type, name=name)
 
     def initialize(
-        self, url: str, *args: Any, **kwargs: Any
+        self,
+        url: str,
+        skip_default_stack: bool = False,
+        *args: Any,
+        **kwargs: Any,
     ) -> "BaseStackStore":
         """Initialize the store.
-
         Args:
             url: The URL of the store.
+            skip_default_stack: If True, the creation of the default stack will
+                be skipped.
             *args: Additional arguments to pass to the concrete store
                 implementation.
             **kwargs: Additional keyword arguments to pass to the concrete
                 store implementation.
-
         Returns:
             The initialized concrete store instance.
         """
-        if self.is_empty:
+
+        if not skip_default_stack and self.is_empty:
+
             logger.info("Initializing store...")
             self.register_default_stack()
 

@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from zenml.constants import LOCAL_CONFIG_DIRECTORY_NAME
+from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.enums import OrchestratorFlavor, StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.orchestrators import LocalOrchestrator
@@ -41,7 +41,7 @@ def test_register_deregister_stacks(
 ):
     """Test creating a new stack store."""
     tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_stack_store")
-    os.mkdir(tmp_path / LOCAL_CONFIG_DIRECTORY_NAME)
+    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
 
     stack = Stack.default_local_stack()
 
@@ -87,7 +87,7 @@ def test_register_deregister_components(
 ):
     """Test adding and removing stack components."""
     tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_stack_store")
-    os.mkdir(tmp_path / LOCAL_CONFIG_DIRECTORY_NAME)
+    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
 
     required_components = {
         StackComponentType.ARTIFACT_STORE,

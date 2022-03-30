@@ -19,10 +19,9 @@ from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
-from zenml import __version__
-from zenml.io import fileio
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper
@@ -60,15 +59,6 @@ class ZenStackDefinition(SQLModel, table=True):
     )
 
 
-class ZenConfig(SQLModel, table=True):
-    """ "Singleton" Table with only one row storing config."""
-
-    create_time: Optional[dt.datetime] = Field(
-        default_factory=dt.datetime.now, primary_key=True
-    )
-    version: str
-
-
 class SqlStackStore(BaseStackStore):
     """Repository Implementation that uses SQL database backend"""
 
@@ -99,8 +89,6 @@ class SqlStackStore(BaseStackStore):
         self.engine = create_engine(url, *args, **kwargs)
         SQLModel.metadata.create_all(self.engine)
         with Session(self.engine) as session:
-            if not session.exec(select(ZenConfig)).first():
-                session.add(ZenConfig(version=__version__))
             if not session.exec(select(ZenUser)).first():
                 session.add(ZenUser(id=1, name="LocalZenUser"))
             session.commit()
@@ -114,13 +102,6 @@ class SqlStackStore(BaseStackStore):
     def type(self) -> StoreType:
         """The type of stack store."""
         return StoreType.SQL
-
-    @property
-    def version(self) -> str:
-        """Get the ZenML version."""
-        with Session(self.engine) as session:
-            conf = session.exec(select(ZenConfig)).one()
-        return conf.version
 
     @property
     def url(self) -> str:
@@ -171,6 +152,7 @@ class SqlStackStore(BaseStackStore):
 
         return True
 
+    @property
     def is_empty(self) -> bool:
         """Check if the stack store is empty."""
         with Session(self.engine) as session:

@@ -142,7 +142,7 @@ zenml stack down
 ### Run the same pipeline on Kubeflow Pipelines deployed to the cloud
 
 We will now run the same pipeline in Kubeflow Pipelines deployed to a cluster on the cloud. 
-Refer to the Cloud Pipelines Deployment Guide [here](../../features/cloud-pipelines/cloud-pipelines.md) to know more and follow along!
+Refer to the Cloud Pipelines Deployment Guide [here](../../features/guide-aws-gcp-azure.md) to know more and follow along!
 
 ## Conclusion
 

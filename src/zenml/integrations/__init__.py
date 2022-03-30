@@ -20,6 +20,7 @@ like the ``facets`` library, as well as deep learning libraries like PyTorch.
 from zenml.integrations.airflow import AirflowIntegration  # noqa
 from zenml.integrations.aws import AWSIntegration  # noqa
 from zenml.integrations.azure import AzureIntegration  # noqa
+from zenml.integrations.azureml import AzureMLIntegration  # noqa
 from zenml.integrations.dash import DashIntegration  # noqa
 from zenml.integrations.evidently import EvidentlyIntegration  # noqa
 from zenml.integrations.facets import FacetsIntegration  # noqa
@@ -32,6 +33,8 @@ from zenml.integrations.pytorch import PytorchIntegration  # noqa
 from zenml.integrations.pytorch_lightning import (  # noqa
     PytorchLightningIntegration,
 )
+from zenml.integrations.sagemaker import SagemakerIntegration  # noqa
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
+from zenml.integrations.vertex import VertexIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa

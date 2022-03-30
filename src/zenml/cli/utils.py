@@ -27,6 +27,7 @@ from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.secret import BaseSecretSchema
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -354,3 +355,43 @@ def uninstall_package(package: str) -> None:
             package,
         ]
     )
+
+
+def pretty_print_secret(
+    secret: BaseSecretSchema, hide_secret: bool = True
+) -> None:
+    """Given a secret set print all key value pairs associated with the secret
+
+    Args:
+        secret: Secret of type BaseSecretSchema
+        hide_secret: boolean that configures if the secret values are shown
+            on the CLI
+    """
+    stack_dicts = [
+        {
+            "SECRET_NAME": secret.name,
+            "SECRET_KEY": key,
+            "SECRET_VALUE": "***" if hide_secret else value,
+        }
+        for key, value in secret.content.items()
+    ]
+    print_table(stack_dicts)
+
+
+def print_secrets(secrets: List[str]) -> None:
+    """Prints the configuration options of a stack.
+
+    Args:
+        secrets: List of secrets
+    """
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title="Secrets",
+        show_lines=True,
+    )
+    rich_table.add_column("SECRET_NAME")
+    secrets.sort()
+    for item in secrets:
+        rich_table.add_row(item)
+
+    console.print(rich_table)

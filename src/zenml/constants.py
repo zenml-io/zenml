@@ -110,9 +110,14 @@ SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
 
 # Repository Directory Path
 # Directory Path for local repositories
-LOCAL_CONFIG_DIRECTORY_NAME = ".zen"
+REPOSITORY_DIRECTORY_NAME = ".zen"
+LOCAL_STORES_DIRECTORY_NAME = "local_stores"
 
 USER_MAIN_MODULE: Optional[str] = None
+
+# Secrets Manager
+ZENML_SCHEMA_NAME = "zenml_schema_name"
+LOCAL_SECRETS_FILENAME = "secrets.yaml"
 
 # Rich config
 ENABLE_RICH_TRACEBACK = handle_bool_env_var(

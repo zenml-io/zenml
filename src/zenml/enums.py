@@ -47,6 +47,7 @@ class StackComponentType(StrEnum):
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
     STEP_OPERATOR = "step_operator"
+    SECRETS_MANAGER = "secrets_manager"
 
     @property
     def plural(self) -> str:
@@ -75,6 +76,8 @@ class StackComponentFlavor(StrEnum):
             return OrchestratorFlavor
         elif component_type == StackComponentType.STEP_OPERATOR:
             return StepOperatorFlavor
+        elif component_type == StackComponentType.SECRETS_MANAGER:
+            return SecretsManagerFlavor
         else:
             raise ValueError(
                 f"Unsupported Stack Component Type {component_type.value}"
@@ -110,6 +113,7 @@ class OrchestratorFlavor(StackComponentFlavor):
     LOCAL = "local"
     KUBEFLOW = "kubeflow"
     AIRFLOW = "airflow"
+    VERTEX = "vertex"
 
 
 class StepOperatorFlavor(StackComponentFlavor):
@@ -117,6 +121,7 @@ class StepOperatorFlavor(StackComponentFlavor):
 
     AZUREML = "azureml"
     SAGEMAKER = "sagemaker"
+    VERTEX = "vertex"
 
 
 class MetadataContextTypes(Enum):
@@ -124,6 +129,21 @@ class MetadataContextTypes(Enum):
 
     STACK = "stack"
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
+
+
+class SecretsManagerFlavor(StackComponentFlavor):
+    """All supported orchestrator flavors."""
+
+    LOCAL = "local"
+    LOCAL_SQLITE = "local_sqlite"
+    AWS = "aws"
+
+
+class SecretSchemaType(StrEnum):
+    """All supported secret schema types."""
+
+    AWS = "aws"
+    ARBITRARY = "arbitrary"
 
 
 class StoreType(StrEnum):

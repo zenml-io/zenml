@@ -118,7 +118,7 @@ about more of that
 ## Artifact Store
 
 An artifact store is a place where artifacts are stored. These artifacts may have been produced by the pipeline 
-steps, or they may be the data first ingested into a pipeline via an ingestion step.
+steps, or they may be the data first ingested into a pipeline via an ingestion step. An artifact store will store all intermediary pipeline step results, which in turn will be tracked in the metadata store.
 
 ## Artifact
 
@@ -177,6 +177,8 @@ def my_step(params: MyStepConfig):
 The configuration of each pipeline, step and produced artifacts are all tracked within the metadata store. 
 The metadata store is an SQL database, and can be `sqlite` or `mysql`.
 
+ZenML puts a lot of emphasis on guaranteed tracking of inputs across pipeline steps. The strict, fully automated, and deeply built-in tracking enables some powerful features - e.g. reproducibility.
+
 ## Metadata
 
 Metadata are the pieces of information tracked about the pipelines, experiments and configurations that you are running 
@@ -184,12 +186,8 @@ with ZenML. Metadata are stored inside the metadata store.
 
 ## Orchestrator
 
-An orchestrator manages the running of each step of the pipeline, administering the actual pipeline runs. You can 
-think of it as the 'root' of any pipeline job that you run during your experimentation.
-
-## Step Operator
-
-The step operator defers the execution of individual steps in a pipeline to specialized runtime environments that are optimized for Machine Learning workloads.
+An orchestrator manages the running of each step of the pipeline, administering the actual pipeline runs. The orchestrator is especially important, as it defines **where** the actual pipeline job runs. Think of it as the 
+`root` of any pipeline job, that controls how and where each individual step within a pipeline is executed. Therefore, the orchestrator can be used to great effect to scale jobs in production.
 
 ## Container Registry
 
@@ -200,9 +198,34 @@ the basis for the deployed 'run'. E.g. When you are running a local container-ba
 container registry which stores the container images you create that bundle up your pipeline code. You could also use a 
 remote container registry like the [Elastic Container Registry](https://aws.amazon.com/ecr/) at AWS in a more production setting.
 
+## Secrets
+
+A ZenML Secret is a grouping of key-value pairs. These are accessed and
+administered via the ZenML Secret Manager (a stack component).
+
+Secrets are distinguished by having different schemas. An AWS SecretSchema, for
+example, has key-value pairs for `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+as well as an optional `AWS_SESSION_TOKEN`. If you don't specify a schema at the
+point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a
+kind of default schema where things that aren't attached to a grouping can be
+stored.
+
+## Secrets Manager
+
+Most projects involving either cloud infrastructure or of a certain complexity
+will involve secrets of some kind. You use secrets, for example, when connecting
+to AWS, which requires an `access_key_id` and a `secret_access_key` which it
+(usually) stores in your `~/.aws/credentials` file.
+
+You might find you need to access those secrets from within your Kubernetes
+cluster as it runs individual steps, or you might just want a centralized
+location for the storage of secrets across your project. ZenML offers a local
+secrets manager and an integration with the managed [AWS Secrets
+Manager](https://aws.amazon.com/secrets-manager).
+
 ## Stack
 
-The stack is essentially all the configuration of all infrastructure of your MLOps platform.
+The stack is essentially all the configuration for the infrastructure of your MLOps platform.
 
 A stack is made up of multiple components. Some examples are:
 
@@ -222,6 +245,35 @@ zenml stack register STACK_NAME \
     -s STEP_OPERATOR_NAME \
     -c CONTAINER_REGISTRY_NAME \
     ...
+```
+
+When users want to run pipelines on remote architecture, all they need to do is swap out a `local` stack with a 
+cloud-based stack, which they can configure. After a stack has been set as active, just running a pipeline will run that pipeline on the that stack.
+
+## Step Operator
+
+The step operator defers the execution of individual steps in a pipeline to specialized runtime environments that are optimized for Machine Learning workloads. This is helpful when there is a requirement for specialized cloud backends ✨ for different steps. One example could be using powerful GPU instances for training jobs or distributed compute for ingestion streams.
+
+While an orchestrator defines how and where your entire pipeline runs, a step operator defines how and where an individual 
+step runs. This can be useful in a variety of scenarios. An example could be if one step within a pipeline should run on a 
+separate environment equipped with a GPU (like a trainer step).
+
+A concrete example is as follows. Let's say we want to run training as a custom [AWS Sagemaker](https://aws.amazon.com/pm/sagemaker/) 
+job. 
+
+This operator can be registered as follows:
+
+```bash
+zenml step-operator register sagemaker \
+    --type=sagemaker
+    ...
+```
+
+```python
+@step(custom_step_operator="sagemaker")
+def trainer(...) -> ...:
+    """Train a model"""
+    # This will run on Sagemaker with a GPU configured above.
 ```
 
 ## Service
