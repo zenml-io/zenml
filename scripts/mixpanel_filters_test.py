@@ -45,7 +45,7 @@ weekly_users = ['weekly_user_0', 'weekly_user_1', 'weekly_user_2',
 monthly_users = ['monthly_user_0', 'monthly_user_1', 'monthly_user_2',
                  'monthly_user_3', 'monthly_user_4', 'monthly_user_5',
                  'monthly_user_6', 'monthly_user_7', 'monthly_user_8',
-                 'monthly_user_9', 'monthly_user_10']
+                 'monthly_user_9']
 
 metadata = {'store_type': 'local', 'orchestrator': 'local',
             'metadata_store': 'sqlite', 'artifact_store': 'local',
@@ -72,7 +72,7 @@ for user in weekly_users:
 # Monthly users post once a month, we stretch this out so not everyone posts
 # on the same day
 for user in monthly_users:
-    weekly_user_num = int(user.split('_')[-1])
-    if (days_since_epoch + weekly_user_num) % 30 == 0:
+    monthly_user_num = int(user.split('_')[-1])
+    if (days_since_epoch + monthly_user_num) % 30 == 0:
         mock_4_pipeline_run_posts(user, metadata)
 
