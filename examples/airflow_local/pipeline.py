@@ -20,14 +20,10 @@ from sklearn.linear_model import LogisticRegression
 
 from zenml.integrations.constants import SKLEARN
 from zenml.pipelines import pipeline
-from zenml.steps import BaseStepConfig, Output, step
+from zenml.steps import Output, step
 
 
-class ImporterConfig(BaseStepConfig):
-    n_days: int = 1
-
-
-def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
+def get_X_y_from_api(is_train: bool = True):
     url = (
         "https://storage.googleapis.com/zenml-public-bucket/mnist"
         "/mnist_handwritten_train.json"
@@ -43,17 +39,15 @@ def get_X_y_from_api(n_days: int = 1, is_train: bool = True):
 
 
 @step
-def dynamic_importer(
-    config: ImporterConfig,
-) -> Output(
+def dynamic_importer() -> Output(
     X_train=np.ndarray,
     y_train=np.ndarray,
     X_test=np.ndarray,
     y_test=np.ndarray,
 ):
     """Downloads the latest data from a mock API."""
-    X_train, y_train = get_X_y_from_api(n_days=config.n_days, is_train=True)
-    X_test, y_test = get_X_y_from_api(n_days=config.n_days, is_train=False)
+    X_train, y_train = get_X_y_from_api(is_train=True)
+    X_test, y_test = get_X_y_from_api(is_train=False)
     return X_train, y_train, X_test, y_test
 
 

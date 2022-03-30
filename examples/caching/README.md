@@ -1,10 +1,10 @@
 # Caching and its power in machine learning
-If we organize the steps of our model training smartly, we can ensure that the data outputs and inputs along the way 
-are cached. A good way to think about splitting up the steps is to use the image of 
-[pipelines](https://blog.zenml.io/tag/pipelines/) and the steps that are executed. 
-For each step, data is passed in, and (potentially) gets returned. We can cache the data at these entry and exit 
-points. If we rerun the pipeline we will only rerun an individual step if something has changed in the implementation, 
-otherwise we can just use the cached output value.
+A machine learning pipeline is usually made up of many steps. Each step takes some sort of input and usually produces 
+some output that other steps further down the pipeline consume. As such, these pipelines describe the flow of
+data through a collection of logical operations. This is where caching comes into play. We can cache the output data of
+each step when we run the pipeline. If we rerun the pipeline we will only rerun an individual step if something has 
+changed in the implementation of the step itself or in the upstream data. In case nothing has changed its safe to assume
+our previous output data is still valid and we can just use the cached output value.
 
 ## Benefits of Caching
 - **🔁 Iteration Efficiency** - When experimenting, it really pays to have a high frequency of iteration. You learn 
@@ -26,8 +26,9 @@ subsequent pipeline runs faster.
 We'll be using the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset (originally developed by Yann LeCun and others) 
 digits and train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
 
-The script will actually run make two pipeline runs, with different configurations of the trainer. In the second run, 
-the first two steps will be skipped (i.e. the importing the data and preprocessing it)
+The script will actually run make two pipeline runs to showcase the effect of caching on runtimes.
+
+Depending on the chosen mode the second run will show the different caching behaviours of ZenML.
 
 This results in the second pipeline run to be **~70 times** faster due to the power of caching.
 
@@ -46,16 +47,35 @@ zenml integration install tensorflow
 # pull example
 zenml example pull caching
 cd zenml_examples/caching
-
-# initialize
-zenml init
 ```
 
 ### Run the project
-Now we're ready. Execute:
+Now we're ready to run our code. There are 3 different modes explained in this example:
+
+**Default Caching Behaviour**
+Zenml uses caching by default. This means if you run the same pipeline twice, the second run will rely on the cache of 
+the first run.This will run the same pipeline twice. The second run will be significantly faster as none of the steps 
+are actually run and the cached output is returned.
 
 ```shell
-python run.py
+python run.py --mode default
+```
+
+**Invalidated Cache**
+Within this mode the configuration of the trainer step is changed. This changed config leads to the invalidation of the 
+cached Output of the step. All steps from the trainer step onwards will be run again in the second pipeline run.
+
+```shell
+python run.py --mode invalidate
+```
+
+**Disable Caching**
+Zenml allows for disabling of caching at the step level as well as the pipeline level. In this case caching has been
+disabled on the normalization step. This means the normalization step as well as all steps that depend on the output
+of the normalization step will be rerun on the second pipeline run.
+
+```shell
+python run.py --mode disable
 ```
 
 ### See results
@@ -85,7 +105,7 @@ steps in a pipeline run are cached!
 
 ## SuperQuick `caching` run
 
-If you're really in a hurry and you want just to see this example pipeline run,
+If you're really in a hurry, and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
