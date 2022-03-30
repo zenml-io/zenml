@@ -27,6 +27,7 @@ def pretty_print_dataframe(df: DataFrame) -> None:
 
 feature_importer = feast_ingestion.FeatureImporter(source="xx")
 batch_features = feast_retrieval.BatchFeatureRetrieval(entities="xx")
+online_features = feast_retrieval.OnlineFeatureRetrieval(entities="yy")
 
 
 @step
@@ -39,18 +40,24 @@ def print_initial_features(batch_features: DataFrame) -> None:
 def feast_pipeline(
     feature_import,
     batch_features,
+    online_features,
     feature_printer,
 ):
     """Links all the steps together in a pipeline"""
     feature_import()
     batch_features = batch_features()
+    print("These features are batch/offline features:")
     feature_printer(batch_features)
+
+    print("These features are online features:")
+    feature_printer(online_features)
 
 
 if __name__ == "__main__":
     pipeline = feast_pipeline(
         feature_importer=feature_importer(),
         batch_features=batch_features(),
+        online_features=online_features(),
         feature_printer=print_initial_features(),
     )
 
