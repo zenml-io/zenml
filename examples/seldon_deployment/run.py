@@ -37,6 +37,24 @@ def main(
     ingress_hostname: str,
     stop_service: bool,
 ):
+    """Example that deploys a Seldon Core deployment to Kubernetes using a
+    Zenml Seldon Core deployment service.
+
+    Example usage:
+
+    ```
+    python run.py --kubernetes-context=zenml-eks-sandbox \
+        --namespace=zenml-workloads \
+        --ingress-hostname=abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
+    ```
+
+    Args:
+        kubernetes_context: Kubernetes context to use.
+        namespace: Kubernetes namespace to use.
+        ingress_hostname: the ingress hostname used by the Seldon Core
+            installation
+        stop_service: stop the service when done
+    """
     service_config = SeldonDeploymentConfig(
         kubernetes_context=kubernetes_context,
         namespace=namespace,
@@ -44,7 +62,6 @@ def main(
         model_uri="gs://seldon-models/v1.14.0-dev/sklearn/iris",
         model_name="iris",
         model_format="sklearn",
-        model_type="sklearn",
         protocol="sklearn",
         pipeline_name="iris-pipeline",
         pipeline_run_id="78087098790",
@@ -52,7 +69,7 @@ def main(
         replicas=2,
     )
 
-    service = SeldonDeploymentService(config=service_config)
+    service = SeldonDeploymentService(config = service_config)
     service.start(timeout=20)
     print(f"Service started: {service.status.prediction_url}")
 
