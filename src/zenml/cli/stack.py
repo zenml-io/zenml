@@ -246,6 +246,14 @@ def update_stack(
                 name=step_operator_name,
             )
 
+        if secrets_manager_name:
+            stack_components[
+                StackComponentType.SECRETS_MANAGER
+            ] = repo.get_stack_component(
+                StackComponentType.SECRETS_MANAGER,
+                name=secrets_manager_name,
+            )
+
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
