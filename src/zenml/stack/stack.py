@@ -31,7 +31,6 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
     RuntimeConfiguration,
@@ -47,6 +46,7 @@ if TYPE_CHECKING:
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
+    from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 
 
 logger = get_logger(__name__)
@@ -72,6 +72,7 @@ class Stack:
         container_registry: Optional["BaseContainerRegistry"] = None,
         secrets_manager: Optional["BaseSecretsManager"] = None,
         step_operator: Optional["BaseStepOperator"] = None,
+        model_deployer: Optional["BaseModelDeployer"] = None
     ):
         """Initializes and validates a stack instance.
 
@@ -85,6 +86,7 @@ class Stack:
         self._container_registry = container_registry
         self._step_operator = step_operator
         self._secrets_manager = secrets_manager
+        self._model_deployer = model_deployer
 
         self.validate()
 
@@ -111,6 +113,7 @@ class Stack:
         from zenml.orchestrators import BaseOrchestrator
         from zenml.secrets_managers import BaseSecretsManager
         from zenml.step_operators import BaseStepOperator
+        from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 
         def _raise_type_error(
             component: Optional["StackComponent"], expected_class: Type[Any]
@@ -168,6 +171,7 @@ class Stack:
             container_registry=container_registry,
             secrets_manager=secrets_manager,
             step_operator=step_operator,
+            model_deployer=model_deployer
         )
 
     @classmethod
@@ -216,6 +220,7 @@ class Stack:
                 self.container_registry,
                 self.secrets_manager,
                 self.step_operator,
+                self.model_deployer
             ]
             if component is not None
         }
@@ -254,6 +259,11 @@ class Stack:
     def step_operator(self) -> Optional["BaseStepOperator"]:
         """The step operator of the stack."""
         return self._step_operator
+
+    @property
+    def model_deployer(self) -> Optional["BaseModelDeployer"]:
+        """The model deployer of the stack."""
+        return self._model_deployer
 
     @property
     def runtime_options(self) -> Dict[str, Any]:
