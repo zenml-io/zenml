@@ -4,15 +4,14 @@ This examples show-cases the `PipelineRunDagVisualizer` using the
 [Graphviz](https://graphviz.readthedocs.io/en/stable/manual.html) library to
 visualize a ZenML pipeline run, in the form a DAG (a directed acyclic graph).
 
-## Visualizers
+## 🖌 Visualizers
 
 Visualizers are Python classes that take post-execution view objects (e.g.
 `PipelineView`, `PipelineRunView`, `StepView`, etc.) and create visualizations
 for them. ZenML will support many standard ones but one can always extend them
 using the `BaseVisualization` classes.
 
-## Overview
-
+## 🗺 Overview
 Here, we are using the
 [Boston Housing Price Regression](https://keras.io/api/datasets/boston_housing/)
 dataset. We create a simple pipeline that returns two pd.DataFrames, one for the
@@ -40,10 +39,9 @@ It produces the following visualization:
 
 ![Boston Housing Dataset Pipeline Visualization](assets/dag-visualization.png)
 
-## Run it locally
+## 💻 Run it locally
 
-### Pre-requisites
-
+### 📃 Pre-requisites
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -51,34 +49,29 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow
-zenml integration install graphviz
+zenml integration install tensorflow graphviz
 
 # pull example
 zenml example pull dag_visualizer
 cd zenml_examples/dag_visualizer
 
-# initialize
-zenml init
 ```
 
-### Run the project
-
+### ▶ Run the code
 Now we're ready. Execute:
 
 ```bash
 python run_visualize.py
 ```
 
-### Clean up
-
+### 🧽 Clean up
 In order to clean up, delete the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
 ```
 
-## SuperQuick `dag_visualizer` run
+## ⚡ SuperQuick `dag_visualizer` run
 
 If you're really in a hurry and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
