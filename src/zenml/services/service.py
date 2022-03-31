@@ -46,6 +46,9 @@ class ServiceConfig(BaseTypedModel):
     #   service configuration
     name: str = ""
     description: str = ""
+    run_id: str = ""
+    step_name: str = ""
+    pipeline_name: str = ""
 
 
 class BaseServiceMeta(BaseTypedModelMeta):
