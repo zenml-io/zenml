@@ -189,11 +189,9 @@ class MLFlowDeploymentService(LocalDaemonService):
                 "MLflow prediction service is not running. "
                 "Please start the service before making predictions."
             )
-        json_data = {"instances": request.tolist()}
-        logger.info("JSON data is: %s", json.dumps(json_data, indent=4))
         response = requests.post(
             self.endpoint.prediction_uri,
-            json=json_data,
+            json={"instances": request.tolist()},
         )
         response.raise_for_status()
         return np.array(response.json())
