@@ -23,16 +23,16 @@ from zenml.integrations.mlflow.mlflow_environment import (
     MLFlowStepEnvironment,
 )
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import MLFlowModelDeployer
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
 )
-from zenml.services import load_last_service_from_step
+from zenml.repository import Repository
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseStep,
     BaseStepConfig,
-    StepContext,
     StepEnvironment,
     step,
 )
@@ -84,38 +84,17 @@ def mlflow_deployer_step(
     def mlflow_model_deployer(
         deploy_decision: bool,
         config: MLFlowDeployerConfig,
-        context: StepContext,
     ) -> MLFlowDeploymentService:
         """MLflow model deployer pipeline step
 
         Args:
             deploy_decision: whether to deploy the model or not
             config: configuration for the deployer step
-            context: pipeline step context
 
         Returns:
             MLflow deployment service
         """
-
-        # Find a service created by a previous run of this step
-        step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-        last_service = cast(
-            MLFlowDeploymentService,
-            load_last_service_from_step(
-                pipeline_name=step_env.pipeline_name,
-                step_name=step_env.step_name,
-                step_context=context,
-            ),
-        )
-        if last_service and not isinstance(
-            last_service, MLFlowDeploymentService
-        ):
-            raise ValueError(
-                f"Last service deployed by step {step_env.step_name} and "
-                f"pipeline {step_env.pipeline_name} has invalid type. Expected "
-                f"MLFlowDeploymentService, found {type(last_service)}."
-            )
-
+        
         mlflow_step_env = cast(
             MLFlowStepEnvironment, Environment()[MLFLOW_STEP_ENVIRONMENT_NAME]
         )
@@ -128,24 +107,12 @@ def mlflow_deployer_step(
         ):
             model_uri = get_artifact_uri(config.model_name)
 
-        if not model_uri:
-            # an MLflow model was not found in the current run, so we simply reuse
-            # the service created during the previous step run
-            if not last_service:
-                raise RuntimeError(
-                    f"An MLflow model with name `{config.model_name}` was not "
-                    f"trained in the current pipeline run and no previous "
-                    f"service was found."
-                )
-            return last_service
-
-        if not deploy_decision and last_service:
-            return last_service
-
-        # stop the service created during the last step run (will be replaced
-        # by a new one to serve the new model)
-        if last_service:
-            last_service.stop(timeout=10)
+        # get pipeline name, step name and run id to add to the 
+        # MLflowDeploymentConfig object
+        step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
+        pipeline_name = step_env.pipeline_name
+        run_id = step_env.pipeline_run_id
+        step_name = step_env.step_name
 
         # create a new service for the new model
         predictor_cfg = MLFlowDeploymentConfig(
@@ -153,10 +120,21 @@ def mlflow_deployer_step(
             model_uri=model_uri,
             workers=config.workers,
             mlserver=config.mlserver,
+            timeout=config.timeout,
+            pipeline_name=pipeline_name,
+            run_id=run_id,
+            step_name=step_name,
+            deploy_decision=deploy_decision
         )
-        service = MLFlowDeploymentService(predictor_cfg)
-        service.start(timeout=10)
+        
+        mlflow_model_deployer_component = Repository().active_stack.model_deployer
+        if not isinstance(mlflow_model_deployer_component, MLFlowModelDeployer):
+            raise TypeError(
+                f"Expected ModelDeployer type MLflowModelDeployer but got "
+                f"{type(mlflow_model_deployer_component)} instead"
+            )
 
+        service = mlflow_model_deployer_component.deploy_model(predictor_cfg)
         return service
 
     return mlflow_model_deployer
