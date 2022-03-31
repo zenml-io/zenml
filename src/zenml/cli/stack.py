@@ -201,64 +201,66 @@ def update_stack(
     secrets_manager_name: Optional[str] = None,
 ) -> None:
     """Update a stack."""
-    with console.status(f"Updating stack `{stack_name}`..."):
-        repo = Repository()
-        stack_components = {
-            StackComponentType.METADATA_STORE: repo.active_stack.metadata_store,
-            StackComponentType.ARTIFACT_STORE: repo.active_stack.artifact_store,
-            StackComponentType.ORCHESTRATOR: repo.active_stack.orchestrator,
-        }
-
-        if metadata_store_name:
-            stack_components[
-                StackComponentType.METADATA_STORE
-            ] = repo.get_stack_component(
-                StackComponentType.METADATA_STORE, name=metadata_store_name
-            )
-
-        if artifact_store_name:
-            stack_components[
-                StackComponentType.ARTIFACT_STORE
-            ] = repo.get_stack_component(
-                StackComponentType.ARTIFACT_STORE, name=artifact_store_name
-            )
-
-        if orchestrator_name:
-            stack_components[
-                StackComponentType.ORCHESTRATOR
-            ] = repo.get_stack_component(
-                StackComponentType.ORCHESTRATOR, name=orchestrator_name
-            )
-
-        if container_registry_name:
-            stack_components[
-                StackComponentType.CONTAINER_REGISTRY
-            ] = repo.get_stack_component(
-                StackComponentType.CONTAINER_REGISTRY,
-                name=container_registry_name,
-            )
-
-        if step_operator_name:
-            stack_components[
-                StackComponentType.STEP_OPERATOR
-            ] = repo.get_stack_component(
-                StackComponentType.STEP_OPERATOR,
-                name=step_operator_name,
-            )
-
-        if secrets_manager_name:
-            stack_components[
-                StackComponentType.SECRETS_MANAGER
-            ] = repo.get_stack_component(
-                StackComponentType.SECRETS_MANAGER,
-                name=secrets_manager_name,
-            )
-
-        stack_ = Stack.from_components(
-            name=stack_name, components=stack_components
+    # TODO: [MEDIUM] consider allowing stack to be renamed using this CLI command
+    # with console.status(f"Updating stack `{stack_name}`..."):
+    repo = Repository()
+    try:
+        current_stack = repo.get_stack(stack_name)
+    except KeyError as e:
+        console.print(
+            f"Stack `{stack_name}` cannot be updated as it does not exist.",
+            e,
         )
-        repo.update_stack(stack_)
-        cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
+    stack_components = current_stack.components
+
+    if metadata_store_name:
+        stack_components[
+            StackComponentType.METADATA_STORE
+        ] = repo.get_stack_component(
+            StackComponentType.METADATA_STORE, name=metadata_store_name
+        )
+
+    if artifact_store_name:
+        stack_components[
+            StackComponentType.ARTIFACT_STORE
+        ] = repo.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, name=artifact_store_name
+        )
+
+    if orchestrator_name:
+        stack_components[
+            StackComponentType.ORCHESTRATOR
+        ] = repo.get_stack_component(
+            StackComponentType.ORCHESTRATOR, name=orchestrator_name
+        )
+
+    if container_registry_name:
+        stack_components[
+            StackComponentType.CONTAINER_REGISTRY
+        ] = repo.get_stack_component(
+            StackComponentType.CONTAINER_REGISTRY,
+            name=container_registry_name,
+        )
+
+    if step_operator_name:
+        stack_components[
+            StackComponentType.STEP_OPERATOR
+        ] = repo.get_stack_component(
+            StackComponentType.STEP_OPERATOR,
+            name=step_operator_name,
+        )
+
+    if secrets_manager_name:
+        stack_components[
+            StackComponentType.SECRETS_MANAGER
+        ] = repo.get_stack_component(
+            StackComponentType.SECRETS_MANAGER,
+            name=secrets_manager_name,
+        )
+
+    stack_ = Stack.from_components(name=stack_name, components=stack_components)
+    repo.update_stack(stack_)
+    cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
 @stack.command("list")
