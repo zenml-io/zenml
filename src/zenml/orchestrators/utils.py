@@ -134,13 +134,16 @@ def execute_step(
                 step_name = json.loads(
                     execution_info.exec_properties[step_name_param]
                 )
+                # TODO [MEDIUM]: find out which pipeline-run the cached
+                #  artifcats originate and log out the pipeline_run_id out here
                 logger.info(
-                    f"Using cached version of `{pipeline_step_name}` [`{step_name}`] "
-                    f"from pipeline_run_id `{pipeline_run_id}`.",
+                    f"Using cached version of `{pipeline_step_name}` "
+                    f"[`{step_name}`] from a previous pipeline run.",
                 )
             else:
                 logger.error(
-                    f"No execution properties found for step `{pipeline_step_name}`."
+                    f"No execution properties found for step "
+                    f"`{pipeline_step_name}`."
                 )
     except RuntimeError as e:
         if "execution has already succeeded" in str(e):
