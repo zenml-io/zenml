@@ -6,7 +6,7 @@ each step when we run the pipeline. If we rerun the pipeline we will only rerun 
 changed in the implementation of the step itself or in the upstream data. In case nothing has changed its safe to assume
 our previous output data is still valid and we can just use the cached output value.
 
-## Benefits of Caching
+## 📈 Benefits of Caching
 - **🔁 Iteration Efficiency** - When experimenting, it really pays to have a high frequency of iteration. You learn 
 when and how to course correct earlier and more often. Caching brings you closer to that by making the costs of 
 frequent iteration much lower.
@@ -19,7 +19,7 @@ which mean you use up and waste less energy. It all adds up!
 bills might be lower on account of your skipping those repeated steps.
 
 
-## Overview
+## 🗺 Overview
 This example builds on the [quickstart](../quickstart) but showcases how easy ZenML leverages caching to make 
 subsequent pipeline runs faster.
 
@@ -32,9 +32,9 @@ Depending on the chosen mode the second run will show the different caching beha
 
 This results in the second pipeline run to be **~70 times** faster due to the power of caching.
 
-## Run it locally
+## 💻 Run it locally
 
-### Pre-requisites
+### 📃 Pre-requisites
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -49,7 +49,7 @@ zenml example pull caching
 cd zenml_examples/caching
 ```
 
-### Run the project
+### ▶ Run the project
 Now we're ready to run our code. There are 3 different modes explained in this example:
 
 **Default Caching Behaviour**
@@ -78,7 +78,7 @@ of the normalization step will be rerun on the second pipeline run.
 python run.py --mode disable
 ```
 
-### See results
+### 👀 See results
 Inspecting the logs, you would be able to see a difference in how fast the runs were. E.g.:
 
 ```shell
@@ -93,7 +93,7 @@ Step `normalizer` has finished in 0.034s.  # second run
 
 This is almost a **70x** speed increase!
 
-### Clean up
+### 🧹 Clean up
 In order to clean up, delete the remaining zenml references.
 
 ```shell
@@ -103,7 +103,7 @@ rm -rf zenml_examples
 To see a visual representation of caching, check out the [lineage](../lineage) example. It show-cases how different 
 steps in a pipeline run are cached!
 
-## SuperQuick `caching` run
+## ⚡ SuperQuick `caching` run
 
 If you're really in a hurry, and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
