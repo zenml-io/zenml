@@ -362,7 +362,8 @@ class Stack:
         if 'enable_cache' in runtime_configuration:
             logger.info(
                 "Runtime configuration overwriting the pipeline cache settings"
-                " to enable_cache=`%s` ",
+                " to enable_cache=`%s` for this pipeline run. The default "
+                "caching strategy is retained for future pipeline runs.",
                 runtime_configuration['enable_cache']
             )
             pipeline.enable_cache = runtime_configuration.pop('enable_cache')
