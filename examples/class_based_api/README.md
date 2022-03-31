@@ -8,33 +8,31 @@ The class-based ZenML API is defined by the base classes `BaseStep` and `BasePip
 users to maintain a higher level of control while they are creating a step definition and using it within the context 
 of a pipeline.
 
-A user may also mix-and-match the Functional API with the Class Based API: All standard data types and steps that 
+A user may also mix-and-match the Functional API with the Class Based API: All standard data types and steps 
 are applicable in both of these approaches.
 
 In order to illustrate how the class-based API functions, we'll do a simple exercise to build our standard 
-built-in training pipeline piece-by-piece.
+built-in training pipeline piece-by-piece. Get your environment ready and follow along!
 
-If you just want to see all the code for each chapter of the guide, head over to the 
-[GitHub version](https://github.com/zenml-io/zenml/tree/main/examples/class_based_api)
+## 💻 Run it locally
 
-If not, then get your environment ready and follow along!
-
-## Set up locally
+### 📃 Pre-requisites
 
 In order to run the chapters of the guide, you need to install and initialize ZenML:
 
 ```bash
+# install CLI
 pip install zenml 
-zenml integration install tensorflow
-zenml integration install sklearn
 
-# pull example
+# install ZenML integrations
+zenml integration install tensorflow, sklearn
+
+# pull example if you don't have it locally already
 zenml example pull class_based_api
 cd zenml_examples/class_based_api
-
-# initialize
-zenml init
 ```
+
+### 👣 Stepping through the chapters
 
 In general, to run each chapter you can do:
 
@@ -42,14 +40,9 @@ In general, to run each chapter you can do:
 python chapter_*.py  # for the chapter of your choice
 ```
 
-Note before executing each chapter, make sure to clean the old chapter artifact and metadata store:
+Each of the chapters 
 
-```shell
-rm -rf .zen
-zenml init  # start again
-```
-
-### Clean up
+### 🧽  Clean up
 
 In order to clean up, delete the remaining zenml references.
 
@@ -57,7 +50,7 @@ In order to clean up, delete the remaining zenml references.
 rm -rf zenml_examples
 ```
 
-## SuperQuick `class_based_api` run
+## ⚡ SuperQuick `class_based_api` run
 
 If you're really in a hurry and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
