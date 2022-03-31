@@ -146,6 +146,7 @@ up whatever dependencies are required, use the ``run`` subcommand:
 ```bash
 zenml example run quickstart
 ```
+
 Using integrations
 ------------------
 
@@ -257,6 +258,7 @@ orchestrator into the CLI with the following command:
 ```bash
 zenml orchestrator delete ORCHESTRATOR_NAME
 ```
+
 Customizing your Container Registry
 -----------------------------------
 
@@ -421,6 +423,23 @@ To see which stack is currently set as the default active stack, type:
 
 ```bash
 zenml stack get
+```
+
+If you wish to update a stack that you have already registered, first make sure
+you have registered whatever components you want to use, then use the following command:
+
+```bash
+# assuming that you have already registered a new orchestrator
+# with NEW_ORCHESTRATOR_NAME
+zenml stack update STACK_NAME -o NEW_ORCHESTRATOR_NAME
+```
+
+You can update one or many stack components at the same time out of the ones
+that ZenML supports. To see the full list of options for updating a stack, use
+the following command:
+
+```bash
+zenml stack update --help
 ```
 """
 
