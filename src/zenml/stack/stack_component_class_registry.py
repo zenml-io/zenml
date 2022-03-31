@@ -20,6 +20,9 @@ from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
+from zenml.secrets_managers.local.local_secrets_manager import (
+    LocalSecretsManager,
+)
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -115,3 +118,4 @@ StackComponentClassRegistry.register_class(SQLiteMetadataStore)
 StackComponentClassRegistry.register_class(MySQLMetadataStore)
 StackComponentClassRegistry.register_class(LocalArtifactStore)
 StackComponentClassRegistry.register_class(BaseContainerRegistry)
+StackComponentClassRegistry.register_class(LocalSecretsManager)

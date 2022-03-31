@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 import json
 import os
-import shutil
 import uuid
 from typing import Any, Dict, Optional, cast
 
@@ -296,22 +295,28 @@ class GlobalConfiguration(
         """
         return os.path.join(config_path or self._config_path, "config.yaml")
 
-    def copy_config_with_active_profile(
+    def copy_active_configuration(
         self,
         config_path: str,
         load_config_path: Optional[str] = None,
     ) -> "GlobalConfiguration":
-        """Create a copy of the global config and the active repository profile
-        using a different config path.
+        """Create a copy of the global config, the active repository profile
+        and the active stack using a different configuration path.
+
+        This method is used to extract the active slice of the current state
+        (consisting only of the global configuration, the active profile and the
+        active stack) and store it in a different configuration path, where it
+        can be loaded in the context of a new environment, such as a container
+        image.
 
         Args:
-            config_path: path where the global config copy should be saved
-            load_config_path: path that will be used to load the global config
+            config_path: path where the active configuration copy should be saved
+            load_config_path: path that will be used to load the configuration
                 copy. This can be set to a value different than `config_path`
-                if the global config copy will be loaded from a different
+                if the configuration copy will be loaded from a different
                 path, e.g. when the global config copy is copied to a
                 container image. This will be reflected in the paths and URLs
-                encoded in the copied profile.
+                encoded in the profile copy.
         """
         from zenml.repository import Repository
 
@@ -319,49 +324,29 @@ class GlobalConfiguration(
 
         config_copy = GlobalConfiguration(config_path=config_path)
         config_copy.profiles = {}
-        profile = Repository().active_profile
 
-        profile_copy = config_copy.add_or_update_profile(profile)
-        profile_copy.active_stack = Repository().active_stack_name
-        config_copy.activate_profile(profile.name)
-
-        if not profile.store_type or not profile.store_url:
-            # should not happen, but just in case
-            raise RuntimeError(
-                f"No store type or URL set for profile " f"`{profile.name}`."
-            )
-
-        # if the profile stores its state locally inside a local directory,
-        # we need to copy that as well
-        store_class = Repository.get_store_class(profile.store_type)
-        if not store_class:
-            raise RuntimeError(
-                f"No store implementation found for store type "
-                f"`{profile.store_type}`."
-            )
-
-        profile_path = store_class.get_path_from_url(profile.store_url)
-        dst_profile_url = store_class.get_local_url(
-            profile_copy.config_directory
+        repo = Repository()
+        profile = ProfileConfiguration(
+            name=repo.active_profile_name,
+            active_stack=repo.active_stack_name,
         )
-        dst_profile_path = store_class.get_path_from_url(dst_profile_url)
-        if profile_path and dst_profile_path:
-            if profile_path.is_dir():
-                shutil.copytree(
-                    profile_path,
-                    dst_profile_path,
-                )
-            else:
-                utils.create_dir_recursive_if_not_exists(
-                    str(dst_profile_path.parent)
-                )
-                shutil.copyfile(profile_path, dst_profile_path)
 
-            if load_config_path:
-                dst_profile_url = dst_profile_url.replace(
-                    config_path, load_config_path
-                )
-            profile_copy.store_url = dst_profile_url
+        profile._config = config_copy
+        # circumvent the profile initialization done in the
+        # ProfileConfiguration and the Repository classes to avoid triggering
+        # the analytics and interact directly with the store creation
+        config_copy.profiles[profile.name] = profile
+        store = Repository.create_store(profile, skip_default_stack=True)
+        # transfer the active stack to the new store
+        store.register_stack(repo.stack_store.get_stack(repo.active_stack_name))
+
+        # if a custom load config path is specified, use it to replace the
+        # current store local path in the profile URL
+        if load_config_path:
+            profile.store_url = store.url.replace(
+                str(config_copy.config_directory), load_config_path
+            )
+
         config_copy._write_config()
         return config_copy
 
@@ -377,6 +362,9 @@ class GlobalConfiguration(
 
         Args:
             profile: profile configuration
+
+        Returns:
+            the profile configuration added to the global configuration
         """
         profile = profile.copy()
         profile._config = self

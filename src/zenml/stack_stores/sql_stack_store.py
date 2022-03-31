@@ -77,6 +77,8 @@ class SqlStackStore(BaseStackStore):
         Returns:
             The initialized stack store instance.
         """
+        if not self.is_valid_url(url):
+            raise ValueError(f"Invalid URL for SQL store: {url}")
 
         logger.debug("Initializing SqlStackStore at %s", url)
         self._url = url

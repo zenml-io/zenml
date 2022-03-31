@@ -130,6 +130,31 @@ configuration lives, e.g., the active
 [Stack](../guides/functional-api/deploy-to-production.md) that you are using to
 run pipelines, is stored.
 
+## Secret
+
+A ZenML Secret is a grouping of key-value pairs. These are accessed and
+administered via the ZenML Secret Manager (a stack component).
+
+Secrets are distinguished by having different schemas. An AWS SecretSchema, for
+example, has key-value pairs for `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+as well as an optional `AWS_SESSION_TOKEN`. If you don't specify a schema at the
+point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a
+kind of default schema where things that aren't attached to a grouping can be
+stored.
+
+## Secrets Manager
+
+Most projects involving either cloud infrastructure or of a certain complexity
+will involve secrets of some kind. You use secrets, for example, when connecting
+to AWS, which requires an `access_key_id` and a `secret_access_key` which it
+(usually) stores in your `~/.aws/credentials` file.
+
+You might find you need to access those secrets from within your Kubernetes
+cluster as it runs individual steps, or you might just want a centralized
+location for the storage of secrets across your project. ZenML offers a local
+secrets manager and an integration with the managed [AWS Secrets
+Manager](https://aws.amazon.com/secrets-manager).
+
 ## Stack
 
 A stack is made up of the following three core components:

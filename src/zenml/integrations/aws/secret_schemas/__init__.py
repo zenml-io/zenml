@@ -12,23 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The AzureML integration submodule provides a way to run ZenML steps in AzureML.
+## Secret Schema
+
+...
 """
+from zenml.integrations.aws.secret_schemas.aws_secret_schema import (
+    AWSSecretSchema,
+)
 
-from zenml.integrations.constants import AZUREML
-from zenml.integrations.integration import Integration
-
-
-class AzureMLIntegration(Integration):
-    """Definition of AzureML integration for ZenML."""
-
-    NAME = AZUREML
-    REQUIREMENTS = ["azureml-core==1.39.0.post1"]
-
-    @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        from zenml.integrations.azureml import step_operators  # noqa
-
-
-AzureMLIntegration.check_installation()
+__all__ = ["AWSSecretSchema"]

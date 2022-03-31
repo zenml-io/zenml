@@ -39,6 +39,17 @@ def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
     utils.write_file_contents_as_string(file_path, yaml.dump(contents))
 
 
+def append_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
+    """Append contents to a YAML file at file_path."""
+    file_contents = read_yaml(file_path) or {}
+    file_contents.update(contents)
+    if not utils.is_remote(file_path):
+        dir_ = str(Path(file_path).parent)
+        if not fileio.isdir(dir_):
+            raise FileNotFoundError(f"Directory {dir_} does not exist.")
+    utils.write_file_contents_as_string(file_path, yaml.dump(file_contents))
+
+
 def read_yaml(file_path: str) -> Any:
     """Read YAML on file path and returns contents as dict.
 
@@ -51,8 +62,11 @@ def read_yaml(file_path: str) -> Any:
     Raises:
         FileNotFoundError: if file does not exist.
     """
+
     if fileio.exists(file_path):
         contents = utils.read_file_contents_as_string(file_path)
+        # TODO: [LOW] consider adding a default empty dict to be returned
+        #   instead of None
         return yaml.safe_load(contents)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")
@@ -88,7 +102,7 @@ def write_json(file_path: str, contents: Dict[str, Any]) -> None:
     if not utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
         if not fileio.isdir(dir_):
-            # If it is a local path and it doesn't exist, raise Exception.
+            # Check if it is a local path, if it doesn't exist, raise Exception.
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
     utils.write_file_contents_as_string(file_path, json.dumps(contents))
 

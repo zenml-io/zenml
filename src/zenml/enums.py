@@ -46,6 +46,7 @@ class StackComponentType(StrEnum):
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
     STEP_OPERATOR = "step_operator"
+    SECRETS_MANAGER = "secrets_manager"
 
     @property
     def plural(self) -> str:
@@ -61,6 +62,13 @@ class MetadataContextTypes(Enum):
 
     STACK = "stack"
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
+
+
+class SecretSchemaType(StrEnum):
+    """All supported secret schema types."""
+
+    AWS = "aws"
+    ARBITRARY = "arbitrary"
 
 
 class StoreType(StrEnum):

@@ -56,6 +56,7 @@ def generate_dockerfile_contents(
     base_image: str,
     entrypoint: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
+    environment_vars: Optional[Dict[str, str]] = None,
 ) -> str:
     """Generates a Dockerfile.
 
@@ -64,11 +65,16 @@ def generate_dockerfile_contents(
         entrypoint: The default entrypoint command that gets executed when
             running a container of an image created by this dockerfile.
         requirements: Optional list of pip requirements to install.
+        environment_vars: Optional dict of environment variables to set.
 
     Returns:
         Content of a dockerfile.
     """
     lines = [f"FROM {base_image}", "WORKDIR /app"]
+
+    if environment_vars:
+        for key, value in environment_vars.items():
+            lines.append(f"ENV {key.upper()}={value}")
 
     if requirements:
         lines.append(
@@ -178,6 +184,7 @@ def build_docker_image(
     dockerfile_path: Optional[str] = None,
     dockerignore_path: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
+    environment_vars: Optional[Dict[str, str]] = None,
     use_local_requirements: bool = False,
     base_image: Optional[str] = None,
 ) -> None:
@@ -197,6 +204,8 @@ def build_docker_image(
             are included in the build context.
         requirements: Optional list of pip requirements to install. This
             will only be used if no value is given for `dockerfile_path`.
+        environment_vars: Optional dict of key value pairs that need to be
+            embedded as environment variables in the image.
         use_local_requirements: If `True` and no values are given for
             `dockerfile_path` and `requirements`, then the packages installed
             in the environment of the current python processed will be
@@ -207,9 +216,10 @@ def build_docker_image(
     try:
 
         # Save a copy of the current global configuration with the
-        # active profile contents into the build context, to have
-        # the configured stacks accessible from within the container.
-        GlobalConfiguration().copy_config_with_active_profile(
+        # active profile and the active stack configuration into the build
+        # context, to have the active profile and active stack accessible from
+        # within the container.
+        GlobalConfiguration().copy_active_configuration(
             config_path,
             load_config_path=f"/app/{CONTAINER_ZENML_CONFIG_DIR}",
         )
@@ -250,8 +260,10 @@ def build_docker_image(
             pull_base_image = not is_local_image(base_image)
 
         logger.info(
-            "Building docker image '%s', this might take a while...", image_name
+            "Building docker image '%s', this might take a while...",
+            image_name,
         )
+
         docker_client = DockerClient.from_env()
         # We use the client api directly here, so we can stream the logs
         output_stream = docker_client.images.client.api.build(

@@ -12,9 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The AWS integration submodule provides a way to run ZenML pipelines in a cloud
-environment. Specifically, it allows the use of cloud artifact stores,
-and an `io` module to handle file operations on S3 buckets.
+The S3 integration  allows the use of cloud artifact stores and file
+operations on S3 buckets.
 """
 from zenml.integrations.constants import S3
 from zenml.integrations.integration import Integration

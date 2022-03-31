@@ -12,23 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The AzureML integration submodule provides a way to run ZenML steps in AzureML.
+The AWS integration submodule provides a way to run ZenML pipelines in a cloud
+environment.
 """
-
-from zenml.integrations.constants import AZUREML
+from zenml.integrations.constants import AWS
 from zenml.integrations.integration import Integration
 
 
-class AzureMLIntegration(Integration):
-    """Definition of AzureML integration for ZenML."""
+class AWSIntegration(Integration):
+    """Definition of AWS integration for ZenML."""
 
-    NAME = AZUREML
-    REQUIREMENTS = ["azureml-core==1.39.0.post1"]
+    NAME = AWS
+    REQUIREMENTS = ["s3fs==2022.2.0"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.azureml import step_operators  # noqa
+        from zenml.integrations.aws import secrets_managers  # noqa
 
 
-AzureMLIntegration.check_installation()
+AWSIntegration.check_installation()

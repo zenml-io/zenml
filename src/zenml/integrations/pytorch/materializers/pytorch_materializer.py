@@ -38,7 +38,9 @@ class PyTorchMaterializer(BaseMaterializer):
             A loaded pytorch model.
         """
         super().handle_input(data_type)
-        return torch.load(os.path.join(self.artifact.uri, DEFAULT_FILENAME))  # type: ignore[no-untyped-call] # noqa
+        return torch.load(  # type: ignore[no-untyped-call]
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        )  # noqa
 
     def handle_return(self, model: Union[Module, TorchDict]) -> None:
         """Writes a PyTorch model.

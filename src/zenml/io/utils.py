@@ -105,12 +105,11 @@ def create_file_if_not_exists(
         file_contents: Contents of file.
 
     """
-    # if not fileio.exists(file_path):
-    #     fileio.(file_path, file_contents)
     full_path = Path(file_path)
-    create_dir_recursive_if_not_exists(str(full_path.parent))
-    with open(str(full_path), "w") as f:
-        f.write(file_contents)
+    if not exists(file_path):
+        create_dir_recursive_if_not_exists(str(full_path.parent))
+        with open(str(full_path), "w") as f:
+            f.write(file_contents)
 
 
 def create_dir_if_not_exists(dir_path: str) -> None:
