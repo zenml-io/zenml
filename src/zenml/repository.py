@@ -26,6 +26,7 @@ from pydantic import BaseModel, ValidationError
 from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
+from zenml.console import console
 from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REPOSITORY_DIRECTORY_NAME
 from zenml.enums import StackComponentFlavor, StackComponentType, StoreType
 from zenml.environment import Environment
@@ -783,9 +784,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         return self._stack_from_wrapper(self.stack_store.get_stack(name))
 
     def register_stack(self, stack: Stack) -> None:
-        """Registers a stack and it's components.
+        """Registers a stack and its components.
 
-        If any of the stacks' components aren't registered in the repository
+        If any of the stack's components aren't registered in the repository
         yet, this method will try to register them as well.
 
         Args:
@@ -803,6 +804,10 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         metadata["store_type"] = self.active_profile.store_type.value
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
+    def update_stack(self, stack: Stack) -> None:
+        """Updates a stack and its components."""
+        console.print("Updating the component")
+
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack.
 
@@ -816,6 +821,14 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         if name == self.active_stack_name:
             raise ValueError(f"Unable to deregister active stack '{name}'.")
         self.stack_store.deregister_stack(name)
+
+    def update_stack_component(
+        self, component_type: StackComponentType, old_name: str, new_name: str
+    ) -> None:
+        """Updates a stack component."""
+        console.print("Updating the component")
+        # self.deregister_stack_component(component_type, old_name)
+        # self.register_stack_component
 
     def get_stack_components(
         self, component_type: StackComponentType

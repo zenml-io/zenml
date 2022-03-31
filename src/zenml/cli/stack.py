@@ -141,6 +141,118 @@ def register_stack(
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
 
+@stack.command("update", context_settings=dict(ignore_unknown_options=True))
+@click.argument("stack_name", type=str, required=True)
+@click.option(
+    "-m",
+    "--metadata-store",
+    "metadata_store_name",
+    help="Name of the new metadata store for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-a",
+    "--artifact-store",
+    "artifact_store_name",
+    help="Name of the new artifact store for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-o",
+    "--orchestrator",
+    "orchestrator_name",
+    help="Name of the new orchestrator for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-c",
+    "--container_registry",
+    "container_registry_name",
+    help="Name of the new container registry for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-s",
+    "--step_operator",
+    "step_operator_name",
+    help="Name of the new step operator for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-x",
+    "--secrets_manager",
+    "secrets_manager_name",
+    help="Name of the new secrets manager for this stack.",
+    type=str,
+    required=False,
+)
+def update_stack(
+    stack_name: str,
+    metadata_store_name: Optional[str] = None,
+    artifact_store_name: Optional[str] = None,
+    orchestrator_name: Optional[str] = None,
+    container_registry_name: Optional[str] = None,
+    step_operator_name: Optional[str] = None,
+    secrets_manager_name: Optional[str] = None,
+) -> None:
+    """Update a stack."""
+    with console.status(f"Updating stack `{stack_name}`..."):
+        repo = Repository()
+        stack_components = {
+            StackComponentType.METADATA_STORE: repo.active_stack.metadata_store,
+            StackComponentType.ARTIFACT_STORE: repo.active_stack.artifact_store,
+            StackComponentType.ORCHESTRATOR: repo.active_stack.orchestrator,
+        }
+
+        if metadata_store_name:
+            stack_components[
+                StackComponentType.METADATA_STORE
+            ] = repo.get_stack_component(
+                StackComponentType.METADATA_STORE, name=metadata_store_name
+            )
+
+        if artifact_store_name:
+            stack_components[
+                StackComponentType.ARTIFACT_STORE
+            ] = repo.get_stack_component(
+                StackComponentType.ARTIFACT_STORE, name=artifact_store_name
+            )
+
+        if orchestrator_name:
+            stack_components[
+                StackComponentType.ORCHESTRATOR
+            ] = repo.get_stack_component(
+                StackComponentType.ORCHESTRATOR, name=orchestrator_name
+            )
+
+        if container_registry_name:
+            stack_components[
+                StackComponentType.CONTAINER_REGISTRY
+            ] = repo.get_stack_component(
+                StackComponentType.CONTAINER_REGISTRY,
+                name=container_registry_name,
+            )
+
+        if step_operator_name:
+            stack_components[
+                StackComponentType.STEP_OPERATOR
+            ] = repo.get_stack_component(
+                StackComponentType.STEP_OPERATOR,
+                name=step_operator_name,
+            )
+
+        stack_ = Stack.from_components(
+            name=stack_name, components=stack_components
+        )
+        repo.update_stack(stack_)
+        cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
+
+
 @stack.command("list")
 def list_stacks() -> None:
     """List all available stacks in the active profile."""
