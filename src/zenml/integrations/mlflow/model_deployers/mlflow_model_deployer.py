@@ -153,7 +153,7 @@ class MLflowDeployer(BaseModelDeployer):
     # the step will receive a config from the user that mentions the number of workers etc.
     # the step implementation will create a new config using all values from the user and 
     # add values like pipeline name, model_uri 
-    def _create_new_service(config: ServiceConfig) -> BaseService:
+    def _create_new_service(self, config: ServiceConfig) -> BaseService:
         """Creates a new MLflowDeploymentService."""
 
         if not config.model_uri:
@@ -171,6 +171,7 @@ class MLflowDeployer(BaseModelDeployer):
             model_uri=config.model_uri,
             workers=config.workers,
             mlserver=config.mlserver,
+            caller_uuid=self.uuid
         )
         service = MLFlowDeploymentService(predictor_cfg)
         # service.start(timeout=10)

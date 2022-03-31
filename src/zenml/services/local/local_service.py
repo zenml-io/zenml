@@ -48,7 +48,7 @@ class LocalDaemonServiceConfig(ServiceConfig):
         silent_daemon: set to True to suppress the output of the daemon
             (i.e. redirect stdout and stderr to /dev/null). If False, the
             daemon output will be redirected to a logfile.
-        uuid: UUID of the stack component that creates the service.
+        caller_uuid: UUID of the stack component that creates the service.
     """
 
     silent_daemon: bool = False
