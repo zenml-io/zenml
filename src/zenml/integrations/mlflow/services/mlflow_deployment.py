@@ -69,6 +69,7 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
             https://github.com/SeldonIO/MLServer). If False, the
             MLflow built-in scoring server will be used.
         timeout: the number of seconds to wait for the service to start/stop.
+        deploy_decision: whether to deploy the model or not
     """
 
     model_uri: str
@@ -76,6 +77,7 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
     workers: int = 1
     mlserver: bool = False
     timeout: int = 10
+    deploy_decision: bool
 
 
 class MLFlowDeploymentService(LocalDaemonService):

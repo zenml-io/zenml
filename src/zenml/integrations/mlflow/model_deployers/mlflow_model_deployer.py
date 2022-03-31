@@ -40,7 +40,7 @@ from zenml.stack.stack_component_class_registry import register_stack_component_
     component_type=StackComponentType.MODEL_DEPLOYER,
     component_flavor=ModelDeployerFlavor.MLFLOW,
 )
-class MLFlowDeployer(BaseModelDeployer):
+class MLFlowModelDeployer(BaseModelDeployer):
     """MLflow implementation of the BaseModelDeployer"""
 
     @property
@@ -113,16 +113,37 @@ class MLFlowDeployer(BaseModelDeployer):
                     old_config = None
                     with open(service_config_path, "r") as f:
                         old_config = f.read()
-                    mlflow_service = ServiceRegistry().load_service_from_json(old_config)
-                    if not isinstance(mlflow_service, MLFlowDeploymentService):
+                    old_service = ServiceRegistry().load_service_from_json(old_config)
+                    if not isinstance(old_service, MLFlowDeploymentService):
                         raise TypeError(
                             f"Expected service type MLFlowDeploymentService but got "
-                            f"{type(mlflow_service)} instead"
+                            f"{type(old_service)} instead"
                         )
-                    if(self._old_service_exists(mlflow_service, config)):
-                        self._clean_up_old_service(mlflow_service, config)
+                    if(self._old_service_exists(old_service, config)):
+                        if config.model_uri and config.deploy_decision:
+                            # there is a MLflow model associated with this run, so we 
+                            # will delete the old service and create a new one
+                            self._clean_up_old_service(old_service, config)
+                        else:
+                            # an MLflow model was not found in the current run, so we simply reuse
+                            # the service created during the previous step run
+                            return old_service
         
-        self._create_new_service(config)
+        # if there is no old service and no mlflow model 
+        # associated with this run, raise a RuntimeError
+        if not config.model_uri:
+            raise RuntimeError(
+                f"An MLflow model with name `{config.model_name}` was not "
+                f"trained in the current pipeline run and no previous "
+                f"service was found."
+            )
+
+        if config.deploy_decision:
+            return self._create_new_service(config)
+        else:
+            # investigate what to do in this case. For now, returning 
+            # a service with inactive state and status.
+            return MLFlowDeploymentService()
 
     
     def _clean_up_old_service(
@@ -165,7 +186,7 @@ class MLFlowDeployer(BaseModelDeployer):
     def _create_new_service(
         self, 
         config: MLFlowDeploymentConfig
-    ) -> BaseService:
+    ) -> MLFlowDeploymentService:
         """Creates a new MLflowDeploymentService."""
 
         if not config.model_uri:
