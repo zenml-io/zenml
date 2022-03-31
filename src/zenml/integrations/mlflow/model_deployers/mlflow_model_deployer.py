@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 import json
 import os
+import shutil
 from typing import Optional
 
 from typing import List, Optional
+
 from zenml import logger
 from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 
@@ -28,7 +30,6 @@ from zenml.io.utils import get_global_config_directory
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.services import (
     BaseService, 
-    ServiceConfig, 
     ServiceRegistry
 )
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
@@ -39,7 +40,7 @@ from zenml.stack.stack_component_class_registry import register_stack_component_
     component_type=StackComponentType.MODEL_DEPLOYER,
     component_flavor=ModelDeployerFlavor.MLFLOW,
 )
-class MLflowDeployer(BaseModelDeployer):
+class MLFlowDeployer(BaseModelDeployer):
     """MLflow implementation of the BaseModelDeployer"""
 
     @property
@@ -54,17 +55,9 @@ class MLflowDeployer(BaseModelDeployer):
 
     def deploy_model(
         self,
-        pipeline_name: str,
-        run_id: str,
-        step_name: str,
-        model_name: str,
-        model_uri: str,
-        model_type: str,
-        config: ServiceConfig,
-        kubernetes_context: Optional[str] = None
-    ) -> BaseService:
+        config: MLFlowDeploymentConfig,
+    ) -> MLFlowDeploymentService:
         """
-        TODO: put extra params into the ServiceConfig
 
         We assume that the deployment decision is made at the step level and 
         here we have to delete any older services that are running and start 
@@ -97,8 +90,8 @@ class MLflowDeployer(BaseModelDeployer):
             model_name: Name of the model to be deployed.
             model_uri: URI of the model to be deployed.
             model_type: Type/format of the model to be deployed.
-            config: Custom Service configuration parameters for the model
-                deployer.
+            config: MLflow deployer config parameters passed from the step for 
+            the model deployer.
 
         Returns:
             The deployment Service object.
@@ -123,37 +116,57 @@ class MLflowDeployer(BaseModelDeployer):
                     mlflow_service = ServiceRegistry().load_service_from_json(old_config)
                     if not isinstance(mlflow_service, MLFlowDeploymentService):
                         raise TypeError(
-                            f"Expected service type LocalDaemonService but got "
+                            f"Expected service type MLFlowDeploymentService but got "
                             f"{type(mlflow_service)} instead"
                         )
                     if(self._old_service_exists(mlflow_service, config)):
-                        return mlflow_service.stop(timeout=10)
-                    else:
-                        return mlflow_service       
-
+                        self._clean_up_old_service(mlflow_service, config)
+        
         self._create_new_service(config)
+
     
+    def _clean_up_old_service(
+        old_service: MLFlowDeploymentService,
+        config: MLFlowDeploymentConfig
+    ) -> None:
+        # stop the older service
+        old_service.stop(timeout=10)
+
+        # delete the old configuration file
+        service_directory_path = old_service.status.runtime_path
+        shutil.rmtree(service_directory_path)
+
+
     def _old_service_exists(
-        old_service: BaseService, 
-        config: ServiceConfig
-        ) -> bool:
+        self,
+        old_service: MLFlowDeploymentService, 
+        config: MLFlowDeploymentConfig
+    ) -> bool:
         """Returns true if an old service with the same pipeline name,
         step name and model name exists.
         
         Args:
             old_service: The materialized Service instance derived from the config
             of the older (existing) service
-            config: The ServiceConfig object passed to the deploy_model function holding 
+            config: The MLFlowDeploymentConfig object passed to the deploy_model function holding 
             parameters of the new service to be created."""
         
-        # wip - investigate how to get pipeline, step and model name from service.
+        old_config = old_service.config
+
+        if old_config.pipeline_name == config.pipeline_name and \
+            old_config.model_name == config.model_name and \
+            old_config.step_name == config.step_name:
+            return True
 
         return False
     
     # the step will receive a config from the user that mentions the number of workers etc.
     # the step implementation will create a new config using all values from the user and 
     # add values like pipeline name, model_uri 
-    def _create_new_service(self, config: ServiceConfig) -> BaseService:
+    def _create_new_service(
+        self, 
+        config: MLFlowDeploymentConfig
+    ) -> BaseService:
         """Creates a new MLflowDeploymentService."""
 
         if not config.model_uri:
@@ -165,20 +178,14 @@ class MLflowDeployer(BaseModelDeployer):
                 f"service was found."
             )
 
+        # set the uuid in the config
+        config.caller_uuid = self.uuid
         # create a new service for the new model
-        predictor_cfg = MLFlowDeploymentConfig(
-            model_name=config.model_name,
-            model_uri=config.model_uri,
-            workers=config.workers,
-            mlserver=config.mlserver,
-            caller_uuid=self.uuid
-        )
-        service = MLFlowDeploymentService(predictor_cfg)
-        # service.start(timeout=10)
+        service = MLFlowDeploymentService(config)
+        service.start(timeout=10)
 
         return service
 
-        
         
     def find_model_server(
         self,
