@@ -127,10 +127,9 @@ class MLFlowDeployer(BaseModelDeployer):
     
     def _clean_up_old_service(
         old_service: MLFlowDeploymentService,
-        config: MLFlowDeploymentConfig
     ) -> None:
         # stop the older service
-        old_service.stop(timeout=10)
+        old_service.stop(timeout=old_service.config.timeout)
 
         # delete the old configuration file
         service_directory_path = old_service.status.runtime_path
@@ -182,7 +181,7 @@ class MLFlowDeployer(BaseModelDeployer):
         config.caller_uuid = self.uuid
         # create a new service for the new model
         service = MLFlowDeploymentService(config)
-        service.start(timeout=10)
+        service.start(timeout=config.timeout)
 
         return service
 

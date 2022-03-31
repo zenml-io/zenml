@@ -48,11 +48,13 @@ class MLFlowDeployerConfig(BaseStepConfig):
         mlserver: set to True to use the MLflow MLServer backend (see
             https://github.com/SeldonIO/MLServer). If False, the
             MLflow built-in scoring server will be used.
+        timeout: the number of seconds to wait for the service to start/stop.
     """
 
     model_name: str = "model"
     workers: int = 1
     mlserver: bool = False
+    timeout: int = 10
 
 
 def mlflow_deployer_step(
