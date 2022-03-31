@@ -23,11 +23,15 @@ from zenml.steps import step
 
 
 class MyObj:
+    """Your implementation of a data object"""
     def __init__(self, name: str):
         self.name = name
 
 
 class MyMaterializer(BaseMaterializer):
+    """Materializer for you data object"""
+    # Within the associated types you specify which object this materializer
+    # is built to handle
     ASSOCIATED_TYPES = (MyObj,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
@@ -47,20 +51,31 @@ class MyMaterializer(BaseMaterializer):
 
 @step
 def step1() -> MyObj:
-    return MyObj("jk")
+    """Step that returns one of your data objects - the handle_return method
+    of your custom materializer will ensure this returned object is stored
+    correctly within the artifact store."""
+    return MyObj("aria_the_cat")
 
 
 @step
 def step2(my_obj: MyObj):
+    """Step that uses one of your data objects as input - - the handle_input
+    method of your custom materializer will ensure this returned object is
+    stored correctly within the artifact store."""
     print(my_obj.name)
 
 
 @pipeline
 def pipe(step1, step2):
-    step2(step1())
+    """Connecting the steps together"""
+    custom_data_object = step1()
+    step2(custom_data_object)
 
 
 if __name__ == "__main__":
+    # When creating your own materializers you should explicitly tell steps
+    # to use this materializer for their outputs
     pipe(
-        step1=step1().with_return_materializers(MyMaterializer), step2=step2()
+        step1=step1().with_return_materializers(MyMaterializer),
+        step2=step2()
     ).run()

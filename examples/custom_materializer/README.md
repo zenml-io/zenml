@@ -59,16 +59,16 @@ at the right time. E.g. If a ZenML step returns a `pd.DataFrame`, ZenML will try
 workflow.
 
 
-## Overview
+## 🗺 Overview
 
 This example builds a simple custom materializer for a custom object that is passed between two steps.
 
-What's important to know: Use the ZenML `fileio` handler to ensure materialization logic works across artifact stores 
-(local and remote like S3 buckets).
+What's important to know: Use the ZenML `fileio` handler when you implement your filesystem access to ensure 
+materialization logic works across artifact stores (local as well as remote like S3 buckets).
 
-## Run it locally
+## 💻 Run it locally
 
-### Pre-requisites
+### 📃 Pre-requisites
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -78,26 +78,25 @@ pip install zenml
 # pull example
 zenml example pull custom_materializer
 cd zenml_examples/custom_materializer
-
-# initialize
-zenml init
 ```
 
-### Run the project
-Now we're ready. Execute:
+### ▶ Run the code
+Now we're ready. Feel free to open the `run.py` file and familiarize yourself with the code.
+
+To run the code just execute:
 
 ```shell
 python run.py
 ```
 
-### Clean up
+### 🧽 Clean up
 In order to clean up, delete the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
 ```
 
-## SuperQuick `custom_materializer` run
+## ⚡ SuperQuick `custom_materializer` run
 
 If you're really in a hurry and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and

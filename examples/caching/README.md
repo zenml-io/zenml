@@ -44,12 +44,12 @@ pip install zenml
 # install ZenML integrations
 zenml integration install tensorflow
 
-# pull example
+# pull example if you don't have it locally already
 zenml example pull caching
 cd zenml_examples/caching
 ```
 
-### ▶ Run the project
+### ▶ Run the code
 Now we're ready to run our code. There are 3 different modes explained in this example:
 
 **Default Caching Behaviour**
