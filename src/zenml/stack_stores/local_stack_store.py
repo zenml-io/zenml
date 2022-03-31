@@ -190,6 +190,22 @@ class LocalStackStore(BaseStackStore):
             component.name,
         )
 
+    def update_stack_component(
+        self,
+        current_component: StackComponentWrapper,
+        new_component: StackComponentWrapper,
+    ) -> None:
+        """Update a stack component.
+
+        Args:
+            current_component: The current component to update.
+            new_component: The new component to update with.
+
+        Raises:
+            KeyError: If no stack component exists with the given name.
+        """
+        raise NotImplementedError
+
     def deregister_stack(self, name: str) -> None:
         """Remove a stack from storage.
 

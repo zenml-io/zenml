@@ -158,6 +158,22 @@ class BaseStackStore(ABC):
         """
 
     @abstractmethod
+    def update_stack_component(
+        self,
+        current_component: StackComponentWrapper,
+        new_component: StackComponentWrapper,
+    ) -> None:
+        """Update a stack component.
+
+        Args:
+            current_component: The current component to update.
+            new_component: The new component to update with.
+
+        Raises:
+            KeyError: If no stack component exists with the given name.
+        """
+
+    @abstractmethod
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
