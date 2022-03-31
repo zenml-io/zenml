@@ -93,7 +93,7 @@ Step `normalizer` has finished in 0.034s.  # second run
 
 This is almost a **70x** speed increase!
 
-### 🧹 Clean up
+### 🧽 Clean up
 In order to clean up, delete the remaining zenml references.
 
 ```shell
