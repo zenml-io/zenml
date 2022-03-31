@@ -358,9 +358,18 @@ class Stack:
         )
         start_time = time.time()
 
+        original_cache_boolean = pipeline.enable_cache
+        if 'enable_cache' in runtime_configuration:
+            pipeline.enable_cache = runtime_configuration.pop('enable_cache')
+
         return_value = self.orchestrator.run_pipeline(
             pipeline, stack=self, runtime_configuration=runtime_configuration
         )
+
+        # Put pipeline level cache policy back to make sure the next runs
+        #  default to that policy again in case the runtime configuration
+        #  is not set explicitly
+        pipeline.enable_cache = original_cache_boolean
 
         run_duration = time.time() - start_time
         logger.info(
