@@ -9,7 +9,7 @@ Within this tutorial you'll get a quick overview of caching in action.
 
 ## ⚡ Get started immediately - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/Zenml_Basics/caching/Caching_in_Zenml.ipynb)
 
-We've written a notebook on caching that you can get started on immediately on [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/Zenml_Basics/caching/Caching_in_Zenml.ipynb).
+We've written a notebook on caching that you can get started on immediately on [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/Zenml_Basics/caching/Caching_in_Zenml.ipynb).
 
 ## 💻 Run it locally
 ### 📃 Pre-requisites
@@ -29,13 +29,15 @@ We offer two ways for you to try this out locally:
 
 1. Start the notebook server of your choice and dive right into the [code](caching_in_zenml.ipynb)
 
-2. Try it in our [caching_in_zenml.py](caching_in_zenml.py) script
+2. Try it in our [caching_in_zenml.py](caching_in_zenml.py) script 
 
 ```bash
 python caching_in_zenml.py
 ```
 
+This will run the same pipeline twice and showcase caching in ZenML. Read the logs in
+your CLI to see how caching affects runtime and step execution.
+
 ### 👓 Learn more
 
--- check here to learn more -> docs
-
+Check out our [Docs](tbd) to  find more about caching and ZenML
