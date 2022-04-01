@@ -1,4 +1,4 @@
-# Creating a custom materializer
+# Materializers
 
 The precise way that data passes between the steps is dictated by `materializers`. The data that flows through steps 
 are stored as artifacts and artifacts are stored in artifact stores. The logic that governs the reading and writing of 
@@ -39,7 +39,7 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
 ```
 
 Above you can see the basic definition of the `BaseMaterializer`. All other materializers inherit from this class, and 
-this class defines the interface of all materializers. 
+this class defines the interface for all materializers. 
 
 Each materializer has an `artifact` object. The most important property of an `artifact` object is the `uri`. The 
 `uri` is created by ZenML on pipeline run time and points to the directory of a file system (the artifact store).
@@ -57,51 +57,3 @@ at the right time. E.g. If a ZenML step returns a `pd.DataFrame`, ZenML will try
 - `ASSOCIATED_ARTIFACT_TYPES` simply define what `type` of artifacts are being stored. This can be `DataArtifact`, 
 `StatisticsArtifact`, `DriftArtifact`, etc. This is simply a tag to query certain artifact types in the post-execution 
 workflow.
-
-
-## 🗺 Overview
-
-This example builds a simple custom materializer for a custom object that is passed between two steps.
-
-What's important to know: Use the ZenML `fileio` handler when you implement your filesystem access to ensure 
-materialization logic works across artifact stores (local as well as remote like S3 buckets).
-
-## 💻 Run it locally
-
-### 📃 Pre-requisites
-In order to run this example, you need to install and initialize ZenML:
-
-```shell
-# install CLI
-pip install zenml
-
-# pull example
-zenml example pull custom_materializer
-cd zenml_examples/custom_materializer
-```
-
-### ▶ Run the code
-Now we're ready. Feel free to open the `run.py` file and familiarize yourself with the code.
-
-To run the code just execute:
-
-```shell
-python run.py
-```
-
-### 🧽 Clean up
-In order to clean up, delete the remaining ZenML references.
-
-```shell
-rm -rf zenml_examples
-```
-
-## ⚡ SuperQuick `custom_materializer` run
-
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run custom_materializer
-```

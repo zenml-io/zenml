@@ -6,7 +6,7 @@ metrics and output files.
 
 ## Overview
 
-This example builds on the [quickstart](../../Zenml_Basics/quickstart) but showcases how easily
+This example builds on the [quickstart](../../zenml_basics/quickstart) but showcases how easily
 mlflow tracking can be integrated into a ZenML pipeline.
 
 We'll be using the

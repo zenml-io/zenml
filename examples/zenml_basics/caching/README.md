@@ -20,7 +20,7 @@ pip install zenml
 
 # pull example if you don't have it locally already
 zenml example pull caching
-cd zenml_examples/caching
+cd zenml_examples/zenml_basics/caching
 ```
 
 ### ▶ Run the code
