@@ -8,7 +8,7 @@ understand how this caching works, how to disable it and when it is invalidated.
 Within this example you'll get a quick overview of caching in action. 
 
 -- here is how:
-- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://github.com/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/Zenml_Basics/caching/Caching_in_Zenml.ipynb)
+- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/Zenml_Basics/caching/Caching_in_Zenml.ipynb)
 - Caching_in_Zenml.ipynb - for interactive
 - Caching_in_Zenml.py - for script
 
