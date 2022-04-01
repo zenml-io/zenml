@@ -34,13 +34,7 @@ class BaseModelDeployer(StackComponent, ABC):
 
     @abstractmethod
     def deploy_model(
-        self,
-        pipeline_name: str,
-        run_id: str,
-        step_name: str,
-        model_name: str,
-        model_uri: str,
-        model_type: str,
+        self,    
         config: ServiceConfig,
     ) -> BaseService:
         """Abstract method to deploy a model.
@@ -57,17 +51,9 @@ class BaseModelDeployer(StackComponent, ABC):
         start, stop, etc.)
 
         Args:
-            pipeline_name: Name of the pipeline that the model to be deployed
-                is part of.
-            run_id: ID of the pipeline run which the model to be deployed
-                is part of.
-            step_name: The name of the pipeline model deployment step that
-                deploys the model.
-            model_name: Name of the model to be deployed.
-            model_uri: URI of the model to be deployed.
-            model_type: Type/format of the model to be deployed.
             config: Custom Service configuration parameters for the model
-                deployer.
+                deployer. Can include the pipeline name, the run id, the step
+                name, the model name, the model uri, the model type etc. 
 
         Returns:
             The deployment Service object.
