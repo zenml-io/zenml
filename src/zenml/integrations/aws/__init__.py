@@ -23,7 +23,7 @@ class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
 
     NAME = AWS
-    REQUIREMENTS = ["s3fs==2022.2.0", "boto3==1.21.21", "botocore==1.24.21"]
+    REQUIREMENTS = ["boto3"]
 
     @classmethod
     def activate(cls) -> None:
