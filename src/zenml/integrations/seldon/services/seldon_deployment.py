@@ -229,3 +229,12 @@ class SeldonDeploymentService(BaseService):
             client.delete_deployment(name=name, force=force)
         except SeldonDeploymentNotFoundError:
             pass
+
+    def update(self, config: SeldonDeploymentConfig) -> None:
+        """Update the service configuration.
+
+        Args:
+            config: the new service configuration
+        """
+        self.config = config
+        self.provision()
