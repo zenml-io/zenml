@@ -1,7 +1,7 @@
 # Visualize statistics
-This examples show-cases the built-in `FacetStatisticsVisualizer` using the [Facets Overview](https://pypi.org/project/facets-overview/) integration.
-[Facets](https://pair-code.github.io/facets/) is an awesome project that helps users visualize large amounts of 
-data in a coherent way.
+This examples show-cases the built-in `FacetStatisticsVisualizer` using the 
+[Facets Overview](https://pypi.org/project/facets-overview/) integration. [Facets](https://pair-code.github.io/facets/) 
+is an awesome project that helps users visualize large amounts of data in a coherent way.
 
 ## Visualizers
 Visualizers are Python classes that take post-execution view objects (e.g. `PipelineView`, `PipelineRunView`, 
@@ -47,15 +47,12 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow
-zenml integration install facets
+zenml integration install tensorflow facets
 
 # pull example
 zenml example pull statistics
 cd zenml_examples/statistics
 
-# initialize
-zenml init
 ```
 
 ### Run the project
