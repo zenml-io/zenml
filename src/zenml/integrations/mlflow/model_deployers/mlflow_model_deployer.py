@@ -141,7 +141,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         if config.deploy_decision:
             return self._create_new_service(config)
         else:
-            # investigate what to do in this case. For now, returning 
+            # TODO: investigate what to do in this case. For now, returning 
             # a service with inactive state and status.
             return MLFlowDeploymentService()
 
@@ -215,7 +215,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
-    ) -> List[BaseService]:
+    ) -> List[MLflowDeploymentService]:
         """Method to find one or more model servers that match the
         given criteria.
 
@@ -227,28 +227,85 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 deployed the model.
             model_name: Name of the deployed model.
             model_uri: URI of the deployed model.
-            model_type: Type/format of the deployed model.
+            model_type: Type/format of the deployed model. Not used in this MLflow
+                case.
 
         Returns:
             One or more Service objects representing model servers that match
             the input search criteria.
         """
 
+        services = []
+        config = MLflowDeploymentConfig(
+            model_name=model_name,
+            model_uri=model_uri,
+            pipeline_name=pipeline_name,
+            run_id=run_id,
+            step_name=step_name
+        )
+        services_path = os.path.join(
+            get_global_config_directory(),
+            LOCAL_STORES_DIRECTORY_NAME,
+            str(self.uuid),
+        )
+        
+        for root, dirs, files in os.walk(services_path):
+            for file in files:
+                if(file == SERVICE_DAEMON_CONFIG_FILE_NAME):
+                    service_config_path = os.path.join(root, file)                    
+                    logger.info(
+                        "Loading service daemon configuration from %s", service_config_path
+                    )
+                    old_config = None
+                    with open(service_config_path, "r") as f:
+                        old_config = f.read()
+                    old_service = ServiceRegistry().load_service_from_json(old_config)
+                    if not isinstance(old_service, MLflowDeploymentService):
+                        raise TypeError(
+                            f"Expected service type MLflowDeploymentService but got "
+                            f"{type(old_service)} instead"
+                        )
+                    if(self._matches_search_criteria(old_service, config)):
+                        services.append(old_service)
+        
+        return services
 
+    def _matches_search_criteria(
+        self,
+        old_service: MLflowDeploymentService, 
+        config: MLflowDeploymentConfig
+    ) -> bool:
+        """Returns true if a service matches the input criteria. If any of the values in 
+            the input criteria are None, they are ignored. This allows listing services
+            just by common pipeline names or step names, etc.
+        
+        Args:
+            old_service: The materialized Service instance derived from the config
+            of the older (existing) service
+            config: The MLflowDeploymentConfig object passed to the deploy_model function holding 
+            parameters of the new service to be created."""
+        
+        old_config = old_service.config
 
-    def stop_model_server(self) -> None:
-        """Abstract method to stop a model server.
+        if (not old_config.pipeline_name or old_config.pipeline_name == config.pipeline_name) and \
+            (not old_config.model_name or old_config.model_name == config.model_name) and \
+            (not old_config.step_name or old_config.step_name == config.step_name):
+            return True
+
+        return False
+
+    def stop_model_server(
+        self,
+        service: MLflowDeploymentService
+    ) -> None:
+        """Method to stop a model server.
 
         Args:
             ...: The arguments to be passed to the underlying model deployer
                 implementation.
         """
+        # clean-up the service
+        self._clean_up_old_service(service)
 
-    # @abstractmethod
-    # def start_model_server(self, ...) -> None:
-    #     """Abstract method to start ????? a model server.
-
-    #     Args:
-    #         ...: The arguments to be passed to the underlying model deployer
-    #             implementation.
-    #     """
+        # TODO: figure out a better parameter to pass as input to this function.
+        # Is it feasible to expect the service instance to be passed?
