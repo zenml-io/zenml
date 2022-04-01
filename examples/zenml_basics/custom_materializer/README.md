@@ -41,4 +41,4 @@ Feel free to comment out or change the code of the `MyMaterializer` to see how i
 
 ### 👓 Learn more
 
-Check out our [Docs](tbd) to  find more about caching and ZenML
+Check out our [Docs](https://docs.zenml.io/features/materializers) to  find more about caching and ZenML
