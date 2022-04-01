@@ -5,12 +5,37 @@ understand how this caching works, how to disable it and when it is invalidated.
 
 ## 🗺 Overview
 
-Within this example you'll get a quick overview of caching in action. 
+Within this tutorial you'll get a quick overview of caching in action. 
 
--- here is how:
-- [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/Zenml_Basics/caching/Caching_in_Zenml.ipynb)
-- Caching_in_Zenml.ipynb - for interactive
-- Caching_in_Zenml.py - for script
+## ⚡ Get started immediately - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/Zenml_Basics/caching/Caching_in_Zenml.ipynb)
+
+We've written a notebook on caching that you can get started on immediately on [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/Zenml_Basics/caching/Caching_in_Zenml.ipynb).
+
+## 💻 Run it locally
+### 📃 Pre-requisites
+
+```shell
+# install CLI
+pip install zenml 
+
+# pull example if you don't have it locally already
+zenml example pull caching
+cd zenml_examples/caching
+```
+
+### ▶ Run the code
+
+We offer two ways for you to try this out locally:
+
+1. Start the notebook server of your choice and dive right into the [code](caching_in_zenml.ipynb)
+
+2. Try it in our [caching_in_zenml.py](caching_in_zenml.py) script
+
+```bash
+python caching_in_zenml.py
+```
+
+### 👓 Learn more
 
 -- check here to learn more -> docs
 

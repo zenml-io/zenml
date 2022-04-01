@@ -178,7 +178,7 @@ if __name__ == "__main__":
     ### 5. Disable cache explicitly in the **runtime configuration**
     
     ```python
-    pipeline_instance.run(enable_cache=False)
+    pipeline_instance_2.run(enable_cache=False)
     ```
     """
     md = Markdown(MARKDOWN)
