@@ -199,7 +199,8 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
 
     def poll_service_status(self, timeout: int = 0) -> None:
         """Poll the external service status until the service operational
-        state matches the administrative state or the timeout is reached.
+        state matches the administrative state, the service enters a failed
+        state, or the timeout is reached.
 
         Args:
             timeout: maximum time to wait for the service operational state
@@ -210,6 +211,8 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             if self.admin_state == ServiceState.ACTIVE and self.is_running:
                 return
             if self.admin_state == ServiceState.INACTIVE and self.is_stopped:
+                return
+            if self.is_failed:
                 return
             if time_remaining <= 0:
                 break
@@ -251,6 +254,19 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         self.update_status()
         return self.status.state == ServiceState.INACTIVE
 
+    @property
+    def is_failed(self) -> bool:
+        """Check if the service is currently failed.
+
+        This method will actively poll the external service to get its status
+        and will return the result.
+
+        Returns:
+            True if the service is in a failure state, otherwise False.
+        """
+        self.update_status()
+        return self.status.state == ServiceState.ERROR
+
     def provision(self) -> None:
         """Provisions resources to run the service."""
         raise NotImplementedError(
@@ -280,7 +296,11 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             if timeout > 0:
                 self.poll_service_status(timeout)
                 if not self.is_running:
-                    raise RuntimeError(f"Failed to start service {self}.")
+                    raise RuntimeError(
+                        f"Failed to start service {self}. Last state: "
+                        f"'{self.status.state.value}'. Last error: "
+                        f"'{self.status.last_error}'"
+                    )
 
     def stop(self, timeout: int = 0, force: bool = False) -> None:
         """Stop the service and optionally wait for it to shutdown.

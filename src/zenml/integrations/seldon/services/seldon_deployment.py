@@ -12,13 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import json
-from kubernetes import client as k8s_client
-from kubernetes import config as k8s_config
+from typing import Any, Dict, Optional, Tuple
+
 from pydantic import Field
-from typing import Any, Dict, Optional, Tuple, Union
 
-
+from zenml.integrations.seldon.seldon_client import (
+    SeldonClient,
+    SeldonDeployment,
+    SeldonDeploymentNotFoundError,
+)
 from zenml.logger import get_logger
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
@@ -28,7 +30,7 @@ logger = get_logger(__name__)
 
 
 class SeldonDeploymentConfig(ServiceConfig):
-    """Seldon Core deployment configuration.
+    """Seldon Core deployment service configuration.
 
     Attributes:
         model_uri: URI of the model (or models) to serve
@@ -61,8 +63,8 @@ class SeldonDeploymentConfig(ServiceConfig):
     pipeline_run_id: Optional[str] = None
     pipeline_step_name: Optional[str] = None
     replicas: int = 1
-    model_metadata: Dict[str, str] = Field(default_factory=dict)
-    extra_args: Dict[str, str] = Field(default_factory=dict)
+    model_metadata: Dict[str, Any] = Field(default_factory=dict)
+    extra_args: Dict[str, Any] = Field(default_factory=dict)
 
     # configuration attributes that are not part of the service configuration
     # but are required for the service to function. These must be moved to the
@@ -73,7 +75,7 @@ class SeldonDeploymentConfig(ServiceConfig):
 
 
 class SeldonDeploymentServiceStatus(ServiceStatus):
-    """Local daemon service status.
+    """Seldon Core deployment service status.
 
     Attributes:
         predition_url: the prediction URI exposed by the prediction service
@@ -83,7 +85,7 @@ class SeldonDeploymentServiceStatus(ServiceStatus):
 
 
 class SeldonDeploymentService(BaseService):
-    """A service represented by a Seldon Core deployment server.
+    """A service that represents a Seldon Core deployment server.
 
 
     Attributes:
@@ -107,7 +109,21 @@ class SeldonDeploymentService(BaseService):
 
     # private attributes
 
-    _custom_objects_api: Optional[k8s_client.CustomObjectsApi] = None
+    _client: Optional[SeldonClient] = None
+
+    def _get_client(self) -> SeldonClient:
+        """Get the Seldon Core client.
+
+        Returns:
+            The Seldon Core client.
+        """
+        if self._client is None:
+            self._client = SeldonClient(
+                context=self.config.kubernetes_context,
+                namespace=self.config.namespace,
+            )
+
+        return self._client
 
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the the current operational state of the Seldon Core
@@ -118,57 +134,87 @@ class SeldonDeploymentService(BaseService):
             providing additional information about that state (e.g. a
             description of the error, if one is encountered).
         """
-        return ServiceState.ACTIVE, "Seldon Core deployment is active"
+        client = self._get_client()
+        name = self._get_seldon_deployment_name()
+        try:
+            deployment = client.get_deployment(name=name)
+        except SeldonDeploymentNotFoundError:
+            if self.admin_state == ServiceState.INACTIVE:
+                return (ServiceState.INACTIVE, "")
+            return (
+                ServiceState.ERROR,
+                f"Seldon Core deployment '{name}' not found",
+            )
+
+        if self.admin_state == ServiceState.INACTIVE:
+            return (ServiceState.PENDING_SHUTDOWN, "")
+
+        if deployment.is_available():
+            return (
+                ServiceState.ACTIVE,
+                f"Seldon Core deployment '{name}' is available",
+            )
+
+        if deployment.is_failed():
+            return (
+                ServiceState.ERROR,
+                f"Seldon Core deployment '{name}' failed: "
+                f"{deployment.get_error()}",
+            )
+
+        pending_message = deployment.get_pending_message() or ""
+        return (
+            ServiceState.PENDING_STARTUP,
+            "Seldon Core deployment is being created: " + pending_message,
+        )
+
+    def _get_seldon_deployment_name(self) -> str:
+        """Get the name of the Seldon Core deployment that uniquely
+        corresponds to this service instance
+
+        Returns:
+            The name of the Seldon Core deployment.
+        """
+        return f"zenml-{str(self.uuid)}"
+
+    def _get_seldon_deployment_labels(self) -> Dict[str, str]:
+        """Generate the labels for the Seldon Core deployment from the
+        service configuration.
+
+        Returns:
+            The labels for the Seldon Core deployment.
+        """
+        return dict(
+            zenml_pipeline_name=self.config.pipeline_name or "",
+            zenml_pipeline_run_id=self.config.pipeline_run_id or "",
+            zenml_pipeline_step_name=self.config.pipeline_step_name or "",
+            zenml_service_uuid=str(self.uuid),
+        )
 
     def provision(self) -> None:
         """Provision or update the remote Seldon Core deployment instance to
         match the current configuration.
         """
-        self._initialize_k8s_client(self.config.kubernetes_context)
-
-        # TODO [MEDIUM]: try to construct this using kubernetes objects
-        body = dict(
-            kind="SeldonDeployment",
-            metadata=dict(
-                name=self.config.model_name,
-                app="zenml",
-                pipeline_name=self.config.pipeline_name,
-                pipeline_run_id=self.config.pipeline_run_id,
-                pipeline_step_name=self.config.pipeline_step_name,
-            ),
-            spec=dict(
-                name=self.config.model_name,
-                predictors=[
-                    dict(
-                        graph=dict(
-                            implementation=self.config.protocol,
-                            modelUri=self.config.model_uri,
-                            name="default",
-                        ),
-                        name=self.config.model_name,
-                        replicas=self.config.replicas,
-                    ),
-                ],
-            ),
+        client = self._get_client()
+        name = self._get_seldon_deployment_name()
+        deployment = SeldonDeployment.build(
+            name=name,
+            model_uri=self.config.model_uri,
+            model_name=self.config.model_name,
+            implementation=self.config.protocol,
+            labels=self._get_seldon_deployment_labels(),
         )
+        deployment.spec.replicas = self.config.replicas
+        deployment.spec.predictors[0].replicas = self.config.replicas
 
+        # check if the Seldon deployment already exists
         try:
-            logger.debug(
-                f"Creating Seldon Core deployment {json.dumps(body, indent=4)}"
-            )
-            response = self._custom_objects_api.create_namespaced_custom_object(
-                group="machinelearning.seldon.io",
-                version="v1",
-                namespace=self.config.namespace,
-                plural="seldondeployments",
-                body=body,
-            )
-            logger.debug("Response: %s", response)
-        except k8s_client.rest.ApiException as e:
-            logger.error(
-                "Exception when creating SeldonDeployment resource: %s", str(e)
-            )
-            raise
+            client.get_deployment(name=name)
+            # update the existing deployment
+            client.update_deployment(deployment)
+        except SeldonDeploymentNotFoundError:
+            # create the deployment
+            client.create_deployment(deployment=deployment)
 
     def deprovision(self, force: bool = False) -> None:
         """Deprovision the remote Seldon Core deployment instance.
@@ -177,16 +223,9 @@ class SeldonDeploymentService(BaseService):
             force: if True, the remote deployment instance will be
                 forcefully deprovisioned.
         """
-
-    def _initialize_k8s_client(self, context: str) -> None:
-        """Initialize the Kubernetes client.
-        :param context: kubernetes context
-        """
-        # TODO [HIGH]: determine how to handle the case where
-        #   this is called from within a container and can use the
-        #   implicit kubernetes context
-
-        k8s_config.load_kube_config(context=context, persist_config=False)
-        self.core_api = k8s_client.CoreV1Api()
-        # self.app_api = k8s_client.AppsV1Api()
-        self._custom_objects_api = k8s_client.CustomObjectsApi()
+        client = self._get_client()
+        name = self._get_seldon_deployment_name()
+        try:
+            client.delete_deployment(name=name, force=force)
+        except SeldonDeploymentNotFoundError:
+            pass

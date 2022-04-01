@@ -11,14 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import click
+import os
 
+import click
 from rich import print
 
 from zenml.integrations.seldon.services import (
-    SeldonDeploymentService,
     SeldonDeploymentConfig,
+    SeldonDeploymentService,
 )
+from zenml.services.service_registry import ServiceRegistry
 
 
 @click.command()
@@ -55,23 +57,38 @@ def main(
             installation
         stop_service: stop the service when done
     """
-    service_config = SeldonDeploymentConfig(
-        kubernetes_context=kubernetes_context,
-        namespace=namespace,
-        ingress_hostname=ingress_hostname,
-        model_uri="gs://seldon-models/v1.14.0-dev/sklearn/iris",
-        model_name="iris",
-        model_format="sklearn",
-        protocol="sklearn",
-        pipeline_name="iris-pipeline",
-        pipeline_run_id="78087098790",
-        pipeline_step_name="model-deployer",
-        replicas=2,
-    )
+    filepath = os.path.join(os.getcwd(), "service.json")
+    if not os.path.exists(filepath):
+        service_config = SeldonDeploymentConfig(
+            kubernetes_context=kubernetes_context,
+            namespace=namespace,
+            ingress_hostname=ingress_hostname,
+            model_uri="gs://seldon-models/v1.14.0-dev/sklearn/iris",
+            model_name="iris",
+            model_format="sklearn",
+            protocol="SKLEARN_SERVER",
+            pipeline_name="iris-pipeline",
+            pipeline_run_id="78087098790",
+            pipeline_step_name="model-deployer",
+            replicas=1,
+        )
+        service = SeldonDeploymentService(config=service_config)
+    else:
+        with open(filepath, "r") as f:
+            service = ServiceRegistry().load_service_from_json(f.read())
 
-    service = SeldonDeploymentService(config = service_config)
-    service.start(timeout=20)
+    print(f"Deploying service is running: {service.is_running}")
+    print(f"Deploying service is stopped: {service.is_stopped}")
+    if stop_service:
+        service.stop(timeout=120)
+    else:
+        service.start(timeout=120)
     print(f"Service started: {service.status.prediction_url}")
+    print(f"Deploying service is running: {service.is_running}")
+    print(f"Deploying service is stopped: {service.is_stopped}")
+
+    with open(filepath, "w") as f:
+        f.write(service.json(indent=4))
 
 
 if __name__ == "__main__":
