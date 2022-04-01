@@ -13,7 +13,7 @@ scratch (without any Class based components) and take it all the way to deployme
 Here is what we'll do in this guide:
 
 * Create a MNIST pipeline that trains using [TensorFlow (Keras)](https://www.tensorflow.org/) 
-(similar to the [Quickstart](../quickstart/README.md)).
+(similar to the [Quickstart](../Zenml_Basics/quickstart/README.md)).
 * Swap out implementations of the `trainer` and `evaluator` steps with [scikit-learn](https://scikit-learn.org/).
 * Persist our interim data artifacts in SQL tables rather than on files.
 * Read from a dynamically changing datasource rather than a static one.
