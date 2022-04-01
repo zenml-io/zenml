@@ -52,6 +52,7 @@ class MLFlowDeployerConfig(BaseStepConfig):
     """
 
     model_name: str = "model"
+    model_uri: str = ""
     workers: int = 1
     mlserver: bool = False
     timeout: int = 10
@@ -94,18 +95,20 @@ def mlflow_deployer_step(
         Returns:
             MLflow deployment service
         """
-        
-        mlflow_step_env = cast(
-            MLFlowStepEnvironment, Environment()[MLFLOW_STEP_ENVIRONMENT_NAME]
-        )
-        client = MlflowClient()
-        # fetch the MLflow artifacts logged during the pipeline run
-        model_uri = None
-        mlflow_run = mlflow_step_env.mlflow_run
-        if mlflow_run and client.list_artifacts(
-            mlflow_run.info.run_id, config.model_name
-        ):
-            model_uri = get_artifact_uri(config.model_name)
+
+        if not config.model_uri:
+            # fetch the MLflow artifacts logged during the pipeline run
+            mlflow_step_env = cast(
+                MLFlowStepEnvironment, Environment()[MLFLOW_STEP_ENVIRONMENT_NAME]
+            )
+            client = MlflowClient()            
+            model_uri = None
+            mlflow_run = mlflow_step_env.mlflow_run
+            if mlflow_run and client.list_artifacts(
+                mlflow_run.info.run_id, config.model_name
+            ):
+                model_uri = get_artifact_uri(config.model_name)
+            config.model_uri = model_uri
 
         # get pipeline name, step name and run id to add to the 
         # MLflowDeploymentConfig object
@@ -117,7 +120,7 @@ def mlflow_deployer_step(
         # create a new service for the new model
         predictor_cfg = MLFlowDeploymentConfig(
             model_name=config.model_name,
-            model_uri=model_uri,
+            model_uri=config.model_uri,
             workers=config.workers,
             mlserver=config.mlserver,
             timeout=config.timeout,
