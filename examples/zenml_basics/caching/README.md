@@ -7,9 +7,9 @@ understand how this caching works, how to disable it and when it is invalidated.
 
 Within this tutorial you'll get a quick overview of caching in action. 
 
-## ⚡ Get started immediately - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/Zenml_Basics/caching/Caching_in_Zenml.ipynb)
+## ⚡ Get started immediately - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/zenml_basics/caching/caching_in_zenml.ipynb)
 
-We've written a notebook on caching that you can get started on immediately on [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/Zenml_Basics/caching/Caching_in_Zenml.ipynb).
+We've written a notebook on caching that you can get started on immediately on [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/zenml_basics/caching/caching_in_zenml.ipynb).
 
 ## 💻 Run it locally
 ### 📃 Pre-requisites
