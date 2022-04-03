@@ -11,67 +11,42 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-import numpy as np
-from sklearn.base import ClassifierMixin
-
-from zenml.integrations.constants import SKLEARN
-from zenml.integrations.sklearn.helpers.digits import (
-    get_digits,
-    get_digits_model,
-)
+import random
 from zenml.pipelines import pipeline
 from zenml.steps import Output, StepContext, step
 
 
 @step
-def importer() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
-):
+def get_current_time() -> Output(random_num=int):
     """Loads the digits array as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
-    return X_train, X_test, y_train, y_test
+    return random.randint(0, 100)
 
 
 @step
-def trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a simple sklearn classifier for the digits dataset."""
-    model = get_digits_model()
-    model.fit(X_train, y_train)
-    return model
-
-
-@step
-def evaluate_and_store_best_model(
+def compare_to_previous_runs(
     context: StepContext,
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: ClassifierMixin,
-) -> ClassifierMixin:
+    random_num: int
+) -> None:
     """Evaluate all models and return the best one."""
-    best_accuracy = model.score(X_test, y_test)
-    best_model = model
+    highest_random_number = random_num
+    best_run = 'current run'
 
     pipeline_runs = context.metadata_store.get_pipeline("mnist_pipeline").runs
     for run in pipeline_runs:
         # get the trained model of all pipeline runs
-        model = run.get_step("trainer").output.read()
-        accuracy = model.score(X_test, y_test)
-        if accuracy > best_accuracy:
+        old_random_num = run.get_step("get_current_time").output.read()
+        if old_random_num > highest_random_number:
             # if the model accuracy is better than our currently best model,
             # store it
-            best_accuracy = accuracy
-            best_model = model
+            highest_random_number = old_random_num
+            best_run = run.name
 
-    print(f"Best test accuracy: {best_accuracy}")
+    print(f"Pipeline run  : {best_accuracy}")
     return best_model
 
 
-@pipeline(required_integrations=[SKLEARN])
-def mnist_pipeline(
+@pipeline()
+def example_pipeline(
     importer,
     trainer,
     evaluator,

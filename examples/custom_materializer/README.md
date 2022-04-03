@@ -8,9 +8,9 @@ flows between steps, one can simply create a custom materializer by sub-classing
 
 Within this tutorial you'll get a quick overview of materializers in ZenML. 
 
-## ⚡ Get started immediately - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/zenml_basics/custom_materializer/materializers_in_zenml.ipynb)
+## ⚡ Get started immediately - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/custom_materializer/materializers_in_zenml.ipynb)
 
-We've written a notebook on caching that you can get started on immediately on [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/zenml_basics/custom_materializer/materializers_in_zenml.ipynb).
+We've written a notebook on caching that you can get started on immediately on [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/custom_materializer/materializers_in_zenml.ipynb).
 
 ## 💻 Run it locally
 ### 📃 Pre-requisites
@@ -21,7 +21,7 @@ pip install zenml
 
 # pull example if you don't have it locally already
 zenml example pull custom_materializer
-cd zenml_examples/zenml_basics/custom_materializer
+cd zenml_examples/custom_materializer
 ```
 
 ### ▶ Run the code
