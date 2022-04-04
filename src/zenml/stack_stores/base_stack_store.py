@@ -312,6 +312,20 @@ class BaseStackStore(ABC):
         self._create_stack(stack.name, stack_configuration)
         return metadata
 
+    def update_stack(self, stack: StackWrapper) -> Dict[str, str]:
+        """Update a stack and its components.
+
+        Args:
+            stack: The stack to update.
+
+        Raises:
+            KeyError: If no stack exists for the given name."""
+
+        # get the stack
+        # check which stack components are different
+        # update them one by one
+        return {"stack": "updated"}
+
     def get_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> StackComponentWrapper:

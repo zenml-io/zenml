@@ -254,7 +254,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         new_profile = self._profile
 
         if not self._root:
-            logger.info("Runnning without an active repository root.")
+            logger.info("Running without an active repository root.")
         else:
             logger.debug("Using repository root %s.", self._root)
             self.__config = self._load_config()
@@ -517,7 +517,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def create_store(
         profile: ProfileConfiguration, skip_default_stack: bool = False
     ) -> BaseStackStore:
-        """Create the repository persistance back-end store from a configuration
+        """Create the repository persistence back-end store from a configuration
         profile.
 
         If the configuration profile doesn't specify all necessary configuration
@@ -806,7 +806,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     def update_stack(self, stack: Stack) -> None:
         """Updates a stack and its components."""
-        console.print("Updating the component")
+        metadata = self.stack_store.update_stack(StackWrapper.from_stack(stack))
+        metadata["store_type"] = self.active_profile.store_type.value
+        track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
 
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack.
