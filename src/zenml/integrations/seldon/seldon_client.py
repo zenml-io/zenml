@@ -361,7 +361,7 @@ class SeldonDeploymentNotFoundError(SeldonClientError):
 
 
 class SeldonClient:
-    def __init__(self, context: str, namespace: str):
+    def __init__(self, context: Optional[str], namespace: Optional[str]):
         """Initialize a Seldon Core client.
 
         Args:
@@ -370,21 +370,43 @@ class SeldonClient:
         """
         self._context = context
         self._namespace = namespace
-        self._initialize_k8s_clients(context)
+        self._initialize_k8s_clients()
 
-    def _initialize_k8s_clients(self, context: str) -> None:
-        """Initialize the Kubernetes clients.
-
-        Args:
-            context: the Kubernetes context to use
-        """
-        # TODO [HIGH]: determine how to handle the case where
-        #   this is called from within a container and can use the
-        #   implicit kubernetes context
-
-        k8s_config.load_kube_config(context=context, persist_config=False)
+    def _initialize_k8s_clients(self) -> None:
+        """Initialize the Kubernetes clients."""
+        try:
+            k8s_config.load_incluster_config()
+            if not self._namespace:
+                # load the namespace in the context of which the
+                # current pod is running
+                self._namespace = open(
+                    "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+                ).read()
+        except k8s_config.config_exception.ConfigException:
+            if not self._namespace or not self._context:
+                raise SeldonClientError(
+                    "The Kubernetes context and namespace must be explicitly "
+                    "configured when running outside of a cluster."
+                )
+            try:
+                k8s_config.load_kube_config(
+                    context=self._context, persist_config=False
+                )
+            except k8s_config.config_exception.ConfigException as e:
+                raise SeldonClientError(
+                    "Could not load the Kubernetes configuration"
+                ) from e
         self._core_api = k8s_client.CoreV1Api()
         self._custom_objects_api = k8s_client.CustomObjectsApi()
+
+    @property
+    def namespace(self) -> Optional[str]:
+        """Returns the Kubernetes namespace in use by the client.
+
+        Returns:
+            The Kubernetes namespace in use by the client.
+        """
+        return self._namespace
 
     def create_deployment(
         self,

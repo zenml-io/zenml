@@ -75,8 +75,8 @@ class SeldonDeploymentConfig(ServiceConfig):
     # configuration attributes that are not part of the service configuration
     # but are required for the service to function. These must be moved to the
     # stack component, when available
-    kubernetes_context: str
-    namespace: str
+    kubernetes_context: Optional[str]
+    namespace: Optional[str]
     base_url: str
     # TODO [HIGH]: replace with ZenML secret and create a k8s secret resource
     #   that can be mounted in the container
@@ -84,7 +84,13 @@ class SeldonDeploymentConfig(ServiceConfig):
 
 
 class SeldonDeploymentServiceStatus(ServiceStatus):
-    """Seldon Core deployment service status."""
+    """Seldon Core deployment service status.
+
+    Attibutes:
+        namespace: the namespace where the Seldon Core deployment is deployed
+    """
+
+    namespace: Optional[str]
 
 
 class SeldonDeploymentService(BaseService):
@@ -200,6 +206,7 @@ class SeldonDeploymentService(BaseService):
         match the current configuration.
         """
         client = self._get_client()
+
         name = self.seldon_deployment_name
         deployment = SeldonDeployment.build(
             name=name,
@@ -245,10 +252,17 @@ class SeldonDeploymentService(BaseService):
         """
         if not self.is_running:
             return None
+        # the namespace is either explicitly configured or implicitly
+        # determined by the in-cluster Kuberenetes configuration
+        namespace = self.config.namespace or self._get_client().namespace
+        if not namespace:
+            # shouldn't happen if the service is running, but we need to
+            # appease the mypy type checker
+            return None
         return os.path.join(
             self.config.base_url,
             "seldon",
-            self.config.namespace,
+            namespace,
             self.seldon_deployment_name,
             "api/v0.1/predictions",
         )

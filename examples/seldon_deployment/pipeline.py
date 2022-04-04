@@ -167,8 +167,8 @@ class SeldonDeployerConfig(BaseStepConfig):
     replicas: int = 1
     implementation: str
     secret_name: Optional[str]
-    kubernetes_context: str
-    namespace: str
+    kubernetes_context: Optional[str]
+    namespace: Optional[str]
     base_url: str
     timeout: int
     step_name: Optional[str]
