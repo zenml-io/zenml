@@ -244,6 +244,7 @@ def build_docker_image(
                 base_image=base_image or DEFAULT_BASE_IMAGE,
                 entrypoint=entrypoint,
                 requirements=requirements,
+                environment_vars=environment_vars,
             )
 
         build_context = create_custom_build_context(
