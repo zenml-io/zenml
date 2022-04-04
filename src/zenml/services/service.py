@@ -279,6 +279,14 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             f"Deprovisioning resources not implemented for {self}."
         )
 
+    def update(self, config: ServiceConfig) -> None:
+        """Update the service configuration.
+
+        Args:
+            config: the new service configuration
+        """
+        self.config = config
+
     def start(self, timeout: int = 0) -> None:
         """Start the service and optionally wait for it to become active.
 

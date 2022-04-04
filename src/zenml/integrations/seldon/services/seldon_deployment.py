@@ -12,8 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Dict, Optional, Tuple
+import os
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
+import numpy as np
+import requests  # type: ignore [import]
 from pydantic import Field
 
 from zenml.integrations.seldon.seldon_client import (
@@ -26,6 +29,9 @@ from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
 logger = get_logger(__name__)
 
 
@@ -37,14 +43,14 @@ class SeldonDeploymentConfig(ServiceConfig):
         model_name: the name of the model. Multiple versions of the same model
             should use the same model name
         model_format: the format of the model being served
-        protocol: the Seldon Core protocol used to serve the model
+        implementation: the Seldon Core implementation used to serve the model
         pipeline_name: the name of the pipeline that was used to deploy the
             model
         pipeline_run_id: the ID of the pipeline run that deployed the model
         pipeline_step_name: the name of the pipeline step that deployed the
             model
         replicas: number of replicas to use for the prediction service
-        model_metadaa: optional model metadata information (see
+        model_metadata: optional model metadata information (see
             https://docs.seldon.io/projects/seldon-core/en/latest/reference/apis/metadata.html)
         extra_args: additional arguments to pass to the Seldon Core deployment
             resource configuration
@@ -56,9 +62,9 @@ class SeldonDeploymentConfig(ServiceConfig):
     model_uri: str
     model_name: str
     # TODO [HIGH]: have an enum of all model formats ?
-    model_format: str
-    # TODO [HIGH]: have an enum of all supported Seldon Core protocols ?
-    protocol: str
+    model_format: Optional[str]
+    # TODO [HIGH]: have an enum of all supported Seldon Core implementation ?
+    implementation: str
     pipeline_name: Optional[str] = None
     pipeline_run_id: Optional[str] = None
     pipeline_step_name: Optional[str] = None
@@ -71,17 +77,14 @@ class SeldonDeploymentConfig(ServiceConfig):
     # stack component, when available
     kubernetes_context: str
     namespace: str
-    ingress_hostname: str
+    base_url: str
+    # TODO [HIGH]: replace with ZenML secret and create a k8s secret resource
+    #   that can be mounted in the container
+    secret_name: Optional[str]
 
 
 class SeldonDeploymentServiceStatus(ServiceStatus):
-    """Seldon Core deployment service status.
-
-    Attributes:
-        predition_url: the prediction URI exposed by the prediction service
-    """
-
-    prediction_url: Optional[str] = None
+    """Seldon Core deployment service status."""
 
 
 class SeldonDeploymentService(BaseService):
@@ -135,7 +138,7 @@ class SeldonDeploymentService(BaseService):
             description of the error, if one is encountered).
         """
         client = self._get_client()
-        name = self._get_seldon_deployment_name()
+        name = self.seldon_deployment_name
         try:
             deployment = client.get_deployment(name=name)
         except SeldonDeploymentNotFoundError:
@@ -168,7 +171,8 @@ class SeldonDeploymentService(BaseService):
             "Seldon Core deployment is being created: " + pending_message,
         )
 
-    def _get_seldon_deployment_name(self) -> str:
+    @property
+    def seldon_deployment_name(self) -> str:
         """Get the name of the Seldon Core deployment that uniquely
         corresponds to this service instance
 
@@ -196,12 +200,13 @@ class SeldonDeploymentService(BaseService):
         match the current configuration.
         """
         client = self._get_client()
-        name = self._get_seldon_deployment_name()
+        name = self.seldon_deployment_name
         deployment = SeldonDeployment.build(
             name=name,
             model_uri=self.config.model_uri,
             model_name=self.config.model_name,
-            implementation=self.config.protocol,
+            implementation=self.config.implementation,
+            secret_name=self.config.secret_name,
             labels=self._get_seldon_deployment_labels(),
         )
         deployment.spec.replicas = self.config.replicas
@@ -224,17 +229,48 @@ class SeldonDeploymentService(BaseService):
                 forcefully deprovisioned.
         """
         client = self._get_client()
-        name = self._get_seldon_deployment_name()
+        name = self.seldon_deployment_name
         try:
             client.delete_deployment(name=name, force=force)
         except SeldonDeploymentNotFoundError:
             pass
 
-    def update(self, config: SeldonDeploymentConfig) -> None:
-        """Update the service configuration.
+    @property
+    def prediction_url(self) -> Optional[str]:
+        """The prediction URI exposed by the prediction service.
+
+        Returns:
+            The prediction URI exposed by the prediction service, or None if
+            the service is not yet ready.
+        """
+        if not self.is_running:
+            return None
+        return os.path.join(
+            self.config.base_url,
+            "seldon",
+            self.config.namespace,
+            self.seldon_deployment_name,
+            "api/v0.1/predictions",
+        )
+
+    def predict(self, request: "NDArray[Any]") -> "NDArray[Any]":
+        """Make a prediction using the service.
 
         Args:
-            config: the new service configuration
+            request: a numpy array representing the request
+
+        Returns:
+            A numpy array representing the prediction returned by the service.
         """
-        self.config = config
-        self.provision()
+        if not self.is_running:
+            raise Exception(
+                "MLflow prediction service is not running. "
+                "Please start the service before making predictions."
+            )
+
+        response = requests.post(
+            self.prediction_url,
+            json={"data": {"ndarray": request.tolist()}},
+        )
+        response.raise_for_status()
+        return np.array(response.json()["data"]["ndarray"])

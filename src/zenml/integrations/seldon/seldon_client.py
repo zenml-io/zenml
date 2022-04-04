@@ -97,6 +97,7 @@ class SedonDeploymentPredictor(BaseModel):
 class SeldonDeploymentSpec(BaseModel):
 
     name: str
+    protocol: Optional[str]
     predictors: List[SedonDeploymentPredictor]
     replicas: int = 1
 
@@ -187,6 +188,7 @@ class SeldonDeployment(BaseModel):
         model_uri: Optional[str] = None,
         model_name: Optional[str] = None,
         implementation: Optional[str] = None,
+        secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
     ) -> "SeldonDeployment":
         """Build a basic Seldon Deployment object.
@@ -197,6 +199,9 @@ class SeldonDeployment(BaseModel):
             model_uri: The URI of the model.
             model_name: The name of the model.
             implementation: The implementation of the model.
+            secret_name: The name of the Kubernetes secret containing
+                environment variable values (e.g. with credentials for the
+                artifact store) to use with the deployment service.
             labels: A dictionary of labels to apply to the Seldon Deployment.
 
         Returns:
@@ -222,6 +227,7 @@ class SeldonDeployment(BaseModel):
                             type=SeldonDeploymentPredictiveUnitType.MODEL,
                             modelUri=model_uri or "",
                             implementation=implementation or "",
+                            envSecretRefName=secret_name,
                         ),
                     )
                 ],
