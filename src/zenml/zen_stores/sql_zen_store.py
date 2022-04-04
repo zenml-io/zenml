@@ -25,8 +25,8 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
 from zenml.io import utils
 from zenml.logger import get_logger
-from zenml.stack_stores import BaseStackStore
-from zenml.stack_stores.models import (
+from zenml.zen_stores import BaseZenStore
+from zenml.zen_stores.models import (
     Project,
     Role,
     RoleAssignment,
@@ -106,7 +106,7 @@ class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
     )
 
 
-class SqlStackStore(BaseStackStore):
+class SqlZenStore(BaseZenStore):
     """Repository Implementation that uses SQL database backend"""
 
     def initialize(
@@ -114,7 +114,7 @@ class SqlStackStore(BaseStackStore):
         url: str,
         *args: Any,
         **kwargs: Any,
-    ) -> "SqlStackStore":
+    ) -> "SqlZenStore":
         """Initialize a new SqlStackStore.
 
         Args:
@@ -176,7 +176,7 @@ class SqlStackStore(BaseStackStore):
             The path extracted from the URL, or None, if the URL does not
             point to a local sqlite file.
         """
-        if not SqlStackStore.is_valid_url(url):
+        if not SqlZenStore.is_valid_url(url):
             raise ValueError(f"Invalid URL for SQL store: {url}")
         if not url.startswith("sqlite:///"):
             return None

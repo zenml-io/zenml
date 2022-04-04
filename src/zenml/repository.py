@@ -37,14 +37,14 @@ from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
-from zenml.stack_stores import BaseStackStore, LocalStackStore, SqlStackStore
-from zenml.stack_stores.models import (
+from zenml.utils import yaml_utils
+from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
+from zenml.zen_stores import BaseZenStore, LocalZenStore, SqlZenStore
+from zenml.zen_stores.models import (
     StackComponentWrapper,
     StackStoreModel,
     StackWrapper,
 )
-from zenml.utils import yaml_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
 
 logger = get_logger(__name__)
 
@@ -298,7 +298,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             profile: configuration profile to set as active.
         """
         self._profile = profile
-        self.stack_store: BaseStackStore = self.create_store(profile)
+        self.stack_store: BaseZenStore = self.create_store(profile)
 
         # Sanitize the repository configuration to reflect the active
         # profile and its store contents
@@ -432,7 +432,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         )
 
         stack_data = legacy_config.get_stack_data()
-        store = LocalStackStore()
+        store = LocalZenStore()
         store.initialize(url=config_path, stack_data=stack_data)
         store._write_store()
         profile = ProfileConfiguration(
@@ -505,17 +505,17 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         yaml_utils.write_yaml(config_path, config_dict)
 
     @staticmethod
-    def get_store_class(type: StoreType) -> Optional[Type[BaseStackStore]]:
+    def get_store_class(type: StoreType) -> Optional[Type[BaseZenStore]]:
         """Returns the class of the given store type."""
         return {
-            StoreType.LOCAL: LocalStackStore,
-            StoreType.SQL: SqlStackStore,
+            StoreType.LOCAL: LocalZenStore,
+            StoreType.SQL: SqlZenStore,
         }.get(type)
 
     @staticmethod
     def create_store(
         profile: ProfileConfiguration, skip_default_stack: bool = False
-    ) -> BaseStackStore:
+    ) -> BaseZenStore:
         """Create the repository persistence back-end store from a configuration
         profile.
 

@@ -18,10 +18,10 @@ from typing import DefaultDict, Dict, List, Set
 from pydantic import BaseModel, validator
 
 from zenml.enums import StackComponentType
-from zenml.stack_stores.models import Project, Role, RoleAssignment, Team, User
+from zenml.zen_stores.models import Project, Role, RoleAssignment, Team, User
 
 
-class StackStoreModel(BaseModel):
+class ZenStoreModel(BaseModel):
     """Pydantic object used for serializing a ZenML Stack Store.
 
     Attributes:
@@ -58,7 +58,7 @@ class StackStoreModel(BaseModel):
         return defaultdict(set, team_assignments)
 
     @classmethod
-    def empty_store(cls) -> "StackStoreModel":
+    def empty_store(cls) -> "ZenStoreModel":
         """Initialize a new empty stack store with current zen version."""
         return cls(stacks={}, stack_components={})
 

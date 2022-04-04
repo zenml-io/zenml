@@ -23,8 +23,9 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
 from zenml.io import fileio, utils
 from zenml.logger import get_logger
-from zenml.stack_stores import BaseStackStore
-from zenml.stack_stores.models import (
+from zenml.utils import yaml_utils
+from zenml.zen_stores import BaseZenStore
+from zenml.zen_stores.models import (
     Project,
     Role,
     RoleAssignment,
@@ -33,7 +34,6 @@ from zenml.stack_stores.models import (
     Team,
     User,
 )
-from zenml.utils import yaml_utils
 
 logger = get_logger(__name__)
 
@@ -73,26 +73,26 @@ def _get_unique_entity(
         return matches[0] if matches else None
 
 
-class LocalStackStore(BaseStackStore):
+class LocalZenStore(BaseZenStore):
     def initialize(
         self,
         url: str,
         *args: Any,
         stack_data: Optional[StackStoreModel] = None,
         **kwargs: Any,
-    ) -> "LocalStackStore":
-        """Initializes a local stack store instance.
+    ) -> "LocalZenStore":
+        """Initializes a local ZenStore instance.
 
         Args:
             url: URL of local directory of the repository to use for
-                stack storage.
+                storage.
             stack_data: optional stack data store object to pre-populate the
                 stack store with.
             args: additional positional arguments (ignored).
             kwargs: additional keyword arguments (ignored).
 
         Returns:
-            The initialized stack store instance.
+            The initialized ZenStore instance.
         """
         if not self.is_valid_url(url):
             raise ValueError(f"Invalid URL for local store: {url}")
@@ -136,7 +136,7 @@ class LocalStackStore(BaseStackStore):
         Returns:
             The path from the URL.
         """
-        if not LocalStackStore.is_valid_url(url):
+        if not LocalZenStore.is_valid_url(url):
             raise ValueError(f"Invalid URL for local store: {url}")
         url = url.replace("file://", "")
         return Path(url)

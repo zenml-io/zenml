@@ -22,7 +22,8 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.stack import Stack
-from zenml.stack_stores.models import (
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.zen_stores.models import (
     Project,
     Role,
     RoleAssignment,
@@ -31,12 +32,11 @@ from zenml.stack_stores.models import (
     Team,
     User,
 )
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
 
-class BaseStackStore(ABC):
+class BaseZenStore(ABC):
     """Base class for accessing data in ZenML Repository and new Service."""
 
     def initialize(
@@ -45,7 +45,7 @@ class BaseStackStore(ABC):
         skip_default_stack: bool = False,
         *args: Any,
         **kwargs: Any,
-    ) -> "BaseStackStore":
+    ) -> "BaseZenStore":
         """Initialize the store.
         Args:
             url: The URL of the store.

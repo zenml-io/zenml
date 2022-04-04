@@ -24,13 +24,13 @@ from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
-from zenml.stack_stores import (
+from zenml.zen_stores import (
     BaseStackStore,
     LocalStackStore,
     RestStackStore,
     SqlStackStore,
 )
-from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
+from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
 from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
 
 logger = get_logger(__name__)
@@ -87,14 +87,14 @@ def test_register_deregister_stacks(fresh_stack_store: BaseStackStore):
     stack = Stack.default_local_stack()
 
     # stack store is pre-initialized with the default stack
-    stack_store = fresh_stack_store
-    assert len(stack_store.stacks) == 1
-    assert len(stack_store.stack_configurations) == 1
+    zen_store = fresh_stack_store
+    assert len(zen_store.stacks) == 1
+    assert len(zen_store.stack_configurations) == 1
 
     # retrieve the default stack
-    got_stack = stack_store.get_stack(stack.name)
+    got_stack = zen_store.get_stack(stack.name)
     assert got_stack.name == stack.name
-    stack_configuration = stack_store.get_stack_configuration(stack.name)
+    stack_configuration = zen_store.get_stack_configuration(stack.name)
     assert set(stack_configuration) == {
         "orchestrator",
         "metadata_store",
@@ -104,23 +104,23 @@ def test_register_deregister_stacks(fresh_stack_store: BaseStackStore):
 
     # can't register the same stack twice or another stack with the same name
     with pytest.raises(StackExistsError):
-        stack_store.register_stack(StackWrapper.from_stack(stack))
+        zen_store.register_stack(StackWrapper.from_stack(stack))
     with pytest.raises(StackExistsError):
-        stack_store.register_stack(StackWrapper(name=stack.name, components=[]))
+        zen_store.register_stack(StackWrapper(name=stack.name, components=[]))
 
     # can't remove a stack that doesn't exist:
     with pytest.raises(KeyError):
-        stack_store.deregister_stack("overflow")
+        zen_store.deregister_stack("overflow")
 
     # remove the default stack
-    stack_store.deregister_stack(stack.name)
-    assert len(stack_store.stacks) == 0
+    zen_store.deregister_stack(stack.name)
+    assert len(zen_store.stacks) == 0
     with pytest.raises(KeyError):
-        _ = stack_store.get_stack(stack.name)
+        _ = zen_store.get_stack(stack.name)
 
     # now can add another stack with the same name
-    stack_store.register_stack(StackWrapper(name=stack.name, components=[]))
-    assert len(stack_store.stacks) == 1
+    zen_store.register_stack(StackWrapper(name=stack.name, components=[]))
+    assert len(zen_store.stacks) == 1
 
 
 def test_register_deregister_components(fresh_stack_store: BaseStackStore):
@@ -133,16 +133,16 @@ def test_register_deregister_components(fresh_stack_store: BaseStackStore):
     }
 
     # stack store starts off with the default stack
-    stack_store = fresh_stack_store
+    zen_store = fresh_stack_store
     for component_type in StackComponentType:
         component_type = StackComponentType(component_type)
         if component_type in required_components:
-            assert len(stack_store.get_stack_components(component_type)) == 1
+            assert len(zen_store.get_stack_components(component_type)) == 1
         else:
-            assert len(stack_store.get_stack_components(component_type)) == 0
+            assert len(zen_store.get_stack_components(component_type)) == 0
 
     # get a component
-    orchestrator = stack_store.get_stack_component(
+    orchestrator = zen_store.get_stack_component(
         StackComponentType.ORCHESTRATOR, "default"
     )
 
@@ -151,7 +151,7 @@ def test_register_deregister_components(fresh_stack_store: BaseStackStore):
 
     # can't add another orchestrator of same name
     with pytest.raises(StackComponentExistsError):
-        stack_store.register_stack_component(
+        zen_store.register_stack_component(
             StackComponentWrapper.from_component(
                 LocalOrchestrator(
                     name="default",
@@ -160,7 +160,7 @@ def test_register_deregister_components(fresh_stack_store: BaseStackStore):
         )
 
     # but can add one if it has a different name
-    stack_store.register_stack_component(
+    zen_store.register_stack_component(
         StackComponentWrapper.from_component(
             LocalOrchestrator(
                 name="local_orchestrator_part_2_the_remix",
@@ -168,22 +168,22 @@ def test_register_deregister_components(fresh_stack_store: BaseStackStore):
         )
     )
     assert (
-        len(stack_store.get_stack_components(StackComponentType.ORCHESTRATOR))
+        len(zen_store.get_stack_components(StackComponentType.ORCHESTRATOR))
         == 2
     )
 
     # can't delete an orchestrator that's part of a stack
     with pytest.raises(ValueError):
-        stack_store.deregister_stack_component(
+        zen_store.deregister_stack_component(
             StackComponentType.ORCHESTRATOR, "default"
         )
 
     # but can if the stack is deleted first
-    stack_store.deregister_stack("default")
-    stack_store.deregister_stack_component(
+    zen_store.deregister_stack("default")
+    zen_store.deregister_stack_component(
         StackComponentType.ORCHESTRATOR, "default"
     )
     assert (
-        len(stack_store.get_stack_components(StackComponentType.ORCHESTRATOR))
+        len(zen_store.get_stack_components(StackComponentType.ORCHESTRATOR))
         == 1
     )

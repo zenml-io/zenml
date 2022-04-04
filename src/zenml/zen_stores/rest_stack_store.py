@@ -31,8 +31,8 @@ from zenml.constants import (
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
-from zenml.stack_stores import BaseStackStore
-from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
+from zenml.zen_stores import BaseZenStore
+from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
 
 logger = get_logger(__name__)
 
@@ -40,7 +40,7 @@ logger = get_logger(__name__)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
-class RestStackStore(BaseStackStore):
+class RestStackStore(BaseZenStore):
     """StackStore implementation for accessing stack data from a REST api."""
 
     def initialize(

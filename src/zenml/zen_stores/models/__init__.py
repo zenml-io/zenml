@@ -11,26 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List
+from zenml.zen_stores.models.permission_management_models import (
+    Project,
+    Role,
+    RoleAssignment,
+    Team,
+    User,
+)
+from zenml.zen_stores.models.stack_component_wrapper import (
+    StackComponentWrapper,
+)
+from zenml.zen_stores.models.stack_store_model import StackStoreModel
+from zenml.zen_stores.models.stack_wrapper import StackWrapper
 
-from pydantic import BaseModel
-
-from zenml.stack import Stack
-from zenml.stack_stores.models import StackComponentWrapper
-
-
-class StackWrapper(BaseModel):
-    """Network Serializable Wrapper describing a Stack."""
-
-    name: str
-    components: List[StackComponentWrapper]
-
-    @classmethod
-    def from_stack(cls, stack: Stack) -> "StackWrapper":
-        return cls(
-            name=stack.name,
-            components=[
-                StackComponentWrapper.from_component(component)
-                for t, component in stack.components.items()
-            ],
-        )
+__all__ = [
+    "StackComponentWrapper",
+    "StackStoreModel",
+    "StackWrapper",
+    "User",
+    "Team",
+    "Project",
+    "Role",
+    "RoleAssignment",
+]
