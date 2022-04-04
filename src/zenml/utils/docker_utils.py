@@ -72,6 +72,7 @@ def generate_dockerfile_contents(
     """
     lines = [f"FROM {base_image}", "WORKDIR /app"]
 
+    # TODO [HIGH]: Make secrets unvisible in the dockerfile or use a different approach. 
     if environment_vars:
         for key, value in environment_vars.items():
             lines.append(f"ENV {key.upper()}={value}")
