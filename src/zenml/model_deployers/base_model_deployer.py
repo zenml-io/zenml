@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Type
+from uuid import UUID
 
 from zenml.enums import ModelDeployerFlavor, StackComponentType
 from zenml.services import BaseService, ServiceConfig
@@ -88,19 +89,34 @@ class BaseModelDeployer(StackComponent, ABC):
         """
 
     @abstractmethod
-    def stop_model_server(self) -> None:
+    def stop_model_server(
+        self, 
+        uuid: UUID
+    ) -> None:
         """Abstract method to stop a model server.
 
         Args:
-            ...: The arguments to be passed to the underlying model deployer
-                implementation.
+            uuid: The UUID of the model server to stop.
         """
 
-    # @abstractmethod
-    # def start_model_server(self, ...) -> None:
-    #     """Abstract method to start ????? a model server.
+    @abstractmethod
+    def start_model_server(
+        self, 
+        uuid: UUID
+    ) -> None:
+        """Abstract method to start a model server.
 
-    #     Args:
-    #         ...: The arguments to be passed to the underlying model deployer
-    #             implementation.
-    #     """
+        Args:
+            uuid: The UUID of the model server to start.
+        """
+
+    @abstractmethod
+    def delete_model_server(
+        self,
+        uuid: UUID
+    ) -> None:
+        """Abstract method to delete a model server.
+
+        Args:
+            uuid: The UUID of the model server to delete.
+        """

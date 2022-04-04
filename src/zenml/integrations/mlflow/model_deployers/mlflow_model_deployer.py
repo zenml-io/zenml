@@ -17,6 +17,7 @@ import shutil
 from typing import Optional
 
 from typing import List, Optional
+from uuid import UUID
 
 from zenml import logger
 from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
@@ -254,16 +255,54 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
     def stop_model_server(
         self,
-        service: MLFlowDeploymentService
+        uuid: UUID
     ) -> None:
         """Method to stop a model server.
 
         Args:
-            ...: The arguments to be passed to the underlying model deployer
-                implementation.
+            uuid: UUID of the model server to stop.
         """
-        # clean-up the service
-        self._clean_up_existing_service(service)
+        # get list of all services
+        existing_services = self.find_model_server()
 
-        # TODO: figure out a better parameter to pass as input to this function.
-        # Is it feasible to expect the service instance to be passed?
+        # if uuid of service matches input uuid, stop the service
+        for service in existing_services:
+            if service.uuid == uuid:
+                service.stop()
+                break
+
+    def start_model_server(
+        self,
+        uuid: UUID
+    ) -> None:
+        """Method to start a model server.
+
+        Args:
+            uuid: UUID of the model server to start.
+        """
+        # get list of all services
+        existing_services = self.find_model_server()
+
+        # if uuid of service matches input uuid, start the service
+        for service in existing_services:
+            if service.uuid == uuid:
+                service.start()
+                break
+
+    def delete_model_server(
+        self,
+        uuid: UUID
+    ) -> None:
+        """Method to delete all configuration of a model server.
+
+        Args:
+            uuid: UUID of the model server to delete.
+        """
+        # get list of all services
+        existing_services = self.find_model_server()
+
+        # if uuid of service matches input uuid, clean up the service
+        for service in existing_services:
+            if service.uuid == uuid:
+                self._clean_up_existing_service(service)
+                break
