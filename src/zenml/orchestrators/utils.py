@@ -14,7 +14,7 @@
 
 import json
 import time
-from typing import TYPE_CHECKING, List, Optional, cast, Tuple
+from typing import TYPE_CHECKING, List, Optional, Tuple, cast
 
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.orchestration.portable import data_types, launcher
@@ -117,9 +117,8 @@ def get_cache_status(
     return status, orig_pipeline_run_name
 
 
-def get_last_completed_run(pipeline: PipelineView,
-                           step_name: str) -> str:
-    """ Iterate backwards through pipeline runs and find the last time the step
+def get_last_completed_run(pipeline: PipelineView, step_name: str) -> str:
+    """Iterate backwards through pipeline runs and find the last time the step
     has been completed.
 
     Args:
@@ -139,9 +138,8 @@ def get_last_completed_run(pipeline: PipelineView,
         except KeyError:
             pass
     if not orig_pipeline_run_name:
-        logger.error(f"Pipeline Run Name for cached step could not be"
-                     f"found")
-        orig_pipeline_run_name = 'Unknown Pipeline Run'
+        logger.error("Pipeline Run Name for cached step could not be found")
+        orig_pipeline_run_name = "Unknown Pipeline Run"
 
     return orig_pipeline_run_name
 
@@ -165,7 +163,7 @@ def execute_step(
     logger.info(f"Step `{pipeline_step_name}` has started.")
     try:
         execution_info = tfx_launcher.launch()
-        status, orig_pipeline_run_id = get_cache_status(execution_info)
+        status, orig_pipeline_run_id = get_cache_status(execution_info)  # type: ignore
         if execution_info and status:
             if execution_info.exec_properties:
                 step_name = json.loads(

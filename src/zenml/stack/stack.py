@@ -359,14 +359,14 @@ class Stack:
         start_time = time.time()
 
         original_cache_boolean = pipeline.enable_cache
-        if 'enable_cache' in runtime_configuration:
+        if "enable_cache" in runtime_configuration:
             logger.info(
                 "Runtime configuration overwriting the pipeline cache settings"
                 " to enable_cache=`%s` for this pipeline run. The default "
                 "caching strategy is retained for future pipeline runs.",
-                runtime_configuration['enable_cache']
+                runtime_configuration["enable_cache"],
             )
-            pipeline.enable_cache = runtime_configuration.pop('enable_cache')
+            pipeline.enable_cache = runtime_configuration.pop("enable_cache")
 
         return_value = self.orchestrator.run_pipeline(
             pipeline, stack=self, runtime_configuration=runtime_configuration
