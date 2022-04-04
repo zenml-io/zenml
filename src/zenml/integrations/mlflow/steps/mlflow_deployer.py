@@ -110,12 +110,49 @@ def mlflow_deployer_step(
                 model_uri = get_artifact_uri(config.model_name)
             config.model_uri = model_uri
 
-        # get pipeline name, step name and run id to add to the 
-        # MLflowDeploymentConfig object
+        # get pipeline name, step name and run id
         step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
         pipeline_name = step_env.pipeline_name
         run_id = step_env.pipeline_run_id
         step_name = step_env.step_name
+
+        # get the MLflow model deployer stack component
+        mlflow_model_deployer = Repository().active_stack.model_deployer
+        if not isinstance(mlflow_model_deployer, MLFlowModelDeployer):
+            raise TypeError(
+                f"Expected ModelDeployer type MLFlowModelDeployer but got "
+                f"{type(mlflow_model_deployer)} instead"
+            )
+
+        # fetch existing services with same pipeline name, step name and model name
+        existing_services = mlflow_model_deployer.find_model_server(
+            pipeline_name=pipeline_name,
+            step_name=step_name,
+            model_name=config.model_name,
+        )
+
+        # check for conditions to deploy the model
+        if not config.model_uri:
+            # an MLflow model was not found in the current run, so we simply reuse
+            # the service created during the previous step run
+            if not existing_services:
+                raise RuntimeError(
+                    f"An MLflow model with name `{config.model_name}` was not "
+                    f"trained in the current pipeline run and no previous "
+                    f"service was found."
+                )
+            return existing_services[0]
+
+        if not deploy_decision:
+            if existing_services:
+                return existing_services[0]
+            else:
+                # TODO: investigate what to do in this case. For now, returning 
+                # a service with inactive state and status.
+                raise RuntimeError(
+                    "The decsion to deploy the model was set to False and no "
+                    "previous service was found."
+                )
 
         # create a new service for the new model
         predictor_cfg = MLFlowDeploymentConfig(
@@ -123,21 +160,16 @@ def mlflow_deployer_step(
             model_uri=config.model_uri,
             workers=config.workers,
             mlserver=config.mlserver,
-            timeout=config.timeout,
             pipeline_name=pipeline_name,
             run_id=run_id,
             step_name=step_name,
-            deploy_decision=deploy_decision
         )
-        
-        mlflow_model_deployer_component = Repository().active_stack.model_deployer
-        if not isinstance(mlflow_model_deployer_component, MLFlowModelDeployer):
-            raise TypeError(
-                f"Expected ModelDeployer type MLflowModelDeployer but got "
-                f"{type(mlflow_model_deployer_component)} instead"
-            )
 
-        service = mlflow_model_deployer_component.deploy_model(predictor_cfg)
+        service = mlflow_model_deployer.deploy_model(
+            replace=True,
+            config=predictor_cfg,
+            timeout=config.timeout,
+    )
         return service
 
     return mlflow_model_deployer
