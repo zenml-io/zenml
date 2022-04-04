@@ -519,4 +519,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Missing secrets manager in current stack."
             )
+        else:
+            # No secrets provided by the user.
+            pass
         return environment_vars
