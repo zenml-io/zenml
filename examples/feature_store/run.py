@@ -45,12 +45,6 @@ logger = get_logger(__name__)
 # online_features = feast_retrieval.OnlineFeatureRetrieval(entities="yy")
 
 
-@step
-def print_initial_features(batch_features: DataFrame) -> None:
-    """Prints features imported from the feature store."""
-    return batch_features.head()
-
-
 # @pipeline(required_integrations=[FEAST])
 # def feast_pipeline(
 #     feature_import,
@@ -98,6 +92,12 @@ def get_batch_data() -> DataFrame:
             "driver_hourly_stats:avg_daily_trips",
         ],
     ).to_df()
+
+
+@step
+def print_initial_features(batch_features: DataFrame) -> None:
+    """Prints features imported from the feature store."""
+    return batch_features.head()
 
 
 @pipeline(required_integrations=[FEAST])
