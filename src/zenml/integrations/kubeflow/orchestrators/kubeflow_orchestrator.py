@@ -510,16 +510,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
             ProvisioningError: If the stack has no secrets manager."""
         environment_vars: Dict[str, str] = {}
         secret_manager = Repository().active_stack.secrets_manager
-        if secrets and not secret_manager:
+        if secrets and secret_manager:
+            for secret in secrets:
+                secret_schema = secret_manager.get_secret(secret)
+                environment_vars.update(secret_schema.content)
+        elif secrets and not secret_manager:
             raise ProvisioningError(
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 "Missing secrets manager in current stack."
             )
-        else:
-            for secret in secrets:
-                if secret_manager:
-                    secret_schema = secret_manager.get_secret(secret)
-                    environment_vars.update(secret_schema.content)
-                else:
-                    environment_vars.update({})
         return environment_vars
