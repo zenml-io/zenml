@@ -233,7 +233,9 @@ def test_registering_a_stack_with_existing_name(clean_repo):
         clean_repo.register_stack(stack)
 
 
-def test_registering_a_new_stack_with_already_registered_components(clean_repo):
+def test_registering_a_new_stack_with_already_registered_components(
+    clean_repo,
+):
     """Tests that registering a new stack with already registered components
     registers the stacks and does NOT register the components."""
     stack = clean_repo.active_stack
@@ -263,6 +265,26 @@ def test_registering_a_new_stack_with_already_registered_components(clean_repo):
     assert registered_artifact_stores == clean_repo.get_stack_components(
         StackComponentType.ARTIFACT_STORE
     )
+
+
+def test_updating_a_new_stack_with_already_registered_components(clean_repo):
+    """Tests that updating a new stack with already registered components
+    updates the stack with the new or altered components passed in."""
+    current_stack = clean_repo.active_stack
+    old_orchestrator = current_stack.orchestrator
+    new_orchestrator = LocalOrchestrator(name="new_orchestrator")
+    updated_stack = Stack(
+        name=current_stack.name,
+        orchestrator=new_orchestrator,
+        metadata_store=current_stack.metadata_store,
+        artifact_store=current_stack.artifact_store,
+    )
+
+    with does_not_raise():
+        clean_repo.update_stack(updated_stack)
+
+    assert old_orchestrator != clean_repo.active_stack.orchestrator
+    assert new_orchestrator == clean_repo.active_stack.orchestrator
 
 
 def test_registering_a_stack_registers_unregistered_components(clean_repo):
@@ -381,7 +403,8 @@ def test_registering_a_new_stack_component(clean_repo):
 
     with does_not_raise():
         registered_artifact_store = new_repo.get_stack_component(
-            component_type=new_artifact_store.type, name=new_artifact_store.name
+            component_type=new_artifact_store.type,
+            name=new_artifact_store.name,
         )
 
     assert registered_artifact_store == new_artifact_store
