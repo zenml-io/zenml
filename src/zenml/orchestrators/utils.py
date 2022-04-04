@@ -171,8 +171,6 @@ def execute_step(
                 step_name = json.loads(
                     execution_info.exec_properties[step_name_param]
                 )
-                # TODO [MEDIUM]: find out which pipeline-run the cached
-                #  artifcats originate and log out the pipeline_run_id out here
                 logger.info(
                     f"Using cached version of `{pipeline_step_name}` "
                     f"[`{step_name}`] from pipeline_run_id "
