@@ -16,7 +16,8 @@ from pipeline import (
     DeploymentTriggerConfig,
     SeldonDeployerConfig,
     SeldonDeploymentLoaderStepConfig,
-    TrainerConfig,
+    SklearnTrainerConfig,
+    TensorflowTrainerConfig,
     continuous_deployment_pipeline,
     deployment_trigger,
     dynamic_importer,
@@ -45,12 +46,45 @@ from zenml.services import load_last_service_from_step
     type=click.Choice(["tensorflow", "sklearn"]),
     help="Flavor of model being trained",
 )
-@click.option("--epochs", default=5, help="Number of epochs for training")
-@click.option("--lr", default=0.003, help="Learning rate for training")
+@click.option(
+    "--epochs",
+    default=5,
+    help="Number of epochs for training (tensorflow hyperparam)",
+)
+@click.option(
+    "--lr",
+    default=0.003,
+    help="Learning rate for training (tensorflow hyperparam, default: 0.003)",
+)
+@click.option(
+    "--solver",
+    default="saga",
+    type=click.Choice(["newton-cg", "lbfgs", "liblinear", "sag", "saga"]),
+    help="Algorithm to use in the optimization problem "
+    "(sklearn hyperparam, default: saga)",
+)
+@click.option(
+    "--penalty",
+    default="l1",
+    type=click.Choice(["l1", "l2", "elasticnet", "none"]),
+    help="Regularization (penalty) norm (sklearn hyperparam, default: l1)",
+)
+@click.option(
+    "--penalty-strength",
+    default=1.0,
+    type=float,
+    help="Regularization (penalty) strength (sklearn hyperparam, default: 1.0)",
+)
+@click.option(
+    "--toleration",
+    default=0.1,
+    type=float,
+    help="Tolerance for stopping criteria (sklearn hyperparam, default: 0.1)",
+)
 @click.option(
     "--min-accuracy",
     default=0.92,
-    help="Minimum accuracy required to deploy the model",
+    help="Minimum accuracy required to deploy the model (default: 0.92)",
 )
 @click.option("--kubernetes-context", help="Kubernetes context to use.")
 @click.option("--namespace", help="Kubernetes namespace to use.")
@@ -65,6 +99,10 @@ def main(
     model_flavor: str,
     epochs: int,
     lr: float,
+    solver: str,
+    penalty: str,
+    penalty_strength: float,
+    toleration: float,
     min_accuracy: float,
     kubernetes_context: str,
     namespace: str,
@@ -91,14 +129,20 @@ def main(
             service.stop(timeout=100)
         return
 
-    trainer_config = TrainerConfig(epochs=epochs, lr=lr)
     if model_flavor == "tensorflow":
         seldon_implementation = "TENSORFLOW_SERVER"
+        trainer_config = TensorflowTrainerConfig(epochs=epochs, lr=lr)
         trainer = tf_trainer(trainer_config)
         evaluator = tf_evaluator()
         predict_preprocessor = tf_predict_preprocessor()
     else:
         seldon_implementation = "SKLEARN_SERVER"
+        trainer_config = SklearnTrainerConfig(
+            solver=solver,
+            penalty=penalty,
+            C=penalty_strength,
+            tol=toleration,
+        )
         trainer = sklearn_trainer(trainer_config)
         evaluator = sklearn_evaluator()
         predict_preprocessor = sklearn_predict_preprocessor()

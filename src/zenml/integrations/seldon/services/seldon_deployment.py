@@ -84,13 +84,7 @@ class SeldonDeploymentConfig(ServiceConfig):
 
 
 class SeldonDeploymentServiceStatus(ServiceStatus):
-    """Seldon Core deployment service status.
-
-    Attibutes:
-        namespace: the namespace where the Seldon Core deployment is deployed
-    """
-
-    namespace: Optional[str]
+    """Seldon Core deployment service status."""
 
 
 class SeldonDeploymentService(BaseService):
@@ -148,12 +142,7 @@ class SeldonDeploymentService(BaseService):
         try:
             deployment = client.get_deployment(name=name)
         except SeldonDeploymentNotFoundError:
-            if self.admin_state == ServiceState.INACTIVE:
-                return (ServiceState.INACTIVE, "")
-            return (
-                ServiceState.ERROR,
-                f"Seldon Core deployment '{name}' not found",
-            )
+            return (ServiceState.INACTIVE, "")
 
         if self.admin_state == ServiceState.INACTIVE:
             return (ServiceState.PENDING_SHUTDOWN, "")

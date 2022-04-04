@@ -39,13 +39,6 @@ from zenml.steps import BaseStepConfig, Output, StepContext, step
 from zenml.steps.step_environment import STEP_ENVIRONMENT_NAME, StepEnvironment
 
 
-class TrainerConfig(BaseStepConfig):
-    """Trainer params"""
-
-    epochs: int = 1
-    lr: float = 0.001
-
-
 @step
 def importer_mnist() -> Output(
     x_train=np.ndarray, y_train=np.ndarray, x_test=np.ndarray, y_test=np.ndarray
@@ -68,9 +61,16 @@ def normalizer(
     return x_train_normed, x_test_normed
 
 
+class TensorflowTrainerConfig(BaseStepConfig):
+    """Trainer params"""
+
+    epochs: int = 1
+    lr: float = 0.001
+
+
 @step
 def tf_trainer(
-    config: TrainerConfig,
+    config: TensorflowTrainerConfig,
     x_train: np.ndarray,
     y_train: np.ndarray,
 ) -> tf.keras.Model:
@@ -111,14 +111,25 @@ def tf_evaluator(
     return test_acc
 
 
+class SklearnTrainerConfig(BaseStepConfig):
+    """Trainer params"""
+
+    solver: str = "saga"
+    penalty: str = "l1"
+    C: float = 1.0
+    tol: float = 0.1
+
+
 @step
 def sklearn_trainer(
-    config: TrainerConfig,
+    config: SklearnTrainerConfig,
     x_train: np.ndarray,
     y_train: np.ndarray,
 ) -> ClassifierMixin:
     """Train SVC from sklearn."""
-    clf = LogisticRegression(penalty="l1", solver="saga", tol=0.1)
+    clf = LogisticRegression(
+        penalty=config.penalty, solver=config.solver, tol=config.tol, C=config.C
+    )
     clf.fit(x_train.reshape((x_train.shape[0], -1)), y_train)
     return clf
 
@@ -174,7 +185,7 @@ class SeldonDeployerConfig(BaseStepConfig):
     step_name: Optional[str]
 
 
-@step(enable_cache=False)
+@step(enable_cache=True)
 def seldon_model_deployer(
     deploy_decision: bool,
     config: SeldonDeployerConfig,
@@ -192,9 +203,15 @@ def seldon_model_deployer(
     Returns:
         Seldon Core deployment service
     """
-
     # Find a service created by a previous run of this step
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
+    step_name = config.step_name or step_env.step_name
+
+    logger.info(
+        f"Loading last service deployed by step {step_name} and "
+        f"pipeline {step_env.pipeline_name}..."
+    )
+
     try:
         service = cast(
             SeldonDeploymentService,
@@ -202,28 +219,31 @@ def seldon_model_deployer(
             #   an integration that is no longer available
             load_last_service_from_step(
                 pipeline_name=step_env.pipeline_name,
-                step_name=config.step_name or step_env.step_name,
+                step_name=step_name,
                 step_context=context,
             ),
         )
-    except KeyError:
+    except KeyError as e:
         # pipeline or step name not found (e.g. never ran before)
+        logger.error(f"No service found: {str(e)}.")
         service = None
-    except ValidationError:
+    except ValidationError as e:
         # invalid service configuration (e.g. missing required fields because
         # the previous pipeline was run with an older service version and
         # the schemas are not compatible)
+        logger.error(f"Invalide service found: {str(e)}.")
         service = None
     if service and not isinstance(service, SeldonDeploymentService):
         logger.error(
-            f"Last service deployed by step {step_env.step_name} and "
+            f"Last service deployed by step {step_name} and "
             f"pipeline {step_env.pipeline_name} has invalid type. Expected "
             f"SeldonDeploymentService, found {type(service)}."
         )
         service = None
 
-    def prepare_model_files(model_uri: str) -> str:
-        """Prepare the model files for model serving.
+    def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
+        """Prepare the model files for model serving and create and return a
+        Seldon service configuration for the model.
 
         This function ensures that the model files are in the correct format
         and file structure required by the Seldon Core server implementation
@@ -246,7 +266,6 @@ def seldon_model_deployer(
             # the TensorFlow server expects model artifacts to be
             # stored in numbered subdirectories, each representing a model version
             fileio.copy_dir(model_uri, os.path.join(served_model_uri, "1"))
-            return served_model_uri
         elif config.implementation == "SKLEARN_SERVER":
             # the sklearn server expects model artifacts to be
             # stored in a file called model.joblib
@@ -258,27 +277,26 @@ def seldon_model_deployer(
             fileio.copy(
                 model_uri, os.path.join(served_model_uri, "model.joblib")
             )
-            return served_model_uri
         else:
             # TODO [MEDIUM]: implement model preprocessing for other built-in
             #   Seldon server implementations
-            return served_model_uri
+            pass
 
-    service_config = SeldonDeploymentConfig(
-        model_uri=prepare_model_files(model_uri=model.uri),
-        model_name=config.model_name,
-        # TODO [MEDIUM]: auto-detect built-in Seldon server implementation
-        #   from the model artifact type
-        implementation=config.implementation,
-        secret_name=config.secret_name,
-        pipeline_name=step_env.pipeline_name,
-        pipeline_run_id=step_env.pipeline_run_id,
-        pipeline_step_name=step_env.step_name,
-        replicas=config.replicas,
-        kubernetes_context=config.kubernetes_context,
-        namespace=config.namespace,
-        base_url=config.base_url,
-    )
+        return SeldonDeploymentConfig(
+            model_uri=served_model_uri,
+            model_name=config.model_name,
+            # TODO [MEDIUM]: auto-detect built-in Seldon server implementation
+            #   from the model artifact type
+            implementation=config.implementation,
+            secret_name=config.secret_name,
+            pipeline_name=step_env.pipeline_name,
+            pipeline_run_id=step_env.pipeline_run_id,
+            pipeline_step_name=step_name,
+            replicas=config.replicas,
+            kubernetes_context=config.kubernetes_context,
+            namespace=config.namespace,
+            base_url=config.base_url,
+        )
 
     if not deploy_decision:
         print(
@@ -286,9 +304,11 @@ def seldon_model_deployer(
             "the criteria"
         )
         if not service:
+            service_config = prepare_service_config(model.uri)
             service = SeldonDeploymentService(config=service_config)
         return service
 
+    service_config = prepare_service_config(model.uri)
     if service and not service.is_stopped:
         print("Updating an existing Seldon deployment service")
         service.update(service_config)
@@ -338,6 +358,12 @@ def prediction_service_loader(
             f"No Seldon prediction service deployed by the "
             f"{config.step_name} step in the {config.pipeline_name} pipeline "
             f"is currently running."
+        )
+    if not service.is_running:
+        raise RuntimeError(
+            f"The Seldon prediction service last deployed by the "
+            f"{config.step_name} step in the {config.pipeline_name} pipeline "
+            f"is not currently running."
         )
 
     return service
