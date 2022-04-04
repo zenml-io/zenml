@@ -284,27 +284,55 @@ class SqlStackStore(BaseStackStore):
 
     # Private interface implementations:
 
-    def _create_stack(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
+    def _save_stack(
+        self,
+        name: str,
+        stack_configuration: Dict[StackComponentType, str],
+        is_update: bool = False,
     ) -> None:
-        """Add a stack to storage.
+        """Save a stack.
 
         Args:
             name: The name to save the stack as.
             stack_configuration: Dict[StackComponentType, str] to persist.
         """
         with Session(self.engine) as session:
-            stack = ZenStack(name=name, created_by=1)
-            session.add(stack)
-            for ctype, cname in stack_configuration.items():
-                if cname is not None:
-                    session.add(
-                        ZenStackDefinition(
-                            stack_name=name,
-                            component_type=ctype,
-                            component_name=cname,
+            if is_update:
+                # CHECK THAT THE STACK EXISTS FIRST
+                for ctype, cname in stack_configuration.items():
+                    if cname is not None:
+                        statement = (
+                            select(ZenStackDefinition)
+                            .where(ZenStackDefinition.stack_name == name)
+                            .where(ZenStackDefinition.component_type == ctype)
                         )
-                    )
+                        results = session.exec(statement)
+                        component = results.one()
+                        if component is None:
+                            session.add(
+                                ZenStackDefinition(
+                                    stack_name=name,
+                                    component_type=ctype,
+                                    component_name=cname,
+                                )
+                            )
+                        else:
+                            component.component_name = cname
+                            component.component_type = ctype
+                            session.add(component)
+                        session.commit()
+            else:
+                stack = ZenStack(name=name, created_by=1)
+                session.add(stack)
+                for ctype, cname in stack_configuration.items():
+                    if cname is not None:
+                        session.add(
+                            ZenStackDefinition(
+                                stack_name=name,
+                                component_type=ctype,
+                                component_name=cname,
+                            )
+                        )
             session.commit()
 
     def _get_component_flavor_and_config(

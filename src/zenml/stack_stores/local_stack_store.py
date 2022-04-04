@@ -225,10 +225,13 @@ class LocalStackStore(BaseStackStore):
 
     # Private interface implementations:
 
-    def _create_stack(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
+    def _save_stack(
+        self,
+        name: str,
+        stack_configuration: Dict[StackComponentType, str],
+        is_update: bool = False,
     ) -> None:
-        """Add a stack to storage.
+        """Save a stack.
 
         Args:
             name: The name to save the stack as.
@@ -236,7 +239,10 @@ class LocalStackStore(BaseStackStore):
         """
         self.__store.stacks[name] = stack_configuration
         self._write_store()
-        logger.info("Registered stack with name '%s'.", name)
+        if is_update:
+            logger.info("Updated stack with name '%s'.", name)
+        else:
+            logger.info("Registered stack with name '%s'.", name)
 
     def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str

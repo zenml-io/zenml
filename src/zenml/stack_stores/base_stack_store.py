@@ -19,7 +19,11 @@ from typing import Any, Dict, List, Optional, Tuple
 import yaml
 
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
+from zenml.exceptions import (
+    DoesNotExistException,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.logger import get_logger
 from zenml.stack import Stack
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
@@ -184,8 +188,11 @@ class BaseStackStore(ABC):
     # Private interface (must be implemented, not to be called by user):
 
     @abstractmethod
-    def _create_stack(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
+    def _save_stack(
+        self,
+        name: str,
+        stack_configuration: Dict[StackComponentType, str],
+        is_update: bool = False,
     ) -> None:
         """Add a stack to storage.
 
@@ -263,7 +270,7 @@ class BaseStackStore(ABC):
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
 
-        If any of the stacks' components aren't registered in the stack store
+        If any of the stack's components aren't registered in the stack store
         yet, this method will try to register them as well.
 
         Args:
@@ -309,22 +316,49 @@ class BaseStackStore(ABC):
             typ: name for typ, name in map(__check_component, stack.components)
         }
         metadata = {c.type.value: c.flavor for c in stack.components}
-        self._create_stack(stack.name, stack_configuration)
+        self._save_stack(stack.name, stack_configuration)
         return metadata
 
     def update_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Update a stack and its components.
 
+        If any of the stack's components aren't registered in the stack store
+        yet, this method will try to register them as well.
+
         Args:
             stack: The stack to update.
 
-        Raises:
-            KeyError: If no stack exists for the given name."""
+        Returns:
+            metadata dict for telemetry or logging.
 
-        # get the stack
-        # check which stack components are different
-        # update them one by one
-        return {"stack": "updated"}
+        Raises:
+            DoesNotExistException: If no stack exists with the given name.
+        """
+        try:
+            self.get_stack(stack.name)
+        except KeyError:
+            raise DoesNotExistException(
+                f"Unable to update stack with name '{stack.name}': No existing "
+                f"stack found with this name."
+            )
+
+        def __check_component(
+            component: StackComponentWrapper,
+        ) -> Tuple[StackComponentType, str]:
+            try:
+                _ = self.get_stack_component(
+                    component_type=component.type, name=component.name
+                )
+            except KeyError:
+                self.register_stack_component(component)
+            return component.type, component.name
+
+        stack_configuration = {
+            typ: name for typ, name in map(__check_component, stack.components)
+        }
+        metadata = {c.type.value: c.flavor for c in stack.components}
+        self._save_stack(stack.name, stack_configuration, is_update=True)
+        return metadata
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
