@@ -14,7 +14,7 @@
 
 import json
 import time
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, List, Optional, cast, Tuple
 
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.orchestration.portable import data_types, launcher
@@ -22,6 +22,7 @@ from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
+from zenml.post_execution import PipelineView
 from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps.utils import (
@@ -60,7 +61,7 @@ def create_tfx_pipeline(
 
 def get_cache_status(
     execution_info: data_types.ExecutionInfo,
-) -> bool:
+) -> Tuple[bool, Optional[str]]:
     """Returns the caching status of a step.
 
     Args:
@@ -78,6 +79,8 @@ def get_cache_status(
         return False
 
     status = False
+    orig_pipeline_run_name = None
+
     repository = Repository()
     # TODO [ENG-706]: Get the current running stack instead of just the active
     #   stack
@@ -103,10 +106,44 @@ def get_cache_status(
     if pipeline is None:
         logger.error(f"Pipeline {pipeline_name} not found in Metadata Store.")
     else:
+        # We assume here that pipeline.runs returns a list sorted by time of
+        # execution
         status = (
             pipeline.get_run(pipeline_run_name).get_step(step_name).is_cached
         )
-    return status
+        if status:
+            orig_pipeline_run_name = get_last_completed_run(pipeline, step_name)
+
+    return status, orig_pipeline_run_name
+
+
+def get_last_completed_run(pipeline: PipelineView,
+                           step_name: str) -> str:
+    """ Iterate backwards through pipeline runs and find the last time the step
+    has been completed.
+
+    Args:
+        pipeline: PipelineView object
+        step_name: Name of step at hand
+    Return:
+        None if no run is found, else the name of the pipeline_run
+    """
+    orig_pipeline_run_name = None
+
+    for run in reversed(pipeline.runs):
+        try:
+            step = run.get_step(step_name)
+            if step.is_completed:
+                orig_pipeline_run_name = run.name
+                break
+        except KeyError:
+            pass
+    if not orig_pipeline_run_name:
+        logger.error(f"Pipeline Run Name for cached step could not be"
+                     f"found")
+        orig_pipeline_run_name = 'Unknown Pipeline Run'
+
+    return orig_pipeline_run_name
 
 
 def execute_step(
@@ -128,9 +165,9 @@ def execute_step(
     logger.info(f"Step `{pipeline_step_name}` has started.")
     try:
         execution_info = tfx_launcher.launch()
-        if execution_info and get_cache_status(execution_info):
+        status, orig_pipeline_run_id = get_cache_status(execution_info)
+        if execution_info and status:
             if execution_info.exec_properties:
-                pipeline_run_id = execution_info.pipeline_run_id
                 step_name = json.loads(
                     execution_info.exec_properties[step_name_param]
                 )
@@ -138,7 +175,8 @@ def execute_step(
                 #  artifcats originate and log out the pipeline_run_id out here
                 logger.info(
                     f"Using cached version of `{pipeline_step_name}` "
-                    f"[`{step_name}`] from a previous pipeline run.",
+                    f"[`{step_name}`] from pipeline_run_id "
+                    f"`{orig_pipeline_run_id}`.",
                 )
             else:
                 logger.error(
@@ -156,7 +194,8 @@ def execute_step(
 
     run_duration = time.time() - start_time
     logger.info(
-        f"Step `{pipeline_step_name}` has finished in {string_utils.get_human_readable_time(run_duration)}."
+        f"Step `{pipeline_step_name}` has finished in "
+        f"{string_utils.get_human_readable_time(run_duration)}."
     )
     return execution_info
 
