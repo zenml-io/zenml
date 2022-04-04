@@ -223,8 +223,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
                             f"{type(existing_service)} instead"
                         )
                     if(self._matches_search_criteria(existing_service, config)):
-                        if existing_service.is_running:
-                            services.append(existing_service)
+                        services.append(existing_service)
         
         return services
 
