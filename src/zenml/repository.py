@@ -815,7 +815,15 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
         if name == self.active_stack_name:
             raise ValueError(f"Unable to deregister active stack '{name}'.")
-        self.stack_store.deregister_stack(name)
+        try:
+            self.stack_store.deregister_stack(name)
+            logger.info("Deregistered stack with name '%s'.", name)
+        except KeyError:
+            logger.warning(
+                "Unable to deregister stack with name '%s': No stack exists "
+                "with this name.",
+                name,
+            )
 
     def get_stack_components(
         self, component_type: StackComponentType

@@ -34,22 +34,12 @@ app = FastAPI()
 root: Path = Path(get_global_config_directory())
 url = f"sqlite:///{root / 'service_stack_store.db'}"
 print(url)
-stack_store: BaseStackStore = SqlStackStore(url)
+stack_store: BaseStackStore = SqlStackStore().initialize(url)
 
 
 @app.head("/health")
 async def health() -> str:
     return "OK"
-
-
-@app.post("/echo-version", response_model=Version)
-async def echo(version: Version) -> Version:
-    return Version(version=version.version)
-
-
-@app.get("/version", response_model=Version)
-async def version() -> Version:
-    return Version(version=stack_store.version)
 
 
 @app.get(

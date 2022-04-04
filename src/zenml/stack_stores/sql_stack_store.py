@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.exc import ArgumentError
+from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from zenml.enums import StackComponentType, StoreType
@@ -250,12 +250,18 @@ class SqlStackStore(BaseStackStore):
 
         Args:
             name: The name of the stack to be deleted.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
         """
         with Session(self.engine) as session:
-            stack = session.exec(
-                select(ZenStack).where(ZenStack.name == name)
-            ).one()
-            session.delete(stack)
+            try:
+                stack = session.exec(
+                    select(ZenStack).where(ZenStack.name == name)
+                ).one()
+                session.delete(stack)
+            except NoResultFound as error:
+                raise KeyError from error
             definitions = session.exec(
                 select(ZenStackDefinition).where(
                     ZenStackDefinition.stack_name == name

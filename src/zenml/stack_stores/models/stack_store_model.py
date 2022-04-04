@@ -32,7 +32,6 @@ class StackStoreModel(BaseModel):
             components.
     """
 
-    version: str
     stacks: Dict[str, Dict[StackComponentType, str]]
     stack_components: DefaultDict[StackComponentType, Dict[str, str]]
 

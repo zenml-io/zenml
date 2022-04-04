@@ -196,17 +196,12 @@ class LocalStackStore(BaseStackStore):
 
         Args:
             name: The name of the stack to be deleted.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
         """
-        try:
-            del self.__store.stacks[name]
-            self._write_store()
-            logger.info("Deregistered stack with name '%s'.", name)
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack with name '%s': No stack exists "
-                "with this name.",
-                name,
-            )
+        del self.__store.stacks[name]
+        self._write_store()
 
     # Private interface implementations:
 

@@ -31,6 +31,33 @@ logger = get_logger(__name__)
 class BaseStackStore(ABC):
     """Base class for accessing data in ZenML Repository and new Service."""
 
+    def initialize(
+        self,
+        url: str,
+        skip_default_stack: bool = False,
+        *arg: Any,
+        **kwargs: Any,
+    ) -> "BaseStackStore":
+        """Initialize the store.
+        Args:
+            url: The URL of the store.
+            skip_default_stack: If True, the creation of the default stack will
+                be skipped.
+            *args: Additional arguments to pass to the concrete store
+                implementation.
+            **kwargs: Additional keyword arguments to pass to the concrete
+                store implementation.
+        Returns:
+            The initialized concrete store instance.
+        """
+
+        if not skip_default_stack and self.is_empty:
+
+            logger.info("Initializing store...")
+            self.register_default_stack()
+
+        return self
+
     # Statics:
 
     @staticmethod
@@ -49,7 +76,14 @@ class BaseStackStore(ABC):
     @staticmethod
     @abstractmethod
     def get_local_url(path: str) -> str:
-        """Get a local URL for a given local path."""
+        """Get a local URL for a given local path.
+
+        Args:
+             path: the path string to build a URL out of.
+
+        Returns:
+            Url pointing to the path for the store type.
+        """
 
     @staticmethod
     @abstractmethod
@@ -123,6 +157,9 @@ class BaseStackStore(ABC):
 
         Args:
             name: The name of the stack to be deleted.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
         """
 
     # Private interface (must be implemented, not to be called by user):
@@ -235,6 +272,17 @@ class BaseStackStore(ABC):
         def __check_component(
             component: StackComponentWrapper,
         ) -> Tuple[StackComponentType, str]:
+            """Try to register a stack component, if it doesn't exist.
+
+            Args:
+                component: StackComponentWrapper to register.
+
+            Returns:
+                metadata key value pair for telemetry.
+
+            Raises:
+                StackComponentExistsError: If a component with same name exists.
+            """
             try:
                 existing_component = self.get_stack_component(
                     component_type=component.type, name=component.name
@@ -313,33 +361,6 @@ class BaseStackStore(ABC):
                     f"registered stack (stack name: '{stack_name}')."
                 )
         self._delete_stack_component(component_type, name=name)
-
-    def initialize(
-        self,
-        url: str,
-        skip_default_stack: bool = False,
-        *args: Any,
-        **kwargs: Any,
-    ) -> "BaseStackStore":
-        """Initialize the store.
-        Args:
-            url: The URL of the store.
-            skip_default_stack: If True, the creation of the default stack will
-                be skipped.
-            *args: Additional arguments to pass to the concrete store
-                implementation.
-            **kwargs: Additional keyword arguments to pass to the concrete
-                store implementation.
-        Returns:
-            The initialized concrete store instance.
-        """
-
-        if not skip_default_stack and self.is_empty:
-
-            logger.info("Initializing store...")
-            self.register_default_stack()
-
-        return self
 
     def register_default_stack(self) -> None:
         """Populates the store with the default Stack.
