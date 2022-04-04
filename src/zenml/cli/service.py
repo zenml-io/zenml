@@ -14,18 +14,17 @@
 """CLI for manipulating ZenML local and global config file."""
 import os
 from json import JSONDecodeError
+from typing import Optional
 
 import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
+from zenml.config.global_config import GlobalConfiguration
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.services import ServiceRegistry, ServiceState
-from zenml.zen_service.zen_service_deployment import (
-    ZenServiceConfig,
-    ZenServiceService,
-)
+from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
 
 logger = get_logger(__name__)
 SERVICE_CONFIG_FILENAME = "ZenService.json"
@@ -40,22 +39,33 @@ def service() -> None:
 
 
 @service.command("up", help="Start a daemon service running the zenml service")
-@click.option("--port", required=False, type=int, default=8000)
-def up_server(port: int) -> None:
+@click.option("--port", type=int, default=8000, show_default=True)
+@click.option("--profile", type=str, default=None)
+def up_server(port: int, profile: Optional[str]) -> None:
     """Provisions resources for the zen service."""
+    if profile is not None:
+        profile_configuration = GlobalConfiguration().get_profile(profile)
+        if profile_configuration is None:
+            raise ValueError(f"Could not find profile of name {profile}")
+        service_config = ZenServiceConfig(
+            port=port, store_profile_configuration=profile_configuration
+        )
+    else:
+        service_config = ZenServiceConfig(port=port)
 
+    print(f"{service_config=}")
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:
             zen_service = ServiceRegistry().load_service_from_json(f.read())
     except (JSONDecodeError, FileNotFoundError, ModuleNotFoundError):
-        zen_service = ZenServiceService(ZenServiceConfig(port=port))
+        zen_service = ZenService(service_config)
 
     cli_utils.declare(
         f"Provisioning resources for service "
         f"'{zen_service.SERVICE_TYPE.name}'."
     )
 
-    zen_service.start(timeout=10)
+    zen_service.start(timeout=30)
 
     if zen_service.endpoint:
         if zen_service.endpoint.status.port != port:

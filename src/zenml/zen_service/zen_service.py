@@ -1,115 +1,150 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
-#
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at:
-#
-#       https://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
-#  permissions and limitations under the License.
-from pathlib import Path
-from typing import Dict, List
+import os
+from typing import Any, Dict, Optional, Union
 
-from fastapi import FastAPI
+import uvicorn  # type: ignore[import]
+from pydantic import Field
 
-from zenml.enums import StackComponentType
-from zenml.io.utils import get_global_config_directory
-from zenml.stack_stores import BaseStackStore, SqlStackStore
-from zenml.stack_stores.models import (
-    StackComponentWrapper,
-    StackWrapper,
-    Version,
+from zenml.config.profile_config import ProfileConfiguration
+from zenml.logger import get_logger
+from zenml.repository import Repository
+from zenml.services import (
+    HTTPEndpointHealthMonitor,
+    HTTPEndpointHealthMonitorConfig,
+    LocalDaemonService,
+    LocalDaemonServiceConfig,
+    LocalDaemonServiceEndpoint,
+    LocalDaemonServiceEndpointConfig,
+    ServiceEndpointProtocol,
+    ServiceType,
 )
 
-app = FastAPI()
+logger = get_logger(__name__)
 
-# to run this, execute:
-# uvicorn zenml.zen_service.zen_service:app --reload
-
-
-root: Path = Path(get_global_config_directory())
-url = f"sqlite:///{root / 'service_stack_store.db'}"
-print(url)
-stack_store: BaseStackStore = SqlStackStore().initialize(url)
+ZEN_SERVICE_URL_PATH = ""
+ZEN_SERVICE_HEALTHCHECK_URL_PATH = "health"
 
 
-@app.head("/health")
-async def health() -> str:
-    return "OK"
+class ZenServiceEndpointConfig(LocalDaemonServiceEndpointConfig):
+    """Zen Service endpoint configuration.
+
+    Attributes:
+        zen_service_uri_path: URI path for the zenml service
+    """
+
+    zen_service_uri_path: str
 
 
-@app.get(
-    "/stacks/configurations/{name}",
-    response_model=Dict[StackComponentType, str],
-)
-async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
-    return stack_store.get_stack_configuration(name)
+class ZenServiceEndpoint(LocalDaemonServiceEndpoint):
+    """A service endpoint exposed by the Zen service daemon.
+
+    Attributes:
+        config: service endpoint configuration
+        monitor: optional service endpoint health monitor
+    """
+
+    config: ZenServiceEndpointConfig
+    monitor: HTTPEndpointHealthMonitor
+
+    @property
+    def endpoint_uri(self) -> Optional[str]:
+        uri = self.status.uri
+        if not uri:
+            return None
+        return f"{uri}{self.config.zen_service_uri_path}"
 
 
-@app.get(
-    "/stacks/configurations/",
-    response_model=Dict[str, Dict[StackComponentType, str]],
-)
-async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
-    return stack_store.stack_configurations
+class ZenServiceConfig(LocalDaemonServiceConfig):
+    """Zen Service deployment configuration.
+
+    Attributes:
+        port: Port at which the service is running
+        store_profile_configuration: ProfileConfiguration describing where
+            the service should persist its data.
+    """
+
+    port: int = 8000
+    store_profile_configuration: ProfileConfiguration = Field(
+        default_factory=lambda: Repository().active_profile
+    )
 
 
-@app.post("/components/register")
-async def register_stack_component(
-    component: StackComponentWrapper,
-) -> None:
-    stack_store.register_stack_component(component)
+class ZenService(LocalDaemonService):
+    """ZenService daemon that can be used to start a local ZenService server.
 
+    Attributes:
+        config: service configuration
+        endpoint: optional service endpoint
+    """
 
-@app.get("/stacks", response_model=List[StackWrapper])
-async def stacks() -> List[StackWrapper]:
-    return [
-        StackWrapper(name=s.name, components=s.components)
-        for s in stack_store.stacks
-    ]
+    SERVICE_TYPE = ServiceType(
+        name="zen_service",
+        type="zenml",
+        flavor="zenml",
+        description="ZenService to manage stacks, user and pipelines",
+    )
 
+    config: ZenServiceConfig
+    endpoint: ZenServiceEndpoint
 
-@app.post("/stacks/register", response_model=Dict[str, str])
-def register_stack(stack: StackWrapper) -> Dict[str, str]:
-    return stack_store.register_stack(stack)
+    def __init__(
+        self,
+        config: Union[ZenServiceConfig, Dict[str, Any]],
+        **attrs: Any,
+    ) -> None:
+        # ensure that the endpoint is created before the service is initialized
+        if isinstance(config, ZenServiceConfig) and "endpoint" not in attrs:
 
+            endpoint_uri_path = ZEN_SERVICE_URL_PATH
+            healthcheck_uri_path = ZEN_SERVICE_HEALTHCHECK_URL_PATH
+            use_head_request = True
 
-@app.get("/stacks/{name}", response_model=StackWrapper)
-async def get_stack(name: str) -> StackWrapper:
-    return stack_store.get_stack(name)
+            endpoint = ZenServiceEndpoint(
+                config=ZenServiceEndpointConfig(
+                    protocol=ServiceEndpointProtocol.HTTP,
+                    port=config.port,
+                    zen_service_uri_path=endpoint_uri_path,
+                ),
+                monitor=HTTPEndpointHealthMonitor(
+                    config=HTTPEndpointHealthMonitorConfig(
+                        healthcheck_uri_path=healthcheck_uri_path,
+                        use_head_request=use_head_request,
+                    )
+                ),
+            )
+            attrs["endpoint"] = endpoint
+        super().__init__(config=config, **attrs)
 
+    def run(self) -> None:
+        logger.info(
+            "Starting ZenService as blocking "
+            "process... press CTRL+C once to stop it."
+        )
 
-@app.get("stacks/{name}/deregister")
-def deregister_stack(name: str) -> None:
-    stack_store.deregister_stack(name)
+        self.endpoint.prepare_for_start()
 
+        # this is the only way to pass information into the FastAPI app??
+        os.environ[
+            "ZENML_PROFILE_CONFIGURATION"
+        ] = self.config.store_profile_configuration.json()
 
-@app.get(
-    "/components/{component_type}/{name}",
-    response_model=StackComponentWrapper,
-)
-async def get_stack_component(
-    component_type: StackComponentType, name: str
-) -> StackComponentWrapper:
-    return stack_store.get_stack_component(component_type, name=name)
+        try:
+            uvicorn.run(
+                "zenml.zen_service.zen_service_api:app",
+                host="127.0.0.1",
+                port=self.endpoint.status.port,
+                log_level="info",
+            )
+        except KeyboardInterrupt:
+            logger.info("Zen service stopped. Resuming normal execution.")
 
+    @property
+    def zen_service_uri(self) -> Optional[str]:
+        """Get the URI where the service is running.
 
-@app.get(
-    "/components/{component_type}",
-    response_model=List[StackComponentWrapper],
-)
-def get_stack_components(
-    component_type: StackComponentType,
-) -> List[StackComponentWrapper]:
-    return stack_store.get_stack_components(component_type)
-
-
-@app.get("/components/deregister/{component_type}/{name}")
-async def deregister_stack_component(
-    component_type: StackComponentType, name: str
-) -> None:
-    return stack_store.deregister_stack_component(component_type, name=name)
+        Returns:
+            The URI where the service can be contacted for requests,
+             or None, if the service isn't running.
+        """
+        if not self.is_running:
+            return None
+        return self.endpoint.endpoint_uri

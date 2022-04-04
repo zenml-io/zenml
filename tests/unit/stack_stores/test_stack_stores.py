@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import random
 import shutil
 
 import pytest
@@ -26,9 +27,11 @@ from zenml.stack import Stack
 from zenml.stack_stores import (
     BaseStackStore,
     LocalStackStore,
+    RestStackStore,
     SqlStackStore,
 )
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
+from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
 
 logger = get_logger(__name__)
 
@@ -37,6 +40,7 @@ logger = get_logger(__name__)
     params=[
         StoreType.LOCAL,
         StoreType.SQL,
+        StoreType.REST,
     ],
 )
 def fresh_stack_store(
@@ -50,6 +54,27 @@ def fresh_stack_store(
         yield LocalStackStore().initialize(str(tmp_path))
     elif store_type == StoreType.SQL:
         yield SqlStackStore().initialize(f"sqlite:///{tmp_path / 'store.db'}")
+    elif store_type == StoreType.REST:
+        port = random.randint(8003, 9000)
+        # create temporary stack store and profile configuration for unit tests
+        backing_stack_store = LocalStackStore().initialize(str(tmp_path))
+        store_profile = ProfileConfiguration(
+            name=f"test_profile_{hash(str(tmp_path))}",
+            store_url=backing_stack_store.url,
+            store_type=backing_stack_store.type,
+        )
+
+        zen_service = ZenService(
+            ZenServiceConfig(
+                port=port,
+                store_profile_configuration=store_profile,
+            )
+        )
+        zen_service.start(timeout=10)
+        # rest stack store can't have trailing slash on url
+        url = zen_service.zen_service_uri.strip("/")
+        yield RestStackStore().initialize(url)
+        zen_service.stop()
     else:
         raise NotImplementedError(f"No StackStore for {store_type}")
 
