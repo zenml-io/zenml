@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -58,7 +59,7 @@ batch_entity_df = pd.DataFrame.from_dict(
     }
 )
 batch_config = FeastHistoricalDatasourceConfig(
-    repo_path="/Users/strickvl/coding/zenml/repos/zenml/examples/feature_store/feast_feature_repo",
+    repo_path=os.path.join(os.getcwd(), "feast_feature_repo")
 )
 
 historical_data = FeastHistoricalDatasource(
