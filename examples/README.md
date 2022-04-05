@@ -1,37 +1,65 @@
-## Examples
+# 🧑‍💻 ZenML Examples
 
-Here you can find a list of practical examples on how you can use ZenML with
-brief descriptions for each example:
+Here you can find a list of practical examples on how you can use ZenML integrations with
+brief descriptions for each example. In case you run into any open questions while interacting with our docs, feel free 
+to check our [docs](https://docs.zenml.io/).
 
-Please note that at any moment this examples folder might be subject to change
-on `main`. If you are using a certain version of `zenml`, you can select the
-correct version on the GitHub UI at the top left side with the appropriate tag,
-or visit the link directly:
-`https://github.com/zenml-io/zenml/tree/<VERSION>/examples`
+## 📑 Table of Contents
 
-- **airflow_local**: Running pipelines with airflow locally.
-- **caching**: Using caching to skip data-intensive tasks and save costs.
-- **class_based_api**: All the code for the class-based API guide found in the
-  [docs](https://docs.zenml.io/v/docs/guides/class-based-api).
-- **custom_materializer**: Create a custom materializer to control data flowing between steps.
-- **dag_visualizer**: Visualizing a pipeline.
-- **drift_detection**: Detect drift with our Evidently integration.
-- **fetch_historical_runs**: Showcases dynamically fetching historical runs from within a step.
-- **functional_api**: All the code for the functional API guide found in the
-  [docs](https://docs.zenml.io/v/docs/guides/functional-api/).
-- **kubeflow**: Shows how to orchestrate a pipeline a local kubeflow stack.
-- **lineage**: Visualizing a pipeline run and showcasing artifact lineage.
-- **mlflow_tracking**: Track and visualize experiment runs with MLFlow Tracking.
-- **not_so_quickstart**: Shows of the modularity of the pipelines with
-hot-swapping of Tensorflow, PyTorch, and scikit-learn trainers.
-- **quickstart**: The official quickstart tutorial.
-- **standard_interfaces**: This examples uses a collection of built-in and
-integrated standard interfaces to showcase their effect on the overall
-smoothness of the user experience.
-- **statistics**: Show-cases how ZenML can automatically extract statistics
-  using facets.
-- **whylogs**: Showcases [whylogs](https://github.com/whylabs/whylogs) integration.
+The examples contain aspects that span across the whole range of
 
+### ⛲ Data Sources
+No data, no fun. 
+
+- **feast_feature_store**: Coming very soon!
+
+### 🧑‍🔬 Data Analysis
+Data is without a doubt the absolute lifeblood of any machine learning work. As such we offer a few integrations
+that will help you perform explorative data analysis, and monitor how your data drifts across pipeline runs.
+
+- **evidently_drift_detection**: Detect drift with our [evidently](https://github.com/evidentlyai/evidently) 
+integration.
+- **facets_visualize_statistics**: The facets integration allows you to retroactively go through pipeline runs and 
+analyze the statistics of the data artifacts.
+- **whylogs_data_profiling**: Profile your data using the [whylogs](https://github.com/whylabs/whylogs) integration.
+
+### 🗂 Experiment Tracking
+Certain phases of machine learning projects require a large amount of experimentation with many possible approaches. 
+Experiment tracking is vital to capture and compare all your experiments so that you can narrow down your solution 
+space.
+
+- **mlflow_tracking**: Track and visualize experiment runs with 
+[MLflow Tracking](https://mlflow.org/docs/latest/tracking.html). 
+
+### 🚀 Model Deployment
+What good are your models if noone gets to interact with them. ZenML offers you some easy ways to quickly deploy your 
+model.
+
+- **mlflow_deployment**: Deploys your trained models to a local mlflow deployment service and allows you to run 
+predictions against this endpoint.
+- **seldon_core_deployment**: Coming very soon!
+- **kserve_deployment**: Coming very soon!
+
+### 🚅 Pipeline Orchestration
+Quickly iterating on code changes is usually easiest when you code on your local machines. But there comes a point where
+you will want to have your pipelines run free from all the limitations of your local setup (performance, data access,
+uptime, etc ...). With zenml you can quickly switch out the pipeline code orchestrator using the CLI. Here are some 
+examples on how:
+
+- **airflow_orchestration**: Running pipelines with airflow locally.
+- **kubeflow_pipeline_orchestration**: Shows how to orchestrate a pipeline using a local kubeflow stack.
+
+### 👣 Step Operators
+Not all steps are created equal. While some steps need only a bit of computational power, the training step is usually 
+a different beast altogether, with a big appetite for Cuda Cores and VRAM. This is where Step Operators will make your 
+life easy. With just a bit of configuration your training step can easily be run on Vertex AI, Sagemaker or AzureML. 
+Check out our example to see how.
+
+- **step_operator_remote_training**: Run your compute intensive steps on one of the big three hyperscalers.
+
+
+
+## 🖥 Local Setup
 For each of these examples, ZenML provides a handy CLI command to pull them
 directly into your local environment. First install `zenml`:
 
@@ -58,7 +86,8 @@ You can now even run the example directly with a one-liner:
 zenml example run EXAMPLE_NAME  # not implemented for all examples
 ```
 
-Have any questions? Want more tutorials? Spot out-dated, frustrating tutorials?
+## ☎️ Talk to us
+Have any questions? Want more examples? Did you spot any out-dated, frustrating examples?
 We got you covered!
 
 Feel free to let us know by creating an

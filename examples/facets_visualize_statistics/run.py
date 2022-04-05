@@ -98,7 +98,7 @@ def evaluator(
     return test_acc
 
 
-@pipeline(required_integrations=[FACETS, TENSORFLOW])
+@pipeline(required_integrations=[FACETS, TENSORFLOW], enable_cache=False)
 def boston_housing_pipeline(
     importer,
     trainer,
@@ -112,7 +112,7 @@ def boston_housing_pipeline(
 
 def visualize_statistics():
     repo = Repository()
-    pipe = repo.get_pipelines()[-1]
+    pipe = repo.get_pipeline(pipeline_name="boston_housing_pipeline")
     importer_outputs = pipe.runs[-1].get_step(name="importer")
     FacetStatisticsVisualizer().visualize(importer_outputs)
 
