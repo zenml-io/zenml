@@ -160,8 +160,8 @@ class StackComponent(BaseModel, ABC):
                 textwrap.dedent(
                     """
                     When you are working with any classes which subclass from
-                    zenml.stack.StackComponent please make sure that your class
-                    has a ClassVar named `TYPE` and its value is set to a
+                    `zenml.stack.StackComponent` please make sure that your 
+                    class has a ClassVar named `TYPE` and its value is set to a
                     `StackComponentType` from `from zenml.enums import StackComponentType`.
 
                     In most of the cases, this is already done for you within the
@@ -186,8 +186,8 @@ class StackComponent(BaseModel, ABC):
                 textwrap.dedent(
                     """
                     When you are working with any classes which subclass from
-                    zenml.stack.StackComponent please make sure that your class
-                    has a defined ClassVar `FLAVOR`.
+                    `zenml.stack.StackComponent` please make sure that your 
+                    class has a defined ClassVar `FLAVOR`.
 
                     Example:
 
