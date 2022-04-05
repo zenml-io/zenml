@@ -95,7 +95,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         if replace == True:
             existing_services = self.find_model_server(
                 pipeline_name=config.pipeline_name,
-                step_name=config.step_name,
+                pipeline_step_name=config.step_name,
                 model_name=config.model_name,
             )
 
@@ -144,8 +144,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
     def find_model_server(
         self,
         pipeline_name: Optional[str] = None,
-        run_id: Optional[str] = None,
-        step_name: Optional[str] = None,
+        pipeline_run_id: Optional[str] = None,
+        pipeline_step_name: Optional[str] = None,
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
@@ -156,8 +156,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
         Args:
             pipeline_name: Name of the pipeline that the deployed model was part
             of.
-            run_id: ID of the pipeline run which the deployed model was part of.
-            step_name: The name of the pipeline model deployment step that
+            pipeline_run_id: ID of the pipeline run which the deployed model was part of.
+            pipeline_step_name: The name of the pipeline model deployment step that
                 deployed the model.
             model_name: Name of the deployed model.
             model_uri: URI of the deployed model.
@@ -174,8 +174,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
             model_name=model_name,
             model_uri=model_uri,
             pipeline_name=pipeline_name,
-            run_id=run_id,
-            step_name=step_name
+            pipeline_run_id=pipeline_run_id,
+            pipeline_step_name=pipeline_step_name,
         )
 
         # path where the services for this deployer are stored

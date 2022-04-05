@@ -127,7 +127,7 @@ def mlflow_deployer_step(
         # fetch existing services with same pipeline name, step name and model name
         existing_services = mlflow_model_deployer.find_model_server(
             pipeline_name=pipeline_name,
-            step_name=step_name,
+            pipeline_step_name=step_name,
             model_name=config.model_name,
         )
 
@@ -161,8 +161,8 @@ def mlflow_deployer_step(
             workers=config.workers,
             mlserver=config.mlserver,
             pipeline_name=pipeline_name,
-            run_id=run_id,
-            step_name=step_name,
+            pipeline_run_id=run_id,
+            pipeline_step_name=step_name,
         )
 
         service = mlflow_model_deployer.deploy_model(
