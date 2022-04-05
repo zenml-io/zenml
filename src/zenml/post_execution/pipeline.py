@@ -110,8 +110,8 @@ class PipelineView:
             except KeyError:
                 pass
         if not orig_pipeline_run:
-            raise RuntimeError("Pipeline Run for cached step could not "
-                               "be found")
+            raise LookupError("No Pipeline Run could be found, that has"
+                              f" completed the provided step: [{step_name}]")
 
         return orig_pipeline_run
 
