@@ -185,9 +185,9 @@ class BaseArtifactStore(StackComponent, ABC):
             raise ArtifactStoreInterfaceError(
                 textwrap.dedent(
                     f"""
-                    The path: "{values["path"]}" you defined for your artifact 
-                    store is not supported by the implementation of 
-                    {cls.schema()["title"]}, because it does not start with 
+                    The path: "{values["path"]}" you defined for your artifact
+                    store is not supported by the implementation of
+                    {cls.schema()["title"]}, because it does not start with
                     one of its supported schemes: {cls.SUPPORTED_SCHEMES}.
                     """
                 )
