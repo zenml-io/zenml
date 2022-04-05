@@ -45,15 +45,10 @@ from pydantic import root_validator
 from tfx.dsl.io.fileio import NotFoundError
 
 from zenml.enums import StackComponentType
-from zenml.exceptions import ZenMLBaseException
+from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.stack import StackComponent
 
 PathType = Union[bytes, str]
-
-
-class ArtifactStoreInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Artifact Store interface
-    in an unsupported way."""
 
 
 def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:

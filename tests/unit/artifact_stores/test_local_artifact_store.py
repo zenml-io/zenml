@@ -15,10 +15,8 @@
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.artifact_stores.base_artifact_store import (
-    ArtifactStoreInterfaceError,
-)
 from zenml.enums import StackComponentType
+from zenml.exceptions import ArtifactStoreInterfaceError
 
 
 def test_local_artifact_store_attributes():

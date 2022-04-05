@@ -15,10 +15,8 @@
 
 import pytest
 
-from zenml.artifact_stores.base_artifact_store import (
-    ArtifactStoreInterfaceError,
-)
 from zenml.enums import StackComponentType
+from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.integrations.gcp.artifact_stores.gcp_artifact_store import (
     GCPArtifactStore,
 )
