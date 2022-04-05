@@ -110,7 +110,8 @@ class PipelineView:
             except KeyError:
                 pass
         if not orig_pipeline_run:
-            logger.error("Pipeline Run for cached step could not be found")
+            raise RuntimeError("Pipeline Run for cached step could not "
+                               "be found")
 
         return orig_pipeline_run
 

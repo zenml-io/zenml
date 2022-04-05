@@ -366,7 +366,7 @@ class Stack:
                 "caching strategy is retained for future pipeline runs.",
                 runtime_configuration["enable_cache"],
             )
-            pipeline.enable_cache = runtime_configuration.pop("enable_cache")
+            pipeline.enable_cache = runtime_configuration.get("enable_cache")
 
         return_value = self.orchestrator.run_pipeline(
             pipeline, stack=self, runtime_configuration=runtime_configuration
