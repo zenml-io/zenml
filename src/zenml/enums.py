@@ -152,7 +152,6 @@ class SecretSchemaType(StrEnum):
 class ModelDeployerFlavor(StackComponentFlavor):
     """All supported model deployer flavors."""
 
-    LOCAL = "local"
     SELDON = "seldon"
     KSERVE = "kserve"
     MLFLOW = "mlflow"
