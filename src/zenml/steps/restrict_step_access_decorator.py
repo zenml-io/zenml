@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from typing import Any
+
 from zenml.environment import Environment
 from zenml.exceptions import ForbiddenRepositoryAccessError
 from zenml.logger import get_logger
@@ -19,13 +20,11 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def restrict_step_access(
-    _func
-) -> Any:
+def restrict_step_access(_func) -> Any:
     """Decorator to restrict this function from running inside a step.
 
-    Apply this decorator to a ZenML function to prevent it from being run 
-    inside the context of a step. 
+    Apply this decorator to a ZenML function to prevent it from being run
+    inside the context of a step.
 
     Args:
         _func: The function to restrict access to, inside a step.
@@ -46,5 +45,5 @@ def restrict_step_access(
             "a `StepContext` inside your step instead.",
             url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
         )
-    
+
     return _func

@@ -16,15 +16,17 @@ from typing import Optional, Type, cast
 
 from mlflow import get_artifact_uri  # type: ignore[import]
 from mlflow.tracking import MlflowClient  # type: ignore[import]
-from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT  
 
+from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
 from zenml.integrations.mlflow.mlflow_environment import (
     MLFLOW_STEP_ENVIRONMENT_NAME,
     MLFlowStepEnvironment,
 )
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
-from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import MLFlowModelDeployer
+from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
+    MLFlowModelDeployer,
+)
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
@@ -100,9 +102,10 @@ def mlflow_deployer_step(
         if not config.model_uri:
             # fetch the MLflow artifacts logged during the pipeline run
             mlflow_step_env = cast(
-                MLFlowStepEnvironment, Environment()[MLFLOW_STEP_ENVIRONMENT_NAME]
+                MLFlowStepEnvironment,
+                Environment()[MLFLOW_STEP_ENVIRONMENT_NAME],
             )
-            client = MlflowClient()            
+            client = MlflowClient()
             model_uri = None
             mlflow_run = mlflow_step_env.mlflow_run
             if mlflow_run and client.list_artifacts(
@@ -148,7 +151,7 @@ def mlflow_deployer_step(
             if existing_services:
                 return existing_services[0]
             else:
-                # TODO: investigate what to do in this case. For now, returning 
+                # TODO: investigate what to do in this case. For now, returning
                 # a service with inactive state and status.
                 raise RuntimeError(
                     "The decsion to deploy the model was set to False and no "
@@ -170,7 +173,7 @@ def mlflow_deployer_step(
             replace=True,
             config=predictor_cfg,
             timeout=config.timeout,
-    )
+        )
         return service
 
     return mlflow_model_deployer

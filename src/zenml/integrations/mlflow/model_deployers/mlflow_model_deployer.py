@@ -13,18 +13,15 @@
 #  permissions and limitations under the License.
 import os
 import shutil
-from typing import Optional
-
 from typing import List, Optional
 from uuid import UUID
 
 from zenml import logger
 from zenml.constants import (
-    LOCAL_STORES_DIRECTORY_NAME, 
-    DEFAULT_SERVICE_START_STOP_TIMEOUT
+    DEFAULT_SERVICE_START_STOP_TIMEOUT,
+    LOCAL_STORES_DIRECTORY_NAME,
 )
-
-from zenml.enums import ModelDeployerFlavor, StackComponentType, ModelDeployerFlavor
+from zenml.enums import ModelDeployerFlavor, StackComponentType
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
@@ -33,7 +30,9 @@ from zenml.io.utils import get_global_config_directory
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
-from zenml.stack.stack_component_class_registry import register_stack_component_class
+from zenml.stack.stack_component_class_registry import (
+    register_stack_component_class,
+)
 
 
 @register_stack_component_class(
@@ -61,16 +60,16 @@ class MLFlowModelDeployer(BaseModelDeployer):
     ) -> MLFlowDeploymentService:
         """
 
-        We assume that the deployment decision is made at the step level and 
-        here we have to delete any older services that are running and start 
+        We assume that the deployment decision is made at the step level and
+        here we have to delete any older services that are running and start
         a new one.
 
-        This method interacts with external serving platforms that manage services. 
+        This method interacts with external serving platforms that manage services.
         In the case of MLflow, we need to look into the local filesystem at a location
         where the configuration for the service is stored. Retrieving that, we can
-        check if there's any service that was created for the existing model and 
-        can return that or create one depending on the value of replace. 
-        
+        check if there's any service that was created for the existing model and
+        can return that or create one depending on the value of replace.
+
         - Detect if there is an existing model server instance running serving
         one or more previous versions of the same model
         - Deploy the model to the serving platform or update the existing model
@@ -100,11 +99,10 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
             for service in existing_services:
                 self._clean_up_existing_service(timeout, service, force=True)
-        
+
         # create a new MLFlowDeploymentService instance
         return self._create_new_service(timeout, config)
 
-    
     def _clean_up_existing_service(
         self,
         timeout: int,
@@ -117,14 +115,12 @@ class MLFlowModelDeployer(BaseModelDeployer):
         # delete the old configuration file
         service_directory_path = existing_service.status.runtime_path
         shutil.rmtree(service_directory_path)
-    
-    # the step will receive a config from the user that mentions the number 
-    # of workers etc.the step implementation will create a new config using 
-    # all values from the user and add values like pipeline name, model_uri 
+
+    # the step will receive a config from the user that mentions the number
+    # of workers etc.the step implementation will create a new config using
+    # all values from the user and add values like pipeline name, model_uri
     def _create_new_service(
-        self, 
-        timeout: int,
-        config: MLFlowDeploymentConfig
+        self, timeout: int, config: MLFlowDeploymentConfig
     ) -> MLFlowDeploymentService:
         """Creates a new MLFlowDeploymentService."""
 
@@ -140,7 +136,6 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
         return service
 
-        
     def find_model_server(
         self,
         pipeline_name: Optional[str] = None,
@@ -184,50 +179,66 @@ class MLFlowModelDeployer(BaseModelDeployer):
             LOCAL_STORES_DIRECTORY_NAME,
             str(self.uuid),
         )
-        
+
         # find all services that match the input criteria
         for root, dirs, files in os.walk(services_path):
             for file in files:
-                if(file == SERVICE_DAEMON_CONFIG_FILE_NAME):
-                    service_config_path = os.path.join(root, file)                    
+                if file == SERVICE_DAEMON_CONFIG_FILE_NAME:
+                    service_config_path = os.path.join(root, file)
                     logger.info(
-                        "Loading service daemon configuration from %s", service_config_path
+                        "Loading service daemon configuration from %s",
+                        service_config_path,
                     )
                     existing_service_config = None
                     with open(service_config_path, "r") as f:
                         existing_service_config = f.read()
-                    existing_service = ServiceRegistry().load_service_from_json(existing_service_config)
-                    if not isinstance(existing_service, MLFlowDeploymentService):
+                    existing_service = ServiceRegistry().load_service_from_json(
+                        existing_service_config
+                    )
+                    if not isinstance(
+                        existing_service, MLFlowDeploymentService
+                    ):
                         raise TypeError(
                             f"Expected service type MLFlowDeploymentService but got "
                             f"{type(existing_service)} instead"
                         )
-                    if(self._matches_search_criteria(existing_service, config)):
+                    if self._matches_search_criteria(existing_service, config):
                         services.append(existing_service)
-        
+
         return services
 
     def _matches_search_criteria(
         self,
-        existing_service: MLFlowDeploymentService, 
-        config: MLFlowDeploymentConfig
+        existing_service: MLFlowDeploymentService,
+        config: MLFlowDeploymentConfig,
     ) -> bool:
-        """Returns true if a service matches the input criteria. If any of the values in 
+        """Returns true if a service matches the input criteria. If any of the values in
             the input criteria are None, they are ignored. This allows listing services
             just by common pipeline names or step names, etc.
-        
+
         Args:
             existing_service: The materialized Service instance derived from the config
             of the older (existing) service
-            config: The MLFlowDeploymentConfig object passed to the deploy_model function holding 
+            config: The MLFlowDeploymentConfig object passed to the deploy_model function holding
             parameters of the new service to be created."""
-        
+
         existing_service_config = existing_service.config
 
         # check if the existing service matches the input criteria
-        if (not existing_service_config.pipeline_name or existing_service_config.pipeline_name == config.pipeline_name) and \
-            (not existing_service_config.model_name or existing_service_config.model_name == config.model_name) and \
-            (not existing_service_config.step_name or existing_service_config.step_name == config.step_name):
+        if (
+            (
+                not existing_service_config.pipeline_name
+                or existing_service_config.pipeline_name == config.pipeline_name
+            )
+            and (
+                not existing_service_config.model_name
+                or existing_service_config.model_name == config.model_name
+            )
+            and (
+                not existing_service_config.step_name
+                or existing_service_config.step_name == config.step_name
+            )
+        ):
             return True
 
         return False
@@ -236,7 +247,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         self,
         uuid: UUID,
         timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
-        force: bool = False
+        force: bool = False,
     ) -> None:
         """Method to stop a model server.
 
@@ -255,9 +266,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 break
 
     def start_model_server(
-        self,
-        uuid: UUID,
-        timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
+        self, uuid: UUID, timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
     ) -> None:
         """Method to start a model server.
 
@@ -277,7 +286,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         self,
         uuid: UUID,
         timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
-        force: bool = False
+        force: bool = False,
     ) -> None:
         """Method to delete all configuration of a model server.
 
@@ -291,8 +300,6 @@ class MLFlowModelDeployer(BaseModelDeployer):
         for service in existing_services:
             if service.uuid == uuid:
                 self._clean_up_existing_service(
-                    existing_service=service,
-                    timeout=timeout,
-                    force=force
+                    existing_service=service, timeout=timeout, force=force
                 )
                 break

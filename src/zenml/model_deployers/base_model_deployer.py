@@ -35,7 +35,7 @@ class BaseModelDeployer(StackComponent, ABC):
 
     @abstractmethod
     def deploy_model(
-        self,    
+        self,
         config: ServiceConfig,
         replace: bool,
         timeout: int,
@@ -56,8 +56,8 @@ class BaseModelDeployer(StackComponent, ABC):
         Args:
             config: Custom Service configuration parameters for the model
                 deployer. Can include the pipeline name, the run id, the step
-                name, the model name, the model uri, the model type etc. 
-            replace: If True, it will replace any existing model server instances 
+                name, the model name, the model uri, the model type etc.
+            replace: If True, it will replace any existing model server instances
                 that serve the same model. If False, it does not replace any
                 existing model server instance.
             timeout: The maximum time in seconds to wait for the model server
@@ -96,10 +96,7 @@ class BaseModelDeployer(StackComponent, ABC):
         """
 
     @abstractmethod
-    def stop_model_server(
-        self, 
-        uuid: UUID
-    ) -> None:
+    def stop_model_server(self, uuid: UUID) -> None:
         """Abstract method to stop a model server.
 
         Args:
@@ -107,10 +104,7 @@ class BaseModelDeployer(StackComponent, ABC):
         """
 
     @abstractmethod
-    def start_model_server(
-        self, 
-        uuid: UUID
-    ) -> None:
+    def start_model_server(self, uuid: UUID) -> None:
         """Abstract method to start a model server.
 
         Args:
@@ -118,10 +112,7 @@ class BaseModelDeployer(StackComponent, ABC):
         """
 
     @abstractmethod
-    def delete_model_server(
-        self,
-        uuid: UUID
-    ) -> None:
+    def delete_model_server(self, uuid: UUID) -> None:
         """Abstract method to delete a model server.
 
         Args:

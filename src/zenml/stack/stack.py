@@ -41,12 +41,12 @@ if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
     from zenml.metadata_stores import BaseMetadataStore
+    from zenml.model_deployers.base_model_deployer import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
     from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
-    from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 
 
 logger = get_logger(__name__)
@@ -72,7 +72,7 @@ class Stack:
         container_registry: Optional["BaseContainerRegistry"] = None,
         secrets_manager: Optional["BaseSecretsManager"] = None,
         step_operator: Optional["BaseStepOperator"] = None,
-        model_deployer: Optional["BaseModelDeployer"] = None
+        model_deployer: Optional["BaseModelDeployer"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -110,10 +110,10 @@ class Stack:
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
         from zenml.metadata_stores import BaseMetadataStore
+        from zenml.model_deployers.base_model_deployer import BaseModelDeployer
         from zenml.orchestrators import BaseOrchestrator
         from zenml.secrets_managers import BaseSecretsManager
         from zenml.step_operators import BaseStepOperator
-        from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 
         def _raise_type_error(
             component: Optional["StackComponent"], expected_class: Type[Any]
@@ -171,7 +171,7 @@ class Stack:
             container_registry=container_registry,
             secrets_manager=secrets_manager,
             step_operator=step_operator,
-            model_deployer=model_deployer
+            model_deployer=model_deployer,
         )
 
     @classmethod
@@ -220,7 +220,7 @@ class Stack:
                 self.container_registry,
                 self.secrets_manager,
                 self.step_operator,
-                self.model_deployer
+                self.model_deployer,
             ]
             if component is not None
         }
