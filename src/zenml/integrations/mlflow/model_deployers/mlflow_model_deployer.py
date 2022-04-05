@@ -118,9 +118,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
         service_directory_path = existing_service.status.runtime_path
         shutil.rmtree(service_directory_path)
     
-    # the step will receive a config from the user that mentions the number of workers etc.
-    # the step implementation will create a new config using all values from the user and 
-    # add values like pipeline name, model_uri 
+    # the step will receive a config from the user that mentions the number 
+    # of workers etc.the step implementation will create a new config using 
+    # all values from the user and add values like pipeline name, model_uri 
     def _create_new_service(
         self, 
         timeout: int,
@@ -128,8 +128,12 @@ class MLFlowModelDeployer(BaseModelDeployer):
     ) -> MLFlowDeploymentService:
         """Creates a new MLFlowDeploymentService."""
 
-        # set the uuid in the config
-        config.caller_uuid = self.uuid
+        # set the root runtime path with the stack component's UUID
+        config.root_runtime_path = os.path.join(
+            get_global_config_directory(),
+            LOCAL_STORES_DIRECTORY_NAME,
+            str(self.uuid),
+        )
         # create a new service for the new model
         service = MLFlowDeploymentService(config)
         service.start(timeout=timeout)

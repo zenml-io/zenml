@@ -48,11 +48,12 @@ class LocalDaemonServiceConfig(ServiceConfig):
         silent_daemon: set to True to suppress the output of the daemon
             (i.e. redirect stdout and stderr to /dev/null). If False, the
             daemon output will be redirected to a logfile.
-        caller_uuid: UUID of the stack component that creates the service.
+        root_runtime_path: the root path where the service daemon will store 
+            service configuration files
     """
 
     silent_daemon: bool = False
-    caller_uuid: Optional[UUID] = None
+    root_runtime_path: Optional[str] = None
 
 
 class LocalDaemonServiceStatus(ServiceStatus):
@@ -240,9 +241,7 @@ class LocalDaemonService(BaseService):
             # runtimepath points to zenml local stores with uuid to make it 
             # easy to track from other locations.
             self.status.runtime_path = os.path.join(
-                get_global_config_directory(),
-                LOCAL_STORES_DIRECTORY_NAME,
-                str(self.config.caller_uuid),
+                self.config.root_runtime_path or tempfile.mkdtemp(prefix="zenml-service-"),
                 str(self.uuid)
             )
 
