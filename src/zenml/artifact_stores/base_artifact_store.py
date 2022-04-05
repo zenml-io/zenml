@@ -85,7 +85,7 @@ class BaseArtifactStore(StackComponent, ABC):
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initiate the pydantic object and register the corresponding
+        """Initiate the Pydantic object and register the corresponding
         filesystem."""
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
