@@ -89,8 +89,8 @@ class PipelineView:
             )
         return run
 
-    def get_run_for_completed_step(self, step_name: str) -> str:
-        """ This method helps you find out which pipeline run produced
+    def get_run_for_completed_step(self, step_name: str) -> "PipelineRunView":
+        """This method helps you find out which pipeline run produced
         the cached artifact of a given step.
 
         Args:

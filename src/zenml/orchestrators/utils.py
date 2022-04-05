@@ -130,7 +130,7 @@ def execute_step(
         execution_info = tfx_launcher.launch()
         if execution_info and get_cache_status(execution_info):
             if execution_info.exec_properties:
-                pipeline_run_id = execution_info.pipeline_run_id
+                execution_info.pipeline_run_id
                 step_name = json.loads(
                     execution_info.exec_properties[step_name_param]
                 )
