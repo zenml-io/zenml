@@ -37,7 +37,7 @@ class SagemakerStepOperator(BaseStepOperator):
     Attributes:
         role: The role that has to be assigned to the jobs which are
             running in Sagemaker.
-        instance_type: The instance type of compute where jobs will run.
+        instance_type: The type of the compute instance where jobs will run.
         base_image: [Optional] The base image to use for building the docker
             image that will be executed.
         bucket: [Optional] Name of the S3 bucket to use for storing artifacts
