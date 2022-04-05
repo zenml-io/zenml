@@ -13,15 +13,22 @@ No data, no fun.
 
 - **feast_feature_store**: Coming very soon!
 
-### 🧑‍🔬 Data Analysis
+### 🧑‍🔬 Data Visualizers
+Within ZenML, Visualizers are Python classes that take post-execution view objects (e.g. `PipelineView`, 
+`PipelineRunView`, `StepView`, etc.) and create visualizations for them. 
+
+- **facets_visualize_statistics**: The [facets](https://pair-code.github.io/facets/) integration allows you to 
+retroactively go through pipeline runs and analyze the statistics of the data artifacts.
+- **whylogs_data_profiling**: Profile your data using the [whylogs](https://github.com/whylabs/whylogs) integration 
+from within the post-execution workflow.
+
+
+### Drift Detection
 Data is without a doubt the absolute lifeblood of any machine learning work. As such we offer a few integrations
-that will help you perform explorative data analysis, and monitor how your data drifts across pipeline runs.
+that will help you monitor how your data drifts across pipeline runs.
 
 - **evidently_drift_detection**: Detect drift with our [evidently](https://github.com/evidentlyai/evidently) 
 integration.
-- **facets_visualize_statistics**: The facets integration allows you to retroactively go through pipeline runs and 
-analyze the statistics of the data artifacts.
-- **whylogs_data_profiling**: Profile your data using the [whylogs](https://github.com/whylabs/whylogs) integration.
 
 ### 🗂 Experiment Tracking
 Certain phases of machine learning projects require a large amount of experimentation with many possible approaches. 
@@ -49,7 +56,7 @@ examples on how:
 - **airflow_orchestration**: Running pipelines with airflow locally.
 - **kubeflow_pipeline_orchestration**: Shows how to orchestrate a pipeline using a local kubeflow stack.
 
-### 👣 Step Operators
+### 🥾 Step Operators
 Not all steps are created equal. While some steps need only a bit of computational power, the training step is usually 
 a different beast altogether, with a big appetite for Cuda Cores and VRAM. This is where Step Operators will make your 
 life easy. With just a bit of configuration your training step can easily be run on Vertex AI, Sagemaker or AzureML. 
