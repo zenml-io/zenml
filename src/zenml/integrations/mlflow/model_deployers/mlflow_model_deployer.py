@@ -117,30 +117,6 @@ class MLFlowModelDeployer(BaseModelDeployer):
         # delete the old configuration file
         service_directory_path = existing_service.status.runtime_path
         shutil.rmtree(service_directory_path)
-
-
-    def _existing_service_exists(
-        self,
-        existing_service: MLFlowDeploymentService, 
-        config: MLFlowDeploymentConfig
-    ) -> bool:
-        """Returns true if an old service with the same pipeline name,
-        step name and model name exists.
-        
-        Args:
-            existing_service: The materialized Service instance derived from the config
-            of the older (existing) service
-            config: The MLFlowDeploymentConfig object passed to the deploy_model function holding 
-            parameters of the new service to be created."""
-        
-        existing_service_config = existing_service.config
-
-        if existing_service_config.pipeline_name == config.pipeline_name and \
-            existing_service_config.model_name == config.model_name and \
-            existing_service_config.step_name == config.step_name:
-            return True
-
-        return False
     
     # the step will receive a config from the user that mentions the number of workers etc.
     # the step implementation will create a new config using all values from the user and 
