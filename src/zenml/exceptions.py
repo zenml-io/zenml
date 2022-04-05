@@ -126,7 +126,7 @@ class ArtifactInterfaceError(ZenMLBaseException):
 
 
 class StackComponentInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the step components
+    """Raises exception when interacting with the stack components
     in an unsupported way."""
 
 
