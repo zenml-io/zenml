@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The S3 integration  allows the use of cloud artifact stores and file
+The S3 integration allows the use of cloud artifact stores and file
 operations on S3 buckets.
 """
 from zenml.integrations.constants import S3
