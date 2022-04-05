@@ -70,8 +70,8 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
             MLflow built-in scoring server will be used.
     """
 
-    model_uri: str
-    model_name: str
+    model_uri: str = ""
+    model_name: str = ""
     workers: int = 1
     mlserver: bool = False
 

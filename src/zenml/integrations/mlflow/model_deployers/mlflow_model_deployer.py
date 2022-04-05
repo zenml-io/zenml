@@ -171,8 +171,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
         services = []
         config = MLFlowDeploymentConfig(
-            model_name=model_name or "",
-            model_uri=model_uri or "",
+            model_name=model_name,
+            model_uri=model_uri,
             pipeline_name=pipeline_name,
             pipeline_run_id=pipeline_run_id,
             pipeline_step_name=pipeline_step_name,
