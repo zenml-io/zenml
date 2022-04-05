@@ -64,7 +64,6 @@ def read_file_contents_as_string(file_path: str) -> str:
 
 
 def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
-    # TODO [ENG-189]: correct docstring since 'None' is never returned
     """Find files in a directory that match pattern.
 
     Args:
@@ -72,7 +71,7 @@ def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
         pattern: pattern like *.png.
 
     Yields:
-         All matching filenames if found, else None.
+         All matching filenames if found.
     """
     for root, dirs, files in walk(dir_path):
         for basename in files:
