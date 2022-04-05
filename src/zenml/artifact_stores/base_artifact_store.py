@@ -186,19 +186,15 @@ class BaseArtifactStore(StackComponent, ABC):
                     """
                 )
             )
-        try:
-            assert any(
-                values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES
-            )
-        except AssertionError:
+        if not any(values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES):
             raise ArtifactStoreInterfaceError(
                 textwrap.dedent(
                     f"""
-                     The path: "{values["path"]}" you defined for your artifact store is
-                     not supported by the implementation of {cls.schema()["title"]},
-                     because it does not start with one of its supported schemes:
-                     {cls.SUPPORTED_SCHEMES}.
-                     """
+                    The path: "{values["path"]}" you defined for your artifact 
+                    store is not supported by the implementation of 
+                    {cls.schema()["title"]}, because it does not start with 
+                    one of its supported schemes: {cls.SUPPORTED_SCHEMES}.
+                    """
                 )
             )
 
