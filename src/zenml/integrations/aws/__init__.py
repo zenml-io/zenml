@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The AWS integration submodule provides a way to run ZenML pipelines in a cloud
-environment.
+The AWS integration provides a way for our users to manage their secrets
+through AWS.
 """
 from zenml.integrations.constants import AWS
 from zenml.integrations.integration import Integration
