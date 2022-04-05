@@ -16,12 +16,8 @@
 
 ...
 """
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
-from zenml.secrets_managers.local.local_secrets_manager import (
-    LocalSecretsManager,
-)
+from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 
 __all__ = [
-    "BaseSecretsManager",
-    "LocalSecretsManager",
+    "BaseModelDeployer",
 ]

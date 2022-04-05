@@ -37,6 +37,8 @@ class BaseModelDeployer(StackComponent, ABC):
     def deploy_model(
         self,    
         config: ServiceConfig,
+        replace: bool,
+        timeout: int,
     ) -> BaseService:
         """Abstract method to deploy a model.
 
@@ -55,6 +57,11 @@ class BaseModelDeployer(StackComponent, ABC):
             config: Custom Service configuration parameters for the model
                 deployer. Can include the pipeline name, the run id, the step
                 name, the model name, the model uri, the model type etc. 
+            replace: If True, it will replace any existing model server instances 
+                that serve the same model. If False, it does not replace any
+                existing model server instance.
+            timeout: The maximum time in seconds to wait for the model server
+                to start serving the model.
 
         Returns:
             The deployment Service object.
