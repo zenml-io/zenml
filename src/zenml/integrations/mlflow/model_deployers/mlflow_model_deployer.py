@@ -90,7 +90,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         """
 
         # if replace is True, remove all existing services
-        if replace == True:
+        if replace is True:
             existing_services = self.find_model_server(
                 pipeline_name=config.pipeline_name,
                 pipeline_step_name=config.step_name,
