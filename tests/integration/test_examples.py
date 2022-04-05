@@ -53,7 +53,7 @@ def example_runner(examples_dir):
     By default, returns the path to an executable .sh file in the
     repository, but can also prefix that with the path to a shell
     / interpreter when the file is not executable on its own. The
-    latter option is needed for windows compatibility.
+    latter option is needed for Windows compatibility.
     """
     return (
         [os.environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in os.environ else []
