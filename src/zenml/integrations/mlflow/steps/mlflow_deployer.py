@@ -16,6 +16,7 @@ from typing import Optional, Type, cast
 
 from mlflow import get_artifact_uri  # type: ignore[import]
 from mlflow.tracking import MlflowClient  # type: ignore[import]
+from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT  
 
 from zenml.environment import Environment
 from zenml.integrations.mlflow.mlflow_environment import (
@@ -55,7 +56,7 @@ class MLFlowDeployerConfig(BaseStepConfig):
     model_uri: str = ""
     workers: int = 1
     mlserver: bool = False
-    timeout: int = 10
+    timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
 
 
 def mlflow_deployer_step(
