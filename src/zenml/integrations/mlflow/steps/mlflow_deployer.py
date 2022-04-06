@@ -16,6 +16,7 @@ from typing import Optional, Type, cast
 
 from mlflow import get_artifact_uri  # type: ignore[import]
 from mlflow.tracking import MlflowClient  # type: ignore[import]
+from zenml.artifacts.model_artifact import ModelArtifact  
 
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
@@ -93,12 +94,14 @@ def mlflow_deployer_step(
     @step(enable_cache=enable_cache, name=name)
     def mlflow_model_deployer(
         deploy_decision: bool,
+        model: ModelArtifact,
         config: MLFlowDeployerConfig,
     ) -> MLFlowDeploymentService:
         """MLflow model deployer pipeline step
 
         Args:
             deploy_decision: whether to deploy the model or not
+            model: the model artifact to deploy
             config: configuration for the deployer step
 
         Returns:
