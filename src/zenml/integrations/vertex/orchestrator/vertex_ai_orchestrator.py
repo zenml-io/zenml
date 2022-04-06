@@ -28,9 +28,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
-from zenml.enums import OrchestratorFlavor
 from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
     KubeflowOrchestrator,
 )
@@ -60,13 +59,7 @@ logger = get_logger(__name__)
 class VertexOrchestrator(KubeflowOrchestrator):
     """Orchestrator responsible for running pipelines on Vertex AI."""
 
-    supports_local_execution = False
-    supports_remote_execution = True
-
-    @property
-    def flavor(self) -> OrchestratorFlavor:
-        """The orchestrator flavor."""
-        return OrchestratorFlavor.VERTEX
+    FLAVOR: ClassVar[str] = "vertex"
 
     def run_pipeline(
         self,
