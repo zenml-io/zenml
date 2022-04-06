@@ -31,7 +31,7 @@ documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflo
 for details.
 
 ## 🧰 How the example is implemented
-Adding mlflow tracking to a step is a simple as adding the mlflow decorator. Now you're free to log anything from within 
+Adding MLFlow tracking to a step is a simple as adding the mlflow decorator. Now you're free to log anything from within 
 the step to mlflow. 
 
 ZenML ties all the logs from all steps within a pipeline run together into one mlflow run so that you can see everything

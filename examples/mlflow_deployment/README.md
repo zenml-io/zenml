@@ -56,6 +56,107 @@ The inference pipeline simulates loading data from a dynamic external source,
 then uses that data to perform online predictions using the running MLflow
 prediction server.
 
+## 🧰 How the example is implemented
+This example contains two very important aspects that should be highlighted.
+
+### 🛠️ Service deployment from code
+
+```python
+from zenml.steps import BaseStepConfig
+from zenml.integrations.mlflow.steps import mlflow_deployer_step
+from zenml.integrations.mlflow.steps import MLFlowDeployerConfig
+
+...
+
+class MLFlowDeploymentLoaderStepConfig(BaseStepConfig):
+    """MLflow deployment getter configuration
+
+    Attributes:
+        pipeline_name: name of the pipeline that deployed the MLflow prediction
+            server
+        step_name: the name of the step that deployed the MLflow prediction
+            server
+        running: when this flag is set, the step only returns a running service
+    """
+
+    pipeline_name: str
+    step_name: str
+    running: bool = True
+    
+model_deployer = mlflow_deployer_step(name="model_deployer")
+
+...
+
+# Initialize a continuous deployment pipeline run
+deployment = continuous_deployment_pipeline(
+    ...,
+    # as a last step to our pipeline the model deployer step is run with it config in place
+    model_deployer=model_deployer(config=MLFlowDeployerConfig(workers=3)),
+)
+```
+
+### ↩️ Prediction against deployed model
+
+```python
+from zenml.integrations.mlflow.services import MLFlowDeploymentService
+from zenml.steps import BaseStepConfig, Output, StepContext, step
+from zenml.services import load_last_service_from_step
+
+...
+
+class MLFlowDeploymentLoaderStepConfig(BaseStepConfig):
+    # see implementation above
+    ...
+
+# Step to retrieve the service associated with the last pipeline run
+@step(enable_cache=False)
+def prediction_service_loader(
+    config: MLFlowDeploymentLoaderStepConfig, context: StepContext
+) -> MLFlowDeploymentService:
+    """Get the prediction service started by the deployment pipeline"""
+
+    service = load_last_service_from_step(
+        pipeline_name=config.pipeline_name,
+        step_name=config.step_name,
+        step_context=context,
+        running=config.running,
+    )
+    if not service:
+        raise RuntimeError(
+            f"No MLflow prediction service deployed by the "
+            f"{config.step_name} step in the {config.pipeline_name} pipeline "
+            f"is currently running."
+        )
+
+    return service
+
+# Use the service for inference
+@step
+def predictor(
+    service: MLFlowDeploymentService,
+    data: np.ndarray,
+) -> Output(predictions=np.ndarray):
+    """Run a inference request against a prediction service"""
+
+    service.start(timeout=10)  # should be a NOP if already started
+    prediction = service.predict(data)
+    prediction = prediction.argmax(axis=-1)
+
+    return prediction
+
+# Initialize an inference pipeline run
+inference = inference_pipeline(
+    ...,
+    prediction_service_loader=prediction_service_loader(
+        MLFlowDeploymentLoaderStepConfig(
+            pipeline_name="continuous_deployment_pipeline",
+            step_name="model_deployer",
+        )
+    ),
+    predictor=predictor(),
+)
+```
+
 # 🖥 Run it locally
 
 ## ⏩ SuperQuick `mlflow` run
