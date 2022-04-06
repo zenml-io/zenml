@@ -171,12 +171,12 @@ class SeldonDeploymentStatusCondition(BaseModel):
 
     Attributes:
 
-        type: Type of runtime condition
-        status: Status of the condition
+        type: Type of runtime condition.
+        status: Status of the condition.
         reason: Brief CamelCase string containing reason for the condition's
-            last transition
+            last transition.
         message: Human-readable message indicating details about last
-            transition
+            transition.
     """
 
     type: str
@@ -224,11 +224,11 @@ class SeldonDeployment(BaseModel):
     SeldonDeployment CRD representation.
 
     Attributes:
-        kind: Kubernetes kind field
-        apiVersion: Kubernetes apiVersion field
-        metadata: Kubernetes metadata field
-        spec: Seldon Deployment spec entry
-        status: Seldon Deployment status
+        kind: Kubernetes kind field.
+        apiVersion: Kubernetes apiVersion field.
+        metadata: Kubernetes metadata field.
+        spec: Seldon Deployment spec entry.
+        status: Seldon Deployment status.
     """
 
     kind: str = Field(SELDON_DEPLOYMENT_KIND, const=True)
@@ -426,8 +426,8 @@ class SeldonClient:
         """Initialize a Seldon Core client.
 
         Args:
-            context: the Kubernetes context to use
-            namespace: the Kubernetes namespace to use
+            context: the Kubernetes context to use.
+            namespace: the Kubernetes namespace to use.
         """
         self._context = context
         self._namespace = namespace
@@ -485,15 +485,15 @@ class SeldonClient:
                 be returned anyway and no exception will be raised.
 
         Returns:
-            the created Seldon Core deployment resource with updated status
+            the created Seldon Core deployment resource with updated status.
 
         Raises:
             SeldonDeploymentExistsError: if a deployment with the same name
-                already exists
+                already exists.
             SeldonDeploymentNotFoundError: if the newly created deployment
-                resource cannot be found
+                resource cannot be found.
             SeldonClientError: if an unknown error occurs during the creation of
-                the deployment
+                the deployment.
         """
         try:
             logger.debug(f"Creating SeldonDeployment resource: {deployment}")
@@ -543,9 +543,9 @@ class SeldonClient:
         """Delete a Seldon Core deployment resource managed by ZenML.
 
         Args:
-            name: the name of the Seldon Core deployment resource to delete
+            name: the name of the Seldon Core deployment resource to delete.
             force: if True, the deployment deletion will be forced (the graceful
-                period will be set to zero)
+                period will be set to zero).
             poll_timeout: the maximum time to wait for the deployment to be
                 deleted. If set to 0, the function will return immediately
                 without checking the deployment status. If a timeout
@@ -554,9 +554,9 @@ class SeldonClient:
 
         Raises:
             SeldonDeploymentNotFoundError: if the deployment resource cannot be
-                found or is not managed by ZenML
+                found or is not managed by ZenML.
             SeldonClientError: if an unknown error occurs during the deployment
-                removal
+                removal.
         """
         try:
             logger.debug(f"Deleting SeldonDeployment resource: {name}")
@@ -610,13 +610,13 @@ class SeldonClient:
                 be returned anyway and no exception will be raised.
 
         Returns:
-            the updated Seldon Core deployment resource with updated status
+            the updated Seldon Core deployment resource with updated status.
 
         Raises:
             SeldonDeploymentNotFoundError: if deployment resource with the given
-                name cannot be found
+                name cannot be found.
             SeldonClientError: if an unknown error occurs while updating the
-                deployment
+                deployment.
         """
         try:
             logger.debug(
@@ -664,16 +664,16 @@ class SeldonClient:
         """Get a ZenML managed Seldon Core deployment resource by name.
 
         Args:
-            name: the name of the Seldon Core deployment resource to fetch
+            name: the name of the Seldon Core deployment resource to fetch.
 
         Returns:
-            The Seldon Core deployment resource
+            The Seldon Core deployment resource.
 
         Raises:
             SeldonDeploymentNotFoundError: if the deployment resource cannot
                 be found or is not managed by ZenML.
             SeldonClientError: if an unknown error occurs while fetching
-                the deployment
+                the deployment.
         """
 
         try:
@@ -729,18 +729,18 @@ class SeldonClient:
         the given criteria.
 
         Args:
-            name: optional name of the deployment resource to find
+            name: optional name of the deployment resource to find.
             fields: optional selector to restrict the list of returned
                 Seldon deployments by their fields. Defaults to everything.
             labels: optional selector to restrict the list of returned
                 Seldon deployments by their labels. Defaults to everything.
 
         Returns:
-            List of Seldon Core deployments that match the given criteria
+            List of Seldon Core deployments that match the given criteria.
 
         Raises:
             SeldonClientError: if an unknown error occurs while fetching
-                the deployments
+                the deployments.
         """
         fields = fields or {}
         labels = labels or {}
