@@ -15,7 +15,7 @@
 from typing import Optional, Type, cast
 
 from mlflow import get_artifact_uri  # type: ignore[import]
-from mlflow.tracking import MlflowClient  # type: ignore[import] 
+from mlflow.tracking import MlflowClient  # type: ignore[import]
 
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
@@ -77,12 +77,7 @@ def mlflow_deployer_step(
     Returns:
         an MLflow model deployer pipeline step
     """
-
-    # enable cache explicitly to compensate for the fact that this step
-    # takes in a context object
-    if enable_cache is None:
-        enable_cache = True
-        
+    
     # check if an MLFlowModelDeployer stack component is registered with 
     # the currently active stack
     mlflow_model_deployer = Repository().active_stack.model_deployer
