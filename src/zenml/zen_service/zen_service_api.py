@@ -56,7 +56,7 @@ stack_store: BaseStackStore = Repository.create_store(
     profile, skip_default_stack=True
 )
 
-app = FastAPI()
+app = FastAPI(title="ZenML", version="0.7.0")
 
 # to run this file locally, execute:
 # uvicorn zenml.zen_service.zen_service_api:app --reload

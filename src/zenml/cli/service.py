@@ -14,14 +14,17 @@
 """CLI for manipulating ZenML local and global config file."""
 import os
 import textwrap
+from importlib import import_module
 from json import JSONDecodeError
 from typing import Optional
 
 import click
+from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfiguration
+from zenml.console import console
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.services import ServiceRegistry, ServiceState
@@ -37,6 +40,16 @@ GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH = os.path.join(
 @cli.group()
 def service() -> None:
     """ZenMl server."""
+
+
+@service.command("explain", help="Explain the service")
+def explain_service() -> None:
+    """Explain the concept of the Zen Service."""
+    component_module = import_module(f"zenml.zen_service")
+
+    if component_module.__doc__ is not None:
+        md = Markdown(component_module.__doc__)
+        console.print(md)
 
 
 @service.command("up", help="Start a daemon service running the zenml service")
