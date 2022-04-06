@@ -1,13 +1,13 @@
-# Integrating MLflow Tracking into your ZenML Pipeline
+# 🛤️ Track experiments with MLflow Tracking
 
 [MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) is a popular
 tool that tracks and visualizes experiment runs with their many parameters,
 metrics and output files.
 
-## Overview
+## 🗺 Overview
 
-This example builds on the [quickstart](../../quickstart) but showcases how easily
-mlflow tracking can be integrated into a ZenML pipeline.
+This example showcases how easily mlflow tracking can be integrated into a ZenML pipeline with just a few simple lines
+of code.
 
 We'll be using the
 [Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset and
@@ -31,9 +31,20 @@ orchestrator and artifact store. See the [mlflow
 documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost)
 for details.
 
-## Run it locally
+# 🖥 Run it locally
 
-### Pre-requisites
+## ⏩ SuperQuick `mlflow_tracking` run
+
+If you're really in a hurry, and you want just to see this example pipeline run,
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run mlflow_tracking
+```
+
+## 👣 Step-by-Step
+### 📄 Prerequisites 
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -52,14 +63,14 @@ cd zenml_examples/mlflow_tracking
 zenml init
 ```
 
-### Run the project
+### ▶️ Run the Code
 Now we're ready. Execute:
 
-```shell
+```bash
 python run.py
 ```
 
-### See results
+### 🔮 See results
 Now we just need to start the mlflow UI to have a look at our two pipeline runs.
 To do this we need to run:
 
@@ -75,21 +86,17 @@ is already in use on your machine you may have to specify another port:
  mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE> -p 5001
  ```
 
-### Clean up
-In order to clean up, delete the remaining ZenML references as well as the
-`mlruns` directory.
+### 🧽 Clean up
+In order to clean up, delete the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
 rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 ```
 
-## SuperQuick `mlflow` run
+# 📜 Learn more
 
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
+Our docs regarding the mlflow tracking integration can be found [here](TODO: Link to docs).
 
-```shell
-zenml example run mlflow_tracking
-```
+If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
+check out our [docs](TODO: Link to docs)

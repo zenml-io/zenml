@@ -6,7 +6,8 @@ to check our [docs](https://docs.zenml.io/).
 
 ## 📑 Table of Contents
 
-The examples contain aspects that span across the whole range of
+The examples contain aspects that span across the whole range of tools and concepts that are integral to the mlops
+ecosystem. 
 
 ### ⛲ Data Sources
 No data, no fun. 
@@ -34,7 +35,7 @@ space.
 [MLflow Tracking](https://mlflow.org/docs/latest/tracking.html). 
 
 ### 🚀 Model Deployment
-What good are your models if noone gets to interact with them. ZenML offers you some easy ways to quickly deploy your 
+What good are your models if no-one gets to interact with them. ZenML offers you some easy ways to quickly deploy your 
 model.
 
 - **[mlflow_deployment](mlflow_deployment/README.md)**: Deploys your trained models to a local mlflow deployment service 
