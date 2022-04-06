@@ -427,7 +427,10 @@ class SqlZenStore(BaseZenStore):
             A list of all registered users.
         """
         with Session(self.engine) as session:
-            return session.exec(select(UserTable)).all()
+            return [
+                User(**user.dict())
+                for user in session.exec(select(UserTable)).all()
+            ]
 
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
@@ -482,11 +485,10 @@ class SqlZenStore(BaseZenStore):
             A list of all registered teams.
         """
         with Session(self.engine) as session:
-            sql_teams = session.exec(select(TeamTable)).all()
-            teams = []
-            for team in sql_teams:
-                teams.append(Team(**team.dict()))
-            return teams
+            return [
+                Team(**team.dict())
+                for team in session.exec(select(TeamTable)).all()
+            ]
 
     def create_team(self, team_name: str) -> Team:
         """Creates a new team.
@@ -579,7 +581,10 @@ class SqlZenStore(BaseZenStore):
             A list of all registered projects.
         """
         with Session(self.engine) as session:
-            return session.exec(select(ProjectTable)).all()
+            return [
+                Project(**project.dict())
+                for project in session.exec(select(ProjectTable)).all()
+            ]
 
     def create_project(
         self, project_name: str, description: Optional[str] = None
@@ -646,7 +651,12 @@ class SqlZenStore(BaseZenStore):
             A list of all registered role assignments.
         """
         with Session(self.engine) as session:
-            return session.exec(select(RoleAssignmentTable)).all()
+            return [
+                RoleAssignment(**assignment.dict())
+                for assignment in session.exec(
+                    select(RoleAssignmentTable)
+                ).all()
+            ]
 
     def create_role(self, role_name: str) -> Role:
         """Creates a new role.
@@ -706,13 +716,8 @@ class SqlZenStore(BaseZenStore):
                 to a user.
         """
         with Session(self.engine) as session:
-            entity_class = UserTable if is_user else TeamTable
-            entity = session.exec(
-                select(entity_class).where(entity_class.name == entity_name)
-            ).one()
-
-            role = session.exec(
-                select(RoleTable).where(RoleTable.name == role_name)
+            role_id = session.exec(
+                select(RoleTable.id).where(RoleTable.name == role_name)
             ).one()
 
             project_id = (
@@ -726,12 +731,18 @@ class SqlZenStore(BaseZenStore):
             )
 
             if is_user:
+                user_id = session.exec(
+                    select(UserTable.id).where(UserTable.name == entity_name)
+                ).one()
                 assignment = RoleAssignmentTable(
-                    role_id=role.id, project_id=project_id, user_id=entity.id
+                    role_id=role_id, project_id=project_id, user_id=user_id
                 )
             else:
+                team_id = session.exec(
+                    select(TeamTable.id).where(TeamTable.name == entity_name)
+                ).one()
                 assignment = RoleAssignmentTable(
-                    role_id=role.id, project_id=project_id, team_id=entity.id
+                    role_id=role_id, project_id=project_id, team_id=team_id
                 )
             session.add(assignment)
             session.commit()
@@ -789,12 +800,13 @@ class SqlZenStore(BaseZenStore):
             List of users that are part of the team.
         """
         with Session(self.engine) as session:
-            return session.exec(
+            users = session.exec(
                 select(UserTable)
                 .where(UserTable.id == TeamAssignmentTable.user_id)
                 .where(TeamAssignmentTable.team_id == TeamTable.id)
                 .where(TeamTable.name == team_name)
             ).all()
+            return [User(**user.dict()) for user in users]
 
     def get_teams_for_user(self, user_name: str) -> List[Team]:
         """Fetches all teams for a user.
@@ -806,12 +818,13 @@ class SqlZenStore(BaseZenStore):
             List of teams that the user is part of.
         """
         with Session(self.engine) as session:
-            return session.exec(
+            teams = session.exec(
                 select(TeamTable)
                 .where(TeamTable.id == TeamAssignmentTable.team_id)
                 .where(TeamAssignmentTable.user_id == UserTable.id)
                 .where(UserTable.name == user_name)
             ).all()
+            return [Team(**team.dict()) for team in teams]
 
     def get_role_assignments_for_user(
         self,
@@ -842,7 +855,10 @@ class SqlZenStore(BaseZenStore):
                     RoleAssignmentTable.project_id == ProjectTable.id
                 ).where(ProjectTable.name == project_name)
 
-            assignments = session.exec(statement).all()
+            assignments = [
+                RoleAssignment(**assignment.dict())
+                for assignment in session.exec(statement).all()
+            ]
             if include_team_roles:
                 for team in self.get_teams_for_user(user_name):
                     assignments += self.get_role_assignments_for_team(
@@ -876,7 +892,11 @@ class SqlZenStore(BaseZenStore):
                 statement = statement.where(
                     RoleAssignmentTable.project_id == ProjectTable.id
                 ).where(ProjectTable.name == project_name)
-            return session.exec(statement).all()
+
+            return [
+                RoleAssignment(**assignment.dict())
+                for assignment in session.exec(statement).all()
+            ]
 
     # Implementation-specific internal methods:
 
