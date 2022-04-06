@@ -34,7 +34,7 @@ Registered stack component with type 'metadata_store' and name 'default'.
 Registered stack component with type 'artifact_store' and name 'default'.
 Registered stack with name 'default'.
 Created and activated default profile.
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'default' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL               │ ACTIVE STACK ┃
@@ -51,7 +51,7 @@ automatically registered and set as the active Stack for that Profile.
 
 ```
 $ zenml profile create zenml
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'default' (global)
 Initializing profile `zenml`...
 Initializing store...
@@ -62,7 +62,7 @@ Registered stack with name 'default'.
 Profile 'zenml' successfully created.
 
 $ zenml profile list
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'default' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL               │ ACTIVE STACK ┃
@@ -85,13 +85,13 @@ like this:
 
 ```
 $ zenml profile create --store-type sql --url "sqlite:///tmp/zenml/zenml.db" sqlite_profile
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'devel' (global)
 Initializing profile `sqlite_profile`...
 Profile 'sqlite_profile' successfully created.
 
 $ zenml profile list
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'default' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ PROFILE NAME   │ STORE TYPE │ URL                                                │ ACTIVE STACK ┃
@@ -102,12 +102,12 @@ Running with active profile: 'default' (global)
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 
 $ zenml profile set sqlite_profile
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'default' (global)
 Active profile changed to: 'sqlite_profile'
 
 $ zenml stack list
-Runnning without an active repository root.
+Running without an active repository root.
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
 ┠────────┼────────────┼────────────────┼────────────────┼──────────────┨
@@ -152,23 +152,23 @@ available as long as that Profile is active.
 
 ```
 $ zenml profile set zenml
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'default' (global)
 Active profile changed to: 'zenml'
 
 $ zenml stack register local -m default -a default -o default
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'zenml' (global)
 Registered stack with name 'local'.
 Stack 'local' successfully registered!
 
 $ zenml stack set local
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'zenml' (global)
 Active stack set to: 'local'
 
 $ zenml stack list
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'zenml' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
@@ -220,7 +220,7 @@ Running with active profile: 'zenml' (local)
 
 /tmp/zenml$ cd ..
 /tmp$ zenml stack list
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'zenml' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃

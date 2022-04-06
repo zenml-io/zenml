@@ -19,7 +19,7 @@ import pytest
 
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
-from zenml.enums import OrchestratorFlavor, StackComponentType, StoreType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
@@ -145,7 +145,8 @@ def test_register_deregister_components(fresh_stack_store: BaseStackStore):
     orchestrator = stack_store.get_stack_component(
         StackComponentType.ORCHESTRATOR, "default"
     )
-    assert orchestrator.flavor == OrchestratorFlavor.LOCAL
+
+    assert orchestrator.flavor == "local"
     assert orchestrator.name == "default"
 
     # can't add another orchestrator of same name

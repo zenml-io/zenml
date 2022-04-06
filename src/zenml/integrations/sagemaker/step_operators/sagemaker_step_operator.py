@@ -12,15 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 
 import sagemaker
 
-from zenml.enums import (
-    OrchestratorFlavor,
-    StackComponentType,
-    StepOperatorFlavor,
-)
+from zenml.enums import StackComponentType
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
 from zenml.stack.stack_component_class_registry import (
@@ -31,10 +27,7 @@ from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.STEP_OPERATOR,
-    component_flavor=StepOperatorFlavor.SAGEMAKER,
-)
+@register_stack_component_class
 class SagemakerStepOperator(BaseStepOperator):
     """Step operator to run a step on Sagemaker.
 
@@ -42,19 +35,18 @@ class SagemakerStepOperator(BaseStepOperator):
     to run using Sagemaker's Estimator.
 
     Attributes:
-        role: The role that has to be assigned to jobs running in Sagemaker.
-        instance_type: The instance type of the compute where jobs will run.
+        role: The role that has to be assigned to the jobs which are
+            running in Sagemaker.
+        instance_type: The type of the compute instance where jobs will run.
         base_image: [Optional] The base image to use for building the docker
             image that will be executed.
         bucket: [Optional] Name of the S3 bucket to use for storing artifacts
             from the job run. If not provided, a default bucket will be created
             based on the following format: "sagemaker-{region}-{aws-account-id}".
         experiment_name: [Optional] The name for the experiment to which the job
-            will be associated. If not provided, the job runs would be independent.
+            will be associated. If not provided, the job runs would be
+            independent.
     """
-
-    supports_local_execution = True
-    supports_remote_execution = True
 
     role: str
     instance_type: str
@@ -63,17 +55,15 @@ class SagemakerStepOperator(BaseStepOperator):
     bucket: Optional[str] = None
     experiment_name: Optional[str] = None
 
-    @property
-    def flavor(self) -> StepOperatorFlavor:
-        """The step operator flavor."""
-        return StepOperatorFlavor.SAGEMAKER
+    # Class Configuration
+    FLAVOR: ClassVar[str] = "sagemaker"
 
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry."""
 
         def _ensure_local_orchestrator(stack: Stack) -> bool:
-            return stack.orchestrator.flavor == OrchestratorFlavor.LOCAL
+            return stack.orchestrator.FLAVOR == "local"
 
         return StackValidator(
             required_components={StackComponentType.CONTAINER_REGISTRY},

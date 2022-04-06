@@ -61,7 +61,7 @@ class LocalExample:
     def python_files_in_dir(self) -> List[str]:
         """List of all python files in the drectl in local example directory
         the __init__.py file is excluded from this list"""
-        py_in_dir = fileio.find_files(str(self.path), "*.py")
+        py_in_dir = zenml.io.utils.find_files(str(self.path), "*.py")
         py_files = []
         for file in py_in_dir:
             # Make sure only files directly in dir are considered, not files
@@ -114,9 +114,7 @@ class LocalExample:
 
     def is_present(self) -> bool:
         """Checks if the example exists at the given path."""
-        return fileio.file_exists(str(self.path)) and fileio.is_dir(
-            str(self.path)
-        )
+        return fileio.exists(str(self.path)) and fileio.isdir(str(self.path))
 
     def run_example(
         self,
@@ -134,7 +132,7 @@ class LocalExample:
             prevent_stack_setup: Prevents the example from setting up a custom
                 stack.
         """
-        if all(map(fileio.file_exists, example_runner)):
+        if all(map(fileio.exists, example_runner)):
             call = (
                 example_runner
                 + ["--executable", self.executable_python_example]
@@ -197,7 +195,7 @@ class Example:
                 readme_content = readme.read()
             return readme_content
         except FileNotFoundError:
-            if fileio.file_exists(str(self.path_in_repo)) and fileio.is_dir(
+            if fileio.exists(str(self.path_in_repo)) and fileio.isdir(
                 str(self.path_in_repo)
             ):
                 raise ValueError(
@@ -415,8 +413,8 @@ class GitExamplesHandler(object):
 
     def copy_example(self, example: Example, destination_dir: str) -> None:
         """Copies an example to the destination_dir."""
-        fileio.create_dir_if_not_exists(destination_dir)
-        fileio.copy_dir(
+        zenml.io.utils.create_dir_if_not_exists(destination_dir)
+        zenml.io.utils.copy_dir(
             str(example.path_in_repo), destination_dir, overwrite=True
         )
 
@@ -491,8 +489,8 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
     directory."""
     examples_directory = os.path.join(os.getcwd(), path)
     if (
-        fileio.file_exists(examples_directory)
-        and fileio.is_dir(examples_directory)
+        fileio.exists(examples_directory)
+        and fileio.isdir(examples_directory)
         and confirmation(
             "Do you wish to delete the ZenML examples directory? \n"
             f"{examples_directory}"
@@ -503,7 +501,7 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
             "ZenML examples directory was deleted from your current working "
             "directory."
         )
-    elif not fileio.file_exists(examples_directory) and not fileio.is_dir(
+    elif not fileio.exists(examples_directory) and not fileio.isdir(
         examples_directory
     ):
         logger.error(
@@ -583,7 +581,7 @@ def pull(
     git_examples_handler.pull(branch=branch, force=force)
 
     examples_dir = os.path.join(os.getcwd(), path)
-    fileio.create_dir_if_not_exists(examples_dir)
+    zenml.io.utils.create_dir_if_not_exists(examples_dir)
     try:
         examples = git_examples_handler.get_examples(example_name)
 
@@ -600,14 +598,14 @@ def pull(
                     "Do you wish to overwrite the directory at "
                     f"{destination_dir}?"
                 ):
-                    fileio.rm_dir(destination_dir)
+                    fileio.rmtree(destination_dir)
                 else:
                     warning(f"Example {example.name} not overwritten.")
                     continue
 
             declare(f"Pulling example {example.name}...")
 
-            fileio.create_dir_if_not_exists(destination_dir)
+            zenml.io.utils.create_dir_if_not_exists(destination_dir)
             git_examples_handler.copy_example(example, destination_dir)
             declare(f"Example pulled in directory: {destination_dir}")
             track_event(

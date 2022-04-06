@@ -65,6 +65,7 @@ sqlmodel = "~0.0.6"
 fastapi = "~0.75.0"
 uvicorn = { extras = ["standard"], version = "~0.17.5" }
 semver = "^2.13.0"
+markupsafe = "1.1.1"
 
 
 [tool.poetry.dev-dependencies]
