@@ -1,11 +1,11 @@
-# Profiling Datasets with whylogs/WhyLabs
-
+# 📊 Profiling Datasets with whylogs/WhyLabs
 Data logging and profiling is an important part of any production ML
 pipeline. [whylogs](https://whylabs.ai/whylogs) is an open source library
 that analyzes your data and creates statistical summaries called whylogs
 profiles. whylogs profiles can be visualized locally or uploaded to the
 [WhyLabs](https://whylabs.ai/) platform where more comprehensive analyses can be carried out.
 
+## 🗺 Overview
 ZenML integrates seamlessly with whylogs and WhyLabs. This example shows
 how easy it is to enhance steps in an existing ML pipeline with whylogs
 profiling features. Changes to the user code are minimal while ZenML takes
@@ -25,8 +25,7 @@ Instantiating this type of step is simplified even further through the
 use of the `whylogs_profiler_step` function.
 
 
-## How the example is implemented
-
+## 🧰 How the example is implemented
 The ZenML pipeline in this example is rather simple, consisting of a couple
 of steps involving some processing of datasets. How these datasets are used in
 the pipeline is irrelevant for the example - it could be data ingestion, feature
@@ -107,9 +106,19 @@ the datasets models with the models in the WhyLabs platform.
 ![WhyLabs UI image 2](assets/whylabs-ui-02.png)
 
 
-## Run it locally
+# 🖥 Run it locally
 
-### Pre-requisites
+## ⏩ SuperQuick `whylogs` run
+If you're really in a hurry, and you want just to see this example pipeline run,
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run whylogs_data_profiling
+```
+
+## 👣 Step-by-Step
+### 📄 Prerequisites 
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -124,30 +133,27 @@ zenml integration install sklearn
 zenml example pull whylogs
 cd zenml_examples/whylogs
 
-# initialize
+# Initialize ZenML repo
 zenml init
 ```
 
-### Run the project
+### ▶️ Run the Code
 Now we're ready. Execute:
 
-```shell
+```bash
 python run.py
 ```
 
-### Clean up
+### 🧽 Clean up
 In order to clean up, delete the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
 ```
 
-## SuperQuick `whylogs` run
+# 📜 Learn more
 
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
+Our docs regarding the whylogs integration can be found [here](TODO: Link to docs).
 
-```shell
-zenml example run whylogs
-```
+If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
+check out our [docs](TODO: Link to docs)

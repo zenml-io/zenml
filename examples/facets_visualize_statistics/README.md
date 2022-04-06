@@ -76,7 +76,7 @@ In order to clean up, delete the remaining ZenML references.
 rm -rf zenml_examples
 ```
 
-# Learn more
+# 📜 Learn more
 
 Our docs regarding the facets integration can be found [here](TODO: Link to docs).
 

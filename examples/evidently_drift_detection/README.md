@@ -24,7 +24,6 @@ Evidently are:
 - "probabilisticmodelperformance"
 
 ## 🧰 How the example is implemented
-
 In this example, we compare two separate slices of the same dataset as an easy
 way to get an idea for how `evidently` is making the comparison between the two
 dataframes. We chose [the University of Wisconsin breast cancer diagnosis
@@ -60,7 +59,7 @@ If you have a google account, you can get started directly with google colab - [
 
 # 🖥 Run it locally
 
-## ⏩ SuperQuick `statistics` run
+## ⏩ SuperQuick `evidently` run
 
 If you're really in a hurry, and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
@@ -106,7 +105,7 @@ rm -rf zenml_examples
 
 # Learn more
 
-Our docs regarding the facets integration can be found [here](TODO: Link to docs).
+Our docs regarding the evidently integration can be found [here](TODO: Link to docs).
 
 If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
 check out our [docs](TODO: Link to docs)
