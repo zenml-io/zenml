@@ -66,7 +66,7 @@ class LocalArtifactStore(BaseArtifactStore):
         """Copy a file from the source to the destination."""
         if not overwrite and os.path.exists(dst):
             raise FileExistsError(
-                f"Destination file {dst} already exists and argument "
+                f"Destination file {str(dst)} already exists and argument "
                 f"`overwrite` is false."
             )
         shutil.copyfile(src, dst)  # type: ignore[type-var, arg-type]
@@ -117,7 +117,7 @@ class LocalArtifactStore(BaseArtifactStore):
         """
         if not overwrite and os.path.exists(dst):
             raise FileExistsError(
-                f"Destination path {dst} already exists and argument "
+                f"Destination path {str(dst)} already exists and argument "
                 f"`overwrite` is false."
             )
         os.rename(src, dst)

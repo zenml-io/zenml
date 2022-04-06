@@ -30,7 +30,6 @@ import textwrap
 from abc import ABC
 from typing import (
     Any,
-    AnyStr,
     Callable,
     ClassVar,
     Dict,
@@ -39,6 +38,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Union,
 )
 
 from pydantic import root_validator
@@ -47,6 +47,8 @@ from tfx.dsl.io.fileio import NotFoundError
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.stack import StackComponent
+
+PathType = Union[bytes, str]
 
 
 def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
@@ -65,7 +67,6 @@ def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
 
 class BaseArtifactStore(StackComponent, ABC):
     """Base class for all ZenML artifact stores.
-
     Attributes:
         path: The root path of the artifact store.
     """
@@ -84,71 +85,71 @@ class BaseArtifactStore(StackComponent, ABC):
         self._register()
 
     @staticmethod
-    def open(name: AnyStr, mode: str = "r") -> Any:
+    def open(name: PathType, mode: str = "r") -> Any:
         """Open a file at the given path."""
         raise NotImplementedError()
 
     @staticmethod
-    def copyfile(src: AnyStr, dst: AnyStr, overwrite: bool = False) -> None:
+    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Copy a file from the source to the destination."""
         raise NotImplementedError()
 
     @staticmethod
-    def exists(path: AnyStr) -> bool:
+    def exists(path: PathType) -> bool:
         """Returns `True` if the given path exists."""
         raise NotImplementedError()
 
     @staticmethod
-    def glob(pattern: AnyStr) -> List[AnyStr]:
+    def glob(pattern: PathType) -> List[PathType]:
         """Return the paths that match a glob pattern."""
         raise NotImplementedError()
 
     @staticmethod
-    def isdir(path: AnyStr) -> bool:
+    def isdir(path: PathType) -> bool:
         """Returns whether the given path points to a directory."""
         raise NotImplementedError()
 
     @staticmethod
-    def listdir(path: AnyStr) -> List[AnyStr]:
+    def listdir(path: PathType) -> List[PathType]:
         """Returns a list of files under a given directory in the filesystem."""
         raise NotImplementedError()
 
     @staticmethod
-    def makedirs(path: AnyStr) -> None:
+    def makedirs(path: PathType) -> None:
         """Make a directory at the given path, recursively creating parents."""
         raise NotImplementedError()
 
     @staticmethod
-    def mkdir(path: AnyStr) -> None:
+    def mkdir(path: PathType) -> None:
         """Make a directory at the given path; parent directory must exist."""
         raise NotImplementedError()
 
     @staticmethod
-    def remove(path: AnyStr) -> None:
+    def remove(path: PathType) -> None:
         """Remove the file at the given path. Dangerous operation."""
         raise NotImplementedError()
 
     @staticmethod
-    def rename(src: AnyStr, dst: AnyStr, overwrite: bool = False) -> None:
+    def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Rename source file to destination file."""
         raise NotImplementedError()
 
     @staticmethod
-    def rmtree(path: AnyStr) -> None:
+    def rmtree(path: PathType) -> None:
         """Deletes dir recursively. Dangerous operation."""
         raise NotImplementedError()
 
     @staticmethod
-    def stat(path: AnyStr) -> Any:
+    def stat(path: PathType) -> Any:
         """Return the stat descriptor for a given file path."""
         raise NotImplementedError()
 
     @staticmethod
     def walk(
-        top: AnyStr,
+        top: PathType,
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
-    ) -> Iterable[Tuple[AnyStr, List[AnyStr], List[AnyStr]]]:
+    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
         """Return an iterator that walks the contents of the given directory."""
         raise NotImplementedError()
 
@@ -166,12 +167,9 @@ class BaseArtifactStore(StackComponent, ABC):
                     zenml.artifact_store.BaseArtifactStore please make sure that your class
                     has a ClassVar named `SUPPORTED_SCHEMES` which should hold a set of
                     supported file schemes such as {"s3://"} or {"gcs://"}.
-
                     Example:
-
                     class S3ArtifactStore(StackComponent):
                         ...
-
                         # Class Variables
                         ...
                         SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
