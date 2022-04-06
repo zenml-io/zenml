@@ -77,11 +77,22 @@ def mlflow_deployer_step(
     Returns:
         an MLflow model deployer pipeline step
     """
-
+    
     # enable cache explicitly to compensate for the fact that this step
     # takes in a context object
     if enable_cache is None:
         enable_cache = True
+
+    # check if an MLFlowModelDeployer stack component is registered with 
+    # the currently active stack
+    mlflow_model_deployer = Repository().active_stack.model_deployer
+    if not isinstance(mlflow_model_deployer, MLFlowModelDeployer):
+        raise TypeError(
+            f"The active stack needs to have a model deployer component"
+            f"of type MLFlowModelDeployer registered for this step to work."
+            f"You can create a new stack with a MLFlowModelDeployer component"
+            f"or update your existing stack to add this component."
+        )
 
     @enable_mlflow
     @step(enable_cache=enable_cache, name=name)
@@ -120,12 +131,13 @@ def mlflow_deployer_step(
         run_id = step_env.pipeline_run_id
         step_name = step_env.step_name
 
-        # get the MLflow model deployer stack component
-        mlflow_model_deployer = Repository().active_stack.model_deployer
+        # check if an MLFlowModelDeployer stack component is registered
         if not isinstance(mlflow_model_deployer, MLFlowModelDeployer):
             raise TypeError(
-                f"Expected ModelDeployer type MLFlowModelDeployer but got "
-                f"{type(mlflow_model_deployer)} instead"
+                f"The active stack needs to have a model deployer component"
+                f"of type MLFlowModelDeployer registered for this step to work."
+                f"You can create a new stack with a MLFlowModelDeployer component"
+                f"or update your existing stack to add this component."
             )
 
         # fetch existing services with same pipeline name, step name and model name
