@@ -12,14 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The stack store defines exactly where and how stacks are persisted across their 
-life.
+ZenStores define ways to store ZenML relevant data locally or remotely.
 """
-
-from zenml.zen_stores.base_stack_store import BaseZenStore
-from zenml.zen_stores.local_stack_store import LocalZenStore
+from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.local_zen_store import LocalZenStore
 from zenml.zen_stores.rest_stack_store import RestStackStore
-from zenml.zen_stores.sql_stack_store import SqlZenStore
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 __all__ = [
     "BaseZenStore",

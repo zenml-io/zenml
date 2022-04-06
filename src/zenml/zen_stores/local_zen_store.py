@@ -87,7 +87,7 @@ class LocalZenStore(BaseZenStore):
             url: URL of local directory of the repository to use for
                 storage.
             stack_data: optional stack data store object to pre-populate the
-                stack store with.
+                zen store with.
             args: additional positional arguments (ignored).
             kwargs: additional keyword arguments (ignored).
 
@@ -118,7 +118,7 @@ class LocalZenStore(BaseZenStore):
 
     @property
     def type(self) -> StoreType:
-        """The type of stack store."""
+        """The type of zen store."""
         return StoreType.LOCAL
 
     @property
@@ -154,7 +154,7 @@ class LocalZenStore(BaseZenStore):
 
     @property
     def is_empty(self) -> bool:
-        """Check if the stack store is empty."""
+        """Check if the zen store is empty."""
         return len(self.__store.stacks) == 0
 
     def get_stack_configuration(
@@ -182,7 +182,7 @@ class LocalZenStore(BaseZenStore):
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configuration for all stacks registered in this stack store.
+        """Configuration for all stacks registered in this zen store.
 
         Returns:
             Dictionary mapping stack names to Dict[StackComponentType, str]
@@ -222,7 +222,7 @@ class LocalZenStore(BaseZenStore):
             base64.b64decode(component.config).decode(),
         )
 
-        # add the component to the stack store dict and write it to disk
+        # add the component to the zen store dict and write it to disk
         components[component.name] = component.flavor
         self._write_store()
         logger.info(
@@ -749,10 +749,10 @@ class LocalZenStore(BaseZenStore):
 
     @property
     def root(self) -> Path:
-        """The root directory of the stack store."""
+        """The root directory of the zen store."""
         if not self._root:
             raise RuntimeError(
-                "Local stack store has not been initialized. Call `initialize` "
+                "Local zen store has not been initialized. Call `initialize` "
                 "before using the store."
             )
         return self._root
@@ -769,7 +769,7 @@ class LocalZenStore(BaseZenStore):
         return str(self.root / "stacks.yaml")
 
     def _write_store(self) -> None:
-        """Writes the stack store yaml file."""
+        """Writes the zen store yaml file."""
         config_dict = json.loads(self.__store.json())
         yaml_utils.write_yaml(self._store_path(), config_dict)
 

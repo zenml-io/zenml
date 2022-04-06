@@ -121,7 +121,7 @@ class SqlZenStore(BaseZenStore):
             url: odbc path to a database.
             args, kwargs: additional parameters for SQLModel.
         Returns:
-            The initialized stack store instance.
+            The initialized zen store instance.
         """
         if not self.is_valid_url(url):
             raise ValueError(f"Invalid URL for SQL store: {url}")
@@ -147,7 +147,7 @@ class SqlZenStore(BaseZenStore):
 
     @property
     def type(self) -> StoreType:
-        """The type of stack store."""
+        """The type of zen store."""
         return StoreType.SQL
 
     @property
@@ -155,7 +155,7 @@ class SqlZenStore(BaseZenStore):
         """URL of the repository."""
         if not self._url:
             raise RuntimeError(
-                "SQL stack store has not been initialized. Call `initialize` "
+                "SQL zen store has not been initialized. Call `initialize` "
                 "before using the store."
             )
         return self._url
@@ -201,7 +201,7 @@ class SqlZenStore(BaseZenStore):
 
     @property
     def is_empty(self) -> bool:
-        """Check if the stack store is empty."""
+        """Check if the zen store is empty."""
         with Session(self.engine) as session:
             return session.exec(select(ZenStack)).first() is None
 
@@ -251,7 +251,7 @@ class SqlZenStore(BaseZenStore):
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configuration for all stacks registered in this stack store.
+        """Configuration for all stacks registered in this zen store.
 
         Returns:
             Dictionary mapping stack names to Dict[StackComponentType, str]

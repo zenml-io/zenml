@@ -132,7 +132,7 @@ def test_register_deregister_components(fresh_stack_store: BaseStackStore):
         StackComponentType.ORCHESTRATOR,
     }
 
-    # stack store starts off with the default stack
+    # zem store starts off with the default stack
     zen_store = fresh_stack_store
     for component_type in StackComponentType:
         component_type = StackComponentType(component_type)

@@ -22,7 +22,7 @@ from zenml.zen_stores.models import Project, Role, RoleAssignment, Team, User
 
 
 class ZenStoreModel(BaseModel):
-    """Pydantic object used for serializing a ZenML Stack Store.
+    """Pydantic object used for serializing a ZenStore.
 
     Attributes:
         version: zenml version number
@@ -59,7 +59,7 @@ class ZenStoreModel(BaseModel):
 
     @classmethod
     def empty_store(cls) -> "ZenStoreModel":
-        """Initialize a new empty stack store with current zen version."""
+        """Initialize a new empty zen store with current zen version."""
         return cls(stacks={}, stack_components={})
 
     class Config:

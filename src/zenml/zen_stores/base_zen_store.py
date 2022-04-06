@@ -137,7 +137,7 @@ class BaseZenStore(ABC):
     @property
     @abstractmethod
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configurations for all stacks registered in this stack store.
+        """Configurations for all stacks registered in this zen store.
 
         Returns:
             Dictionary mapping stack names to Dict[StackComponentType, str]'s
@@ -470,7 +470,7 @@ class BaseZenStore(ABC):
 
     @property
     def stacks(self) -> List[StackWrapper]:
-        """All stacks registered in this stack store."""
+        """All stacks registered in this zen store."""
         return [
             self._stack_from_dict(name, conf)
             for name, conf in self.stack_configurations.items()
@@ -493,7 +493,7 @@ class BaseZenStore(ABC):
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
 
-        If any of the stacks' components aren't registered in the stack store
+        If any of the stacks' components aren't registered in the zen store
         yet, this method will try to register them as well.
 
         Args:
