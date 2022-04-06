@@ -1,4 +1,4 @@
-# Get in production with Airflow
+# 🏃 Run pipeline in production with Airflow
 
 ZenML pipelines can be executed natively as Airflow DAGs. This brings together
 the power of the Airflow orchestration with the ML-specific benefits of ZenML
@@ -11,12 +11,24 @@ Note that this tutorial installs and deploys Airflow locally on your machine,
 but in a production setting that part might be already done. Please read the
 other airflow tutorials that cover that case.
 
-## Pre-requisites
+# 🖥 Run it locally
+
+## ⏩ SuperQuick `airflow_local` run
+
+If you're really in a hurry, and you want just to see this example pipeline run,
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run airflow_local
+```
+
+
+## 👣 Step-by-Step
+### 📄 Prerequisites 
 
 In order to run this example, you need to install and initialize ZenML and
 Airflow.
-
-### Installation
 
 ```bash
 # install CLI
@@ -26,14 +38,14 @@ pip install zenml
 zenml integration install airflow sklearn
 
 # pull example
-zenml example pull airflow_local
-cd zenml_examples/airflow_local
+zenml example pull airflow_orchestration
+cd zenml_examples/airflow_orchestration
 
-# initialize
+# Initialize ZenML repo
 zenml init
 ```
 
-### Create a new Airflow Stack
+### 🥞 Create a new Airflow Stack
 
 ```bash
 zenml orchestrator register airflow_orchestrator --type airflow
@@ -44,7 +56,7 @@ zenml stack register airflow_stack \
 zenml stack set airflow_stack
 ```
 
-### Starting up Airflow
+### ▶️ Starting up Airflow
 
 ZenML takes care of configuring Airflow, all we need to do is run:
 
@@ -67,7 +79,7 @@ file. The username will always be `admin`.
   folder here, so you can just navigate to the one that is present.
   {% endhint %}
 
-### Schedule the airflow DAG
+### 📆 Schedule the airflow DAG
 
 To schedule the DAG, simply run:
 
@@ -78,7 +90,7 @@ python run_schedule.py
 After a few seconds, you should be able to see the executed dag
 [here](http://0.0.0.0:8080/tree?dag_id=mnist_pipeline)
 
-### Clean up
+### 🧽 Clean up
 
 In order to clean up, tear down the Airflow stack and delete the remaining ZenML
 references.
@@ -88,12 +100,9 @@ zenml stack down --force
 rm -rf zenml_examples
 ```
 
-## SuperQuick `airflow_local` run
+# 📜 Learn more
 
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
+Our docs regarding the airflow orchestrator integration can be found [here](TODO: Link to docs).
 
-```shell
-zenml example run airflow_local
-```
+If you want to learn more about orchestrators in general or about how to build your own orchestrators in zenml
+check out our [docs](TODO: Link to docs)

@@ -86,7 +86,7 @@ zenml integration install tensorflow
 zenml example pull mlflow_tracking
 cd zenml_examples/mlflow_tracking
 
-# initialize
+# Initialize ZenML repo
 zenml init
 ```
 
@@ -125,5 +125,5 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 
 Our docs regarding the mlflow tracking integration can be found [here](TODO: Link to docs).
 
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
+If you want to learn more about the implementation in general or about how to build your own decorators in zenml
 check out our [docs](TODO: Link to docs)

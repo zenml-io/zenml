@@ -64,22 +64,24 @@ def analyze_drift(
     input: dict,
 ) -> bool:
     """Analyze the Evidently drift report and return a true/false value
-     indicating whether data drift was detected."""
+    indicating whether data drift was detected."""
     return input["data_drift"]["data"]["metrics"]["dataset_drift"]
 
 
 @pipeline(required_integrations=[EVIDENTLY, SKLEARN])
 def drift_detection_pipeline(
-        data_loader,
-        data_splitter,
-        drift_detector,
-        drift_analyzer,
+    data_loader,
+    data_splitter,
+    drift_detector,
+    drift_analyzer,
 ):
     """Links all the steps together in a pipeline"""
     data = data_loader()
     reference_dataset, comparison_dataset = data_splitter(data)
-    drift_report, _ = drift_detector(reference_dataset=reference_dataset,
-                                     comparison_dataset=comparison_dataset)
+    drift_report, _ = drift_detector(
+        reference_dataset=reference_dataset,
+        comparison_dataset=comparison_dataset,
+    )
     drift_analyzer(drift_report)
 
 
@@ -100,7 +102,7 @@ if __name__ == "__main__":
     pipeline.run()
 
     repo = Repository()
-    pipeline = repo.get_pipeline(pipeline_name='drift_detection_pipeline')
+    pipeline = repo.get_pipeline(pipeline_name="drift_detection_pipeline")
     last_run = pipeline.runs[-1]
     drift_analysis_step = last_run.get_step(name="drift_analyzer")
     print(f"Data drift detected: {drift_analysis_step.output.read()}")

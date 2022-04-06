@@ -241,5 +241,5 @@ rm -rf zenml_examples
 
 Our docs regarding the mlflow deployment integration can be found [here](TODO: Link to docs).
 
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
+If you want to learn more about deployment in zenml in general or about how to build your own deployer steps in zenml
 check out our [docs](TODO: Link to docs)
