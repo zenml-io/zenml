@@ -341,6 +341,47 @@ python run.py --deploy --kubernetes-context=<context> --namespace=<namespace> \
   --base-url=<base-url>
 ```
 
+Example output when run with the local orchestrator stack:
+
+```
+zenml/seldon_deployment$ python run.py --deploy --kubernetes-context=zenml-eks --namespace=zenml-workloads --base-url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com --min-accuracy 0.80 --model-flavor sklearn
+
+2022-04-06 15:40:28.903233: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
+2022-04-06 15:40:28.903253: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+Creating run for pipeline: `continuous_deployment_pipeline`
+Cache disabled for pipeline `continuous_deployment_pipeline`
+Using stack `local_with_aws_storage` to run pipeline `continuous_deployment_pipeline`...
+Step `importer_mnist` has started.
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+Step `importer_mnist` has finished in 20.012s.
+Step `normalizer` has started.
+Step `normalizer` has finished in 24.177s.
+Step `sklearn_trainer` has started.
+Step `sklearn_trainer` has finished in 23.150s.
+Step `sklearn_evaluator` has started.
+Step `sklearn_evaluator` has finished in 10.511s.
+Step `deployment_trigger` has started.
+Step `deployment_trigger` has finished in 4.965s.
+Step `seldon_model_deployer` has started.
+INFO:asyncio:Loading last service deployed by step model_deployer and pipeline continuous_deployment_pipeline...
+Creating a new Seldon deployment service
+Seldon deployment service started and reachable at:
+    http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-1
+6241824-7e17-42d8-bed3-070b51ba29d2/api/v0.1/predictions
+
+Step `seldon_model_deployer` has finished in 39.095s.
+Pipeline run `continuous_deployment_pipeline-06_Apr_22-15_40_31_886832` has finished in 2m2s.
+The Seldon prediction server is running remotely as a Kubernetes service and accepts inference requests at:
+    http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-1
+6241824-7e17-42d8-bed3-070b51ba29d2/api/v0.1/predictions
+To stop the service, re-run the same command and supply the `--stop-service` argument.
+```
+
+Example Kubeflow pipeline when run with the remote Kubeflow stack:
+
+![Kubeflow Deployment Pipeline](assets/kubeflow-deployment.png)
+
+
 Re-running the example with different hyperparameter values will re-train
 the model and update the deployment server to serve the new model:
 
@@ -362,6 +403,38 @@ server to perform an online prediction. To run the inference pipeline:
 python run.py --predict --kubernetes-context=<context> --namespace=<namespace> \
   --base-url=<base-url>
 ```
+
+Example output when run with the local orchestrator stack:
+
+```
+zenml/seldon_deployment$ python run.py --predict --kubernetes-context=zenml-eks --namespace=zenml-workloads --base-url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com --model-flavor sklearn
+2022-04-06 15:48:02.346731: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
+2022-04-06 15:48:02.346762: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+Creating run for pipeline: `inference_pipeline`
+Cache disabled for pipeline `inference_pipeline`
+Using stack `local_with_aws_storage` to run pipeline `inference_pipeline`...
+Step `dynamic_importer` has started.
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+Step `dynamic_importer` has finished in 6.284s.
+Step `prediction_service_loader` has started.
+Step `prediction_service_loader` has finished in 7.104s.
+Step `sklearn_predict_preprocessor` has started.
+Step `sklearn_predict_preprocessor` has finished in 5.180s.
+Step `predictor` has started.
+Prediction:  [7 2 1 0 4 1 4 9 6 9 0 6 9 0 1 5 9 7 3 4 9 6 6 5 4 0 7 4 0 1 3 1 3 6 7 2 7
+ 1 2 1 1 7 4 2 3 5 1 2 4 4 6 3 5 5 6 0 4 1 9 5 7 8 9 2 7 4 7 4 3 0 7 0 2 9
+ 1 7 3 2 9 7 7 6 2 7 8 4 7 3 6 1 3 6 9 3 1 4 1 7 6 9]
+Step `predictor` has finished in 8.009s.
+Pipeline run `inference_pipeline-06_Apr_22-15_48_05_308089` has finished in 26.702s.
+The Seldon prediction server is running remotely as a Kubernetes service and accepts inference requests at:
+    http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-162
+41824-7e17-42d8-bed3-070b51ba29d2/api/v0.1/predictions
+To stop the service, re-run the same command and supply the `--stop-service` argument.
+```
+
+Example Kubeflow pipeline when run with the remote Kubeflow stack:
+
+![Kubeflow Inference Pipeline](assets/kubeflow-prediction.png)
 
 To switch from Tensorflow to sklearn as the libraries used for model
 training and the Seldon Core model server implementation, the `--model-flavor`
