@@ -20,7 +20,7 @@ without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
 ```shell
-zenml example run airflow_local
+zenml example run airflow_orchestration
 ```
 
 
@@ -56,7 +56,7 @@ zenml stack register airflow_stack \
 zenml stack set airflow_stack
 ```
 
-### ▶️ Starting up Airflow
+### 🏁️ Starting up Airflow
 
 ZenML takes care of configuring Airflow, all we need to do is run:
 

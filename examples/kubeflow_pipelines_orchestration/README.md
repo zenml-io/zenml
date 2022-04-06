@@ -1,4 +1,4 @@
-# Deploy pipelines to production using Kubeflow Pipelines
+# 🏃 Run pipelines in production using Kubeflow Pipelines
 
 When developing ML models, you probably develop your pipelines on your local
 machine initially as this allows for quicker iteration and debugging. However,
@@ -8,8 +8,21 @@ robust environment.
 
 You can also watch a video of this example [here](https://www.youtube.com/watch?v=b5TXRYkdL3w).
 
-## Pre-requisites
+# 🖥 Run it locally
 
+## ⏩ SuperQuick `kubeflow` run
+
+If you're really in a hurry, and you want just to see this example pipeline run,
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run kubeflow_pipelines_orchestrator
+```
+
+
+## 👣 Step-by-Step
+### 📄 Prerequisites
 In order to run this example, we have to install a few tools that allow ZenML to
 spin up a local Kubeflow Pipelines 
 setup:
@@ -23,8 +36,6 @@ your pipeline in Kubernetes pods (**Note**: the local Kubeflow Pipelines
 deployment requires more than 2 GB of RAM, so if you're using Docker Desktop
 make sure to update the resource limits in the preferences)
 
-
-## Installation
 
 Next, we will install ZenML, get the code for this example and initialize a
 ZenML repository:
@@ -45,7 +56,7 @@ cd zenml_examples/kubeflow
 zenml init
 ```
 
-## Use the notebook 
+## 📓 Use the notebook 
 As an alternate to running the below commands, you can also simply use the notebook version and see the story unfold there:
 
 ```shell
@@ -54,9 +65,7 @@ jupyter notebook
 
 Otherwise, please continue reading if you want to run it straight in Python scripts.
 
-## Run on the local machine
-
-### Run the pipeline
+## 🏃 Run the pipeline **without** kubeflow pipelines
 
 We can now run the pipeline by simply executing the python script:
 
@@ -80,7 +89,7 @@ python run.py --epochs=10
 ![Tensorboard 02](assets/tensorboard-02.png)
 ![Tensorboard 03](assets/tensorboard-03.png)
 
-### Clean up
+### 🧽 Clean up
 
 Once you're done experimenting, you can stop the Tensorboard server running
 in the background by running the command below. However, you may want to keep
@@ -91,9 +100,9 @@ pipeline on a local Kubeflow Pipelines deployment.
 python run.py --stop-tensorboard
 ```
 
-## Run the same pipeline on a local Kubeflow Pipelines deployment
+## 🏃️ Run the same pipeline on a local Kubeflow Pipelines deployment
 
-### Create a local Kubeflow Pipelines Stack
+### 🥞 Create a local Kubeflow Pipelines Stack
 
 Now with all the installation and initialization out of the way, all that's left
 to do is configuring our ZenML [stack](https://docs.zenml.io/core-concepts). For
@@ -120,7 +129,7 @@ zenml stack register local_kubeflow_stack \
 zenml stack set local_kubeflow_stack
 ```
 
-### Start up Kubeflow Pipelines locally
+### 🏁 Start up Kubeflow Pipelines locally
 
 ZenML takes care of setting up and configuring the local Kubeflow Pipelines
 deployment. All we need to do is run:
@@ -132,7 +141,7 @@ zenml stack up
 When the setup is finished, you should see a local URL which you can access in
 your browser and take a look at the Kubeflow Pipelines UI.
 
-### Run the pipeline
+### ▶️ Run the pipeline
 We can now run the pipeline by simply executing the python script:
 
 ```bash
@@ -164,7 +173,7 @@ python run.py --learning_rate=0.02
 python run.py --epochs=10
 ```
 
-### Clean up
+### 🧽 Clean up
 Once you're done experimenting, you can stop the Tensorboard server running
 in the background with the command:
 
@@ -179,14 +188,14 @@ calling:
 zenml stack down
 ```
 
-## Run the same pipeline on Kubeflow Pipelines deployed to GCP
+## ☁️ Run the same pipeline on Kubeflow Pipelines deployed to GCP
 
 We will now run the same pipeline in Kubeflow Pipelines deployed to a Google Kubernetes Engine cluster. 
 As you can see from the long list of additional pre-requisites, this requires lots of external setup steps at the 
 moment. In future releases ZenML will be able to automate most of these steps for you, so make sure to revisit this 
 guide if this is something you're interested in!
 
-### Additional pre-requisites
+### 📄 Additional pre-requisites
 
 * An existing [GCP container registry](https://cloud.google.com/container-registry/docs).
 * An existing [GCP bucket](https://cloud.google.com/storage/docs/creating-buckets).
@@ -199,7 +208,7 @@ Kubernetes cluster.
 * The [current context](https://kubernetes.io/docs/reference/kubectl/cheatsheet/#kubectl-context-and-configuration) 
 configured in Kubectl points to your GCP cluster. 
 
-### Create a GCP Kubeflow Pipelines stack
+### 🥞 Create a GCP Kubeflow Pipelines stack
 
 To run our pipeline on Kubeflow Pipelines deployed to GCP, we will create a new stack with these components:
 * The **artifact store** stores step outputs in a GCP Bucket. 
@@ -228,7 +237,7 @@ zenml stack register gcp_kubeflow_stack \
 zenml stack set gcp_kubeflow_stack
 ```
 
-### Run the pipeline
+### ▶️ Run the pipeline
 
 Configuring and activating the new stack is all that's necessary to switch from running your pipelines locally 
 to running them on GCP:
@@ -239,13 +248,3 @@ python run.py
 
 That's it! If everything went as planned this pipeline should now be running in the cloud, and we are one step 
 closer to a production pipeline!
-
-## SuperQuick `kubeflow` run
-
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run kubeflow
-```
