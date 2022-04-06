@@ -32,7 +32,7 @@ from zenml.integrations.seldon.services import (
     SeldonDeploymentConfig,
     SeldonDeploymentService,
 )
-from zenml.io import fileio
+from zenml.io import utils as io_utils
 from zenml.pipelines import pipeline
 from zenml.services import load_last_service_from_step
 from zenml.steps import BaseStepConfig, Output, StepContext, step
@@ -258,23 +258,23 @@ def seldon_model_deployer(
         served_model_uri = os.path.join(
             context.get_output_artifact_uri(), "seldon"
         )
-        fileio.make_dirs(served_model_uri)
+        io_utils.makedirs(served_model_uri)
 
         # TODO [MEDIUM]: validate the model artifact type against the
         #   supported built-in Seldon server implementations
         if config.implementation == "TENSORFLOW_SERVER":
             # the TensorFlow server expects model artifacts to be
             # stored in numbered subdirectories, each representing a model version
-            fileio.copy_dir(model_uri, os.path.join(served_model_uri, "1"))
+            io_utils.copy_dir(model_uri, os.path.join(served_model_uri, "1"))
         elif config.implementation == "SKLEARN_SERVER":
             # the sklearn server expects model artifacts to be
             # stored in a file called model.joblib
             model_uri = os.path.join(model.uri, "model")
-            if not fileio.file_exists(model.uri):
+            if not io_utils.exists(model.uri):
                 raise RuntimeError(
                     f"Expected sklearn model artifact was not found at {model_uri}"
                 )
-            fileio.copy(
+            io_utils.copy(
                 model_uri, os.path.join(served_model_uri, "model.joblib")
             )
         else:

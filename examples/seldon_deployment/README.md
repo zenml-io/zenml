@@ -242,7 +242,7 @@ differently. Please look up the variables relevant to your use-case in the
 Configuring the stack can be done like this:
 
 ```
-zenml integration install aws
+zenml integration install s3
 zenml artifact-store register aws --type s3 --path s3://mybucket
 zenml stack register local_with_aws_storage -m default -a aws -o default
 zenml stack set local_with_aws_storage
@@ -315,7 +315,7 @@ differently. Please look up the variables relevant to your use-case in the
 Configuring the stack can be done like this:
 
 ```
-zenml integration install aws
+zenml integration install s3 kubeflow
 zenml artifact-store register aws --type=s3 --path=s3://mybucket
 zenml container-registry register aws --type=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
 zenml metadata-store register aws --type=kubeflow
