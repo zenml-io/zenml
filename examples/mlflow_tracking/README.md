@@ -5,7 +5,6 @@ tool that tracks and visualizes experiment runs with their many parameters,
 metrics and output files.
 
 ## 🗺 Overview
-
 This example showcases how easily mlflow tracking can be integrated into a ZenML pipeline with just a few simple lines
 of code.
 
@@ -31,10 +30,38 @@ orchestrator and artifact store. See the [mlflow
 documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost)
 for details.
 
+## 🧰 How the example is implemented
+Adding mlflow tracking to a step is a simple as adding the mlflow decorator. Now you're free to log anything from within 
+the step to mlflow. 
+
+ZenML ties all the logs from all steps within a pipeline run together into one mlflow run so that you can see everything
+in one place.
+
+ ```python
+from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+
+# Define the step and enable mlflow - order of decorators is important here
+@enable_mlflow
+@step
+def tf_trainer(
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+) -> tf.keras.Model:
+    """Train a neural net from scratch to recognize MNIST digits return our
+    model or the learner"""
+    
+    # compile model
+
+    mlflow.tensorflow.autolog()
+    
+    # train model
+    
+    return model
+```
+
 # 🖥 Run it locally
 
 ## ⏩ SuperQuick `mlflow_tracking` run
-
 If you're really in a hurry, and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:

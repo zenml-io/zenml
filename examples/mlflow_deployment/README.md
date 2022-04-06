@@ -1,4 +1,4 @@
-# ZenML continuous model deployment with MLflow deployments
+# 🚀 Local model deployment with MLflow deployments
 
 The popular open-source MLflow platform is known primarily for its great
 [experiment tracking and visualization](https://mlflow.org/docs/latest/tracking.html)
@@ -14,7 +14,7 @@ deploying MLflow models locally with its
 The integration that ZenML makes with MLflow deployments allows users to implement
 continuous model deployment with minimal effort.
 
-## Overview
+## 🗺 Overview
 
 The example uses the
 [Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset to
@@ -56,9 +56,20 @@ The inference pipeline simulates loading data from a dynamic external source,
 then uses that data to perform online predictions using the running MLflow
 prediction server.
 
-## Run it locally
+# 🖥 Run it locally
 
-### Pre-requisites
+## ⏩ SuperQuick `mlflow` run
+
+If you're really in a hurry and you want just to see this example pipeline run,
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run mlflow_deployment
+```
+
+## 👣 Step-by-Step
+### 📄 Prerequisites 
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -77,7 +88,7 @@ cd zenml_examples/mlflow_deployment
 zenml init
 ```
 
-### Run the project
+### ▶️ Run the Code
 To run the pipeline locally:
 
 ```shell
@@ -111,8 +122,7 @@ to the example script:
 python run.py --stop-service
 ```
 
-### Clean up
-
+### 🧽 Clean up
 To stop the prediction server running in the background, pass the
 `--stop-service` flag to the example script:
 
@@ -126,12 +136,9 @@ Then delete the remaining ZenML references.
 rm -rf zenml_examples
 ```
 
-## SuperQuick `mlflow` run
+# 📜 Learn more
 
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
+Our docs regarding the mlflow deployment integration can be found [here](TODO: Link to docs).
 
-```shell
-zenml example run mlflow_deployment
-```
+If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
+check out our [docs](TODO: Link to docs)

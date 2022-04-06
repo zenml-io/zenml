@@ -96,7 +96,8 @@ def main(epochs: int, lr: float, min_accuracy: float, stop_service: bool):
     mlflow_env = Environment()[MLFLOW_ENVIRONMENT_NAME]
     print(
         "You can run:\n "
-        f"[italic green]    mlflow ui --backend-store-uri {mlflow_env.tracking_uri}[/italic green]\n"
+        "[italic green]    mlflow ui --backend-store-uri "
+        f"{mlflow_env.tracking_uri}[/italic green]\n"
         "...to inspect your experiment runs within the MLflow UI.\n"
         "You can find your runs tracked within the `mlflow_example_pipeline`"
         "experiment. There you'll also be able to compare two or more runs.\n\n"
@@ -109,11 +110,11 @@ def main(epochs: int, lr: float, min_accuracy: float, stop_service: bool):
     )
     if service:
         print(
-            f"The MLflow prediction server is running locally as a daemon process "
-            f"and accepts inference requests at:\n"
+            f"The MLflow prediction server is running locally as a daemon "
+            f"process and accepts inference requests at:\n"
             f"    {service.prediction_uri}\n"
-            f"To stop the service, re-run the same command and supply the "
-            f"`--stop-service` argument."
+            "To stop the service, re-run the same command and supply the "
+            "`--stop-service` argument."
         )
 
 
