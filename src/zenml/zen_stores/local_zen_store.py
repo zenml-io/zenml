@@ -44,6 +44,7 @@ E = TypeVar("E", bound=Union[User, Team, Project, Role])
 def _get_unique_entity(
     entity_name: str, collection: List[E], ensure_exists: bool = True
 ) -> E:
+    """Type annotations in case of `ensure_exists=True`."""
     ...
 
 
@@ -51,12 +52,28 @@ def _get_unique_entity(
 def _get_unique_entity(
     entity_name: str, collection: List[E], ensure_exists: bool = False
 ) -> Optional[E]:
+    """Type annotations in case of `ensure_exists=False`."""
     ...
 
 
 def _get_unique_entity(
     entity_name: str, collection: List[E], ensure_exists: bool = True
 ) -> Optional[E]:
+    """Gets an entity with a specific name from a collection.
+
+    Args:
+        entity_name: Name of the entity to get.
+        collection: List of entities.
+        ensure_exists: If `True`, raises an error if the entity doesn't exist.
+
+    Returns:
+        The entity for the name or `None` if it wasn't found.
+
+    Raises:
+        RuntimeError: If more than one entity with the name exists.
+        KeyError: If `ensure_exists` is `True` and no entity for the name was
+            found.
+    """
     matches = [entity for entity in collection if entity.name == entity_name]
     if len(matches) > 1:
         # Two entities with the same name, this should never happen
@@ -67,7 +84,7 @@ def _get_unique_entity(
 
     if ensure_exists:
         if not matches:
-            raise RuntimeError(f"No entity found with name '{entity_name}'.")
+            raise KeyError(f"No entity found with name '{entity_name}'.")
         return matches[0]
     else:
         return matches[0] if matches else None
@@ -641,7 +658,7 @@ class LocalZenStore(BaseZenStore):
                 project_name, collection=self.__store.projects
             ).id
 
-        assignments = self._filter_role_assignments(
+        assignments = self._get_role_assignments(
             role_id=role.id,
             user_id=user_id,
             team_id=team_id,
@@ -709,7 +726,7 @@ class LocalZenStore(BaseZenStore):
             if project_name
             else None
         )
-        assignments = self._filter_role_assignments(
+        assignments = self._get_role_assignments(
             user_id=user.id, project_id=project_id
         )
 
@@ -743,7 +760,7 @@ class LocalZenStore(BaseZenStore):
             if project_name
             else None
         )
-        return self._filter_role_assignments(
+        return self._get_role_assignments(
             team_id=team.id, project_id=project_id
         )
 
@@ -775,22 +792,32 @@ class LocalZenStore(BaseZenStore):
         config_dict = json.loads(self.__store.json())
         yaml_utils.write_yaml(self._store_path(), config_dict)
 
-    def _filter_role_assignments(
+    def _get_role_assignments(
         self,
         role_id: Optional[UUID] = None,
         project_id: Optional[UUID] = None,
         user_id: Optional[UUID] = None,
         team_id: Optional[UUID] = None,
     ) -> List[RoleAssignment]:
-        matches = []
-        for assignment in self.__store.role_assignments:
-            if (
+        """Gets all role assignments that match the criteria.
+
+        Args:
+            role_id: Only include role assignments associated with this role id.
+            project_id: Only include role assignments associated with this
+                project id.
+            user_id: Only include role assignments associated with this user id.
+            team_id: Only include role assignments associated with this team id.
+
+        Returns:
+            List of role assignments.
+        """
+        return [
+            assignment
+            for assignment in self.__store.role_assignments
+            if not (
                 (role_id and assignment.role_id != role_id)
                 or (project_id and project_id != assignment.project_id)
                 or (user_id and user_id != assignment.user_id)
                 or (team_id and team_id != assignment.team_id)
-            ):
-                continue
-            matches.append(assignment)
-
-        return matches
+            )
+        ]

@@ -76,14 +76,13 @@ def fresh_stack_store(
         yield RestStackStore().initialize(url)
         zen_service.stop()
     else:
-        raise NotImplementedError(f"No StackStore for {store_type}")
+        raise NotImplementedError(f"No ZenStore for {store_type}")
 
     shutil.rmtree(tmp_path)
 
 
 def test_register_deregister_stacks(fresh_stack_store: BaseStackStore):
-    """Test creating a new stack store."""
-
+    """Test creating a new zen store."""
     stack = Stack.default_local_stack()
 
     # stack store is pre-initialized with the default stack
@@ -125,7 +124,6 @@ def test_register_deregister_stacks(fresh_stack_store: BaseStackStore):
 
 def test_register_deregister_components(fresh_stack_store: BaseStackStore):
     """Test adding and removing stack components."""
-
     required_components = {
         StackComponentType.ARTIFACT_STORE,
         StackComponentType.METADATA_STORE,
@@ -186,4 +184,156 @@ def test_register_deregister_components(fresh_stack_store: BaseStackStore):
     assert (
         len(zen_store.get_stack_components(StackComponentType.ORCHESTRATOR))
         == 1
+    )
+
+
+@pytest.mark.parametrize("store_type", [StoreType.LOCAL, StoreType.SQL])
+def test_user_management(
+    tmp_path_factory: pytest.TempPathFactory, store_type: StoreType
+):
+    """Tests user creation and deletion."""
+    tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_zen_store")
+    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
+
+    zen_store = _zen_store_for_type(store_type, tmp_path)
+
+    # starts with a default user
+    assert len(zen_store.users) == 1
+
+    zen_store.create_user("aria")
+    assert len(zen_store.users) == 2
+
+    with pytest.raises(RuntimeError):
+        # usernames need to be unique
+        zen_store.create_user("aria")
+
+    zen_store.create_team("team_aria")
+    zen_store.add_user_to_team(team_name="team_aria", user_name="aria")
+
+    zen_store.create_role("cat")
+    zen_store.assign_role(role_name="cat", entity_name="aria", is_user=True)
+
+    assert len(zen_store.get_users_for_team("team_aria")) == 1
+    assert len(zen_store.role_assignments) == 1
+
+    # Deletes the user as well as any team/role assignment
+    zen_store.delete_user("aria")
+    assert len(zen_store.users) == 1
+    assert len(zen_store.get_users_for_team("team_aria")) == 0
+    assert len(zen_store.role_assignments) == 0
+
+
+@pytest.mark.parametrize("store_type", [StoreType.LOCAL, StoreType.SQL])
+def test_team_management(
+    tmp_path_factory: pytest.TempPathFactory, store_type: StoreType
+):
+    """Tests team creation and deletion."""
+    tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_zen_store")
+    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
+
+    zen_store = _zen_store_for_type(store_type, tmp_path)
+
+    zen_store.create_user("adam")
+    zen_store.create_user("hamza")
+    zen_store.create_team("zenml")
+
+    zen_store.add_user_to_team(team_name="zenml", user_name="adam")
+    zen_store.add_user_to_team(team_name="zenml", user_name="hamza")
+    assert len(zen_store.get_users_for_team("zenml")) == 2
+
+    with pytest.raises(Exception):
+        # non-existent team
+        zen_store.add_user_to_team(team_name="airflow", user_name="hamza")
+
+    with pytest.raises(Exception):
+        # non-existent user
+        zen_store.add_user_to_team(team_name="zenml", user_name="elon")
+
+    zen_store.remove_user_from_team(team_name="zenml", user_name="hamza")
+    assert len(zen_store.get_users_for_team("zenml")) == 1
+
+    zen_store.delete_team("zenml")
+    assert len(zen_store.get_teams_for_user("adam")) == 0
+
+
+@pytest.mark.parametrize("store_type", [StoreType.LOCAL, StoreType.SQL])
+def test_project_management(
+    tmp_path_factory: pytest.TempPathFactory, store_type: StoreType
+):
+    """Tests project creation and deletion."""
+    tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_zen_store")
+    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
+
+    zen_store = _zen_store_for_type(store_type, tmp_path)
+
+    zen_store.create_project("secret_project")
+    assert len(zen_store.projects) == 1
+    zen_store.delete_project("secret_project")
+    assert len(zen_store.projects) == 0
+
+
+@pytest.mark.parametrize("store_type", [StoreType.LOCAL, StoreType.SQL])
+def test_role_management(
+    tmp_path_factory: pytest.TempPathFactory, store_type: StoreType
+):
+    """Tests role creation, deletion, assignment and revocation."""
+    tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_zen_store")
+    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
+
+    zen_store = _zen_store_for_type(store_type, tmp_path)
+
+    zen_store.create_user("aria")
+    zen_store.create_team("cats")
+    zen_store.add_user_to_team(user_name="aria", team_name="cats")
+    zen_store.create_role("beautiful")
+    assert len(zen_store.roles) == 1
+
+    zen_store.assign_role(
+        role_name="beautiful", entity_name="aria", is_user=True
+    )
+
+    assert len(zen_store.get_role_assignments_for_user(user_name="aria")) == 1
+
+    zen_store.assign_role(
+        role_name="beautiful", entity_name="cats", is_user=False
+    )
+
+    assert (
+        len(
+            zen_store.get_role_assignments_for_user(
+                user_name="aria", include_team_roles=False
+            )
+        )
+        == 1
+    )
+    assert len(zen_store.get_role_assignments_for_team(team_name="cats")) == 1
+    assert (
+        len(
+            zen_store.get_role_assignments_for_user(
+                user_name="aria", include_team_roles=True
+            )
+        )
+        == 2
+    )
+
+    zen_store.revoke_role(
+        role_name="beautiful", entity_name="aria", is_user=True
+    )
+    assert (
+        len(
+            zen_store.get_role_assignments_for_user(
+                user_name="aria", include_team_roles=False
+            )
+        )
+        == 0
+    )
+
+    zen_store.delete_team("cats")
+    assert (
+        len(
+            zen_store.get_role_assignments_for_user(
+                user_name="aria", include_team_roles=True
+            )
+        )
+        == 0
     )

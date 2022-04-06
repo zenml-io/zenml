@@ -94,15 +94,11 @@ class TeamAssignmentTable(SQLModel, table=True):
 
 class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=uuid4)
-    role_id: UUID = Field(primary_key=True, foreign_key="roletable.id")
-    user_id: Optional[UUID] = Field(
-        default=None, primary_key=True, foreign_key="usertable.id"
-    )
-    team_id: Optional[UUID] = Field(
-        default=None, primary_key=True, foreign_key="teamtable.id"
-    )
+    role_id: UUID = Field(foreign_key="roletable.id")
+    user_id: Optional[UUID] = Field(default=None, foreign_key="usertable.id")
+    team_id: Optional[UUID] = Field(default=None, foreign_key="teamtable.id")
     project_id: Optional[UUID] = Field(
-        primary_key=True, foreign_key="projecttable.id"
+        default=None, foreign_key="projecttable.id"
     )
 
 
