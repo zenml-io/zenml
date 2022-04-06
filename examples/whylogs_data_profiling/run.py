@@ -109,7 +109,7 @@ def data_profiling_pipeline(
 
 def visualize_statistics(step_name: str):
     repo = Repository()
-    pipe = repo.get_pipeline(pipeline_name='data_profiling_pipeline')[-1]
+    pipe = repo.get_pipeline(pipeline_name='data_profiling_pipeline')
     whylogs_outputs = pipe.runs[-1].get_step(name=step_name)
     WhylogsVisualizer().visualize(whylogs_outputs)
 

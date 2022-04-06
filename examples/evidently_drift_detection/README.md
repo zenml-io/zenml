@@ -1,10 +1,10 @@
-# Explore Drift Detection
-
+# 🏎 Explore Drift Detection
 Data drift is something you often want to guard against in your pipelines.
 Machine learning pipelines are built on top of data inputs, so it is worth
 checking for drift if you have a model that was trained on a certain
 distribution of data.
 
+## 🗺 Overview
 This example uses [`evidently`](https://github.com/evidentlyai/evidently), a
 useful open-source library to painlessly check for data drift (among other
 features). At its core, Evidently's drift detection takes in a reference data
@@ -23,7 +23,7 @@ Evidently are:
 - "regressionmodelperformance"
 - "probabilisticmodelperformance"
 
-## How the example is implemented
+## 🧰 How the example is implemented
 
 In this example, we compare two separate slices of the same dataset as an easy
 way to get an idea for how `evidently` is making the comparison between the two
@@ -32,68 +32,18 @@ dataset](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+(Diagno
 to illustrate how it works.
 
 ```python
-# ... other imports
 from zenml.integrations.evidently.steps import (
     EvidentlyProfileConfig,
     EvidentlyProfileStep,
 )
-from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 
-# ... data loader and separate steps to get our full and partial dataframes
-
+# instead of defining the step yourself, we have done it for you
 drift_detector = EvidentlyProfileStep(
     EvidentlyProfileConfig(
         column_mapping=None,
         profile_section="datadrift",
     )
 )
-
-@step
-def analyze_drift(
-    input: dict,
-) -> bool:
-    """Analyze the Evidently drift report and return a true/false value indicating
-    whether data drift was detected."""
-    return input["data_drift"]["data"]["metrics"]["dataset_drift"]
-
-@pipeline
-def drift_detection_pipeline(
-    data_loader,
-    full_data,
-    partial_data,
-    drift_detector,
-    drift_analyzer,
-):
-    """Links all the steps together in a pipeline"""
-    data_loader = data_loader()
-    full_data = full_data(data_loader)
-    partial_data = partial_data(data_loader)
-    drift_report, _ = drift_detector(
-        reference_dataset=full_data, comparison_dataset=partial_data
-    )
-    drift_analyzer(drift_report)
-
-
-def visualize_statistics():
-    repo = Repository()
-    pipe = repo.get_pipelines()[-1]
-    evidently_outputs = pipe.runs[-1].get_step(name="drift_detector")
-    EvidentlyVisualizer().visualize(evidently_outputs)
-
-
-pipeline = drift_detection_pipeline(
-        data_loader=data_loader(),
-        full_data=full_split(),
-        partial_data=partial_split(),
-        drift_detector=drift_detector,
-        drift_analyzer=analyze_drift(),
-)
-
-pipeline.run()
-
-# ... get the relevant artifacts
-
-visualize_statistics()
 ```
 
 Here you can see that defining the step is extremely simple using our
@@ -105,9 +55,23 @@ drift diagrams in your browser or within a Jupyter notebook:
 
 ![Evidently drift visualization UI](assets/drift_visualization.png)
 
-## Run it locally
+# ☁️ Run in Colab
+If you have a google account, you can get started directly with google colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/evidently_drift_detection/evidently.ipynb)
 
-### Pre-requisites
+# 🖥 Run it locally
+
+## ⏩ SuperQuick `statistics` run
+
+If you're really in a hurry, and you want just to see this example pipeline run,
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run evidently_drift_detection
+```
+
+## 👣 Step-by-Step
+### 📄 Prerequisites 
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -122,20 +86,27 @@ zenml integration install sklearn
 zenml example pull drift_detection
 cd zenml_examples/drift_detection
 
-# initialize
+# Initialize ZenML repo
 zenml init
 ```
 
-### Run the project
+### ▶️ Run the Code
 Now we're ready. Execute:
 
-```shell
+```bash
 python run.py
 ```
 
-### Clean up
+### 🧽 Clean up
 In order to clean up, delete the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
 ```
+
+# Learn more
+
+Our docs regarding the facets integration can be found [here](TODO: Link to docs).
+
+If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
+check out our [docs](TODO: Link to docs)

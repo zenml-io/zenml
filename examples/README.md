@@ -11,41 +11,36 @@ The examples contain aspects that span across the whole range of
 ### ⛲ Data Sources
 No data, no fun. 
 
-- **feast_feature_store**: Coming very soon!
+- **feast_feature_store**: 🔜 Coming very soon!
 
-### 🧑‍🔬 Data Visualizers
+### 📊 Data Visualizers
 Within ZenML, Visualizers are Python classes that take post-execution view objects (e.g. `PipelineView`, 
 `PipelineRunView`, `StepView`, etc.) and create visualizations for them. 
 
-- **facets_visualize_statistics**: The [facets](https://pair-code.github.io/facets/) integration allows you to 
-retroactively go through pipeline runs and analyze the statistics of the data artifacts.
-- **whylogs_data_profiling**: Profile your data using the [whylogs](https://github.com/whylabs/whylogs) integration 
-from within the post-execution workflow.
-
-
-### Drift Detection
-Data is without a doubt the absolute lifeblood of any machine learning work. As such we offer a few integrations
-that will help you monitor how your data drifts across pipeline runs.
-
-- **evidently_drift_detection**: Detect drift with our [evidently](https://github.com/evidentlyai/evidently) 
-integration.
+- **[facets_visualize_statistics](facets_visualize_statistics/README.md)**: 
+The [facets](https://pair-code.github.io/facets/) integration allows you to retroactively go through pipeline runs and 
+analyze the statistics of the data artifacts.
+- **[whylogs_data_profiling](whylogs_data_profiling/README.md)**: Profile your data using the 
+[whylogs](https://github.com/whylabs/whylogs) integration from within the post-execution workflow.
+- **[evidently_drift_detection](evidently_drift_detection/README.md)**: Detect drift with our 
+[evidently](https://github.com/evidentlyai/evidently) integration. 
 
 ### 🗂 Experiment Tracking
 Certain phases of machine learning projects require a large amount of experimentation with many possible approaches. 
 Experiment tracking is vital to capture and compare all your experiments so that you can narrow down your solution 
 space.
 
-- **mlflow_tracking**: Track and visualize experiment runs with 
+- **[mlflow_tracking](mlflow_tracking/README.md)**: Track and visualize experiment runs with 
 [MLflow Tracking](https://mlflow.org/docs/latest/tracking.html). 
 
 ### 🚀 Model Deployment
 What good are your models if noone gets to interact with them. ZenML offers you some easy ways to quickly deploy your 
 model.
 
-- **mlflow_deployment**: Deploys your trained models to a local mlflow deployment service and allows you to run 
-predictions against this endpoint.
-- **seldon_core_deployment**: Coming very soon!
-- **kserve_deployment**: Coming very soon!
+- **[mlflow_deployment](mlflow_deployment/README.md)**: Deploys your trained models to a local mlflow deployment service 
+and allows you to run predictions against this endpoint.
+- **seldon_core_deployment**: 🔜 Coming very soon!
+- **kserve_deployment**: 🔜 Coming very soon!
 
 ### 🚅 Pipeline Orchestration
 Quickly iterating on code changes is usually easiest when you code on your local machines. But there comes a point where
@@ -53,8 +48,9 @@ you will want to have your pipelines run free from all the limitations of your l
 uptime, etc ...). With zenml you can quickly switch out the pipeline code orchestrator using the CLI. Here are some 
 examples on how:
 
-- **airflow_orchestration**: Running pipelines with airflow locally.
-- **kubeflow_pipeline_orchestration**: Shows how to orchestrate a pipeline using a local kubeflow stack.
+- **[airflow_orchestration](airflow_orchestration/README.md)**: Running pipelines with airflow locally.
+- **[kubeflow_pipeline_orchestration](kubeflow_pipeline_orchestration/README.md)**: Shows how to orchestrate a pipeline
+using a local kubeflow stack.
 
 ### 🥾 Step Operators
 Not all steps are created equal. While some steps need only a bit of computational power, the training step is usually 
@@ -62,8 +58,8 @@ a different beast altogether, with a big appetite for Cuda Cores and VRAM. This 
 life easy. With just a bit of configuration your training step can easily be run on Vertex AI, Sagemaker or AzureML. 
 Check out our example to see how.
 
-- **step_operator_remote_training**: Run your compute intensive steps on one of the big three hyperscalers.
-
+- **[step_operator_remote_training](step_operator_remote_training/README.md)**: Run your compute intensive steps on one 
+of the big three hyperscalers.
 
 
 ## 🖥 Local Setup

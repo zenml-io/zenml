@@ -40,7 +40,7 @@ without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
 ```shell
-zenml example run statistics
+zenml example run facets_visualize_statistics
 ```
 
 ## 👣 Step-by-Step
@@ -57,6 +57,9 @@ zenml integration install tensorflow facets
 # pull example
 zenml example pull facets_visualize_statistics
 cd zenml_examples/facets_visualize_statistics
+
+# Initialize ZenML repo
+zenml init
 ```
 
 ### ▶️ Run the Code

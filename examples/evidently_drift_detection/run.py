@@ -26,7 +26,7 @@ from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
-from zenml.steps import step
+from zenml.steps import Output, step
 
 logger = get_logger(__name__)
 
@@ -43,19 +43,12 @@ def data_loader() -> pd.DataFrame:
 
 
 @step
-def full_split(
-    input: pd.DataFrame,
-) -> pd.DataFrame:
-    """Loads the breast cancer dataset as a Pandas dataframe."""
-    return input
-
-
-@step
-def partial_split(
-    input: pd.DataFrame,
-) -> pd.DataFrame:
-    """Loads part of the breast cancer dataset as a Pandas dataframe."""
-    return input[:100]
+def data_splitter(
+    input_df: pd.DataFrame,
+) -> Output(reference_dataset=pd.DataFrame, comparison_dataset=pd.DataFrame):
+    """Splits the dataset into two subsets, the reference dataset and the
+    comparison dataset"""
+    return input_df[100:], input_df[:100]
 
 
 drift_detector = EvidentlyProfileStep(
@@ -70,26 +63,23 @@ drift_detector = EvidentlyProfileStep(
 def analyze_drift(
     input: dict,
 ) -> bool:
-    """Analyze the Evidently drift report and return a true/false value indicating
-    whether data drift was detected."""
+    """Analyze the Evidently drift report and return a true/false value
+     indicating whether data drift was detected."""
     return input["data_drift"]["data"]["metrics"]["dataset_drift"]
 
 
 @pipeline(required_integrations=[EVIDENTLY, SKLEARN])
 def drift_detection_pipeline(
-    data_loader,
-    full_data,
-    partial_data,
-    drift_detector,
-    drift_analyzer,
+        data_loader,
+        data_splitter,
+        drift_detector,
+        drift_analyzer,
 ):
     """Links all the steps together in a pipeline"""
-    data_loader = data_loader()
-    full_data = full_data(data_loader)
-    partial_data = partial_data(data_loader)
-    drift_report, _ = drift_detector(
-        reference_dataset=full_data, comparison_dataset=partial_data
-    )
+    data = data_loader()
+    reference_dataset, comparison_dataset = data_splitter(data)
+    drift_report, _ = drift_detector(reference_dataset=reference_dataset,
+                                     comparison_dataset=comparison_dataset)
     drift_analyzer(drift_report)
 
 
@@ -103,16 +93,14 @@ def visualize_statistics():
 if __name__ == "__main__":
     pipeline = drift_detection_pipeline(
         data_loader=data_loader(),
-        full_data=full_split(),
-        partial_data=partial_split(),
+        data_splitter=data_splitter(),
         drift_detector=drift_detector,
         drift_analyzer=analyze_drift(),
     )
-
     pipeline.run()
 
     repo = Repository()
-    pipeline = repo.get_pipeline("drift_detection_pipeline")
+    pipeline = repo.get_pipeline(pipeline_name='drift_detection_pipeline')
     last_run = pipeline.runs[-1]
     drift_analysis_step = last_run.get_step(name="drift_analyzer")
     print(f"Data drift detected: {drift_analysis_step.output.read()}")
