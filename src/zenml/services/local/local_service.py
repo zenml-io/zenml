@@ -19,13 +19,10 @@ import sys
 import tempfile
 from abc import abstractmethod
 from typing import Dict, List, Optional, Tuple
-from uuid import UUID
 
 import psutil
 from pydantic import Field
 
-from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
-from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.services.local.local_service_endpoint import (
     LocalDaemonServiceEndpoint,

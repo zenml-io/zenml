@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional, Type
+from typing import List, Optional
 from uuid import UUID
 
 from zenml.enums import ModelDeployerFlavor, StackComponentType

@@ -16,8 +16,8 @@ from typing import Optional, Type, cast
 
 from mlflow import get_artifact_uri  # type: ignore[import]
 from mlflow.tracking import MlflowClient  # type: ignore[import]
-from zenml.artifacts.model_artifact import ModelArtifact  
 
+from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
 from zenml.integrations.mlflow.mlflow_environment import (
@@ -78,8 +78,8 @@ def mlflow_deployer_step(
     Returns:
         an MLflow model deployer pipeline step
     """
-    
-    # check if an MLFlowModelDeployer stack component is registered with 
+
+    # check if an MLFlowModelDeployer stack component is registered with
     # the currently active stack
     mlflow_model_deployer = Repository().active_stack.model_deployer
     if not isinstance(mlflow_model_deployer, MLFlowModelDeployer):
