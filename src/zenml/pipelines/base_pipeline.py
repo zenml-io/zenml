@@ -42,7 +42,7 @@ from zenml.exceptions import (
     StackValidationError,
 )
 from zenml.integrations.registry import integration_registry
-from zenml.io import fileio
+from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository
@@ -263,9 +263,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"'{integration_name}'."
                 ) from e
 
-        if self.requirements_file and fileio.file_exists(
-            self.requirements_file
-        ):
+        if self.requirements_file and fileio.exists(self.requirements_file):
             with fileio.open(self.requirements_file, "r") as f:
                 requirements.update(
                     {
@@ -347,7 +345,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # Path of the file where pipeline.run() was called. This is needed by
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
-        dag_filepath = fileio.resolve_relative_path(
+        dag_filepath = utils.resolve_relative_path(
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
         runtime_configuration = RuntimeConfiguration(
@@ -359,7 +357,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         stack = Repository().active_stack
 
         stack_metadata = {
-            component_type.value: component.flavor.value
+            component_type.value: component.FLAVOR
             for component_type, component in stack.components.items()
         }
         track_event(

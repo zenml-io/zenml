@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set
+import textwrap
+from abc import ABC
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 
-from zenml.enums import StackComponentFlavor, StackComponentType
+from zenml.enums import StackComponentType
+from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.utils import get_requirements_for_module
 
 if TYPE_CHECKING:
@@ -32,24 +34,14 @@ class StackComponent(BaseModel, ABC):
     Attributes:
         name: The name of the component.
         uuid: Unique identifier of the component.
-        supports_local_execution: If the component supports running locally.
-        supports_remote_execution: If the component supports running remotely.
     """
 
     name: str
     uuid: UUID = Field(default_factory=uuid4)
-    supports_local_execution: bool
-    supports_remote_execution: bool
 
-    @property
-    @abstractmethod
-    def type(self) -> StackComponentType:
-        """The component type."""
-
-    @property
-    @abstractmethod
-    def flavor(self) -> StackComponentFlavor:
-        """The component flavor."""
+    # Class Configuration
+    TYPE: ClassVar[StackComponentType]
+    FLAVOR: ClassVar[str]
 
     @property
     def log_file(self) -> Optional[str]:
@@ -150,13 +142,68 @@ class StackComponent(BaseModel, ABC):
             f"{key}={value}" for key, value in self.dict().items()
         )
         return (
-            f"{self.__class__.__qualname__}(type={self.type}, "
-            f"flavor={self.flavor}, {attribute_representation})"
+            f"{self.__class__.__qualname__}(type={self.TYPE}, "
+            f"flavor={self.FLAVOR}, {attribute_representation})"
         )
 
     def __str__(self) -> str:
         """String representation of the stack component."""
         return self.__repr__()
+
+    @root_validator
+    def _ensure_stack_component_complete(cls, values: Dict[str, Any]) -> Any:
+        try:
+            stack_component_type = getattr(cls, "TYPE")
+            assert stack_component_type in StackComponentType
+        except (AttributeError, AssertionError):
+            raise StackComponentInterfaceError(
+                textwrap.dedent(
+                    """
+                    When you are working with any classes which subclass from
+                    `zenml.stack.StackComponent` please make sure that your
+                    class has a ClassVar named `TYPE` and its value is set to a
+                    `StackComponentType` from `from zenml.enums import StackComponentType`.
+
+                    In most of the cases, this is already done for you within the
+                    implementation of the base concept.
+
+                    Example:
+
+                    class BaseArtifactStore(StackComponent):
+                        # Instance Variables
+                        path: str
+
+                        # Class Variables
+                        TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
+                    """
+                )
+            )
+
+        try:
+            getattr(cls, "FLAVOR")
+        except AttributeError:
+            raise StackComponentInterfaceError(
+                textwrap.dedent(
+                    """
+                    When you are working with any classes which subclass from
+                    `zenml.stack.StackComponent` please make sure that your
+                    class has a defined ClassVar `FLAVOR`.
+
+                    Example:
+
+                    class LocalArtifactStore(BaseArtifactStore):
+
+                        ...
+
+                        # Define flavor as a ClassVar
+                        FLAVOR: ClassVar[str] = "local"
+
+                        ...
+                    """
+                )
+            )
+
+        return values
 
     class Config:
         """Pydantic configuration class."""
@@ -166,9 +213,3 @@ class StackComponent(BaseModel, ABC):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
-
-        # exclude these two fields from being serialized
-        fields = {
-            "supports_local_execution": {"exclude": True},
-            "supports_remote_execution": {"exclude": True},
-        }

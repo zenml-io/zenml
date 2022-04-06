@@ -202,7 +202,7 @@ def print_stack_component_configuration(
     component: StackComponent, display_name: str, active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component."""
-    title = f"{component.type.value.upper()} Component Configuration"
+    title = f"{component.TYPE.value.upper()} Component Configuration"
     if active_status:
         title += " (ACTIVE)"
     rich_table = table.Table(

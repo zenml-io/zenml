@@ -13,13 +13,15 @@
 #  permissions and limitations under the License.
 import os
 import uuid
-from typing import Any, Dict, List
+from typing import Any, ClassVar, Dict, List
 
 from zenml.cli.utils import error
 from zenml.constants import LOCAL_SECRETS_FILENAME, LOCAL_STORES_DIRECTORY_NAME
-from zenml.enums import SecretsManagerFlavor, StackComponentType
-from zenml.io.fileio import create_file_if_not_exists, remove
-from zenml.io.utils import get_global_config_directory
+from zenml.io.fileio import remove
+from zenml.io.utils import (
+    create_file_if_not_exists,
+    get_global_config_directory,
+)
 from zenml.logger import get_logger
 from zenml.secret import SecretSchemaClassRegistry
 from zenml.secret.base_secret import BaseSecretSchema
@@ -47,11 +49,12 @@ def get_secret_store_path(uuid: uuid.UUID) -> str:
 
 
 class LocalSecretsManager(BaseSecretsManager):
-    """Class for ZenML local filebased secret manager."""
+    """Class for ZenML local file-based secret manager."""
 
     secrets_file: str
-    supports_local_execution: bool = True
-    supports_remote_execution: bool = False
+
+    # Class configuration
+    FLAVOR: ClassVar[str] = "local"
 
     def __init__(self, *args: Any, **kwargs: Any):
         if "secrets_file" not in kwargs:
@@ -83,22 +86,6 @@ class LocalSecretsManager(BaseSecretsManager):
     def _get_all_secrets(self) -> Dict[str, Dict[str, str]]:
         self._create_secrets_file__if_not_exists()
         return yaml_utils.read_yaml(self.secrets_file) or {}
-
-    @property
-    def flavor(self) -> SecretsManagerFlavor:
-        """The local filesystem-based secrets manager flavor.
-
-        Returns:
-            The local filesystem-based secrets manager flavor."""
-        return SecretsManagerFlavor.LOCAL
-
-    @property
-    def type(self) -> StackComponentType:
-        """The secrets manager type.
-
-        Returns:
-            The secrets manager type."""
-        return StackComponentType.SECRETS_MANAGER
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.

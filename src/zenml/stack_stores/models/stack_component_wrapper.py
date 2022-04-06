@@ -37,8 +37,8 @@ class StackComponentWrapper(BaseModel):
         cls, component: StackComponent
     ) -> "StackComponentWrapper":
         return cls(
-            type=component.type,
-            flavor=component.flavor.value,
+            type=component.TYPE,
+            flavor=component.FLAVOR,
             name=component.name,
             uuid=component.uuid,
             config=base64.b64encode(
