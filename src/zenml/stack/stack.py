@@ -29,7 +29,7 @@ from typing import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
-from zenml.io import fileio
+from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
@@ -178,7 +178,7 @@ class Stack:
             "local_stores",
             str(artifact_store_uuid),
         )
-        fileio.create_dir_recursive_if_not_exists(artifact_store_path)
+        utils.create_dir_recursive_if_not_exists(artifact_store_path)
         artifact_store = LocalArtifactStore(
             name="default",
             uuid=artifact_store_uuid,
@@ -201,7 +201,7 @@ class Stack:
     def components(self) -> Dict[StackComponentType, "StackComponent"]:
         """All components of the stack."""
         return {
-            component.type: component
+            component.TYPE: component
             for component in [
                 self.orchestrator,
                 self.metadata_store,
@@ -297,7 +297,7 @@ class Stack:
         requirements = [
             component.requirements
             for component in self.components.values()
-            if component.type not in exclude_components
+            if component.TYPE not in exclude_components
         ]
         return set.union(*requirements) if requirements else set()
 

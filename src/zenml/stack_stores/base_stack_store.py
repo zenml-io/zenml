@@ -189,7 +189,7 @@ class BaseStackStore(ABC):
             name: The name of the component to fetch.
 
         Returns:
-            Pair of (flavor, congfiguration) for stack component, as string and
+            Pair of (flavor, configuration) for stack component, as string and
             base64-encoded yaml document, respectively
 
         Raises:

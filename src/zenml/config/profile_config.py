@@ -99,8 +99,9 @@ class ProfileConfiguration(BaseModel):
         logger.info("Initializing profile `%s`...", self.name)
 
         # Create and initialize the profile using a special repository instance.
-        # This also validates and updates the store URL configuration and creates
-        # all necessary resources (e.g. paths, initial DB, default stacks).
+        # This also validates and updates the store URL configuration and
+        # creates all necessary resources (e.g. paths, initial DB, default
+        # stacks).
         repo = Repository(profile=self)
 
         if not self.active_stack:
@@ -110,8 +111,8 @@ class ProfileConfiguration(BaseModel):
 
     def cleanup(self) -> None:
         """Cleanup the profile directory."""
-        if fileio.is_dir(self.config_directory):
-            fileio.rm_dir(self.config_directory)
+        if fileio.isdir(self.config_directory):
+            fileio.rmtree(self.config_directory)
 
     @property
     def global_config(self) -> "GlobalConfiguration":

@@ -111,7 +111,7 @@ def clean_kubeflow_profile(
     information from the artifact store and metadata store.
 
     Args:
-        shared_kubeflow_repo: A repository with a provisioned local kubeflow
+        shared_kubeflow_profile: A repository with a provisioned local kubeflow
             stack
 
     Yields:

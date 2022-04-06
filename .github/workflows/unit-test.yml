@@ -10,7 +10,7 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: 'utf-8'
-    # Exit if its a commit from Gitbook
+    # Exit if it's a commit from Gitbook
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
 
     defaults:
@@ -32,7 +32,7 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install kubeflow -f
+          zenml integration install kubeflow s3 gcp azure -f
 
       - name: Test
         run: |

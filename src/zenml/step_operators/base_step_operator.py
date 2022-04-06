@@ -13,24 +13,17 @@
 #  permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import ClassVar, List
 
-from zenml.enums import StackComponentType, StepOperatorFlavor
+from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
 
 class BaseStepOperator(StackComponent, ABC):
     """Base class for all ZenML step operators."""
 
-    @property
-    def type(self) -> StackComponentType:
-        """The component type."""
-        return StackComponentType.STEP_OPERATOR
-
-    @property
-    @abstractmethod
-    def flavor(self) -> StepOperatorFlavor:
-        """The step operator flavor."""
+    # Class Configuration
+    TYPE: ClassVar[StackComponentType] = StackComponentType.STEP_OPERATOR
 
     @abstractmethod
     def launch(
