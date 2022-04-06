@@ -40,7 +40,7 @@ The example consists of two individual pipelines:
   data
 
 You can control which pipeline to run by passing the `--deploy` and/or the
-`predict` flag to the `run.py` launcher.
+`--predict` flag to the `run.py` launcher.
 
 In the deployment pipeline, ZenML's Seldon Core integration is used to serve
 the trained model directly from the Artifact Store where it is automatically
@@ -144,7 +144,7 @@ apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
   name: iris-model
-  namespace: zenml-workloads
+  namespace: default
 spec:
   name: iris
   predictors:
@@ -283,7 +283,7 @@ To configure EKS cluster access locally, run e.g:
 aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
 ```
 
-To configure EKR registry access locally, run e.g.:
+To configure ECR registry access locally, run e.g.:
 
 ```bash
 aws ecr get-login-password --region us-east-1 | docker login --username AWS \
