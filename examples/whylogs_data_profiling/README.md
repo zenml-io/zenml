@@ -72,7 +72,7 @@ test_data_profiler = whylogs_profiler_step(
 )
 ```
 
-### Post execution analysis
+### 🕵️ Post execution analysis
 
 The ZenML `WhylogsVisualizer` can be used to visualize the whylogs
 profiles persisted in the Artifact Store locally:
@@ -104,10 +104,6 @@ the datasets models with the models in the WhyLabs platform.
 
 ![WhyLabs UI image 1](assets/whylabs-ui-01.png)
 ![WhyLabs UI image 2](assets/whylabs-ui-02.png)
-
-# ☁️ Run in Colab
-If you have a google account, you can get started directly with google colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/whylogs_data_profiling/run.py)
-
 
 # 🖥 Run it locally
 

@@ -46,7 +46,7 @@ drift_detector = EvidentlyProfileStep(
 ```
 
 Here you can see that defining the step is extremely simple using our
-class-based interface and then you just have to pass in the two dataframes for
+class-based interface, and then you just have to pass in the two dataframes for
 the comparison to take place.
 
 We even allow you to use the Evidently visualization tool easily to display data
@@ -103,7 +103,7 @@ In order to clean up, delete the remaining ZenML references.
 rm -rf zenml_examples
 ```
 
-# Learn more
+# 📜 Learn more
 
 Our docs regarding the evidently integration can be found [here](TODO: Link to docs).
 
