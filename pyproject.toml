@@ -61,8 +61,8 @@ distro = "^1.6.0"
 rich = {extras = ["jupyter"], version = "^11.0.0"}
 httplib2 = "<0.20,>=0.19.1"
 pyparsing = "<3,>=2.4.0"
-wandb "^0.12.12"
-Pillow "^9.1.0"
+wandb = "^0.12.12"
+Pillow = "^9.1.0"
 
 
 [tool.poetry.dev-dependencies]
