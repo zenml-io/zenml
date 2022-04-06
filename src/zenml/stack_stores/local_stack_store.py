@@ -20,11 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
-from zenml.io import fileio
-from zenml.io.utils import (
-    read_file_contents_as_string,
-    write_file_contents_as_string,
-)
+from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper, StackStoreModel
@@ -59,12 +55,12 @@ class LocalStackStore(BaseStackStore):
 
         self._root = self.get_path_from_url(url)
         self._url = f"file://{self._root}"
-        fileio.create_dir_recursive_if_not_exists(str(self._root))
+        utils.create_dir_recursive_if_not_exists(str(self._root))
 
         if stack_data is not None:
             self.__store = stack_data
             self._write_store()
-        elif fileio.file_exists(self._store_path()):
+        elif fileio.exists(self._store_path()):
             config_dict = yaml_utils.read_yaml(self._store_path())
             self.__store = StackStoreModel.parse_obj(config_dict)
         else:
@@ -173,10 +169,10 @@ class LocalStackStore(BaseStackStore):
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
-        fileio.create_dir_recursive_if_not_exists(
+        utils.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
         )
-        write_file_contents_as_string(
+        utils.write_file_contents_as_string(
             component_config_path,
             base64.b64decode(component.config).decode(),
         )
@@ -232,7 +228,7 @@ class LocalStackStore(BaseStackStore):
             name: The name of the component to fetch.
 
         Returns:
-            Pair of (flavor, congfiguration) for stack component, as string and
+            Pair of (flavor, configuration) for stack component, as string and
             base64-encoded yaml document, respectively
 
         Raises:
@@ -252,7 +248,7 @@ class LocalStackStore(BaseStackStore):
         )
         flavor = components[name]
         config = base64.b64encode(
-            read_file_contents_as_string(component_config_path).encode()
+            utils.read_file_contents_as_string(component_config_path).encode()
         )
         return flavor, config
 
@@ -291,7 +287,7 @@ class LocalStackStore(BaseStackStore):
             component_type=component_type, name=name
         )
 
-        if fileio.file_exists(component_config_path):
+        if fileio.exists(component_config_path):
             fileio.remove(component_config_path)
 
     # Implementation-specific internal methods:

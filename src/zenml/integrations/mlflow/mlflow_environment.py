@@ -14,7 +14,7 @@
 import os
 from typing import Optional
 
-from mlflow import (  # type: ignore [import]
+from mlflow import (  # type: ignore[import]
     ActiveRun,
     get_experiment_by_name,
     search_runs,
@@ -22,7 +22,7 @@ from mlflow import (  # type: ignore [import]
     set_tracking_uri,
     start_run,
 )
-from mlflow.entities import Experiment  # type: ignore [import]
+from mlflow.entities import Experiment  # type: ignore[import]
 
 from zenml.environment import BaseEnvironmentComponent
 from zenml.logger import get_logger
