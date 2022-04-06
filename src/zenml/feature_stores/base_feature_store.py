@@ -13,25 +13,19 @@
 #  permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
+from typing import ClassVar
 
 from pandas import DataFrame
 
-from zenml.enums import FeatureStoreFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
 
 class BaseFeatureStore(StackComponent, ABC):
     """Base class for all ZenML feature stores."""
 
-    @property
-    def type(self) -> StackComponentType:
-        """The component type."""
-        return StackComponentType.FEATURE_STORE
-
-    @property
-    @abstractmethod
-    def flavor(self) -> FeatureStoreFlavor:
-        """The step operator flavor."""
+    TYPE: ClassVar[StackComponentType] = StackComponentType.FEATURE_STORE
+    FLAVOR: ClassVar[str]
 
     @abstractmethod
     def get_historical_features(self) -> DataFrame:

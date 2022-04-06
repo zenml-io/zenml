@@ -12,9 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import ClassVar
+
 from pandas import DataFrame
 
-from zenml.enums import FeatureStoreFlavor, StackComponentType
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
 from zenml.logger import get_logger
 from zenml.stack.stack_component_class_registry import (
@@ -24,20 +25,11 @@ from zenml.stack.stack_component_class_registry import (
 logger = get_logger(__name__)
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.FEATURE_STORE,
-    component_flavor=FeatureStoreFlavor.FEAST,
-)
+@register_stack_component_class
 class FeastFeatureStore(BaseFeatureStore):
     """Class to interact with the Feast feature store."""
 
-    supports_local_execution: bool = True
-    supports_remote_execution: bool = True
-
-    @property
-    def flavor(self) -> FeatureStoreFlavor:
-        """The feature store flavor."""
-        return FeatureStoreFlavor.FEAST
+    FLAVOR: ClassVar[str] = "feast"
 
     def get_historical_features(self) -> DataFrame:
         """Returns the historical features for training or batch scoring."""
