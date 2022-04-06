@@ -35,7 +35,7 @@ class BaseStackStore(ABC):
         self,
         url: str,
         skip_default_stack: bool = False,
-        *arg: Any,
+        *args: Any,
         **kwargs: Any,
     ) -> "BaseStackStore":
         """Initialize the store.
@@ -215,6 +215,9 @@ class BaseStackStore(ABC):
         Args:
             component_type: The type of component to delete.
             name: Then name of the component to delete.
+
+        Raises:
+            KeyError: If no component exists for given type and name.
         """
 
     # Common code (user facing):

@@ -889,7 +889,22 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             component_type: The type of the component to deregister.
             name: The name of the component to deregister.
         """
-        self.stack_store.deregister_stack_component(component_type, name=name)
+        try:
+            self.stack_store.deregister_stack_component(
+                component_type, name=name
+            )
+            logger.info(
+                "Deregistered stack component (type: %s) with name '%s'.",
+                component_type.value,
+                name,
+            )
+        except KeyError:
+            logger.warning(
+                "Unable to deregister stack component (type: %s) with name "
+                "'%s': No stack component exists with this name.",
+                component_type.value,
+                name,
+            )
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(

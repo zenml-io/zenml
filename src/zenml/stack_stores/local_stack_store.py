@@ -266,29 +266,20 @@ class LocalStackStore(BaseStackStore):
         Args:
             component_type: The type of component to delete.
             name: Then name of the component to delete.
+
+        Raises:
+            KeyError: If no component exists for given type and name.
         """
-        components = self.__store.stack_components[component_type]
-        try:
-            del components[name]
-            self._write_store()
-            logger.info(
-                "Deregistered stack component (type: %s) with name '%s'.",
-                component_type.value,
-                name,
-            )
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack component (type: %s) with name "
-                "'%s': No stack component exists with this name.",
-                component_type.value,
-                name,
-            )
         component_config_path = self._get_stack_component_config_path(
             component_type=component_type, name=name
         )
 
         if fileio.file_exists(component_config_path):
             fileio.remove(component_config_path)
+
+        components = self.__store.stack_components[component_type]
+        del components[name]
+        self._write_store()
 
     # Implementation-specific internal methods:
 

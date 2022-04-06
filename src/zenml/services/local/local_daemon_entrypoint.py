@@ -22,10 +22,6 @@ import click
 
 from zenml.utils.daemon import daemonize
 
-# import this explicitly for the service daemon to know about this
-# TODO [MEDIUM]: Figure out a more streamlined way to do this - ask Stefann
-#  for more info on this
-
 
 @click.command()
 @click.option("--config-file", required=True, type=click.Path(exists=True))

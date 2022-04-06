@@ -17,7 +17,6 @@ from typing import DefaultDict, Dict
 
 from pydantic import BaseModel, validator
 
-import zenml
 from zenml.enums import StackComponentType
 
 
@@ -46,7 +45,7 @@ class StackStoreModel(BaseModel):
     @classmethod
     def empty_store(cls) -> "StackStoreModel":
         """Initialize a new empty stack store with current zen version."""
-        return cls(version=zenml.__version__, stacks={}, stack_components={})
+        return cls(stacks={}, stack_components={})
 
     class Config:
         """Pydantic configuration class."""

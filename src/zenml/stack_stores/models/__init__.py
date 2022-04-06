@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.stack_stores.models.rest_api_models import Version
 from zenml.stack_stores.models.stack_component_wrapper import (
     StackComponentWrapper,
 )
@@ -22,5 +21,4 @@ __all__ = [
     "StackComponentWrapper",
     "StackStoreModel",
     "StackWrapper",
-    "Version",
 ]

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 import os
+import textwrap
 from json import JSONDecodeError
 from typing import Optional
 
@@ -46,14 +47,13 @@ def up_server(port: int, profile: Optional[str]) -> None:
     if profile is not None:
         profile_configuration = GlobalConfiguration().get_profile(profile)
         if profile_configuration is None:
-            raise ValueError(f"Could not find profile of name {profile}")
+            raise ValueError(f"Could not find profile of name {profile}.")
         service_config = ZenServiceConfig(
             port=port, store_profile_configuration=profile_configuration
         )
     else:
         service_config = ZenServiceConfig(port=port)
 
-    print(f"{service_config=}")
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:
             zen_service = ServiceRegistry().load_service_from_json(f.read())
@@ -70,20 +70,21 @@ def up_server(port: int, profile: Optional[str]) -> None:
     if zen_service.endpoint:
         if zen_service.endpoint.status.port != port:
             cli_utils.error(
-                f"You specified port={port} but the service is "
-                f"running at '{zen_service.endpoint.status.uri}' "
-                f"This can happen in case the specified port is "
-                f"in use or if the service was already running "
-                f"on port{zen_service.endpoint.status.port}' "
-                f"In case you want to change to port={port} "
-                f"shut down the service with "
-                f"`zenml service down -f` and restart it with "
-                f"a free port of your choice."
+                textwrap.dedent(
+                    f"""
+                    You specified port={port} but the service is running at
+                    '{zen_service.endpoint.status.uri}'. This can happen in the
+                    case the specified port is in use or if the service was
+                    already running on port {zen_service.endpoint.status.port}.
+                    In case you want to change to port={port} shut down the
+                    service with `zenml service down -f` and restart it with
+                    a free port of your choice.
+                    """
+                )
             )
         else:
             cli_utils.declare(
-                "Zenml Service running at "
-                f"'{zen_service.endpoint.status.uri}'."
+                f"Zenml Service running at '{zen_service.endpoint.status.uri}'."
             )
     else:
         raise ValueError("No endpoint found for Zen Service.")
@@ -94,26 +95,24 @@ def up_server(port: int, profile: Optional[str]) -> None:
 
 @service.command("status")
 def status_server() -> None:
-    """Provisions resources for the stack."""
+    """Get the status of the zen service."""
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:
             zervice = ServiceRegistry().load_service_from_json(f.read())
     except FileNotFoundError:
-        cli_utils.error("No service found!")
+        cli_utils.warning("No service found!")
     else:
         zen_service_status = zervice.check_status()
 
-        response_message = (
-            f"The Zenml Service status is " f"{zen_service_status[0]}"
+        running = (
+            f" and running at {zervice.endpoint.status.uri}."
+            if zen_service_status[0] == ServiceState.ACTIVE and zervice.endpoint
+            else ""
         )
-        if zen_service_status[0] == ServiceState.ACTIVE and zervice.endpoint:
-            response_message += (
-                f" and running at " f"{zervice.endpoint.status.uri}."
-            )
-        else:
-            response_message += "."
 
-        cli_utils.declare(response_message)
+        cli_utils.declare(
+            f"The Zenml Service status is {zen_service_status[0]}{running}."
+        )
 
 
 @service.command("down")
@@ -124,7 +123,7 @@ def status_server() -> None:
     help="Deprovisions local resources instead of suspending them.",
 )
 def down_service(force: bool = False) -> None:
-    """Suspends resources of the local stack deployment."""
+    """Suspends resources of the local zen service."""
 
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:

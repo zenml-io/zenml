@@ -11,22 +11,30 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import logging
 import os
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
+from zenml.constants import (
+    DELETE_COMPONENT,
+    DELETE_STACK,
+    GET_COMPONENTS,
+    GET_STACK_CONFIGURATIONS,
+    GET_STACKS,
+    IS_EMPTY,
+    REGISTER_COMPONENT,
+    REGISTER_STACK,
+)
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.repository import Repository
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
 
-# """
 profile_configuration_json = os.environ.get("ZENML_PROFILE_CONFIGURATION")
 profile_name = os.environ.get("ZENML_PROFILE_NAME")
 
@@ -50,8 +58,8 @@ stack_store: BaseStackStore = Repository.create_store(
 
 app = FastAPI()
 
-# to run this, execute:
-# uvicorn zenml.zen_service.zen_service:app --reload
+# to run this file locally, execute:
+# uvicorn zenml.zen_service.zen_service_api:app --reload
 
 
 class ErrorModel(BaseModel):
@@ -59,6 +67,21 @@ class ErrorModel(BaseModel):
 
 
 error_response = dict(model=ErrorModel)
+
+
+def error_detail(error: Exception) -> List[str]:
+    """Convert an Exception to API representation."""
+    return [type(error).__name__] + [str(a) for a in error.args]
+
+
+def not_found(error: Exception) -> HTTPException:
+    """Convert an Exception to a HTTP 404 response."""
+    return HTTPException(status_code=404, detail=error_detail(error))
+
+
+def conflict(error: Exception) -> HTTPException:
+    """Convert an Exception to a HTTP 404 response."""
+    return HTTPException(status_code=409, detail=error_detail(error))
 
 
 @app.get("/", response_model=ProfileConfiguration)
@@ -72,8 +95,13 @@ async def health() -> str:
     return "OK"
 
 
+@app.get(IS_EMPTY, response_model=bool)
+async def is_empty() -> bool:
+    return stack_store.is_empty
+
+
 @app.get(
-    "/stacks/get-configurations/{name}",
+    GET_STACK_CONFIGURATIONS + "/{name}",
     response_model=Dict[StackComponentType, str],
     responses={404: error_response},
 )
@@ -81,49 +109,42 @@ async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
     try:
         return stack_store.get_stack_configuration(name)
     except KeyError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=error.args
-        ) from error
+        raise not_found(error) from error
 
 
 @app.get(
-    "/stacks/get-configurations",
+    GET_STACK_CONFIGURATIONS,
     response_model=Dict[str, Dict[StackComponentType, str]],
 )
 async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
     return stack_store.stack_configurations
 
 
-@app.post("/components/register", responses={409: error_response})
+@app.post(REGISTER_COMPONENT, responses={409: error_response})
 async def register_stack_component(
     component: StackComponentWrapper,
 ) -> None:
     try:
         stack_store.register_stack_component(component)
     except StackComponentExistsError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=error.args
-        ) from error
+        raise conflict(error) from error
 
 
-@app.get("/stacks/delete/{name}")
+@app.get(DELETE_STACK + "/{name}", responses={404: error_response})
 async def deregister_stack(name: str) -> None:
-    logging.warning(f"About to delete stack {name}")
     try:
         stack_store.deregister_stack(name)
     except KeyError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=error.args
-        ) from error
+        raise not_found(error) from error
 
 
-@app.get("/stacks/get", response_model=List[StackWrapper])
+@app.get(GET_STACKS, response_model=List[StackWrapper])
 async def stacks() -> List[StackWrapper]:
     return stack_store.stacks
 
 
 @app.get(
-    "/stacks/get/{name}",
+    GET_STACKS + "/{name}",
     response_model=StackWrapper,
     responses={404: error_response},
 )
@@ -131,41 +152,37 @@ async def get_stack(name: str) -> StackWrapper:
     try:
         return stack_store.get_stack(name)
     except KeyError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=error.args
-        ) from error
+        raise not_found(error) from error
 
 
 @app.post(
-    "/stacks/register",
+    REGISTER_STACK,
     response_model=Dict[str, str],
-    responses={404: error_response, 409: error_response},
+    responses={409: error_response},
 )
 async def register_stack(stack: StackWrapper) -> Dict[str, str]:
     try:
         return stack_store.register_stack(stack)
-    except StackComponentExistsError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=error.args
-        ) from error
-    except StackExistsError as error:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=error.args
-        ) from error
+    except (StackExistsError, StackComponentExistsError) as error:
+        raise conflict(error) from error
 
 
 @app.get(
-    "/components/get/{component_type}/{name}",
+    GET_COMPONENTS + "/{component_type}/{name}",
     response_model=StackComponentWrapper,
+    responses={404: error_response},
 )
 async def get_stack_component(
     component_type: StackComponentType, name: str
 ) -> StackComponentWrapper:
-    return stack_store.get_stack_component(component_type, name=name)
+    try:
+        return stack_store.get_stack_component(component_type, name=name)
+    except KeyError as error:
+        raise not_found(error) from error
 
 
 @app.get(
-    "/components/get/{component_type}",
+    GET_COMPONENTS + "/{component_type}",
     response_model=List[StackComponentWrapper],
 )
 async def get_stack_components(
@@ -174,13 +191,16 @@ async def get_stack_components(
     return stack_store.get_stack_components(component_type)
 
 
-@app.get("/components/delete/{component_type}/{name}")
+@app.get(
+    DELETE_COMPONENT + "/{component_type}/{name}",
+    responses={404: error_response, 409: error_response},
+)
 async def deregister_stack_component(
     component_type: StackComponentType, name: str
 ) -> None:
     try:
         return stack_store.deregister_stack_component(component_type, name=name)
+    except KeyError as error:
+        raise not_found(error) from error
     except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=error.args
-        ) from error
+        raise conflict(error) from error

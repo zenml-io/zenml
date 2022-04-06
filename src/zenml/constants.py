@@ -108,8 +108,7 @@ SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 )
 
-# Repository Directory Path
-# Directory Path for local repositories
+# Repository and local store directory paths:
 REPOSITORY_DIRECTORY_NAME = ".zen"
 LOCAL_STORES_DIRECTORY_NAME = "local_stores"
 
@@ -123,3 +122,13 @@ LOCAL_SECRETS_FILENAME = "secrets.yaml"
 ENABLE_RICH_TRACEBACK = handle_bool_env_var(
     ENV_ZENML_ENABLE_RICH_TRACEBACK, True
 )
+
+# API Endpoint paths:
+IS_EMPTY = "/stacks/empty"
+GET_STACKS = "/stacks/get"
+GET_STACK_CONFIGURATIONS = "/stacks/get-configurations"
+DELETE_STACK = "/stacks/delete"
+REGISTER_STACK = "/stacks/register"
+GET_COMPONENTS = "/components/get"
+DELETE_COMPONENT = "/components/delete"
+REGISTER_COMPONENT = "/components/register"

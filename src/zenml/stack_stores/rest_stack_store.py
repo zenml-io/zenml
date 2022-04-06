@@ -18,6 +18,16 @@ from typing import Any, Dict, List, Optional, Tuple, Union, cast
 import requests
 from pydantic import BaseModel
 
+from zenml.constants import (
+    DELETE_COMPONENT,
+    DELETE_STACK,
+    GET_COMPONENTS,
+    GET_STACK_CONFIGURATIONS,
+    GET_STACKS,
+    IS_EMPTY,
+    REGISTER_COMPONENT,
+    REGISTER_STACK,
+)
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
@@ -115,8 +125,12 @@ class RestStackStore(BaseStackStore):
         The implementation of this method should check if the store is empty
         without having to load all the stacks from the persistent storage.
         """
-        # TODO: add endpoint?
-        return len(self.stack_configurations) == 0
+        empty = self.get(IS_EMPTY)
+        if not isinstance(empty, bool):
+            raise ValueError(
+                f"Bad API Response. Expected boolean, got:\n{empty}"
+            )
+        return empty
 
     def get_stack_configuration(
         self, name: str
@@ -133,7 +147,7 @@ class RestStackStore(BaseStackStore):
             KeyError: If no stack exists for the given name.
         """
         return self._parse_stack_configuration(
-            self.get(f"/stacks/get-configurations/{name}")
+            self.get(f"{GET_STACK_CONFIGURATIONS}/{name}")
         )
 
     @property
@@ -143,7 +157,7 @@ class RestStackStore(BaseStackStore):
         Returns:
             Dictionary mapping stack names to Dict[StackComponentType, str]'s
         """
-        body = self.get("/stacks/get-configurations")
+        body = self.get(GET_STACK_CONFIGURATIONS)
         if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected dict, got {type(body)}"
@@ -166,7 +180,7 @@ class RestStackStore(BaseStackStore):
             StackComponentExistsError: If a stack component with the same type
                 and name already exists.
         """
-        self.post("/components/register", body=component)
+        self.post(REGISTER_COMPONENT, body=component)
 
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
@@ -177,14 +191,14 @@ class RestStackStore(BaseStackStore):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        self.get(f"/stacks/delete/{name}")
+        self.get(f"{DELETE_STACK}/{name}")
 
     # Custom implementations:
 
     @property
     def stacks(self) -> List[StackWrapper]:
         """All stacks registered in this repository."""
-        body = self.get("/stacks/get")
+        body = self.get(GET_STACKS)
         if not isinstance(body, list):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
@@ -203,7 +217,7 @@ class RestStackStore(BaseStackStore):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        return StackWrapper.parse_obj(self.get(f"/stacks/get/{name}"))
+        return StackWrapper.parse_obj(self.get(f"{GET_STACKS}/{name}"))
 
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
@@ -223,16 +237,13 @@ class RestStackStore(BaseStackStore):
                 registered and a different component with the same name
                 already exists.
         """
-        try:
-            body = self.post("/stacks/register", stack)
-            if isinstance(body, dict):
-                return cast(Dict[str, str], body)
-            else:
-                raise ValueError(
-                    f"Bad API Response. Expected dict, got {type(body)}"
-                )
-        except KeyError as error:
-            raise StackExistsError from error
+        body = self.post(REGISTER_STACK, stack)
+        if isinstance(body, dict):
+            return cast(Dict[str, str], body)
+        else:
+            raise ValueError(
+                f"Bad API Response. Expected dict, got {type(body)}"
+            )
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
@@ -243,7 +254,7 @@ class RestStackStore(BaseStackStore):
             KeyError: If no component with the requested type and name exists.
         """
         return StackComponentWrapper.parse_obj(
-            self.get(f"/components/get/{component_type}/{name}")
+            self.get(f"{GET_COMPONENTS}/{component_type}/{name}")
         )
 
     def get_stack_components(
@@ -257,7 +268,7 @@ class RestStackStore(BaseStackStore):
         Returns:
             A list of StackComponentConfiguration instances.
         """
-        body = self.get(f"/components/get/{component_type}")
+        body = self.get(f"{GET_COMPONENTS}/{component_type}")
         if not isinstance(body, list):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
@@ -277,11 +288,7 @@ class RestStackStore(BaseStackStore):
             ValueError: if trying to deregister a component that's part
                 of a stack.
         """
-        try:
-            self.get(f"/components/delete/{component_type}/{name}")
-        except StackComponentExistsError as error:
-            # 409 by default is StackComponentExistsError, treat as ValueError
-            raise ValueError from error
+        self.get(f"{DELETE_COMPONENT}/{component_type}/{name}")
 
     # Private interface shall not be implemented for REST store, instead the
     # API only provides all public methods, including the ones that would
@@ -335,18 +342,31 @@ class RestStackStore(BaseStackStore):
                 payload: Json = response.json()
                 return payload
             except requests.exceptions.JSONDecodeError:
-                raise ValueError("Bad response from API. Expected json.")
+                raise ValueError(
+                    "Bad response from API. Expected json, got\n"
+                    f"{response.text}"
+                )
         elif response.status_code == 404:
             raise KeyError(*response.json().get("detail", (response.text,)))
         elif response.status_code == 409:
-            raise StackComponentExistsError(
-                *response.json().get("detail", (response.text,))
-            )
+            if "StackComponentExistsError" in response.text:
+                raise StackComponentExistsError(
+                    *response.json().get("detail", (response.text,))
+                )
+            elif "StackExistsError" in response.text:
+                raise StackExistsError(
+                    *response.json().get("detail", (response.text,))
+                )
+            else:
+                raise ValueError(
+                    *response.json().get("detail", (response.text,))
+                )
         elif response.status_code == 422:
             raise RuntimeError(*response.json().get("detail", (response.text,)))
         else:
             raise RuntimeError(
-                f"Error retrieving from API. Got response {response.status_code} with body:\n{response.text}"
+                "Error retrieving from API. Got response "
+                f"{response.status_code} with body:\n{response.text}"
             )
 
     def get(self, path: str) -> Json:
