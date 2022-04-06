@@ -158,7 +158,11 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
         if not run_exists:
             # Create a new run
             wandb.finish()
-            self._run = wandb.init(project=self._project_name, group=self._experiment_name, name=self._run_name, entity=entity)
+            self._run = wandb.init(
+                project=self._project_name,
+                name=self._run_name,
+                entity=entity
+            )
 
     def activate(self) -> None:
         """Activate the wandb environment for the current step."""
