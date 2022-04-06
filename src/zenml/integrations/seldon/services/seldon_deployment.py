@@ -39,21 +39,21 @@ class SeldonDeploymentConfig(ServiceConfig):
     """Seldon Core deployment service configuration.
 
     Attributes:
-        model_uri: URI of the model (or models) to serve
+        model_uri: URI of the model (or models) to serve.
         model_name: the name of the model. Multiple versions of the same model
-            should use the same model name
-        model_format: the format of the model being served
-        implementation: the Seldon Core implementation used to serve the model
+            should use the same model name.
+        model_format: the format of the model being served.
+        implementation: the Seldon Core implementation used to serve the model.
         pipeline_name: the name of the pipeline that was used to deploy the
-            model
-        pipeline_run_id: the ID of the pipeline run that deployed the model
+            model.
+        pipeline_run_id: the ID of the pipeline run that deployed the model.
         pipeline_step_name: the name of the pipeline step that deployed the
-            model
-        replicas: number of replicas to use for the prediction service
+            model.
+        replicas: number of replicas to use for the prediction service.
         model_metadata: optional model metadata information (see
-            https://docs.seldon.io/projects/seldon-core/en/latest/reference/apis/metadata.html)
+            https://docs.seldon.io/projects/seldon-core/en/latest/reference/apis/metadata.html).
         extra_args: additional arguments to pass to the Seldon Core deployment
-            resource configuration
+            resource configuration.
     """
 
     # TODO [HIGH]: determine how to formalize how models are organized into
@@ -92,8 +92,8 @@ class SeldonDeploymentService(BaseService):
 
 
     Attributes:
-        config: service configuration
-        status: service status
+        config: service configuration.
+        status: service status.
     """
 
     SERVICE_TYPE = ServiceType(

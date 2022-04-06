@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The seldon core integration allows you to use the Seldon Core model serving
+The Seldon Core integration allows you to use the Seldon Core model serving
 platform to implement continuous model deployment.
 """
 from zenml.integrations.constants import SELDON

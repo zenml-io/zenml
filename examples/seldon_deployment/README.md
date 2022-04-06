@@ -120,13 +120,13 @@ cd istio-1.5.0/
 bin/istioctl manifest apply --set profile=demo
 ```
 
-Set up an istio gateway for seldon core:
+Set up an Istio gateway for Seldon Core:
 
 ```bash
 curl https://raw.githubusercontent.com/SeldonIO/seldon-core/master/notebooks/resources/seldon-gateway.yaml | kubectl apply -f -
 ```
 
-Finally, install seldon core:
+Finally, install Seldon Core:
 
 ```bash
 helm install seldon-core seldon-core-operator \
@@ -136,7 +136,7 @@ helm install seldon-core seldon-core-operator \
     --namespace seldon-system
 ```
 
-To test that the installation is functional, you can use this sample seldon
+To test that the installation is functional, you can use this sample Seldon
 deployment:
 
 ```yaml
@@ -185,7 +185,7 @@ You should see something like this as the prediction response:
 Before you run the example, a ZenML Stack needs to be set up with all the proper
 components. Two different examples of stacks featuring AWS infrastructure
 components are described in this document, but similar stacks may be set up
-using different back-ends and used to run the example as long as the basic Stack
+using different backends and used to run the example as long as the basic Stack
 prerequisites are met.
 
 #### Local orchestrator with S3 artifact store and EKS Seldon Core installation
@@ -259,12 +259,12 @@ python run.py --predict --kubernetes-context=zenml-eks \
 
 #### Full AWS stack
 
-This stack has all component running in the AWS cloud:
+This stack has all components running in the AWS cloud:
 
 * an AWS S3 artifact store
 * a Kubeflow orchestrator installed in an AWS EKS Kubernetes cluster
 * a metadata store that uses the same database as the Kubeflow deployment as
-a back-end
+a backend
 * an AWS ECR container registry
 
 To have access to the AWS S3 artifact store from your local workstation, the
@@ -363,7 +363,7 @@ python run.py --predict --kubernetes-context=<context> --namespace=<namespace> \
   --base-url=<base-url>
 ```
 
-To switch from Tensorflow to SKLearn as the libraries used for model
+To switch from Tensorflow to sklearn as the libraries used for model
 training and the Seldon Core model server implementation, the `--model-flavor`
 command line argument can be used:
 

@@ -44,7 +44,7 @@ def load_last_service_from_step(
         was created during the last execution of the pipeline step.
 
     Raises:
-        KeyError: if the pipeline or step name is not found in the execution
+        KeyError: if the pipeline or step name is not found in the execution.
     """
     if step_context is None:
         repo = Repository()

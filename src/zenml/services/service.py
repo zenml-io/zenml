@@ -283,7 +283,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """Update the service configuration.
 
         Args:
-            config: the new service configuration
+            config: the new service configuration.
         """
         self.config = config
 
