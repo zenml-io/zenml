@@ -30,6 +30,13 @@ class ZenStoreModel(BaseModel):
             names and flavors of all stack components.
         stack_components: Contains names and flavors of all registered stack
             components.
+        users: All registered users.
+        teams: All registered teams.
+        projects: All registered projects.
+        roles: All registered roles.
+        role_assignments: All role assignments.
+        team_assignments: Maps team names to names of users that are part of
+            the team.
     """
 
     stacks: Dict[str, Dict[StackComponentType, str]]
@@ -39,7 +46,7 @@ class ZenStoreModel(BaseModel):
     projects: List[Project] = []
     roles: List[Role] = []
     role_assignments: List[RoleAssignment] = []
-    team_assignments: DefaultDict[str, Set[str]] = {}
+    team_assignments: DefaultDict[str, Set[str]] = defaultdict(set)
 
     @validator("stack_components")
     def _construct_stack_components_defaultdict(

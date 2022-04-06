@@ -21,12 +21,12 @@ from zenml.zen_stores.models.permission_management_models import (
 from zenml.zen_stores.models.stack_component_wrapper import (
     StackComponentWrapper,
 )
-from zenml.zen_stores.models.stack_store_model import StackStoreModel
 from zenml.zen_stores.models.stack_wrapper import StackWrapper
+from zenml.zen_stores.models.zen_store_model import ZenStoreModel
 
 __all__ = [
     "StackComponentWrapper",
-    "StackStoreModel",
+    "ZenStoreModel",
     "StackWrapper",
     "User",
     "Team",

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import click
 from pydantic import BaseModel
@@ -22,7 +22,7 @@ from zenml.cli.cli import cli
 from zenml.repository import Repository
 
 
-def _convert_to_table_dict(model: BaseModel):
+def _convert_to_table_dict(model: BaseModel) -> Dict[str, str]:
     return {key.upper(): str(value) for key, value in model.dict().items()}
 
 
@@ -32,12 +32,12 @@ def user() -> None:
 
 
 @user.command("list")
-def list_users():
+def list_users() -> None:
     """List all users."""
     cli_utils.print_active_profile()
     user_dicts = [
         _convert_to_table_dict(user_)
-        for user_ in Repository().stack_store.users
+        for user_ in Repository().zen_store.users
     ]
     cli_utils.print_table(user_dicts)
 
@@ -46,18 +46,18 @@ def list_users():
 @click.argument("user_name", type=str, required=True)
 # @click.option("--email", type=str, required=True)
 # @click.password_option("--password", type=str, required=True)
-def create_user(user_name: str):
+def create_user(user_name: str) -> None:
     """Create a new user."""
     cli_utils.print_active_profile()
-    Repository().stack_store.create_user(user_name=user_name)
+    Repository().zen_store.create_user(user_name=user_name)
 
 
 @user.command("delete")
 @click.argument("user_name", type=str, required=True)
-def delete_user(user_name: str):
+def delete_user(user_name: str) -> None:
     """Delete a user."""
     cli_utils.print_active_profile()
-    Repository().stack_store.delete_user(user_name=user_name)
+    Repository().zen_store.delete_user(user_name=user_name)
 
 
 @cli.group()
@@ -66,40 +66,40 @@ def team() -> None:
 
 
 @team.command("list")
-def list_teams():
+def list_teams() -> None:
     """List all teams."""
     cli_utils.print_active_profile()
     team_dicts = [
         _convert_to_table_dict(team_)
-        for team_ in Repository().stack_store.teams
+        for team_ in Repository().zen_store.teams
     ]
     cli_utils.print_table(team_dicts)
 
 
 @team.command("create")
 @click.argument("team_name", type=str, required=True)
-def create_team(team_name: str):
+def create_team(team_name: str) -> None:
     """Create a new team."""
     cli_utils.print_active_profile()
-    Repository().stack_store.create_team(team_name=team_name)
+    Repository().zen_store.create_team(team_name=team_name)
 
 
 @team.command("delete")
 @click.argument("team_name", type=str, required=True)
-def delete_team(team_name: str):
+def delete_team(team_name: str) -> None:
     """Delete a team."""
     cli_utils.print_active_profile()
-    Repository().stack_store.delete_team(team_name=team_name)
+    Repository().zen_store.delete_team(team_name=team_name)
 
 
 @team.command("add")
 @click.argument("team_name", type=str, required=True)
 @click.option("--user", "user_names", type=str, required=True, multiple=True)
-def add_users(team_name: str, user_names: Tuple[str]):
+def add_users(team_name: str, user_names: Tuple[str]) -> None:
     """Add users to a team."""
     cli_utils.print_active_profile()
     for user_name in user_names:
-        Repository().stack_store.add_user_to_team(
+        Repository().zen_store.add_user_to_team(
             team_name=team_name, user_name=user_name
         )
 
@@ -107,11 +107,11 @@ def add_users(team_name: str, user_names: Tuple[str]):
 @team.command("remove")
 @click.argument("team_name", type=str, required=True)
 @click.option("--user", "user_names", type=str, required=True, multiple=True)
-def remove_users(team_name: str, user_names: Tuple[str]):
+def remove_users(team_name: str, user_names: Tuple[str]) -> None:
     """Remove users from a team."""
     cli_utils.print_active_profile()
     for user_name in user_names:
-        Repository().stack_store.remove_user_from_team(
+        Repository().zen_store.remove_user_from_team(
             team_name=team_name, user_name=user_name
         )
 
@@ -122,12 +122,12 @@ def project() -> None:
 
 
 @project.command("list")
-def list_projects():
+def list_projects() -> None:
     """List all projects."""
     cli_utils.print_active_profile()
     project_dicts = [
         _convert_to_table_dict(project_)
-        for project_ in Repository().stack_store.projects
+        for project_ in Repository().zen_store.projects
     ]
     cli_utils.print_table(project_dicts)
 
@@ -139,20 +139,22 @@ def list_projects():
     type=str,
     required=False,
 )
-def create_project(project_name: str, description: Optional[str] = None):
+def create_project(
+    project_name: str, description: Optional[str] = None
+) -> None:
     """Create a new project."""
     cli_utils.print_active_profile()
-    Repository().stack_store.create_project(
+    Repository().zen_store.create_project(
         project_name=project_name, description=description
     )
 
 
 @project.command("delete")
 @click.argument("project_name", type=str, required=True)
-def delete_project(project_name: str):
+def delete_project(project_name: str) -> None:
     """Delete a project."""
     cli_utils.print_active_profile()
-    Repository().stack_store.delete_project(project_name=project_name)
+    Repository().zen_store.delete_project(project_name=project_name)
 
 
 @cli.group()
@@ -161,30 +163,30 @@ def role() -> None:
 
 
 @role.command("list")
-def list_roles():
+def list_roles() -> None:
     """List all roles."""
     cli_utils.print_active_profile()
     role_dicts = [
         _convert_to_table_dict(role_)
-        for role_ in Repository().stack_store.roles
+        for role_ in Repository().zen_store.roles
     ]
     cli_utils.print_table(role_dicts)
 
 
 @role.command("create")
 @click.argument("role_name", type=str, required=True)
-def create_role(role_name: str):
+def create_role(role_name: str) -> None:
     """Create a new role."""
     cli_utils.print_active_profile()
-    Repository().stack_store.create_role(role_name=role_name)
+    Repository().zen_store.create_role(role_name=role_name)
 
 
 @role.command("delete")
 @click.argument("role_name", type=str, required=True)
-def delete_role(role_name: str):
+def delete_role(role_name: str) -> None:
     """Delete a role."""
     cli_utils.print_active_profile()
-    Repository().stack_store.delete_role(role_name=role_name)
+    Repository().zen_store.delete_role(role_name=role_name)
 
 
 @role.command("assign")
@@ -197,11 +199,11 @@ def assign_role(
     project_name: str,
     user_names: Tuple[str],
     team_names: Tuple[str],
-):
+) -> None:
     """Assign a role."""
     cli_utils.print_active_profile()
     for user_name in user_names:
-        Repository().stack_store.assign_role(
+        Repository().zen_store.assign_role(
             role_name=role_name,
             project_name=project_name,
             entity_name=user_name,
@@ -209,7 +211,7 @@ def assign_role(
         )
 
     for team_name in team_names:
-        Repository().stack_store.assign_role(
+        Repository().zen_store.assign_role(
             role_name=role_name,
             project_name=project_name,
             entity_name=team_name,
@@ -227,11 +229,11 @@ def revoke_role(
     project_name: str,
     user_names: Tuple[str],
     team_names: Tuple[str],
-):
+) -> None:
     """Revoke a role."""
     cli_utils.print_active_profile()
     for user_name in user_names:
-        Repository().stack_store.revoke_role(
+        Repository().zen_store.revoke_role(
             role_name=role_name,
             project_name=project_name,
             entity_name=user_name,
@@ -239,7 +241,7 @@ def revoke_role(
         )
 
     for team_name in team_names:
-        Repository().stack_store.revoke_role(
+        Repository().zen_store.revoke_role(
             role_name=role_name,
             project_name=project_name,
             entity_name=team_name,
@@ -253,11 +255,11 @@ def assignment() -> None:
 
 
 @assignment.command("list")
-def list_role_assignments():
+def list_role_assignments() -> None:
     """List all role assignments."""
     cli_utils.print_active_profile()
     role_assignment_dicts = [
         _convert_to_table_dict(role_assignment)
-        for role_assignment in Repository().stack_store.role_assignments
+        for role_assignment in Repository().zen_store.role_assignments
     ]
     cli_utils.print_table(role_assignment_dicts)

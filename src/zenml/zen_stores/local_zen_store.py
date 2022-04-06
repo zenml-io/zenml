@@ -30,9 +30,9 @@ from zenml.zen_stores.models import (
     Role,
     RoleAssignment,
     StackComponentWrapper,
-    StackStoreModel,
     Team,
     User,
+    ZenStoreModel,
 )
 
 logger = get_logger(__name__)
@@ -78,7 +78,7 @@ class LocalZenStore(BaseZenStore):
         self,
         url: str,
         *args: Any,
-        stack_data: Optional[StackStoreModel] = None,
+        store_data: Optional[ZenStoreModel] = None,
         **kwargs: Any,
     ) -> "LocalZenStore":
         """Initializes a local ZenStore instance.
@@ -86,7 +86,7 @@ class LocalZenStore(BaseZenStore):
         Args:
             url: URL of local directory of the repository to use for
                 storage.
-            stack_data: optional stack data store object to pre-populate the
+            store_data: optional store data object to pre-populate the
                 zen store with.
             args: additional positional arguments (ignored).
             kwargs: additional keyword arguments (ignored).
@@ -101,14 +101,14 @@ class LocalZenStore(BaseZenStore):
         self._url = f"file://{self._root}"
         utils.create_dir_recursive_if_not_exists(str(self._root))
 
-        if stack_data is not None:
-            self.__store = stack_data
+        if store_data is not None:
+            self.__store = store_data
             self._write_store()
         elif fileio.exists(self._store_path()):
             config_dict = yaml_utils.read_yaml(self._store_path())
-            self.__store = StackStoreModel.parse_obj(config_dict)
+            self.__store = ZenStoreModel.parse_obj(config_dict)
         else:
-            self.__store = StackStoreModel.empty_store()
+            self.__store = ZenStoreModel.empty_store()
             self._write_store()
 
         super().initialize(url, *args, **kwargs)
@@ -589,19 +589,21 @@ class LocalZenStore(BaseZenStore):
                 to a user.
         """
         role = _get_unique_entity(role_name, collection=self.__store.roles)
-        project = _get_unique_entity(
-            project_name, collection=self.__store.projects
-        )
+        project_id: Optional[UUID] = None
+        if project_name:
+            project_id = _get_unique_entity(
+                project_name, collection=self.__store.projects
+            ).id
 
         if is_user:
             user = _get_unique_entity(entity_name, self.__store.users)
             assignment = RoleAssignment(
-                role_id=role.id, project_id=project.id, user_id=user.id
+                role_id=role.id, project_id=project_id, user_id=user.id
             )
         else:
             team = _get_unique_entity(entity_name, self.__store.teams)
             assignment = RoleAssignment(
-                role_id=role.id, project_id=project.id, team_id=team.id
+                role_id=role.id, project_id=project_id, team_id=team.id
             )
 
         self.__store.role_assignments.append(assignment)

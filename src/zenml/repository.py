@@ -42,8 +42,8 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
 from zenml.zen_stores import BaseZenStore, LocalZenStore, SqlZenStore
 from zenml.zen_stores.models import (
     StackComponentWrapper,
-    StackStoreModel,
     StackWrapper,
+    ZenStoreModel,
 )
 
 logger = get_logger(__name__)
@@ -79,9 +79,9 @@ class LegacyRepositoryConfig(BaseModel):
     stacks: Dict[str, Dict[StackComponentType, Optional[str]]]
     stack_components: Dict[StackComponentType, Dict[str, str]]
 
-    def get_stack_data(self) -> StackStoreModel:
+    def get_stack_data(self) -> ZenStoreModel:
         """Extract stack data from Legacy Repository file."""
-        return StackStoreModel(
+        return ZenStoreModel(
             stacks={
                 name: {
                     component_type: value
@@ -298,7 +298,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             profile: configuration profile to set as active.
         """
         self._profile = profile
-        self.stack_store: BaseZenStore = self.create_store(profile)
+        self.zen_store: BaseZenStore = self.create_store(profile)
 
         # Sanitize the repository configuration to reflect the active
         # profile and its store contents
@@ -354,7 +354,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         # or to the first stack in the repository
         backup_stack_name = self.active_profile.active_stack
         if not backup_stack_name:
-            stacks = self.stack_store.stacks
+            stacks = self.zen_store.stacks
             if stacks:
                 backup_stack_name = stacks[0].name
 
@@ -370,7 +370,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         # Ensure that the repository active stack is still valid
         try:
-            self.stack_store.get_stack(self.__config.active_stack_name)
+            self.zen_store.get_stack(self.__config.active_stack_name)
         except KeyError:
             logger.warning(
                 "Stack `%s` not found. Switching the repository active stack "
@@ -433,7 +433,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         stack_data = legacy_config.get_stack_data()
         store = LocalZenStore()
-        store.initialize(url=config_path, stack_data=stack_data)
+        store.initialize(url=config_path, store_data=stack_data)
         store._write_store()
         profile = ProfileConfiguration(
             name=profile_name,
@@ -693,7 +693,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     @property
     def stacks(self) -> List[Stack]:
         """All stacks registered in this repository."""
-        return [self._stack_from_wrapper(s) for s in self.stack_store.stacks]
+        return [self._stack_from_wrapper(s) for s in self.zen_store.stacks]
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
@@ -709,7 +709,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         register/deregister stacks, use `repo.register_stack(...)` or
         `repo.deregister_stack(...)` instead.
         """
-        return self.stack_store.stack_configurations
+        return self.zen_store.stack_configurations
 
     @property
     def active_stack(self) -> Stack:
@@ -759,7 +759,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        self.stack_store.get_stack_configuration(name)  # raises KeyError
+        self.zen_store.get_stack_configuration(name)  # raises KeyError
         if self.__config:
             self.__config.active_stack_name = name
             self._write_config()
@@ -780,7 +780,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             KeyError: If no stack exists for the given name or one of the
                 stacks components is not registered.
         """
-        return self._stack_from_wrapper(self.stack_store.get_stack(name))
+        return self._stack_from_wrapper(self.zen_store.get_stack(name))
 
     def register_stack(self, stack: Stack) -> None:
         """Registers a stack and it's components.
@@ -797,7 +797,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 registered and a different component with the same name
                 already exists.
         """
-        metadata = self.stack_store.register_stack(
+        metadata = self.zen_store.register_stack(
             StackWrapper.from_stack(stack)
         )
         metadata["store_type"] = self.active_profile.store_type.value
@@ -815,8 +815,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
         if name == self.active_stack_name:
             raise ValueError(f"Unable to deregister active stack '{name}'.")
+
         try:
-            self.stack_store.deregister_stack(name)
+            self.zen_store.deregister_stack(name)
             logger.info("Deregistered stack with name '%s'.", name)
         except KeyError:
             logger.warning(
@@ -831,7 +832,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """Fetches all registered stack components of the given type."""
         return [
             self._component_from_wrapper(c)
-            for c in self.stack_store.get_stack_components(component_type)
+            for c in self.zen_store.get_stack_components(component_type)
         ]
 
     def get_stack_component(
@@ -852,7 +853,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             name,
         )
         return self._component_from_wrapper(
-            self.stack_store.get_stack_component(component_type, name=name)
+            self.zen_store.get_stack_component(component_type, name=name)
         )
 
     def register_stack_component(
@@ -868,7 +869,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             StackComponentExistsError: If a stack component with the same type
                 and name already exists.
         """
-        self.stack_store.register_stack_component(
+        self.zen_store.register_stack_component(
             StackComponentWrapper.from_component(component)
         )
 
@@ -891,7 +892,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             name: The name of the component to deregister.
         """
         try:
-            self.stack_store.deregister_stack_component(
+            self.zen_store.deregister_stack_component(
                 component_type, name=name
             )
             logger.info(
