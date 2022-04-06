@@ -30,6 +30,7 @@ import textwrap
 from abc import ABC
 from typing import (
     Any,
+    AnyStr,
     Callable,
     ClassVar,
     Dict,
@@ -38,7 +39,6 @@ from typing import (
     Optional,
     Set,
     Tuple,
-    Union,
 )
 
 from pydantic import root_validator
@@ -47,8 +47,6 @@ from tfx.dsl.io.fileio import NotFoundError
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
 from zenml.stack import StackComponent
-
-PathType = Union[bytes, str]
 
 
 def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
@@ -86,71 +84,71 @@ class BaseArtifactStore(StackComponent, ABC):
         self._register()
 
     @staticmethod
-    def open(name: PathType, mode: str = "r") -> Any:
+    def open(name: AnyStr, mode: str = "r") -> Any:
         """Open a file at the given path."""
         raise NotImplementedError()
 
     @staticmethod
-    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def copyfile(src: AnyStr, dst: AnyStr, overwrite: bool = False) -> None:
         """Copy a file from the source to the destination."""
         raise NotImplementedError()
 
     @staticmethod
-    def exists(path: PathType) -> bool:
+    def exists(path: AnyStr) -> bool:
         """Returns `True` if the given path exists."""
         raise NotImplementedError()
 
     @staticmethod
-    def glob(pattern: PathType) -> List[PathType]:
+    def glob(pattern: AnyStr) -> List[AnyStr]:
         """Return the paths that match a glob pattern."""
         raise NotImplementedError()
 
     @staticmethod
-    def isdir(path: PathType) -> bool:
+    def isdir(path: AnyStr) -> bool:
         """Returns whether the given path points to a directory."""
         raise NotImplementedError()
 
     @staticmethod
-    def listdir(path: PathType) -> List[PathType]:
+    def listdir(path: AnyStr) -> List[AnyStr]:
         """Returns a list of files under a given directory in the filesystem."""
         raise NotImplementedError()
 
     @staticmethod
-    def makedirs(path: PathType) -> None:
+    def makedirs(path: AnyStr) -> None:
         """Make a directory at the given path, recursively creating parents."""
         raise NotImplementedError()
 
     @staticmethod
-    def mkdir(path: PathType) -> None:
+    def mkdir(path: AnyStr) -> None:
         """Make a directory at the given path; parent directory must exist."""
         raise NotImplementedError()
 
     @staticmethod
-    def remove(path: PathType) -> None:
+    def remove(path: AnyStr) -> None:
         """Remove the file at the given path. Dangerous operation."""
         raise NotImplementedError()
 
     @staticmethod
-    def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def rename(src: AnyStr, dst: AnyStr, overwrite: bool = False) -> None:
         """Rename source file to destination file."""
         raise NotImplementedError()
 
     @staticmethod
-    def rmtree(path: PathType) -> None:
+    def rmtree(path: AnyStr) -> None:
         """Deletes dir recursively. Dangerous operation."""
         raise NotImplementedError()
 
     @staticmethod
-    def stat(path: PathType) -> Any:
+    def stat(path: AnyStr) -> Any:
         """Return the stat descriptor for a given file path."""
         raise NotImplementedError()
 
     @staticmethod
     def walk(
-        top: PathType,
+        top: AnyStr,
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
-    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+    ) -> Iterable[Tuple[AnyStr, List[AnyStr], List[AnyStr]]]:
         """Return an iterator that walks the contents of the given directory."""
         raise NotImplementedError()
 
