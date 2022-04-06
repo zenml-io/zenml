@@ -12,18 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 import click
-from pydantic import BaseModel
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.repository import Repository
-
-
-def _convert_to_table_dict(model: BaseModel) -> Dict[str, str]:
-    return {key.upper(): str(value) for key, value in model.dict().items()}
 
 
 @cli.group()
@@ -35,11 +30,12 @@ def user() -> None:
 def list_users() -> None:
     """List all users."""
     cli_utils.print_active_profile()
-    user_dicts = [
-        _convert_to_table_dict(user_)
-        for user_ in Repository().zen_store.users
-    ]
-    cli_utils.print_table(user_dicts)
+    users = Repository().zen_store.users
+    if not users:
+        cli_utils.declare("No users registered.")
+        return
+
+    cli_utils.print_pydantic_models(users)
 
 
 @user.command("create")
@@ -69,11 +65,12 @@ def team() -> None:
 def list_teams() -> None:
     """List all teams."""
     cli_utils.print_active_profile()
-    team_dicts = [
-        _convert_to_table_dict(team_)
-        for team_ in Repository().zen_store.teams
-    ]
-    cli_utils.print_table(team_dicts)
+    teams = Repository().zen_store.teams
+    if not teams:
+        cli_utils.declare("No teams registered.")
+        return
+
+    cli_utils.print_pydantic_models(teams)
 
 
 @team.command("create")
@@ -125,11 +122,12 @@ def project() -> None:
 def list_projects() -> None:
     """List all projects."""
     cli_utils.print_active_profile()
-    project_dicts = [
-        _convert_to_table_dict(project_)
-        for project_ in Repository().zen_store.projects
-    ]
-    cli_utils.print_table(project_dicts)
+    projects = Repository().zen_store.projects
+    if not projects:
+        cli_utils.declare("No projects registered.")
+        return
+
+    cli_utils.print_pydantic_models(projects)
 
 
 @project.command("create")
@@ -166,11 +164,12 @@ def role() -> None:
 def list_roles() -> None:
     """List all roles."""
     cli_utils.print_active_profile()
-    role_dicts = [
-        _convert_to_table_dict(role_)
-        for role_ in Repository().zen_store.roles
-    ]
-    cli_utils.print_table(role_dicts)
+    roles = Repository().zen_store.roles
+    if not roles:
+        cli_utils.declare("No roles registered.")
+        return
+
+    cli_utils.print_pydantic_models(roles)
 
 
 @role.command("create")
@@ -258,8 +257,9 @@ def assignment() -> None:
 def list_role_assignments() -> None:
     """List all role assignments."""
     cli_utils.print_active_profile()
-    role_assignment_dicts = [
-        _convert_to_table_dict(role_assignment)
-        for role_assignment in Repository().zen_store.role_assignments
-    ]
-    cli_utils.print_table(role_assignment_dicts)
+    role_assignments = Repository().zen_store.role_assignments
+    if not role_assignments:
+        cli_utils.declare("No roles assigned.")
+        return
+
+    cli_utils.print_pydantic_models(role_assignments)

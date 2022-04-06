@@ -14,10 +14,20 @@
 import datetime
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import click
 from dateutil import tz
+from pydantic import BaseModel
 from rich import box, table
 from rich.text import Text
 
@@ -122,6 +132,20 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
     console.print(rich_table)
+
+
+def print_pydantic_models(models: Sequence[BaseModel]) -> None:
+    """Prints the list of Pydantic models in a table.
+
+    Args:
+        models: List of pydantic models that will be represented as a row in
+            the table.
+    """
+    model_dicts = [
+        {key: str(value) for key, value in model.dict().items()}
+        for model in models
+    ]
+    print_table(model_dicts)
 
 
 def format_integration_list(

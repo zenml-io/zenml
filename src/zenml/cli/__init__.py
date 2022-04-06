@@ -428,10 +428,10 @@ from zenml.cli.base import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
 from zenml.cli.integration import *  # noqa
-from zenml.cli.permission_management import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.service import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
+from zenml.cli.user_management import *  # noqa
 from zenml.cli.version import *  # noqa

@@ -797,9 +797,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 registered and a different component with the same name
                 already exists.
         """
-        metadata = self.zen_store.register_stack(
-            StackWrapper.from_stack(stack)
-        )
+        metadata = self.zen_store.register_stack(StackWrapper.from_stack(stack))
         metadata["store_type"] = self.active_profile.store_type.value
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
