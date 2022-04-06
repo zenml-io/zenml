@@ -267,7 +267,7 @@ class SeldonDeploymentService(BaseService):
         """
         if not self.is_running:
             raise Exception(
-                "MLflow prediction service is not running. "
+                "Seldon prediction service is not running. "
                 "Please start the service before making predictions."
             )
 

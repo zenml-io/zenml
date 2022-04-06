@@ -1,0 +1,397 @@
+# ZenML continuous model deployment with Seldon Core
+
+[Seldon Core](https://github.com/SeldonIO/seldon-core) is a production grade
+open source model serving platform. It packs a wide range of features built
+around deploying models to REST/GRPC microservices that include monitoring and
+logging, model explainers, outlier detectors and various continuous deployment
+strategies such as A/B testing, canary deployments and more.
+
+Seldon Core also comes equipped with a set of built-in model server
+implementations designed to work with standard formats for packaging ML models
+that greatly simplify the process of serving models for real-time inference.
+
+This example demonstrates how easy it is to build a continuous deployment
+pipeline that trains a model and then serves it with Seldon Core as the
+industry-ready model deployment tool of choice.
+
+After [serving models locally with MLflow](../mlflow_deployment), switching to
+a ZenML MLOps stack that features Seldon Core as a model deployer component
+makes for a seamless transition from running experiments locally to deploying
+models in production.
+
+## Overview
+
+The example uses the
+[Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset to
+train a classifier using either [Tensorflow (Keras)](https://www.tensorflow.org/)
+or [scikit-learn](https://scikit-learn.org/stable/). Different
+hyperparameter values (e.g. the number of epochs and learning rate for the Keras
+model, solver and penalty for the scikit-learn logical regression) can be
+supplied as command line arguments to the `run.py` Python script.
+
+The example consists of two individual pipelines:
+
+  * a deployment pipeline that implements a continuous deployment workflow. It
+  ingests and processes input data, trains a model and then (re)deploys the
+  prediction server that serves the model if it meets some evaluation
+  criteria
+  * an inference pipeline that interacts with the prediction server deployed
+  by the continuous deployment pipeline to get online predictions based on live
+  data
+
+You can control which pipeline to run by passing the `--deploy` and/or the
+`predict` flag to the `run.py` launcher.
+
+In the deployment pipeline, ZenML's Seldon Core integration is used to serve
+the trained model directly from the Artifact Store where it is automatically
+saved as an artifact by the training step. A Seldon Core deployment server
+is launched to serve the latest model version if its accuracy is above a
+configured threshold (also customizable through a command line argument).
+
+The Seldon Core deployment server is provisioned remotely as a Kubernetes
+resource that continues to run after the deployment pipeline run is complete.
+Subsequent runs of the deployment pipeline will reuse the existing deployment
+server and merely update it to serve the more recent model version.
+
+The deployment pipeline has caching enabled to avoid re-training and
+re-deploying the model if the training data and hyperparameter values don't
+change. When a new model is trained that passes the accuracy threshold
+validation, the pipeline automatically updates the currently running Seldon Core
+deployment server so that the new model is being served instead of the old one.
+
+The inference pipeline simulates loading data from a dynamic external source,
+then uses that data to perform online predictions using the running Seldon
+Core prediction server.
+
+## Running the example
+
+### Pre-requisites
+
+For the ZenML Seldon Core deployer to work, three basic things are required:
+
+1. access to a Kubernetes cluster. The example accepts a `--kubernetes-context`
+command line argument. This Kubernetes context needs to point to the Kubernetes
+cluster where Seldon Core model servers will be deployed. If the context is not
+explicitly supplied to the example, it defaults to using the locally active
+context.
+
+2. Seldon Core needs to be preinstalled and running in the target Kubernetes
+cluster (read below for a brief explanation of how to do that).
+
+3. models deployed with Seldon Core need to be stored in some form of
+persistent shared storage that is accessible from the Kubernetes cluster where
+Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
+
+In order to run this example, you need to install and initialize ZenML:
+
+```shell
+# install CLI
+pip install zenml
+
+# install ZenML integrations
+zenml integration install tensorflow sklearn seldon
+
+# pull example
+zenml example pull seldon_deployment
+cd zenml_examples/seldon_deployment
+
+# initialize a local ZenML Repository
+zenml init
+```
+
+#### Installing Seldon Core (e.g. in an EKS cluster)
+
+This section is a trimmed up version of the
+[official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup)
+applied to a particular type of Kubernetes cluster, EKS in this case. It assumes
+that an EKS cluster is already set up and configured with IAM access.
+
+To configure EKS cluster access locally, e.g:
+
+```bash
+aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
+```
+
+Install Istio 1.5.0 (required for the latest Seldon Core version):
+
+```bash
+curl -L [https://istio.io/downloadIstio](https://istio.io/downloadIstio) | ISTIO_VERSION=1.5.0 sh -
+cd istio-1.5.0/
+bin/istioctl manifest apply --set profile=demo
+```
+
+Set up an istio gateway for seldon core:
+
+```bash
+curl https://raw.githubusercontent.com/SeldonIO/seldon-core/master/notebooks/resources/seldon-gateway.yaml | kubectl apply -f -
+```
+
+Finally, install seldon core:
+
+```bash
+helm install seldon-core seldon-core-operator \
+    --repo https://storage.googleapis.com/seldon-charts \
+    --set usageMetrics.enabled=true \
+    --set istio.enabled=true \
+    --namespace seldon-system
+```
+
+To test that the installation is functional, you can use this sample seldon
+deployment:
+
+```yaml
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: iris-model
+  namespace: zenml-workloads
+spec:
+  name: iris
+  predictors:
+  - graph:
+      implementation: SKLEARN_SERVER
+      modelUri: gs://seldon-models/v1.14.0-dev/sklearn/iris
+      name: classifier
+    name: default
+    replicas: 1
+```
+
+```bash
+kubectl apply -f iris.yaml
+```
+
+Extract the URL where the model server exposes its prediction API:
+
+```bash
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+```
+
+Use curl to send a test prediction API request to the server:
+
+```bash
+curl -X POST http://$INGRESS_HOST/seldon/default/iris-model/api/v1.0/predictions \
+         -H 'Content-Type: application/json' \
+         -d '{ "data": { "ndarray": [[1,2,3,4]] } }'
+```
+
+You should see something like this as the prediction response:
+
+```json
+{"data":{"names":["t:0","t:1","t:2"],"ndarray":[[0.0006985194531162835,0.00366803903943666,0.995633441507447]]},"meta":{"requestPath":{"classifier":"seldonio/sklearnserver:1.13.1"}}}
+```
+
+### Setting up the ZenML Stack
+
+Before you run the example, a ZenML Stack needs to be set up with all the proper
+components. Two different examples of stacks featuring AWS infrastructure
+components are described in this document, but similar stacks may be set up
+using different back-ends and used to run the example as long as the basic Stack
+prerequisites are met.
+
+#### Local orchestrator with S3 artifact store and EKS Seldon Core installation
+
+This stack consists of the following components:
+
+* an AWS S3 artifact store
+* the local orchestrator
+* the local metadata store
+
+To have access to the AWS S3 artifact store from your local workstation, the
+AWS client credentials needs to be properly set up locally as documented in
+[the official AWS documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
+In addition to the stack components, Seldon Core must be installed in a
+Kubernetes cluster that is locally accessible through a Kubernetes configuration
+context. The reference used in this example is a Seldon Core installation
+running in an EKS cluster, but any other type of Kubernetes cluster can be used,
+managed or otherwise.
+
+To configure EKS cluster access locally, e.g:
+
+```bash
+aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
+```
+
+Set up a namespace for ZenML Seldon Core workloads:
+
+```bash
+kubectl create ns zenml-workloads
+```
+
+Extract the URL where the Seldon Core model server exposes its prediction API, e.g.:
+
+```bash
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+```
+
+Give Seldon Core access to the S3 artifact store in the configured namespace:
+
+```bash
+kubectl -n zenml-workloads create secret generic seldon-init-container-secret \
+    --from-literal=RCLONE_CONFIG_S3_PROVIDER='aws' \
+    --from-literal=RCLONE_CONFIG_S3_TYPE='s3' \
+    --from-literal=RCLONE_CONFIG_S3_ENV_AUTH=true
+```
+
+NOTE: this is based on the assumption that Seldon Core is running in an EKS
+cluster that already has IAM access enabled and doesn't need any explicit AWS
+credentials. If that is not the case, you will need to set up credentials
+differently. Please look up the variables relevant to your use-case in the
+[official Seldon Core documentation](https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials).
+
+Configuring the stack can be done like this:
+
+```
+zenml integration install aws
+zenml artifact-store register aws --type s3 --path s3://mybucket
+zenml stack register local_with_aws_storage -m default -a aws -o default
+zenml stack set local_with_aws_storage
+```
+
+When running the example with this stack, make sure to pass the relevant
+`--kubernetes-context`, `--namespace` and `--base-url` configuration parameter
+values to the example script:
+
+```
+python run.py --predict --kubernetes-context=zenml-eks \
+    --namespace=zenml-workloads --base-url=http://$INGRESS_HOST ...
+```
+
+#### Full AWS stack
+
+This stack has all component running in the AWS cloud:
+
+* an AWS S3 artifact store
+* a Kubeflow orchestrator installed in an AWS EKS Kubernetes cluster
+* a metadata store that uses the same database as the Kubeflow deployment as
+a back-end
+* an AWS ECR container registry
+
+To have access to the AWS S3 artifact store from your local workstation, the
+AWS client credentials needs to be properly set up locally as documented in
+[the official AWS documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
+In addition to the stack components, Seldon Core must be installed in *the same*
+Kubernetes cluster as Kubeflow. The cluster must also be locally accessible
+through a Kubernetes configuration context. The reference used in this example
+is a Kubeflow and Seldon Core installation running in an EKS cluster, but any
+other type of Kubernetes cluster can be used, managed or otherwise.
+
+To configure EKS cluster access locally, run e.g:
+
+```bash
+aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
+```
+
+To configure EKR registry access locally, run e.g.:
+
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS \
+  --password-stdin 715803424590.dkr.ecr.us-east-1.amazonaws.com
+```
+
+Extract the URL where the Seldon Core model server exposes its prediction API, e.g.:
+
+```bash
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+```
+
+Give Seldon Core access to the S3 artifact store in the Kubeflow namespace:
+
+```bash
+kubectl -n kubeflow create secret generic seldon-init-container-secret \
+    --from-literal=RCLONE_CONFIG_S3_PROVIDER='aws' \
+    --from-literal=RCLONE_CONFIG_S3_TYPE='s3' \
+    --from-literal=RCLONE_CONFIG_S3_ENV_AUTH=true
+```
+
+NOTE: this is based on the assumption that Seldon Core is running in an EKS
+cluster that already has IAM access enabled and doesn't need any explicit AWS
+credentials. If that is not the case, you will need to set up credentials
+differently. Please look up the variables relevant to your use-case in the
+[official Seldon Core documentation](https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials).
+
+Configuring the stack can be done like this:
+
+```
+zenml integration install aws
+zenml artifact-store register aws --type=s3 --path=s3://mybucket
+zenml container-registry register aws --type=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
+zenml metadata-store register aws --type=kubeflow
+zenml orchestrator register aws --type=kubeflow --kubernetes_context=zenml-eks --synchronous=True
+zenml stack register aws -m aws -a aws -o aws -c aws
+zenml stack set aws
+```
+
+When running the example with this stack, make sure to pass the relevant
+`--kubernetes-context`, `--namespace` and `--base-url` configuration parameter
+values to the example script:
+
+```
+python run.py --predict --kubernetes-context=zenml-eks --namespace=kubeflow \
+  --base-url=http://$INGRESS_HOST ...
+```
+
+### Run the project
+To run the continuous deployment pipeline:
+
+```shell
+python run.py --deploy --kubernetes-context=<context> --namespace=<namespace> \
+  --base-url=<base-url>
+```
+
+Re-running the example with different hyperparameter values will re-train
+the model and update the deployment server to serve the new model:
+
+```shell
+python run.py --deploy --kubernetes-context=<context> --namespace=<namespace> \
+  --base-url=<base-url> --epochs=10 --learning_rate=0.1
+```
+
+If the input hyperparameter argument values are not changed, the pipeline
+caching feature will kick in, a new model will not be re-trained and the Seldon
+Core deployment will not be updated with the new model. Similarly, if a new model
+is trained in the deployment pipeline but the model accuracy doesn't exceed the
+configured accuracy threshold, the new model will not be deployed.
+
+The inference pipeline will use the currently running Seldon Core deployment
+server to perform an online prediction. To run the inference pipeline:
+
+```shell
+python run.py --predict --kubernetes-context=<context> --namespace=<namespace> \
+  --base-url=<base-url>
+```
+
+To switch from Tensorflow to SKLearn as the libraries used for model
+training and the Seldon Core model server implementation, the `--model-flavor`
+command line argument can be used:
+
+```
+python run.py --deploy --predict --kubernetes-context=<context> --namespace=<namespace> \
+  --base-url=<base-url> --model-flavor sklearn --penalty=l2
+```
+
+Finally, to stop the prediction server, simply pass the `--stop-service` flag
+to the example script:
+
+```shell
+python run.py --kubernetes-context=<context> --namespace=<namespace> \
+  --base-url=<base-url> --stop-service
+```
+
+### Clean up
+
+To stop the prediction server running in the background, pass the
+`--stop-service` flag to the example script:
+
+```shell
+python run.py --kubernetes-context=<context> --namespace=<namespace> \
+  --base-url=<base-url> --stop-service
+```
+
+Then delete the remaining ZenML references.
+
+```shell
+rm -rf zenml_examples
+```

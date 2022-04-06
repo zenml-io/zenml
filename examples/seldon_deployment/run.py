@@ -41,6 +41,19 @@ from zenml.services import load_last_service_from_step
 
 @click.command()
 @click.option(
+    "--deploy",
+    "-d",
+    is_flag=True,
+    help="Run the deployment pipeline to train and deploy a model",
+)
+@click.option(
+    "--predict",
+    "-p",
+    is_flag=True,
+    help="Run the inference pipeline to send a prediction request "
+    "to the deployed model",
+)
+@click.option(
     "--model-flavor",
     default="tensorflow",
     type=click.Choice(["tensorflow", "sklearn"]),
@@ -96,6 +109,8 @@ from zenml.services import load_last_service_from_step
     help="Stop the prediction service when done",
 )
 def main(
+    deploy: bool,
+    predict: bool,
     model_flavor: str,
     epochs: int,
     lr: float,
@@ -109,12 +124,14 @@ def main(
     base_url: str,
     stop_service: bool,
 ):
-    """Run the Seldon example pipeline
+    """Run the Seldon example continuous deployment or inference pipeline
 
     Example usage:
 
-    python run.py --kubernetes-context=zenml-eks-sandbox \
-        --namespace=zenml-workloads \
+    python run.py --deploy --predict \
+        --model-flavor tensorflow \
+        --kubernetes-context=zenml-eks-sandbox \
+        --namespace=kubeflow \
         --base-url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com \
         --min-accuracy 0.80
     """
@@ -147,61 +164,69 @@ def main(
         evaluator = sklearn_evaluator()
         predict_preprocessor = sklearn_predict_preprocessor()
 
-    # Initialize a continuous deployment pipeline run
-    deployment = continuous_deployment_pipeline(
-        importer=importer_mnist(),
-        normalizer=normalizer(),
-        trainer=trainer,
-        evaluator=evaluator,
-        deployment_trigger=deployment_trigger(
-            config=DeploymentTriggerConfig(
-                min_accuracy=min_accuracy,
-            )
-        ),
-        model_deployer=seldon_model_deployer(
-            config=SeldonDeployerConfig(
-                model_name="mnist",
-                step_name="model_deployer",
-                replicas=1,
-                implementation=seldon_implementation,
-                secret_name="seldon-init-container-secret",
-                kubernetes_context=kubernetes_context,
-                namespace=namespace,
-                base_url=base_url,
-                timeout=120,
-            )
-        ),
-    )
+    if deploy:
+        # Initialize a continuous deployment pipeline run
+        deployment = continuous_deployment_pipeline(
+            importer=importer_mnist(),
+            normalizer=normalizer(),
+            trainer=trainer,
+            evaluator=evaluator,
+            deployment_trigger=deployment_trigger(
+                config=DeploymentTriggerConfig(
+                    min_accuracy=min_accuracy,
+                )
+            ),
+            model_deployer=seldon_model_deployer(
+                config=SeldonDeployerConfig(
+                    model_name="mnist",
+                    step_name="model_deployer",
+                    replicas=1,
+                    implementation=seldon_implementation,
+                    secret_name="seldon-init-container-secret",
+                    kubernetes_context=kubernetes_context,
+                    namespace=namespace,
+                    base_url=base_url,
+                    timeout=120,
+                )
+            ),
+        )
 
-    deployment.run()
+        deployment.run()
 
-    # Initialize an inference pipeline run
-    inference = inference_pipeline(
-        dynamic_importer=dynamic_importer(),
-        predict_preprocessor=predict_preprocessor,
-        prediction_service_loader=prediction_service_loader(
-            SeldonDeploymentLoaderStepConfig(
-                pipeline_name="continuous_deployment_pipeline",
-                step_name="model_deployer",
-            )
-        ),
-        predictor=predictor(),
-    )
+    if predict:
+        # Initialize an inference pipeline run
+        inference = inference_pipeline(
+            dynamic_importer=dynamic_importer(),
+            predict_preprocessor=predict_preprocessor,
+            prediction_service_loader=prediction_service_loader(
+                SeldonDeploymentLoaderStepConfig(
+                    pipeline_name="continuous_deployment_pipeline",
+                    step_name="model_deployer",
+                )
+            ),
+            predictor=predictor(),
+        )
 
-    inference.run()
+        inference.run()
 
-    service = load_last_service_from_step(
-        pipeline_name="continuous_deployment_pipeline",
-        step_name="model_deployer",
-        running=True,
-    )
-    if service:
+    try:
+        service = load_last_service_from_step(
+            pipeline_name="continuous_deployment_pipeline",
+            step_name="model_deployer",
+            running=True,
+        )
         print(
             f"The Seldon prediction server is running remotely as a Kubernetes "
             f"service and accepts inference requests at:\n"
             f"    {service.prediction_url}\n"
             f"To stop the service, re-run the same command and supply the "
             f"`--stop-service` argument."
+        )
+    except KeyError:
+        print(
+            "No Seldon prediction server is currently running. The deployment "
+            "pipeline must run first to train a model and deploy it. Execute "
+            "the same command with the `--deploy` argument to deploy a model."
         )
 
 

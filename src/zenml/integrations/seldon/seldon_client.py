@@ -31,6 +31,12 @@ SELDON_DEPLOYMENT_API_VERSION = "machinelearning.seldon.io/v1"
 
 
 class SeldonDeploymentMetadata(BaseModel):
+    """Metadata for a Seldon Deployment.
+
+    Attributes:
+        name: the name of the Seldon Deployment.
+        labels: Kubernetes labels for the Seldon Deployment.
+    """
 
     name: str
     labels: Dict[str, str] = Field(default_factory=dict)
@@ -45,6 +51,7 @@ class SeldonDeploymentMetadata(BaseModel):
 
 
 class SeldonDeploymentPredictiveUnitType(StrEnum):
+    """Predictive unit types for a Seldon Deployment."""
 
     UNKNOWN_TYPE = "UNKNOWN_TYPE"
     ROUTER = "ROUTER"
@@ -54,7 +61,22 @@ class SeldonDeploymentPredictiveUnitType(StrEnum):
     OUTPUT_TRANSFORMER = "OUTPUT_TRANSFORMER"
 
 
-class SedonDeploymentPredictiveUnit(BaseModel):
+class SeldonDeploymentPredictiveUnit(BaseModel):
+    """Seldon Deployment predictive unit.
+
+    Attributes:
+        name: the name of the predictive unit.
+        type: predictive unit type.
+        implementation: the Seldon Core implementation used to serve the model.
+        modelUri: URI of the model (or models) to serve.
+        serviceAccountName: the name of the service account to associate with
+            the predictive unit container.
+        envSecretRefName: the name of a Kubernetes secret that contains
+            environment variables (e.g. credentials) to be configured for the
+            predictive unit container.
+        children: a list of child predictive units that together make up the
+            model serving graph.
+    """
 
     name: str
     type: Optional[
@@ -64,7 +86,7 @@ class SedonDeploymentPredictiveUnit(BaseModel):
     modelUri: Optional[str]
     serviceAccountName: Optional[str]
     envSecretRefName: Optional[str]
-    children: List["SedonDeploymentPredictiveUnit"] = Field(
+    children: List["SeldonDeploymentPredictiveUnit"] = Field(
         default_factory=list
     )
 
@@ -77,12 +99,19 @@ class SedonDeploymentPredictiveUnit(BaseModel):
         extra = "ignore"
 
 
-class SedonDeploymentPredictor(BaseModel):
+class SeldonDeploymentPredictor(BaseModel):
+    """Seldon Deployment predictor.
+
+    Attributes:
+        name: the name of the predictor.
+        replicas: the number of pod replicas for the predictor.
+        graph: the serving graph composed of one or more predictive units.
+    """
 
     name: str
     replicas: int = 1
-    graph: SedonDeploymentPredictiveUnit = Field(
-        default_factory=SedonDeploymentPredictiveUnit
+    graph: SeldonDeploymentPredictiveUnit = Field(
+        default_factory=SeldonDeploymentPredictiveUnit
     )
 
     class Config:
@@ -95,10 +124,18 @@ class SedonDeploymentPredictor(BaseModel):
 
 
 class SeldonDeploymentSpec(BaseModel):
+    """Spec for a Seldon Deployment.
+
+    Attributes:
+        name: the name of the Seldon Deployment.
+        protocol: the API protocol used for the Seldon Deployment.
+        predictors: a list of predictors that make up the serving graph.
+        replicas: the default number of pod replicas used for the predictors.
+    """
 
     name: str
     protocol: Optional[str]
-    predictors: List[SedonDeploymentPredictor]
+    predictors: List[SeldonDeploymentPredictor]
     replicas: int = 1
 
     class Config:
@@ -111,6 +148,8 @@ class SeldonDeploymentSpec(BaseModel):
 
 
 class SeldonDeploymentStatusState(StrEnum):
+    """Possible state values for a Seldon Deployment."""
+
     UNKNOWN = "Unknown"
     AVAILABLE = "Available"
     CREATING = "Creating"
@@ -118,12 +157,18 @@ class SeldonDeploymentStatusState(StrEnum):
 
 
 class SeldonDeploymentStatusAddress(BaseModel):
+    """The status address for a Seldon Deployment.
+
+    Attributes:
+        url: the URL where the Seldon Deployment API can be accessed internally.
+    """
 
     url: str
 
 
 class SeldonDeploymentStatusCondition(BaseModel):
-    """
+    """The Kubernetes status condition entry for a Seldon Deployment.
+
     Attributes:
 
         type: Type of runtime condition
@@ -141,6 +186,15 @@ class SeldonDeploymentStatusCondition(BaseModel):
 
 
 class SeldonDeploymentStatus(BaseModel):
+    """The status of a Seldon Deployment.
+
+    Attributes:
+        state: the current state of the Seldon Deployment.
+        description: a human-readable description of the current state.
+        replicas: the current number of running pod replicas
+        address: the address where the Seldon Deployment API can be accessed.
+        conditions: the list of Kubernetes conditions for the Seldon Deployment.
+    """
 
     state: SeldonDeploymentStatusState = SeldonDeploymentStatusState.UNKNOWN
     description: Optional[str]
@@ -168,6 +222,13 @@ class SeldonDeployment(BaseModel):
     the ZenML integration. The fields that are not represented are silently
     ignored when the Seldon Deployment is created or updated from an external
     SeldonDeployment CRD representation.
+
+    Attributes:
+        kind: Kubernetes kind field
+        apiVersion: Kubernetes apiVersion field
+        metadata: Kubernetes metadata field
+        spec: Seldon Deployment spec entry
+        status: Seldon Deployment status
     """
 
     kind: str = Field(SELDON_DEPLOYMENT_KIND, const=True)
@@ -220,9 +281,9 @@ class SeldonDeployment(BaseModel):
             spec=SeldonDeploymentSpec(
                 name=name,
                 predictors=[
-                    SedonDeploymentPredictor(
+                    SeldonDeploymentPredictor(
                         name=model_name or "",
-                        graph=SedonDeploymentPredictiveUnit(
+                        graph=SeldonDeploymentPredictiveUnit(
                             name="default",
                             type=SeldonDeploymentPredictiveUnitType.MODEL,
                             modelUri=model_uri or "",
