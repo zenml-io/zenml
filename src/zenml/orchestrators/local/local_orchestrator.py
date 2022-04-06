@@ -29,7 +29,7 @@
 #  permissions and limitations under the License.
 
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from tfx.dsl.compiler.compiler import Compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -42,7 +42,7 @@ from tfx.proto.orchestration import executable_spec_pb2
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
-from zenml.enums import MetadataContextTypes, OrchestratorFlavor
+from zenml.enums import MetadataContextTypes
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator, context_utils
 from zenml.orchestrators.utils import (
@@ -64,13 +64,8 @@ logger = get_logger(__name__)
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally."""
 
-    supports_local_execution = True
-    supports_remote_execution = False
-
-    @property
-    def flavor(self) -> OrchestratorFlavor:
-        """The orchestrator flavor."""
-        return OrchestratorFlavor.LOCAL
+    # Class Configuration
+    FLAVOR: ClassVar[str] = "local"
 
     def run_pipeline(
         self,

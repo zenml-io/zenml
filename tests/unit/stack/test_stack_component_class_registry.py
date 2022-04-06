@@ -17,13 +17,7 @@ import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.container_registries import BaseContainerRegistry
-from zenml.enums import (
-    ArtifactStoreFlavor,
-    ContainerRegistryFlavor,
-    MetadataStoreFlavor,
-    OrchestratorFlavor,
-    StackComponentType,
-)
+from zenml.enums import StackComponentType
 from zenml.integrations.registry import integration_registry
 from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
@@ -39,28 +33,28 @@ def test_stack_component_class_registry_has_local_classes_registered():
     assert (
         StackComponentClassRegistry.get_class(
             component_type=StackComponentType.ORCHESTRATOR,
-            component_flavor=OrchestratorFlavor.LOCAL,
+            component_flavor="local",
         )
         is LocalOrchestrator
     )
     assert (
         StackComponentClassRegistry.get_class(
             component_type=StackComponentType.METADATA_STORE,
-            component_flavor=MetadataStoreFlavor.SQLITE,
+            component_flavor="sqlite",
         )
         is SQLiteMetadataStore
     )
     assert (
         StackComponentClassRegistry.get_class(
             component_type=StackComponentType.ARTIFACT_STORE,
-            component_flavor=ArtifactStoreFlavor.LOCAL,
+            component_flavor="local",
         )
         is LocalArtifactStore
     )
     assert (
         StackComponentClassRegistry.get_class(
             component_type=StackComponentType.CONTAINER_REGISTRY,
-            component_flavor=ContainerRegistryFlavor.DEFAULT,
+            component_flavor="default",
         )
         is BaseContainerRegistry
     )
@@ -71,46 +65,41 @@ def test_stack_component_class_registration(stub_component):
 
     with pytest.raises(KeyError):
         StackComponentClassRegistry.get_class(
-            component_type=stub_component.type,
-            component_flavor=stub_component.flavor,
+            component_type=stub_component.TYPE,
+            component_flavor=stub_component.FLAVOR,
         )
 
     StackComponentClassRegistry.register_class(
-        component_type=stub_component.type,
-        component_flavor=stub_component.flavor,
         component_class=type(stub_component),
     )
 
     with does_not_raise():
         returned_class = StackComponentClassRegistry.get_class(
-            component_type=stub_component.type,
-            component_flavor=stub_component.flavor,
+            component_type=stub_component.TYPE,
+            component_flavor=stub_component.FLAVOR,
         )
 
     assert returned_class is type(stub_component)
     # remove the registered component class so other tests aren't affected
-    StackComponentClassRegistry.component_classes[stub_component.type].pop(
-        stub_component.flavor.value
+    StackComponentClassRegistry.component_classes[stub_component.TYPE].pop(
+        stub_component.FLAVOR
     )
 
 
 def test_stack_component_class_registration_decorator(stub_component):
     """Tests that stack component classes can be registered using the
     decorator."""
-    register_stack_component_class(
-        component_type=stub_component.type,
-        component_flavor=stub_component.flavor,
-    )(type(stub_component))
+    register_stack_component_class(type(stub_component))
 
     with does_not_raise():
         StackComponentClassRegistry.get_class(
-            component_type=stub_component.type,
-            component_flavor=stub_component.flavor,
+            component_type=stub_component.TYPE,
+            component_flavor=stub_component.FLAVOR,
         )
 
     # remove the registered component class so other tests aren't affected
-    StackComponentClassRegistry.component_classes[stub_component.type].pop(
-        stub_component.flavor.value
+    StackComponentClassRegistry.component_classes[stub_component.TYPE].pop(
+        stub_component.FLAVOR
     )
 
 
@@ -122,8 +111,6 @@ def test_stack_component_class_registry_activates_integrations_if_necessary(
 
     def _activate_integrations():
         StackComponentClassRegistry.register_class(
-            component_type=stub_component.type,
-            component_flavor=stub_component.flavor,
             component_class=type(stub_component),
         )
 
@@ -136,19 +123,19 @@ def test_stack_component_class_registry_activates_integrations_if_necessary(
     # getting the local orchestrator should not require activating integrations
     StackComponentClassRegistry.get_class(
         component_type=StackComponentType.ORCHESTRATOR,
-        component_flavor=OrchestratorFlavor.LOCAL,
+        component_flavor="local",
     )
     integration_registry.activate_integrations.assert_not_called()
 
     # trying to get an unregistered component should activate the integrations
-    stub_compononent_class = StackComponentClassRegistry.get_class(
-        component_type=stub_component.type,
-        component_flavor=stub_component.flavor,
+    stub_component_class = StackComponentClassRegistry.get_class(
+        component_type=stub_component.TYPE,
+        component_flavor=stub_component.FLAVOR,
     )
-    assert stub_compononent_class is type(stub_component)
+    assert stub_component_class is type(stub_component)
     integration_registry.activate_integrations.assert_called_once()
 
     # remove the registered component class so other tests aren't affected
-    StackComponentClassRegistry.component_classes[stub_component.type].pop(
-        stub_component.flavor.value
+    StackComponentClassRegistry.component_classes[stub_component.TYPE].pop(
+        stub_component.FLAVOR
     )

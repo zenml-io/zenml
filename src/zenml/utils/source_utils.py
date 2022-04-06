@@ -236,11 +236,6 @@ def get_source_root_path() -> str:
       * same case as above, but when there is no repository root configured,
       the source root path is `full/path/to/my`.
 
-      *
-
-    Args:
-        module: a module.
-
     Returns:
         The source root path of the current process.
     """
