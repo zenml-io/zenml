@@ -34,6 +34,7 @@ class FeastFeatureStore(BaseFeatureStore):
 
     online_host: str = "localhost"
     online_port: int = 6379
+    feast_repo: str = ""
 
     def get_historical_features(self) -> DataFrame:
         """Returns the historical features for training or batch scoring."""
