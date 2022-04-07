@@ -31,22 +31,6 @@ from zenml.steps import step
 logger = get_logger(__name__)
 
 
-@step
-def print_initial_features(batch_features: DataFrame) -> DataFrame:
-    """Prints features imported from the feature store."""
-    return batch_features.head()
-
-
-@pipeline(required_integrations=[FEAST])
-def feast_pipeline(
-    batch_features,
-    feature_printer,
-):
-    """Links all the steps together in a pipeline"""
-    features = batch_features()
-    feature_printer(features)
-
-
 batch_entity_df = pd.DataFrame.from_dict(
     {
         "driver_id": [1001, 1002, 1003],
@@ -71,6 +55,23 @@ historical_data = FeastHistoricalDatasource(
         "driver_hourly_stats:avg_daily_trips",
     ],
 )
+
+
+@step
+def print_initial_features(batch_features: DataFrame) -> DataFrame:
+    """Prints features imported from the feature store."""
+    return batch_features.head()
+
+
+@pipeline(required_integrations=[FEAST])
+def feast_pipeline(
+    batch_features,
+    feature_printer,
+):
+    """Links all the steps together in a pipeline"""
+    features = batch_features()
+    feature_printer(features)
+
 
 if __name__ == "__main__":
     pipeline = feast_pipeline(
