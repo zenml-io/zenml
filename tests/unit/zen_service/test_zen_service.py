@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import platform
 import random
 
 import pytest
@@ -36,6 +37,10 @@ def running_zen_service() -> ZenService:
     assert zen_service.check_status()[0] == ServiceState.INACTIVE
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="ZenService not supported as daemon on Windows.",
+)
 def test_get_stack_endpoints(running_zen_service: ZenService):
     """Test that the stack methods behave as they should."""
     endpoint = running_zen_service.endpoint.status.uri.strip("/")
@@ -50,6 +55,10 @@ def test_get_stack_endpoints(running_zen_service: ZenService):
     assert len(configs_response.json()) == 1
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="ZenService not supported as daemon on Windows.",
+)
 def test_service_up_down():
     """Test spinning up and shutting down Zen service."""
     port = random.randint(8003, 9000)

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import platform
 import random
 import shutil
 
@@ -37,13 +38,11 @@ from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
 logger = get_logger(__name__)
 
 
-@pytest.fixture(
-    params=[
-        StoreType.LOCAL,
-        StoreType.SQL,
-        StoreType.REST,
-    ],
-)
+not_windows = platform.system() != "Windows"
+store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * not_windows
+
+
+@pytest.fixture(params=store_types)
 def fresh_stack_store(
     request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
 ) -> BaseStackStore:

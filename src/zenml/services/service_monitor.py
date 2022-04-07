@@ -134,8 +134,6 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
 
         logger.debug("Running HTTP healthcheck for URI: %s", check_uri)
 
-        error = ""
-
         try:
             if self.config.use_head_request:
                 r = requests.head(
