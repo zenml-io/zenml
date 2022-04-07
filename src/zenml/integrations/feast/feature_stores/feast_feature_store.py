@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import ClassVar, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Union
 
 import redis  # type: ignore
 from feast import FeatureStore  # type: ignore[import]
@@ -43,7 +43,7 @@ class FeastFeatureStore(BaseFeatureStore):
         entity_df: Union[DataFrame, str],
         features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
-    ) -> Optional[DataFrame]:
+    ) -> DataFrame:
         """Returns the historical features for training or batch scoring."""
         self._validate_connection()
         fs = FeatureStore(repo_path=self.feast_repo)
@@ -54,10 +54,21 @@ class FeastFeatureStore(BaseFeatureStore):
             full_feature_names=full_feature_names,
         ).to_df()
 
-    def get_online_features(self) -> Optional[DataFrame]:
+    def get_online_features(
+        self,
+        entity_rows: List[Dict[str, Any]],
+        features: Union[List[str], FeatureService],
+        full_feature_names: bool = False,
+    ) -> Dict[str, Any]:
         """Returns the latest online feature data."""
         self._validate_connection()
-        return NotImplementedError
+        fs = FeatureStore(repo_path=self.feast_repo)
+
+        return fs.get_online_features(  # type: ignore[no-any-return]
+            entity_rows=entity_rows,
+            features=features,
+            full_feature_names=full_feature_names,
+        ).to_dict()
 
     def _validate_connection(self) -> None:
         """Validates the connection to the feature store."""

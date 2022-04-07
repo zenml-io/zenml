@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from feast.feature_service import FeatureService  # type: ignore[import]
 from pandas import DataFrame
@@ -20,21 +20,21 @@ from pandas import DataFrame
 from zenml.steps import BaseStep, BaseStepConfig, StepContext, step
 
 
-class FeastFeatureStoreConfig(BaseStepConfig):
-    """Feast Feature Store step configuration."""
+class FeastHistoricalFeaturesConfig(BaseStepConfig):
+    """Feast Feature Store historical data step configuration."""
 
     class Config:
         arbitrary_types_allowed = True
 
 
-def feast_feature_store_step(
+def feast_historical_features_step(
     entity_df: Union[DataFrame, str],
     features: Union[List[str], FeatureService],
     full_feature_names: bool = False,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
 ) -> Type[BaseStep]:
-    """Feast Feature Store step"""
+    """Feast Feature Store historical data step"""
 
     # enable cache explicitly to compensate for the fact that this step
     # takes in a context object
@@ -42,11 +42,11 @@ def feast_feature_store_step(
         enable_cache = True
 
     @step(enable_cache=enable_cache, name=name)
-    def feast_feature_store(
-        config: FeastFeatureStoreConfig,
+    def feast_historical_features(
+        config: FeastHistoricalFeaturesConfig,
         context: StepContext,
     ) -> DataFrame:
-        """Feast Feature Store step"""
+        """Feast Feature Store historical data step"""
         feature_store_component = context.feature_store
 
         return feature_store_component.get_historical_features(  # type: ignore[union-attr]
@@ -55,4 +55,42 @@ def feast_feature_store_step(
             full_feature_names=full_feature_names,
         )
 
-    return feast_feature_store
+    return feast_historical_features
+
+
+class FeastOnlineFeaturesConfig(BaseStepConfig):
+    """Feast Feature Store online data step configuration."""
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+def feast_online_features_step(
+    entity_rows: List[Dict[str, Any]],
+    features: Union[List[str], FeatureService],
+    full_feature_names: bool = False,
+    name: Optional[str] = None,
+    enable_cache: Optional[bool] = None,
+) -> Type[BaseStep]:
+    """Feast Feature Store online data step"""
+
+    # enable cache explicitly to compensate for the fact that this step
+    # takes in a context object
+    if enable_cache is None:
+        enable_cache = True
+
+    @step(enable_cache=enable_cache, name=name)
+    def feast_online_features(
+        config: FeastHistoricalFeaturesConfig,
+        context: StepContext,
+    ) -> Dict[str, Any]:
+        """Feast Feature Store historical data step"""
+        feature_store_component = context.feature_store
+
+        return feature_store_component.get_online_features(  # type: ignore[union-attr]
+            entity_rows=entity_rows,
+            features=features,
+            full_feature_names=full_feature_names,
+        )
+
+    return feast_online_features

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import ClassVar, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Union
 
 from feast.feature_service import FeatureService  # type: ignore[import]
 from pandas import DataFrame
@@ -34,11 +34,14 @@ class BaseFeatureStore(StackComponent, ABC):
         entity_df: Union[DataFrame, str],
         features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
-    ) -> Optional[DataFrame]:
+    ) -> DataFrame:
         """Returns the historical features for training or batch scoring."""
-        return NotImplementedError
 
     @abstractmethod
-    def get_online_features(self) -> Optional[DataFrame]:
+    def get_online_features(
+        self,
+        entity_rows: List[Dict[str, Any]],
+        features: Union[List[str], FeatureService],
+        full_feature_names: bool = False,
+    ) -> Dict[str, Any]:
         """Returns the latest online feature data."""
-        return NotImplementedError
