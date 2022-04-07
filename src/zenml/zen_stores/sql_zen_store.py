@@ -111,7 +111,7 @@ class SqlZenStore(BaseZenStore):
         *args: Any,
         **kwargs: Any,
     ) -> "SqlZenStore":
-        """Initialize a new SqlStackStore.
+        """Initialize a new SqlZenStore.
 
         Args:
             url: odbc path to a database.
@@ -122,7 +122,7 @@ class SqlZenStore(BaseZenStore):
         if not self.is_valid_url(url):
             raise ValueError(f"Invalid URL for SQL store: {url}")
 
-        logger.debug("Initializing SqlStackStore at %s", url)
+        logger.debug("Initializing SqlZenStore at %s", url)
         self._url = url
 
         local_path = self.get_path_from_url(url)
@@ -898,7 +898,7 @@ class SqlZenStore(BaseZenStore):
 
     @property
     def stack_names(self) -> List[str]:
-        """Names of all stacks registered in this StackStore."""
+        """Names of all stacks registered in this ZenStore."""
         with Session(self.engine) as session:
             return [s.name for s in session.exec(select(ZenStack))]
 

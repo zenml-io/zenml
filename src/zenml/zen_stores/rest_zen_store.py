@@ -40,24 +40,24 @@ logger = get_logger(__name__)
 Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
-class RestStackStore(BaseZenStore):
-    """StackStore implementation for accessing stack data from a REST api."""
+class RestZenStore(BaseZenStore):
+    """ZenStore implementation for accessing stack data from a REST api."""
 
     def initialize(
         self,
         url: str,
         *args: Any,
         **kwargs: Any,
-    ) -> "RestStackStore":
-        """Initializes a local stack store instance.
+    ) -> "RestZenStore":
+        """Initializes a rest zen store instance.
 
         Args:
-            url: Endpoint URL of the service for stack storage.
+            url: Endpoint URL of the service for zen storage.
             args: additional positional arguments (ignored).
             kwargs: additional keyword arguments (ignored).
 
         Returns:
-            The initialized stack store instance.
+            The initialized zen store instance.
         """
         if not self.is_valid_url(url):
             raise ValueError("Invalid URL for REST store: {url}")
@@ -110,12 +110,12 @@ class RestStackStore(BaseZenStore):
 
     @property
     def type(self) -> StoreType:
-        """The type of stack store."""
+        """The type of zen store."""
         return StoreType.REST
 
     @property
     def url(self) -> str:
-        """Get the stack store URL."""
+        """Get the zen store URL."""
         return self._url
 
     @property
@@ -152,7 +152,7 @@ class RestStackStore(BaseZenStore):
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configurations for all stacks registered in this stack store.
+        """Configurations for all stacks registered in this zen store.
 
         Returns:
             Dictionary mapping stack names to Dict[StackComponentType, str]'s
@@ -222,7 +222,7 @@ class RestStackStore(BaseZenStore):
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
 
-        If any of the stacks' components aren't registered in the stack store
+        If any of the stacks' components aren't registered in the zen store
         yet, this method will try to register them as well.
 
         Args:
@@ -292,7 +292,7 @@ class RestStackStore(BaseZenStore):
 
     # Private interface shall not be implemented for REST store, instead the
     # API only provides all public methods, including the ones that would
-    # otherwise be inherited from the BaseStackStore in other implementations.
+    # otherwise be inherited from the BaseZenStore in other implementations.
     # Don't call these! ABC complains that they aren't implemented, but they
     # aren't needed with the custom implementations of base methods.
 

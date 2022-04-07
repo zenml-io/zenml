@@ -32,8 +32,8 @@ from zenml.constants import (
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.repository import Repository
-from zenml.stack_stores import BaseStackStore
-from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
+from zenml.zen_stores import BaseZenStore
+from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
 
 profile_configuration_json = os.environ.get("ZENML_PROFILE_CONFIGURATION")
 profile_name = os.environ.get("ZENML_PROFILE_NAME")
@@ -52,7 +52,7 @@ else:
     profile = Repository().active_profile
 
 
-stack_store: BaseStackStore = Repository.create_store(
+zen_store: BaseZenStore = Repository.create_store(
     profile, skip_default_stack=True
 )
 
@@ -97,7 +97,7 @@ async def health() -> str:
 
 @app.get(IS_EMPTY, response_model=bool)
 async def is_empty() -> bool:
-    return stack_store.is_empty
+    return zen_store.is_empty
 
 
 @app.get(
@@ -107,7 +107,7 @@ async def is_empty() -> bool:
 )
 async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
     try:
-        return stack_store.get_stack_configuration(name)
+        return zen_store.get_stack_configuration(name)
     except KeyError as error:
         raise not_found(error) from error
 
@@ -117,7 +117,7 @@ async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
     response_model=Dict[str, Dict[StackComponentType, str]],
 )
 async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
-    return stack_store.stack_configurations
+    return zen_store.stack_configurations
 
 
 @app.post(REGISTER_COMPONENT, responses={409: error_response})
@@ -125,7 +125,7 @@ async def register_stack_component(
     component: StackComponentWrapper,
 ) -> None:
     try:
-        stack_store.register_stack_component(component)
+        zen_store.register_stack_component(component)
     except StackComponentExistsError as error:
         raise conflict(error) from error
 
@@ -133,14 +133,14 @@ async def register_stack_component(
 @app.get(DELETE_STACK + "/{name}", responses={404: error_response})
 async def deregister_stack(name: str) -> None:
     try:
-        stack_store.deregister_stack(name)
+        zen_store.deregister_stack(name)
     except KeyError as error:
         raise not_found(error) from error
 
 
 @app.get(GET_STACKS, response_model=List[StackWrapper])
 async def stacks() -> List[StackWrapper]:
-    return stack_store.stacks
+    return zen_store.stacks
 
 
 @app.get(
@@ -150,7 +150,7 @@ async def stacks() -> List[StackWrapper]:
 )
 async def get_stack(name: str) -> StackWrapper:
     try:
-        return stack_store.get_stack(name)
+        return zen_store.get_stack(name)
     except KeyError as error:
         raise not_found(error) from error
 
@@ -162,7 +162,7 @@ async def get_stack(name: str) -> StackWrapper:
 )
 async def register_stack(stack: StackWrapper) -> Dict[str, str]:
     try:
-        return stack_store.register_stack(stack)
+        return zen_store.register_stack(stack)
     except (StackExistsError, StackComponentExistsError) as error:
         raise conflict(error) from error
 
@@ -176,7 +176,7 @@ async def get_stack_component(
     component_type: StackComponentType, name: str
 ) -> StackComponentWrapper:
     try:
-        return stack_store.get_stack_component(component_type, name=name)
+        return zen_store.get_stack_component(component_type, name=name)
     except KeyError as error:
         raise not_found(error) from error
 
@@ -188,7 +188,7 @@ async def get_stack_component(
 async def get_stack_components(
     component_type: StackComponentType,
 ) -> List[StackComponentWrapper]:
-    return stack_store.get_stack_components(component_type)
+    return zen_store.get_stack_components(component_type)
 
 
 @app.get(
@@ -199,7 +199,7 @@ async def deregister_stack_component(
     component_type: StackComponentType, name: str
 ) -> None:
     try:
-        return stack_store.deregister_stack_component(component_type, name=name)
+        return zen_store.deregister_stack_component(component_type, name=name)
     except KeyError as error:
         raise not_found(error) from error
     except ValueError as error:

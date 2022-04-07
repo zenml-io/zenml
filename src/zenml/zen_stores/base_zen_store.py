@@ -102,7 +102,7 @@ class BaseZenStore(ABC):
     @property
     @abstractmethod
     def type(self) -> StoreType:
-        """The type of stack store."""
+        """The type of zen store."""
 
     @property
     @abstractmethod

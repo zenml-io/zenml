@@ -890,9 +890,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             name: The name of the component to deregister.
         """
         try:
-            self.zen_store.deregister_stack_component(
-                component_type, name=name
-            )
+            self.zen_store.deregister_stack_component(component_type, name=name)
             logger.info(
                 "Deregistered stack component (type: %s) with name '%s'.",
                 component_type.value,

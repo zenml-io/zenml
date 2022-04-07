@@ -784,7 +784,7 @@ class LocalZenStore(BaseZenStore):
         return str(path)
 
     def _store_path(self) -> str:
-        """Path to the stack store yaml file."""
+        """Path to the zen store yaml file."""
         return str(self.root / "stacks.yaml")
 
     def _write_store(self) -> None:
