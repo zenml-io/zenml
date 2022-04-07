@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import ClassVar, Optional
+from typing import ClassVar, List, Optional, Union
 
+from feast.feature_service import FeatureService  # type: ignore[import]
 from pandas import DataFrame
 
 from zenml.enums import StackComponentType
@@ -28,7 +29,12 @@ class BaseFeatureStore(StackComponent, ABC):
     FLAVOR: ClassVar[str]
 
     @abstractmethod
-    def get_historical_features(self) -> Optional[DataFrame]:
+    def get_historical_features(
+        self,
+        entity_df: Union[DataFrame, str],
+        features: Union[List[str], FeatureService],
+        full_feature_names: bool = False,
+    ) -> Optional[DataFrame]:
         """Returns the historical features for training or batch scoring."""
         return NotImplementedError
 

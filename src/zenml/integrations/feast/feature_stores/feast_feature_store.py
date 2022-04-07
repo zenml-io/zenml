@@ -12,9 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import ClassVar, Optional
+from typing import ClassVar, List, Optional, Union
 
 import redis  # type: ignore
+from feast import FeatureStore  # type: ignore[import]
+from feast.feature_service import FeatureService  # type: ignore[import]
 from pandas import DataFrame
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
@@ -36,17 +38,21 @@ class FeastFeatureStore(BaseFeatureStore):
     online_port: int = 6379
     feast_repo: str = ""
 
-    def get_historical_features(self) -> Optional[DataFrame]:
+    def get_historical_features(
+        self,
+        entity_df: Union[DataFrame, str],
+        features: Union[List[str], FeatureService],
+        full_feature_names: bool = False,
+    ) -> Optional[DataFrame]:
         """Returns the historical features for training or batch scoring."""
         self._validate_connection()
-        # fs_interface = FeatureStore(repo_path=config.repo_path)
+        fs = FeatureStore(repo_path=self.feast_repo)
 
-        # return fs_interface.get_historical_features(
-        #     entity_df=self.entity_df,
-        #     features=self.features,
-        #     full_feature_names=self.full_feature_names,
-        # ).to_df()
-        return NotImplementedError
+        return fs.get_historical_features(
+            entity_df=entity_df,
+            features=features,
+            full_feature_names=full_feature_names,
+        ).to_df()
 
     def get_online_features(self) -> Optional[DataFrame]:
         """Returns the latest online feature data."""

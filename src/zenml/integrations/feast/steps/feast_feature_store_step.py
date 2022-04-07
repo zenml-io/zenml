@@ -26,12 +26,15 @@ class FeastFeatureStoreConfig(BaseStepConfig):
     class Config:
         arbitrary_types_allowed = True
 
-    entity_df: Union[DataFrame, str]
-    features: Union[List[str], FeatureService]
-    full_feature_names: bool = False
+    # entity_df: Union[DataFrame, str]
+    # features: Union[List[str], FeatureService]
+    # full_feature_names: bool = False
 
 
 def feast_feature_store_step(
+    entity_df: Union[DataFrame, str],
+    features: Union[List[str], FeatureService],
+    full_feature_names: bool = False,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
 ) -> Type[BaseStep]:
@@ -48,12 +51,12 @@ def feast_feature_store_step(
         context: StepContext,
     ) -> DataFrame:
         """Feast Feature Store step"""
-        fs_interface = context.feature_store
+        feature_store_component = context.feature_store
 
-        return fs_interface.get_historical_features(
-            entity_df=config.entity_df,
-            features=config.features,
-            full_feature_names=config.full_feature_names,
-        ).to_df()
+        return feature_store_component.get_historical_features(  # type: ignore[union-attr]
+            entity_df=entity_df,
+            features=features,
+            full_feature_names=full_feature_names,
+        )
 
     return feast_feature_store

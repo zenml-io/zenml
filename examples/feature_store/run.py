@@ -48,14 +48,13 @@ features = [
     "driver_hourly_stats:avg_daily_trips",
 ]
 
-feature_store = feast_feature_store_step(name="feature_store")
-
-historical_data = feature_store(
-    FeastFeatureStoreConfig(
-        entity_df=batch_entity_df,
-        features=features,
-    )
+feature_store = feast_feature_store_step(
+    name="feature_store",
+    entity_df=batch_entity_df,
+    features=features,
 )
+
+historical_data = feature_store(FeastFeatureStoreConfig())
 
 
 @step
@@ -76,7 +75,7 @@ def feast_pipeline(
 
 if __name__ == "__main__":
     pipeline = feast_pipeline(
-        batch_features=historical_data(),
+        batch_features=historical_data,
         feature_printer=print_initial_features(),
     )
 
