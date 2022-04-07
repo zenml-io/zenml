@@ -214,7 +214,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
                     if self._matches_search_criteria(existing_service, config):
                         if running:
                             if existing_service.is_running:
-                                services.append(cast(BaseService, existing_service))
+                                services.append(
+                                    cast(BaseService, existing_service)
+                                )
                         else:
                             services.append(cast(BaseService, existing_service))
 
