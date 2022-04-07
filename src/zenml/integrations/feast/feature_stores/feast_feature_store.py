@@ -44,7 +44,16 @@ class FeastFeatureStore(BaseFeatureStore):
         features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
     ) -> DataFrame:
-        """Returns the historical features for training or batch scoring."""
+        """Returns the historical features for training or batch scoring.
+
+        Args:
+            entity_df: The entity dataframe or entity name.
+            features: The features to retrieve.
+            full_feature_names: Whether to return the full feature names.
+
+        Returns:
+            The historical features as a Pandas DataFrame.
+        """
         self._validate_connection()
         fs = FeatureStore(repo_path=self.feast_repo)
 
@@ -60,7 +69,16 @@ class FeastFeatureStore(BaseFeatureStore):
         features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
     ) -> Dict[str, Any]:
-        """Returns the latest online feature data."""
+        """Returns the latest online feature data.
+
+        Args:
+            entity_rows: The entity rows to retrieve.
+            features: The features to retrieve.
+            full_feature_names: Whether to return the full feature names.
+
+        Returns:
+            The latest online feature data as a dictionary.
+        """
         self._validate_connection()
         fs = FeatureStore(repo_path=self.feast_repo)
 
@@ -71,7 +89,11 @@ class FeastFeatureStore(BaseFeatureStore):
         ).to_dict()
 
     def _validate_connection(self) -> None:
-        """Validates the connection to the feature store."""
+        """Validates the connection to the feature store.
+
+        Raises:
+            RuntimeError: If the online component (Redis) is not available.
+        """
         client = redis.Redis(host=self.online_host, port=self.online_port)
         try:
             client.ping()

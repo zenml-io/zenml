@@ -35,7 +35,16 @@ class BaseFeatureStore(StackComponent, ABC):
         features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
     ) -> DataFrame:
-        """Returns the historical features for training or batch scoring."""
+        """Returns the historical features for training or batch scoring.
+
+        Args:
+            entity_df: The entity dataframe or entity name.
+            features: The features to retrieve.
+            full_feature_names: Whether to return the full feature names.
+
+        Returns:
+            The historical features as a Pandas DataFrame.
+        """
 
     @abstractmethod
     def get_online_features(
@@ -44,4 +53,13 @@ class BaseFeatureStore(StackComponent, ABC):
         features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
     ) -> Dict[str, Any]:
-        """Returns the latest online feature data."""
+        """Returns the latest online feature data.
+
+        Args:
+            entity_rows: The entity rows to retrieve.
+            features: The features to retrieve.
+            full_feature_names: Whether to return the full feature names.
+
+        Returns:
+            The latest online feature data as a dictionary.
+        """

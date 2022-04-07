@@ -34,7 +34,18 @@ def feast_historical_features_step(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
 ) -> Type[BaseStep]:
-    """Feast Feature Store historical data step"""
+    """Feast Feature Store historical data step.
+
+    Args:
+        entity_df: The entity dataframe or entity name.
+        features: The features to retrieve.
+        full_feature_names: Whether to return the full feature names.
+        name: The name of the step.
+        enable_cache: Whether to enable caching.
+
+    Returns:
+        A historical features step.
+    """
 
     # enable cache explicitly to compensate for the fact that this step
     # takes in a context object
@@ -46,7 +57,15 @@ def feast_historical_features_step(
         config: FeastHistoricalFeaturesConfig,
         context: StepContext,
     ) -> DataFrame:
-        """Feast Feature Store historical data step"""
+        """Feast Feature Store historical data step
+
+        Args:
+            config: The step configuration.
+            context: The step context.
+
+        Returns:
+            The historical features as a DataFrame.
+        """
         feature_store_component = context.feature_store
 
         return feature_store_component.get_historical_features(  # type: ignore[union-attr]
@@ -72,7 +91,18 @@ def feast_online_features_step(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
 ) -> Type[BaseStep]:
-    """Feast Feature Store online data step"""
+    """Feast Feature Store online data step
+
+    Args:
+        entity_rows: The entity rows to retrieve.
+        features: The features to retrieve.
+        full_feature_names: Whether to return the full feature names.
+        name: The name of the step.
+        enable_cache: Whether to enable caching.
+
+    Returns:
+        An online features step.
+    """
 
     # enable cache explicitly to compensate for the fact that this step
     # takes in a context object
@@ -84,7 +114,15 @@ def feast_online_features_step(
         config: FeastHistoricalFeaturesConfig,
         context: StepContext,
     ) -> Dict[str, Any]:
-        """Feast Feature Store historical data step"""
+        """Feast Feature Store historical data step
+
+        Args:
+            config: The step configuration.
+            context: The step context.
+
+        Returns:
+            The online features as a dictionary.
+        """
         feature_store_component = context.feature_store
 
         return feature_store_component.get_online_features(  # type: ignore[union-attr]
