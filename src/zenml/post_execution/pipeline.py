@@ -89,6 +89,34 @@ class PipelineView:
             )
         return run
 
+    def get_run_for_completed_step(self, step_name: str) -> "PipelineRunView":
+        """This method helps you find out which pipeline run produced
+        the cached artifact of a given step.
+
+        Args:
+            step_name: Name of step at hand
+        Return:
+            None if no run is found that completed the given step,
+             else the original pipeline_run
+        """
+        orig_pipeline_run = None
+
+        for run in reversed(self.runs):
+            try:
+                step = run.get_step(step_name)
+                if step.is_completed:
+                    orig_pipeline_run = run
+                    break
+            except KeyError:
+                pass
+        if not orig_pipeline_run:
+            raise LookupError(
+                "No Pipeline Run could be found, that has"
+                f" completed the provided step: [{step_name}]"
+            )
+
+        return orig_pipeline_run
+
     def __repr__(self) -> str:
         """Returns a string representation of this pipeline."""
         return (
