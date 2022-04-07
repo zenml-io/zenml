@@ -30,11 +30,7 @@ from zenml.steps import step
 logger = get_logger(__name__)
 
 
-# fs = FeatureStore(repo_path="feature_repo")
-# fs.materialize_incremental(end_date=datetime.utcnow() - timedelta(minutes=5))
-
-
-batch_entity_df = pd.DataFrame.from_dict(
+historical_entity_df = pd.DataFrame.from_dict(
     {
         "driver_id": [1001, 1002, 1003],
         "label_driver_reported_satisfaction": [1, 5, 3],
@@ -54,30 +50,26 @@ features = [
 
 historical_feature_data_importer = feast_historical_features_step(
     name="historical_features",
-    entity_df=batch_entity_df,
+    entity_df=historical_entity_df,
     features=features,
 )
 online_feature_data_importer = feast_online_features_step(
     name="online_features",
-    features=[
-        "driver_hourly_stats:conv_rate",
-        "driver_hourly_stats:acc_rate",
-        "driver_hourly_stats:avg_daily_trips",
-    ],
+    features=features,
     entity_rows=[
         {"driver_id": 1004},
         {"driver_id": 1005},
     ],
 )
 
-historical_data = historical_feature_data_importer()
-online_data = online_feature_data_importer()
+historical_features = historical_feature_data_importer()
+online_features = online_feature_data_importer()
 
 
 @step
-def print_historical_features(batch_features: DataFrame) -> DataFrame:
+def print_historical_features(historical_features: DataFrame) -> DataFrame:
     """Prints features imported from the offline / batch feature store."""
-    return batch_features.head()
+    return historical_features.head()
 
 
 @step
@@ -88,22 +80,22 @@ def print_online_features(features_dict: dict) -> dict:
 
 @pipeline(required_integrations=[FEAST])
 def feast_pipeline(
-    batch_features,
+    historical_features,
     online_features,
     historical_feature_printer,
     online_feature_printer,
 ):
     """Links all the steps together in a pipeline"""
-    batch_features = batch_features()
-    historical_feature_printer(batch_features)
+    historical_features = historical_features()
+    historical_feature_printer(historical_features)
     online_features = online_features()
     online_feature_printer(online_features)
 
 
 if __name__ == "__main__":
     pipeline = feast_pipeline(
-        batch_features=historical_data,
-        online_features=online_data,
+        historical_features=historical_features,
+        online_features=online_features,
         historical_feature_printer=print_historical_features(),
         online_feature_printer=print_online_features(),
     )
