@@ -50,7 +50,7 @@ def pipeline(
     required_integrations: Sequence[str] = (),
     requirements_file: Optional[str] = None,
     dockerignore_file: Optional[str] = None,
-    secrets: Optional[List[str]] = None,
+    secrets: Optional[List[str]] = [],
 ) -> Callable[[F], Type[BasePipeline]]:
     """Type annotations for step decorator in case of arguments."""
     ...
@@ -64,7 +64,7 @@ def pipeline(
     required_integrations: Sequence[str] = (),
     requirements_file: Optional[str] = None,
     dockerignore_file: Optional[str] = None,
-    secrets: Optional[List[str]] = None,
+    secrets: Optional[List[str]] = [],
 ) -> Union[Type[BasePipeline], Callable[[F], Type[BasePipeline]]]:
     """Outer decorator function for the creation of a ZenML pipeline
 

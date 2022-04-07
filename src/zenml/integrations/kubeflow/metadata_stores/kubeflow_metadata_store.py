@@ -12,12 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from typing import Union
+from typing import ClassVar, Union
 
 from kubernetes import config as k8s_config
 from ml_metadata.proto import metadata_store_pb2
 
-from zenml.enums import MetadataStoreFlavor, StackComponentType
 from zenml.metadata_stores import MySQLMetadataStore
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
@@ -36,10 +35,7 @@ def inside_kfp_pod() -> bool:
         return False
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.METADATA_STORE,
-    component_flavor=MetadataStoreFlavor.KUBEFLOW,
-)
+@register_stack_component_class
 class KubeflowMetadataStore(MySQLMetadataStore):
     """Kubeflow MySQL backend for ZenML metadata store."""
 
@@ -49,10 +45,13 @@ class KubeflowMetadataStore(MySQLMetadataStore):
     username: str = "root"
     password: str = ""
 
+    # Class Configuration
+    FLAVOR: ClassVar[str] = "kubeflow"
+
     @property
-    def flavor(self) -> MetadataStoreFlavor:
-        """The metadata store flavor."""
-        return MetadataStoreFlavor.KUBEFLOW
+    def upgrade_migration_enabled(self) -> bool:
+        """Return False to disable automatic database schema migration."""
+        return False
 
     def get_tfx_metadata_config(
         self,

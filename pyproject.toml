@@ -63,6 +63,7 @@ httplib2 = "<0.20,>=0.19.1"
 pyparsing = "<3,>=2.4.0"
 sqlmodel = "0.0.6"
 semver = "^2.13.0"
+markupsafe = "1.1.1"
 
 
 [tool.poetry.dev-dependencies]
@@ -79,7 +80,11 @@ pyment = "^0.3.3"
 tox = "^3.24.3"
 hypothesis = "^6.23.0"
 typing-extensions = ">=3.7.4"
+
+# pytest dev dependencies
 pytest-randomly = "^3.10.1"
+pytest-xdist = "^2.5.0"
+pytest-clarity = "^1.0.1"
 
 # mkdocs including plugins
 mkdocs="^1.2.3"

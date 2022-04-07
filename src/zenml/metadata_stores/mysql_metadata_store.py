@@ -11,12 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Union
+from typing import ClassVar, Union
 
 from ml_metadata.proto import metadata_store_pb2
 from tfx.orchestration import metadata
 
-from zenml.enums import MetadataStoreFlavor
 from zenml.metadata_stores import BaseMetadataStore
 
 
@@ -28,13 +27,14 @@ class MySQLMetadataStore(BaseMetadataStore):
     database: str
     username: str
     password: str
-    supports_local_execution = True
-    supports_remote_execution = True
+
+    # Class Configuration
+    FLAVOR: ClassVar[str] = "mysql"
 
     @property
-    def flavor(self) -> MetadataStoreFlavor:
-        """The metadata store flavor."""
-        return MetadataStoreFlavor.MYSQL
+    def upgrade_migration_enabled(self) -> bool:
+        """Return True to enable automatic database schema migration."""
+        return True
 
     def get_tfx_metadata_config(
         self,

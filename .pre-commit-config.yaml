@@ -7,7 +7,7 @@ repos:
         name: lint
         entry: poetry run bash scripts/lint.sh
         language: system
-        files: ^src/zenml/|^tests/
+        files: ^src/zenml/|^tests/|^examples/
         types: [file, python]
         pass_filenames: false
 

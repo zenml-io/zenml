@@ -21,7 +21,7 @@ from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
-from zenml.io import fileio
+from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper
@@ -85,7 +85,7 @@ class SqlStackStore(BaseStackStore):
 
         local_path = self.get_path_from_url(url)
         if local_path:
-            fileio.create_dir_recursive_if_not_exists(str(local_path.parent))
+            utils.create_dir_recursive_if_not_exists(str(local_path.parent))
 
         self.engine = create_engine(url, *args, **kwargs)
         SQLModel.metadata.create_all(self.engine)
@@ -301,7 +301,7 @@ class SqlStackStore(BaseStackStore):
             name: The name of the component to fetch.
 
         Returns:
-            Pair of (flavor, congfiguration) for stack component, as string and
+            Pair of (flavor, configuration) for stack component, as string and
             base64-encoded yaml document, respectively
 
         Raises:
