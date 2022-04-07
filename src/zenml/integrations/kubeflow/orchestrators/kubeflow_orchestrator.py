@@ -510,7 +510,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
         elif secrets and not secret_manager:
             raise ProvisioningError(
                 "Unable to provision local Kubeflow Pipelines deployment: "
-                "Missing secrets manager in current stack."
+                f"You passed in the following secrets: { ', '.join(secrets) }, "
+                "however, no secrets manager is registered for the current stack."
             )
         else:
             # No secrets provided by the user.
