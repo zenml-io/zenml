@@ -32,7 +32,6 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
 )
-from zenml.repository import Repository
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseStep,
@@ -79,16 +78,10 @@ def mlflow_deployer_step(
         an MLflow model deployer pipeline step
     """
 
-    # check if an MLFlowModelDeployer stack component is registered with
-    # the currently active stack
-    mlflow_model_deployer_component = Repository().active_stack.model_deployer
-    if not isinstance(mlflow_model_deployer_component, MLFlowModelDeployer):
-        raise TypeError(
-            "The active stack needs to have a model deployer component"
-            "of type MLFlowModelDeployer registered for this step to work."
-            "You can create a new stack with a MLFlowModelDeployer component"
-            "or update your existing stack to add this component."
-        )
+    # get active MLFlowModelDeployer stack component
+    mlflow_model_deployer_component = (
+        MLFlowModelDeployer.get_active_model_deployer()
+    )
 
     @enable_mlflow
     @step(enable_cache=enable_cache, name=name)

@@ -32,8 +32,10 @@ from rich import print
 
 from zenml.environment import Environment
 from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT_NAME
+from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
+    MLFlowModelDeployer,
+)
 from zenml.integrations.mlflow.steps import MLFlowDeployerConfig
-from zenml.repository import Repository
 
 
 @click.command()
@@ -54,7 +56,9 @@ def main(epochs: int, lr: float, min_accuracy: float, stop_service: bool):
     """Run the MLflow example pipeline"""
 
     # get the MLflow model deployer stack component
-    mlflow_model_deployer_component = Repository().active_stack.model_deployer
+    mlflow_model_deployer_component = (
+        MLFlowModelDeployer.get_active_model_deployer()
+    )
 
     if stop_service:
         services = mlflow_model_deployer_component.find_model_server(

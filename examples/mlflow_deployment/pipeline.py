@@ -21,10 +21,12 @@ import requests  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
 
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
+    MLFlowModelDeployer,
+)
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
 from zenml.integrations.mlflow.steps import mlflow_deployer_step
 from zenml.pipelines import pipeline
-from zenml.repository import Repository
 from zenml.steps import BaseStepConfig, Output, step
 
 # Path to a pip requirements file that contains requirements necessary to run
@@ -155,7 +157,9 @@ def prediction_service_loader(
     """Get the prediction service started by the deployment pipeline"""
 
     # get the MLflow model deployer stack component
-    mlflow_model_deployer_component = Repository().active_stack.model_deployer
+    mlflow_model_deployer_component = (
+        MLFlowModelDeployer.get_active_model_deployer()
+    )
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = mlflow_model_deployer_component.find_model_server(
