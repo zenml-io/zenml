@@ -67,7 +67,7 @@ def _read_executor_output(
     Raises:
         RuntimeError: If no output is written to the given path.
     """
-    if fileio.file_exists(output_path):
+    if fileio.exists(output_path):
         with fileio.open(output_path, "rb") as f:
             return execution_result_pb2.ExecutorOutput.FromString(f.read())
     else:
@@ -136,9 +136,8 @@ class StepExecutorOperator(BaseExecutorOperator):
         """
         main_module_path = zenml.constants.USER_MAIN_MODULE
         if not main_module_path:
-            main_module_file = cast(str, sys.modules["__main__"].__file__)
-            main_module_path = source_utils.get_module_source_from_file_path(
-                os.path.abspath(main_module_file)
+            main_module_path = source_utils.get_module_source_from_module(
+                sys.modules["__main__"]
             )
 
         step_type = cast(str, pipeline_node.node_info.type.name)

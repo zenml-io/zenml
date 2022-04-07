@@ -20,12 +20,15 @@ from docker.client import DockerClient
 from docker.utils import build as docker_build_utils
 
 import zenml
-import zenml.io.utils
+from zenml.config.global_config import GlobalConfiguration
+from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.io import fileio
+from zenml.io.utils import read_file_contents_as_string
 from zenml.logger import get_logger
 from zenml.utils import string_utils
 
 DEFAULT_BASE_IMAGE = f"zenmldocker/zenml:{zenml.__version__}"
+CONTAINER_ZENML_CONFIG_DIR = ".zenconfig"
 
 logger = get_logger(__name__)
 
@@ -33,9 +36,7 @@ logger = get_logger(__name__)
 def _parse_dockerignore(dockerignore_path: str) -> List[str]:
     """Parses a dockerignore file and returns a list of patterns to ignore."""
     try:
-        file_content = zenml.io.utils.read_file_contents_as_string(
-            dockerignore_path
-        )
+        file_content = read_file_contents_as_string(dockerignore_path)
     except FileNotFoundError:
         logger.warning(
             "Unable to find dockerignore file at path '%s'.", dockerignore_path
@@ -55,6 +56,7 @@ def generate_dockerfile_contents(
     base_image: str,
     entrypoint: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
+    environment_vars: Optional[Dict[str, str]] = None,
 ) -> str:
     """Generates a Dockerfile.
 
@@ -63,11 +65,16 @@ def generate_dockerfile_contents(
         entrypoint: The default entrypoint command that gets executed when
             running a container of an image created by this dockerfile.
         requirements: Optional list of pip requirements to install.
+        environment_vars: Optional dict of environment variables to set.
 
     Returns:
         Content of a dockerfile.
     """
     lines = [f"FROM {base_image}", "WORKDIR /app"]
+
+    if environment_vars:
+        for key, value in environment_vars.items():
+            lines.append(f"ENV {key.upper()}={value}")
 
     if requirements:
         lines.append(
@@ -75,6 +82,10 @@ def generate_dockerfile_contents(
         )
 
     lines.append("COPY . .")
+    lines.append("RUN chmod -R a+rw .")
+    lines.append(
+        f"ENV {ENV_ZENML_CONFIG_PATH}=/app/{CONTAINER_ZENML_CONFIG_DIR}"
+    )
 
     if entrypoint:
         lines.append(f"ENTRYPOINT {entrypoint}")
@@ -108,7 +119,7 @@ def create_custom_build_context(
     )
     if dockerignore_path:
         exclude_patterns = _parse_dockerignore(dockerignore_path)
-    elif fileio.file_exists(default_dockerignore_path):
+    elif fileio.exists(default_dockerignore_path):
         logger.info(
             "Using dockerignore found at path '%s' to create docker "
             "build context.",
@@ -173,6 +184,7 @@ def build_docker_image(
     dockerfile_path: Optional[str] = None,
     dockerignore_path: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
+    environment_vars: Optional[Dict[str, str]] = None,
     use_local_requirements: bool = False,
     base_image: Optional[str] = None,
 ) -> None:
@@ -192,62 +204,80 @@ def build_docker_image(
             are included in the build context.
         requirements: Optional list of pip requirements to install. This
             will only be used if no value is given for `dockerfile_path`.
+        environment_vars: Optional dict of key value pairs that need to be
+            embedded as environment variables in the image.
         use_local_requirements: If `True` and no values are given for
             `dockerfile_path` and `requirements`, then the packages installed
             in the environment of the current python processed will be
             installed in the docker image.
         base_image: The image to use as base for the docker image.
     """
-    if not requirements and use_local_requirements:
-        local_requirements = get_current_environment_requirements()
-        requirements = {
-            f"{package}=={version}"
-            for package, version in local_requirements.items()
-            if package != "zenml"  # exclude ZenML
-        }
+    config_path = os.path.join(build_context_path, CONTAINER_ZENML_CONFIG_DIR)
+    try:
+
+        # Save a copy of the current global configuration with the
+        # active profile and the active stack configuration into the build
+        # context, to have the active profile and active stack accessible from
+        # within the container.
+        GlobalConfiguration().copy_active_configuration(
+            config_path,
+            load_config_path=f"/app/{CONTAINER_ZENML_CONFIG_DIR}",
+        )
+
+        if not requirements and use_local_requirements:
+            local_requirements = get_current_environment_requirements()
+            requirements = {
+                f"{package}=={version}"
+                for package, version in local_requirements.items()
+                if package != "zenml"  # exclude ZenML
+            }
+            logger.info(
+                "Using requirements from local environment to build "
+                "docker image: %s",
+                requirements,
+            )
+
+        if dockerfile_path:
+            dockerfile_contents = read_file_contents_as_string(dockerfile_path)
+        else:
+            dockerfile_contents = generate_dockerfile_contents(
+                base_image=base_image or DEFAULT_BASE_IMAGE,
+                entrypoint=entrypoint,
+                requirements=requirements,
+            )
+
+        build_context = create_custom_build_context(
+            build_context_path=build_context_path,
+            dockerfile_contents=dockerfile_contents,
+            dockerignore_path=dockerignore_path,
+        )
+        # If a custom base image is provided, make sure to always pull the
+        # latest version of that image (if it isn't a locally built image).
+        # If no base image is provided, we use the static default ZenML image so
+        # there is no need to constantly pull
+        pull_base_image = False
+        if base_image:
+            pull_base_image = not is_local_image(base_image)
+
         logger.info(
-            "Using requirements from local environment to build "
-            "docker image: %s",
-            requirements,
+            "Building docker image '%s', this might take a while...",
+            image_name,
         )
 
-    if dockerfile_path:
-        dockerfile_contents = zenml.io.utils.read_file_contents_as_string(
-            dockerfile_path
+        docker_client = DockerClient.from_env()
+        # We use the client api directly here, so we can stream the logs
+        output_stream = docker_client.images.client.api.build(
+            fileobj=build_context,
+            custom_context=True,
+            tag=image_name,
+            pull=pull_base_image,
+            rm=False,  # don't remove intermediate containers
         )
-    else:
-        dockerfile_contents = generate_dockerfile_contents(
-            base_image=base_image or DEFAULT_BASE_IMAGE,
-            entrypoint=entrypoint,
-            requirements=requirements,
-        )
+        _process_stream(output_stream)
+    finally:
+        # Clean up the temporary build files
+        fileio.rmtree(config_path)
 
-    build_context = create_custom_build_context(
-        build_context_path=build_context_path,
-        dockerfile_contents=dockerfile_contents,
-        dockerignore_path=dockerignore_path,
-    )
-    # If a custom base image is provided, make sure to always pull the
-    # latest version of that image (if it isn't a locally built image).
-    # If no base image is provided, we use the static default ZenML image so
-    # there is no need to constantly pull
-    pull_base_image = False
-    if base_image:
-        pull_base_image = not is_local_image(base_image)
-
-    logger.info(
-        "Building docker image '%s', this might take a while...", image_name
-    )
-    docker_client = DockerClient.from_env()
-    # We use the client api directly here so we can stream the logs
-    output_stream = docker_client.images.client.api.build(
-        fileobj=build_context,
-        custom_context=True,
-        tag=image_name,
-        pull=pull_base_image,
-        rm=False,  # don't remove intermediate containers
-    )
-    _process_stream(output_stream)
     logger.info("Finished building docker image.")
 
 

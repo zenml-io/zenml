@@ -14,7 +14,6 @@
 
 import logging
 from enum import Enum
-from typing import Type
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -47,6 +46,7 @@ class StackComponentType(StrEnum):
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
     STEP_OPERATOR = "step_operator"
+    SECRETS_MANAGER = "secrets_manager"
 
     @property
     def plural(self) -> str:
@@ -57,68 +57,6 @@ class StackComponentType(StrEnum):
         return f"{self.value}s"
 
 
-class StackComponentFlavor(StrEnum):
-    """Abstract base class for all stack component flavors."""
-
-    @staticmethod
-    def for_type(
-        component_type: StackComponentType,
-    ) -> Type["StackComponentFlavor"]:
-        """Get the corresponding flavor child-type for a component type."""
-        if component_type == StackComponentType.ARTIFACT_STORE:
-            return ArtifactStoreFlavor
-        elif component_type == StackComponentType.METADATA_STORE:
-            return MetadataStoreFlavor
-        elif component_type == StackComponentType.CONTAINER_REGISTRY:
-            return ContainerRegistryFlavor
-        elif component_type == StackComponentType.ORCHESTRATOR:
-            return OrchestratorFlavor
-        elif component_type == StackComponentType.STEP_OPERATOR:
-            return StepOperatorFlavor
-        else:
-            raise ValueError(
-                f"Unsupported Stack Component Type {component_type.value}"
-            )
-
-
-class ArtifactStoreFlavor(StackComponentFlavor):
-    """All supported artifact store flavors."""
-
-    AZURE = "azure"
-    LOCAL = "local"
-    GCP = "gcp"
-    S3 = "s3"
-
-
-class MetadataStoreFlavor(StackComponentFlavor):
-    """All supported metadata store flavors."""
-
-    SQLITE = "sqlite"
-    MYSQL = "mysql"
-    KUBEFLOW = "kubeflow"
-
-
-class ContainerRegistryFlavor(StackComponentFlavor):
-    """All supported container registry flavors."""
-
-    DEFAULT = "default"
-
-
-class OrchestratorFlavor(StackComponentFlavor):
-    """All supported orchestrator flavors."""
-
-    LOCAL = "local"
-    KUBEFLOW = "kubeflow"
-    AIRFLOW = "airflow"
-
-
-class StepOperatorFlavor(StackComponentFlavor):
-    """All supported step operator flavors."""
-
-    AZUREML = "azureml"
-    SAGEMAKER = "sagemaker"
-
-
 class MetadataContextTypes(Enum):
     """All possible types that contexts can have within pipeline nodes"""
 
@@ -126,10 +64,16 @@ class MetadataContextTypes(Enum):
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
 
 
-class StorageType(StrEnum):
-    """Storage Backend Types"""
+class SecretSchemaType(StrEnum):
+    """All supported secret schema types."""
 
-    YAML_STORAGE = "yaml_storage"
-    SQLITE_STORAGE = "sqlite_storage"
-    MYSQL_STORAGE = "mysql_storage"
-    REST_STORAGE = "rest_storage"
+    AWS = "aws"
+    ARBITRARY = "arbitrary"
+
+
+class StoreType(StrEnum):
+    """Repository Store Backend Types"""
+
+    LOCAL = "local"
+    SQL = "sql"
+    REST = "rest"

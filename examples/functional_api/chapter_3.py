@@ -109,21 +109,22 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Run the pipeline
-mnist_pipeline(
-    importer=importer_mnist(),
-    normalizer=normalize_mnist(),
-    trainer=tf_trainer(config=TrainerConfig(epochs=1)),
-    evaluator=tf_evaluator(),
-).run()
+if __name__ == "__main__":
 
+    # Run the pipeline
+    mnist_pipeline(
+        importer=importer_mnist(),
+        normalizer=normalize_mnist(),
+        trainer=tf_trainer(config=TrainerConfig(epochs=1)),
+        evaluator=tf_evaluator(),
+    ).run()
 
-# Post-execution
-repo = Repository()
-p = repo.get_pipeline(pipeline_name="mnist_pipeline")
-runs = p.runs
-print(f"Pipeline `mnist_pipeline` has {len(runs)} run(s)")
-run = runs[-1]
-print(f"The run you just made has {len(run.steps)} steps.")
-step = run.get_step("evaluator")
-print(f"The `tf_evaluator` step returned an accuracy: {step.output.read()}")
+    # Post-execution
+    repo = Repository()
+    p = repo.get_pipeline(pipeline_name="mnist_pipeline")
+    runs = p.runs
+    print(f"Pipeline `mnist_pipeline` has {len(runs)} run(s)")
+    run = runs[-1]
+    print(f"The run you just made has {len(run.steps)} steps.")
+    step = run.get_step("evaluator")
+    print(f"The `tf_evaluator` step returned an accuracy: {step.output.read()}")

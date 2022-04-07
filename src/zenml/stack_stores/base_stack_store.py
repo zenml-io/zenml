@@ -13,14 +13,17 @@
 #  permissions and limitations under the License.
 import base64
 from abc import ABC, abstractmethod
-from typing import Dict, List, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
+from zenml.stack import Stack
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
@@ -28,12 +31,91 @@ logger = get_logger(__name__)
 class BaseStackStore(ABC):
     """Base class for accessing data in ZenML Repository and new Service."""
 
+    def register_default_stack(self) -> None:
+        """Populates the store with the default Stack.
+
+        The default stack contains a local orchestrator,
+        a local artifact store and a local SQLite metadata store.
+        """
+
+        # register the default stack
+        stack = Stack.default_local_stack()
+        metadata = self.register_stack(StackWrapper.from_stack(stack))
+        metadata["store_type"] = self.type.value
+        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+
     # Public Interface:
 
     @property
     @abstractmethod
-    def version(self) -> str:
-        """Get the ZenML version."""
+    def type(self) -> StoreType:
+        """The type of stack store."""
+
+    @abstractmethod
+    def initialize(
+        self,
+        url: str,
+        skip_default_stack: bool = False,
+        *args: Any,
+        **kwargs: Any,
+    ) -> "BaseStackStore":
+        """Initialize the store.
+
+        Args:
+            url: The URL of the store.
+            skip_default_stack: If True, the creation of the default stack will
+                be skipped.
+            *args: Additional arguments to pass to the concrete store
+                implementation.
+            **kwargs: Additional keyword arguments to pass to the concrete
+                store implementation.
+
+        Returns:
+            The initialized concrete store instance.
+        """
+
+        if not skip_default_stack and self.is_empty():
+
+            logger.info("Initializing store...")
+            self.register_default_stack()
+
+        return self
+
+    @property
+    @abstractmethod
+    def url(self) -> str:
+        """Get the repository URL."""
+
+    @staticmethod
+    @abstractmethod
+    def get_path_from_url(url: str) -> Optional[Path]:
+        """Get the path from a URL, if it points or is backed by a local file.
+
+        Args:
+            url: The URL to get the path from.
+
+        Returns:
+            The local path backed by the URL, or None if the URL is not backed
+            by a local file or directory
+        """
+
+    @staticmethod
+    @abstractmethod
+    def get_local_url(path: str) -> str:
+        """Get a local URL for a given local path."""
+
+    @staticmethod
+    @abstractmethod
+    def is_valid_url(url: str) -> bool:
+        """Check if the given url is valid."""
+
+    @abstractmethod
+    def is_empty(self) -> bool:
+        """Check if the store is empty (no stacks are configured).
+
+        The implementation of this method should check if the store is empty
+        without having to load all the stacks from the persistent storage.
+        """
 
     @abstractmethod
     def get_stack_configuration(
@@ -107,7 +189,7 @@ class BaseStackStore(ABC):
             name: The name of the component to fetch.
 
         Returns:
-            Pair of (flavor, congfiguration) for stack component, as string and
+            Pair of (flavor, configuration) for stack component, as string and
             base64-encoded yaml document, respectively
 
         Raises:

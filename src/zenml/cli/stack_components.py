@@ -71,15 +71,18 @@ def generate_stack_component_get_command(
 
     def get_stack_component_command() -> None:
         """Prints the name of the active component."""
+
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         active_stack = Repository().active_stack
         component = active_stack.components.get(component_type, None)
         display_name = _component_display_name(component_type)
-
         if component:
-            cli_utils.declare(f"Active {display_name}: {component.name}")
+            cli_utils.declare(f"Active {display_name}: '{component.name}'")
         else:
             cli_utils.warning(
-                f"No {display_name} set for active stack ({active_stack.name})."
+                f"No {display_name} set for active stack ('{active_stack.name}')."
             )
 
     return get_stack_component_command
@@ -97,6 +100,9 @@ def generate_stack_component_describe_command(
     )
     def describe_stack_component_command(name: Optional[str]) -> None:
         """Prints details about the active/specified component."""
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         singular_display_name = _component_display_name(component_type)
         plural_display_name = _component_display_name(
             component_type, plural=True
@@ -145,7 +151,12 @@ def generate_stack_component_list_command(
 
     def list_stack_components_command() -> None:
         """Prints a table of stack components."""
+
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         repo = Repository()
+
         components = repo.get_stack_components(component_type)
         display_name = _component_display_name(component_type, plural=True)
         if len(components) == 0:
@@ -189,6 +200,7 @@ def generate_stack_component_register_command(
         name: str, flavor: str, args: List[str]
     ) -> None:
         """Registers a stack component."""
+        cli_utils.print_active_profile()
         try:
             parsed_args = cli_utils.parse_unknown_options(args)
         except AssertionError as e:
@@ -217,6 +229,7 @@ def generate_stack_component_delete_command(
     @click.argument("name", type=str)
     def delete_stack_component_command(name: str) -> None:
         """Deletes a stack component."""
+        cli_utils.print_active_profile()
         Repository().deregister_stack_component(
             component_type=component_type,
             name=name,
@@ -235,6 +248,9 @@ def generate_stack_component_up_command(
     @click.argument("name", type=str, required=False)
     def up_stack_component_command(name: Optional[str] = None) -> None:
         """Deploys a stack component locally."""
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         component = _get_stack_component(component_type, component_name=name)
         display_name = _component_display_name(component_type)
 
@@ -284,6 +300,9 @@ def generate_stack_component_down_command(
         name: Optional[str] = None, force: bool = False
     ) -> None:
         """Stops/Tears down the local deployment of a stack component."""
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         component = _get_stack_component(component_type, component_name=name)
         display_name = _component_display_name(component_type)
 
@@ -332,11 +351,14 @@ def generate_stack_component_logs_command(
         name: Optional[str] = None, follow: bool = False
     ) -> None:
         """Displays stack component logs."""
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         component = _get_stack_component(component_type, component_name=name)
         display_name = _component_display_name(component_type)
         log_file = component.log_file
 
-        if not log_file or not fileio.file_exists(log_file):
+        if not log_file or not fileio.exists(log_file):
             cli_utils.warning(
                 f"Unable to find log file for {display_name} "
                 f"'{component.name}'."

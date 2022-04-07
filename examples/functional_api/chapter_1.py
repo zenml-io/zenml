@@ -42,19 +42,19 @@ def load_mnist_pipeline(
     importer()
 
 
-# Run the pipeline
-load_mnist_pipeline(importer=importer_mnist()).run()
+if __name__ == "__main__":
+    # Run the pipeline
+    load_mnist_pipeline(importer=importer_mnist()).run()
 
-
-# Post-execution
-repo = Repository()
-p = repo.get_pipeline(pipeline_name="load_mnist_pipeline")
-runs = p.runs
-print(f"Pipeline `load_mnist_pipeline` has {len(runs)} run(s)")
-run = runs[-1]
-print(f"The run you just made has {len(run.steps)} step(s).")
-step = run.get_step("importer")
-print(f"That step has {len(step.outputs)} output artifacts.")
-for k, o in step.outputs.items():
-    arr = o.read()
-    print(f"Output '{k}' is an array with shape: {arr.shape}")
+    # Post-execution
+    repo = Repository()
+    p = repo.get_pipeline(pipeline_name="load_mnist_pipeline")
+    runs = p.runs
+    print(f"Pipeline `load_mnist_pipeline` has {len(runs)} run(s)")
+    run = runs[-1]
+    print(f"The run you just made has {len(run.steps)} step(s).")
+    step = run.get_step("importer")
+    print(f"That step has {len(step.outputs)} output artifacts.")
+    for k, o in step.outputs.items():
+        arr = o.read()
+        print(f"Output '{k}' is an array with shape: {arr.shape}")

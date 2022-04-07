@@ -1,3 +1,34 @@
+# 0.7.0
+
+With ZenML 0.7.0, a lot has been revamped under the hood about how things are stored. Importantly what this means is that ZenML now has [system-wide profiles](https://docs.zenml.io/features/profiles) that let you register stacks to share across several of your projects! If you still want to manage your stacks for each project folder individually, profiles still let you do that as well.
+
+Most projects of any complexity will require passwords or tokens to access data and infrastructure, and for this purpose ZenML 0.7.0 introduces [the Secrets Manager](https://docs.zenml.io/features/secrets) stack component to seamlessly pass around these values to your steps. Our AWS integration also allows you to use AWS Secrets Manager as a backend to handle all your secret persistence needs.
+
+Finally, in addition to the new AzureML and Sagemaker Step Operators that version 0.6.3 brought, this release also adds the ability to [run individual steps on GCP's Vertex AI](https://docs.zenml.io/v/docs/features/step-operators).
+
+Beyond this, some smaller bugfixes and documentation changes combine to make ZenML 0.7.0 a more pleasant user experience.
+
+## What's Changed
+* Added quick mention of how to use dockerignore by @AlexejPenner in https://github.com/zenml-io/zenml/pull/468
+* Made rich traceback optional with ENV variable by @htahir1 in https://github.com/zenml-io/zenml/pull/472
+* Separate stack persistence from repo implementation by @jwwwb in https://github.com/zenml-io/zenml/pull/462
+* Adding safoine username to github team by @safoinme in https://github.com/zenml-io/zenml/pull/475
+* Fix `zenml stack describe` bug by @strickvl in https://github.com/zenml-io/zenml/pull/476
+* ZenProfiles and centralized ZenML repositories by @stefannica in https://github.com/zenml-io/zenml/pull/471
+* Add `examples` folder to linting script by @strickvl in https://github.com/zenml-io/zenml/pull/482
+* Vertex AI integration and numerous other changes by @htahir1 in https://github.com/zenml-io/zenml/pull/477
+* Fix profile handing in the Azure ML step operator by @stefannica in https://github.com/zenml-io/zenml/pull/483
+* Copy the entire stack configuration into containers by @stefannica in https://github.com/zenml-io/zenml/pull/480
+* Improve some things with the Profiles CLI output by @stefannica in https://github.com/zenml-io/zenml/pull/484
+* Secrets manager stack component and interface by @AlexejPenner in https://github.com/zenml-io/zenml/pull/470
+* Update schedule.py (#485) by @avramdj in https://github.com/zenml-io/zenml/pull/485 
+
+## New Contributors
+* @avramdj in https://github.com/zenml-io/zenml/pull/485 
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.6.3...0.7.0rc
+
+
 # 0.6.3
 
 With ZenML 0.6.3, you can now run your ZenML steps on Sagemaker and AzureML! It's normal to have certain steps that require specific hardware on which to run model training, for example, and this latest release gives you the power to switch out hardware for individual steps to support this.

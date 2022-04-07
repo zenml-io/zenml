@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import logging
 import os
 import shutil
 import sys
@@ -49,10 +50,10 @@ def copy_example_files(example_dir: str, dst_dir: str) -> None:
 def example_runner(examples_dir):
     """Get the executable that runs examples.
 
-    By default returns the path to an executable .sh file in the
+    By default, returns the path to an executable .sh file in the
     repository, but can also prefix that with the path to a shell
     / interpreter when the file is not executable on its own. The
-    latter option is needed for windows compatibility.
+    latter option is needed for Windows compatibility.
     """
     return (
         [os.environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in os.environ else []
@@ -191,6 +192,7 @@ if sys.platform != "win32":
 )
 def test_run_example(
     example_configuration: ExampleIntegrationTestConfiguration,
+    tmp_path_factory: pytest.TempPathFactory,
     repo_fixture_name: str,
     request: pytest.FixtureRequest,
     virtualenv: str,
@@ -199,6 +201,7 @@ def test_run_example(
 
     Args:
         example_configuration: Configuration of the example to run.
+        tmp_path_factory: Factory to generate temporary test paths.
         repo_fixture_name: Name of a fixture that returns a ZenML repository.
             This fixture will be executed and the example will run on the
             active stack of the repository given by the fixture.
@@ -210,16 +213,18 @@ def test_run_example(
     # run the fixture given by repo_fixture_name
     repo = request.getfixturevalue(repo_fixture_name)
 
+    tmp_path = tmp_path_factory.mktemp("tmp")
+
     # Root directory of all checked out examples
     examples_directory = Path(repo.original_cwd) / "examples"
 
     # Copy all example files into the repository directory
     copy_example_files(
-        str(examples_directory / example_configuration.name), str(repo.root)
+        str(examples_directory / example_configuration.name), str(tmp_path)
     )
 
     # Run the example
-    example = LocalExample(name=example_configuration.name, path=repo.root)
+    example = LocalExample(name=example_configuration.name, path=tmp_path)
     example.run_example(
         example_runner(examples_directory),
         force=True,
@@ -228,3 +233,17 @@ def test_run_example(
 
     # Validate the result
     example_configuration.validation_function(repo)
+
+    # clean up
+    try:
+        shutil.rmtree(tmp_path)
+    except PermissionError:
+        # Windows does not have the concept of unlinking a file and deleting
+        # once all processes that are accessing the resource are done
+        # instead windows tries to delete immediately and fails with a
+        # PermissionError: [WinError 32] The process cannot access the
+        # file because it is being used by another process
+        logging.debug(
+            "Skipping deletion of temp dir at teardown, due to "
+            "Windows Permission error"
+        )

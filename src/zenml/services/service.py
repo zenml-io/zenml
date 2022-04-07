@@ -42,8 +42,6 @@ class ServiceConfig(BaseTypedModel):
         description: description of the service
     """
 
-    # TODO [ENG-702]: add pipeline metadata (name, run id, step etc) to the base
-    #   service configuration
     name: str = ""
     description: str = ""
 

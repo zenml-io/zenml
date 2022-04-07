@@ -19,6 +19,7 @@ from tfx.orchestration.portable.data_types import ExecutionInfo
 from tfx.proto.orchestration.pipeline_pb2 import PipelineInfo
 
 from zenml.orchestrators.utils import get_cache_status
+from zenml.repository import Repository
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
@@ -33,7 +34,7 @@ def test_get_cache_status_raises_no_error_when_none_passed():
         pytest.fail("`get_cache_status()` raised an `AttributeError`")
 
 
-def test_get_cache_status_works_when_running_pipeline_twice(clean_repo):
+def test_get_cache_status_works_when_running_pipeline_twice():
     """Check that steps are cached when a pipeline is run twice successively."""
     from zenml.pipelines import pipeline
     from zenml.steps import step
@@ -55,7 +56,7 @@ def test_get_cache_status_works_when_running_pipeline_twice(clean_repo):
     pipeline.run()
     pipeline.run()
 
-    pipeline = clean_repo.get_pipeline("some_pipeline")
+    pipeline = Repository().get_pipeline("some_pipeline")
     first_run = pipeline.runs[-2]
     second_run = pipeline.runs[-1]
 

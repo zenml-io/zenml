@@ -13,7 +13,7 @@
   * [Preprocess data](guides/functional-api/normalize-data.md)
   * [Train & evaluate](guides/functional-api/train-and-evaluate.md)
   * [Caching](guides/functional-api/caching.md)
-  * [Materialize artifacts](guides/functional-api/materialize-artifacts.md)
+  * [Materialize artifacts](guides/functional-api/materialize-artifacts)
   * [Import dynamic data](guides/functional-api/import-dynamic-data.md)
   * [Deploy to production](guides/functional-api/deploy-to-production.md)
 * [Class-based API](guides/class-based-api/class-based-api.md)
@@ -22,25 +22,29 @@
   * [Train & evaluate](guides/class-based-api/train-and-evaluate.md)
   * [Caching](guides/class-based-api/caching.md)
   * [Materialize artifacts](guides/class-based-api/materialize-artifacts.md)
-* [General](guides/common-usecases/index.md)
+* [User Guide](guides/common-usecases/index.md)
   * [Fetch pipelines and artifacts after running them](guides/common-usecases/post-execution-workflow.md)
   * [Naming a pipeline run](guides/common-usecases/naming-a-pipeline-run.md)
   * [Use `zenml example run`](guides/common-usecases/zenml-example-cli.md)
   * [Creating a custom `materializer`](guides/common-usecases/custom-materializer.md)
+  * [Bypassing materialization](guides/common-usecases/skip-materialization.md)
   * [Fetching historic runs using `StepContext`](guides/common-usecases/historic-runs.md)
   * [Developing and using `visualizers`](guides/common-usecases/visualizers.md)
+  * [System environmental variables](guides/common-usecases/system-env.md)
 
 ## Features
 
 * [Integrations](features/integrations.md)
+* [Run Your Pipelines in the Cloud](features/guide-aws-gcp-azure.md)
 * [Pipeline Configuration](features/pipeline-configuration.md)
 * [Caching](features/caching.md)
-* [Standardized Artifacts](features/artifacts.md)
-* [Run Your Pipelines in the Cloud](features/cloud-pipelines/cloud-pipelines.md)
-  * [Cloud-specific guide](features/cloud-pipelines/guide-aws-gcp-azure.md)
+* [Run steps in specialized environments](features/step-operators.md)
 * [Convenient Step Fixtures](features/step-fixtures.md)
 * [Continuous Training and Deployment](features/continous-training-and-deployment.md)
 * [Managing External Services](features/services.md)
+* [Managing Secrets](features/secrets.md)
+* [Standardized Artifacts](features/artifacts.md)
+* [Profiles and Centralized Stack Management](features/profiles.md)
 
 ## Support
 
