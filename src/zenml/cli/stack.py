@@ -83,6 +83,14 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "-f",
+    "--feature_store",
+    "feature_store_name",
+    help="Name of the feature store for this stack.",
+    type=str,
+    required=False,
+)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
@@ -91,11 +99,12 @@ def register_stack(
     container_registry_name: Optional[str] = None,
     secrets_manager_name: Optional[str] = None,
     step_operator_name: Optional[str] = None,
+    feature_store_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
     cli_utils.print_active_profile()
 
-    with console.status(f"Registering stack '{stack_name}'..."):
+    with console.status(f"Registering stack '{stack_name}'...\n"):
         repo = Repository()
 
         stack_components = {
@@ -132,6 +141,14 @@ def register_stack(
             ] = repo.get_stack_component(
                 StackComponentType.STEP_OPERATOR,
                 name=step_operator_name,
+            )
+
+        if feature_store_name:
+            stack_components[
+                StackComponentType.FEATURE_STORE
+            ] = repo.get_stack_component(
+                StackComponentType.FEATURE_STORE,
+                name=feature_store_name,
             )
 
         stack_ = Stack.from_components(
