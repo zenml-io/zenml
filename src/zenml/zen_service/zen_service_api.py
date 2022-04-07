@@ -20,23 +20,20 @@ from pydantic import BaseModel
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
-    DELETE_COMPONENT,
-    DELETE_STACK,
-    GET_COMPONENTS,
-    GET_STACK_CONFIGURATIONS,
-    GET_STACKS,
+    ENV_ZENML_PROFILE_NAME,
     IS_EMPTY,
-    REGISTER_COMPONENT,
-    REGISTER_STACK,
+    STACK_COMPONENTS,
+    STACK_CONFIGURATIONS,
+    STACKS,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.repository import Repository
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
 
 profile_configuration_json = os.environ.get("ZENML_PROFILE_CONFIGURATION")
-profile_name = os.environ.get("ZENML_PROFILE_NAME")
+profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
 
 # Hopefully profile configuration was passed as env variable:
 if profile_configuration_json:
@@ -52,9 +49,16 @@ else:
     profile = Repository().active_profile
 
 
-stack_store: BaseStackStore = Repository.create_store(
-    profile, skip_default_stack=True
-)
+if profile.store_type == StoreType.REST:
+    raise ValueError(
+        "Service cannot be started with REST store type. Make sure you "
+        "specify a profile with a non-networked persistence backend "
+        "when trying to start the Zen Service. (use command line flag "
+        "`--profile=$PROFILE_NAME` or set the env variable "
+        f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
+        "other than the currently active one)"
+    )
+stack_store: BaseStackStore = Repository.create_store(profile)
 
 app = FastAPI(title="ZenML", version="0.7.0")
 
@@ -101,7 +105,7 @@ async def is_empty() -> bool:
 
 
 @app.get(
-    GET_STACK_CONFIGURATIONS + "/{name}",
+    STACK_CONFIGURATIONS + "/{name}",
     response_model=Dict[StackComponentType, str],
     responses={404: error_response},
 )
@@ -113,14 +117,14 @@ async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
 
 
 @app.get(
-    GET_STACK_CONFIGURATIONS,
+    STACK_CONFIGURATIONS,
     response_model=Dict[str, Dict[StackComponentType, str]],
 )
 async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
     return stack_store.stack_configurations
 
 
-@app.post(REGISTER_COMPONENT, responses={409: error_response})
+@app.post(STACK_COMPONENTS, responses={409: error_response})
 async def register_stack_component(
     component: StackComponentWrapper,
 ) -> None:
@@ -130,7 +134,7 @@ async def register_stack_component(
         raise conflict(error) from error
 
 
-@app.get(DELETE_STACK + "/{name}", responses={404: error_response})
+@app.delete(STACKS + "/{name}", responses={404: error_response})
 async def deregister_stack(name: str) -> None:
     try:
         stack_store.deregister_stack(name)
@@ -138,13 +142,13 @@ async def deregister_stack(name: str) -> None:
         raise not_found(error) from error
 
 
-@app.get(GET_STACKS, response_model=List[StackWrapper])
+@app.get(STACKS, response_model=List[StackWrapper])
 async def stacks() -> List[StackWrapper]:
     return stack_store.stacks
 
 
 @app.get(
-    GET_STACKS + "/{name}",
+    STACKS + "/{name}",
     response_model=StackWrapper,
     responses={404: error_response},
 )
@@ -156,7 +160,7 @@ async def get_stack(name: str) -> StackWrapper:
 
 
 @app.post(
-    REGISTER_STACK,
+    STACKS,
     response_model=Dict[str, str],
     responses={409: error_response},
 )
@@ -168,7 +172,7 @@ async def register_stack(stack: StackWrapper) -> Dict[str, str]:
 
 
 @app.get(
-    GET_COMPONENTS + "/{component_type}/{name}",
+    STACK_COMPONENTS + "/{component_type}/{name}",
     response_model=StackComponentWrapper,
     responses={404: error_response},
 )
@@ -182,7 +186,7 @@ async def get_stack_component(
 
 
 @app.get(
-    GET_COMPONENTS + "/{component_type}",
+    STACK_COMPONENTS + "/{component_type}",
     response_model=List[StackComponentWrapper],
 )
 async def get_stack_components(
@@ -191,8 +195,8 @@ async def get_stack_components(
     return stack_store.get_stack_components(component_type)
 
 
-@app.get(
-    DELETE_COMPONENT + "/{component_type}/{name}",
+@app.delete(
+    STACK_COMPONENTS + "/{component_type}/{name}",
     responses={404: error_response, 409: error_response},
 )
 async def deregister_stack_component(

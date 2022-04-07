@@ -17,7 +17,7 @@ import random
 import pytest
 import requests
 
-from zenml.constants import GET_STACK_CONFIGURATIONS, GET_STACKS
+from zenml.constants import STACK_CONFIGURATIONS, STACKS
 from zenml.services import ServiceState
 from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
 
@@ -44,12 +44,12 @@ def running_zen_service() -> ZenService:
 def test_get_stack_endpoints(running_zen_service: ZenService):
     """Test that the stack methods behave as they should."""
     endpoint = running_zen_service.endpoint.status.uri.strip("/")
-    stacks_response = requests.get(endpoint + GET_STACKS)
+    stacks_response = requests.get(endpoint + STACKS)
     assert stacks_response.status_code == 200
     assert isinstance(stacks_response.json(), (list, tuple))
     assert len(stacks_response.json()) == 1
 
-    configs_response = requests.get(endpoint + GET_STACK_CONFIGURATIONS)
+    configs_response = requests.get(endpoint + STACK_CONFIGURATIONS)
     assert configs_response.status_code == 200
     assert isinstance(configs_response.json(), dict)
     assert len(configs_response.json()) == 1

@@ -37,7 +37,12 @@ from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
-from zenml.stack_stores import BaseStackStore, LocalStackStore, SqlStackStore
+from zenml.stack_stores import (
+    BaseStackStore,
+    LocalStackStore,
+    RestStackStore,
+    SqlStackStore,
+)
 from zenml.stack_stores.models import (
     StackComponentWrapper,
     StackStoreModel,
@@ -510,6 +515,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         return {
             StoreType.LOCAL: LocalStackStore,
             StoreType.SQL: SqlStackStore,
+            StoreType.REST: RestStackStore,
         }.get(type)
 
     @staticmethod
@@ -547,6 +553,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             profile.store_url = store_class.get_local_url(
                 profile.config_directory
             )
+
+        if profile.store_type == StoreType.REST:
+            skip_default_stack = True
 
         if store_class.is_valid_url(profile.store_url):
             store = store_class()

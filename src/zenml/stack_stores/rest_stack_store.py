@@ -19,14 +19,10 @@ import requests
 from pydantic import BaseModel
 
 from zenml.constants import (
-    DELETE_COMPONENT,
-    DELETE_STACK,
-    GET_COMPONENTS,
-    GET_STACK_CONFIGURATIONS,
-    GET_STACKS,
     IS_EMPTY,
-    REGISTER_COMPONENT,
-    REGISTER_STACK,
+    STACK_COMPONENTS,
+    STACK_CONFIGURATIONS,
+    STACKS,
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
@@ -59,11 +55,12 @@ class RestStackStore(BaseStackStore):
         Returns:
             The initialized stack store instance.
         """
-        if not self.is_valid_url(url):
+        if not self.is_valid_url(url.strip("/")):
             raise ValueError("Invalid URL for REST store: {url}")
-        self._url = url
+        self._url = url.strip("/")
         if "skip_default_stack" not in kwargs:
             kwargs["skip_default_stack"] = True
+        # breakpoint()
         super().initialize(url, *args, **kwargs)
         return self
 
@@ -147,7 +144,7 @@ class RestStackStore(BaseStackStore):
             KeyError: If no stack exists for the given name.
         """
         return self._parse_stack_configuration(
-            self.get(f"{GET_STACK_CONFIGURATIONS}/{name}")
+            self.get(f"{STACK_CONFIGURATIONS}/{name}")
         )
 
     @property
@@ -157,7 +154,7 @@ class RestStackStore(BaseStackStore):
         Returns:
             Dictionary mapping stack names to Dict[StackComponentType, str]'s
         """
-        body = self.get(GET_STACK_CONFIGURATIONS)
+        body = self.get(STACK_CONFIGURATIONS)
         if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected dict, got {type(body)}"
@@ -180,7 +177,7 @@ class RestStackStore(BaseStackStore):
             StackComponentExistsError: If a stack component with the same type
                 and name already exists.
         """
-        self.post(REGISTER_COMPONENT, body=component)
+        self.post(STACK_COMPONENTS, body=component)
 
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
@@ -191,14 +188,14 @@ class RestStackStore(BaseStackStore):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        self.get(f"{DELETE_STACK}/{name}")
+        self.delete(f"{STACKS}/{name}")
 
     # Custom implementations:
 
     @property
     def stacks(self) -> List[StackWrapper]:
         """All stacks registered in this repository."""
-        body = self.get(GET_STACKS)
+        body = self.get(STACKS)
         if not isinstance(body, list):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
@@ -217,7 +214,7 @@ class RestStackStore(BaseStackStore):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        return StackWrapper.parse_obj(self.get(f"{GET_STACKS}/{name}"))
+        return StackWrapper.parse_obj(self.get(f"{STACKS}/{name}"))
 
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
@@ -237,7 +234,7 @@ class RestStackStore(BaseStackStore):
                 registered and a different component with the same name
                 already exists.
         """
-        body = self.post(REGISTER_STACK, stack)
+        body = self.post(STACKS, stack)
         if isinstance(body, dict):
             return cast(Dict[str, str], body)
         else:
@@ -254,7 +251,7 @@ class RestStackStore(BaseStackStore):
             KeyError: If no component with the requested type and name exists.
         """
         return StackComponentWrapper.parse_obj(
-            self.get(f"{GET_COMPONENTS}/{component_type}/{name}")
+            self.get(f"{STACK_COMPONENTS}/{component_type}/{name}")
         )
 
     def get_stack_components(
@@ -268,7 +265,7 @@ class RestStackStore(BaseStackStore):
         Returns:
             A list of StackComponentConfiguration instances.
         """
-        body = self.get(f"{GET_COMPONENTS}/{component_type}")
+        body = self.get(f"{STACK_COMPONENTS}/{component_type}")
         if not isinstance(body, list):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
@@ -288,7 +285,7 @@ class RestStackStore(BaseStackStore):
             ValueError: if trying to deregister a component that's part
                 of a stack.
         """
-        self.get(f"{DELETE_COMPONENT}/{component_type}/{name}")
+        self.delete(f"{STACK_COMPONENTS}/{component_type}/{name}")
 
     # Private interface shall not be implemented for REST store, instead the
     # API only provides all public methods, including the ones that would
@@ -372,6 +369,10 @@ class RestStackStore(BaseStackStore):
     def get(self, path: str) -> Json:
         """Make a GET request to the given endpoint path."""
         return self._handle_response(requests.get(self.url + path))
+
+    def delete(self, path: str) -> Json:
+        """Make a GET request to the given endpoint path."""
+        return self._handle_response(requests.delete(self.url + path))
 
     def post(self, path: str, body: BaseModel) -> Json:
         """Make a POST request to the given endpoint path."""
