@@ -57,6 +57,7 @@ class SecretSchemaClassRegistry:
         flavors[secret_schema_value] = secret
         logger.debug(
             "Registered stack component class for type '%s' and flavor '%s'.",
+            secret.__class__.__name__,
             secret_schema_value,
         )
 
