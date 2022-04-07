@@ -5,6 +5,7 @@ from zenml.repository import Repository
 
 if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
+    from zenml.feature_stores.base_feature_store import BaseFeatureStore
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata_stores.base_metadata_store import BaseMetadataStore
 
@@ -76,6 +77,7 @@ class StepContext:
             for key in output_materializers.keys()
         }
         self._metadata_store = Repository().active_stack.metadata_store
+        self._feature_store = Repository().active_stack.feature_store
 
     def _get_output(
         self, output_name: Optional[str] = None
@@ -129,6 +131,14 @@ class StepContext:
         being executed.
         """
         return self._metadata_store
+
+    @property
+    def feature_store(self) -> Optional["BaseFeatureStore"]:
+        """
+        Returns an instance of the feature store that is used to access online
+        and offline features to be used inside a step and pipeline.
+        """
+        return self._feature_store
 
     def get_output_materializer(
         self,
