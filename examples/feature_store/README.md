@@ -24,7 +24,7 @@ basic introduction paragraph
 ## 🧰 How the example is implemented
 
 Showcase the code and explain how it works
-(Maybe a visual diagram showing the various parts of it?
+Maybe a visual diagram showing the various parts of it?
 
 # 🖥 Run it locally
 
