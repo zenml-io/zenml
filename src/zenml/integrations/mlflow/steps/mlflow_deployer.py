@@ -81,13 +81,13 @@ def mlflow_deployer_step(
 
     # check if an MLFlowModelDeployer stack component is registered with
     # the currently active stack
-    mlflow_model_deployer = Repository().active_stack.model_deployer
-    if not isinstance(mlflow_model_deployer, MLFlowModelDeployer):
+    mlflow_model_deployer_component = Repository().active_stack.model_deployer
+    if not isinstance(mlflow_model_deployer_component, MLFlowModelDeployer):
         raise TypeError(
-            f"The active stack needs to have a model deployer component"
-            f"of type MLFlowModelDeployer registered for this step to work."
-            f"You can create a new stack with a MLFlowModelDeployer component"
-            f"or update your existing stack to add this component."
+            "The active stack needs to have a model deployer component"
+            "of type MLFlowModelDeployer registered for this step to work."
+            "You can create a new stack with a MLFlowModelDeployer component"
+            "or update your existing stack to add this component."
         )
 
     @enable_mlflow
@@ -130,16 +130,16 @@ def mlflow_deployer_step(
         step_name = step_env.step_name
 
         # check if an MLFlowModelDeployer stack component is registered
-        if not isinstance(mlflow_model_deployer, MLFlowModelDeployer):
+        if not isinstance(mlflow_model_deployer_component, MLFlowModelDeployer):
             raise TypeError(
-                f"The active stack needs to have a model deployer component"
-                f"of type MLFlowModelDeployer registered for this step to work."
-                f"You can create a new stack with a MLFlowModelDeployer component"
-                f"or update your existing stack to add this component."
+                "The active stack needs to have a model deployer component"
+                "of type MLFlowModelDeployer registered for this step to work."
+                "You can create a new stack with a MLFlowModelDeployer component"
+                "or update your existing stack to add this component."
             )
 
         # fetch existing services with same pipeline name, step name and model name
-        existing_services = mlflow_model_deployer.find_model_server(
+        existing_services = mlflow_model_deployer_component.find_model_server(
             pipeline_name=pipeline_name,
             pipeline_step_name=step_name,
             model_name=config.model_name,
@@ -176,7 +176,7 @@ def mlflow_deployer_step(
                 return MLFlowDeploymentService(predictor_cfg)
 
         # create a new model deployment
-        service = mlflow_model_deployer.deploy_model(
+        service = mlflow_model_deployer_component.deploy_model(
             replace=True,
             config=predictor_cfg,
             timeout=config.timeout,

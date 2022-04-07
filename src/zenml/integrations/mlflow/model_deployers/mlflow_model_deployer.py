@@ -16,7 +16,7 @@ import shutil
 from typing import List, Optional
 from uuid import UUID
 
-from zenml import logger
+from zenml.logger import get_logger
 from zenml.constants import (
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
     LOCAL_STORES_DIRECTORY_NAME,
@@ -33,6 +33,8 @@ from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
+
+logger = get_logger(__name__)
 
 
 @register_stack_component_class(
@@ -93,12 +95,12 @@ class MLFlowModelDeployer(BaseModelDeployer):
         if replace is True:
             existing_services = self.find_model_server(
                 pipeline_name=config.pipeline_name,
-                pipeline_step_name=config.step_name,
+                pipeline_step_name=config.pipeline_step_name,
                 model_name=config.model_name,
             )
 
             for service in existing_services:
-                self._clean_up_existing_service(timeout, service, force=True)
+                self._clean_up_existing_service(timeout=timeout, force=True, existing_service=service)
 
         # create a new MLFlowDeploymentService instance
         return self._create_new_service(timeout, config)
@@ -235,8 +237,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 or existing_service_config.model_name == config.model_name
             )
             and (
-                not existing_service_config.step_name
-                or existing_service_config.step_name == config.step_name
+                not existing_service_config.pipeline_step_name
+                or existing_service_config.pipeline_step_name == config.pipeline_step_name
             )
         ):
             return True
