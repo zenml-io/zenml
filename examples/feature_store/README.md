@@ -55,8 +55,6 @@ pip install zenml
 zenml integration install feast
 ```
 
-You will need to
-
 Since this example is built around a [Redis](https://redis.com/) use case, a
 Python package to interact with Redis will get installed alongside Feast, but
 you will still first need to install Redis yourself. See
