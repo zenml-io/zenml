@@ -28,6 +28,7 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
+from zenml.repository import Repository
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
@@ -55,6 +56,30 @@ class MLFlowModelDeployer(BaseModelDeployer):
         """The model deployer flavor."""
         return ModelDeployerFlavor.MLFLOW
 
+    @staticmethod
+    def get_active_model_deployer() -> "MLFlowModelDeployer":
+        """
+        Returns the MLFlowModelDeployer component of the active stack.
+
+        Args:
+            None
+
+        Returns:
+            The MLFlowModelDeployer component of the active stack.
+        """
+        mlflow_model_deployer_component = Repository(
+            skip_repository_check=True
+        ).active_stack.model_deployer
+
+        if not isinstance(mlflow_model_deployer_component, MLFlowModelDeployer):
+            raise TypeError(
+                "The active stack needs to have a model deployer component"
+                "of type MLFlowModelDeployer registered for this step to work."
+                "You can create a new stack with a MLFlowModelDeployer component"
+                "or update your existing stack to add this component."
+            )
+        return mlflow_model_deployer_component
+
     def deploy_model(
         self,
         config: ServiceConfig,
@@ -62,7 +87,6 @@ class MLFlowModelDeployer(BaseModelDeployer):
         timeout: int,
     ) -> BaseService:
         """
-
         We assume that the deployment decision is made at the step level and
         here we have to delete any older services that are running and start
         a new one.
