@@ -153,8 +153,8 @@ $ zenml profile create --store-type sql --url "mysql://zenml:password@10.11.12.1
 ## Sharing Stacks over the Network using the ZenML Service
 
 You might want to exchange or collaborate on stacks with other developers or
-even just work on multiple machines. While you can always zip up or check into
-version control the yaml based store files, a more live option is to spin up
+even just work on multiple machines. While you can always zip up or check the yaml based store files into
+version control, a more elegant option is to spin up
 a ZenML service, which provides a REST API to store and access stacks and stack
 components over the network. Starting a service locally is as simple as typing
 `zenml service up`. This should start a background daemon accessible on your

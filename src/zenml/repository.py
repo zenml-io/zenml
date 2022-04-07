@@ -820,8 +820,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             logger.info("Deregistered stack with name '%s'.", name)
         except KeyError:
             logger.warning(
-                "Unable to deregister stack with name '%s': No stack exists "
-                "with this name.",
+                "Unable to deregister stack with name '%s': No stack  "
+                "with this name could be found.",
                 name,
             )
 
@@ -902,7 +902,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         except KeyError:
             logger.warning(
                 "Unable to deregister stack component (type: %s) with name "
-                "'%s': No stack component exists with this name.",
+                "'%s': No stack component with this name could be found.",
                 component_type.value,
                 name,
             )
