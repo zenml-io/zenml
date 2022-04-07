@@ -23,6 +23,7 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
+from zenml.services import ServiceState
 from zenml.stack import Stack
 from zenml.stack_stores import (
     BaseStackStore,
@@ -74,7 +75,8 @@ def fresh_stack_store(
         # rest stack store can't have trailing slash on url
         url = zen_service.zen_service_uri.strip("/")
         yield RestStackStore().initialize(url)
-        zen_service.stop()
+        zen_service.stop(timeout=10)
+        assert zen_service.check_status()[0] == ServiceState.INACTIVE
     else:
         raise NotImplementedError(f"No StackStore for {store_type}")
 
