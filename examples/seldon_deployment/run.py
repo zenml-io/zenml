@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import cast
+
 import click
 from pipeline import (
     DeploymentTriggerConfig,
-    SeldonDeployerConfig,
     SeldonDeploymentLoaderStepConfig,
     SklearnTrainerConfig,
     TensorflowTrainerConfig,
@@ -26,7 +27,6 @@ from pipeline import (
     normalizer,
     prediction_service_loader,
     predictor,
-    seldon_model_deployer,
     sklearn_evaluator,
     sklearn_predict_preprocessor,
     sklearn_trainer,
@@ -36,7 +36,14 @@ from pipeline import (
 )
 from rich import print
 
-from zenml.services import load_last_service_from_step
+from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
+from zenml.integrations.seldon.services.seldon_deployment import (
+    SeldonDeploymentService,
+)
+from zenml.integrations.seldon.steps import (
+    SeldonDeployerStepConfig,
+    seldon_model_deployer_step,
+)
 
 
 @click.command()
@@ -99,9 +106,6 @@ from zenml.services import load_last_service_from_step
     default=0.92,
     help="Minimum accuracy required to deploy the model (default: 0.92)",
 )
-@click.option("--kubernetes-context", help="Kubernetes context to use.")
-@click.option("--namespace", help="Kubernetes namespace to use.")
-@click.option("--base-url", help="Seldon core ingress base URL.")
 @click.option(
     "--stop-service",
     is_flag=True,
@@ -119,31 +123,30 @@ def main(
     penalty_strength: float,
     toleration: float,
     min_accuracy: float,
-    kubernetes_context: str,
-    namespace: str,
-    base_url: str,
     stop_service: bool,
 ):
     """Run the Seldon example continuous deployment or inference pipeline
 
     Example usage:
 
-    python run.py --deploy --predict \
-        --model-flavor tensorflow \
-        --kubernetes-context=zenml-eks-sandbox \
-        --namespace=kubeflow \
-        --base-url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com \
-        --min-accuracy 0.80
+        python run.py --deploy --predict --model-flavor tensorflow \
+             --min-accuracy 0.80
+
     """
+    model_name = "mnist"
+    deployment_pipeline_name = "continuous_deployment_pipeline"
+    deployer_step_name = "seldon_model_deployer_step"
+
+    model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
     if stop_service:
-        service = load_last_service_from_step(
-            pipeline_name="continuous_deployment_pipeline",
-            step_name="model_deployer",
-            running=True,
+        services = model_deployer.find_model_server(
+            pipeline_name=deployment_pipeline_name,
+            pipeline_step_name=deployer_step_name,
+            model_name=model_name,
         )
-        if service:
-            service.stop(timeout=100)
+        if services:
+            services[0].stop(timeout=100)
         return
 
     if model_flavor == "tensorflow":
@@ -176,16 +179,12 @@ def main(
                     min_accuracy=min_accuracy,
                 )
             ),
-            model_deployer=seldon_model_deployer(
-                config=SeldonDeployerConfig(
-                    model_name="mnist",
-                    step_name="model_deployer",
+            model_deployer=seldon_model_deployer_step(
+                config=SeldonDeployerStepConfig(
+                    model_name=model_name,
                     replicas=1,
                     implementation=seldon_implementation,
-                    secret_name="seldon-init-container-secret",
-                    kubernetes_context=kubernetes_context,
-                    namespace=namespace,
-                    base_url=base_url,
+                    secrets=["seldon-init-container-secret"],
                     timeout=120,
                 )
             ),
@@ -200,8 +199,9 @@ def main(
             predict_preprocessor=predict_preprocessor,
             prediction_service_loader=prediction_service_loader(
                 SeldonDeploymentLoaderStepConfig(
-                    pipeline_name="continuous_deployment_pipeline",
-                    step_name="model_deployer",
+                    pipeline_name=deployment_pipeline_name,
+                    step_name=deployer_step_name,
+                    model_name=model_name,
                 )
             ),
             predictor=predictor(),
@@ -209,20 +209,29 @@ def main(
 
         inference.run()
 
-    try:
-        service = load_last_service_from_step(
-            pipeline_name="continuous_deployment_pipeline",
-            step_name="model_deployer",
-            running=True,
-        )
-        print(
-            f"The Seldon prediction server is running remotely as a Kubernetes "
-            f"service and accepts inference requests at:\n"
-            f"    {service.prediction_url}\n"
-            f"To stop the service, re-run the same command and supply the "
-            f"`--stop-service` argument."
-        )
-    except KeyError:
+    services = model_deployer.find_model_server(
+        pipeline_name=deployment_pipeline_name,
+        pipeline_step_name=deployer_step_name,
+        model_name=model_name,
+    )
+    if services:
+        service = cast(SeldonDeploymentService, services[0])
+        if service.is_running:
+            print(
+                f"The Seldon prediction server is running remotely as a Kubernetes "
+                f"service and accepts inference requests at:\n"
+                f"    {service.prediction_url}\n"
+                f"To stop the service, re-run the same command and supply the "
+                f"`--stop-service` argument."
+            )
+        elif service.is_failed:
+            print(
+                f"The Seldon prediction server is in a failed state:\n"
+                f" Last state: '{service.status.state.value}'\n"
+                f" Last error: '{service.status.last_error}'"
+            )
+
+    else:
         print(
             "No Seldon prediction server is currently running. The deployment "
             "pipeline must run first to train a model and deploy it. Execute "

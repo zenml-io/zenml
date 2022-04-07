@@ -195,6 +195,7 @@ This stack consists of the following components:
 * an AWS S3 artifact store
 * the local orchestrator
 * the local metadata store
+* a Seldon Core model deployer
 
 To have access to the AWS S3 artifact store from your local workstation, the
 AWS client credentials needs to be properly set up locally as documented in
@@ -243,18 +244,12 @@ Configuring the stack can be done like this:
 
 ```
 zenml integration install s3
+zenml model-deployer register seldon_eks --type=seldon \
+  --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
+  --base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
 zenml artifact-store register aws --type s3 --path s3://mybucket
-zenml stack register local_with_aws_storage -m default -a aws -o default
+zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks
 zenml stack set local_with_aws_storage
-```
-
-When running the example with this stack, make sure to pass the relevant
-`--kubernetes-context`, `--namespace` and `--base-url` configuration parameter
-values to the example script:
-
-```
-python run.py --predict --kubernetes-context=zenml-eks \
-    --namespace=zenml-workloads --base-url=http://$INGRESS_HOST ...
 ```
 
 #### Full AWS stack
@@ -316,35 +311,29 @@ Configuring the stack can be done like this:
 
 ```
 zenml integration install s3 kubeflow
+
 zenml artifact-store register aws --type=s3 --path=s3://mybucket
+zenml model-deployer register seldon_aws --type=seldon \
+  --kubernetes_context=zenml-eks --kubernetes_namespace=kubeflow \
+  --base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
 zenml container-registry register aws --type=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
 zenml metadata-store register aws --type=kubeflow
 zenml orchestrator register aws --type=kubeflow --kubernetes_context=zenml-eks --synchronous=True
-zenml stack register aws -m aws -a aws -o aws -c aws
+zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws
 zenml stack set aws
-```
-
-When running the example with this stack, make sure to pass the relevant
-`--kubernetes-context`, `--namespace` and `--base-url` configuration parameter
-values to the example script:
-
-```
-python run.py --predict --kubernetes-context=zenml-eks --namespace=kubeflow \
-  --base-url=http://$INGRESS_HOST ...
 ```
 
 ### Run the project
 To run the continuous deployment pipeline:
 
 ```shell
-python run.py --deploy --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url>
+python run.py --deploy
 ```
 
 Example output when run with the local orchestrator stack:
 
 ```
-zenml/seldon_deployment$ python run.py --deploy --kubernetes-context=zenml-eks --namespace=zenml-workloads --base-url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com --min-accuracy 0.80 --model-flavor sklearn
+zenml/seldon_deployment$ python run.py --deploy --min-accuracy 0.80 --model-flavor sklearn
 
 2022-04-06 15:40:28.903233: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
 2022-04-06 15:40:28.903253: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
@@ -386,8 +375,7 @@ Re-running the example with different hyperparameter values will re-train
 the model and update the deployment server to serve the new model:
 
 ```shell
-python run.py --deploy --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url> --epochs=10 --learning_rate=0.1
+python run.py --deploy --epochs=10 --learning_rate=0.1
 ```
 
 If the input hyperparameter argument values are not changed, the pipeline
@@ -400,14 +388,13 @@ The inference pipeline will use the currently running Seldon Core deployment
 server to perform an online prediction. To run the inference pipeline:
 
 ```shell
-python run.py --predict --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url>
+python run.py --predict
 ```
 
 Example output when run with the local orchestrator stack:
 
 ```
-zenml/seldon_deployment$ python run.py --predict --kubernetes-context=zenml-eks --namespace=zenml-workloads --base-url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com --model-flavor sklearn
+zenml/seldon_deployment$ python run.py --predict --model-flavor sklearn
 2022-04-06 15:48:02.346731: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
 2022-04-06 15:48:02.346762: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
 Creating run for pipeline: `inference_pipeline`
@@ -441,16 +428,14 @@ training and the Seldon Core model server implementation, the `--model-flavor`
 command line argument can be used:
 
 ```
-python run.py --deploy --predict --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url> --model-flavor sklearn --penalty=l2
+python run.py --deploy --predict --model-flavor sklearn --penalty=l2
 ```
 
 Finally, to stop the prediction server, simply pass the `--stop-service` flag
 to the example script:
 
 ```shell
-python run.py --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url> --stop-service
+python run.py --stop-service
 ```
 
 ### Clean up
@@ -459,8 +444,7 @@ To stop the prediction server running in the background, pass the
 `--stop-service` flag to the example script:
 
 ```shell
-python run.py --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url> --stop-service
+python run.py --stop-service
 ```
 
 Then delete the remaining ZenML references.

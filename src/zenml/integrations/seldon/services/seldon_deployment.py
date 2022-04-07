@@ -12,13 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from __future__ import annotations
+
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from uuid import UUID
 
 import numpy as np
-import requests
-from pydantic import Field
+import requests  # type: ignore [import]
+from pydantic import Field, ValidationError
 
+from zenml import __version__
 from zenml.integrations.seldon.seldon_client import (
     SeldonClient,
     SeldonDeployment,
@@ -42,44 +46,107 @@ class SeldonDeploymentConfig(ServiceConfig):
         model_uri: URI of the model (or models) to serve.
         model_name: the name of the model. Multiple versions of the same model
             should use the same model name.
-        model_format: the format of the model being served.
         implementation: the Seldon Core implementation used to serve the model.
-        pipeline_name: the name of the pipeline that was used to deploy the
-            model.
-        pipeline_run_id: the ID of the pipeline run that deployed the model.
-        pipeline_step_name: the name of the pipeline step that deployed the
-            model.
         replicas: number of replicas to use for the prediction service.
+        secret_name: the name of a Kubernetes secret containing additional
+            configuration parameters for the Seldon Core deployment (e.g.
+            credentials to access the Artifact Store).
         model_metadata: optional model metadata information (see
             https://docs.seldon.io/projects/seldon-core/en/latest/reference/apis/metadata.html).
         extra_args: additional arguments to pass to the Seldon Core deployment
             resource configuration.
     """
 
-    # TODO [ENG-773]: determine how to formalize how models are organized into
-    #   folders and sub-folders depending on the model type/format and the
-    #   Seldon Core protocol used to serve the model.
     model_uri: str
     model_name: str
-    model_format: Optional[str]
-    # TODO [ENG-775]: have an enum of all supported Seldon Core implementation ?
+    # TODO [ENG-775]: have an enum of all supported Seldon Core implementations
     implementation: str
-    pipeline_name: Optional[str] = None
-    pipeline_run_id: Optional[str] = None
-    pipeline_step_name: Optional[str] = None
     replicas: int = 1
+    secret_name: Optional[str]
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
     extra_args: Dict[str, Any] = Field(default_factory=dict)
 
-    # configuration attributes that are not part of the service configuration
-    # but are required for the service to function. These must be moved to the
-    # stack component, when available
-    kubernetes_context: Optional[str]
-    namespace: Optional[str]
-    base_url: str
-    # TODO [ENG-776]: replace with ZenML secret and create a k8s secret resource
-    #   that can be mounted in the container
-    secret_name: Optional[str]
+    def get_seldon_deployment_labels(self) -> Dict[str, str]:
+        """Generate the labels for the Seldon Core deployment from the
+        service configuration.
+
+        These labels are attached to the Seldon Core deployment resource
+        and may be used as label selectors in lookup operations.
+
+        Returns:
+            The labels for the Seldon Core deployment.
+        """
+        labels = {}
+        if self.pipeline_name:
+            labels["zenml.pipeline_name"] = self.pipeline_name
+        if self.pipeline_run_id:
+            labels["zenml.pipeline_run_id"] = self.pipeline_run_id
+        if self.pipeline_step_name:
+            labels["zenml.pipeline_step_name"] = self.pipeline_step_name
+        if self.model_name:
+            labels["zenml.model_name"] = self.model_name
+        if self.model_uri:
+            labels["zenml.model_uri"] = self.model_uri
+        if self.implementation:
+            labels["zenml.model_type"] = self.implementation
+        SeldonClient.sanitize_labels(labels)
+        return labels
+
+    def get_seldon_deployment_annotations(self) -> Dict[str, str]:
+        """Generate the annotations for the Seldon Core deployment from the
+        service configuration.
+
+        The annotations are used to store additional information about the
+        Seldon Core service that is associated with the deployment that is
+        not available in the labels. One annotation particularly important
+        is the serialized Service configuration itself, which is used to
+        recreate the service configuration from a remote Seldon deployment.
+
+        Returns:
+            The annotations for the Seldon Core deployment.
+        """
+        annotations = {
+            "zenml.service_config": self.json(),
+            "zenml.version": __version__,
+        }
+        return annotations
+
+    @classmethod
+    def create_from_deployment(
+        cls, deployment: SeldonDeployment
+    ) -> "SeldonDeploymentConfig":
+        """Recreate a Seldon Core service configuration from a Seldon Core
+        deployment resource.
+
+        Args:
+            deployment: the Seldon Core deployment resource.
+
+        Returns:
+            The Seldon Core service configuration corresponding to the given
+            Seldon Core deployment resource.
+
+        Raises:
+            ValueError: if the given deployment resource does not contain
+                the expected annotations or it contains an invalid or
+                incompatible Seldon Core service configuration.
+        """
+        config_data = deployment.metadata.annotations.get(
+            "zenml.service_config"
+        )
+        if not config_data:
+            raise ValueError(
+                f"The given deployment resource does not contain a "
+                f"'zenml.service_config' annotation: {deployment}"
+            )
+        try:
+            service_config = cls.parse_raw(config_data)
+        except ValidationError as e:
+            raise ValueError(
+                f"The loaded Seldon Core deployment resource contains an "
+                f"invalid or incompatible Seldon Core service configuration: "
+                f"{config_data}"
+            ) from e
+        return service_config
 
 
 class SeldonDeploymentServiceStatus(ServiceStatus):
@@ -109,23 +176,18 @@ class SeldonDeploymentService(BaseService):
         default_factory=SeldonDeploymentServiceStatus
     )
 
-    # private attributes
-
-    _client: Optional[SeldonClient] = None
-
     def _get_client(self) -> SeldonClient:
-        """Get the Seldon Core client.
+        """Get the Seldon Core client from the active Seldon Core model deployer.
 
         Returns:
             The Seldon Core client.
         """
-        if self._client is None:
-            self._client = SeldonClient(
-                context=self.config.kubernetes_context,
-                namespace=self.config.namespace,
-            )
+        from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
+            SeldonModelDeployer,
+        )
 
-        return self._client
+        model_deployer = SeldonModelDeployer.get_active_model_deployer()
+        return model_deployer.seldon_client
 
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the the current operational state of the Seldon Core
@@ -142,9 +204,6 @@ class SeldonDeploymentService(BaseService):
             deployment = client.get_deployment(name=name)
         except SeldonDeploymentNotFoundError:
             return (ServiceState.INACTIVE, "")
-
-        if self.admin_state == ServiceState.INACTIVE:
-            return (ServiceState.PENDING_SHUTDOWN, "")
 
         if deployment.is_available():
             return (
@@ -182,12 +241,35 @@ class SeldonDeploymentService(BaseService):
         Returns:
             The labels for the Seldon Core deployment.
         """
-        return dict(
-            zenml_pipeline_name=self.config.pipeline_name or "",
-            zenml_pipeline_run_id=self.config.pipeline_run_id or "",
-            zenml_pipeline_step_name=self.config.pipeline_step_name or "",
-            zenml_service_uuid=str(self.uuid),
-        )
+        labels = self.config.get_seldon_deployment_labels()
+        labels["zenml.service_uuid"] = str(self.uuid)
+        SeldonClient.sanitize_labels(labels)
+        return labels
+
+    @classmethod
+    def create_from_deployment(
+        cls, deployment: SeldonDeployment
+    ) -> "SeldonDeploymentService":
+        """Recreate a Seldon Core service from a Seldon Core
+        deployment resource and update their operational status.
+
+        Args:
+            deployment: the Seldon Core deployment resource.
+
+        Returns:
+            The Seldon Core service corresponding to the given
+            Seldon Core deployment resource.
+        """
+        config = SeldonDeploymentConfig.create_from_deployment(deployment)
+        uuid = deployment.metadata.labels.get("zenml.service_uuid")
+        if not uuid:
+            raise ValueError(
+                f"The given deployment resource does not contain a valid "
+                f"'zenml.service_uuid' label: {deployment}"
+            )
+        service = cls(uuid=UUID(uuid), config=config)
+        service.update_status()
+        return service
 
     def provision(self) -> None:
         """Provision or update the remote Seldon Core deployment instance to
@@ -203,6 +285,7 @@ class SeldonDeploymentService(BaseService):
             implementation=self.config.implementation,
             secret_name=self.config.secret_name,
             labels=self._get_seldon_deployment_labels(),
+            annotations=self.config.get_seldon_deployment_annotations(),
         )
         deployment.spec.replicas = self.config.replicas
         deployment.spec.predictors[0].replicas = self.config.replicas
@@ -238,17 +321,16 @@ class SeldonDeploymentService(BaseService):
             The prediction URI exposed by the prediction service, or None if
             the service is not yet ready.
         """
+        from zenml.integrations.seldon.model_deployers.seldon_model_deployer import (
+            SeldonModelDeployer,
+        )
+
         if not self.is_running:
             return None
-        # the namespace is either explicitly configured or implicitly
-        # determined by the in-cluster Kuberenetes configuration
-        namespace = self.config.namespace or self._get_client().namespace
-        if not namespace:
-            # shouldn't happen if the service is running, but we need to
-            # appease the mypy type checker
-            return None
+        namespace = self._get_client().namespace
+        model_deployer = SeldonModelDeployer.get_active_model_deployer()
         return os.path.join(
-            self.config.base_url,
+            model_deployer.base_url,
             "seldon",
             namespace,
             self.seldon_deployment_name,
