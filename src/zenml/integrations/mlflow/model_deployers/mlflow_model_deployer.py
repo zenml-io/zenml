@@ -13,10 +13,9 @@
 #  permissions and limitations under the License.
 import os
 import shutil
-from typing import List, Optional
+from typing import List, Optional, cast
 from uuid import UUID
 
-from zenml.logger import get_logger
 from zenml.constants import (
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
     LOCAL_STORES_DIRECTORY_NAME,
@@ -27,9 +26,11 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.io.utils import get_global_config_directory
+from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
+from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -56,10 +57,10 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
     def deploy_model(
         self,
-        config: MLFlowDeploymentConfig,
-        replace: bool = False,
-        timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
-    ) -> MLFlowDeploymentService:
+        config: ServiceConfig,
+        replace: bool,
+        timeout: int,
+    ) -> BaseService:
         """
 
         We assume that the deployment decision is made at the step level and
@@ -90,6 +91,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         Returns:
             The MLFlowDeploymentService object.
         """
+        config = cast(MLFlowDeploymentConfig, config)
 
         # if replace is True, remove all existing services
         if replace is True:
@@ -100,12 +102,13 @@ class MLFlowModelDeployer(BaseModelDeployer):
             )
 
             for service in existing_services:
+                service = cast(MLFlowDeploymentService, service)
                 self._clean_up_existing_service(
                     timeout=timeout, force=True, existing_service=service
                 )
 
         # create a new MLFlowDeploymentService instance
-        return self._create_new_service(timeout, config)
+        return cast(BaseService, self._create_new_service(timeout, config))
 
     def _clean_up_existing_service(
         self,
@@ -117,7 +120,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         existing_service.stop(timeout=timeout, force=force)
 
         # delete the old configuration file
-        service_directory_path = existing_service.status.runtime_path
+        service_directory_path = existing_service.status.runtime_path or ""
         shutil.rmtree(service_directory_path)
 
     # the step will receive a config from the user that mentions the number
@@ -149,7 +152,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         model_name: Optional[str] = None,
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
-    ) -> List[MLFlowDeploymentService]:
+    ) -> List[BaseService]:
         """Method to find one or more model servers that match the
         given criteria.
 
@@ -211,9 +214,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
                     if self._matches_search_criteria(existing_service, config):
                         if running:
                             if existing_service.is_running:
-                                services.append(existing_service)
+                                services.append(cast(BaseService, existing_service))
                         else:
-                            services.append(existing_service)
+                            services.append(cast(BaseService, existing_service))
 
         return services
 
@@ -309,6 +312,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
         # if uuid of service matches input uuid, clean up the service
         for service in existing_services:
+            service = cast(MLFlowDeploymentService, service)
             if service.uuid == uuid:
                 self._clean_up_existing_service(
                     existing_service=service, timeout=timeout, force=force
