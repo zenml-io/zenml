@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, ClassVar
+from typing import ClassVar
 
 import redis  # type: ignore
 from pandas import DataFrame
@@ -31,25 +31,23 @@ class FeastFeatureStore(BaseFeatureStore):
     """Class to interact with the Feast feature store."""
 
     FLAVOR: ClassVar[str] = "feast"
-    HOST: ClassVar[str] = "localhost"
-    PORT: ClassVar[int] = 6379
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        """Initializes the Feast feature store."""
-        super().__init__(*args, **kwargs)
-        self._validate_connection()
+    online_host: str = "localhost"
+    online_port: int = 6379
 
     def get_historical_features(self) -> DataFrame:
         """Returns the historical features for training or batch scoring."""
+        self._validate_connection()
         return NotImplementedError
 
     def get_online_features(self) -> DataFrame:
         """Returns the latest online feature data."""
+        self._validate_connection()
         return NotImplementedError
 
     def _validate_connection(self) -> None:
         """Validates the connection to the feature store."""
-        client = redis.Redis(host=self.HOST, port=self.PORT)
+        client = redis.Redis(host=self.online_host, port=self.online_port)
         try:
             client.ping()
         except redis.exceptions.ConnectionError as e:

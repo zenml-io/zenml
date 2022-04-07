@@ -27,6 +27,9 @@ class BaseFeatureStore(StackComponent, ABC):
     TYPE: ClassVar[StackComponentType] = StackComponentType.FEATURE_STORE
     FLAVOR: ClassVar[str]
 
+    online_host: str
+    online_port: int
+
     @abstractmethod
     def get_historical_features(self) -> DataFrame:
         """Returns the historical features for training or batch scoring."""
