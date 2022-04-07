@@ -70,6 +70,7 @@ class BaseModelDeployer(StackComponent, ABC):
     @abstractmethod
     def find_model_server(
         self,
+        running: bool = True,
         pipeline_name: Optional[str] = None,
         pipeline_run_id: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
@@ -81,6 +82,7 @@ class BaseModelDeployer(StackComponent, ABC):
         given criteria.
 
         Args:
+            running: If true, only running services will be returned.
             pipeline_name: Name of the pipeline that the deployed model was part
             of.
             pipeline_run_id: ID of the pipeline run which the deployed model was part of.

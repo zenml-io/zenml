@@ -100,7 +100,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
             )
 
             for service in existing_services:
-                self._clean_up_existing_service(timeout=timeout, force=True, existing_service=service)
+                self._clean_up_existing_service(
+                    timeout=timeout, force=True, existing_service=service
+                )
 
         # create a new MLFlowDeploymentService instance
         return self._create_new_service(timeout, config)
@@ -140,6 +142,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
     def find_model_server(
         self,
+        running: bool = True,
         pipeline_name: Optional[str] = None,
         pipeline_run_id: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
@@ -151,6 +154,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         given criteria.
 
         Args:
+            running: If true, only running services will be returned.
             pipeline_name: Name of the pipeline that the deployed model was part
             of.
             pipeline_run_id: ID of the pipeline run which the deployed model was part of.
@@ -205,7 +209,11 @@ class MLFlowModelDeployer(BaseModelDeployer):
                             f"{type(existing_service)} instead"
                         )
                     if self._matches_search_criteria(existing_service, config):
-                        services.append(existing_service)
+                        if running:
+                            if existing_service.is_running:
+                                services.append(existing_service)
+                        else:
+                            services.append(existing_service)
 
         return services
 
@@ -238,7 +246,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
             )
             and (
                 not existing_service_config.pipeline_step_name
-                or existing_service_config.pipeline_step_name == config.pipeline_step_name
+                or existing_service_config.pipeline_step_name
+                == config.pipeline_step_name
             )
         ):
             return True

@@ -24,8 +24,8 @@ from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
 from zenml.integrations.mlflow.steps import mlflow_deployer_step
 from zenml.pipelines import pipeline
-from zenml.services import load_last_service_from_step
-from zenml.steps import BaseStepConfig, Output, StepContext, step
+from zenml.repository import Repository
+from zenml.steps import BaseStepConfig, Output, step
 
 # Path to a pip requirements file that contains requirements necessary to run
 # the pipeline
@@ -139,33 +139,40 @@ class MLFlowDeploymentLoaderStepConfig(BaseStepConfig):
         step_name: the name of the step that deployed the MLflow prediction
             server
         running: when this flag is set, the step only returns a running service
+        model_name: the name of the model that is deployed
     """
 
     pipeline_name: str
-    step_name: str
+    pipeline_step_name: str
     running: bool = True
+    model_name: str = "model"
 
 
 @step(enable_cache=False)
 def prediction_service_loader(
-    config: MLFlowDeploymentLoaderStepConfig, context: StepContext
+    config: MLFlowDeploymentLoaderStepConfig,
 ) -> MLFlowDeploymentService:
     """Get the prediction service started by the deployment pipeline"""
 
-    service = load_last_service_from_step(
+    # get the MLflow model deployer stack component
+    mlflow_model_deployer_component = Repository().active_stack.model_deployer
+
+    # fetch existing services with same pipeline name, step name and model name
+    existing_services = mlflow_model_deployer_component.find_model_server(
         pipeline_name=config.pipeline_name,
-        step_name=config.step_name,
-        step_context=context,
+        pipeline_step_name=config.pipeline_step_name,
+        model_name=config.model_name,
         running=config.running,
     )
-    if not service:
+
+    if not existing_services:
         raise RuntimeError(
             f"No MLflow prediction service deployed by the "
-            f"{config.step_name} step in the {config.pipeline_name} pipeline "
+            f"{config.pipeline_step_name} step in the {config.pipeline_name} pipeline "
             f"is currently running."
         )
 
-    return service
+    return existing_services[0]
 
 
 def get_data_from_api():
@@ -216,7 +223,7 @@ def continuous_deployment_pipeline(
     model = trainer(x_train=x_trained_normed, y_train=y_train)
     accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
     deployment_decision = deployment_trigger(accuracy=accuracy)
-    model_deployer(deployment_decision)
+    model_deployer(deployment_decision, model)
 
 
 @pipeline(enable_cache=True, requirements_file=requirements_file)

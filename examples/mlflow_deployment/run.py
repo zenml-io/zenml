@@ -33,7 +33,7 @@ from rich import print
 from zenml.environment import Environment
 from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT_NAME
 from zenml.integrations.mlflow.steps import MLFlowDeployerConfig
-from zenml.services import load_last_service_from_step
+from zenml.repository import Repository
 
 
 @click.command()
@@ -53,14 +53,17 @@ from zenml.services import load_last_service_from_step
 def main(epochs: int, lr: float, min_accuracy: float, stop_service: bool):
     """Run the MLflow example pipeline"""
 
+    # get the MLflow model deployer stack component
+    mlflow_model_deployer_component = Repository().active_stack.model_deployer
+
     if stop_service:
-        service = load_last_service_from_step(
+        services = mlflow_model_deployer_component.find_model_server(
             pipeline_name="continuous_deployment_pipeline",
-            step_name="model_deployer",
-            running=True,
+            pipeline_step_name="model_deployer",
+            model_name="model",
         )
-        if service:
-            service.stop(timeout=10)
+        if services[0]:
+            services[0].stop(timeout=10)
         return
 
     # Initialize a continuous deployment pipeline run
@@ -74,7 +77,9 @@ def main(epochs: int, lr: float, min_accuracy: float, stop_service: bool):
                 min_accuracy=min_accuracy,
             )
         ),
-        model_deployer=model_deployer(config=MLFlowDeployerConfig(workers=3)),
+        model_deployer=model_deployer(
+            config=MLFlowDeployerConfig(workers=3, timeout=10)
+        ),
     )
 
     deployment.run()
@@ -102,16 +107,18 @@ def main(epochs: int, lr: float, min_accuracy: float, stop_service: bool):
         "experiment. There you'll also be able to compare two or more runs.\n\n"
     )
 
-    service = load_last_service_from_step(
+    # fetch existing services with same pipeline name, step name and model name
+    existing_services = mlflow_model_deployer_component.find_model_server(
         pipeline_name="continuous_deployment_pipeline",
-        step_name="model_deployer",
-        running=True,
+        pipeline_step_name="model_deployer",
+        model_name="model",
     )
-    if service:
+
+    if existing_services[0]:
         print(
             f"The MLflow prediction server is running locally as a daemon process "
             f"and accepts inference requests at:\n"
-            f"    {service.prediction_uri}\n"
+            f"    {existing_services[0].prediction_uri}\n"
             f"To stop the service, re-run the same command and supply the "
             f"`--stop-service` argument."
         )
