@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from pandas import DataFrame
 
@@ -28,11 +28,11 @@ class BaseFeatureStore(StackComponent, ABC):
     FLAVOR: ClassVar[str]
 
     @abstractmethod
-    def get_historical_features(self) -> DataFrame:
+    def get_historical_features(self) -> Optional[DataFrame]:
         """Returns the historical features for training or batch scoring."""
         return NotImplementedError
 
     @abstractmethod
-    def get_online_features(self) -> DataFrame:
+    def get_online_features(self) -> Optional[DataFrame]:
         """Returns the latest online feature data."""
         return NotImplementedError

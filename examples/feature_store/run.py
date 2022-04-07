@@ -12,16 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
 from datetime import datetime, timedelta
 
 import pandas as pd
 from pandas import DataFrame
 
 from zenml.integrations.constants import FEAST
-from zenml.integrations.feast.steps.feast_datasource import (
-    FeastHistoricalDatasource,
-    FeastHistoricalDatasourceConfig,
+from zenml.integrations.feast.steps.feast_feature_store_step import (
+    FeastFeatureStoreConfig,
+    feast_feature_store_step,
 )
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
@@ -42,18 +41,20 @@ batch_entity_df = pd.DataFrame.from_dict(
         ],
     }
 )
-batch_config = FeastHistoricalDatasourceConfig(
-    repo_path=os.path.join(os.getcwd(), "feast_feature_repo")
-)
 
-historical_data = FeastHistoricalDatasource(
-    config=batch_config,
-    entity_df=batch_entity_df,
-    features=[
-        "driver_hourly_stats:conv_rate",
-        "driver_hourly_stats:acc_rate",
-        "driver_hourly_stats:avg_daily_trips",
-    ],
+features = [
+    "driver_hourly_stats:conv_rate",
+    "driver_hourly_stats:acc_rate",
+    "driver_hourly_stats:avg_daily_trips",
+]
+
+feature_store = feast_feature_store_step(name="feature_store")
+
+historical_data = feature_store(
+    FeastFeatureStoreConfig(
+        entity_df=batch_entity_df,
+        features=features,
+    )
 )
 
 
@@ -75,7 +76,7 @@ def feast_pipeline(
 
 if __name__ == "__main__":
     pipeline = feast_pipeline(
-        batch_features=historical_data,
+        batch_features=historical_data(),
         feature_printer=print_initial_features(),
     )
 
@@ -86,3 +87,18 @@ if __name__ == "__main__":
     last_run = pipeline.runs[-1]
     features_step = last_run.get_step(name="feature_printer")
     print(features_step.output.read())
+
+
+# batch_config = FeastHistoricalDatasourceConfig(
+#     repo_path=os.path.join(os.getcwd(), "feast_feature_repo")
+# )
+
+# historical_data = FeastHistoricalDatasource(
+#     config=batch_config,
+#     entity_df=batch_entity_df,
+#     features=[
+#         "driver_hourly_stats:conv_rate",
+#         "driver_hourly_stats:acc_rate",
+#         "driver_hourly_stats:avg_daily_trips",
+#     ],
+# )
