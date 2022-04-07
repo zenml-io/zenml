@@ -141,6 +141,9 @@ class S3ArtifactStore(BaseArtifactStore):
         return [
             _extract_basename(dict_)
             for dict_ in S3ArtifactStore.FILESYSTEM.listdir(path=path)
+            # s3fs.listdir also returns the root directory, so we filter
+            # it out here
+            if _extract_basename(dict_)
         ]
 
     @staticmethod

@@ -20,7 +20,7 @@ from zenml.integrations.integration import Integration
 
 
 class MlflowIntegration(Integration):
-    """Definition of Plotly integration for ZenML."""
+    """Definition of MLflow integration for ZenML."""
 
     NAME = MLFLOW
     REQUIREMENTS = [

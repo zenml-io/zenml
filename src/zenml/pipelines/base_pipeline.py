@@ -115,7 +115,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.required_integrations = kwargs.pop(PARAM_REQUIRED_INTEGRATIONS, ())
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
         self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
-        self.secrets = kwargs.pop(PARAM_SECRETS, None)
+        self.secrets = kwargs.pop(PARAM_SECRETS, [])
 
         self.name = self.__class__.__name__
         logger.info("Creating run for pipeline: `%s`", self.name)
