@@ -45,7 +45,7 @@ def service() -> None:
 @service.command("explain", help="Explain the service")
 def explain_service() -> None:
     """Explain the concept of the Zen Service."""
-    component_module = import_module(f"zenml.zen_service")
+    component_module = import_module("zenml.zen_service")
 
     if component_module.__doc__ is not None:
         md = Markdown(component_module.__doc__)
