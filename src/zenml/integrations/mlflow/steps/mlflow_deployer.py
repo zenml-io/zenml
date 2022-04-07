@@ -63,8 +63,8 @@ class MLFlowDeployerConfig(BaseStepConfig):
 
 
 def mlflow_deployer_step(
+    enable_cache: bool = True,
     name: Optional[str] = None,
-    enable_cache: Optional[bool] = None,
 ) -> Type[BaseStep]:
     """Shortcut function to create a pipeline step to deploy a given ML model
     with a local MLflow prediction server.
@@ -147,14 +147,19 @@ def mlflow_deployer_step(
 
         # create a config for the new model service
         predictor_cfg = MLFlowDeploymentConfig(
-            model_name=config.model_name,
-            model_uri=config.model_uri,
+            model_name=config.model_name or "",
+            model_uri=config.model_uri or "",
             workers=config.workers,
             mlserver=config.mlserver,
             pipeline_name=pipeline_name,
             pipeline_run_id=run_id,
             pipeline_step_name=step_name,
         )
+
+        # Creating a new service with inactive state and status by default
+        service = MLFlowDeploymentService(predictor_cfg)
+        if existing_services:
+            service = cast(MLFlowDeploymentService, existing_services[0])
 
         # check for conditions to deploy the model
         if not config.model_uri:
@@ -166,21 +171,18 @@ def mlflow_deployer_step(
                     f"trained in the current pipeline run and no previous "
                     f"service was found."
                 )
-            return existing_services[0]
+            return service
 
         if not deploy_decision:
-            if existing_services:
-                return existing_services[0]
-            else:
-                # Returning a service with inactive state and status.
-                return MLFlowDeploymentService(predictor_cfg)
+            # no new deployment is required, so we reuse the existing service
+            return service
 
         # create a new model deployment
-        service = mlflow_model_deployer_component.deploy_model(
+        new_service = mlflow_model_deployer_component.deploy_model(
             replace=True,
             config=predictor_cfg,
             timeout=config.timeout,
         )
-        return service
+        return cast(MLFlowDeploymentService, new_service)
 
     return mlflow_model_deployer
