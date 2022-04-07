@@ -20,7 +20,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def restrict_step_access(_func) -> Any:
+def restrict_step_access(_func: Any) -> Any:
     """Decorator to restrict this function from running inside a step.
 
     Apply this decorator to a ZenML function to prevent it from being run
