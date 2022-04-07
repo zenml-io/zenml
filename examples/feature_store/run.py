@@ -19,7 +19,6 @@ from pandas import DataFrame
 
 from zenml.integrations.constants import FEAST
 from zenml.integrations.feast.steps.feast_feature_store_step import (
-    FeastFeatureStoreConfig,
     feast_feature_store_step,
 )
 from zenml.logger import get_logger
@@ -54,11 +53,11 @@ feature_store = feast_feature_store_step(
     features=features,
 )
 
-historical_data = feature_store(FeastFeatureStoreConfig())
+historical_data = feature_store()
 
 
 @step
-def print_initial_features(batch_features: DataFrame) -> DataFrame:
+def print_historical_features(batch_features: DataFrame) -> DataFrame:
     """Prints features imported from the feature store."""
     return batch_features.head()
 
@@ -76,7 +75,7 @@ def feast_pipeline(
 if __name__ == "__main__":
     pipeline = feast_pipeline(
         batch_features=historical_data,
-        feature_printer=print_initial_features(),
+        feature_printer=print_historical_features(),
     )
 
     pipeline.run()
@@ -86,18 +85,3 @@ if __name__ == "__main__":
     last_run = pipeline.runs[-1]
     features_step = last_run.get_step(name="feature_printer")
     print(features_step.output.read())
-
-
-# batch_config = FeastHistoricalDatasourceConfig(
-#     repo_path=os.path.join(os.getcwd(), "feast_feature_repo")
-# )
-
-# historical_data = FeastHistoricalDatasource(
-#     config=batch_config,
-#     entity_df=batch_entity_df,
-#     features=[
-#         "driver_hourly_stats:conv_rate",
-#         "driver_hourly_stats:acc_rate",
-#         "driver_hourly_stats:avg_daily_trips",
-#     ],
-# )

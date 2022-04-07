@@ -26,10 +26,6 @@ class FeastFeatureStoreConfig(BaseStepConfig):
     class Config:
         arbitrary_types_allowed = True
 
-    # entity_df: Union[DataFrame, str]
-    # features: Union[List[str], FeatureService]
-    # full_feature_names: bool = False
-
 
 def feast_feature_store_step(
     entity_df: Union[DataFrame, str],
