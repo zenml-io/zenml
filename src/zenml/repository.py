@@ -124,7 +124,13 @@ class RepositoryMetaClass(ABCMeta):
             ForbiddenRepositoryAccessError: If trying to create a `Repository`
                 instance while a ZenML step is being executed.
         """
-        if Environment().step_is_running:
+
+        # `skip_repository_check` is a special kwarg that can be passed to
+        # the Repository constructor to bypass the check that prevents the
+        # Repository instance from being accessed from within pipeline steps.
+        if kwargs.pop("skip_repository_check", False):
+            return super().__call__(*args, **kwargs)
+        elif Environment().step_is_running:
             raise ForbiddenRepositoryAccessError(
                 "Unable to access repository during step execution. If you "
                 "require access to the artifact or metadata store, please use "
