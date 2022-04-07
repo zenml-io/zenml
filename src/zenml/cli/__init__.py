@@ -433,4 +433,5 @@ from zenml.cli.secret import *  # noqa
 from zenml.cli.service import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
+from zenml.cli.user_management import *  # noqa
 from zenml.cli.version import *  # noqa
