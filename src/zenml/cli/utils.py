@@ -121,13 +121,13 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     Args:
       obj: A List containing dictionaries.
     """
-    columns = {key.upper(): None for dict_ in obj for key in dict_.keys()}
-    rich_table = table.Table(*columns.keys(), box=box.HEAVY_EDGE)
+    column_keys = {key: None for dict_ in obj for key in dict_}
+    column_names = [key.upper() for key in column_keys]
+    rich_table = table.Table(*column_names, box=box.HEAVY_EDGE)
 
     for dict_ in obj:
-        values = columns.copy()
-        values.update(dict_)
-        rich_table.add_row(*list(values.values()))
+        values = [dict_.get(key) for key in column_keys]
+        rich_table.add_row(*values)
 
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
