@@ -56,14 +56,14 @@ class SeldonDeploymentConfig(ServiceConfig):
             resource configuration.
     """
 
-    # TODO [HIGH]: determine how to formalize how models are organized into
+    # TODO [ENG-773]: determine how to formalize how models are organized into
     #   folders and sub-folders depending on the model type/format and the
     #   Seldon Core protocol used to serve the model.
     model_uri: str
     model_name: str
-    # TODO [HIGH]: have an enum of all model formats ?
+    # TODO [ENG-774]: have an enum of all model formats ?
     model_format: Optional[str]
-    # TODO [HIGH]: have an enum of all supported Seldon Core implementation ?
+    # TODO [ENG-775]: have an enum of all supported Seldon Core implementation ?
     implementation: str
     pipeline_name: Optional[str] = None
     pipeline_run_id: Optional[str] = None
@@ -78,7 +78,7 @@ class SeldonDeploymentConfig(ServiceConfig):
     kubernetes_context: Optional[str]
     namespace: Optional[str]
     base_url: str
-    # TODO [HIGH]: replace with ZenML secret and create a k8s secret resource
+    # TODO [ENG-776]: replace with ZenML secret and create a k8s secret resource
     #   that can be mounted in the container
     secret_name: Optional[str]
 
