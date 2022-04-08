@@ -23,7 +23,39 @@ DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
 class BaseModelDeployer(StackComponent, ABC):
-    """Base class for all ZenML model deployers."""
+    """Base class for all ZenML model deployers.
+
+    The model deployer serves three major purposes:
+
+    1. it contains all the stack related configuration attributes required to
+    interact with the remote model serving tool, service or platform (e.g.
+    hostnames, URLs, references to credentials, other client related
+    configuration parameters).
+
+    2. it implements the continuous deployment logic necessary to deploy models
+    in a way that updates an existing model server that is already serving a
+    previous version of the same model instead of creating a new model server
+    for every new model version (see the `deploy_model` abstract method).
+    This functionality can be consumed directly from ZenML pipeline steps, but
+    it can also be used outside of the pipeline to deploy ad-hoc models. It is
+    also usually coupled with a standard model deployer step, implemented by
+    each integration, that hides the details of the deployment process away from
+    the user.
+
+    3. it acts as a ZenML BaseService registry, where every BaseService instance
+    is used as an internal representation of a remote model server (see the
+    `find_model_server` abstract method). To achieve this, it must be able to
+    re-create the configuration of a BaseService from information that is
+    persisted externally, alongside or even part of the remote model server
+    configuration itself. For example, for model servers that are implemented as
+    Kubernetes resources, the BaseService instances can be serialized and saved
+    as Kubernetes resourece annotations. This allows the model deployer to keep
+    track of all externally running model servers and to re-create their
+    corresponding BaseService instance representations at any given time.
+    The model deployer also defines methods that implement basic life-cycle
+    management on remote model servers outside the coverage of a pipeline
+    (see `stop_model_server`, `start_model_server` and `delete_model_server`).
+    """
 
     # Class configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.MODEL_DEPLOYER

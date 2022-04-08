@@ -246,7 +246,7 @@ differently. Please look up the variables relevant to your use-case in the
 Configuring the stack can be done like this:
 
 ```
-zenml integration install s3
+zenml integration install s3 seldon
 zenml model-deployer register seldon_eks --type=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
   --base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
@@ -316,7 +316,7 @@ differently. Please look up the variables relevant to your use-case in the
 Configuring the stack can be done like this:
 
 ```
-zenml integration install s3 kubeflow
+zenml integration install s3 kubeflow seldon
 
 zenml artifact-store register aws --type=s3 --path=s3://mybucket
 zenml model-deployer register seldon_aws --type=seldon \
