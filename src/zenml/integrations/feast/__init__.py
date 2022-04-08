@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The AWS integration submodule provides a way to run ZenML pipelines in a cloud
-environment. Specifically, it allows the use of cloud artifact stores,
-and an `io` module to handle file operations on S3 buckets.
+The Feast integration offers a way to connect to a Feast Feature Store. ZenML
+implements a dedicated stack component that you can access as part of your ZenML
+steps in the usual ways.
 """
 
 from zenml.integrations.constants import FEAST

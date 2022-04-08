@@ -15,8 +15,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, List, Union
 
+import pandas as pd
 from feast.feature_service import FeatureService  # type: ignore[import]
-from pandas import DataFrame
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
@@ -31,10 +31,10 @@ class BaseFeatureStore(StackComponent, ABC):
     @abstractmethod
     def get_historical_features(
         self,
-        entity_df: Union[DataFrame, str],
+        entity_df: Union[pd.DataFrame, str],
         features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
-    ) -> DataFrame:
+    ) -> pd.DataFrame:
         """Returns the historical features for training or batch scoring.
 
         Args:

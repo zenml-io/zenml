@@ -14,8 +14,8 @@
 
 from typing import Any, Dict, List, Optional, Type, Union
 
+import pandas as pd
 from feast.feature_service import FeatureService  # type: ignore[import]
-from pandas import DataFrame
 
 from zenml.steps import BaseStep, BaseStepConfig, StepContext, step
 
@@ -28,7 +28,7 @@ class FeastHistoricalFeaturesConfig(BaseStepConfig):
 
 
 def feast_historical_features_step(
-    entity_df: Union[DataFrame, str],
+    entity_df: Union[pd.DataFrame, str],
     features: Union[List[str], FeatureService],
     full_feature_names: bool = False,
     name: Optional[str] = None,
@@ -56,7 +56,7 @@ def feast_historical_features_step(
     def feast_historical_features(
         config: FeastHistoricalFeaturesConfig,
         context: StepContext,
-    ) -> DataFrame:
+    ) -> pd.DataFrame:
         """Feast Feature Store historical data step
 
         Args:

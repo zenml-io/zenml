@@ -14,10 +14,10 @@
 
 from typing import Any, ClassVar, Dict, List, Union
 
+import pandas as pd
 import redis  # type: ignore
 from feast import FeatureStore  # type: ignore[import]
 from feast.feature_service import FeatureService  # type: ignore[import]
-from pandas import DataFrame
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
 from zenml.logger import get_logger
@@ -38,12 +38,27 @@ class FeastFeatureStore(BaseFeatureStore):
     online_port: int = 6379
     feast_repo: str
 
+    def _validate_connection(self) -> None:
+        """Validates the connection to the feature store.
+
+        Raises:
+            RuntimeError: If the online component (Redis) is not available.
+        """
+        client = redis.Redis(host=self.online_host, port=self.online_port)
+        try:
+            client.ping()
+        except redis.exceptions.ConnectionError as e:
+            raise RuntimeError(
+                "Could not connect to feature store's online component. "
+                "Please make sure that Redis is running."
+            ) from e
+
     def get_historical_features(
         self,
-        entity_df: Union[DataFrame, str],
+        entity_df: Union[pd.DataFrame, str],
         features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
-    ) -> DataFrame:
+    ) -> pd.DataFrame:
         """Returns the historical features for training or batch scoring.
 
         Args:
@@ -87,18 +102,3 @@ class FeastFeatureStore(BaseFeatureStore):
             features=features,
             full_feature_names=full_feature_names,
         ).to_dict()
-
-    def _validate_connection(self) -> None:
-        """Validates the connection to the feature store.
-
-        Raises:
-            RuntimeError: If the online component (Redis) is not available.
-        """
-        client = redis.Redis(host=self.online_host, port=self.online_port)
-        try:
-            client.ping()
-        except redis.exceptions.ConnectionError as e:
-            raise RuntimeError(
-                "Could not connect to feature store's online component. "
-                "Please make sure that Redis is running."
-            ) from e
