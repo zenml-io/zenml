@@ -110,6 +110,7 @@ def conflict(error: Exception) -> HTTPException:
 
 @app.get("/", response_model=ProfileConfiguration)
 async def service_info() -> ProfileConfiguration:
+    """Returns the profile configuration for this service."""
     return profile
 
 
@@ -121,6 +122,7 @@ async def health() -> str:
 
 @app.get(IS_EMPTY, response_model=bool)
 async def is_empty() -> bool:
+    """Returns whether stacks are registered or not."""
     return zen_store.is_empty
 
 
@@ -130,6 +132,7 @@ async def is_empty() -> bool:
     responses={404: error_response},
 )
 async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
+    """Returns the configuration for the requested stack."""
     try:
         return zen_store.get_stack_configuration(name)
     except KeyError as error:
@@ -141,6 +144,7 @@ async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
     response_model=Dict[str, Dict[StackComponentType, str]],
 )
 async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
+    """Returns configurations for all stacks."""
     return zen_store.stack_configurations
 
 
@@ -148,6 +152,7 @@ async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
 async def register_stack_component(
     component: StackComponentWrapper,
 ) -> None:
+    """Registers a stack component."""
     try:
         zen_store.register_stack_component(component)
     except StackComponentExistsError as error:
@@ -156,6 +161,7 @@ async def register_stack_component(
 
 @app.delete(STACKS + "/{name}", responses={404: error_response})
 async def deregister_stack(name: str) -> None:
+    """Deregisters a stack."""
     try:
         zen_store.deregister_stack(name)
     except KeyError as error:
@@ -164,6 +170,7 @@ async def deregister_stack(name: str) -> None:
 
 @app.get(STACKS, response_model=List[StackWrapper])
 async def stacks() -> List[StackWrapper]:
+    """Returns all stacks."""
     return zen_store.stacks
 
 
@@ -173,6 +180,7 @@ async def stacks() -> List[StackWrapper]:
     responses={404: error_response},
 )
 async def get_stack(name: str) -> StackWrapper:
+    """Returns the requested stack."""
     try:
         return zen_store.get_stack(name)
     except KeyError as error:
@@ -185,6 +193,7 @@ async def get_stack(name: str) -> StackWrapper:
     responses={409: error_response},
 )
 async def register_stack(stack: StackWrapper) -> Dict[str, str]:
+    """Registers a stack."""
     try:
         return zen_store.register_stack(stack)
     except (StackExistsError, StackComponentExistsError) as error:
@@ -199,6 +208,7 @@ async def register_stack(stack: StackWrapper) -> Dict[str, str]:
 async def get_stack_component(
     component_type: StackComponentType, name: str
 ) -> StackComponentWrapper:
+    """Returns the requested stack component."""
     try:
         return zen_store.get_stack_component(component_type, name=name)
     except KeyError as error:
@@ -212,6 +222,7 @@ async def get_stack_component(
 async def get_stack_components(
     component_type: StackComponentType,
 ) -> List[StackComponentWrapper]:
+    """Returns all stack components for the requested type."""
     return zen_store.get_stack_components(component_type)
 
 
@@ -222,6 +233,7 @@ async def get_stack_components(
 async def deregister_stack_component(
     component_type: StackComponentType, name: str
 ) -> None:
+    """Deregisters a stack component."""
     try:
         return zen_store.deregister_stack_component(component_type, name=name)
     except KeyError as error:
@@ -232,6 +244,7 @@ async def deregister_stack_component(
 
 @app.get(USERS, response_model=List[User])
 async def users() -> List[User]:
+    """Returns all users."""
     return zen_store.users
 
 
@@ -241,6 +254,7 @@ async def users() -> List[User]:
     responses={409: error_response},
 )
 async def create_user(user: User) -> User:
+    """Creates a user."""
     try:
         return zen_store.create_user(user.name)
     except EntityExistsError as error:
@@ -249,6 +263,7 @@ async def create_user(user: User) -> User:
 
 @app.delete(USERS + "/{name}", responses={404: error_response})
 async def delete_user(name: str) -> None:
+    """Deletes a user."""
     try:
         zen_store.delete_user(user_name=name)
     except KeyError as error:
@@ -261,6 +276,7 @@ async def delete_user(name: str) -> None:
     responses={404: error_response},
 )
 async def teams_for_user(name: str) -> List[Team]:
+    """Returns all teams for a user."""
     try:
         return zen_store.get_teams_for_user(user_name=name)
     except KeyError as error:
@@ -275,6 +291,7 @@ async def teams_for_user(name: str) -> List[Team]:
 async def role_assignments_for_user(
     name: str, project_name: Optional[str] = None
 ) -> List[RoleAssignment]:
+    """Returns all role assignments for a user."""
     try:
         return zen_store.get_role_assignments_for_user(
             user_name=name, project_name=project_name, include_team_roles=False
@@ -285,6 +302,7 @@ async def role_assignments_for_user(
 
 @app.get(TEAMS, response_model=List[Team])
 async def teams() -> List[Team]:
+    """Returns all teams."""
     return zen_store.teams
 
 
@@ -294,6 +312,7 @@ async def teams() -> List[Team]:
     responses={409: error_response},
 )
 async def create_team(team: Team) -> Team:
+    """Creates a team."""
     try:
         return zen_store.create_team(team.name)
     except EntityExistsError as error:
@@ -302,6 +321,7 @@ async def create_team(team: Team) -> Team:
 
 @app.delete(TEAMS + "/{name}", responses={404: error_response})
 async def delete_team(name: str) -> None:
+    """Deletes a team."""
     try:
         zen_store.delete_team(team_name=name)
     except KeyError as error:
@@ -314,6 +334,7 @@ async def delete_team(name: str) -> None:
     responses={404: error_response},
 )
 async def users_for_team(name: str) -> List[User]:
+    """Returns all users for a team."""
     try:
         return zen_store.get_users_for_team(team_name=name)
     except KeyError as error:
@@ -322,6 +343,7 @@ async def users_for_team(name: str) -> List[User]:
 
 @app.post(TEAMS + "/{name}/users", responses={404: error_response})
 async def add_user_to_team(name: str, user: User) -> None:
+    """Adds a user to a team."""
     try:
         zen_store.add_user_to_team(team_name=name, user_name=user.name)
     except KeyError as error:
@@ -332,6 +354,7 @@ async def add_user_to_team(name: str, user: User) -> None:
     TEAMS + "/{team_name}/users/{user_name}", responses={404: error_response}
 )
 async def remove_user_from_team(team_name: str, user_name: str) -> None:
+    """Removes a user from a team."""
     try:
         zen_store.remove_user_from_team(
             team_name=team_name, user_name=user_name
@@ -348,6 +371,7 @@ async def remove_user_from_team(team_name: str, user_name: str) -> None:
 async def role_assignments_for_team(
     name: str, project_name: Optional[str] = None
 ) -> List[RoleAssignment]:
+    """Gets all role assignments for a team."""
     try:
         return zen_store.get_role_assignments_for_team(
             team_name=name, project_name=project_name
@@ -358,6 +382,7 @@ async def role_assignments_for_team(
 
 @app.get(PROJECTS, response_model=List[Project])
 async def projects() -> List[Project]:
+    """Returns all projects."""
     return zen_store.projects
 
 
@@ -367,6 +392,7 @@ async def projects() -> List[Project]:
     responses={409: error_response},
 )
 async def create_project(project: Project) -> Project:
+    """Creates a project."""
     try:
         return zen_store.create_project(
             project_name=project.name, description=project.description
@@ -377,6 +403,7 @@ async def create_project(project: Project) -> Project:
 
 @app.delete(PROJECTS + "/{name}", responses={404: error_response})
 async def delete_project(name: str) -> None:
+    """Deletes a project."""
     try:
         zen_store.delete_project(project_name=name)
     except KeyError as error:
@@ -385,6 +412,7 @@ async def delete_project(name: str) -> None:
 
 @app.get(ROLES, response_model=List[Role])
 async def roles() -> List[Role]:
+    """Returns all roles."""
     return zen_store.roles
 
 
@@ -394,6 +422,7 @@ async def roles() -> List[Role]:
     responses={409: error_response},
 )
 async def create_role(role: Role) -> Role:
+    """Creates a role."""
     try:
         return zen_store.create_role(role.name)
     except EntityExistsError as error:
@@ -402,6 +431,7 @@ async def create_role(role: Role) -> Role:
 
 @app.delete(ROLES + "/{name}", responses={404: error_response})
 async def delete_role(name: str) -> None:
+    """Deletes a role."""
     try:
         zen_store.delete_role(role_name=name)
     except KeyError as error:
@@ -410,6 +440,7 @@ async def delete_role(name: str) -> None:
 
 @app.get(ROLE_ASSIGNMENTS, response_model=List[RoleAssignment])
 async def role_assignments() -> List[RoleAssignment]:
+    """Returns all role assignments."""
     return zen_store.role_assignments
 
 
@@ -418,6 +449,7 @@ async def role_assignments() -> List[RoleAssignment]:
     responses={404: error_response},
 )
 async def assign_role(data: Dict[str, Any]) -> None:
+    """Assigns a role."""
     role_name = data["role_name"]
     entity_name = data["entity_name"]
     project_name = data.get("project_name")
@@ -436,6 +468,7 @@ async def assign_role(data: Dict[str, Any]) -> None:
 
 @app.delete(ROLE_ASSIGNMENTS, responses={404: error_response})
 async def revoke_role(data: Dict[str, Any]) -> None:
+    """Revokes a role."""
     role_name = data["role_name"]
     entity_name = data["entity_name"]
     project_name = data.get("project_name")
