@@ -48,7 +48,7 @@ class FeastFeatureStore(BaseFeatureStore):
         try:
             client.ping()
         except redis.exceptions.ConnectionError as e:
-            raise RuntimeError(
+            raise redis.exceptions.ConnectionError(
                 "Could not connect to feature store's online component. "
                 "Please make sure that Redis is running."
             ) from e
@@ -65,6 +65,9 @@ class FeastFeatureStore(BaseFeatureStore):
             entity_df: The entity dataframe or entity name.
             features: The features to retrieve.
             full_feature_names: Whether to return the full feature names.
+
+        Raise:
+            ConnectionError: If the online component (Redis) is not available.
 
         Returns:
             The historical features as a Pandas DataFrame.
@@ -90,6 +93,9 @@ class FeastFeatureStore(BaseFeatureStore):
             entity_rows: The entity rows to retrieve.
             features: The features to retrieve.
             full_feature_names: Whether to return the full feature names.
+
+        Raise:
+            ConnectionError: If the online component (Redis) is not available.
 
         Returns:
             The latest online feature data as a dictionary.
