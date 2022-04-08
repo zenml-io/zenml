@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from datetime import datetime
-from typing import ClassVar, List, Optional, cast
+from typing import ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.integrations.constants import SELDON
@@ -65,6 +65,20 @@ class SeldonModelDeployer(BaseModelDeployer):
 
     # private attributes
     _client: Optional[SeldonClient] = None
+
+    @staticmethod
+    def get_model_server_info(
+        service_instance: "SeldonDeploymentService",
+    ) -> Dict[str, Optional[str]]:
+
+        # TODO [HIGH]: Fix Mypy issues as the service_instance is a
+        #  SeldonDeploymentService not a BaseService
+
+        return {
+            "PREDICTION_URL": service_instance.prediction_url,
+            "MODEL_URI": service_instance.config.model_uri,
+            "MODEL_NAME": service_instance.config.model_name,
+        }
 
     @staticmethod
     def get_active_model_deployer() -> "SeldonModelDeployer":
