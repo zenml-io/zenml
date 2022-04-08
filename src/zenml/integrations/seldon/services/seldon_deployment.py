@@ -61,7 +61,6 @@ class SeldonDeploymentConfig(ServiceConfig):
     #   Seldon Core protocol used to serve the model.
     model_uri: str
     model_name: str
-    # TODO [ENG-774]: have an enum of all model formats ?
     model_format: Optional[str]
     # TODO [ENG-775]: have an enum of all supported Seldon Core implementation ?
     implementation: str
