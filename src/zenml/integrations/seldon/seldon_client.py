@@ -49,6 +49,26 @@ class SeldonDeploymentMetadata(BaseModel):
         # Ignore extra attributes from the CRD that are not reflected here
         extra = "ignore"
 
+class SeldonDeploymentParameters(BaseModel):
+    """Parameters for a Seldon Deployment.
+
+
+    Attributes:
+        name: name of the parameter
+        value: value of the parameter
+        type: type of the parameter
+
+    """
+
+    name: str
+    value: str
+    type: str
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
 
 class SeldonDeploymentPredictiveUnitType(StrEnum):
     """Predictive unit types for a Seldon Deployment."""
@@ -74,6 +94,7 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
         envSecretRefName: the name of a Kubernetes secret that contains
             environment variables (e.g. credentials) to be configured for the
             predictive unit container.
+        parameters: parameters for the predictive unit.
         children: a list of child predictive units that together make up the
             model serving graph.
     """
@@ -86,6 +107,7 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
     modelUri: Optional[str]
     serviceAccountName: Optional[str]
     envSecretRefName: Optional[str]
+    parameters: Optional[List[SeldonDeploymentParameters]]
     children: List["SeldonDeploymentPredictiveUnit"] = Field(
         default_factory=list
     )
@@ -251,6 +273,7 @@ class SeldonDeployment(BaseModel):
         implementation: Optional[str] = None,
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
+        parameters: Optional[List[Dict[str, str]]] = [],
     ) -> "SeldonDeployment":
         """Build a basic Seldon Deployment object.
 
@@ -289,6 +312,11 @@ class SeldonDeployment(BaseModel):
                             modelUri=model_uri or "",
                             implementation=implementation or "",
                             envSecretRefName=secret_name,
+                            parameters=[
+                                SeldonDeploymentParameters(**parameter)
+                                for parameter in parameters
+                            ]
+                            or [],
                         ),
                     )
                 ],

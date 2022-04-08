@@ -18,7 +18,7 @@ from pipeline import (
     SeldonDeploymentLoaderStepConfig,
     SklearnTrainerConfig,
     TensorflowTrainerConfig,
-    continuous_deployment_pipeline,
+    continuous_deployment_pipeline_cache,
     deployment_trigger,
     dynamic_importer,
     importer_mnist,
@@ -61,12 +61,12 @@ from zenml.services import load_last_service_from_step
 )
 @click.option(
     "--epochs",
-    default=5,
+    default=7,
     help="Number of epochs for training (tensorflow hyperparam)",
 )
 @click.option(
     "--lr",
-    default=0.003,
+    default=0.002,
     help="Learning rate for training (tensorflow hyperparam, default: 0.003)",
 )
 @click.option(
@@ -166,7 +166,7 @@ def main(
 
     if deploy:
         # Initialize a continuous deployment pipeline run
-        deployment = continuous_deployment_pipeline(
+        deployment = continuous_deployment_pipeline_cache(
             importer=importer_mnist(),
             normalizer=normalizer(),
             trainer=trainer,
@@ -182,11 +182,12 @@ def main(
                     step_name="model_deployer",
                     replicas=1,
                     implementation=seldon_implementation,
-                    secret_name="seldon-init-container-secret",
+                    secret_name="seldon-rclone-secret",
                     kubernetes_context=kubernetes_context,
                     namespace=namespace,
                     base_url=base_url,
                     timeout=120,
+                    parameters=[{"name": "method", "type": "STRING", "value": "predict_proba"},],
                 )
             ),
         )
@@ -200,7 +201,7 @@ def main(
             predict_preprocessor=predict_preprocessor,
             prediction_service_loader=prediction_service_loader(
                 SeldonDeploymentLoaderStepConfig(
-                    pipeline_name="continuous_deployment_pipeline",
+                    pipeline_name="continuous_deployment_pipeline_cache",
                     step_name="model_deployer",
                 )
             ),
@@ -211,7 +212,7 @@ def main(
 
     try:
         service = load_last_service_from_step(
-            pipeline_name="continuous_deployment_pipeline",
+            pipeline_name="continuous_deployment_pipeline_cache",
             step_name="model_deployer",
             running=True,
         )

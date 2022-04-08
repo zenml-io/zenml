@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import numpy as np
 import requests  # type: ignore [import]
@@ -69,6 +69,7 @@ class SeldonDeploymentConfig(ServiceConfig):
     pipeline_run_id: Optional[str] = None
     pipeline_step_name: Optional[str] = None
     replicas: int = 1
+    parameters: Optional[List[Dict[str, str]]] = []
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
     extra_args: Dict[str, Any] = Field(default_factory=dict)
 
@@ -204,6 +205,7 @@ class SeldonDeploymentService(BaseService):
             implementation=self.config.implementation,
             secret_name=self.config.secret_name,
             labels=self._get_seldon_deployment_labels(),
+            parameters=self.config.parameters,
         )
         deployment.spec.replicas = self.config.replicas
         deployment.spec.predictors[0].replicas = self.config.replicas
