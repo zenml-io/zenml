@@ -26,6 +26,7 @@ from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
+    Flavor,
     Project,
     Role,
     RoleAssignment,
@@ -37,7 +38,7 @@ from zenml.zen_stores.models import (
 
 logger = get_logger(__name__)
 
-E = TypeVar("E", bound=Union[User, Team, Project, Role])
+E = TypeVar("E", bound=Union[User, Team, Project, Role, Flavor])
 
 
 @overload
@@ -763,6 +764,79 @@ class LocalZenStore(BaseZenStore):
         return self._get_role_assignments(
             team_id=team.id, project_id=project_id
         )
+
+    # Stack component flavor
+    @property
+    def flavors(self) -> List[Flavor]:
+        """All registered users.
+
+        Returns:
+            A list of all registered users.
+        """
+        return self.__store.stack_component_flavors
+
+    def create_flavor(self, source: str) -> Flavor:
+        """Register a new flavor with a given source path.
+
+        Args:
+            source: the source path of the new flavor
+
+        Returns:
+            The newly created flavor
+        """
+        from zenml.utils.source_utils import import_class_by_path
+
+        flavor_class = import_class_by_path(source)
+
+        flavor = Flavor(source=source, type=flavor_class.TYPE)
+
+        self.__store.stack_component_flavors.append(flavor)
+        self._write_store()
+
+        return flavor
+
+    def get_flavor_by_name_and_type(
+        self,
+        flavor_name: str,
+        component_type: StackComponentType,
+        ensure_exists: bool = True,
+    ):
+        """Fetch a flavor by a given name and type.
+
+        Args:
+            flavor_name: The name of the flavor
+            component_type: Optional, the type of the component
+            ensure_exists: If `True`, raises an error if the entity doesn't
+                exist
+
+        Returns:
+            Flavor instance if it exists
+
+        Raises:
+            KeyError: If no flavor exists with the given name or there are more
+                than one instances
+        """
+        matches = self.get_flavors_by_type(component_type)
+        return _get_unique_entity(
+            entity_name=flavor_name,
+            collection=matches,
+            ensure_exists=ensure_exists,
+        )
+
+    def get_flavors_by_type(self, component_type: StackComponentType):
+        """Fetch all flavor defined for a specific stack component type.
+
+        Args:
+            component_type: The type of the stack component
+
+        Returns:
+            List of all the flavors for the given stack component type
+        """
+        return [
+            f
+            for f in self.__store.stack_component_flavors
+            if f.type == component_type
+        ]
 
     # Implementation-specific internal methods:
 
