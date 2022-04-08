@@ -234,6 +234,9 @@ kubectl -n zenml-workloads create secret generic seldon-init-container-secret \
     --from-literal=RCLONE_CONFIG_S3_ENV_AUTH=true
 ```
 
+The name of the created secret also needs to be passed to the `run.py` example
+launcher script via its `--secret` command line argument.
+
 NOTE: this is based on the assumption that Seldon Core is running in an EKS
 cluster that already has IAM access enabled and doesn't need any explicit AWS
 credentials. If that is not the case, you will need to set up credentials
@@ -301,6 +304,9 @@ kubectl -n kubeflow create secret generic seldon-init-container-secret \
     --from-literal=RCLONE_CONFIG_S3_ENV_AUTH=true
 ```
 
+The name of the created secret also needs to be passed to the `run.py` example
+launcher script via its `--secret` command line argument.
+
 NOTE: this is based on the assumption that Seldon Core is running in an EKS
 cluster that already has IAM access enabled and doesn't need any explicit AWS
 credentials. If that is not the case, you will need to set up credentials
@@ -327,13 +333,13 @@ zenml stack set aws
 To run the continuous deployment pipeline:
 
 ```shell
-python run.py --deploy
+python run.py --secret seldon-init-container-secret --deploy
 ```
 
 Example output when run with the local orchestrator stack:
 
 ```
-zenml/seldon_deployment$ python run.py --deploy --min-accuracy 0.80 --model-flavor sklearn
+zenml/seldon_deployment$ python run.py --secret seldon-init-container-secret --deploy --min-accuracy 0.80 --model-flavor sklearn
 
 2022-04-06 15:40:28.903233: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
 2022-04-06 15:40:28.903253: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
@@ -375,7 +381,7 @@ Re-running the example with different hyperparameter values will re-train
 the model and update the deployment server to serve the new model:
 
 ```shell
-python run.py --deploy --epochs=10 --learning_rate=0.1
+python run.py --secret seldon-init-container-secret --deploy --epochs=10 --learning_rate=0.1
 ```
 
 If the input hyperparameter argument values are not changed, the pipeline
@@ -388,7 +394,7 @@ The inference pipeline will use the currently running Seldon Core deployment
 server to perform an online prediction. To run the inference pipeline:
 
 ```shell
-python run.py --predict
+python run.py --secret seldon-init-container-secret --predict
 ```
 
 Example output when run with the local orchestrator stack:
@@ -428,14 +434,14 @@ training and the Seldon Core model server implementation, the `--model-flavor`
 command line argument can be used:
 
 ```
-python run.py --deploy --predict --model-flavor sklearn --penalty=l2
+python run.py --secret seldon-init-container-secret --deploy --predict --model-flavor sklearn --penalty=l2
 ```
 
 Finally, to stop the prediction server, simply pass the `--stop-service` flag
 to the example script:
 
 ```shell
-python run.py --stop-service
+python run.py --secret seldon-init-container-secret --stop-service
 ```
 
 ### Clean up
@@ -444,7 +450,7 @@ To stop the prediction server running in the background, pass the
 `--stop-service` flag to the example script:
 
 ```shell
-python run.py --stop-service
+python run.py --secret seldon-init-container-secret --stop-service
 ```
 
 Then delete the remaining ZenML references.

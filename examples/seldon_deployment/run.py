@@ -37,7 +37,8 @@ from pipeline import (
 from rich import print
 
 from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
-from zenml.integrations.seldon.services.seldon_deployment import (
+from zenml.integrations.seldon.services import (
+    SeldonDeploymentConfig,
     SeldonDeploymentService,
 )
 from zenml.integrations.seldon.steps import (
@@ -107,6 +108,14 @@ from zenml.integrations.seldon.steps import (
     help="Minimum accuracy required to deploy the model (default: 0.92)",
 )
 @click.option(
+    "--secret",
+    "-x",
+    type=str,
+    required=True,
+    help="Specify the name of a Kubernetes secret to be passed to Seldon Core "
+    "deployments to authenticate to the Artifact Store",
+)
+@click.option(
     "--stop-service",
     is_flag=True,
     default=False,
@@ -123,6 +132,7 @@ def main(
     penalty_strength: float,
     toleration: float,
     min_accuracy: float,
+    secret: str,
     stop_service: bool,
 ):
     """Run the Seldon example continuous deployment or inference pipeline
@@ -130,7 +140,7 @@ def main(
     Example usage:
 
         python run.py --deploy --predict --model-flavor tensorflow \
-             --min-accuracy 0.80
+             --min-accuracy 0.80 --secret seldon-init-container-secret
 
     """
     model_name = "mnist"
@@ -181,10 +191,12 @@ def main(
             ),
             model_deployer=seldon_model_deployer_step(
                 config=SeldonDeployerStepConfig(
-                    model_name=model_name,
-                    replicas=1,
-                    implementation=seldon_implementation,
-                    secrets=["seldon-init-container-secret"],
+                    service_config=SeldonDeploymentConfig(
+                        model_name=model_name,
+                        replicas=1,
+                        implementation=seldon_implementation,
+                        secret_name=secret,
+                    ),
                     timeout=120,
                 )
             ),
