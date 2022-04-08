@@ -221,6 +221,49 @@ def generate_stack_component_register_command(
     return register_stack_component_command
 
 
+def generate_stack_component_flavor_register_command(
+    component_type: StackComponentType,
+) -> Callable[[str], None]:
+    """Generates a `register` command for the flavors of a stack component."""
+
+    @click.argument(
+        "source",
+        type=str,
+        required=True,
+    )
+    def register_stack_component_flavor_command(source: str) -> None:
+        """Adds a flavor for a stack component type"""
+        cli_utils.print_active_profile()
+
+        # Check whether the module exists and is the right type
+        cli_utils.validate_component_type_source(
+            source=source, component_type=component_type
+        )
+
+        # Register the flavor in the given source
+        Repository().zen_store.create_flavor(source=source)
+
+    return register_stack_component_flavor_command
+
+
+def generate_stack_component_flavor_list_command(
+    component_type: StackComponentType,
+) -> Callable[[], None]:
+    """Generates a `list` command for the flavors of a stack component."""
+
+    def list_stack_component_flavor_command() -> None:
+        """Adds a flavor for a stack component type"""
+        cli_utils.print_active_profile()
+
+        # List all the flavors of the component type
+        flavors = Repository().zen_store.get_flavors_by_type(
+            component_type=component_type
+        )
+        cli_utils.print_pydantic_models(flavors)
+
+    return list_stack_component_flavor_command
+
+
 def generate_stack_component_delete_command(
     component_type: StackComponentType,
 ) -> Callable[[str], None]:
@@ -452,6 +495,32 @@ def register_single_stack_component_cli_commands(
         context_settings=context_settings,
         help=f"Register a new {singular_display_name}.",
     )(register_command)
+
+    # zenml stack-component flavor
+    @command_group.group(
+        "flavor", help=f"Commands to interact with {plural_display_name}."
+    )
+    def flavor_group() -> None:
+        """Group commands for handling the flavors of single stack component
+        type."""
+
+    # zenml stack-component flavor register
+    register_flavor_command = generate_stack_component_flavor_register_command(
+        component_type=component_type
+    )
+    flavor_group.command(
+        "register",
+        help=f"Identify a new flavor for {plural_display_name}.",
+    )(register_flavor_command)
+
+    # zenml stack-component flavor list
+    list_flavor_command = generate_stack_component_flavor_list_command(
+        component_type=component_type
+    )
+    flavor_group.command(
+        "list",
+        help=f"List all registered flavors for {plural_display_name}.",
+    )(list_flavor_command)
 
     # zenml stack-component delete
     delete_command = generate_stack_component_delete_command(component_type)

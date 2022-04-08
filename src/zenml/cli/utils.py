@@ -39,6 +39,7 @@ from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
 from zenml.stack import StackComponent
+from zenml.utils.source_utils import load_source_path_class
 
 logger = get_logger(__name__)
 
@@ -418,3 +419,20 @@ def print_secrets(secrets: List[str]) -> None:
         rich_table.add_row(item)
 
     console.print(rich_table)
+
+
+def validate_component_type_source(
+    source: str, component_type: StackComponentType
+) -> bool:
+    """Validates if the given source exists and has the right
+    StackComponentType
+
+    Args:
+        source:
+        component_type:
+    """
+    stack_component_class = load_source_path_class(source)
+
+    assert stack_component_class.TYPE == component_type
+
+    return True
