@@ -27,12 +27,13 @@ from zenml.constants import (
     IS_EMPTY,
     REGISTER_COMPONENT,
     REGISTER_STACK,
+USERS, TEAMS, PROJECTS, ROLES, ROLE_ASSIGNMENTS
 )
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
+from zenml.exceptions import StackComponentExistsError, StackExistsError, EntityExistsError
 from zenml.logger import get_logger
 from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
+from zenml.zen_stores.models import StackComponentWrapper, StackWrapper, User, Team, Project, Role, RoleAssignment
 
 logger = get_logger(__name__)
 
@@ -41,7 +42,7 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
 class RestZenStore(BaseZenStore):
-    """ZenStore implementation for accessing stack data from a REST api."""
+    """ZenStore implementation for accessing data from a REST api."""
 
     def initialize(
         self,
@@ -290,6 +291,312 @@ class RestZenStore(BaseZenStore):
         """
         self.get(f"{DELETE_COMPONENT}/{component_type}/{name}")
 
+    # User, project and role management
+
+    @property
+    def users(self) -> List[User]:
+        """All registered users.
+
+        Returns:
+            A list of all registered users.
+        """
+        body = self.get(USERS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [User.parse_obj(user_dict) for user_dict in body]
+
+    def create_user(self, user_name: str) -> User:
+        """Creates a new user.
+
+        Args:
+            user_name: Unique username.
+
+        Returns:
+             The newly created user.
+        """
+        user = User(name=user_name)
+        return User.parse_obj(self.post(USERS, body=user))
+
+    def delete_user(self, user_name: str) -> None:
+        """Deletes a user.
+
+        Args:
+            user_name: Name of the user to delete.
+        """
+        self.delete(f"{USERS}/{user_name}")
+
+    @property
+    def teams(self) -> List[Team]:
+        """All registered teams.
+
+        Returns:
+            A list of all registered teams.
+        """
+        body = self.get(TEAMS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [Team.parse_obj(team_dict) for team_dict in body]
+
+    def create_team(self, team_name: str) -> Team:
+        """Creates a new team.
+
+        Args:
+            team_name: Unique team name.
+
+        Returns:
+             The newly created team.
+        """
+        team = Team(name=team_name)
+        return Team.parse_obj(self.post(TEAMS, body=team))
+
+    def delete_team(self, team_name: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_name: Name of the team to delete.
+        """
+        self.delete(f"{TEAMS}/{team_name}")
+
+    def add_user_to_team(self, team_name: str, user_name: str) -> None:
+        """Adds a user to a team.
+
+        Args:
+            team_name: Name of the team.
+            user_name: Name of the user.
+        """
+        user = User(name=user_name)
+        self.post(f"{TEAMS}/{team_name}/users", user)
+
+    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
+        """Removes a user from a team.
+
+        Args:
+            team_name: Name of the team.
+            user_name: Name of the user.
+        """
+        self.delete(f"{TEAMS}/{team_name}/users/{user_name}")
+
+    @property
+    def projects(self) -> List[Project]:
+        """All registered projects.
+
+        Returns:
+            A list of all registered projects.
+        """
+        body = self.get(PROJECTS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [Project.parse_obj(project_dict) for project_dict in body]
+
+    def create_project(
+        self, project_name: str, description: Optional[str] = None
+    ) -> Project:
+        """Creates a new project.
+
+        Args:
+            project_name: Unique project name.
+            description: Optional project description.
+
+        Returns:
+             The newly created project.
+        """
+        project = Project(name=project_name, description=description)
+        return Project.parse_obj(self.post(PROJECTS, body=project))
+
+    def delete_project(self, project_name: str) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name: Name of the project to delete.
+        """
+        self.delete(f"{PROJECTS}/{project_name}")
+
+    @property
+    def roles(self) -> List[Role]:
+        """All registered roles.
+
+        Returns:
+            A list of all registered roles.
+        """
+        body = self.get(ROLES)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [Role.parse_obj(role_dict) for role_dict in body]
+
+    @property
+    def role_assignments(self) -> List[RoleAssignment]:
+        """All registered role assignments.
+
+        Returns:
+            A list of all registered role assignments.
+        """
+        body = self.get(ROLE_ASSIGNMENTS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [RoleAssignment.parse_obj(assignment_dict) for assignment_dict in body]
+
+    def create_role(self, role_name: str) -> Role:
+        """Creates a new role.
+
+        Args:
+            role_name: Unique role name.
+
+        Returns:
+             The newly created role.
+        """
+        role = Role(name=role_name)
+        return Role.parse_obj(self.post(ROLES, body=role))
+
+    def delete_role(self, role_name: str) -> None:
+        """Deletes a role.
+
+        Args:
+            role_name: Name of the role to delete.
+        """
+        self.delete(f"{ROLES}/{role_name}")
+
+    def assign_role(
+        self,
+        role_name: str,
+        entity_name: str,
+        project_name: Optional[str] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Assigns a role to a user or team.
+
+        Args:
+            role_name: Name of the role to assign.
+            entity_name: User or team name.
+            project_name: Optional project name.
+            is_user: Boolean indicating whether the given `entity_name` refers
+                to a user.
+        """
+        data = {"role_name": role_name, "entity_name": entity_name, "project_name": project_name, "is_user": is_user}
+        self._handle_response(requests.post(self.url + ROLE_ASSIGNMENTS, json=data))
+
+    def revoke_role(
+        self,
+        role_name: str,
+        entity_name: str,
+        project_name: Optional[str] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Revokes a role from a user or team.
+
+        Args:
+            role_name: Name of the role to revoke.
+            entity_name: User or team name.
+            project_name: Optional project name.
+            is_user: Boolean indicating whether the given `entity_name` refers
+                to a user.
+        """
+        data = {"role_name": role_name, "entity_name": entity_name, "project_name": project_name, "is_user": is_user}
+        self._handle_response(requests.delete(self.url + ROLE_ASSIGNMENTS, json=data))
+
+    def get_users_for_team(self, team_name: str) -> List[User]:
+        """Fetches all users of a team.
+
+        Args:
+            team_name: Name of the team.
+
+        Returns:
+            List of users that are part of the team.
+        """
+        body = self.get(f"{TEAMS}/{team_name}/users")
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [User.parse_obj(user_dict) for user_dict in body]
+
+    def get_teams_for_user(self, user_name: str) -> List[Team]:
+        """Fetches all teams for a user.
+
+        Args:
+            user_name: Name of the user.
+
+        Returns:
+            List of teams that the user is part of.
+        """
+        body = self.get(f"{USERS}/{user_name}/teams")
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [Team.parse_obj(team_dict) for team_dict in body]
+
+    def get_role_assignments_for_user(
+        self,
+        user_name: str,
+        project_name: Optional[str] = None,
+        include_team_roles: bool = True,
+    ) -> List[RoleAssignment]:
+        """Fetches all role assignments for a user.
+
+        Args:
+            user_name: Name of the user.
+            project_name: Optional filter to only return roles assigned for
+                this project.
+            include_team_roles: If `True`, includes roles for all teams that
+                the user is part of.
+
+        Returns:
+            List of role assignments for this user.
+        """
+        path = f"{USERS}/{user_name}/role_assignments"
+        if project_name:
+            path += f"?project_name={project_name}"
+
+        body = self.get(path)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        assignments = [RoleAssignment.parse_obj(assignment_dict) for assignment_dict in body]
+        if include_team_roles:
+            for team in self.get_teams_for_user(user_name):
+                assignments += self.get_role_assignments_for_team(
+                    team.name, project_name=project_name
+                )
+        return assignments
+
+    def get_role_assignments_for_team(
+        self,
+        team_name: str,
+        project_name: Optional[str] = None,
+    ) -> List[RoleAssignment]:
+        """Fetches all role assignments for a team.
+
+        Args:
+            team_name: Name of the user.
+            project_name: Optional filter to only return roles assigned for
+                this project.
+
+        Returns:
+            List of role assignments for this team.
+        """
+        path = f"{TEAMS}/{team_name}/role_assignments"
+        if project_name:
+            path += f"?project_name={project_name}"
+
+        body = self.get(path)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [RoleAssignment.parse_obj(assignment_dict) for
+                       assignment_dict in body]
+
     # Private interface shall not be implemented for REST store, instead the
     # API only provides all public methods, including the ones that would
     # otherwise be inherited from the BaseZenStore in other implementations.
@@ -357,6 +664,8 @@ class RestZenStore(BaseZenStore):
                 raise StackExistsError(
                     *response.json().get("detail", (response.text,))
                 )
+            elif "EntityExistsError" in response.text:
+                raise EntityExistsError(*response.json().get("detail", (response.text,)))
             else:
                 raise ValueError(
                     *response.json().get("detail", (response.text,))
@@ -377,3 +686,8 @@ class RestZenStore(BaseZenStore):
         """Make a POST request to the given endpoint path."""
         endpoint = self.url + path
         return self._handle_response(requests.post(endpoint, data=body.json()))
+
+    def delete(self, path: str) -> Json:
+        """Make a DELETE request to the given endpoint path."""
+        return self._handle_response(requests.delete(self.url + path))
+

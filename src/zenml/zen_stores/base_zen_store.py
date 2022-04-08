@@ -247,6 +247,9 @@ class BaseZenStore(ABC):
 
         Returns:
              The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
         """
 
     @abstractmethod
@@ -255,6 +258,9 @@ class BaseZenStore(ABC):
 
         Args:
             user_name: Name of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
 
     @property
@@ -275,6 +281,9 @@ class BaseZenStore(ABC):
 
         Returns:
              The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
         """
 
     @abstractmethod
@@ -283,6 +292,9 @@ class BaseZenStore(ABC):
 
         Args:
             team_name: Name of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
 
     @abstractmethod
@@ -292,6 +304,9 @@ class BaseZenStore(ABC):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
         """
 
     @abstractmethod
@@ -301,6 +316,9 @@ class BaseZenStore(ABC):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
         """
 
     @property
@@ -324,6 +342,9 @@ class BaseZenStore(ABC):
 
         Returns:
              The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
         """
 
     @abstractmethod
@@ -332,6 +353,9 @@ class BaseZenStore(ABC):
 
         Args:
             project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
         """
 
     @property
@@ -361,6 +385,9 @@ class BaseZenStore(ABC):
 
         Returns:
              The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
         """
 
     @abstractmethod
@@ -369,6 +396,9 @@ class BaseZenStore(ABC):
 
         Args:
             role_name: Name of the role to delete.
+
+        Raises:
+            KeyError: If no role with the given name exists.
         """
 
     @abstractmethod
@@ -387,6 +417,9 @@ class BaseZenStore(ABC):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
         """
 
     @abstractmethod
@@ -405,6 +438,9 @@ class BaseZenStore(ABC):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
         """
 
     @abstractmethod
@@ -416,6 +452,9 @@ class BaseZenStore(ABC):
 
         Returns:
             List of users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
 
     @abstractmethod
@@ -427,6 +466,9 @@ class BaseZenStore(ABC):
 
         Returns:
             List of teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
 
     @abstractmethod
@@ -447,6 +489,9 @@ class BaseZenStore(ABC):
 
         Returns:
             List of role assignments for this user.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
         """
 
     @abstractmethod
@@ -464,6 +509,9 @@ class BaseZenStore(ABC):
 
         Returns:
             List of role assignments for this team.
+
+        Raises:
+            KeyError: If no team or project with the given names exists.
         """
 
     # Common code (user facing):

@@ -53,7 +53,10 @@ def create_user(user_name: str) -> None:
 def delete_user(user_name: str) -> None:
     """Delete a user."""
     cli_utils.print_active_profile()
-    Repository().zen_store.delete_user(user_name=user_name)
+    try:
+        Repository().zen_store.delete_user(user_name=user_name)
+    except KeyError:
+        cli_utils.warning(f"No user found for name '{user_name}'.")
 
 
 @cli.group()
@@ -73,6 +76,19 @@ def list_teams() -> None:
     cli_utils.print_pydantic_models(teams)
 
 
+@team.command("describe")
+@click.argument("team_name", type=str, required=True)
+def describe_team(team_name: str) -> None:
+    """Print details of a team."""
+    cli_utils.print_active_profile()
+    try:
+        users = Repository().zen_store.get_users_for_team(team_name=team_name)
+    except KeyError:
+        cli_utils.warning(f"No team found for name '{team_name}'.")
+    else:
+        cli_utils.declare(f"TEAM: {team_name}, USERS: {set(user.name for user in users)}")
+
+
 @team.command("create")
 @click.argument("team_name", type=str, required=True)
 def create_team(team_name: str) -> None:
@@ -86,7 +102,10 @@ def create_team(team_name: str) -> None:
 def delete_team(team_name: str) -> None:
     """Delete a team."""
     cli_utils.print_active_profile()
-    Repository().zen_store.delete_team(team_name=team_name)
+    try:
+        Repository().zen_store.delete_team(team_name=team_name)
+    except KeyError:
+        cli_utils.warning(f"No team found for name '{team_name}'.")
 
 
 @team.command("add")
@@ -190,14 +209,14 @@ def delete_role(role_name: str) -> None:
 
 @role.command("assign")
 @click.argument("role_name", type=str, required=True)
-@click.option("--project", "project_name", type=str, required=True)
 @click.option("--user", "user_names", type=str, required=False, multiple=True)
 @click.option("--team", "team_names", type=str, required=False, multiple=True)
+@click.option("--project", "project_name", type=str, required=False)
 def assign_role(
     role_name: str,
-    project_name: str,
     user_names: Tuple[str],
     team_names: Tuple[str],
+    project_name: Optional[str] = None,
 ) -> None:
     """Assign a role."""
     cli_utils.print_active_profile()
@@ -220,14 +239,14 @@ def assign_role(
 
 @role.command("revoke")
 @click.argument("role_name", type=str, required=True)
-@click.option("--project", "project_name", type=str, required=True)
 @click.option("--user", "user_names", type=str, required=False, multiple=True)
 @click.option("--team", "team_names", type=str, required=False, multiple=True)
+@click.option("--project", "project_name", type=str, required=False)
 def revoke_role(
     role_name: str,
-    project_name: str,
     user_names: Tuple[str],
     team_names: Tuple[str],
+    project_name: Optional[str] = None,
 ) -> None:
     """Revoke a role."""
     cli_utils.print_active_profile()

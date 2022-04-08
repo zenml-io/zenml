@@ -20,7 +20,7 @@ import pytest
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
+from zenml.exceptions import StackComponentExistsError, StackExistsError, EntityExistsError
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
@@ -195,7 +195,7 @@ def test_user_management(fresh_zen_store):
     fresh_zen_store.create_user("aria")
     assert len(fresh_zen_store.users) == 2
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(EntityExistsError):
         # usernames need to be unique
         fresh_zen_store.create_user("aria")
 
@@ -215,6 +215,10 @@ def test_user_management(fresh_zen_store):
     assert len(fresh_zen_store.users) == 1
     assert len(fresh_zen_store.get_users_for_team("team_aria")) == 0
     assert len(fresh_zen_store.role_assignments) == 0
+
+    with pytest.raises(KeyError):
+        # can't delete non-existent user
+        fresh_zen_store.delete_user("aria")
 
 
 def test_team_management(fresh_zen_store):
@@ -241,6 +245,10 @@ def test_team_management(fresh_zen_store):
     fresh_zen_store.delete_team("zenml")
     assert len(fresh_zen_store.get_teams_for_user("adam")) == 0
 
+    with pytest.raises(KeyError):
+        # can't delete non-existent team
+        fresh_zen_store.delete_team("zenml")
+
 
 def test_project_management(fresh_zen_store):
     """Tests project creation and deletion."""
@@ -248,6 +256,10 @@ def test_project_management(fresh_zen_store):
     assert len(fresh_zen_store.projects) == 1
     fresh_zen_store.delete_project("secret_project")
     assert len(fresh_zen_store.projects) == 0
+
+    with pytest.raises(KeyError):
+        # can't delete non-existent project
+        fresh_zen_store.delete_project("secret_project")
 
 
 def test_role_management(fresh_zen_store):

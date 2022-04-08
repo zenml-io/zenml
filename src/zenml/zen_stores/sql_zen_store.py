@@ -22,7 +22,7 @@ from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError
+from zenml.exceptions import StackComponentExistsError, EntityExistsError
 from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.zen_stores import BaseZenStore
@@ -36,6 +36,16 @@ from zenml.zen_stores.models import (
 )
 
 logger = get_logger(__name__)
+
+
+def _sqlmodel_uuid() -> UUID:
+    """Generates a UUID whose hex string does not start with a '0'."""
+    # SQLModel crashes when a UUID hex string starts with '0'
+    # (see: https://github.com/tiangolo/sqlmodel/issues/25)
+    uuid = uuid4()
+    while uuid.hex[0] == '0':
+        uuid = uuid4()
+    return uuid
 
 
 class ZenUser(SQLModel, table=True):
@@ -69,20 +79,20 @@ class ZenStackDefinition(SQLModel, table=True):
 
 
 class UserTable(User, SQLModel, table=True):
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
 
 
 class TeamTable(Team, SQLModel, table=True):
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
 
 
 class ProjectTable(Project, SQLModel, table=True):
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     creation_date: datetime = Field(default_factory=datetime.now)
 
 
 class RoleTable(SQLModel, table=True):
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     creation_date: datetime = Field(default_factory=datetime.now)
     name: str
 
@@ -93,7 +103,7 @@ class TeamAssignmentTable(SQLModel, table=True):
 
 
 class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
-    id: UUID = Field(primary_key=True, default_factory=uuid4)
+    id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     role_id: UUID = Field(foreign_key="roletable.id")
     user_id: Optional[UUID] = Field(default=None, foreign_key="usertable.id")
     team_id: Optional[UUID] = Field(default=None, foreign_key="teamtable.id")
@@ -436,13 +446,16 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
              The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
         """
         with Session(self.engine) as session:
             existing_user = session.exec(
                 select(UserTable).where(UserTable.name == user_name)
             ).first()
             if existing_user:
-                raise RuntimeError(
+                raise EntityExistsError(
                     f"User with name '{user_name}' already exists."
                 )
             user = UserTable(name=user_name)
@@ -455,11 +468,18 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             user_name: Name of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
         with Session(self.engine) as session:
-            user = session.exec(
-                select(UserTable).where(UserTable.name == user_name)
-            ).one()
+            try:
+                user = session.exec(
+                    select(UserTable).where(UserTable.name == user_name)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
             session.delete(user)
             session.commit()
             self._delete_query_results(
@@ -494,13 +514,16 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
              The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
         """
         with Session(self.engine) as session:
             existing_team = session.exec(
                 select(TeamTable).where(TeamTable.name == team_name)
             ).first()
             if existing_team:
-                raise RuntimeError(
+                raise EntityExistsError(
                     f"Team with name '{team_name}' already exists."
                 )
             sql_team = TeamTable(name=team_name)
@@ -514,11 +537,18 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             team_name: Name of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
         with Session(self.engine) as session:
-            team = session.exec(
-                select(TeamTable).where(TeamTable.name == team_name)
-            ).one()
+            try:
+                team = session.exec(
+                    select(TeamTable).where(TeamTable.name == team_name)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
             session.delete(team)
             session.commit()
             self._delete_query_results(
@@ -538,14 +568,21 @@ class SqlZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
         """
         with Session(self.engine) as session:
-            team = session.exec(
-                select(TeamTable).where(TeamTable.name == team_name)
-            ).one()
-            user = session.exec(
-                select(UserTable).where(UserTable.name == user_name)
-            ).one()
+            try:
+                team = session.exec(
+                    select(TeamTable).where(TeamTable.name == team_name)
+                ).one()
+                user = session.exec(
+                    select(UserTable).where(UserTable.name == user_name)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
             assignment = TeamAssignmentTable(user_id=user.id, team_id=team.id)
             session.add(assignment)
             session.commit()
@@ -556,18 +593,24 @@ class SqlZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
         """
         with Session(self.engine) as session:
-            assignment = session.exec(
-                select(TeamAssignmentTable)
-                .where(TeamAssignmentTable.team_id == TeamTable.id)
-                .where(TeamAssignmentTable.user_id == UserTable.id)
-                .where(UserTable.name == user_name)
-                .where(TeamTable.name == team_name)
-            ).one_or_none()
-            if assignment:
-                session.delete(assignment)
-                session.commit()
+            try:
+                assignment = session.exec(
+                    select(TeamAssignmentTable)
+                    .where(TeamAssignmentTable.team_id == TeamTable.id)
+                    .where(TeamAssignmentTable.user_id == UserTable.id)
+                    .where(UserTable.name == user_name)
+                    .where(TeamTable.name == team_name)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
+            session.delete(assignment)
+            session.commit()
 
     @property
     def projects(self) -> List[Project]:
@@ -593,13 +636,16 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
              The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
         """
         with Session(self.engine) as session:
             existing_project = session.exec(
                 select(ProjectTable).where(ProjectTable.name == project_name)
             ).first()
             if existing_project:
-                raise RuntimeError(
+                raise EntityExistsError(
                     f"Project with name '{project_name}' already exists."
                 )
             sql_project = ProjectTable(name=project_name)
@@ -613,11 +659,18 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
         """
         with Session(self.engine) as session:
-            project = session.exec(
-                select(ProjectTable).where(ProjectTable.name == project_name)
-            ).one()
+            try:
+                project = session.exec(
+                    select(ProjectTable).where(ProjectTable.name == project_name)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
             session.delete(project)
             session.commit()
             self._delete_query_results(
@@ -662,13 +715,16 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
              The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
         """
         with Session(self.engine) as session:
             existing_role = session.exec(
                 select(RoleTable).where(RoleTable.name == role_name)
             ).first()
             if existing_role:
-                raise RuntimeError(
+                raise EntityExistsError(
                     f"Role with name '{role_name}' already exists."
                 )
             sql_role = RoleTable(name=role_name)
@@ -682,11 +738,18 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             role_name: Name of the role to delete.
+
+        Raises:
+            KeyError: If no role with the given name exists.
         """
         with Session(self.engine) as session:
-            role = session.exec(
-                select(RoleTable).where(RoleTable.name == role_name)
-            ).one()
+            try:
+                role = session.exec(
+                    select(RoleTable).where(RoleTable.name == role_name)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
             session.delete(role)
             session.commit()
             self._delete_query_results(
@@ -710,36 +773,41 @@ class SqlZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
         """
         with Session(self.engine) as session:
-            role_id = session.exec(
-                select(RoleTable.id).where(RoleTable.name == role_name)
-            ).one()
+            user_id: Optional[UUID] = None
+            team_id: Optional[UUID] = None
+            project_id: Optional[UUID] = None
 
-            project_id = (
-                session.exec(
-                    select(ProjectTable.id).where(
-                        ProjectTable.name == project_name
-                    )
+            try:
+                role_id = session.exec(
+                    select(RoleTable.id).where(RoleTable.name == role_name)
                 ).one()
-                if project_name
-                else None
+
+                if project_name:
+                    project_id = session.exec(
+                            select(ProjectTable.id).where(
+                                ProjectTable.name == project_name
+                            )
+                        ).one()
+
+                if is_user:
+                    user_id = session.exec(
+                        select(UserTable.id).where(UserTable.name == entity_name)
+                    ).one()
+                else:
+                    team_id = session.exec(
+                        select(TeamTable.id).where(TeamTable.name == entity_name)
+                    ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
+            assignment = RoleAssignmentTable(
+                role_id=role_id, project_id=project_id, user_id=user_id, team_id=team_id
             )
-
-            if is_user:
-                user_id = session.exec(
-                    select(UserTable.id).where(UserTable.name == entity_name)
-                ).one()
-                assignment = RoleAssignmentTable(
-                    role_id=role_id, project_id=project_id, user_id=user_id
-                )
-            else:
-                team_id = session.exec(
-                    select(TeamTable.id).where(TeamTable.name == entity_name)
-                ).one()
-                assignment = RoleAssignmentTable(
-                    role_id=role_id, project_id=project_id, team_id=team_id
-                )
             session.add(assignment)
             session.commit()
 
@@ -758,6 +826,9 @@ class SqlZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
         """
         with Session(self.engine) as session:
             statement = (
@@ -780,11 +851,13 @@ class SqlZenStore(BaseZenStore):
                     RoleAssignmentTable.team_id == TeamTable.id
                 ).where(TeamTable.name == entity_name)
 
-            assignment = session.exec(statement).one_or_none()
+            try:
+                assignment = session.exec(statement).one()
+            except NoResultFound as error:
+                raise KeyError from error
 
-            if assignment:
-                session.delete(assignment)
-                session.commit()
+            session.delete(assignment)
+            session.commit()
 
     def get_users_for_team(self, team_name: str) -> List[User]:
         """Fetches all users of a team.
@@ -794,13 +867,20 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             List of users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
         with Session(self.engine) as session:
+            try:
+                team_id = session.exec(select(TeamTable.id).where(TeamTable.name == team_name)).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
             users = session.exec(
                 select(UserTable)
                 .where(UserTable.id == TeamAssignmentTable.user_id)
-                .where(TeamAssignmentTable.team_id == TeamTable.id)
-                .where(TeamTable.name == team_name)
+                .where(TeamAssignmentTable.team_id == team_id)
             ).all()
             return [User(**user.dict()) for user in users]
 
@@ -812,13 +892,20 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             List of teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
         with Session(self.engine) as session:
+            try:
+                user_id = session.exec(select(UserTable.id).where(UserTable.name == user_name)).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
             teams = session.exec(
                 select(TeamTable)
                 .where(TeamTable.id == TeamAssignmentTable.team_id)
-                .where(TeamAssignmentTable.user_id == UserTable.id)
-                .where(UserTable.name == user_name)
+                .where(TeamAssignmentTable.user_id == user_id)
             ).all()
             return [Team(**team.dict()) for team in teams]
 
@@ -839,17 +926,24 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             List of role assignments for this user.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
         """
         with Session(self.engine) as session:
-            statement = (
-                select(RoleAssignmentTable)
-                .where(RoleAssignmentTable.user_id == UserTable.id)
-                .where(UserTable.name == user_name)
-            )
-            if project_name:
-                statement = statement.where(
-                    RoleAssignmentTable.project_id == ProjectTable.id
-                ).where(ProjectTable.name == project_name)
+            try:
+                user_id = session.exec(select(UserTable.id).where(UserTable.name == user_name)).one()
+                statement = (
+                    select(RoleAssignmentTable)
+                        .where(RoleAssignmentTable.user_id == user_id)
+                )
+                if project_name:
+                    project_id = session.exec(select(ProjectTable.id).where(ProjectTable.name == project_name)).one()
+                    statement = statement.where(
+                        RoleAssignmentTable.project_id == project_id
+                    )
+            except NoResultFound as error:
+                raise KeyError from error
 
             assignments = [
                 RoleAssignment(**assignment.dict())
@@ -877,17 +971,25 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             List of role assignments for this team.
+
+        Raises:
+            KeyError: If no team or project with the given names exists.
         """
         with Session(self.engine) as session:
-            statement = (
-                select(RoleAssignmentTable)
-                .where(RoleAssignmentTable.team_id == TeamTable.id)
-                .where(TeamTable.name == team_name)
-            )
-            if project_name:
-                statement = statement.where(
-                    RoleAssignmentTable.project_id == ProjectTable.id
-                ).where(ProjectTable.name == project_name)
+            try:
+                team_id = session.exec(select(TeamTable.id).where(TeamTable.name == team_name)).one()
+
+                statement = (
+                    select(RoleAssignmentTable)
+                        .where(RoleAssignmentTable.team_id == team_id)
+                )
+                if project_name:
+                    project_id = session.exec(select(ProjectTable.id).where(ProjectTable.name == project_name)).one()
+                    statement = statement.where(
+                        RoleAssignmentTable.project_id == project_id
+                    )
+            except NoResultFound as error:
+                raise KeyError from error
 
             return [
                 RoleAssignment(**assignment.dict())
