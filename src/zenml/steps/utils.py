@@ -26,6 +26,7 @@ is proposed by ZenML.
 from __future__ import absolute_import, division, print_function
 
 import inspect
+import json
 import sys
 import typing
 from typing import (
@@ -395,7 +396,7 @@ class _FunctionExecutor(BaseExecutor):
 
         # remove all ZenML internal execution properties
         exec_properties = {
-            k: v
+            k: json.loads(v)
             for k, v in exec_properties.items()
             if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
         }
@@ -416,11 +417,6 @@ class _FunctionExecutor(BaseExecutor):
 
             if issubclass(arg_type, BaseStepConfig):
                 try:
-                    exec_properties = {
-                        k: arg_type.Config.json_loads(v)
-                        for k, v in exec_properties.items()
-                        if not k.startswith(INTERNAL_EXECUTION_PARAMETER_PREFIX)
-                    }
                     config_object = arg_type.parse_obj(exec_properties)
                 except pydantic.ValidationError as e:
                     missing_fields = [

@@ -613,17 +613,8 @@ class BaseStep(metaclass=BaseStepMeta):
         # Convert execution parameter values to strings
         try:
             execution_parameters = {
-                k: json.dumps(v)
-                for k, v in self._internal_execution_parameters.items()
+                k: json.dumps(v) for k, v in execution_parameters.items()
             }
-            if self.CONFIG_CLASS:
-                execution_parameters.update(
-                    {
-                        k: self.CONFIG_CLASS.Config.json_dumps(v)
-                        for k, v in self.PARAM_SPEC.items()
-                    }
-                )
-
         except TypeError as e:
             raise StepInterfaceError(
                 f"Failed to serialize execution parameters for step "
