@@ -86,8 +86,7 @@ def get_environment() -> str:
         return "native"
 
 
-def identify_user(user_metadata: Optional[Dict[str, Any]] = None
-) -> bool:
+def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
     """Attach metadate to user directly
 
     Args:
@@ -119,9 +118,7 @@ def identify_user(user_metadata: Optional[Dict[str, Any]] = None
             return False
 
         analytics.identify(str(gc.user_id), traits=user_metadata)
-        logger.debug(
-            f"User data sent: User: {gc.user_id},{user_metadata}"
-        )
+        logger.debug(f"User data sent: User: {gc.user_id},{user_metadata}")
         return True
     except Exception as e:
         # We should never fail main thread
@@ -150,7 +147,6 @@ def track_event(
         if analytics.write_key is None:
             analytics.write_key = get_segment_key()
 
-        breakpoint()
         assert (
             analytics.write_key is not None
         ), "Analytics key not set but trying to make telemetry call."

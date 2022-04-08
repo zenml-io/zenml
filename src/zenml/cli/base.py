@@ -17,10 +17,10 @@ from pathlib import Path
 from typing import Optional
 
 import click
-from git import Repo
+from git import Repo  # type: ignore
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error
+from zenml.cli.utils import confirmation, declare, error, warning, title
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.exceptions import InitializationException
@@ -29,7 +29,7 @@ from zenml.utils.analytics_utils import identify_user
 
 # WT_SESSION is a Windows Terminal specific environment variable. If it
 # exists, we are on the latest Windows Terminal that supports emojis
-_SHOW_EMOJIS = not os.name == 'nt' or os.environ.get("WT_SESSION")
+_SHOW_EMOJIS = not os.name == "nt" or os.environ.get("WT_SESSION")
 
 
 @cli.command("init", help="Initialize a ZenML repository.")
@@ -90,62 +90,81 @@ def clean(yes: bool = False) -> None:
 
 @cli.command("go")
 def go() -> None:
-    """Quickly explore zenml with this walk through.
-
-    """
-    _hello_message = (("⛩  " if _SHOW_EMOJIS else "")
-                      + click.style("Welcome to ZenML!\n", bold=True))
+    """Quickly explore zenml with this walk through."""
+    _hello_message = ("\n  ⛩  " if _SHOW_EMOJIS else "") + click.style(
+        "Welcome to ZenML!\n", bold=True
+    )
     click.echo(_hello_message)
 
     from zenml.config.global_config import GlobalConfiguration
+
     gc = GlobalConfiguration()
 
-    if not gc.user_metadata:
-        prompt_email(gc)
+    #if not gc.user_metadata:
+    prompt_email(gc)
 
-    _privacy_message = textwrap.dedent(
-        """
-        As an open source project we rely on usage statistics to inform
-        our decisions moving forward. The statistics do not 
-        contain any of your code, data or personal information. All we
-        see on our end is metadata like operating system, stack 
-        flavors and triggered events like pipeline runs.
-        \n
-        If  you wish to opt out, feel free to run the following command
-            zenml analytics opt-out
-        """)
+    _privacy_message = textwrap.fill(
+        "As an open source project we rely on usage statistics to inform "
+        "our decisions moving forward. The statistics do not contain any of "
+        "your code, data or personal information. All we see on our end is "
+        "metadata like operating system, stack flavors and triggered events "
+        "like pipeline runs. "
+        "If you wish to opt out, feel free to run the following command: ",
+        width=80,
+        initial_indent='  ',
+        subsequent_indent='  ',
+        replace_whitespace=False
+    )
 
-    click.echo(click.style("Privacy Policy at ZenML!", bold=True)
-               + _privacy_message)
+    _how_to_opt_out = textwrap.fill(
+        "zenml analytics opt-out",
+        width=80,
+        initial_indent='    ',
+        replace_whitespace=False
+    )
 
-    Repo.clone_from('https://github.com/zenml-io/zenbytes', 'zenml_tutorial')
+    click.echo(
+        click.style("\n  🔒 Privacy Policy at ZenML!\n", bold=True)
+    )
 
-    file = "zenml_tutorial/'00 - Basics.ipynb'"
+    click.echo(_privacy_message)
+    click.echo(_how_to_opt_out)
+
+    if not os.path.isdir("zenml_tutorial"):
+        Repo.clone_from("https://github.com/zenml-io/zenbytes",
+                        "zenml_tutorial")
+
+    click
 
 
 def prompt_email(gc: GlobalConfiguration) -> None:
     """Ask the user to give his email address"""
 
-    _email_message = textwrap.dedent("""
-    Here at ZenML we are working hard to produce the best 
-    possible MLOps tool. In order to solve real world problems 
-    we want to ask you, the user for feedback and ideas. If 
-    you are interested in helping us shape the MLOps world 
-    please leave your email below (leave blank to skip). We will
-    only use this for the purpose of reaching out to you for a
-    user interview.
-    """)
+    _email_message = textwrap.fill(
+        "Here at ZenML we are working hard to produce the best "
+        "possible MLOps tool. In order to solve real world problems "
+        "we want to ask you, the user for feedback and ideas. If "
+        "you are interested in helping us shape the MLOps world "
+        "please leave your email below (leave blank to skip). We will "
+        "only use this for the purpose of reaching out to you for a "
+        "user interview. ",
+        width=80,
+        initial_indent='  ',
+        subsequent_indent='  ',
+        replace_whitespace=False
+    )
     click.echo(_email_message)
-    email = click.prompt(click.style("Email: ", fg="blue"))
+    email = click.prompt(click.style("  Email: ", fg="blue"),
+                         default='',
+                         show_default=False)
     if email:
         if len(email) > 0 and email.count("@") != 1:
-            click.error("That doesn't look like an email, skipping ...")
+            warning("That doesn't look like an email, skipping ...")
         else:
             _thanks_message = (
-                    "\n" +
-                    ("🙏  " if _SHOW_EMOJIS else "")
-                    + click.style("Thank You!", bold=True)
-                    + "\n"
+                "\n"
+                + ("  🙏  " if _SHOW_EMOJIS else "")
+                + click.style("Thank You!", bold=True)
             )
 
             click.echo(_thanks_message)
