@@ -22,13 +22,17 @@ from zenml.steps import Output, step
 
 logger = get_logger(__name__)
 
+
 @step
 def data_loader() -> Output(df_train=pd.DataFrame, df_test=pd.DataFrame):
     """Return the renewable."""
     data_location = "https://raw.githubusercontent.com/ourownstory/neuralprophet-data/main/datasets/"
-    sf_pv_df = pd.read_csv(data_location +  'energy/SF_PV.csv')
-    df_train, df_test = NeuralProphet().split_df(sf_pv_df, freq='H', valid_p = 1.0/12)
+    sf_pv_df = pd.read_csv(data_location + "energy/SF_PV.csv")
+    df_train, df_test = NeuralProphet().split_df(
+        sf_pv_df, freq="H", valid_p=1.0 / 12
+    )
     return df_train, df_test
+
 
 @step
 def trainer(df_train: pd.DataFrame, df_test: pd.DataFrame) -> NeuralProphet:
@@ -38,9 +42,10 @@ def trainer(df_train: pd.DataFrame, df_test: pd.DataFrame) -> NeuralProphet:
         trend_reg=1,
         learning_rate=0.01,
     )
-    metrics = m.fit(df_train, freq='H', validation_df=df_test)
+    metrics = m.fit(df_train, freq="H", validation_df=df_test)
     print(metrics)
     return m
+
 
 @step
 def predicter(model: NeuralProphet, df: pd.DataFrame) -> pd.DataFrame:
@@ -58,16 +63,15 @@ def neural_prophet_pipeline(
     m = trainer(df_train, df_test)
     predicter(m, df_train)
 
+
 if __name__ == "__main__":
 
     pipeline = neural_prophet_pipeline(
-        data_loader=data_loader(),
-        trainer=trainer(),
-        predicter=predicter()
+        data_loader=data_loader(), trainer=trainer(), predicter=predicter()
     )
 
     pipeline.run()
 
     repo = Repository()
     pipe = repo.get_pipelines()[-1]
-    model = pipe.runs[-1].get_step(name='trainer').output.read()
+    model = pipe.runs[-1].get_step(name="trainer").output.read()
