@@ -16,7 +16,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install neural_prophet
+zenml integration install neural_prophet -f
 
 # pull example
 zenml example pull neural_prophet
@@ -31,6 +31,12 @@ Now we're ready. Execute:
 
 ```shell
 python run.py
+```
+
+After running the pipeline, you may inspect the accompanying notebook to visalize results:
+
+```shell
+jupyter notebook
 ```
 
 ### Clean up
