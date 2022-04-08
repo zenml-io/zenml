@@ -36,7 +36,7 @@ class NeuralProphetMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> NeuralProphet:
-        """Reads and retuPrns a NeuralProphet model.
+        """Reads and returns a NeuralProphet model.
 
         Returns:
             A loaded NeuralProphet model.
@@ -50,7 +50,7 @@ class NeuralProphetMaterializer(BaseMaterializer):
         """Writes a NeuralProphet model.
 
         Args:
-            model: A torch.nn.Module or a dict to pass into model.save
+            model: A NeuralProphet model object.
         """
         super().handle_return(model)
         torch.save(model, os.path.join(self.artifact.uri, DEFAULT_FILENAME))
