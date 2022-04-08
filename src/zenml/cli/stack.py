@@ -83,6 +83,14 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "-d",
+    "--model_deployer",
+    "model_deployer_name",
+    help="Name of the model deployer for this stack.",
+    type=str,
+    required=False,
+)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
@@ -91,6 +99,7 @@ def register_stack(
     container_registry_name: Optional[str] = None,
     secrets_manager_name: Optional[str] = None,
     step_operator_name: Optional[str] = None,
+    model_deployer_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
     cli_utils.print_active_profile()
@@ -132,6 +141,14 @@ def register_stack(
             ] = repo.get_stack_component(
                 StackComponentType.STEP_OPERATOR,
                 name=step_operator_name,
+            )
+
+        if model_deployer_name:
+            stack_components[
+                StackComponentType.MODEL_DEPLOYER
+            ] = repo.get_stack_component(
+                StackComponentType.MODEL_DEPLOYER,
+                name=model_deployer_name,
             )
 
         stack_ = Stack.from_components(
