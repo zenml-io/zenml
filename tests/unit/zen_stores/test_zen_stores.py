@@ -35,13 +35,12 @@ from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
 
 logger = get_logger(__name__)
 
+not_windows = platform.system() != "Windows"
+store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * not_windows
+
 
 @pytest.fixture(
-    params=[
-        StoreType.LOCAL,
-        StoreType.SQL,
-        StoreType.REST,
-    ],
+    params=store_types
 )
 def fresh_zen_store(
     request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory

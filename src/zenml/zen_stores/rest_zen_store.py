@@ -19,14 +19,10 @@ import requests
 from pydantic import BaseModel
 
 from zenml.constants import (
-    DELETE_COMPONENT,
-    DELETE_STACK,
-    GET_COMPONENTS,
-    GET_STACK_CONFIGURATIONS,
-    GET_STACKS,
     IS_EMPTY,
-    REGISTER_COMPONENT,
-    REGISTER_STACK,
+    STACK_COMPONENTS,
+    STACK_CONFIGURATIONS,
+    STACKS,
 USERS, TEAMS, PROJECTS, ROLES, ROLE_ASSIGNMENTS
 )
 from zenml.enums import StackComponentType, StoreType
@@ -60,11 +56,12 @@ class RestZenStore(BaseZenStore):
         Returns:
             The initialized zen store instance.
         """
-        if not self.is_valid_url(url):
+        if not self.is_valid_url(url.strip("/")):
             raise ValueError("Invalid URL for REST store: {url}")
-        self._url = url
+        self._url = url.strip("/")
         if "skip_default_stack" not in kwargs:
             kwargs["skip_default_stack"] = True
+        # breakpoint()
         super().initialize(url, *args, **kwargs)
         return self
 
@@ -111,12 +108,12 @@ class RestZenStore(BaseZenStore):
 
     @property
     def type(self) -> StoreType:
-        """The type of zen store."""
+        """The type of stack store."""
         return StoreType.REST
 
     @property
     def url(self) -> str:
-        """Get the zen store URL."""
+        """Get the stack store URL."""
         return self._url
 
     @property
@@ -148,17 +145,17 @@ class RestZenStore(BaseZenStore):
             KeyError: If no stack exists for the given name.
         """
         return self._parse_stack_configuration(
-            self.get(f"{GET_STACK_CONFIGURATIONS}/{name}")
+            self.get(f"{STACK_CONFIGURATIONS}/{name}")
         )
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configurations for all stacks registered in this zen store.
+        """Configurations for all stacks registered in this stack store.
 
         Returns:
             Dictionary mapping stack names to Dict[StackComponentType, str]'s
         """
-        body = self.get(GET_STACK_CONFIGURATIONS)
+        body = self.get(STACK_CONFIGURATIONS)
         if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected dict, got {type(body)}"
@@ -181,7 +178,7 @@ class RestZenStore(BaseZenStore):
             StackComponentExistsError: If a stack component with the same type
                 and name already exists.
         """
-        self.post(REGISTER_COMPONENT, body=component)
+        self.post(STACK_COMPONENTS, body=component)
 
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
@@ -192,14 +189,14 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        self.get(f"{DELETE_STACK}/{name}")
+        self.delete(f"{STACKS}/{name}")
 
     # Custom implementations:
 
     @property
     def stacks(self) -> List[StackWrapper]:
         """All stacks registered in this repository."""
-        body = self.get(GET_STACKS)
+        body = self.get(STACKS)
         if not isinstance(body, list):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
@@ -218,12 +215,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        return StackWrapper.parse_obj(self.get(f"{GET_STACKS}/{name}"))
+        return StackWrapper.parse_obj(self.get(f"{STACKS}/{name}"))
 
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
 
-        If any of the stacks' components aren't registered in the zen store
+        If any of the stacks' components aren't registered in the stack store
         yet, this method will try to register them as well.
 
         Args:
@@ -238,7 +235,7 @@ class RestZenStore(BaseZenStore):
                 registered and a different component with the same name
                 already exists.
         """
-        body = self.post(REGISTER_STACK, stack)
+        body = self.post(STACKS, stack)
         if isinstance(body, dict):
             return cast(Dict[str, str], body)
         else:
@@ -255,7 +252,7 @@ class RestZenStore(BaseZenStore):
             KeyError: If no component with the requested type and name exists.
         """
         return StackComponentWrapper.parse_obj(
-            self.get(f"{GET_COMPONENTS}/{component_type}/{name}")
+            self.get(f"{STACK_COMPONENTS}/{component_type}/{name}")
         )
 
     def get_stack_components(
@@ -269,7 +266,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of StackComponentConfiguration instances.
         """
-        body = self.get(f"{GET_COMPONENTS}/{component_type}")
+        body = self.get(f"{STACK_COMPONENTS}/{component_type}")
         if not isinstance(body, list):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
@@ -289,7 +286,7 @@ class RestZenStore(BaseZenStore):
             ValueError: if trying to deregister a component that's part
                 of a stack.
         """
-        self.get(f"{DELETE_COMPONENT}/{component_type}/{name}")
+        self.delete(f"{STACK_COMPONENTS}/{component_type}/{name}")
 
     # User, project and role management
 
@@ -630,7 +627,7 @@ class RestZenStore(BaseZenStore):
     # Implementation specific methods:
 
     def _parse_stack_configuration(
-        self, to_parse: Json
+            self, to_parse: Json
     ) -> Dict[StackComponentType, str]:
         """Parse an API response into `Dict[StackComponentType, str]`."""
         if not isinstance(to_parse, dict):
@@ -665,13 +662,16 @@ class RestZenStore(BaseZenStore):
                     *response.json().get("detail", (response.text,))
                 )
             elif "EntityExistsError" in response.text:
-                raise EntityExistsError(*response.json().get("detail", (response.text,)))
+                raise EntityExistsError(
+                    *response.json().get("detail", (response.text,))
+                )
             else:
                 raise ValueError(
                     *response.json().get("detail", (response.text,))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(*response.json().get("detail", (response.text,)))
+            raise RuntimeError(
+                *response.json().get("detail", (response.text,)))
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "
@@ -682,12 +682,12 @@ class RestZenStore(BaseZenStore):
         """Make a GET request to the given endpoint path."""
         return self._handle_response(requests.get(self.url + path))
 
-    def post(self, path: str, body: BaseModel) -> Json:
-        """Make a POST request to the given endpoint path."""
-        endpoint = self.url + path
-        return self._handle_response(requests.post(endpoint, data=body.json()))
-
     def delete(self, path: str) -> Json:
         """Make a DELETE request to the given endpoint path."""
         return self._handle_response(requests.delete(self.url + path))
 
+    def post(self, path: str, body: BaseModel) -> Json:
+        """Make a POST request to the given endpoint path."""
+        endpoint = self.url + path
+        return self._handle_response(
+            requests.post(endpoint, data=body.json()))
