@@ -83,6 +83,11 @@ def seldon_model_deployer_step(
     pipeline_run_id = step_env.pipeline_run_id
     step_name = step_env.step_name
 
+    # update the step configuration with the real pipeline runtime information
+    config.service_config.pipeline_name = pipeline_name
+    config.service_config.pipeline_run_id = pipeline_run_id
+    config.service_config.pipeline_step_name = step_name
+
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
         """Prepare the model files for model serving and create and return a
         Seldon service configuration for the model.
@@ -134,18 +139,9 @@ def seldon_model_deployer_step(
             # is originally stored
             served_model_uri = model_uri
 
-        return SeldonDeploymentConfig(
-            model_uri=served_model_uri,
-            model_name=config.service_config.model_name,
-            implementation=config.service_config.implementation,
-            pipeline_name=pipeline_name,
-            pipeline_run_id=pipeline_run_id,
-            pipeline_step_name=step_name,
-            replicas=config.service_config.replicas,
-            secret_name="seldon-init-container-secret",
-            model_metadata=config.service_config.model_metadata or {},
-            extra_args=config.service_config.extra_args or {},
-        )
+        service_config = config.service_config.copy()
+        service_config.model_uri = served_model_uri
+        return service_config
 
     if not deploy_decision:
         logger.info(
