@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,6 +20,11 @@ from neuralprophet import NeuralProphet
 
 from zenml.artifacts import ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
+
+# TODO [LOW]: The integration consists of a simple materializer that uses the
+#  torch load and save methods which is the [current recommended way of storing
+#  NeuralProphet models on disk](https://github.com/ourownstory/neural_prophet/issues/27).
+#  Update this once a better implementation is exposed.
 
 DEFAULT_FILENAME = "entire_model.pt"
 
