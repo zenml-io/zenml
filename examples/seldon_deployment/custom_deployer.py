@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import logging
 import os
 from asyncio.log import logger
 from typing import Dict, Iterable, List, Optional, Union, cast
@@ -138,17 +139,30 @@ class SeldonDeployerConfig(BaseStepConfig):
 
 def load(self, model_uri: str) -> None:
     print("load")
-    model_file = os.path.join(seldon_core.Storage.download(model_uri), "model.joblib")
-    self.model = joblib.load(model_file)
-    self.model
+    try:
+        model_file = os.path.join(seldon_core.Storage.download(model_uri), "model.joblib")
+        self.model = joblib.load(model_file)
+        self.ready = True
+    except Exception as ex:
+        logging.exception("Exception during predict", ex)
+        self.ready = False
 
 def predict(self, X: np.ndarray, names: Iterable[str], meta: Dict = None) -> Union[np.ndarray, List, str, bytes]:
+    """
+        Return a prediction.
+
+        Parameters
+        ----------
+        X : array-like
+        feature_names : array of feature names (optional)
+    """
+
     try:
         logger.info("Calling predict_proba")
         result = self.model.predict_proba(X)
         return result
     except Exception as ex:
-        logging.exception("Exception during predict")
+        logging.exception("Exception during predict", ex)
 
 @step(enable_cache=True)
 def seldon_model_deployer(

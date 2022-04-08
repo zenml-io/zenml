@@ -19,9 +19,10 @@ class ZenMLCustomModel(object):
         from zenml.utils.source_utils import load_source_path_class
         self.load_func = load_source_path_class(load_func)
         self.predict_func = load_source_path_class(predict_func)
+        self.model_uri = model_uri
         self.model = None
         self.ready = False
-        self.load(model_uri)
+        self.load(self.model_uri)
 
     def load(self, model_uri: str):
         """
@@ -49,5 +50,8 @@ class ZenMLCustomModel(object):
         X : array-like
         feature_names : array of feature names (optional)
         """
-         
+        if not self.ready:
+            self.load(self.model_uri)
+        else:
+            pass
         return self.predict_func(self, X, names, meta)
