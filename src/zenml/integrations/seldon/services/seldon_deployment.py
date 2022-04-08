@@ -113,8 +113,7 @@ class SeldonDeploymentConfig(ServiceConfig):
     def create_from_deployment(
         cls, deployment: SeldonDeployment
     ) -> "SeldonDeploymentConfig":
-        """Recreate a Seldon Core service configuration from a Seldon Core
-        deployment resource.
+        """Recreate the configuration of a Seldon Core Service from a deployed instance.
 
         Args:
             deployment: the Seldon Core deployment resource.
