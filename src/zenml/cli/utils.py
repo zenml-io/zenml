@@ -26,8 +26,10 @@ from zenml.console import console
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
+from zenml.services import BaseService
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -393,4 +395,75 @@ def print_secrets(secrets: List[str]) -> None:
     for item in secrets:
         rich_table.add_row(item)
 
+    console.print(rich_table)
+
+
+def pretty_print_model_deployer(model_services: List[BaseService]) -> None:
+    """Given a secret set print all key value pairs associated with the secret
+
+    Args:
+        model_services:
+    """
+    model_service_dicts = []
+    for model_service in model_services:
+        status = (
+            "Running" * model_service.is_running
+            or "Failed" * model_service.is_failed
+            or "Stopped" * model_service.is_stopped
+        )
+
+        model_service_dicts.append(
+            {
+                "UUID": str(model_service.uuid),
+                "STATUS": status,
+                "PIPELINE_NAME": model_service.config.pipeline_name,
+                "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
+                "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
+            }
+        )
+
+    print_table(model_service_dicts)
+
+
+def print_served_model_configuration(
+    model_service: BaseService, model_deployer: BaseModelDeployer
+) -> None:
+    """Prints the configuration of a model_service."""
+    title = f"Properties of Served Model {model_service.uuid}"
+    status = (
+        "Running" * model_service.is_running
+        or "Failed" * model_service.is_failed
+        or "Stopped" * model_service.is_stopped
+    )
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title,
+        show_lines=True,
+    )
+    rich_table.add_column("MODEL SERVICE PROPERTY")
+    rich_table.add_column("VALUE")
+
+    # Get implementation specific info
+    served_model_info = model_deployer.get_model_server_info(model_service)
+
+    served_model_info = {
+        **served_model_info,
+        "UUID": str(model_service.uuid),
+        "STATUS": status,
+        "PIPELINE_NAME": model_service.config.pipeline_name,
+        "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
+        "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
+    }
+
+    sorted_items = {k: v for k, v in sorted(served_model_info.items())}
+
+    for item in sorted_items.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
     console.print(rich_table)

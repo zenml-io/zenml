@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import ClassVar, List, Optional
+from typing import ClassVar, Dict, List, Optional
 from uuid import UUID
 
 from zenml.enums import StackComponentType
@@ -61,6 +61,17 @@ class BaseModelDeployer(StackComponent, ABC):
 
         Returns:
             The deployment Service object.
+        """
+
+    @staticmethod
+    @abstractmethod
+    def get_model_server_info(
+            service: "BaseService") -> Dict[str, Optional[str]]:
+        """Give implementation specific way to extract relevant model server
+        properties for the user
+
+        Args:
+            service: Integration-specific service instance
         """
 
     @abstractmethod
