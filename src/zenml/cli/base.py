@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from git import Repo
 
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error
@@ -25,6 +26,10 @@ from zenml.console import console
 from zenml.exceptions import InitializationException
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import identify_user
+
+# WT_SESSION is a Windows Terminal specific environment variable. If it
+# exists, we are on the latest Windows Terminal that supports emojis
+_SHOW_EMOJIS = not os.name == 'nt' or os.environ.get("WT_SESSION")
 
 
 @cli.command("init", help="Initialize a ZenML repository.")
@@ -53,11 +58,11 @@ def init(path: Optional[Path]) -> None:
         except InitializationException as e:
             error(f"{e}")
 
-    cfg = GlobalConfiguration()
+    gc = GlobalConfiguration()
     declare(
         f"The local active profile was initialized to "
-        f"'{cfg.active_profile_name}' and the local active stack to "
-        f"'{cfg.active_stack_name}'. This local configuration will only take "
+        f"'{gc.active_profile_name}' and the local active stack to "
+        f"'{gc.active_stack_name}'. This local configuration will only take "
         f"effect when you're running ZenML from the initialized repository "
         f"root, or from a subdirectory. For more information on profile "
         f"and stack configuration, please visit "
@@ -88,50 +93,21 @@ def go() -> None:
     """Quickly explore zenml with this walk through.
 
     """
-
-    # WT_SESSION is a Windows Terminal specific environment variable. If it
-    # exists, we are on the latest Windows Terminal that supports emojis
-    _SHOW_EMOJIS = not os.name == 'nt' or os.environ.get("WT_SESSION")
-
-    # TODO [MEDIUM]: Only run first part if no email is registered
-
     _hello_message = (("⛩  " if _SHOW_EMOJIS else "")
-                      + click.style("Welcome to ZenML!", bold=True))
-
+                      + click.style("Welcome to ZenML!\n", bold=True))
     click.echo(_hello_message)
 
-    _email_message = textwrap.dedent("""
-    Here at ZenML we are working hard to produce the best 
-    possible MLOps tool. In order to solve real world problems 
-    we want to ask you, the user for feedback and ideas. If 
-    you are interested in helping us shape the MLOps world 
-    please leave your email below. We will only use this for the 
-    purpose of reaching out to you for user interview.
-    """)
+    from zenml.config.global_config import GlobalConfiguration
+    gc = GlobalConfiguration()
 
-    click.echo(_email_message)
-
-    email = click.prompt(click.style("Email: ", fg="blue"))
-
-    if email:
-        if len(email) > 0 and email.count("@") != 1:
-            cli.error("That doesn't look like an email")
-        else:
-            _thanks_message = (
-                "\n" +
-                ("🙏  " if _SHOW_EMOJIS else "")
-                + click.style("Thank You!", bold=True)
-                + "\n"
-            )
-
-            click.echo(_thanks_message)
-            identify_user({"email": email})
+    if not gc.user_metadata:
+        prompt_email(gc)
 
     _privacy_message = textwrap.dedent(
         """
         As an open source project we rely on usage statistics to inform
-        our decisions regarding new features. The statistics do not 
-        contain an of your code, data or personal information. All we
+        our decisions moving forward. The statistics do not 
+        contain any of your code, data or personal information. All we
         see on our end is metadata like operating system, stack 
         flavors and triggered events like pipeline runs.
         \n
@@ -141,3 +117,38 @@ def go() -> None:
 
     click.echo(click.style("Privacy Policy at ZenML!", bold=True)
                + _privacy_message)
+
+    Repo.clone_from('https://github.com/zenml-io/zenbytes', 'zenml_tutorial')
+
+    file = "zenml_tutorial/'00 - Basics.ipynb'"
+
+
+def prompt_email(gc: GlobalConfiguration) -> None:
+    """Ask the user to give his email address"""
+
+    _email_message = textwrap.dedent("""
+    Here at ZenML we are working hard to produce the best 
+    possible MLOps tool. In order to solve real world problems 
+    we want to ask you, the user for feedback and ideas. If 
+    you are interested in helping us shape the MLOps world 
+    please leave your email below (leave blank to skip). We will
+    only use this for the purpose of reaching out to you for a
+    user interview.
+    """)
+    click.echo(_email_message)
+    email = click.prompt(click.style("Email: ", fg="blue"))
+    if email:
+        if len(email) > 0 and email.count("@") != 1:
+            click.error("That doesn't look like an email, skipping ...")
+        else:
+            _thanks_message = (
+                    "\n" +
+                    ("🙏  " if _SHOW_EMOJIS else "")
+                    + click.style("Thank You!", bold=True)
+                    + "\n"
+            )
+
+            click.echo(_thanks_message)
+
+            gc.user_metadata = {"email": email}
+            identify_user({"email": email})
