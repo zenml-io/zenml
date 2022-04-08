@@ -39,7 +39,12 @@ from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
-from zenml.zen_stores import BaseZenStore, LocalZenStore, SqlZenStore, RestZenStore
+from zenml.zen_stores import (
+    BaseZenStore,
+    LocalZenStore,
+    RestZenStore,
+    SqlZenStore,
+)
 from zenml.zen_stores.models import (
     StackComponentWrapper,
     StackWrapper,
@@ -510,7 +515,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         return {
             StoreType.LOCAL: LocalZenStore,
             StoreType.SQL: SqlZenStore,
-            StoreType.REST: RestZenStore
+            StoreType.REST: RestZenStore,
         }.get(type)
 
     @staticmethod
