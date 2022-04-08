@@ -18,7 +18,14 @@ from typing import DefaultDict, Dict, List, Set
 from pydantic import BaseModel, validator
 
 from zenml.enums import StackComponentType
-from zenml.zen_stores.models import Project, Role, RoleAssignment, Team, User
+from zenml.zen_stores.models import (
+    Flavor,
+    Project,
+    Role,
+    RoleAssignment,
+    Team,
+    User,
+)
 
 
 class ZenStoreModel(BaseModel):
@@ -30,6 +37,8 @@ class ZenStoreModel(BaseModel):
             names and flavors of all stack components.
         stack_components: Contains names and flavors of all registered stack
             components.
+        stack_component_flavors: Contains the flavor definitions of each
+            stack component type
         users: All registered users.
         teams: All registered teams.
         projects: All registered projects.
@@ -41,6 +50,7 @@ class ZenStoreModel(BaseModel):
 
     stacks: Dict[str, Dict[StackComponentType, str]]
     stack_components: DefaultDict[StackComponentType, Dict[str, str]]
+    stack_component_flavors: List[Flavor] = []
     users: List[User] = []
     teams: List[Team] = []
     projects: List[Project] = []

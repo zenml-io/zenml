@@ -11,28 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.zen_stores.models.stack_component_flavor_model import Flavor
-from zenml.zen_stores.models.stack_component_wrapper import (
-    StackComponentWrapper,
-)
-from zenml.zen_stores.models.stack_wrapper import StackWrapper
-from zenml.zen_stores.models.user_management_models import (
-    Project,
-    Role,
-    RoleAssignment,
-    Team,
-    User,
-)
-from zenml.zen_stores.models.zen_store_model import ZenStoreModel
+from uuid import UUID, uuid4
 
-__all__ = [
-    "StackComponentWrapper",
-    "ZenStoreModel",
-    "StackWrapper",
-    "User",
-    "Team",
-    "Project",
-    "Role",
-    "RoleAssignment",
-    "Flavor",
-]
+from pydantic import BaseModel, Field
+
+from zenml.enums import StackComponentType
+
+
+class Flavor(BaseModel):
+    """Pydantic object representing the custom implementation of a stack
+    component."""
+
+    id: UUID = Field(default_factory=uuid4)
+    type: StackComponentType
+    source: str
+    # sha: ???
