@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import re
 from datetime import datetime
 from typing import ClassVar, Dict, List, Optional, cast
 from uuid import UUID
@@ -25,6 +26,7 @@ from zenml.integrations.seldon.services.seldon_deployment import (
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.repository import Repository
+from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
@@ -54,6 +56,10 @@ class SeldonModelDeployer(BaseModelDeployer):
             (if running inside a pod).
         base_url: the base URL of the Kubernetes ingress used to expose the
             Seldon Core deployment servers.
+        secret: the name of a ZenML secret containing the credentials used by
+            Seldon Core storage initializers to authenticate to the Artifact
+            Store (i.e. the storage backend where models are stored - see
+            https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials).
     """
 
     # Class Configuration
@@ -62,6 +68,7 @@ class SeldonModelDeployer(BaseModelDeployer):
     kubernetes_context: Optional[str]
     kubernetes_namespace: Optional[str]
     base_url: str
+    secret: Optional[str]
 
     # private attributes
     _client: Optional[SeldonClient] = None
@@ -130,6 +137,91 @@ class SeldonModelDeployer(BaseModelDeployer):
             )
         return self._client
 
+    @property
+    def kubernetes_secret_name(self) -> Optional[str]:
+        """Get the Kubernetes secret name associated with this model deployer.
+
+        If a secret is configured for this model deployer, a corresponding
+        Kubernetes secret is created in the remote cluster to be used
+        by Seldon Core storage initializers to authenticate to the Artifact
+        Store. This method returns the unique name that is used for this secret.
+
+        Returns:
+            The Seldon Core Kubernetes secret name, or None if no secret is
+            configured.
+        """
+        if not self.secret:
+            return None
+        return (
+            re.sub(r"[^0-9a-zA-Z-]+", "-", f"zenml-seldon-core-{self.secret}")
+            .strip("-")
+            .lower()
+        )
+
+    def _create_or_update_kubernetes_secret(self) -> Optional[str]:
+        """Create or update a Kubernetes secret with the information stored in
+        the ZenML secret configured for the model deployer.
+
+        Returns:
+            The name of the Kubernetes secret that was created or updated, or
+            None if no secret was configured.
+
+        Raises:
+            SeldonClientError: if the secret cannot be created or updated.
+        """
+        # if a ZenML secret was configured in the model deployer,
+        # create a Kubernetes secret as a means to pass this information
+        # to the Seldon Core deployment
+        if self.secret:
+
+            secret_manager = Repository(  # type: ignore [call-arg]
+                skip_repository_check=True
+            ).active_stack.secrets_manager
+
+            if not secret_manager or not isinstance(
+                secret_manager, BaseSecretsManager
+            ):
+                raise RuntimeError(
+                    f"The active stack doesn't have a secret manager component. "
+                    f"The ZenML secret specified in the Seldon Core Model "
+                    f"Deployer configuration cannot be fetched: {self.secret}."
+                )
+
+            try:
+                zenml_secret = secret_manager.get_secret(self.secret)
+            except KeyError:
+                raise RuntimeError(
+                    f"The ZenML secret '{self.secret}' specified in the "
+                    f"Seldon Core Model Deployer configuration was not found "
+                    f"in the active stack's secret manager."
+                )
+
+            # should never happen, just making mypy happy
+            assert self.kubernetes_secret_name is not None
+            self.seldon_client.create_or_update_secret(
+                self.kubernetes_secret_name, zenml_secret
+            )
+
+        return self.kubernetes_secret_name
+
+    def _delete_kubernetes_secret(self) -> None:
+        """Delete the Kubernetes secret associated with this model deployer
+        if no Seldon Core deployments are using it.
+
+        Raises:
+            SeldonClientError: if the secret cannot be deleted.
+        """
+        if self.kubernetes_secret_name:
+
+            # fetch all the Seldon Core deployments that currently
+            # configured to use this secret
+            services = self.find_model_server()
+            for service in services:
+                config = cast(SeldonDeploymentConfig, service.config)
+                if config.secret_name == self.kubernetes_secret_name:
+                    return
+            self.seldon_client.delete_secret(self.kubernetes_secret_name)
+
     def deploy_model(
         self,
         config: ServiceConfig,
@@ -189,6 +281,11 @@ class SeldonModelDeployer(BaseModelDeployer):
         """
         config = cast(SeldonDeploymentConfig, config)
         service = None
+
+        # update the service configuration with the name of the Kubernetes
+        # secret that is used to authenticate Seldon Core to the Artifact
+        # Store
+        config.secret_name = self._create_or_update_kubernetes_secret()
 
         # if replace is True, find equivalent Seldon Core deployments
         if replace is True:
@@ -362,3 +459,8 @@ class SeldonModelDeployer(BaseModelDeployer):
         if len(services) == 0:
             return
         services[0].stop(timeout=timeout, force=force)
+
+        # if this is the last Seldon Core model server, delete the Kubernetes
+        # secret used to store the authentication information for the Seldon
+        # Core model server storage initializer
+        self._delete_kubernetes_secret()

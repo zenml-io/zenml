@@ -30,7 +30,7 @@ class BaseSecretSchema(BaseModel, ABC):
         Returns:
             A dictionary containing the content of the SecretSchema.
         """
-        fields_dict = self.dict()
+        fields_dict = self.dict(exclude_none=True)
         fields_dict.pop("name")
         if "arbitrary_kv_pairs" in fields_dict:
             arbitrary_kv_pairs = fields_dict.pop("arbitrary_kv_pairs")

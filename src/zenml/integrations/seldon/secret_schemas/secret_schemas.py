@@ -11,14 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import ClassVar, Dict, Literal, Optional
+from typing import ClassVar, Literal, Optional
 
 from zenml.secret import register_secret_schema_class
 from zenml.secret.base_secret import BaseSecretSchema
 
 SELDON_S3_SECRET_SCHEMA_TYPE = "seldon_s3"
 SELDON_GS_SECRET_SCHEMA_TYPE = "seldon_gs"
-SELDON_AZUREBLOB_SECRET_SCHEMA_TYPE = "seldon_azureblob"
+SELDON_AZUREBLOB_SECRET_SCHEMA_TYPE = "seldon_az"
 
 
 @register_secret_schema_class
@@ -44,7 +44,7 @@ class SeldonS3SecretSchema(BaseSecretSchema):
 
     TYPE: ClassVar[str] = SELDON_S3_SECRET_SCHEMA_TYPE
 
-    rclone_config_s3_type: Literal["s3"]
+    rclone_config_s3_type: Literal["s3"] = "s3"
     rclone_config_s3_provider: str = "aws"
     rclone_config_s3_env_auth: bool = False
     rclone_config_s3_access_key_id: Optional[str]
@@ -78,11 +78,13 @@ class SeldonGSSecretSchema(BaseSecretSchema):
 
     TYPE: ClassVar[str] = SELDON_GS_SECRET_SCHEMA_TYPE
 
-    rclone_config_gs_type: Literal["google cloud storage"]
+    rclone_config_gs_type: Literal[
+        "google cloud storage"
+    ] = "google cloud storage"
     rclone_config_gs_client_id: Optional[str]
     rclone_config_gs_client_secret: Optional[str]
     rclone_config_gs_project_number: Optional[str]
-    rclone_config_gs_service_account_credentials: Optional[Dict[str, str]]
+    rclone_config_gs_service_account_credentials: Optional[str]
     rclone_config_gs_anonymous: bool = False
     rclone_config_gs_token: Optional[str]
     rclone_config_gs_auth_url: Optional[str]
@@ -111,7 +113,7 @@ class SeldonAzureSecretSchema(BaseSecretSchema):
 
     TYPE: ClassVar[str] = SELDON_AZUREBLOB_SECRET_SCHEMA_TYPE
 
-    rclone_config_azureblob_type: Literal["azureblob"]
+    rclone_config_azureblob_type: Literal["azureblob"] = "azureblob"
     rclone_config_azureblob_account: Optional[str]
     rclone_config_azureblob_key: Optional[str]
     rclone_config_azureblob_sas_url: Optional[str]

@@ -131,7 +131,8 @@ def register_secret(
         )
         for k in secret_keys:
             v = getpass.getpass(f"Secret value for {k}:")
-            secret_contents[k] = v
+            if v:
+                secret_contents[k] = v
 
     elif secret_key and secret_value:
         secret_contents[secret_key] = secret_value

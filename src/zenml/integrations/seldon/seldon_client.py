@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import base64
 import json
 import re
 import time
@@ -22,6 +23,7 @@ from kubernetes import config as k8s_config
 from pydantic import BaseModel, Field, ValidationError
 
 from zenml.logger import get_logger
+from zenml.secret.base_secret import BaseSecretSchema
 from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
@@ -825,4 +827,103 @@ class SeldonClient:
             raise SeldonClientError(
                 f"Unexpected exception when searching SeldonDeployment "
                 f"with labels '{labels or ''}' and field '{fields or ''}'"
+            ) from e
+
+    def create_or_update_secret(
+        self,
+        name: str,
+        secret: BaseSecretSchema,
+    ) -> None:
+        """Create or update a Kubernetes Secret resource with the information
+        contained in a ZenML secret.
+
+        Args:
+            name: the name of the Secret resource to create.
+            secret: a ZenML secret with key-values that should be
+                stored in the Secret resource.
+
+        Raises:
+            SeldonClientError: if an unknown error occurs during the creation of
+                the secret.
+        """
+        try:
+            logger.debug(f"Creating Secret resource: {name}")
+
+            secret_data = {
+                k.upper(): base64.b64encode(str(v).encode("utf-8")).decode(
+                    "ascii"
+                )
+                for k, v in secret.content.items()
+                if v is not None
+            }
+
+            secret = k8s_client.V1Secret(
+                metadata=k8s_client.V1ObjectMeta(
+                    name=name,
+                    labels={"app": "zenml"},
+                ),
+                type="Opaque",
+                data=secret_data,
+            )
+
+            try:
+                # check if the secret is already present
+                self._core_api.read_namespaced_secret(
+                    name=name,
+                    namespace=self._namespace,
+                )
+                # if we got this far, the secret is already present, update it
+                # in place
+                response = self._core_api.replace_namespaced_secret(
+                    name=name,
+                    namespace=self._namespace,
+                    body=secret,
+                )
+            except k8s_client.rest.ApiException as e:
+                if e.status != 404:
+                    # if an error other than 404 is raised here, treat it
+                    # as an unexpected error
+                    raise
+                response = self._core_api.create_namespaced_secret(
+                    namespace=self._namespace,
+                    body=secret,
+                )
+            logger.debug("Kubernetes API response: %s", response)
+        except k8s_client.rest.ApiException as e:
+            logger.error("Exception when creating Secret resource: %s", str(e))
+            raise SeldonClientError(
+                "Exception when creating Secret resource"
+            ) from e
+
+    def delete_secret(
+        self,
+        name: str,
+    ) -> None:
+        """Delete a Kubernetes Secret resource managed by ZenML.
+
+        Args:
+            name: the name of the Kubernetes Secret resource to delete.
+        Raises:
+            SeldonClientError: if an unknown error occurs during the removal
+                of the secret.
+        """
+        try:
+            logger.debug(f"Deleting Secret resource: {name}")
+
+            response = self._core_api.delete_namespaced_secret(
+                name=name,
+                namespace=self._namespace,
+            )
+            logger.debug("Kubernetes API response: %s", response)
+        except k8s_client.rest.ApiException as e:
+            if e.status == 404:
+                # the secret is no longer present, nothing to do
+                return
+            logger.error(
+                "Exception when deleting Secret resource %s: %s",
+                name,
+                str(e),
+            )
+            raise SeldonClientError(
+                f"Exception when deleting Secret resource {name}"
             ) from e

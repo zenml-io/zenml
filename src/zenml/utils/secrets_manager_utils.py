@@ -40,7 +40,11 @@ def encode_secret(secret: BaseSecretSchema) -> Dict[str, str]:
     Returns:
         Encoded secret Dict containing key-value pairs
     """
-    encoded_secret = {k: encode_string(v) for k, v in secret.content.items()}
+    encoded_secret = {
+        k: encode_string(str(v))
+        for k, v in secret.content.items()
+        if v is not None
+    }
     encoded_secret[ZENML_SCHEMA_NAME] = secret.TYPE
     return encoded_secret
 
