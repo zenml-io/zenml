@@ -47,11 +47,16 @@ features = [
 ]
 
 
-def orjson_dumps(v, *, default):
+def custom_json_loads(v):
+    if v.startswith("datetime"):
+        return datetime.date(v)
+    else:
+        return orjson.loads(v)
+
+
+def orjson_dumps(v):
     # orjson.dumps returns bytes, to match standard json.dumps we need to decode
-    return orjson.dumps(
-        v, default=default, option=orjson.OPT_NAIVE_UTC
-    ).decode()
+    return orjson.dumps(v, option=orjson.OPT_NAIVE_UTC).decode()
 
 
 class FeastHistoricalFeaturesConfig(BaseStepConfig):
