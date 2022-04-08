@@ -312,6 +312,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of all registered users.
+
+        Raises:
+            ValueError: In case of a bad API response.
         """
         body = self.get(USERS)
         if not isinstance(body, list):
@@ -328,6 +331,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
              The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
         """
         user = User(name=user_name)
         return User.parse_obj(self.post(USERS, body=user))
@@ -337,6 +343,9 @@ class RestZenStore(BaseZenStore):
 
         Args:
             user_name: Name of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
         self.delete(f"{USERS}/{user_name}")
 
@@ -346,6 +355,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of all registered teams.
+
+        Raises:
+            ValueError: In case of a bad API response.
         """
         body = self.get(TEAMS)
         if not isinstance(body, list):
@@ -362,6 +374,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
              The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
         """
         team = Team(name=team_name)
         return Team.parse_obj(self.post(TEAMS, body=team))
@@ -371,6 +386,9 @@ class RestZenStore(BaseZenStore):
 
         Args:
             team_name: Name of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
         self.delete(f"{TEAMS}/{team_name}")
 
@@ -380,6 +398,9 @@ class RestZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
         """
         user = User(name=user_name)
         self.post(f"{TEAMS}/{team_name}/users", user)
@@ -390,6 +411,9 @@ class RestZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
         """
         self.delete(f"{TEAMS}/{team_name}/users/{user_name}")
 
@@ -399,6 +423,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of all registered projects.
+
+        Raises:
+            ValueError: In case of a bad API response.
         """
         body = self.get(PROJECTS)
         if not isinstance(body, list):
@@ -418,6 +445,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
              The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
         """
         project = Project(name=project_name, description=description)
         return Project.parse_obj(self.post(PROJECTS, body=project))
@@ -427,6 +457,9 @@ class RestZenStore(BaseZenStore):
 
         Args:
             project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
         """
         self.delete(f"{PROJECTS}/{project_name}")
 
@@ -436,6 +469,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of all registered roles.
+
+        Raises:
+            ValueError: In case of a bad API response.
         """
         body = self.get(ROLES)
         if not isinstance(body, list):
@@ -450,6 +486,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of all registered role assignments.
+
+        Raises:
+            ValueError: In case of a bad API response.
         """
         body = self.get(ROLE_ASSIGNMENTS)
         if not isinstance(body, list):
@@ -469,6 +508,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
              The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
         """
         role = Role(name=role_name)
         return Role.parse_obj(self.post(ROLES, body=role))
@@ -478,6 +520,9 @@ class RestZenStore(BaseZenStore):
 
         Args:
             role_name: Name of the role to delete.
+
+        Raises:
+            KeyError: If no role with the given name exists.
         """
         self.delete(f"{ROLES}/{role_name}")
 
@@ -496,6 +541,9 @@ class RestZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
         """
         data = {
             "role_name": role_name,
@@ -522,6 +570,9 @@ class RestZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
         """
         data = {
             "role_name": role_name,
@@ -541,6 +592,10 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             List of users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+            ValueError: In case of a bad API response.
         """
         body = self.get(f"{TEAMS}/{team_name}/users")
         if not isinstance(body, list):
@@ -557,6 +612,10 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             List of teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+            ValueError: In case of a bad API response.
         """
         body = self.get(f"{USERS}/{user_name}/teams")
         if not isinstance(body, list):
@@ -582,6 +641,10 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             List of role assignments for this user.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
+            ValueError: In case of a bad API response.
         """
         path = f"{USERS}/{user_name}/role_assignments"
         if project_name:
@@ -617,6 +680,10 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             List of role assignments for this team.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
+            ValueError: In case of a bad API response.
         """
         path = f"{TEAMS}/{team_name}/role_assignments"
         if project_name:

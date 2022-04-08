@@ -87,7 +87,7 @@ def describe_team(team_name: str) -> None:
         cli_utils.warning(f"No team found for name '{team_name}'.")
     else:
         cli_utils.declare(
-            f"TEAM: {team_name}, USERS: {set(user.name for user in users)}"
+            f"TEAM: {team_name}, USERS: {set(user_.name for user_ in users)}"
         )
 
 
@@ -117,9 +117,15 @@ def add_users(team_name: str, user_names: Tuple[str]) -> None:
     """Add users to a team."""
     cli_utils.print_active_profile()
     for user_name in user_names:
-        Repository().zen_store.add_user_to_team(
-            team_name=team_name, user_name=user_name
-        )
+        cli_utils.declare(f"Adding user '{user_name}' to team '{team_name}'.")
+        try:
+            Repository().zen_store.add_user_to_team(
+                team_name=team_name, user_name=user_name
+            )
+        except KeyError:
+            cli_utils.warning(
+                "Failed to add user. Either the user or the team doesn't exist."
+            )
 
 
 @team.command("remove")
@@ -129,9 +135,18 @@ def remove_users(team_name: str, user_names: Tuple[str]) -> None:
     """Remove users from a team."""
     cli_utils.print_active_profile()
     for user_name in user_names:
-        Repository().zen_store.remove_user_from_team(
-            team_name=team_name, user_name=user_name
+        cli_utils.declare(
+            f"Removing user '{user_name}' from team '{team_name}'."
         )
+        try:
+            Repository().zen_store.remove_user_from_team(
+                team_name=team_name, user_name=user_name
+            )
+        except KeyError:
+            cli_utils.warning(
+                "Failed to remove user. Either the user or the team doesn't "
+                "exist."
+            )
 
 
 @cli.group()
@@ -173,7 +188,10 @@ def create_project(
 def delete_project(project_name: str) -> None:
     """Delete a project."""
     cli_utils.print_active_profile()
-    Repository().zen_store.delete_project(project_name=project_name)
+    try:
+        Repository().zen_store.delete_project(project_name=project_name)
+    except KeyError:
+        cli_utils.warning(f"No project found for name '{project_name}'.")
 
 
 @cli.group()
@@ -206,7 +224,10 @@ def create_role(role_name: str) -> None:
 def delete_role(role_name: str) -> None:
     """Delete a role."""
     cli_utils.print_active_profile()
-    Repository().zen_store.delete_role(role_name=role_name)
+    try:
+        Repository().zen_store.delete_role(role_name=role_name)
+    except KeyError:
+        cli_utils.warning(f"No role found for name '{role_name}'.")
 
 
 @role.command("assign")
@@ -223,20 +244,38 @@ def assign_role(
     """Assign a role."""
     cli_utils.print_active_profile()
     for user_name in user_names:
-        Repository().zen_store.assign_role(
-            role_name=role_name,
-            project_name=project_name,
-            entity_name=user_name,
-            is_user=True,
+        cli_utils.declare(
+            f"Assigning role '{role_name}' to user '{user_name}'."
         )
+        try:
+            Repository().zen_store.assign_role(
+                role_name=role_name,
+                project_name=project_name,
+                entity_name=user_name,
+                is_user=True,
+            )
+        except KeyError:
+            cli_utils.warning(
+                "Failed to assign role. Either the role, user or project "
+                "doesn't exist."
+            )
 
     for team_name in team_names:
-        Repository().zen_store.assign_role(
-            role_name=role_name,
-            project_name=project_name,
-            entity_name=team_name,
-            is_user=False,
+        cli_utils.declare(
+            f"Assigning role '{role_name}' to team '{team_name}'."
         )
+        try:
+            Repository().zen_store.assign_role(
+                role_name=role_name,
+                project_name=project_name,
+                entity_name=team_name,
+                is_user=False,
+            )
+        except KeyError:
+            cli_utils.warning(
+                "Failed to assign role. Either the role, team or project "
+                "doesn't exist."
+            )
 
 
 @role.command("revoke")
@@ -253,20 +292,39 @@ def revoke_role(
     """Revoke a role."""
     cli_utils.print_active_profile()
     for user_name in user_names:
-        Repository().zen_store.revoke_role(
-            role_name=role_name,
-            project_name=project_name,
-            entity_name=user_name,
-            is_user=True,
+        cli_utils.declare(
+            f"Revoking role '{role_name}' from user '{user_name}'."
         )
+        try:
+            Repository().zen_store.revoke_role(
+                role_name=role_name,
+                project_name=project_name,
+                entity_name=user_name,
+                is_user=True,
+            )
+        except KeyError:
+            cli_utils.warning(
+                "Failed to revoke role. Either the role, user or project "
+                "doesn't exist."
+            )
 
     for team_name in team_names:
-        Repository().zen_store.revoke_role(
-            role_name=role_name,
-            project_name=project_name,
-            entity_name=team_name,
-            is_user=False,
+        cli_utils.declare(
+            f"Revoking role '{role_name}' from team '{team_name}'."
         )
+
+        try:
+            Repository().zen_store.revoke_role(
+                role_name=role_name,
+                project_name=project_name,
+                entity_name=team_name,
+                is_user=False,
+            )
+        except KeyError:
+            cli_utils.warning(
+                "Failed to revoke role. Either the role, team or project "
+                "doesn't exist."
+            )
 
 
 @role.group()
