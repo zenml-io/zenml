@@ -16,7 +16,7 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import numpy as np
-import requests  # type: ignore [import]
+import requests
 from pydantic import Field
 
 from zenml.integrations.seldon.seldon_client import (
@@ -271,6 +271,8 @@ class SeldonDeploymentService(BaseService):
                 "Please start the service before making predictions."
             )
 
+        if self.prediction_url is None:
+            raise ValueError("`self.prediction_url` is not set, cannot post.")
         response = requests.post(
             self.prediction_url,
             json={"data": {"ndarray": request.tolist()}},

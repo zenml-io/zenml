@@ -24,6 +24,7 @@ class StackStoreModel(BaseModel):
     """Pydantic object used for serializing a ZenML Stack Store.
 
     Attributes:
+        version: zenml version number
         stacks: Maps stack names to a configuration object containing the
             names and flavors of all stack components.
         stack_components: Contains names and flavors of all registered stack

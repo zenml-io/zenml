@@ -217,7 +217,7 @@ class LocalDaemonService(BaseService):
           method that must be implemented by the subclass
 
         Subclasses that need a different command to launch the service daemon
-        should overrride this method.
+        should override this method.
 
         Returns:
             Command needed to launch the daemon process and the environment

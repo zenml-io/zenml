@@ -44,7 +44,7 @@
 * [Managing External Services](features/services.md)
 * [Managing Secrets](features/secrets.md)
 * [Standardized Artifacts](features/artifacts.md)
-* [Profiles and Centralized Stack Management](features/profiles.md)
+* [Profiles and Stack Management](features/profiles.md)
 
 ## Support
 
