@@ -28,6 +28,7 @@ from zenml.exceptions import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
+from zenml.services.service_status import ServiceState
 from zenml.stack import Stack
 from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
 from zenml.zen_stores import (
@@ -76,7 +77,8 @@ def fresh_zen_store(
         # rest zen store can't have trailing slash on url
         url = zen_service.zen_service_uri.strip("/")
         yield RestZenStore().initialize(url)
-        zen_service.stop()
+        zen_service.stop(timeout=10)
+        assert zen_service.check_status()[0] == ServiceState.INACTIVE
     else:
         raise NotImplementedError(f"No ZenStore for {store_type}")
 
