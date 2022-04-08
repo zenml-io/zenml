@@ -2,7 +2,6 @@ import logging
 from typing import Dict, List, Optional, Union, Iterable
 import numpy as np
 
-
 class ZenMLCustomModel(object):
     """
     Model template. You can load your model parameters in __init__ from a location accessible at runtime
@@ -22,17 +21,17 @@ class ZenMLCustomModel(object):
         self.predict_func = load_source_path_class(predict_func)
         self.model = None
         self.ready = False
-        self.model = self.load(model_uri)
+        self.load(model_uri)
 
     def load(self, model_uri: str):
         """
         Load the model from the given path.
         """
         try:
-            self.model = self.load_func(model_uri)
+            self.model = self.load_func(self, model_uri)
             self.ready = True
         except Exception as ex:
-            logging.exception("Exception during custom model loading")
+            logging.exception("Exception during custom model loading", ex)
         
 
     def predict(
@@ -51,4 +50,4 @@ class ZenMLCustomModel(object):
         feature_names : array of feature names (optional)
         """
          
-        return self.predict_func(X, names, meta)
+        return self.predict_func(self, X, names, meta)

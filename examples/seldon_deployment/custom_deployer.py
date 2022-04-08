@@ -139,19 +139,13 @@ class SeldonDeployerConfig(BaseStepConfig):
 def load(self, model_uri: str) -> None:
     print("load")
     model_file = os.path.join(seldon_core.Storage.download(model_uri), "model.joblib")
-    model = joblib.load(model_file)
-    return model
+    self.model = joblib.load(model_file)
+    self.model
 
 def predict(self, X: np.ndarray, names: Iterable[str], meta: Dict = None) -> Union[np.ndarray, List, str, bytes]:
     try:
-        if not self.ready:
-            self.load()
-        if self.method == "predict_proba":
-            logger.info("Calling predict_proba")
-            result = self._joblib.predict_proba(X)
-        else:
-            logger.info("Calling predict")
-            result = self._joblib.predict(X)
+        logger.info("Calling predict_proba")
+        result = self.model.predict_proba(X)
         return result
     except Exception as ex:
         logging.exception("Exception during predict")
