@@ -72,6 +72,7 @@ def generate_dockerfile_contents(
     """
     lines = [f"FROM {base_image}", "WORKDIR /app"]
 
+    # TODO [ENG-781]: Make secrets invisible in the Dockerfile or use a different approach.
     if environment_vars:
         for key, value in environment_vars.items():
             lines.append(f"ENV {key.upper()}={value}")
@@ -244,6 +245,7 @@ def build_docker_image(
                 base_image=base_image or DEFAULT_BASE_IMAGE,
                 entrypoint=entrypoint,
                 requirements=requirements,
+                environment_vars=environment_vars,
             )
 
         build_context = create_custom_build_context(

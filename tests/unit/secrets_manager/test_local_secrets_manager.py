@@ -42,6 +42,14 @@ def test_local_secrets_manager_attributes(local_secrets_manager):
 def test_local_secrets_manager_creates_file(local_secrets_manager):
     """Tests that the initialization of the local secrets manager creates
     a yaml file at the right location."""
+    name = "test_name"
+    key = "test_key"
+    value = "test_value"
+    some_secret_name = name
+    some_arbitrary_schema = ArbitrarySecretSchema(name=some_secret_name)
+    some_arbitrary_schema.arbitrary_kv_pairs[key] = value
+
+    local_secrets_manager.register_secret(some_arbitrary_schema)
     secrets_file = local_secrets_manager.secrets_file
     assert exists(secrets_file)
 

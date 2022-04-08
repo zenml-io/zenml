@@ -15,7 +15,7 @@
 from typing import Any, ClassVar, Dict, List, Union
 
 import pandas as pd
-import redis  # type: ignore
+import redis
 from feast import FeatureStore  # type: ignore[import]
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
