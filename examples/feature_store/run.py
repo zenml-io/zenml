@@ -14,7 +14,7 @@
 
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 import pandas as pd
 from feast.feature_service import FeatureService  # type: ignore[import]
@@ -24,7 +24,7 @@ from zenml.integrations.constants import FEAST
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
-from zenml.steps import BaseStepConfig, StepContext, step
+from zenml.steps import BaseStep, BaseStepConfig, StepContext, step
 
 logger = get_logger(__name__)
 
@@ -54,44 +54,71 @@ class FeastHistoricalFeaturesConfig(BaseStepConfig):
         arbitrary_types_allowed = True
 
     entity_dict: Union[Dict[str, Any], str]
-    features: Union[List[str], FeatureService]
+    features: List[str]
     full_feature_names: bool = False
 
 
-@step()
-def get_historical_features(
-    config: FeastHistoricalFeaturesConfig(
-        entity_dict=historical_entity_dict, features=features
-    ),
-    context: StepContext,
-) -> pd.DataFrame:
-    """Feast Feature Store historical data step
+def feast_historical_features_step(
+    name: Optional[str] = None,
+    enable_cache: Optional[bool] = None,
+) -> Type[BaseStep]:
+    """Feast Feature Store historical data step.
 
     Args:
-        config: The step configuration.
-        context: The step context.
+        entity_df: The entity dataframe or entity name.
+        features: The features to retrieve.
+        full_feature_names: Whether to return the full feature names.
+        name: The name of the step.
+        enable_cache: Whether to enable caching.
 
     Returns:
-        The historical features as a DataFrame.
+        A historical features step.
     """
-    if not context.stack:
-        raise DoesNotExistException(
-            "No active stack is available. Please make sure that you have registered and set a stack."
-        )
-    elif not context.stack.feature_store:
-        raise DoesNotExistException(
-            "The Feast feature store component is not available. "
-            "Please make sure that the Feast stack component is registered as part of your current active stack."
+
+    # enable cache explicitly to compensate for the fact that this step
+    # takes in a context object
+    if enable_cache is None:
+        enable_cache = True
+
+    @step(enable_cache=enable_cache, name=name)
+    def get_historical_features(
+        config: FeastHistoricalFeaturesConfig(
+            entity_dict=historical_entity_dict, features=features
+        ),
+        context: StepContext,
+    ) -> pd.DataFrame:
+        """Feast Feature Store historical data step
+
+        Args:
+            config: The step configuration.
+            context: The step context.
+
+        Returns:
+            The historical features as a DataFrame.
+        """
+        if not context.stack:
+            raise DoesNotExistException(
+                "No active stack is available. Please make sure that you have registered and set a stack."
+            )
+        elif not context.stack.feature_store:
+            raise DoesNotExistException(
+                "The Feast feature store component is not available. "
+                "Please make sure that the Feast stack component is registered as part of your current active stack."
+            )
+
+        feature_store_component = context.stack.feature_store
+        entity_df = pd.DataFrame.from_dict(config.entity_dict)
+
+        return feature_store_component.get_historical_features(
+            entity_df=entity_df,
+            features=config.features,
+            full_feature_names=config.full_feature_names,
         )
 
-    feature_store_component = context.stack.feature_store
-    entity_df = pd.DataFrame.from_dict(config.entity_dict)
+    return get_historical_features
 
-    return feature_store_component.get_historical_features(
-        entity_df=entity_df,
-        features=config.features,
-        full_feature_names=config.full_feature_names,
-    )
+
+historical_features = feast_historical_features_step()
 
 
 @step
@@ -114,7 +141,7 @@ def feast_pipeline(
 
 if __name__ == "__main__":
     pipeline = feast_pipeline(
-        get_features=get_historical_features(),
+        get_features=historical_features,
         feature_printer=print_historical_features(),
     )
 
