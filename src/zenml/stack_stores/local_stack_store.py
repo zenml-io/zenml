@@ -108,6 +108,7 @@ class LocalStackStore(BaseStackStore):
         scheme = re.search("^([a-z0-9]+://)", url)
         return not scheme or scheme.group() == "file://"
 
+    @property
     def is_empty(self) -> bool:
         """Check if the stack store is empty."""
         return len(self.__store.stacks) == 0
@@ -191,17 +192,12 @@ class LocalStackStore(BaseStackStore):
 
         Args:
             name: The name of the stack to be deleted.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
         """
-        try:
-            del self.__store.stacks[name]
-            self._write_store()
-            logger.info("Deregistered stack with name '%s'.", name)
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack with name '%s': No stack exists "
-                "with this name.",
-                name,
-            )
+        del self.__store.stacks[name]
+        self._write_store()
 
     # Private interface implementations:
 
@@ -266,29 +262,20 @@ class LocalStackStore(BaseStackStore):
         Args:
             component_type: The type of component to delete.
             name: Then name of the component to delete.
+
+        Raises:
+            KeyError: If no component exists for given type and name.
         """
-        components = self.__store.stack_components[component_type]
-        try:
-            del components[name]
-            self._write_store()
-            logger.info(
-                "Deregistered stack component (type: %s) with name '%s'.",
-                component_type.value,
-                name,
-            )
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack component (type: %s) with name "
-                "'%s': No stack component exists with this name.",
-                component_type.value,
-                name,
-            )
         component_config_path = self._get_stack_component_config_path(
             component_type=component_type, name=name
         )
 
         if fileio.exists(component_config_path):
             fileio.remove(component_config_path)
+
+        components = self.__store.stack_components[component_type]
+        del components[name]
+        self._write_store()
 
     # Implementation-specific internal methods:
 
@@ -310,7 +297,7 @@ class LocalStackStore(BaseStackStore):
         return str(path)
 
     def _store_path(self) -> str:
-        """Path to the repository configuration file."""
+        """Path to the stack store yaml file."""
         return str(self.root / "stacks.yaml")
 
     def _write_store(self) -> None:

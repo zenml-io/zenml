@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.exc import ArgumentError
+from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from zenml.enums import StackComponentType, StoreType
@@ -73,7 +73,6 @@ class SqlStackStore(BaseStackStore):
         Args:
             url: odbc path to a database.
             args, kwargs: additional parameters for SQLModel.
-
         Returns:
             The initialized stack store instance.
         """
@@ -95,7 +94,6 @@ class SqlStackStore(BaseStackStore):
             session.commit()
 
         super().initialize(url, *args, **kwargs)
-
         return self
 
     # Public interface implementations:
@@ -154,6 +152,7 @@ class SqlStackStore(BaseStackStore):
 
         return True
 
+    @property
     def is_empty(self) -> bool:
         """Check if the stack store is empty."""
         with Session(self.engine) as session:
@@ -251,12 +250,18 @@ class SqlStackStore(BaseStackStore):
 
         Args:
             name: The name of the stack to be deleted.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
         """
         with Session(self.engine) as session:
-            stack = session.exec(
-                select(ZenStack).where(ZenStack.name == name)
-            ).one()
-            session.delete(stack)
+            try:
+                stack = session.exec(
+                    select(ZenStack).where(ZenStack.name == name)
+                ).one()
+                session.delete(stack)
+            except NoResultFound as error:
+                raise KeyError from error
             definitions = session.exec(
                 select(ZenStackDefinition).where(
                     ZenStackDefinition.stack_name == name
@@ -345,6 +350,9 @@ class SqlStackStore(BaseStackStore):
         Args:
             component_type: The type of component to delete.
             name: Then name of the component to delete.
+
+        Raises:
+            KeyError: If no component exists for given type and name.
         """
         with Session(self.engine) as session:
             component = session.exec(
@@ -355,17 +363,11 @@ class SqlStackStore(BaseStackStore):
             if component is not None:
                 session.delete(component)
                 session.commit()
-                logger.info(
-                    "Deregistered stack component (type: %s) with name '%s'.",
-                    component_type.value,
-                    name,
-                )
             else:
-                logger.warning(
-                    "Unable to deregister stack component (type: %s) with name "
-                    "'%s': No stack component exists with this name.",
-                    component_type.value,
-                    name,
+                raise KeyError(
+                    "Unable to deregister stack component (type: "
+                    f"{component_type.value}) with name '{name}': No stack "
+                    "component exists with this name."
                 )
 
     # Implementation-specific internal methods:

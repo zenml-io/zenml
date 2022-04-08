@@ -12,18 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The stack store defines exactly where and how stacks are persisted across their 
-life.
+## Zen Service
+
+The Zen Service is a simple webserver to let you collaborate on stacks via
+the network. It can be spun up in a background daemon from the command line
+using `zenml service up` and managed from the same command line group.
+
+Using the Zen Service's stacks in your project just requires setting up a
+profile with `rest` store-type pointed to the url of the service.
 """
 
-from zenml.stack_stores.base_stack_store import BaseStackStore
-from zenml.stack_stores.local_stack_store import LocalStackStore
-from zenml.stack_stores.rest_stack_store import RestStackStore
-from zenml.stack_stores.sql_stack_store import SqlStackStore
+from zenml.zen_service.zen_service import (
+    ZenService,
+    ZenServiceConfig,
+    ZenServiceEndpoint,
+    ZenServiceEndpointConfig,
+)
 
 __all__ = [
-    "BaseStackStore",
-    "LocalStackStore",
-    "RestStackStore",
-    "SqlStackStore",
+    "ZenService",
+    "ZenServiceConfig",
+    "ZenServiceEndpoint",
+    "ZenServiceEndpointConfig",
 ]
