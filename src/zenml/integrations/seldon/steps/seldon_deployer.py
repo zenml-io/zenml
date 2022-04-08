@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Any, Dict, List, Optional, cast
+from typing import cast
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.environment import Environment
@@ -43,17 +43,7 @@ class SeldonDeployerStepConfig(BaseStepConfig):
     """Seldon model deployer step configuration
 
     Attributes:
-        model_name: the name of the Seldon model logged in the Seldon artifact
-            store for the current pipeline.
-        implementation: the Seldon Core implementation to use for the prediction
-            service
-        replicas: number of server replicas to use for the prediction service
-        timeout: the number of seconds to wait for the Seldon Core deployment
-            server to start.
-        model_metadata: optional Seldon Core model metadata information (see
-            https://docs.seldon.io/projects/seldon-core/en/latest/reference/apis/metadata.html).
-        extra_args: additional arguments to pass to the Seldon Core deployment
-            resource configuration.
+        service_config: Seldon Core deployment service configuration.
         secrets: a list of ZenML secrets containing additional configuration
             parameters for the Seldon Core deployment (e.g. credentials to
             access the Artifact Store where the models are stored). If supplied,
@@ -61,13 +51,8 @@ class SeldonDeployerStepConfig(BaseStepConfig):
             Core deployment server as a list of environment variables.
     """
 
-    model_name: str = "model"
-    implementation: str
-    replicas: int = 1
-    model_metadata: Optional[Dict[str, Any]] = None
-    extra_args: Optional[Dict[str, Any]] = None
+    service_config: SeldonDeploymentConfig
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT
-    secrets: List[str] = []
 
 
 @step(enable_cache=True)
@@ -126,12 +111,12 @@ def seldon_model_deployer_step(
 
         # TODO [MEDIUM]: validate the model artifact type against the
         #   supported built-in Seldon server implementations
-        if config.implementation == "TENSORFLOW_SERVER":
+        if config.service_config.implementation == "TENSORFLOW_SERVER":
             # the TensorFlow server expects model artifacts to be
             # stored in numbered subdirectories, each representing a model
             # version
             io_utils.copy_dir(model_uri, os.path.join(served_model_uri, "1"))
-        elif config.implementation == "SKLEARN_SERVER":
+        elif config.service_config.implementation == "SKLEARN_SERVER":
             # the sklearn server expects model artifacts to be
             # stored in a file called model.joblib
             model_uri = os.path.join(model.uri, "model")
@@ -151,17 +136,15 @@ def seldon_model_deployer_step(
 
         return SeldonDeploymentConfig(
             model_uri=served_model_uri,
-            model_name=config.model_name,
-            implementation=config.implementation,
+            model_name=config.service_config.model_name,
+            implementation=config.service_config.implementation,
             pipeline_name=pipeline_name,
             pipeline_run_id=pipeline_run_id,
             pipeline_step_name=step_name,
-            replicas=config.replicas,
-            # TODO [ENG-776]: replace with ZenML secret and create a k8s secret
-            #   resource that can be mounted in the container
+            replicas=config.service_config.replicas,
             secret_name="seldon-init-container-secret",
-            model_metadata=config.model_metadata or {},
-            extra_args=config.extra_args or {},
+            model_metadata=config.service_config.model_metadata or {},
+            extra_args=config.service_config.extra_args or {},
         )
 
     if not deploy_decision:
@@ -169,7 +152,7 @@ def seldon_model_deployer_step(
             f"Skipping model deployment because the model quality does not "
             f"meet the criteria. Loading last service deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
-            f"'{config.model_name}'..."
+            f"'{config.service_config.model_name}'..."
         )
 
         # fetch existing services with same pipeline name, step name and
@@ -177,7 +160,7 @@ def seldon_model_deployer_step(
         existing_services = model_deployer.find_model_server(
             pipeline_name=pipeline_name,
             pipeline_step_name=step_name,
-            model_name=config.model_name,
+            model_name=config.service_config.model_name,
         )
 
         if existing_services:

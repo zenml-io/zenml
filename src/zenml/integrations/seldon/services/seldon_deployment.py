@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from __future__ import annotations
-
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from uuid import UUID
@@ -57,8 +55,8 @@ class SeldonDeploymentConfig(ServiceConfig):
             resource configuration.
     """
 
-    model_uri: str
-    model_name: str
+    model_uri: str = ""
+    model_name: str = "default"
     # TODO [ENG-775]: have an enum of all supported Seldon Core implementations
     implementation: str
     replicas: int = 1
@@ -278,6 +276,7 @@ class SeldonDeploymentService(BaseService):
         client = self._get_client()
 
         name = self.seldon_deployment_name
+
         deployment = SeldonDeployment.build(
             name=name,
             model_uri=self.config.model_uri,
