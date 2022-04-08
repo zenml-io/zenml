@@ -16,31 +16,39 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
 import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
     ENV_ZENML_PROFILE_NAME,
     IS_EMPTY,
+    PROJECTS,
+    ROLE_ASSIGNMENTS,
+    ROLES,
     STACK_COMPONENTS,
     STACK_CONFIGURATIONS,
-    STACKS, USERS, TEAMS, PROJECTS, ROLES, ROLE_ASSIGNMENTS
+    STACKS,
+    TEAMS,
+    USERS,
 )
-from zenml.enums import StackComponentType
-from zenml.exceptions import StackComponentExistsError, StackExistsError, EntityExistsError
+from zenml.enums import StackComponentType, StoreType
+from zenml.exceptions import (
+    EntityExistsError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.repository import Repository
 from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.models import StackComponentWrapper, StackWrapper, User, Team, Project, Role, RoleAssignment
-
-
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-
-from zenml.config.global_config import GlobalConfiguration
-from zenml.config.profile_config import ProfileConfiguration
-from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
-
+from zenml.zen_stores.models import (
+    Project,
+    Role,
+    RoleAssignment,
+    StackComponentWrapper,
+    StackWrapper,
+    Team,
+    User,
+)
 
 profile_configuration_json = os.environ.get("ZENML_PROFILE_CONFIGURATION")
 profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
@@ -247,7 +255,11 @@ async def delete_user(name: str) -> None:
         raise not_found(error) from error
 
 
-@app.get(USERS + "/{name}/teams", response_model=List[Team], responses={404: error_response})
+@app.get(
+    USERS + "/{name}/teams",
+    response_model=List[Team],
+    responses={404: error_response},
+)
 async def teams_for_user(name: str) -> List[Team]:
     try:
         return zen_store.get_teams_for_user(user_name=name)
@@ -255,10 +267,18 @@ async def teams_for_user(name: str) -> List[Team]:
         raise not_found(error) from error
 
 
-@app.get(USERS + "/{name}/role_assignments", response_model=List[RoleAssignment], responses={404: error_response})
-async def role_assignments_for_user(name: str, project_name: Optional[str] = None) -> List[RoleAssignment]:
+@app.get(
+    USERS + "/{name}/role_assignments",
+    response_model=List[RoleAssignment],
+    responses={404: error_response},
+)
+async def role_assignments_for_user(
+    name: str, project_name: Optional[str] = None
+) -> List[RoleAssignment]:
     try:
-        return zen_store.get_role_assignments_for_user(user_name=name, project_name=project_name, include_team_roles=False)
+        return zen_store.get_role_assignments_for_user(
+            user_name=name, project_name=project_name, include_team_roles=False
+        )
     except KeyError as error:
         raise not_found(error) from error
 
@@ -287,12 +307,18 @@ async def delete_team(name: str) -> None:
     except KeyError as error:
         raise not_found(error) from error
 
-@app.get(TEAMS + "/{name}/users", response_model=List[User], responses={404: error_response})
+
+@app.get(
+    TEAMS + "/{name}/users",
+    response_model=List[User],
+    responses={404: error_response},
+)
 async def users_for_team(name: str) -> List[User]:
     try:
         return zen_store.get_users_for_team(team_name=name)
     except KeyError as error:
         raise not_found(error) from error
+
 
 @app.post(TEAMS + "/{name}/users", responses={404: error_response})
 async def add_user_to_team(name: str, user: User) -> None:
@@ -301,19 +327,34 @@ async def add_user_to_team(name: str, user: User) -> None:
     except KeyError as error:
         raise not_found(error) from error
 
-@app.delete(TEAMS + "/{team_name}/users/{user_name}", responses={404: error_response})
+
+@app.delete(
+    TEAMS + "/{team_name}/users/{user_name}", responses={404: error_response}
+)
 async def remove_user_from_team(team_name: str, user_name: str) -> None:
     try:
-        zen_store.remove_user_from_team(team_name=team_name, user_name=user_name)
+        zen_store.remove_user_from_team(
+            team_name=team_name, user_name=user_name
+        )
     except KeyError as error:
         raise not_found(error) from error
 
-@app.get(TEAMS + "/{name}/role_assignments", response_model=List[RoleAssignment], responses={404: error_response})
-async def role_assignments_for_team(name: str, project_name: Optional[str] = None) -> List[RoleAssignment]:
+
+@app.get(
+    TEAMS + "/{name}/role_assignments",
+    response_model=List[RoleAssignment],
+    responses={404: error_response},
+)
+async def role_assignments_for_team(
+    name: str, project_name: Optional[str] = None
+) -> List[RoleAssignment]:
     try:
-        return zen_store.get_role_assignments_for_team(team_name=name, project_name=project_name)
+        return zen_store.get_role_assignments_for_team(
+            team_name=name, project_name=project_name
+        )
     except KeyError as error:
         raise not_found(error) from error
+
 
 @app.get(PROJECTS, response_model=List[Project])
 async def projects() -> List[Project]:
@@ -327,7 +368,9 @@ async def projects() -> List[Project]:
 )
 async def create_project(project: Project) -> Project:
     try:
-        return zen_store.create_project(project_name=project.name, description=project.description)
+        return zen_store.create_project(
+            project_name=project.name, description=project.description
+        )
     except EntityExistsError as error:
         raise conflict(error) from error
 
@@ -338,6 +381,7 @@ async def delete_project(name: str) -> None:
         zen_store.delete_project(project_name=name)
     except KeyError as error:
         raise not_found(error) from error
+
 
 @app.get(ROLES, response_model=List[Role])
 async def roles() -> List[Role]:
@@ -363,6 +407,7 @@ async def delete_role(name: str) -> None:
     except KeyError as error:
         raise not_found(error) from error
 
+
 @app.get(ROLE_ASSIGNMENTS, response_model=List[RoleAssignment])
 async def role_assignments() -> List[RoleAssignment]:
     return zen_store.role_assignments
@@ -379,7 +424,12 @@ async def assign_role(data: Dict[str, Any]) -> None:
     is_user = data.get("is_user", True)
 
     try:
-        zen_store.assign_role(role_name=role_name, entity_name=entity_name, project_name=project_name, is_user=is_user)
+        zen_store.assign_role(
+            role_name=role_name,
+            entity_name=entity_name,
+            project_name=project_name,
+            is_user=is_user,
+        )
     except KeyError as error:
         raise not_found(error) from error
 
@@ -392,8 +442,11 @@ async def revoke_role(data: Dict[str, Any]) -> None:
     is_user = data.get("is_user", True)
 
     try:
-        zen_store.revoke_role(role_name=role_name,
-                                     entity_name=entity_name,
-                                     project_name=project_name, is_user=is_user)
+        zen_store.revoke_role(
+            role_name=role_name,
+            entity_name=entity_name,
+            project_name=project_name,
+            is_user=is_user,
+        )
     except KeyError as error:
         raise not_found(error) from error

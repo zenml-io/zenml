@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union, overload
 from uuid import UUID
 
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, EntityExistsError
+from zenml.exceptions import EntityExistsError, StackComponentExistsError
 from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
@@ -364,7 +364,9 @@ class LocalZenStore(BaseZenStore):
         if _get_unique_entity(
             user_name, collection=self.__store.users, ensure_exists=False
         ):
-            raise EntityExistsError(f"User with name '{user_name}' already exists.")
+            raise EntityExistsError(
+                f"User with name '{user_name}' already exists."
+            )
 
         user = User(name=user_name)
         self.__store.users.append(user)
@@ -380,9 +382,7 @@ class LocalZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name exists.
         """
-        user = _get_unique_entity(
-            user_name, collection=self.__store.users
-        )
+        user = _get_unique_entity(user_name, collection=self.__store.users)
         self.__store.users.remove(user)
         for user_names in self.__store.team_assignments.values():
             user_names.discard(user.name)
@@ -419,7 +419,9 @@ class LocalZenStore(BaseZenStore):
         if _get_unique_entity(
             team_name, collection=self.__store.teams, ensure_exists=False
         ):
-            raise EntityExistsError(f"Team with name '{team_name}' already exists.")
+            raise EntityExistsError(
+                f"Team with name '{team_name}' already exists."
+            )
 
         team = Team(name=team_name)
         self.__store.teams.append(team)
@@ -435,9 +437,7 @@ class LocalZenStore(BaseZenStore):
         Raises:
             KeyError: If no team with the given name exists.
         """
-        team = _get_unique_entity(
-            team_name, collection=self.__store.teams
-        )
+        team = _get_unique_entity(team_name, collection=self.__store.teams)
         self.__store.teams.remove(team)
         self.__store.team_assignments.pop(team.name, None)
         self.__store.role_assignments = [
@@ -569,7 +569,9 @@ class LocalZenStore(BaseZenStore):
         if _get_unique_entity(
             role_name, collection=self.__store.roles, ensure_exists=False
         ):
-            raise EntityExistsError(f"Role with name '{role_name}' already exists.")
+            raise EntityExistsError(
+                f"Role with name '{role_name}' already exists."
+            )
 
         role = Role(name=role_name)
         self.__store.roles.append(role)
@@ -585,9 +587,7 @@ class LocalZenStore(BaseZenStore):
         Raises:
             KeyError: If no role with the given name exists.
         """
-        role = _get_unique_entity(
-            role_name, collection=self.__store.roles
-        )
+        role = _get_unique_entity(role_name, collection=self.__store.roles)
         self.__store.roles.remove(role)
         self.__store.role_assignments = [
             assignment

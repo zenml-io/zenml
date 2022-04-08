@@ -86,7 +86,9 @@ def describe_team(team_name: str) -> None:
     except KeyError:
         cli_utils.warning(f"No team found for name '{team_name}'.")
     else:
-        cli_utils.declare(f"TEAM: {team_name}, USERS: {set(user.name for user in users)}")
+        cli_utils.declare(
+            f"TEAM: {team_name}, USERS: {set(user.name for user in users)}"
+        )
 
 
 @team.command("create")

@@ -20,16 +20,32 @@ from pydantic import BaseModel
 
 from zenml.constants import (
     IS_EMPTY,
+    PROJECTS,
+    ROLE_ASSIGNMENTS,
+    ROLES,
     STACK_COMPONENTS,
     STACK_CONFIGURATIONS,
     STACKS,
-USERS, TEAMS, PROJECTS, ROLES, ROLE_ASSIGNMENTS
+    TEAMS,
+    USERS,
 )
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError, EntityExistsError
+from zenml.exceptions import (
+    EntityExistsError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.logger import get_logger
 from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.models import StackComponentWrapper, StackWrapper, User, Team, Project, Role, RoleAssignment
+from zenml.zen_stores.models import (
+    Project,
+    Role,
+    RoleAssignment,
+    StackComponentWrapper,
+    StackWrapper,
+    Team,
+    User,
+)
 
 logger = get_logger(__name__)
 
@@ -440,7 +456,10 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [RoleAssignment.parse_obj(assignment_dict) for assignment_dict in body]
+        return [
+            RoleAssignment.parse_obj(assignment_dict)
+            for assignment_dict in body
+        ]
 
     def create_role(self, role_name: str) -> Role:
         """Creates a new role.
@@ -478,8 +497,15 @@ class RestZenStore(BaseZenStore):
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
         """
-        data = {"role_name": role_name, "entity_name": entity_name, "project_name": project_name, "is_user": is_user}
-        self._handle_response(requests.post(self.url + ROLE_ASSIGNMENTS, json=data))
+        data = {
+            "role_name": role_name,
+            "entity_name": entity_name,
+            "project_name": project_name,
+            "is_user": is_user,
+        }
+        self._handle_response(
+            requests.post(self.url + ROLE_ASSIGNMENTS, json=data)
+        )
 
     def revoke_role(
         self,
@@ -497,8 +523,15 @@ class RestZenStore(BaseZenStore):
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
         """
-        data = {"role_name": role_name, "entity_name": entity_name, "project_name": project_name, "is_user": is_user}
-        self._handle_response(requests.delete(self.url + ROLE_ASSIGNMENTS, json=data))
+        data = {
+            "role_name": role_name,
+            "entity_name": entity_name,
+            "project_name": project_name,
+            "is_user": is_user,
+        }
+        self._handle_response(
+            requests.delete(self.url + ROLE_ASSIGNMENTS, json=data)
+        )
 
     def get_users_for_team(self, team_name: str) -> List[User]:
         """Fetches all users of a team.
@@ -559,7 +592,10 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        assignments = [RoleAssignment.parse_obj(assignment_dict) for assignment_dict in body]
+        assignments = [
+            RoleAssignment.parse_obj(assignment_dict)
+            for assignment_dict in body
+        ]
         if include_team_roles:
             for team in self.get_teams_for_user(user_name):
                 assignments += self.get_role_assignments_for_team(
@@ -591,8 +627,10 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [RoleAssignment.parse_obj(assignment_dict) for
-                       assignment_dict in body]
+        return [
+            RoleAssignment.parse_obj(assignment_dict)
+            for assignment_dict in body
+        ]
 
     # Private interface shall not be implemented for REST store, instead the
     # API only provides all public methods, including the ones that would
@@ -627,7 +665,7 @@ class RestZenStore(BaseZenStore):
     # Implementation specific methods:
 
     def _parse_stack_configuration(
-            self, to_parse: Json
+        self, to_parse: Json
     ) -> Dict[StackComponentType, str]:
         """Parse an API response into `Dict[StackComponentType, str]`."""
         if not isinstance(to_parse, dict):
@@ -670,8 +708,7 @@ class RestZenStore(BaseZenStore):
                     *response.json().get("detail", (response.text,))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(
-                *response.json().get("detail", (response.text,)))
+            raise RuntimeError(*response.json().get("detail", (response.text,)))
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "
@@ -689,5 +726,4 @@ class RestZenStore(BaseZenStore):
     def post(self, path: str, body: BaseModel) -> Json:
         """Make a POST request to the given endpoint path."""
         endpoint = self.url + path
-        return self._handle_response(
-            requests.post(endpoint, data=body.json()))
+        return self._handle_response(requests.post(endpoint, data=body.json()))

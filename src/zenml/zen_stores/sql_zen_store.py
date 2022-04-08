@@ -22,7 +22,7 @@ from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, EntityExistsError
+from zenml.exceptions import EntityExistsError, StackComponentExistsError
 from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.zen_stores import BaseZenStore
@@ -43,7 +43,7 @@ def _sqlmodel_uuid() -> UUID:
     # SQLModel crashes when a UUID hex string starts with '0'
     # (see: https://github.com/tiangolo/sqlmodel/issues/25)
     uuid = uuid4()
-    while uuid.hex[0] == '0':
+    while uuid.hex[0] == "0":
         uuid = uuid4()
     return uuid
 
@@ -666,7 +666,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 project = session.exec(
-                    select(ProjectTable).where(ProjectTable.name == project_name)
+                    select(ProjectTable).where(
+                        ProjectTable.name == project_name
+                    )
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
@@ -789,24 +791,31 @@ class SqlZenStore(BaseZenStore):
 
                 if project_name:
                     project_id = session.exec(
-                            select(ProjectTable.id).where(
-                                ProjectTable.name == project_name
-                            )
-                        ).one()
+                        select(ProjectTable.id).where(
+                            ProjectTable.name == project_name
+                        )
+                    ).one()
 
                 if is_user:
                     user_id = session.exec(
-                        select(UserTable.id).where(UserTable.name == entity_name)
+                        select(UserTable.id).where(
+                            UserTable.name == entity_name
+                        )
                     ).one()
                 else:
                     team_id = session.exec(
-                        select(TeamTable.id).where(TeamTable.name == entity_name)
+                        select(TeamTable.id).where(
+                            TeamTable.name == entity_name
+                        )
                     ).one()
             except NoResultFound as error:
                 raise KeyError from error
 
             assignment = RoleAssignmentTable(
-                role_id=role_id, project_id=project_id, user_id=user_id, team_id=team_id
+                role_id=role_id,
+                project_id=project_id,
+                user_id=user_id,
+                team_id=team_id,
             )
             session.add(assignment)
             session.commit()
@@ -873,7 +882,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             try:
-                team_id = session.exec(select(TeamTable.id).where(TeamTable.name == team_name)).one()
+                team_id = session.exec(
+                    select(TeamTable.id).where(TeamTable.name == team_name)
+                ).one()
             except NoResultFound as error:
                 raise KeyError from error
 
@@ -898,7 +909,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             try:
-                user_id = session.exec(select(UserTable.id).where(UserTable.name == user_name)).one()
+                user_id = session.exec(
+                    select(UserTable.id).where(UserTable.name == user_name)
+                ).one()
             except NoResultFound as error:
                 raise KeyError from error
 
@@ -932,13 +945,18 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             try:
-                user_id = session.exec(select(UserTable.id).where(UserTable.name == user_name)).one()
-                statement = (
-                    select(RoleAssignmentTable)
-                        .where(RoleAssignmentTable.user_id == user_id)
+                user_id = session.exec(
+                    select(UserTable.id).where(UserTable.name == user_name)
+                ).one()
+                statement = select(RoleAssignmentTable).where(
+                    RoleAssignmentTable.user_id == user_id
                 )
                 if project_name:
-                    project_id = session.exec(select(ProjectTable.id).where(ProjectTable.name == project_name)).one()
+                    project_id = session.exec(
+                        select(ProjectTable.id).where(
+                            ProjectTable.name == project_name
+                        )
+                    ).one()
                     statement = statement.where(
                         RoleAssignmentTable.project_id == project_id
                     )
@@ -977,14 +995,19 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             try:
-                team_id = session.exec(select(TeamTable.id).where(TeamTable.name == team_name)).one()
+                team_id = session.exec(
+                    select(TeamTable.id).where(TeamTable.name == team_name)
+                ).one()
 
-                statement = (
-                    select(RoleAssignmentTable)
-                        .where(RoleAssignmentTable.team_id == team_id)
+                statement = select(RoleAssignmentTable).where(
+                    RoleAssignmentTable.team_id == team_id
                 )
                 if project_name:
-                    project_id = session.exec(select(ProjectTable.id).where(ProjectTable.name == project_name)).one()
+                    project_id = session.exec(
+                        select(ProjectTable.id).where(
+                            ProjectTable.name == project_name
+                        )
+                    ).one()
                     statement = statement.where(
                         RoleAssignmentTable.project_id == project_id
                     )

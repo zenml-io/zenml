@@ -20,7 +20,11 @@ import pytest
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError, EntityExistsError
+from zenml.exceptions import (
+    EntityExistsError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
@@ -39,9 +43,7 @@ not_windows = platform.system() != "Windows"
 store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * not_windows
 
 
-@pytest.fixture(
-    params=store_types
-)
+@pytest.fixture(params=store_types)
 def fresh_zen_store(
     request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
 ) -> BaseZenStore:
