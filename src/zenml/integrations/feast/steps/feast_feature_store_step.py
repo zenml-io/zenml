@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 import pandas as pd
 from feast.feature_service import FeatureService  # type: ignore[import]
 
+from zenml.exceptions import DoesNotExistException
 from zenml.steps import BaseStep, BaseStepConfig, StepContext, step
 
 
@@ -66,9 +67,19 @@ def feast_historical_features_step(
         Returns:
             The historical features as a DataFrame.
         """
-        feature_store_component = context.feature_store
+        if not context.stack:
+            raise DoesNotExistException(
+                "No active stack is available. Please make sure that you have registered and set a stack."
+            )
+        elif not context.stack.feature_store:
+            raise DoesNotExistException(
+                "The Feast feature store component is not available. "
+                "Please make sure that the Feast stack component is registered as part of your current active stack."
+            )
 
-        return feature_store_component.get_historical_features(  # type: ignore[union-attr]
+        feature_store_component = context.stack.feature_store
+
+        return feature_store_component.get_historical_features(
             entity_df=entity_df,
             features=features,
             full_feature_names=full_feature_names,
@@ -123,9 +134,19 @@ def feast_online_features_step(
         Returns:
             The online features as a dictionary.
         """
-        feature_store_component = context.feature_store
+        if not context.stack:
+            raise DoesNotExistException(
+                "No active stack is available. Please make sure that you have registered and set a stack."
+            )
+        elif not context.stack.feature_store:
+            raise DoesNotExistException(
+                "The Feast feature store component is not available. "
+                "Please make sure that the Feast stack component is registered as part of your current active stack."
+            )
 
-        return feature_store_component.get_online_features(  # type: ignore[union-attr]
+        feature_store_component = context.stack.feature_store
+
+        return feature_store_component.get_online_features(
             entity_rows=entity_rows,
             features=features,
             full_feature_names=full_feature_names,
