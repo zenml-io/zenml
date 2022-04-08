@@ -12,22 +12,31 @@
 #  permissions and limitations under the License.
 
 import pandas as pd
-from neural_prophet import NeuralProphet
+from neuralprophet import NeuralProphet
 
 from zenml.integrations.constants import NEURAL_PROPHET
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
-from zenml.repository import Repository
-from zenml.steps import Output, step
+from zenml.steps import BaseStepConfig, Output, step
 
 logger = get_logger(__name__)
+
+DATA_LOCATION = "https://raw.githubusercontent.com/ourownstory/neuralprophet-data/main/datasets/"
+
+
+class NeuralProphetConfig(BaseStepConfig):
+    """Tracks parameters for a NeuralProphet model"""
+
+    weekly_seasonality: int = 6
+    daily_seasonality: int = 10
+    trend_reg: int = 1
+    learning_rate: int = 0.01
 
 
 @step
 def data_loader() -> Output(df_train=pd.DataFrame, df_test=pd.DataFrame):
     """Return the renewable."""
-    data_location = "https://raw.githubusercontent.com/ourownstory/neuralprophet-data/main/datasets/"
-    sf_pv_df = pd.read_csv(data_location + "energy/SF_PV.csv")
+    sf_pv_df = pd.read_csv(DATA_LOCATION + "energy/SF_PV.csv")
     df_train, df_test = NeuralProphet().split_df(
         sf_pv_df, freq="H", valid_p=1.0 / 12
     )
@@ -35,15 +44,17 @@ def data_loader() -> Output(df_train=pd.DataFrame, df_test=pd.DataFrame):
 
 
 @step
-def trainer(df_train: pd.DataFrame, df_test: pd.DataFrame) -> NeuralProphet:
+def trainer(
+    config: NeuralProphetConfig, df_train: pd.DataFrame, df_test: pd.DataFrame
+) -> NeuralProphet:
     m = NeuralProphet(
-        weekly_seasonality=6,
-        daily_seasonality=10,
-        trend_reg=1,
-        learning_rate=0.01,
+        weekly_seasonality=config.weekly_seasonality,
+        daily_seasonality=config.daily_seasonality,
+        trend_reg=config.trend_reg,
+        learning_rate=config.learning_rate,
     )
     metrics = m.fit(df_train, freq="H", validation_df=df_test)
-    print(metrics)
+    logger.info(f"Metrics: {metrics}")
     return m
 
 
@@ -72,6 +83,7 @@ if __name__ == "__main__":
 
     pipeline.run()
 
-    repo = Repository()
-    pipe = repo.get_pipelines()[-1]
-    model = pipe.runs[-1].get_step(name="trainer").output.read()
+    print(
+        "Pipeline has run and model is trained. Please run the "
+        "`post_execution.ipynb notebook to inspect the results."
+    )
