@@ -17,7 +17,6 @@ from typing import Any, ClassVar, Dict, List, Union
 import pandas as pd
 import redis  # type: ignore
 from feast import FeatureStore  # type: ignore[import]
-from feast.feature_service import FeatureService  # type: ignore[import]
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
 from zenml.logger import get_logger
@@ -56,7 +55,7 @@ class FeastFeatureStore(BaseFeatureStore):
     def get_historical_features(
         self,
         entity_df: Union[pd.DataFrame, str],
-        features: Union[List[str], FeatureService],
+        features: List[str],
         full_feature_names: bool = False,
     ) -> pd.DataFrame:
         """Returns the historical features for training or batch scoring.
@@ -84,7 +83,7 @@ class FeastFeatureStore(BaseFeatureStore):
     def get_online_features(
         self,
         entity_rows: List[Dict[str, Any]],
-        features: Union[List[str], FeatureService],
+        features: List[str],
         full_feature_names: bool = False,
     ) -> Dict[str, Any]:
         """Returns the latest online feature data.

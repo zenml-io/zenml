@@ -16,7 +16,6 @@ from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, List, Union
 
 import pandas as pd
-from feast.feature_service import FeatureService  # type: ignore[import]
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
@@ -32,7 +31,7 @@ class BaseFeatureStore(StackComponent, ABC):
     def get_historical_features(
         self,
         entity_df: Union[pd.DataFrame, str],
-        features: Union[List[str], FeatureService],
+        features: List[str],
         full_feature_names: bool = False,
     ) -> pd.DataFrame:
         """Returns the historical features for training or batch scoring.
@@ -50,7 +49,7 @@ class BaseFeatureStore(StackComponent, ABC):
     def get_online_features(
         self,
         entity_rows: List[Dict[str, Any]],
-        features: Union[List[str], FeatureService],
+        features: List[str],
         full_feature_names: bool = False,
     ) -> Dict[str, Any]:
         """Returns the latest online feature data.
