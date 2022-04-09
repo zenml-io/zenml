@@ -30,7 +30,11 @@ from zenml.repository import Repository
 @cli.group()
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
-    """Secrets for storing key-value pairs for use in authentication."""
+    """Secrets for storing key-value pairs for use in authentication.
+
+    Args:
+        ctx: Click context to pass to all sub-commands
+    """
     ctx.obj = Repository().active_stack.components.get(
         StackComponentType.MODEL_DEPLOYER, None
     )
@@ -60,6 +64,7 @@ def describe_model(
     model_deployer: "BaseModelDeployer", served_model_uuid: str
 ) -> None:
     """Describe a specified served model.
+
     Args:
         model_deployer: Stack component that implements the interface to the
             underlying model deployer engine

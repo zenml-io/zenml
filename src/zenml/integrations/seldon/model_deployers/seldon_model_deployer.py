@@ -67,12 +67,15 @@ class SeldonModelDeployer(BaseModelDeployer):
     _client: Optional[SeldonClient] = None
 
     @staticmethod
-    def get_model_server_info(
+    def get_model_server_info(  # type: ignore[override]
         service_instance: "SeldonDeploymentService",
     ) -> Dict[str, Optional[str]]:
+        """"Return implementation specific information that might be relevant
+        to the user.
 
-        # TODO [HIGH]: Fix Mypy issues as the service_instance is a
-        #  SeldonDeploymentService not a BaseService
+        Args:
+            service_instance: Instance of a SeldonDeploymentService
+        """
 
         return {
             "PREDICTION_URL": service_instance.prediction_url,

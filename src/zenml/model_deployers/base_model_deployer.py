@@ -98,7 +98,8 @@ class BaseModelDeployer(StackComponent, ABC):
     @staticmethod
     @abstractmethod
     def get_model_server_info(
-            service: "BaseService") -> Dict[str, Optional[str]]:
+        service: BaseService,
+    ) -> Dict[str, Optional[str]]:
         """Give implementation specific way to extract relevant model server
         properties for the user
 
