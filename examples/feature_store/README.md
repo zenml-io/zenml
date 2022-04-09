@@ -18,7 +18,7 @@ This example currently shows the offline data retrieval part of what Feast enabl
 
 ## 🧰 How the example is implemented
 
-
+This example has two simple steps, showing how you can access historical (batch / offline) data from a local file source.
 
 # 🖥 Run it locally
 
