@@ -399,7 +399,8 @@ def print_secrets(secrets: List[str]) -> None:
 
 
 def pretty_print_model_deployer(model_services: List[BaseService]) -> None:
-    """Given a secret set print all key value pairs associated with the secret
+    """Given a list of served_models print all key value pairs associated with
+    the secret
 
     Args:
         model_services:
@@ -415,10 +416,10 @@ def pretty_print_model_deployer(model_services: List[BaseService]) -> None:
         model_service_dicts.append(
             {
                 "UUID": str(model_service.uuid),
-                "STATUS": status,
                 "PIPELINE_NAME": model_service.config.pipeline_name,
                 "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
                 "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
+                "STATUS": status,
             }
         )
 
@@ -428,8 +429,14 @@ def pretty_print_model_deployer(model_services: List[BaseService]) -> None:
 def print_served_model_configuration(
     model_service: BaseService, model_deployer: BaseModelDeployer
 ) -> None:
-    """Prints the configuration of a model_service."""
+    """Prints the configuration of a model_service.
+
+    Args:
+        model_service: Specific service instance to
+        model_deployer: Active model deployer
+    """
     title = f"Properties of Served Model {model_service.uuid}"
+
     status = (
         "Running" * model_service.is_running
         or "Failed" * model_service.is_failed
@@ -456,6 +463,7 @@ def print_served_model_configuration(
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
     }
 
+    # Sort fields alphabetically
     sorted_items = {k: v for k, v in sorted(served_model_info.items())}
 
     for item in sorted_items.items():

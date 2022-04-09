@@ -372,6 +372,47 @@ Finally, to delete a secret, use the `delete` command:
 zenml secret delete SECRET_NAME
 ```
 
+Interacting with Deployed Models
+-------------
+
+Deployed models are
+
+
+If you want to simply see what models have been deployed within your stack, run
+the following command:
+
+```bash
+zenml served-models list
+```
+
+This should give you a list of served models containing their uuid, the name
+of the pipeline that produced them including the run id and the step name as
+well as the status.
+This information should help you identify the different models.
+
+If you want further information about a specific model, simply copy the
+UUID and the following command.
+
+```bash
+zenml served-models describe <UUID>
+```
+
+If you are only interested in the prediction-url of the specific model you can
+also run:
+
+```bash
+zenml served-models get-url <UUID>
+```
+
+Finally, you will also be able to start/stop the services using the following
+ two commands:
+
+```bash
+zenml served-models start <UUID>
+zenml served-models stop <UUID>
+```
+
+
 Administering the Stack
 -----------------------
 
