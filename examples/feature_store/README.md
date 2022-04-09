@@ -1,10 +1,12 @@
 # 🗂 Get your data from a Feature Store
 
-<!-- basic introduction paragraph
+Feature stores allow data teams to serve data via an offline store and an online low-latency store where data is kept in sync between the two. It also offers a centralized registry where features (and feature schemas) are stored for use within a team or wider organization.
 
-- what is a feature store
-- what problem does it solve
-- what specific combo have we integrated with? -->
+As a data scientist working on training your model, your requirements for how you access your batch / 'offline' data will almost certainly be different from how you access that data as part of a real-time or online inference setting. Feast solves the problem of developing [train-serve skew](https://ploomber.io/blog/train-serve-skew/) where those two sources of data diverge from each other.
+
+Feature stores are a relatively recent addition to commonly-used machine learning stacks. [Feast](https://feast.dev/) is a leading open-source feature store, first developed by [Gojek](https://www.gojek.com/en-id/) in collaboration with Google.
+
+This example runs locally, using a (local) [Redis](https://redis.com/) server to simulate the online part of the store.
 
 ## 🗺 Overview: Features Stores & ZenML
 
@@ -131,11 +133,8 @@ In order to clean up, delete the remaining ZenML references.
 rm -rf zenml_examples
 ```
 
-If you ran the Redis server as a daemon process, you'll want to find the process
-ID (using `ps aux | grep redis-server`) and you can `kill` the process from the
-terminal.
+If you ran the Redis server as a daemon process, you'll want to find the process ID (using `ps aux | grep redis-server`) and you can `kill` the process from the terminal.
 
 # 📜 Learn more
 
-Our docs regarding the Feast feature store integration can be found
-[here](https://docs.zenml.io/features/feature-store).
+Our docs regarding the Feast feature store integration can be found [here](https://docs.zenml.io/features/feature-store).
