@@ -372,6 +372,19 @@ Finally, to delete a secret, use the `delete` command:
 zenml secret delete SECRET_NAME
 ```
 
+Add a Feature Store to your Stack
+---------------------------------
+
+ZenML supports connecting to a Redis-backed Feast feature store as a stack
+component integration. To set up a feature store, use the following CLI command:
+
+```shell zenml feature-store register FEATURE_STORE_NAME -t feast
+--feast_repo=REPO_PATH --online_host HOST_NAME --online_port ONLINE_PORT_NUMBER
+```
+
+Once you have registered your feature store as a stack component, you can use it
+in your ZenML Stack.
+
 Administering the Stack
 -----------------------
 
