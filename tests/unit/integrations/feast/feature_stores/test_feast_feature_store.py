@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import pytest
+from redis.exceptions import ConnectionError
 
 from zenml.enums import StackComponentType
 from zenml.integrations.feast.feature_stores import FeastFeatureStore
@@ -21,8 +22,7 @@ from zenml.integrations.feast.feature_stores import FeastFeatureStore
 @pytest.fixture()
 def feast_feature_store():
     """Fixture to yield a Feast feature store."""
-    feast_feature_store = FeastFeatureStore(name="", feast_repo="")
-    yield feast_feature_store
+    yield FeastFeatureStore(name="", feast_repo="")
 
 
 def test_feast_feature_store_attributes(feast_feature_store):
@@ -32,3 +32,13 @@ def test_feast_feature_store_attributes(feast_feature_store):
     assert feast_feature_store.FLAVOR == "feast"
     assert feast_feature_store.online_host == "localhost"
     assert feast_feature_store.online_port == 6379
+
+
+def test_feast_feature_store_raises_error_when_no_redis(feast_feature_store):
+    """Tests that the FeastFeatureStore raises an error when no redis is
+    available."""
+    with pytest.raises(ConnectionError):
+        feast_feature_store._validate_connection()
+
+    with pytest.raises(ConnectionError):
+        feast_feature_store.get_online_features([], [])
