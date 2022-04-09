@@ -77,6 +77,7 @@ class StepContext:
             for key in output_materializers.keys()
         }
         self._metadata_store = Repository().active_stack.metadata_store
+        self._stack = Repository().active_stack
 
     def _get_output(
         self, output_name: Optional[str] = None
@@ -134,7 +135,7 @@ class StepContext:
     @property
     def stack(self) -> Optional["Stack"]:
         """Returns the current active stack."""
-        return Repository().active_stack
+        return self._stack
 
     def get_output_materializer(
         self,

@@ -16,7 +16,6 @@
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Union
 
-import orjson
 import pandas as pd
 
 from zenml.exceptions import DoesNotExistException
@@ -33,9 +32,9 @@ historical_entity_dict = {
     "driver_id": [1001, 1002, 1003],
     "label_driver_reported_satisfaction": [1, 5, 3],
     "event_timestamp": [
-        datetime.now() - timedelta(minutes=11),
-        datetime.now() - timedelta(minutes=36),
-        datetime.now() - timedelta(minutes=73),
+        (datetime.now() - timedelta(minutes=11)).isoformat(),
+        (datetime.now() - timedelta(minutes=36)).isoformat(),
+        (datetime.now() - timedelta(minutes=73)).isoformat(),
     ],
 }
 
@@ -47,18 +46,6 @@ features = [
 ]
 
 
-def custom_json_loads(v):
-    if v.startswith("datetime"):
-        return datetime.date(v)
-    else:
-        return orjson.loads(v)
-
-
-def orjson_dumps(v):
-    # orjson.dumps returns bytes, to match standard json.dumps we need to decode
-    return orjson.dumps(v, option=orjson.OPT_NAIVE_UTC).decode()
-
-
 class FeastHistoricalFeaturesConfig(BaseStepConfig):
     """Feast Feature Store historical data step configuration."""
 
@@ -68,8 +55,6 @@ class FeastHistoricalFeaturesConfig(BaseStepConfig):
 
     class Config:
         arbitrary_types_allowed = True
-        json_loads = orjson.loads
-        json_dumps = orjson_dumps
 
 
 @step
@@ -97,6 +82,10 @@ def get_historical_features(
         )
 
     feature_store_component = context.stack.feature_store
+    config.entity_dict["event_timestamp"] = [
+        datetime.fromisoformat(val)
+        for val in config.entity_dict["event_timestamp"]
+    ]
     entity_df = pd.DataFrame.from_dict(config.entity_dict)
 
     return feature_store_component.get_historical_features(
