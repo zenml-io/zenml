@@ -25,7 +25,7 @@ class FeastIntegration(Integration):
     """Definition of Feast integration for ZenML."""
 
     NAME = FEAST
-    REQUIREMENTS = ["feast[redis]", "redis-server"]
+    REQUIREMENTS = ["feast[redis]>=0.19.4", "redis-server"]
 
     @classmethod
     def activate(cls) -> None:

@@ -17,6 +17,7 @@ from typing import Any, ClassVar, Dict, List, Union
 import pandas as pd
 import redis
 from feast import FeatureStore  # type: ignore[import]
+from feast.registry import Registry  # type: ignore[import]
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
 from zenml.logger import get_logger
@@ -106,3 +107,91 @@ class FeastFeatureStore(BaseFeatureStore):
             features=features,
             full_feature_names=full_feature_names,
         ).to_dict()
+
+    def get_data_sources(self) -> List[str]:
+        """Returns the data sources' names.
+
+        Raise:
+            ConnectionError: If the online component (Redis) is not available.
+
+        Returns:
+            The data sources' names.
+        """
+        self._validate_connection()
+        fs = FeatureStore(repo_path=self.feast_repo)
+        return [ds.name for ds in fs.list_data_sources()]
+
+    def get_entities(self) -> List[str]:
+        """Returns the entity names.
+
+        Raise:
+            ConnectionError: If the online component (Redis) is not available.
+
+        Returns:
+            The entity names.
+        """
+        self._validate_connection()
+        fs = FeatureStore(repo_path=self.feast_repo)
+        return [ds.name for ds in fs.list_entities()]
+
+    def get_feature_services(self) -> List[str]:
+        """Returns the feature service names.
+
+        Raise:
+            ConnectionError: If the online component (Redis) is not available.
+
+        Returns:
+            The feature service names.
+        """
+        self._validate_connection()
+        fs = FeatureStore(repo_path=self.feast_repo)
+        return [ds.name for ds in fs.list_feature_services()]
+
+    def get_feature_views(self) -> List[str]:
+        """Returns the feature view names.
+
+        Raise:
+            ConnectionError: If the online component (Redis) is not available.
+
+        Returns:
+            The feature view names.
+        """
+        self._validate_connection()
+        fs = FeatureStore(repo_path=self.feast_repo)
+        return [ds.name for ds in fs.list_feature_views()]
+
+    def get_project(self) -> str:
+        """Returns the project name.
+
+        Raise:
+            ConnectionError: If the online component (Redis) is not available.
+
+        Returns:
+            The project name.
+        """
+        fs = FeatureStore(repo_path=self.feast_repo)
+        return str(fs.project)
+
+    def get_registry(self) -> Registry:
+        """Returns the feature store registry.
+
+        Raise:
+            ConnectionError: If the online component (Redis) is not available.
+
+        Returns:
+            The registry.
+        """
+        fs = FeatureStore(repo_path=self.feast_repo)
+        return fs.registry
+
+    def get_feast_version(self) -> str:
+        """Returns the version of Feast used.
+
+        Raise:
+            ConnectionError: If the online component (Redis) is not available.
+
+        Returns:
+            The version of Feast currently being used.
+        """
+        fs = FeatureStore(repo_path=self.feast_repo)
+        return str(fs.version())

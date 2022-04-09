@@ -440,6 +440,7 @@ zenml stack get
 from zenml.cli.base import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
+from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.secret import *  # noqa
