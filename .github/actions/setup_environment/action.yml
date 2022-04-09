@@ -1,5 +1,7 @@
 name: "Setup Matrix and Poetry"
-description: "Install Poetry, loads cached venv if applicable, and performs miscellaneous other operations"
+description:
+  "Install Poetry, loads cached venv if applicable, and performs miscellaneous
+  other operations"
 
 runs:
   using: "composite"
@@ -34,13 +36,11 @@ runs:
           .venv
           poetry.lock
         # Cache the complete venv dir for a given os, python version, pyproject.toml
-        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+        key:
+          venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{
+          hashFiles('pyproject.toml') }}
 
     - name: Install Project
       shell: bash
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install
-
-    - name: Update mypy types
-      shell: bash
-      run: mypy --install-types
