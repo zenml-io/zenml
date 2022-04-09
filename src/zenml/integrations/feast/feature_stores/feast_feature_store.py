@@ -71,7 +71,6 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The historical features as a Pandas DataFrame.
         """
-        self._validate_connection()
         fs = FeatureStore(repo_path=self.feast_repo)
 
         return fs.get_historical_features(
