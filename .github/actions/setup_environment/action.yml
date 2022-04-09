@@ -40,3 +40,7 @@ runs:
       shell: bash
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install
+
+    - name: Update mypy types
+      shell: bash
+      run: mypy --install-types
