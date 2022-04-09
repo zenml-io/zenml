@@ -16,8 +16,6 @@
 
 ...
 """
-from zenml.integrations.feast.feature_stores.feast_feature_store import (
+from zenml.integrations.feast.feature_stores.feast_feature_store import (  # noqa
     FeastFeatureStore,
 )
-
-__all__ = ["FeastFeatureStore"]
