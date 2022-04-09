@@ -8,42 +8,21 @@ Feature stores are a relatively recent addition to commonly-used machine learnin
 
 This example runs locally, using a (local) [Redis](https://redis.com/) server to simulate the online part of the store.
 
-## 🗺 Overview: Features Stores & ZenML
+## 🗺 Features Stores & ZenML
 
-<!-- - how to think about a feature store
-- what is it used for?
-- components / architecture of a feature store
-  - offline / batch serving
-  - online serving
-- The main abstractions you need to think of / how do we help you?:
-  - getting offline features
-  - getting online features
-- caveats about our integration
-  - this example runs locally
-  - we assume you have a feature store already if you want to use it in
-    production (ZenML doesn't currently help you set that all up)
-  - online serving doesn't work in tandem with deployed models currently
-- This example, and what features of features it showcases / what you can do
-  with the ZenML feature store integration -->
+There are two core functions that feature stores enable: access to data from an offline / batch store for training and access to online data at inference time. The ZenML Feast integration enables both of these behaviors.
+
+This example showcases a local implementation where the whole setup runs on a single machine, but we assume that users of the ZenML Feast integration will have set up their own feature store already. We encourage users to check out [Feast's documentation](https://docs.feast.dev/) and [guides](https://docs.feast.dev/how-to-guides/) on how to setup your offline and online data sources via the configuration `yaml` file.
+
+This example currently shows the offline data retrieval part of what Feast enables. (Online data retrieval is currently possible in a local / simple setting, but we don't currently support using the online data serving in the context of a deployed model or as part of model deployment.)
 
 ## 🧰 How the example is implemented
 
-<!-- Showcase the code and explain how it works
-Maybe a visual diagram showing the various parts of it? -->
+
 
 # 🖥 Run it locally
 
-## ⏩ SuperQuick `feature-store` run
-
-If you're really in a hurry, and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run feature_store
-```
-
-## 👣 Step-by-Step
+## 👣 Step-by-Step `feature-store` run
 
 ### 📄 Prerequisites
 
