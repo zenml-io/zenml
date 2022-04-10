@@ -70,7 +70,7 @@ class SeldonModelDeployer(BaseModelDeployer):
     def get_model_server_info(  # type: ignore[override]
         service_instance: "SeldonDeploymentService",
     ) -> Dict[str, Optional[str]]:
-        """"Return implementation specific information that might be relevant
+        """ "Return implementation specific information that might be relevant
         to the user.
 
         Args:
@@ -278,7 +278,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             # the service UUID is not a label covered by the Seldon
             # deployment service configuration, so we need to add it
             # separately
-            labels["zenml_service_uuid"] = str(service_uuid)
+            labels["zenml.service_uuid"] = str(service_uuid)
 
         deployments = self.seldon_client.find_deployments(labels=labels)
         # sort the deployments in descending order of their creation time
@@ -339,7 +339,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 active.
         """
         raise NotImplementedError(
-            "Starting Seldon Core model servers is not implemented"
+            "Stopping Seldon Core model servers is not implemented"
         )
 
     def delete_model_server(

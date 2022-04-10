@@ -785,7 +785,6 @@ class SeldonClient:
                 f"Searching SeldonDeployment resources with label selector "
                 f"'{labels or ''}' and field selector '{fields or ''}'"
             )
-
             response = self._custom_objects_api.list_namespaced_custom_object(
                 group="machinelearning.seldon.io",
                 version="v1",
