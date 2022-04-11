@@ -40,7 +40,7 @@
 * [Caching](features/caching.md)
 * [Run steps in specialized environments](features/step-operators.md)
 * [Convenient Step Fixtures](features/step-fixtures.md)
-* [Continuous Training and Deployment](features/continous-training-and-deployment.md)
+* [Continuous Training and Deployment](features/continuous-training-and-deployment.md)
 * [Managing External Services](features/services.md)
 * [Managing Secrets](features/secrets.md)
 * [Standardized Artifacts](features/artifacts.md)
