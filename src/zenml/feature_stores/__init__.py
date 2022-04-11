@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-# TODO [HIGH]: Write docstring.
+# TODO [ENG-793]: Write docstring.
 ## Feature Store
 
 Feature stores allow data teams to serve data via an offline store and an online

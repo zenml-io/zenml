@@ -21,7 +21,7 @@ from neuralprophet import NeuralProphet
 from zenml.artifacts import ModelArtifact
 from zenml.materializers.base_materializer import BaseMaterializer
 
-# TODO [LOW]: The integration consists of a simple materializer that uses the
+# TODO [ENG-794]: The integration consists of a simple materializer that uses the
 #  torch load and save methods which is the [current recommended way of storing
 #  NeuralProphet models on disk](https://github.com/ourownstory/neural_prophet/issues/27).
 #  Update this once a better implementation is exposed.
