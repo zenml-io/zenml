@@ -13,7 +13,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# TODO [HIGH]: Generalize these commands to all feature stores.
+# TODO [ENG-795]: Generalize these commands to all feature stores.
 
 import click
 
