@@ -73,10 +73,11 @@ def describe_model(
         served_model_uuid: UUID of a served model
     """
 
-    served_model = model_deployer.find_model_server(
-        service_uuid=uuid.UUID(served_model_uuid))[0]
-    if served_model:
-        print_served_model_configuration(served_model, model_deployer)
+    served_models = model_deployer.find_model_server(
+        service_uuid=uuid.UUID(served_model_uuid)
+    )
+    if served_models:
+        print_served_model_configuration(served_models[0], model_deployer)
         return
     warning(f"No model with uuid: '{served_model_uuid}' could be found.")
     return
@@ -94,12 +95,13 @@ def get_url(
             underlying model deployer engine
         served_model_uuid: UUID of a served model
     """
-    served_model = model_deployer.find_model_server(
-        service_uuid=uuid.UUID(served_model_uuid))[0]
-    if served_model:
+    served_models = model_deployer.find_model_server(
+        service_uuid=uuid.UUID(served_model_uuid)
+    )
+    if served_models:
         try:
             prediction_url = model_deployer.get_model_server_info(
-                served_model
+                served_models[0]
             ).get("PREDICTION_URL")
             declare(
                 f"  Prediction URL of Served Model {served_model_uuid} "
@@ -135,10 +137,13 @@ def start_model_service(
         served_model_uuid: UUID of a served model
     """
 
-    served_model = model_deployer.find_model_server(
-        service_uuid=uuid.UUID(served_model_uuid))[0]
-    if served_model:
-        model_deployer.start_model_server(served_model.uuid, timeout=timeout)
+    served_models = model_deployer.find_model_server(
+        service_uuid=uuid.UUID(served_model_uuid)
+    )
+    if served_models:
+        model_deployer.start_model_server(
+            served_models[0].uuid, timeout=timeout
+        )
         return
 
     warning(f"No model with uuid: '{served_model_uuid}' could be found.")
@@ -177,11 +182,12 @@ def stop_model_service(
         served_model_uuid: UUID of a served model
     """
 
-    served_model = model_deployer.find_model_server(
-        service_uuid=uuid.UUID(served_model_uuid))[0]
-    if served_model:
+    served_models = model_deployer.find_model_server(
+        service_uuid=uuid.UUID(served_model_uuid)
+    )
+    if served_models:
         model_deployer.stop_model_server(
-            served_model.uuid, timeout=timeout, force=force
+            served_models[0].uuid, timeout=timeout, force=force
         )
         return
 
@@ -221,11 +227,12 @@ def delete_model_service(
         served_model_uuid: UUID of a served model
     """
 
-    served_model = model_deployer.find_model_server(
-        service_uuid=uuid.UUID(served_model_uuid))[0]
-    if served_model:
+    served_models = model_deployer.find_model_server(
+        service_uuid=uuid.UUID(served_model_uuid)
+    )
+    if served_models:
         model_deployer.delete_model_server(
-            served_model.uuid, timeout=timeout, force=force
+            served_models[0].uuid, timeout=timeout, force=force
         )
         return
 
