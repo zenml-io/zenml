@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import json
+import re
 import time
 from typing import Dict, List, Optional
 
@@ -36,10 +37,14 @@ class SeldonDeploymentMetadata(BaseModel):
     Attributes:
         name: the name of the Seldon Deployment.
         labels: Kubernetes labels for the Seldon Deployment.
+        annotations: Kubernetes annotations for the Seldon Deployment.
+        creationTimestamp: the creation timestamp of the Seldon Deployment.
     """
 
     name: str
     labels: Dict[str, str] = Field(default_factory=dict)
+    annotations: Dict[str, str] = Field(default_factory=dict)
+    creationTimestamp: Optional[str]
 
     class Config:
         """Pydantic configuration class."""
@@ -251,6 +256,7 @@ class SeldonDeployment(BaseModel):
         implementation: Optional[str] = None,
         secret_name: Optional[str] = None,
         labels: Optional[Dict[str, str]] = None,
+        annotations: Optional[Dict[str, str]] = None,
     ) -> "SeldonDeployment":
         """Build a basic Seldon Deployment object.
 
@@ -264,6 +270,8 @@ class SeldonDeployment(BaseModel):
                 environment variable values (e.g. with credentials for the
                 artifact store) to use with the deployment service.
             labels: A dictionary of labels to apply to the Seldon Deployment.
+            annotations: A dictionary of annotations to apply to the Seldon
+                Deployment.
 
         Returns:
             A minimal SeldonDeployment object built from the provided
@@ -275,9 +283,13 @@ class SeldonDeployment(BaseModel):
 
         if labels is None:
             labels = {}
+        if annotations is None:
+            annotations = {}
 
         return SeldonDeployment(
-            metadata=SeldonDeploymentMetadata(name=name, labels=labels),
+            metadata=SeldonDeploymentMetadata(
+                name=name, labels=labels, annotations=annotations
+            ),
             spec=SeldonDeploymentSpec(
                 name=name,
                 predictors=[
@@ -444,9 +456,9 @@ class SeldonClient:
                     "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
                 ).read()
         except k8s_config.config_exception.ConfigException:
-            if not self._namespace or not self._context:
+            if not self._namespace:
                 raise SeldonClientError(
-                    "The Kubernetes context and namespace must be explicitly "
+                    "The Kubernetes namespace must be explicitly "
                     "configured when running outside of a cluster."
                 )
             try:
@@ -460,13 +472,23 @@ class SeldonClient:
         self._core_api = k8s_client.CoreV1Api()
         self._custom_objects_api = k8s_client.CustomObjectsApi()
 
+    @staticmethod
+    def sanitize_labels(labels: Dict[str, str]) -> None:
+        """Update the label values to be valid Kubernetes labels"""
+        for key, value in labels.items():
+            labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value)
+
     @property
-    def namespace(self) -> Optional[str]:
+    def namespace(self) -> str:
         """Returns the Kubernetes namespace in use by the client.
 
         Returns:
             The Kubernetes namespace in use by the client.
         """
+        if not self._namespace:
+            # shouldn't happen if the client is initialized, but we need to
+            # appease the mypy type checker
+            raise RuntimeError("The Kubernetes namespace is not configured")
         return self._namespace
 
     def create_deployment(
@@ -689,9 +711,11 @@ class SeldonClient:
             logger.debug("Seldon Core API response: %s", response)
             try:
                 deployment = SeldonDeployment(**response)
-            except ValidationError:
+            except ValidationError as e:
                 logger.error(
-                    "Invalid Seldon Core deployment resource: %s", str(response)
+                    "Invalid Seldon Core deployment resource: %s\n%s",
+                    str(e),
+                    str(response),
                 )
                 raise SeldonDeploymentNotFoundError(
                     f"SeldonDeployment resource {name} could not be parsed"
@@ -761,7 +785,6 @@ class SeldonClient:
                 f"Searching SeldonDeployment resources with label selector "
                 f"'{labels or ''}' and field selector '{fields or ''}'"
             )
-
             response = self._custom_objects_api.list_namespaced_custom_object(
                 group="machinelearning.seldon.io",
                 version="v1",
@@ -769,7 +792,6 @@ class SeldonClient:
                 plural="seldondeployments",
                 field_selector=field_selector,
                 label_selector=label_selector,
-                name=name,
             )
             logger.debug(
                 "Seldon Core API returned %s items", len(response["items"])
@@ -777,10 +799,12 @@ class SeldonClient:
             deployments = []
             for item in response.get("items") or []:
                 try:
-                    deployments.append(SeldonDeployment(**response))
-                except ValidationError:
+                    deployments.append(SeldonDeployment(**item))
+                except ValidationError as e:
                     logger.error(
-                        "Invalid Seldon Core deployment resource: %s", str(item)
+                        "Invalid Seldon Core deployment resource: %s\n%s",
+                        str(e),
+                        str(item),
                     )
             return deployments
         except k8s_client.rest.ApiException as e:

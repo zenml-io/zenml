@@ -37,7 +37,12 @@ from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
-from zenml.stack_stores import BaseStackStore, LocalStackStore, SqlStackStore
+from zenml.stack_stores import (
+    BaseStackStore,
+    LocalStackStore,
+    RestStackStore,
+    SqlStackStore,
+)
 from zenml.stack_stores.models import (
     StackComponentWrapper,
     StackStoreModel,
@@ -132,8 +137,8 @@ class RepositoryMetaClass(ABCMeta):
             if Environment().step_is_running:
                 raise ForbiddenRepositoryAccessError(
                     "Unable to access repository during step execution. If you "
-                    "require access to the artifact or metadata store, please use "
-                    "a `StepContext` inside your step instead.",
+                    "require access to the artifact or metadata store, please "
+                    "use a `StepContext` inside your step instead.",
                     url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
                 )
 
@@ -515,6 +520,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         return {
             StoreType.LOCAL: LocalStackStore,
             StoreType.SQL: SqlStackStore,
+            StoreType.REST: RestStackStore,
         }.get(type)
 
     @staticmethod
@@ -552,6 +558,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             profile.store_url = store_class.get_local_url(
                 profile.config_directory
             )
+
+        if profile.store_type == StoreType.REST:
+            skip_default_stack = True
 
         if store_class.is_valid_url(profile.store_url):
             store = store_class()
@@ -820,7 +829,15 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
         if name == self.active_stack_name:
             raise ValueError(f"Unable to deregister active stack '{name}'.")
-        self.stack_store.deregister_stack(name)
+        try:
+            self.stack_store.deregister_stack(name)
+            logger.info("Deregistered stack with name '%s'.", name)
+        except KeyError:
+            logger.warning(
+                "Unable to deregister stack with name '%s': No stack  "
+                "with this name could be found.",
+                name,
+            )
 
     def get_stack_components(
         self, component_type: StackComponentType
@@ -868,7 +885,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self.stack_store.register_stack_component(
             StackComponentWrapper.from_component(component)
         )
-
         analytics_metadata = {
             "type": component.TYPE.value,
             "flavor": component.FLAVOR,
@@ -887,7 +903,22 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             component_type: The type of the component to deregister.
             name: The name of the component to deregister.
         """
-        self.stack_store.deregister_stack_component(component_type, name=name)
+        try:
+            self.stack_store.deregister_stack_component(
+                component_type, name=name
+            )
+            logger.info(
+                "Deregistered stack component (type: %s) with name '%s'.",
+                component_type.value,
+                name,
+            )
+        except KeyError:
+            logger.warning(
+                "Unable to deregister stack component (type: %s) with name "
+                "'%s': No stack component with this name could be found.",
+                component_type.value,
+                name,
+            )
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(

@@ -18,10 +18,12 @@ life.
 
 from zenml.stack_stores.base_stack_store import BaseStackStore
 from zenml.stack_stores.local_stack_store import LocalStackStore
+from zenml.stack_stores.rest_stack_store import RestStackStore
 from zenml.stack_stores.sql_stack_store import SqlStackStore
 
 __all__ = [
     "BaseStackStore",
     "LocalStackStore",
+    "RestStackStore",
     "SqlStackStore",
 ]
