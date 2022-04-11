@@ -69,7 +69,7 @@ class MLFlowEnvironment(BaseEnvironmentComponent):
         Returns:
             The MLflow tracking URI for the local mlflow backend.
         """
-        repo = Repository()
+        repo = Repository(skip_repository_check=True)
         artifact_store = repo.active_stack.artifact_store
         local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
         if not os.path.exists(local_mlflow_backend_uri):
@@ -203,3 +203,8 @@ class MLFlowStepEnvironment(BaseEnvironmentComponent):
     def mlflow_run(self) -> Optional[ActiveRun]:
         """Returns the MLflow run for the current step."""
         return self._run
+
+
+def global_mlflow_env() -> MLFlowEnvironment:
+    """Returns the global MLflow environment."""
+    return MLFlowEnvironment()
