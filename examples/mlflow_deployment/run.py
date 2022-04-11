@@ -93,7 +93,7 @@ def main(epochs: int, lr: float, min_accuracy: float, stop_service: bool):
         prediction_service_loader=prediction_service_loader(
             MLFlowDeploymentLoaderStepConfig(
                 pipeline_name="continuous_deployment_pipeline",
-                step_name="model_deployer",
+                pipeline_step_name="model_deployer",
             )
         ),
         predictor=predictor(),

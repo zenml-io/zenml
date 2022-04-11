@@ -125,7 +125,7 @@ class RepositoryMetaClass(ABCMeta):
                 instance while a ZenML step is being executed.
         """
 
-         # `skip_repository_check` is a special kwarg that can be passed to
+        # `skip_repository_check` is a special kwarg that can be passed to
         # the Repository constructor to bypass the check that prevents the
         # Repository instance from being accessed from within pipeline steps.
         if not kwargs.pop("skip_repository_check", False):

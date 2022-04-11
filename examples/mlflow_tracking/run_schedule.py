@@ -22,8 +22,7 @@ from pipeline import (
     tf_trainer,
 )
 
-from zenml.environment import Environment
-from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT_NAME, global_mlflow_env
+from zenml.integrations.mlflow.mlflow_environment import global_mlflow_env
 from zenml.pipelines import Schedule
 
 if __name__ == "__main__":
