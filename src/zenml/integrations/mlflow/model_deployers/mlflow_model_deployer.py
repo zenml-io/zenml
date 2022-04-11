@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import shutil
-from typing import ClassVar, List, Optional, cast
+from typing import ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.constants import (
@@ -48,6 +48,24 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW
+
+    @staticmethod
+    def get_model_server_info(  # type: ignore[override]
+        service_instance: "MLFlowDeploymentService",
+    ) -> Dict[str, Optional[str]]:
+        """ "Return implementation specific information that might be relevant
+        to the user.
+
+        Args:
+            service_instance: Instance of a SeldonDeploymentService
+        """
+
+        return {
+            "PREDICTION_URL": service_instance.endpoint.prediction_uri,
+            "MODEL_URI": service_instance.config.model_uri,
+            "MODEL_NAME": service_instance.config.model_name,
+            "SERVICE_PATH": service_instance.status.runtime_path,
+        }
 
     @staticmethod
     def get_active_model_deployer() -> "MLFlowModelDeployer":
