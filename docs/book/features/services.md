@@ -27,6 +27,7 @@ You can see full examples of using services here:
 
 * Visualizing training with tensorboard with the [Kubeflow tensorboard example](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow).
 * Continuous training and continuous deployment setting with the [MLflow deployment example](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment).
+* Continuous training and continuous deployment setting with the [Seldon deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment).
 
 ## Examples services
 
@@ -49,4 +50,4 @@ service.stop()
 
 This couples nicely with the `TensorboardVisualizer` to visualize Tensorboard logs.
 
-Another example of a service can be found in the [continuous training and deployment guide](continous-training-and-deployment.md).
+Other examples of Services can be found in the [continuous training and deployment guide](continuous-training-and-deployment.md).
