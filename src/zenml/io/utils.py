@@ -160,12 +160,12 @@ def copy_dir(
         destination_path = os.path.join(
             destination_dir, convert_to_str(source_file)
         )
-        if isdir(source_file):
+        if isdir(source_path):
             if source_path == destination_dir:
                 # if the destination is a subdirectory of the source, we skip
                 # copying it to avoid an infinite loop.
                 return
-            copy_dir(convert_to_str(source_file), destination_path, overwrite)
+            copy_dir(source_path, destination_path, overwrite)
         else:
             create_dir_recursive_if_not_exists(
                 str(Path(destination_path).parent)
