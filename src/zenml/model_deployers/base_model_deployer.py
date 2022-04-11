@@ -15,23 +15,13 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from uuid import UUID
 
-from zenml.enums import ModelDeployerFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.services import BaseService, ServiceConfig
 from zenml.stack import StackComponent
 
 
 class BaseModelDeployer(StackComponent, ABC):
     """Base class for all ZenML model deployers."""
-
-    @property
-    def type(self) -> StackComponentType:
-        """The component type."""
-        return StackComponentType.MODEL_DEPLOYER
-
-    @property
-    @abstractmethod
-    def flavor(self) -> ModelDeployerFlavor:
-        """The model deployer flavor."""
 
     @abstractmethod
     def deploy_model(

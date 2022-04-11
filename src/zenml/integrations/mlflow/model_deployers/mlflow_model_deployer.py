@@ -13,14 +13,15 @@
 #  permissions and limitations under the License.
 import os
 import shutil
-from typing import List, Optional, cast
+from typing import ClassVar, List, Optional, cast
 from uuid import UUID
 
 from zenml.constants import (
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
     LOCAL_STORES_DIRECTORY_NAME,
 )
-from zenml.enums import ModelDeployerFlavor, StackComponentType
+from zenml.enums import StackComponentType
+from zenml.integrations.constants import MLFLOW
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
@@ -39,22 +40,12 @@ from zenml.stack.stack_component_class_registry import (
 logger = get_logger(__name__)
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.MODEL_DEPLOYER,
-    component_flavor=ModelDeployerFlavor.MLFLOW,
-)
+@register_stack_component_class
 class MLFlowModelDeployer(BaseModelDeployer):
     """MLflow implementation of the BaseModelDeployer"""
 
-    @property
-    def type(self) -> StackComponentType:
-        """The component type."""
-        return StackComponentType.MODEL_DEPLOYER
-
-    @property
-    def flavor(self) -> ModelDeployerFlavor:
-        """The model deployer flavor."""
-        return ModelDeployerFlavor.MLFLOW
+    # Class Configuration
+    FLAVOR: ClassVar[str] = MLFLOW
 
     @staticmethod
     def get_active_model_deployer() -> "MLFlowModelDeployer":
