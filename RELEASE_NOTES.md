@@ -1,3 +1,34 @@
+# 0.7.1
+
+The release introduces the [Seldon Core](https://github.com/SeldonIO/seldon-core) ZenML integration, featuring the
+*Seldon Core Model Deployer* and a *Seldon Core standard model deployer step*.
+The [*Model Deployer*](https://docs.zenml.io/core-concepts#model-deployer)
+is a new type of stack component that enables you to develop continuous
+model deployment pipelines that train models and continuously deploy them to an
+external model serving tool, service or platform. You can read more on deploying models
+to production with Seldon Core in our
+[Continuous Training and Deployment documentation section](https://docs.zenml.io/features/continuous-training-and-deployment) and our [Seldon Core deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment).
+
+We also see two new integrations with the [Feast](https://feast.dev) as ZenML's first feature store stack component, and an addition to our training libraries with [NeuralProphet](https://neuralprophet.com/html/index.html). See the [examples](https://github.com/zenml-io/zenml/tree/main/examples) folder for full examples on both!
+
+## What's Changed
+* Add linting of examples to `pre-commit` by @strickvl in https://github.com/zenml-io/zenml/pull/490
+* Remove dev-specific entries in `.gitignore` by @strickvl in https://github.com/zenml-io/zenml/pull/488
+* Produce periodic mocked data for Segment/Mixpanel by @AlexejPenner in https://github.com/zenml-io/zenml/pull/487
+* Abstractions for artifact stores by @bcdurak in https://github.com/zenml-io/zenml/pull/474
+* enable and disable cache from runtime config by @AlexejPenner in https://github.com/zenml-io/zenml/pull/492
+* Basic Seldon Core Deployment Service by @stefannica in https://github.com/zenml-io/zenml/pull/495
+* Parallelise our test suite and make errors more readable by @alex-zenml in https://github.com/zenml-io/zenml/pull/378
+* Provision local zenml service by @jwwwb in https://github.com/zenml-io/zenml/pull/496
+* bugfix/optional-secrets-manager by @safoinme in https://github.com/zenml-io/zenml/pull/493
+* Quick fix for copying folders by @bcdurak in https://github.com/zenml-io/zenml/pull/501
+* Pin exact ml-pipelines-sdk version by @schustmi in https://github.com/zenml-io/zenml/pull/506
+* Seldon Core model deployer stack component and standard step by @stefannica in https://github.com/zenml-io/zenml/pull/499
+* Fix datetime test / bug by @strickvl in https://github.com/zenml-io/zenml/pull/507
+* Added NeuralProphet integration by @htahir1 in https://github.com/zenml-io/zenml/pull/504
+* Feature Store (Feast with Redis) by @strickvl in https://github.com/zenml-io/zenml/pull/498
+
+
 # 0.7.0
 
 With ZenML 0.7.0, a lot has been revamped under the hood about how things are stored. Importantly what this means is that ZenML now has [system-wide profiles](https://docs.zenml.io/features/profiles) that let you register stacks to share across several of your projects! If you still want to manage your stacks for each project folder individually, profiles still let you do that as well.
