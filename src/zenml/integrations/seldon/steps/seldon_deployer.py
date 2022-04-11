@@ -111,10 +111,10 @@ def seldon_model_deployer_step(
         #   folders and sub-folders depending on the model type/format and the
         #   Seldon Core protocol used to serve the model.
 
-        # TODO [MEDIUM]: auto-detect built-in Seldon server implementation
+        # TODO [ENG-791]: auto-detect built-in Seldon server implementation
         #   from the model artifact type
 
-        # TODO [MEDIUM]: validate the model artifact type against the
+        # TODO [ENG-792]: validate the model artifact type against the
         #   supported built-in Seldon server implementations
         if config.service_config.implementation == "TENSORFLOW_SERVER":
             # the TensorFlow server expects model artifacts to be
