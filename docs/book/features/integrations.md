@@ -42,6 +42,7 @@ These are the third-party integrations that ZenML currently supports:
 | Kubeflow | ✅ | Orchestrator | Either full Kubeflow or Kubeflow Pipelines. Works for local environments currently. | [kubeflow](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) |
 | MLflow Tracking | ✅ | Experiment Tracking | Tracks your pipelines and your training runs. | [mlflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_tracking) |
 | MLflow Deployment | ✅ | Deployment | Deploys models with the MLflow scoring server. | [mlflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment) |
+| NeuralProphet      | ✅ | Training               | Enables materializing NeuralProphet models.                                                   | [neural_prophet](https://github.com/zenml-io/zenml/tree/main/examples/neural_prophet)                                                                    |
 | numpy | ✅ | Exploration |   |   |
 | pandas | ✅ | Exploration |   |   |
 | Plotly | ✅ | Visualizer | For Pipeline and PipelineRun visualization objects. | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage) |
@@ -55,8 +56,7 @@ These are the third-party integrations that ZenML currently supports:
 | Tensorflow | ✅ | Training, Visualizer | Tensorboard support. | [quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart). [kubeflow](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) |
 | whylogs | ✅ | Logging | Integration fully implemented for data logging. | [whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs) |
 
-✅ means the integration is already implemented. 
-
+✅ means the integration is already implemented.
 ⛏ means we are looking to implement the integration soon.
 
 ## Help us with integrations!
