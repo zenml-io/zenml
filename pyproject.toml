@@ -220,6 +220,7 @@ module = [
     "sagemaker.*",
     "azureml.*",
     "google.*",
+    "neuralprophet.*",
 ]
 ignore_missing_imports = true
 
