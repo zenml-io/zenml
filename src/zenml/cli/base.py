@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,14 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import subprocess
 import textwrap
 from pathlib import Path
 from typing import Optional
+from rich.markdown import Markdown
 
 import click
 from git import Repo  # type: ignore
 
 from zenml.cli.cli import cli
+from zenml.cli.text_utils import zenml_go_privacy_message, \
+    zenml_go_welcome_message, zenml_go_email_prompt, zenml_go_thank_you_message, \
+    zenml_go_notebook_tutorial_message
 from zenml.cli.utils import confirmation, declare, error, warning, title
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
@@ -91,83 +96,43 @@ def clean(yes: bool = False) -> None:
 @cli.command("go")
 def go() -> None:
     """Quickly explore zenml with this walk through."""
-    _hello_message = ("\n  ⛩  " if _SHOW_EMOJIS else "") + click.style(
-        "Welcome to ZenML!\n", bold=True
-    )
-    click.echo(_hello_message)
+    console.print(zenml_go_welcome_message, width=80)
 
     from zenml.config.global_config import GlobalConfiguration
 
     gc = GlobalConfiguration()
 
-    #if not gc.user_metadata:
-    prompt_email(gc)
+    if not gc.user_metadata:
+     _prompt_email(gc)
 
-    _privacy_message = textwrap.fill(
-        "As an open source project we rely on usage statistics to inform "
-        "our decisions moving forward. The statistics do not contain any of "
-        "your code, data or personal information. All we see on our end is "
-        "metadata like operating system, stack flavors and triggered events "
-        "like pipeline runs. "
-        "If you wish to opt out, feel free to run the following command: ",
-        width=80,
-        initial_indent='  ',
-        subsequent_indent='  ',
-        replace_whitespace=False
-    )
-
-    _how_to_opt_out = textwrap.fill(
-        "zenml analytics opt-out",
-        width=80,
-        initial_indent='    ',
-        replace_whitespace=False
-    )
-
-    click.echo(
-        click.style("\n  🔒 Privacy Policy at ZenML!\n", bold=True)
-    )
-
-    click.echo(_privacy_message)
-    click.echo(_how_to_opt_out)
+    console.print(zenml_go_privacy_message, width=80)
 
     if not os.path.isdir("zenml_tutorial"):
         Repo.clone_from("https://github.com/zenml-io/zenbytes",
                         "zenml_tutorial")
 
-    click
+    cwd = os.getcwd()
+
+    console.print(zenml_go_notebook_tutorial_message, width=80)
+
+    subprocess.check_call(["jupyter", "notebook"],
+                          cwd=os.path.join(cwd, "zenml_tutorial"))
 
 
-def prompt_email(gc: GlobalConfiguration) -> None:
+def _prompt_email(gc: GlobalConfiguration) -> None:
     """Ask the user to give his email address"""
 
-    _email_message = textwrap.fill(
-        "Here at ZenML we are working hard to produce the best "
-        "possible MLOps tool. In order to solve real world problems "
-        "we want to ask you, the user for feedback and ideas. If "
-        "you are interested in helping us shape the MLOps world "
-        "please leave your email below (leave blank to skip). We will "
-        "only use this for the purpose of reaching out to you for a "
-        "user interview. ",
-        width=80,
-        initial_indent='  ',
-        subsequent_indent='  ',
-        replace_whitespace=False
-    )
-    click.echo(_email_message)
-    email = click.prompt(click.style("  Email: ", fg="blue"),
+    console.print(zenml_go_email_prompt, width=80)
+
+    email = click.prompt(click.style("Email: ", fg="blue"),
                          default='',
                          show_default=False)
     if email:
         if len(email) > 0 and email.count("@") != 1:
             warning("That doesn't look like an email, skipping ...")
         else:
-            _thanks_message = (
-                "\n"
-                + ("  🙏  " if _SHOW_EMOJIS else "")
-                + click.style("Thank You!", bold=True)
-            )
 
-            click.echo(_thanks_message)
+            console.print(zenml_go_thank_you_message, width=80)
 
             gc.user_metadata = {"email": email}
             identify_user({"email": email})
