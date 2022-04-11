@@ -16,9 +16,15 @@ from typing import TYPE_CHECKING, List
 from tfx.proto.orchestration import pipeline_pb2
 
 import zenml
+from zenml.logger import get_logger
+from zenml.repository import Repository
+from zenml.utils import docker_utils
+from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.stack import Stack
+
+logger = get_logger(__name__)
 
 
 class SeldonCustomDeployer:
@@ -57,3 +63,28 @@ class SeldonCustomDeployer:
         requirements.add(f"zenml=={zenml.__version__}")
 
         return sorted(requirements)
+
+    def _build_and_push_docker_image(
+        self,
+        pipeline_name: str,
+        requirements: List[str],
+        entrypoint_command: List[str],
+    ) -> str:
+        repo = Repository()
+        container_registry = repo.active_stack.container_registry
+
+        if not container_registry:
+            raise RuntimeError("Missing container registry")
+
+        registry_uri = container_registry.uri.rstrip("/")
+        image_name = f"{registry_uri}/seldon-custom-model:{pipeline_name}"
+
+        docker_utils.build_docker_image(
+            build_context_path=get_source_root_path(),
+            image_name=image_name,
+            entrypoint=" ".join(entrypoint_command),
+            requirements=set(requirements),
+            base_image=self.base_image,
+        )
+        docker_utils.push_docker_image(image_name)
+        return docker_utils.get_image_digest(image_name) or image_name

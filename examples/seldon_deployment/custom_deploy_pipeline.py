@@ -31,7 +31,7 @@ from sklearn.linear_model import LogisticRegression
 from zenml.artifacts import ModelArtifact
 from zenml.environment import Environment
 from zenml.integrations.constants import SELDON, SKLEARN, TENSORFLOW
-from zenml.integrations.seldon import ZenMLCustomModel
+from zenml.integrations.seldon.custom_deployer import ZenMLCustomModel
 from zenml.integrations.seldon.services import (
     SeldonDeploymentConfig,
     SeldonDeploymentService,

@@ -15,6 +15,7 @@
 import os
 from typing import TYPE_CHECKING, Any, Optional
 
+import requests
 from pydantic import BaseModel, Field
 
 from zenml.constants import ENV_ZENML_DEFAULT_STORE_TYPE
@@ -105,7 +106,10 @@ class ProfileConfiguration(BaseModel):
         repo = Repository(profile=self)
 
         if not self.active_stack:
-            stacks = repo.stacks
+            try:
+                stacks = repo.stacks
+            except requests.exceptions.ConnectionError:
+                stacks = None
             if stacks:
                 self.active_stack = stacks[0].name
 

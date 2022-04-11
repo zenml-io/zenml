@@ -49,6 +49,18 @@ Additional Profiles can be created by running `zenml profile create`. Every
 Profile, including the `default` profile will have a `default` local Stack
 automatically registered and set as the active Stack for that Profile.
 
+Newly created Profiles use the default `local` store back-end that saves the
+Stack configuration data on disk, in the global configuration location, as a set
+of YAML files. The store driver can be changed by running `zenml profile create`
+and passing a custom `--store-type` argument. Currently possible options are:
+
+* `local` to store in yaml files on your local filesystem
+* `sql` to store directly in a SQLAlchemy compatible database
+* `rest` to connect to a ZenML Service over the network
+
+Creating a new profile without setting this flag defaults to initializing a
+fresh `local` store in your zenml configuration directory:
+
 ```
 $ zenml profile create zenml
 Running without an active repository root.
@@ -72,13 +84,9 @@ Running with active profile: 'default' (global)
 ┗━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
 
-Newly created Profiles use the default `local` store back-end that saves the
-Stack configuration data on disk, in the global configuration location, as a set
-of YAML files. The store driver can be changed by running `zenml profile create`
-and passing a custom `--store-type` argument. The only other currently supported
-store driver is an `sql` store, which is based on SQLAlchemy and can interface
-with any SQL database service, local or remote, to store the Stack configuration
-data in a SQL database.
+Another possible store driver is an `sql` store, which is based on SQLAlchemy
+and can interface with any SQL database service, local or remote, to store the
+Stack configuration data in a SQL database.
 
 For a local sqlite back-end, the command to create a new Profile would look
 like this:
@@ -140,6 +148,49 @@ Finally, the command to create a new Profile would look like this:
 
 ```
 $ zenml profile create --store-type sql --url "mysql://zenml:password@10.11.12.13/zenml" mysql_profile
+```
+
+## Sharing Stacks over the Network using the ZenML Service
+
+You might want to exchange or collaborate on stacks with other developers or
+even just work on multiple machines. While you can always zip up or check the
+yaml based store files into version control, a more elegant option is to spin up
+a ZenML service, which provides a REST API to store and access stacks and stack
+components over the network. Starting a service locally is as simple as typing
+`zenml service up`. This should start a background daemon accessible on your
+local machine, by default on port 8000:
+
+```
+$ zenml service up
+Provisioning resources for service 'zen_service'.
+Zenml Service running at 'http://localhost:8000/'.
+```
+
+This service provides http access to the data of your currently active profile.
+You can also specify to use a different profile with `--profile=$PROFILE_NAME`,
+as well as change the port using `--port=$PORT`.
+
+This service will run in the background, and can be checked on using
+
+```sh
+zenml service status
+```
+
+and shut down again using
+
+```sh
+zenml service down
+```
+
+For more details on how this service API looks, spin up the service and visit 
+`http://$SERVICE_URL/docs` to see the OpenAPI specification.
+
+When you want to configure your ZenML project to access the data from this
+service, you must create a new profile that uses the `rest` store-type:
+
+```sh
+zenml profile create $PROFILE_NAME --type=rest --url=http://localhost:8000
+zenml profile set $PROFILE_NAME
 ```
 
 ## Working with Profiles
