@@ -412,7 +412,9 @@ zenml served-models start <UUID>
 zenml served-models stop <UUID>
 ```
 
-
+If you want to completely remove a served model you can also irreversibly delete it using:
+```bash
+zenml served-models delete <UUID>
 Administering the Stack
 -----------------------
 

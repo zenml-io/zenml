@@ -74,8 +74,7 @@ def describe_model(
     """
 
     served_model = model_deployer.find_model_server(
-        service_uuid=uuid.UUID(served_model_uuid)
-    )[0]
+        service_uuid=uuid.UUID(served_model_uuid))[0]
     if served_model:
         print_served_model_configuration(served_model, model_deployer)
         return
@@ -96,8 +95,7 @@ def get_url(
         served_model_uuid: UUID of a served model
     """
     served_model = model_deployer.find_model_server(
-        service_uuid=uuid.UUID(served_model_uuid)
-    )[0]
+        service_uuid=uuid.UUID(served_model_uuid))[0]
     if served_model:
         try:
             prediction_url = model_deployer.get_model_server_info(
@@ -138,8 +136,7 @@ def start_model_service(
     """
 
     served_model = model_deployer.find_model_server(
-        service_uuid=uuid.UUID(served_model_uuid)
-    )[0]
+        service_uuid=uuid.UUID(served_model_uuid))[0]
     if served_model:
         model_deployer.start_model_server(served_model.uuid, timeout=timeout)
         return
@@ -181,8 +178,7 @@ def stop_model_service(
     """
 
     served_model = model_deployer.find_model_server(
-        service_uuid=uuid.UUID(served_model_uuid)
-    )[0]
+        service_uuid=uuid.UUID(served_model_uuid))[0]
     if served_model:
         model_deployer.stop_model_server(
             served_model.uuid, timeout=timeout, force=force
@@ -218,7 +214,7 @@ def delete_model_service(
     timeout: int,
     force: bool,
 ) -> None:
-    """Stop a specified served model.
+    """Delete a specified served model.
     Args:
         model_deployer: Stack component that implements the interface to the
             underlying model deployer engine
@@ -226,8 +222,7 @@ def delete_model_service(
     """
 
     served_model = model_deployer.find_model_server(
-        service_uuid=uuid.UUID(served_model_uuid)
-    )[0]
+        service_uuid=uuid.UUID(served_model_uuid))[0]
     if served_model:
         model_deployer.delete_model_server(
             served_model.uuid, timeout=timeout, force=force
