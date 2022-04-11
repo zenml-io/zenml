@@ -12,27 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-AIRFLOW = "airflow"
-AWS = "aws"
-AZURE = "azure"
-AZUREML = "azureml"
-DASH = "dash"
-EVIDENTLY = "evidently"
-FACETS = "facets"
-FEAST = "feast"
-GCP = "gcp"
-GRAPHVIZ = "graphviz"
-KUBEFLOW = "kubeflow"
-MLFLOW = "mlflow"
-PLOTLY = "plotly"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-S3 = "s3"
-SAGEMAKER = "sagemaker"
-SELDON = "seldon"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-VAULT = "vault"
-WHYLOGS = "whylogs"
-VERTEX = "vertex"
-NEURAL_PROPHET = "neural_prophet"
+
+from click.testing import CliRunner
+
+from zenml.cli.feature import get_project
+
+
+def test_feature_command_fails_without_active_feature_store() -> None:
+    """Test that the feature store CLI command raises an error when no feature store is active"""
+    runner = CliRunner()
+    result = runner.invoke(get_project)
+    assert result.exit_code == 1

@@ -46,6 +46,7 @@ class StackComponentType(StrEnum):
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
     STEP_OPERATOR = "step_operator"
+    FEATURE_STORE = "feature_store"
     SECRETS_MANAGER = "secrets_manager"
     MODEL_DEPLOYER = "model_deployer"
 
