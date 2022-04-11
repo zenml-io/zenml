@@ -27,7 +27,10 @@ from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.console import console
-from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REPOSITORY_DIRECTORY_NAME
+from zenml.constants import (
+    ENV_ZENML_REPOSITORY_PATH,
+    REPOSITORY_DIRECTORY_NAME,
+)
 from zenml.enums import StackComponentType, StoreType
 from zenml.environment import Environment
 from zenml.exceptions import (
@@ -815,7 +818,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     def update_stack(self, stack: Stack) -> None:
         """Updates a stack and its components."""
-        metadata = self.stack_store.update_stack(StackWrapper.from_stack(stack))
+        metadata = self.stack_store.update_stack(
+            StackWrapper.from_stack(stack)
+        )
         metadata["store_type"] = self.active_profile.store_type.value
         track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
 

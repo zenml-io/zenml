@@ -221,6 +221,52 @@ def generate_stack_component_register_command(
     return register_stack_component_command
 
 
+def generate_stack_component_update_command(
+    component_type: StackComponentType,
+) -> Callable[[str, str, List[str]], None]:
+    """Generates an `update` command for the specific stack component type."""
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name",
+        type=str,
+        required=True,
+    )
+    @click.option(
+        "--type",
+        "-t",
+        "flavor",
+        help=f"The type of the {display_name} to update.",
+        required=False,
+        type=str,
+    )
+    @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+    def update_stack_component_command(
+        name: str, flavor: str, args: List[str]
+    ) -> None:
+        """Updates a stack component."""
+        # TODO: [LOW] Implement a way to rename an individual stack component
+        cli_utils.print_active_profile()
+        try:
+            parsed_args = cli_utils.parse_unknown_options(args)
+        except AssertionError as e:
+            cli_utils.error(str(e))
+            return
+
+        from zenml.stack.stack_component_class_registry import (
+            StackComponentClassRegistry,
+        )
+
+        component_class = StackComponentClassRegistry.get_class(
+            component_type=component_type, component_flavor=flavor
+        )
+        component = component_class(name=name, **parsed_args)
+        Repository().update_stack_component(component)
+        cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
+
+    return update_stack_component_command
+
+
 def generate_stack_component_delete_command(
     component_type: StackComponentType,
 ) -> Callable[[str], None]:
@@ -432,7 +478,9 @@ def register_single_stack_component_cli_commands(
     )(get_command)
 
     # zenml stack-component describe
-    describe_command = generate_stack_component_describe_command(component_type)
+    describe_command = generate_stack_component_describe_command(
+        component_type
+    )
     command_group.command(
         "describe",
         help=f"Show details about the (active) {singular_display_name}.",
@@ -445,7 +493,9 @@ def register_single_stack_component_cli_commands(
     )(list_command)
 
     # zenml stack-component register
-    register_command = generate_stack_component_register_command(component_type)
+    register_command = generate_stack_component_register_command(
+        component_type
+    )
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "register",
