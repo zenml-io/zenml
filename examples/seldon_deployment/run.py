@@ -133,7 +133,6 @@ def main(
     toleration: float,
     min_accuracy: float,
     secret: str,
-    stop_service: bool,
 ):
     """Run the Seldon example continuous deployment or inference pipeline
 
@@ -148,16 +147,6 @@ def main(
     deployer_step_name = "seldon_model_deployer_step"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
-
-    if stop_service:
-        services = model_deployer.find_model_server(
-            pipeline_name=deployment_pipeline_name,
-            pipeline_step_name=deployer_step_name,
-            model_name=model_name,
-        )
-        if services:
-            services[0].stop(timeout=100)
-        return
 
     if model_flavor == "tensorflow":
         seldon_implementation = "TENSORFLOW_SERVER"

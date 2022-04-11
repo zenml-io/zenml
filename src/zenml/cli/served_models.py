@@ -104,7 +104,7 @@ def get_url(
                 served_model
             ).get("PREDICTION_URL")
             declare(
-                f"  Prediction Url of Served Model {served_model_uuid} "
+                f"  Prediction URL of Served Model {served_model_uuid} "
                 f"is:\n"
                 f"  {prediction_url}"
             )
@@ -117,9 +117,18 @@ def get_url(
 
 @served_models.command("start")
 @click.argument("served_model_uuid", type=click.STRING)
+@click.option(
+    "--timeout",
+    "-t",
+    type=click.INT,
+    default=300,
+    help="Time in seconds to wait for the model to start. Set to 0 to return "
+    "immediately after telling the server to start, without waiting for it to "
+    "become fully active (default: 300s).",
+)
 @click.pass_obj
 def start_model_service(
-    model_deployer: "BaseModelDeployer", served_model_uuid: str
+    model_deployer: "BaseModelDeployer", served_model_uuid: str, timeout: int
 ) -> None:
     """Start a specified served model.
     Args:
@@ -132,7 +141,7 @@ def start_model_service(
         service_uuid=uuid.UUID(served_model_uuid)
     )[0]
     if served_model:
-        model_deployer.start_model_server(served_model.uuid)
+        model_deployer.start_model_server(served_model.uuid, timeout=timeout)
         return
 
     warning(f"No model with uuid: '{served_model_uuid}' could be found.")
@@ -141,9 +150,28 @@ def start_model_service(
 
 @served_models.command("stop")
 @click.argument("served_model_uuid", type=click.STRING)
+@click.option(
+    "--timeout",
+    "-t",
+    type=click.INT,
+    default=300,
+    help="Time in seconds to wait for the model to start. Set to 0 to return "
+    "immediately after telling the server to stop, without waiting for it to "
+    "become inactive (default: 300s).",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Force the model server to stop. This will bypass any graceful "
+    "shutdown processes and try to force the model server to stop immediately, "
+    "if possible.",
+)
 @click.pass_obj
 def stop_model_service(
-    model_deployer: "BaseModelDeployer", served_model_uuid: str
+    model_deployer: "BaseModelDeployer",
+    served_model_uuid: str,
+    timeout: int,
+    force: bool,
 ) -> None:
     """Stop a specified served model.
     Args:
@@ -156,7 +184,54 @@ def stop_model_service(
         service_uuid=uuid.UUID(served_model_uuid)
     )[0]
     if served_model:
-        model_deployer.start_model_server(served_model.uuid)
+        model_deployer.stop_model_server(
+            served_model.uuid, timeout=timeout, force=force
+        )
+        return
+
+    warning(f"No model with uuid: '{served_model_uuid}' could be found.")
+    return
+
+
+@served_models.command("delete")
+@click.argument("served_model_uuid", type=click.STRING)
+@click.option(
+    "--timeout",
+    "-t",
+    type=click.INT,
+    default=300,
+    help="Time in seconds to wait for the model to be deleted. Set to 0 to "
+    "return immediately after stopping and deleting the model server, without "
+    "waiting for it to release all allocated resources.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Force the model server to stop and delete. This will bypass any "
+    "graceful shutdown processes and try to force the model server to stop and "
+    "delete immediately, if possible.",
+)
+@click.pass_obj
+def delete_model_service(
+    model_deployer: "BaseModelDeployer",
+    served_model_uuid: str,
+    timeout: int,
+    force: bool,
+) -> None:
+    """Stop a specified served model.
+    Args:
+        model_deployer: Stack component that implements the interface to the
+            underlying model deployer engine
+        served_model_uuid: UUID of a served model
+    """
+
+    served_model = model_deployer.find_model_server(
+        service_uuid=uuid.UUID(served_model_uuid)
+    )[0]
+    if served_model:
+        model_deployer.delete_model_server(
+            served_model.uuid, timeout=timeout, force=force
+        )
         return
 
     warning(f"No model with uuid: '{served_model_uuid}' could be found.")

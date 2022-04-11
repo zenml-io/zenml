@@ -81,6 +81,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             "PREDICTION_URL": service_instance.prediction_url,
             "MODEL_URI": service_instance.config.model_uri,
             "MODEL_NAME": service_instance.config.model_name,
+            "SELDON_DEPLOYMENT": service_instance.seldon_deployment_name,
         }
 
     @staticmethod
@@ -339,7 +340,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 active.
         """
         raise NotImplementedError(
-            "Stopping Seldon Core model servers is not implemented"
+            "Starting Seldon Core model servers is not implemented"
         )
 
     def delete_model_server(

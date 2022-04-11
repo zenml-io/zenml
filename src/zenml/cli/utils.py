@@ -30,6 +30,7 @@ from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService
+from zenml.services.service_status import ServiceState
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -398,6 +399,24 @@ def print_secrets(secrets: List[str]) -> None:
     console.print(rich_table)
 
 
+def get_service_status_emoji(service: BaseService) -> str:
+    """Get the rich emoji representing the operational status of a Service.
+
+    Args:
+        service: Service to get emoji for.
+
+    Returns:
+        String representing the emoji.
+    """
+    if service.status.state == ServiceState.ACTIVE:
+        return ":white_check_mark:"
+    if service.status.state == ServiceState.INACTIVE:
+        return ":pause_button:"
+    if service.status.state == ServiceState.ERROR:
+        return ":heavy_exclamation_mark:"
+    return ":hourglass_not_done:"
+
+
 def pretty_print_model_deployer(model_services: List[BaseService]) -> None:
     """Given a list of served_models print all key value pairs associated with
     the secret
@@ -407,19 +426,13 @@ def pretty_print_model_deployer(model_services: List[BaseService]) -> None:
     """
     model_service_dicts = []
     for model_service in model_services:
-        status = (
-            "Running" * model_service.is_running
-            or "Failed" * model_service.is_failed
-            or "Stopped" * model_service.is_stopped
-        )
 
         model_service_dicts.append(
             {
+                "STATUS": get_service_status_emoji(model_service),
                 "UUID": str(model_service.uuid),
                 "PIPELINE_NAME": model_service.config.pipeline_name,
-                "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
                 "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
-                "STATUS": status,
             }
         )
 
@@ -437,12 +450,6 @@ def print_served_model_configuration(
     """
     title = f"Properties of Served Model {model_service.uuid}"
 
-    status = (
-        "Running" * model_service.is_running
-        or "Failed" * model_service.is_failed
-        or "Stopped" * model_service.is_stopped
-    )
-
     rich_table = table.Table(
         box=box.HEAVY_EDGE,
         title=title,
@@ -457,7 +464,8 @@ def print_served_model_configuration(
     served_model_info = {
         **served_model_info,
         "UUID": str(model_service.uuid),
-        "STATUS": status,
+        "STATUS": get_service_status_emoji(model_service),
+        "STATUS_MESSAGE": model_service.status.last_error,
         "PIPELINE_NAME": model_service.config.pipeline_name,
         "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
         "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
