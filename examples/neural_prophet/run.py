@@ -35,7 +35,7 @@ class NeuralProphetConfig(BaseStepConfig):
 
 @step
 def data_loader() -> Output(df_train=pd.DataFrame, df_test=pd.DataFrame):
-    """Return the renewable."""
+    """Return the renewable energy dataset as pandas dataframes."""
     sf_pv_df = pd.read_csv(DATA_LOCATION + "energy/SF_PV.csv")
     df_train, df_test = NeuralProphet().split_df(
         sf_pv_df, freq="H", valid_p=1.0 / 12
@@ -47,6 +47,7 @@ def data_loader() -> Output(df_train=pd.DataFrame, df_test=pd.DataFrame):
 def trainer(
     config: NeuralProphetConfig, df_train: pd.DataFrame, df_test: pd.DataFrame
 ) -> NeuralProphet:
+    """Trains a NeuralProphet model on the data."""
     m = NeuralProphet(
         weekly_seasonality=config.weekly_seasonality,
         daily_seasonality=config.daily_seasonality,
@@ -60,6 +61,7 @@ def trainer(
 
 @step
 def predictor(model: NeuralProphet, df: pd.DataFrame) -> pd.DataFrame:
+    """Makes predictions on a trained NeuralProphet model."""
     return model.predict(df)
 
 
