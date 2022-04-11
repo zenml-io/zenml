@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 from uuid import UUID
 
 from zenml.enums import StackComponentType
@@ -22,6 +22,8 @@ from zenml.stack import StackComponent
 
 class BaseModelDeployer(StackComponent, ABC):
     """Base class for all ZenML model deployers."""
+
+    TYPE: ClassVar[StackComponentType] = StackComponentType.MODEL_DEPLOYER
 
     @abstractmethod
     def deploy_model(

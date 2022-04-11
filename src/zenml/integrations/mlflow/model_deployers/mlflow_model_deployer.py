@@ -20,7 +20,6 @@ from zenml.constants import (
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
     LOCAL_STORES_DIRECTORY_NAME,
 )
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import MLFLOW
 from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
