@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from uuid import UUID
 
 import numpy as np
-import requests  # type: ignore [import]
+import requests
 from pydantic import Field, ValidationError
 
 from zenml import __version__
