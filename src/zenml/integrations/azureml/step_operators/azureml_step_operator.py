@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import List, Optional
+from typing import ClassVar, List, Optional
 
 from azureml.core import (
     ComputeTarget,
@@ -30,7 +30,6 @@ from azureml.core.conda_dependencies import CondaDependencies
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH
-from zenml.enums import StackComponentType, StepOperatorFlavor
 from zenml.environment import Environment as ZenMLEnvironment
 from zenml.io import fileio
 from zenml.stack.stack_component_class_registry import (
@@ -41,14 +40,11 @@ from zenml.utils.docker_utils import CONTAINER_ZENML_CONFIG_DIR
 from zenml.utils.source_utils import get_source_root_path
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.STEP_OPERATOR,
-    component_flavor=StepOperatorFlavor.AZUREML,
-)
+@register_stack_component_class
 class AzureMLStepOperator(BaseStepOperator):
     """Step operator to run a step on AzureML.
 
-    This class defines code that can setup an AzureML environment and run the
+    This class defines code that can set up an AzureML environment and run the
     ZenML entrypoint command in it.
 
     Attributes:
@@ -69,8 +65,6 @@ class AzureMLStepOperator(BaseStepOperator):
         service_principal_password: Password for the service principal.
     """
 
-    supports_local_execution = True
-    supports_remote_execution = True
     subscription_id: str
     resource_group: str
     workspace_name: str
@@ -86,10 +80,8 @@ class AzureMLStepOperator(BaseStepOperator):
     service_principal_id: Optional[str] = None
     service_principal_password: Optional[str] = None
 
-    @property
-    def flavor(self) -> StepOperatorFlavor:
-        """The step operator flavor."""
-        return StepOperatorFlavor.AZUREML
+    # Class Configuration
+    FLAVOR: ClassVar[str] = "azureml"
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:
         if (
@@ -224,7 +216,7 @@ class AzureMLStepOperator(BaseStepOperator):
 
         finally:
             # Clean up the temporary build files
-            fileio.rm_dir(config_path)
+            fileio.rmtree(config_path)
 
         run.display_name = run_name
         run.wait_for_completion(show_output=True)

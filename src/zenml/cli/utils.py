@@ -171,9 +171,7 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    config: Dict[StackComponentType, str],
-    active: bool,
-    stack_name: str,
+    config: Dict[StackComponentType, str], active: bool, stack_name: str
 ) -> None:
     """Prints the configuration options of a stack."""
     stack_caption = f"'{stack_name}' stack"
@@ -187,9 +185,8 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE")
     rich_table.add_column("COMPONENT_NAME")
-    items = ([typ.value, name] for typ, name in config.items())
-    for item in items:
-        rich_table.add_row(*item)
+    for component_type, name in config.items():
+        rich_table.add_row(component_type.value, name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -202,7 +199,7 @@ def print_stack_component_configuration(
     component: StackComponent, display_name: str, active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component."""
-    title = f"{component.type.value.upper()} Component Configuration"
+    title = f"{component.TYPE.value.upper()} Component Configuration"
     if active_status:
         title += " (ACTIVE)"
     rich_table = table.Table(

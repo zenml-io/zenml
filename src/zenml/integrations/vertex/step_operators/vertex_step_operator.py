@@ -16,7 +16,7 @@ https://github.com/tensorflow/tfx/blob/master/tfx/extensions/
 google_cloud_ai_platform/training_clients.py"""
 
 import time
-from typing import List, Optional, Tuple
+from typing import ClassVar, List, Optional, Tuple
 
 from google.auth import credentials as auth_credentials
 from google.auth import default, load_credentials_from_file
@@ -24,12 +24,7 @@ from google.cloud import aiplatform
 from pydantic import validator as property_validator
 
 from zenml import __version__
-from zenml.enums import (
-    ArtifactStoreFlavor,
-    OrchestratorFlavor,
-    StackComponentType,
-    StepOperatorFlavor,
-)
+from zenml.enums import StackComponentType
 from zenml.integrations.vertex.constants import (
     CONNECTION_ERROR_RETRY_LIMIT,
     POLLING_INTERVAL_IN_SECONDS,
@@ -50,30 +45,27 @@ from zenml.utils.source_utils import get_source_root_path
 logger = get_logger(__name__)
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.STEP_OPERATOR,
-    component_flavor=StepOperatorFlavor.VERTEX,
-)
+@register_stack_component_class
 class VertexStepOperator(BaseStepOperator):
     """Step operator to run a step on Vertex AI.
 
-    This class defines code that can setup a Vertex AI environment and run the
+    This class defines code that can set up a Vertex AI environment and run the
     ZenML entrypoint command in it.
 
     Attributes:
         region: Region name, e.g., `europe-west1`.
-        project: [Optional] GCP project name. If left None, inferred from the environment.
+        project: [Optional] GCP project name. If left None, inferred from the
+            environment.
         accelerator_type: [Optional] Accelerator type from list: https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#AcceleratorType
-        accelerator_count: [Optional] Defines number of accelerators to be used for the job.
+        accelerator_count: [Optional] Defines number of accelerators to be
+            used for the job.
         machine_type: [Optional] Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
         base_image: [Optional] Base image for building the custom job container.
         encryption_spec_key_name: [Optional]: Encryption spec key name.
-        service_account_path: [Optional]: Path to service account file specifiying credentials of the GCP user. If not provided, falls back
-        to Default Credentials.
+        service_account_path: [Optional]: Path to service account file
+            specifying credentials of the GCP user. If not provided, falls back
+            to Default Credentials.
     """
-
-    supports_local_execution = True
-    supports_remote_execution = True
 
     region: str
     project: Optional[str] = None
@@ -90,10 +82,8 @@ class VertexStepOperator(BaseStepOperator):
     # environment default credentials used if not set
     service_account_path: Optional[str] = None
 
-    @property
-    def flavor(self) -> StepOperatorFlavor:
-        """The step operator flavor."""
-        return StepOperatorFlavor.VERTEX
+    # Class configuration
+    FLAVOR: ClassVar[str] = "vertex"
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -102,8 +92,8 @@ class VertexStepOperator(BaseStepOperator):
         def _ensure_local_orchestrator(stack: Stack) -> bool:
             # For now this only works on local orchestrator and GCP artifact
             #  store
-            return (stack.orchestrator.flavor == OrchestratorFlavor.LOCAL) and (
-                stack.artifact_store.flavor == ArtifactStoreFlavor.GCP
+            return (stack.orchestrator.FLAVOR == "local") and (
+                stack.artifact_store.FLAVOR == "gcp"
             )
 
         return StackValidator(
@@ -244,23 +234,24 @@ class VertexStepOperator(BaseStepOperator):
 
         # Step 4: Monitor the job
 
-        # Monitors the long-running operation by polling the job state periodically,
-        # and retries the polling when a transient connectivity issue is encountered.
+        # Monitors the long-running operation by polling the job state
+        # periodically, and retries the polling when a transient connectivity
+        # issue is encountered.
         #
         # Long-running operation monitoring:
         #   The possible states of "get job" response can be found at
         #   https://cloud.google.com/ai-platform/training/docs/reference/rest/v1/projects.jobs#State
-        #   where SUCCEEDED/FAILED/CANCELLED are considered to be final states.
-        #   The following logic will keep polling the state of the job until the job
-        #   enters a final state.
+        #   where SUCCEEDED/FAILED/CANCELED are considered to be final states.
+        #   The following logic will keep polling the state of the job until
+        #   the job enters a final state.
         #
-        # During the polling, if a connection error was encountered, the GET request
-        # will be retried by recreating the Python API client to refresh the lifecycle
-        # of the connection being used. See
+        # During the polling, if a connection error was encountered, the GET
+        # request will be retried by recreating the Python API client to
+        # refresh the lifecycle of the connection being used. See
         # https://github.com/googleapis/google-api-python-client/issues/218
         # for a detailed description of the problem. If the error persists for
-        # _CONNECTION_ERROR_RETRY_LIMIT consecutive attempts, the function will raise
-        # ConnectionError.
+        # _CONNECTION_ERROR_RETRY_LIMIT consecutive attempts, the function
+        # will raise ConnectionError.
         retry_count = 0
         job_id = response.name
 
@@ -274,8 +265,8 @@ class VertexStepOperator(BaseStepOperator):
                 if retry_count < CONNECTION_ERROR_RETRY_LIMIT:
                     retry_count += 1
                     logger.warning(
-                        "ConnectionError (%s) encountered when polling job: %s. Trying to "
-                        "recreate the API client.",
+                        "ConnectionError (%s) encountered when polling job: "
+                        "%s. Trying to recreate the API client.",
                         err,
                         job_id,
                     )

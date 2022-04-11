@@ -29,7 +29,7 @@ from typing import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
-from zenml.io import fileio
+from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
@@ -178,7 +178,7 @@ class Stack:
             "local_stores",
             str(artifact_store_uuid),
         )
-        fileio.create_dir_recursive_if_not_exists(artifact_store_path)
+        utils.create_dir_recursive_if_not_exists(artifact_store_path)
         artifact_store = LocalArtifactStore(
             name="default",
             uuid=artifact_store_uuid,
@@ -201,7 +201,7 @@ class Stack:
     def components(self) -> Dict[StackComponentType, "StackComponent"]:
         """All components of the stack."""
         return {
-            component.type: component
+            component.TYPE: component
             for component in [
                 self.orchestrator,
                 self.metadata_store,
@@ -297,7 +297,7 @@ class Stack:
         requirements = [
             component.requirements
             for component in self.components.values()
-            if component.type not in exclude_components
+            if component.TYPE not in exclude_components
         ]
         return set.union(*requirements) if requirements else set()
 
@@ -358,9 +358,24 @@ class Stack:
         )
         start_time = time.time()
 
+        original_cache_boolean = pipeline.enable_cache
+        if "enable_cache" in runtime_configuration:
+            logger.info(
+                "Runtime configuration overwriting the pipeline cache settings"
+                " to enable_cache=`%s` for this pipeline run. The default "
+                "caching strategy is retained for future pipeline runs.",
+                runtime_configuration["enable_cache"],
+            )
+            pipeline.enable_cache = runtime_configuration.get("enable_cache")
+
         return_value = self.orchestrator.run_pipeline(
             pipeline, stack=self, runtime_configuration=runtime_configuration
         )
+
+        # Put pipeline level cache policy back to make sure the next runs
+        #  default to that policy again in case the runtime configuration
+        #  is not set explicitly
+        pipeline.enable_cache = original_cache_boolean
 
         run_duration = time.time() - start_time
         logger.info(

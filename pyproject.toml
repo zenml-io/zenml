@@ -61,8 +61,11 @@ distro = "^1.6.0"
 rich = {extras = ["jupyter"], version = "^12.0.0"}
 httplib2 = "<0.20,>=0.19.1"
 pyparsing = "<3,>=2.4.0"
-sqlmodel = "0.0.6"
+sqlmodel = "~0.0.6"
+fastapi = "~0.75.0"
+uvicorn = { extras = ["standard"], version = "~0.17.5" }
 semver = "^2.13.0"
+markupsafe = "1.1.1"
 
 
 [tool.poetry.dev-dependencies]
@@ -79,7 +82,11 @@ pyment = "^0.3.3"
 tox = "^3.24.3"
 hypothesis = "^6.23.0"
 typing-extensions = ">=3.7.4"
+
+# pytest dev dependencies
 pytest-randomly = "^3.10.1"
+pytest-xdist = "^2.5.0"
+pytest-clarity = "^1.0.1"
 
 # mkdocs including plugins
 mkdocs="^1.2.3"
@@ -100,6 +107,7 @@ types-PyMySQL = "^1.0.4"
 types-python-dateutil = "^2.8.2"
 types-python-slugify = "^5.0.2"
 types-PyYAML = "^6.0.0"
+types-requests = "^2.27.11"
 types-setuptools = "^57.4.2"
 types-six = "^1.16.2"
 types-termcolor = "^1.1.2"

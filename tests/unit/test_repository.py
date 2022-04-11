@@ -27,7 +27,7 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
-from zenml.io import fileio
+from zenml.io import fileio, utils
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.repository import Repository
@@ -77,7 +77,7 @@ def test_initializing_repo_creates_directory_and_uses_default_stack(
     """Tests that repo initialization creates a .zen directory and uses the
     default local stack."""
     Repository.initialize(tmp_path)
-    assert fileio.file_exists(str(tmp_path / ".zen"))
+    assert fileio.exists(str(tmp_path / ".zen"))
 
     repo = Repository()
     # switch to the new repo root
@@ -112,7 +112,7 @@ def test_finding_repository_directory_with_explicit_path(tmp_path, clean_repo):
     """Tests that a repository can be found using an explicit path, an
     environment variable and the current working directory."""
     subdirectory_path = tmp_path / "some_other_directory"
-    fileio.create_dir_recursive_if_not_exists(str(subdirectory_path))
+    utils.create_dir_recursive_if_not_exists(str(subdirectory_path))
     os.chdir(str(subdirectory_path))
 
     # no repo exists and explicit path passed
@@ -166,7 +166,7 @@ def test_finding_repository_directory_with_explicit_path(tmp_path, clean_repo):
 def test_repo_without_configuration_file_falls_back_to_empty_config(tmp_path):
     """Tests that the repo uses an empty configuration if the config file was
     deleted."""
-    fileio.create_dir_recursive_if_not_exists(str(tmp_path / ".zen"))
+    utils.create_dir_recursive_if_not_exists(str(tmp_path / ".zen"))
     repo = Repository(tmp_path)
 
     assert len(repo.stacks) == 1
@@ -352,7 +352,7 @@ def test_getting_a_stack_component(clean_repo):
 
     with does_not_raise():
         registered_component = clean_repo.get_stack_component(
-            component_type=component.type, name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
     assert component == registered_component
@@ -403,7 +403,7 @@ def test_registering_a_new_stack_component(clean_repo):
 
     with does_not_raise():
         registered_artifact_store = new_repo.get_stack_component(
-            component_type=new_artifact_store.type,
+            component_type=new_artifact_store.TYPE,
             name=new_artifact_store.name,
         )
 
@@ -416,19 +416,19 @@ def test_deregistering_a_stack_component(clean_repo):
     clean_repo.register_stack_component(component)
 
     clean_repo.deregister_stack_component(
-        component_type=component.type, name=component.name
+        component_type=component.TYPE, name=component.name
     )
 
     with pytest.raises(KeyError):
         clean_repo.get_stack_component(
-            component_type=component.type, name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
     new_repo = Repository(clean_repo.root)
 
     with pytest.raises(KeyError):
         new_repo.get_stack_component(
-            component_type=component.type, name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
 
@@ -441,7 +441,7 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
 
     with pytest.raises(ValueError):
         clean_repo.deregister_stack_component(
-            component_type=component.type, name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
 

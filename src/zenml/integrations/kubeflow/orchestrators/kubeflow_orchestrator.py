@@ -14,7 +14,7 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
 import kfp
 import urllib3
@@ -22,7 +22,7 @@ from kfp_server_api.exceptions import ApiException
 
 import zenml.io.utils
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.enums import OrchestratorFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
@@ -53,10 +53,7 @@ logger = get_logger(__name__)
 DEFAULT_KFP_UI_PORT = 8080
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.ORCHESTRATOR,
-    component_flavor=OrchestratorFlavor.KUBEFLOW,
-)
+@register_stack_component_class
 class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow.
 
@@ -82,13 +79,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubernetes_context: Optional[str] = None
     synchronous = False
-    supports_local_execution = True
-    supports_remote_execution = True
 
-    @property
-    def flavor(self) -> OrchestratorFlavor:
-        """The orchestrator flavor."""
-        return OrchestratorFlavor.KUBEFLOW
+    # Class Configuration
+    FLAVOR: ClassVar[str] = "kubeflow"
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -184,7 +177,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
-        fileio.make_dirs(self.pipeline_directory)
+        fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
             self.pipeline_directory, f"{pipeline.name}.yaml"
         )
@@ -399,7 +392,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
         logger.info("Provisioning local Kubeflow Pipelines deployment...")
-        fileio.make_dirs(self.root_directory)
+        fileio.makedirs(self.root_directory)
         container_registry_port = int(container_registry.uri.split(":")[-1])
         container_registry_name = self._get_k3d_registry_name(
             port=container_registry_port
@@ -451,7 +444,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             pid_file_path=self._pid_file_path
         )
 
-        if fileio.file_exists(self.log_file):
+        if fileio.exists(self.log_file):
             fileio.remove(self.log_file)
 
         logger.info("Local kubeflow pipelines deployment deprovisioned.")
@@ -508,14 +501,19 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         Raises:
             ProvisioningError: If the stack has no secrets manager."""
-
+        environment_vars: Dict[str, str] = {}
         secret_manager = Repository().active_stack.secrets_manager
-        if not secret_manager:
+        if secrets and secret_manager:
+            for secret in secrets:
+                secret_schema = secret_manager.get_secret(secret)
+                environment_vars.update(secret_schema.content)
+        elif secrets and not secret_manager:
             raise ProvisioningError(
                 "Unable to provision local Kubeflow Pipelines deployment: "
-                "Missing secrets manager in current stack."
+                f"You passed in the following secrets: { ', '.join(secrets) }, "
+                "however, no secrets manager is registered for the current stack."
             )
-        environment_vars: Dict[str, str] = {}
-        for secret in secrets:
-            environment_vars.update(secret_manager.get_secret(secret))
+        else:
+            # No secrets provided by the user.
+            pass
         return environment_vars

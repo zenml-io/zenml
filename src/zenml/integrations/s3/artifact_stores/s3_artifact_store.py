@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,53 +12,60 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-""" Plugin which is created to add Google Cloud Store support to ZenML.
-It inherits from the base Filesystem created by TFX and overwrites the
-corresponding functions thanks to gcsfs.
-"""
 
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 
-import gcsfs
-from tfx.dsl.io.fileio import NotFoundError
+import s3fs
 
-from zenml.io.fileio import convert_to_str
-from zenml.io.filesystem import Filesystem, PathType
+from zenml.artifact_stores import BaseArtifactStore
+from zenml.io.utils import convert_to_str
+from zenml.stack.stack_component_class_registry import (
+    register_stack_component_class,
+)
+
+PathType = Union[bytes, str]
 
 
-class ZenGCS(Filesystem):
-    """Filesystem that delegates to Google Cloud Store using gcsfs.
+@register_stack_component_class
+class S3ArtifactStore(BaseArtifactStore):
+    """Artifact Store for Amazon S3 based artifacts."""
 
-    **Note**: To allow TFX to check for various error conditions, we need to
-    raise their custom `NotFoundError` instead of the builtin python
-    FileNotFoundError."""
-
-    SUPPORTED_SCHEMES = ["gs://"]
-    fs: gcsfs.GCSFileSystem = None
+    # Class variables
+    FLAVOR: ClassVar[str] = "s3"
+    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
+    FILESYSTEM: ClassVar[s3fs.S3FileSystem] = None
 
     @classmethod
     def _ensure_filesystem_set(cls) -> None:
         """Ensures that the filesystem is set."""
-        if ZenGCS.fs is None:
-            ZenGCS.fs = gcsfs.GCSFileSystem()
+        if cls.FILESYSTEM is None:
+            cls.FILESYSTEM = s3fs.S3FileSystem()
 
     @staticmethod
     def open(path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
         Args:
             path: Path of the file to open.
-            mode: Mode in which to open the file. Currently only
+            mode: Mode in which to open the file. Currently, only
                 'rb' and 'wb' to read and write binary files are supported.
         """
-        ZenGCS._ensure_filesystem_set()
-
-        try:
-            return ZenGCS.fs.open(path=path, mode=mode)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        S3ArtifactStore._ensure_filesystem_set()
+        return S3ArtifactStore.FILESYSTEM.open(path=path, mode=mode)
 
     @staticmethod
-    def copy(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
         """Copy a file.
         Args:
             src: The path to copy from.
@@ -71,8 +78,8 @@ class ZenGCS(Filesystem):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        ZenGCS._ensure_filesystem_set()
-        if not overwrite and ZenGCS.fs.exists(dst):
+        S3ArtifactStore._ensure_filesystem_set()
+        if not overwrite and S3ArtifactStore.FILESYSTEM.exists(dst):
             raise FileExistsError(
                 f"Unable to copy to destination '{convert_to_str(dst)}', "
                 f"file already exists. Set `overwrite=True` to copy anyway."
@@ -80,16 +87,13 @@ class ZenGCS(Filesystem):
 
         # TODO [ENG-151]: Check if it works with overwrite=True or if we need to
         #  manually remove it first
-        try:
-            ZenGCS.fs.copy(path1=src, path2=dst)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        S3ArtifactStore.FILESYSTEM.copy(path1=src, path2=dst)
 
     @staticmethod
     def exists(path: PathType) -> bool:
         """Check whether a path exists."""
-        ZenGCS._ensure_filesystem_set()
-        return ZenGCS.fs.exists(path=path)  # type: ignore[no-any-return]
+        S3ArtifactStore._ensure_filesystem_set()
+        return S3ArtifactStore.FILESYSTEM.exists(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
@@ -105,45 +109,61 @@ class ZenGCS(Filesystem):
         Returns:
             A list of paths that match the given glob pattern.
         """
-        ZenGCS._ensure_filesystem_set()
-        return ZenGCS.fs.glob(path=pattern)  # type: ignore[no-any-return]
+        S3ArtifactStore._ensure_filesystem_set()
+        return [
+            f"s3://{path}"
+            for path in S3ArtifactStore.FILESYSTEM.glob(path=pattern)
+        ]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
-        ZenGCS._ensure_filesystem_set()
-        return ZenGCS.fs.isdir(path=path)  # type: ignore[no-any-return]
+        S3ArtifactStore._ensure_filesystem_set()
+        return S3ArtifactStore.FILESYSTEM.isdir(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
-        ZenGCS._ensure_filesystem_set()
-        try:
-            return ZenGCS.fs.listdir(path=path)  # type: ignore[no-any-return]
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        S3ArtifactStore._ensure_filesystem_set()
+        # remove s3 prefix if given, so we can remove the directory later as
+        # this method is expected to only return filenames
+        path = convert_to_str(path)
+        if path.startswith("s3://"):
+            path = path[5:]
+
+        def _extract_basename(file_dict: Dict[str, Any]) -> str:
+            """Extracts the basename from a file info dict returned by the S3
+            filesystem."""
+            file_path = cast(str, file_dict["Key"])
+            base_name = file_path[len(path) :]
+            return base_name.lstrip("/")
+
+        return [
+            _extract_basename(dict_)
+            for dict_ in S3ArtifactStore.FILESYSTEM.listdir(path=path)
+            # s3fs.listdir also returns the root directory, so we filter
+            # it out here
+            if _extract_basename(dict_)
+        ]
 
     @staticmethod
     def makedirs(path: PathType) -> None:
         """Create a directory at the given path. If needed also
         create missing parent directories."""
-        ZenGCS._ensure_filesystem_set()
-        ZenGCS.fs.makedirs(path=path, exist_ok=True)
+        S3ArtifactStore._ensure_filesystem_set()
+        S3ArtifactStore.FILESYSTEM.makedirs(path=path, exist_ok=True)
 
     @staticmethod
     def mkdir(path: PathType) -> None:
         """Create a directory at the given path."""
-        ZenGCS._ensure_filesystem_set()
-        ZenGCS.fs.makedir(path=path)
+        S3ArtifactStore._ensure_filesystem_set()
+        S3ArtifactStore.FILESYSTEM.makedir(path=path)
 
     @staticmethod
     def remove(path: PathType) -> None:
         """Remove the file at the given path."""
-        ZenGCS._ensure_filesystem_set()
-        try:
-            ZenGCS.fs.rm_file(path=path)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        S3ArtifactStore._ensure_filesystem_set()
+        S3ArtifactStore.FILESYSTEM.rm_file(path=path)
 
     @staticmethod
     def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
@@ -159,8 +179,8 @@ class ZenGCS(Filesystem):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        ZenGCS._ensure_filesystem_set()
-        if not overwrite and ZenGCS.fs.exists(dst):
+        S3ArtifactStore._ensure_filesystem_set()
+        if not overwrite and S3ArtifactStore.FILESYSTEM.exists(dst):
             raise FileExistsError(
                 f"Unable to rename file to '{convert_to_str(dst)}', "
                 f"file already exists. Set `overwrite=True` to rename anyway."
@@ -168,28 +188,19 @@ class ZenGCS(Filesystem):
 
         # TODO [ENG-152]: Check if it works with overwrite=True or if we need
         #  to manually remove it first
-        try:
-            ZenGCS.fs.rename(path1=src, path2=dst)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        S3ArtifactStore.FILESYSTEM.rename(path1=src, path2=dst)
 
     @staticmethod
     def rmtree(path: PathType) -> None:
         """Remove the given directory."""
-        ZenGCS._ensure_filesystem_set()
-        try:
-            ZenGCS.fs.delete(path=path, recursive=True)
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        S3ArtifactStore._ensure_filesystem_set()
+        S3ArtifactStore.FILESYSTEM.delete(path=path, recursive=True)
 
     @staticmethod
     def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
-        ZenGCS._ensure_filesystem_set()
-        try:
-            return ZenGCS.fs.stat(path=path)  # type: ignore[no-any-return]
-        except FileNotFoundError as e:
-            raise NotFoundError() from e
+        S3ArtifactStore._ensure_filesystem_set()
+        return S3ArtifactStore.FILESYSTEM.stat(path=path)  # type: ignore[no-any-return]
 
     @staticmethod
     def walk(
@@ -207,6 +218,9 @@ class ZenGCS(Filesystem):
             directory path, a list of directories inside the current directory
             and a list of files inside the current directory.
         """
-        ZenGCS._ensure_filesystem_set()
+        S3ArtifactStore._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
-        return ZenGCS.fs.walk(path=top)  # type: ignore[no-any-return]
+        for directory, subdirectories, files in S3ArtifactStore.FILESYSTEM.walk(
+            path=top
+        ):
+            yield f"s3://{directory}", subdirectories, files

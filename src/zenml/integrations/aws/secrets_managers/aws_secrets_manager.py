@@ -16,7 +16,6 @@ from typing import Any, ClassVar, Dict, List
 
 import boto3 as boto3  # type: ignore
 
-from zenml.enums import SecretsManagerFlavor, StackComponentType
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -48,17 +47,14 @@ def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
     return json.dumps(secret_contents)
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.SECRETS_MANAGER,
-    component_flavor=SecretsManagerFlavor.AWS,
-)
+@register_stack_component_class
 class AWSSecretsManager(BaseSecretsManager):
     """Class to interact with the AWS secrets manager."""
 
-    supports_local_execution: bool = True
-    supports_remote_execution: bool = True
     region_name: str = DEFAULT_AWS_REGION
 
+    # Class configuration
+    FLAVOR: ClassVar[str] = "aws"
     CLIENT: ClassVar[Any] = None
 
     @classmethod
@@ -69,22 +65,6 @@ class AWSSecretsManager(BaseSecretsManager):
             cls.CLIENT = session.client(
                 service_name="secretsmanager", region_name=region_name
             )
-
-    @property
-    def flavor(self) -> SecretsManagerFlavor:
-        """The secrets manager flavor.
-
-        Returns:
-            The secrets manager flavor."""
-        return SecretsManagerFlavor.AWS
-
-    @property
-    def type(self) -> StackComponentType:
-        """The secrets manager type.
-
-        Returns:
-            The secrets manager type."""
-        return StackComponentType.SECRETS_MANAGER
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
