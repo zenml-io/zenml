@@ -49,6 +49,7 @@ class SeldonDeploymentMetadata(BaseModel):
         # Ignore extra attributes from the CRD that are not reflected here
         extra = "ignore"
 
+
 class SeldonDeploymentParameters(BaseModel):
     """Parameters for a Seldon Deployment.
 
@@ -69,6 +70,7 @@ class SeldonDeploymentParameters(BaseModel):
 
         # validate attribute assignments
         validate_assignment = True
+
 
 class SeldonDeploymentPredictiveUnitType(StrEnum):
     """Predictive unit types for a Seldon Deployment."""

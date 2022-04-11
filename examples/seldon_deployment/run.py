@@ -187,7 +187,13 @@ def main(
                     namespace=namespace,
                     base_url=base_url,
                     timeout=120,
-                    parameters=[{"name": "method", "type": "STRING", "value": "predict_proba"},],
+                    parameters=[
+                        {
+                            "name": "method",
+                            "type": "STRING",
+                            "value": "predict_proba",
+                        },
+                    ],
                 )
             ),
         )

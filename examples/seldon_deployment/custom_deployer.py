@@ -16,20 +16,22 @@ import logging
 import os
 from asyncio.log import logger
 from typing import Dict, Iterable, List, Optional, Union, cast
-import joblib
 
+import joblib
 import numpy as np  # type: ignore [import]
 import pandas as pd
 import requests  # type: ignore [import]
+import seldon_core
 import tensorflow as tf  # type: ignore [import]
 from pydantic import ValidationError  # type: ignore [import]
 from rich import print
 from sklearn.base import ClassifierMixin
 from sklearn.linear_model import LogisticRegression
-import seldon_core
+
 from zenml.artifacts import ModelArtifact
 from zenml.environment import Environment
 from zenml.integrations.constants import SELDON, SKLEARN, TENSORFLOW
+from zenml.integrations.seldon import ZenMLCustomModel
 from zenml.integrations.seldon.services import (
     SeldonDeploymentConfig,
     SeldonDeploymentService,
@@ -137,32 +139,41 @@ class SeldonDeployerConfig(BaseStepConfig):
     step_name: Optional[str]
 
 
-def load(self, model_uri: str) -> None:
+def load(zenml_custom_model: ZenMLCustomModel, model_uri: str) -> None:
     print("load")
     try:
-        model_file = os.path.join(seldon_core.Storage.download(model_uri), "model.joblib")
-        self.model = joblib.load(model_file)
-        self.ready = True
+        model_file = os.path.join(
+            seldon_core.Storage.download(model_uri), "model.joblib"
+        )
+        zenml_custom_model.model = joblib.load(model_file)
+        zenml_custom_model.ready = True
     except Exception as ex:
         logging.exception("Exception during predict", ex)
-        self.ready = False
+        zenml_custom_model.ready = False
 
-def predict(self, X: np.ndarray, names: Iterable[str], meta: Dict = None) -> Union[np.ndarray, List, str, bytes]:
+
+def predict(
+    zenml_custom_model: ZenMLCustomModel,
+    X: np.ndarray,
+    names: Iterable[str],
+    meta: Dict = None,
+) -> Union[np.ndarray, List, str, bytes]:
     """
-        Return a prediction.
+    Return a prediction.
 
-        Parameters
-        ----------
-        X : array-like
-        feature_names : array of feature names (optional)
+    Parameters
+    ----------
+    X : array-like
+    feature_names : array of feature names (optional)
     """
 
     try:
         logger.info("Calling predict_proba")
-        result = self.model.predict_proba(X)
+        result = zenml_custom_model.model.predict_proba(X)
         return result
     except Exception as ex:
         logging.exception("Exception during predict", ex)
+
 
 @step(enable_cache=True)
 def seldon_model_deployer(
@@ -365,6 +376,7 @@ def dynamic_importer() -> Output(data=np.ndarray):
     """Downloads the latest data from a mock API."""
     data = get_data_from_api()
     return data
+
 
 @step
 def sklearn_predict_preprocessor(input: np.ndarray) -> Output(data=np.ndarray):

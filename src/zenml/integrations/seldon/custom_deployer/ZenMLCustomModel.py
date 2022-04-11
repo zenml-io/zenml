@@ -1,13 +1,17 @@
 import logging
-from typing import Dict, List, Optional, Union, Iterable
+from typing import Dict, List, Optional, Union
+
 import numpy as np
+
 
 class ZenMLCustomModel(object):
     """
     Model template. You can load your model parameters in __init__ from a location accessible at runtime
     """
 
-    def __init__(self, load_func: str, predict_func: str, model_uri: str = None):
+    def __init__(
+        self, load_func: str, predict_func: str, model_uri: str = None
+    ):
         """
         Add any initialization parameters. These will be passed at runtime from the graph definition parameters defined in your seldondeployment kubernetes resource manifest.
 
@@ -17,6 +21,7 @@ class ZenMLCustomModel(object):
         """
 
         from zenml.utils.source_utils import load_source_path_class
+
         self.load_func = load_source_path_class(load_func)
         self.predict_func = load_source_path_class(predict_func)
         self.model_uri = model_uri
@@ -24,16 +29,15 @@ class ZenMLCustomModel(object):
         self.ready = False
         self.load(self.model_uri)
 
-    def load(self, model_uri: str):
+    def load(self):
         """
         Load the model from the given path.
         """
         try:
-            self.model = self.load_func(self, model_uri)
+            self.model = self.load_func(self, self.model_uri)
             self.ready = True
         except Exception as ex:
             logging.exception("Exception during custom model loading", ex)
-        
 
     def predict(
         self,
@@ -51,7 +55,7 @@ class ZenMLCustomModel(object):
         feature_names : array of feature names (optional)
         """
         if not self.ready:
-            self.load(self.model_uri)
+            self.load(self, self.model_uri)
         else:
             pass
         return self.predict_func(self, X, names, meta)
