@@ -59,7 +59,7 @@ def trainer(
 
 
 @step
-def predicter(model: NeuralProphet, df: pd.DataFrame) -> pd.DataFrame:
+def predictor(model: NeuralProphet, df: pd.DataFrame) -> pd.DataFrame:
     return model.predict(df)
 
 
@@ -67,23 +67,23 @@ def predicter(model: NeuralProphet, df: pd.DataFrame) -> pd.DataFrame:
 def neural_prophet_pipeline(
     data_loader,
     trainer,
-    predicter,
+    predictor,
 ):
     """Links all the steps together in a pipeline"""
     df_train, df_test = data_loader()
     m = trainer(df_train, df_test)
-    predicter(m, df_train)
+    predictor(m, df_train)
 
 
 if __name__ == "__main__":
 
     pipeline = neural_prophet_pipeline(
-        data_loader=data_loader(), trainer=trainer(), predicter=predicter()
+        data_loader=data_loader(), trainer=trainer(), predictor=predictor()
     )
 
     pipeline.run()
 
     print(
         "Pipeline has run and model is trained. Please run the "
-        "`post_execution.ipynb notebook to inspect the results."
+        "`post_execution.ipynb` notebook to inspect the results."
     )
