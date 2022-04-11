@@ -36,6 +36,7 @@ class MlflowIntegration(Integration):
         from zenml.integrations.mlflow.mlflow_environment import (
             MLFlowEnvironment,
         )
+        from zenml.integrations.mlflow import model_deployers
 
         # Create and activate the global MLflow environment
         MLFlowEnvironment().activate()
