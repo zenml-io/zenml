@@ -84,17 +84,18 @@ def stack() -> None:
     required=False,
 )
 @click.option(
-<<<<<<< HEAD
     "-f",
     "--feature_store",
     "feature_store_name",
     help="Name of the feature store for this stack.",
-=======
+    type=str,
+    required=False,
+)
+@click.option(
     "-d",
     "--model_deployer",
     "model_deployer_name",
     help="Name of the model deployer for this stack.",
->>>>>>> origin/develop
     type=str,
     required=False,
 )
@@ -106,11 +107,8 @@ def register_stack(
     container_registry_name: Optional[str] = None,
     secrets_manager_name: Optional[str] = None,
     step_operator_name: Optional[str] = None,
-<<<<<<< HEAD
     feature_store_name: Optional[str] = None,
-=======
     model_deployer_name: Optional[str] = None,
->>>>>>> origin/develop
 ) -> None:
     """Register a stack."""
     cli_utils.print_active_profile()
@@ -154,21 +152,19 @@ def register_stack(
                 name=step_operator_name,
             )
 
-<<<<<<< HEAD
         if feature_store_name:
             stack_components[
                 StackComponentType.FEATURE_STORE
             ] = repo.get_stack_component(
                 StackComponentType.FEATURE_STORE,
                 name=feature_store_name,
-=======
+            )
         if model_deployer_name:
             stack_components[
                 StackComponentType.MODEL_DEPLOYER
             ] = repo.get_stack_component(
                 StackComponentType.MODEL_DEPLOYER,
                 name=model_deployer_name,
->>>>>>> origin/develop
             )
 
         stack_ = Stack.from_components(

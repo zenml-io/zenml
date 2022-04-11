@@ -275,6 +275,7 @@ class Stack:
     def feature_store(self) -> Optional["BaseFeatureStore"]:
         """The feature store of the stack."""
         return self._feature_store
+
     def model_deployer(self) -> Optional["BaseModelDeployer"]:
         """The model deployer of the stack."""
         return self._model_deployer
