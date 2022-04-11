@@ -48,6 +48,7 @@ class StackComponentType(StrEnum):
     STEP_OPERATOR = "step_operator"
     FEATURE_STORE = "feature_store"
     SECRETS_MANAGER = "secrets_manager"
+    MODEL_DEPLOYER = "model_deployer"
 
     @property
     def plural(self) -> str:

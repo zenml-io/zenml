@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
     from zenml.feature_stores import BaseFeatureStore
     from zenml.metadata_stores import BaseMetadataStore
+    from zenml.model_deployers import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
     from zenml.secrets_managers import BaseSecretsManager
@@ -73,6 +74,7 @@ class Stack:
         secrets_manager: Optional["BaseSecretsManager"] = None,
         step_operator: Optional["BaseStepOperator"] = None,
         feature_store: Optional["BaseFeatureStore"] = None,
+        model_deployer: Optional["BaseModelDeployer"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -87,6 +89,7 @@ class Stack:
         self._step_operator = step_operator
         self._secrets_manager = secrets_manager
         self._feature_store = feature_store
+        self._model_deployer = model_deployer
 
         self.validate()
 
@@ -111,6 +114,7 @@ class Stack:
         from zenml.container_registries import BaseContainerRegistry
         from zenml.feature_stores import BaseFeatureStore
         from zenml.metadata_stores import BaseMetadataStore
+        from zenml.model_deployers import BaseModelDeployer
         from zenml.orchestrators import BaseOrchestrator
         from zenml.secrets_managers import BaseSecretsManager
         from zenml.step_operators import BaseStepOperator
@@ -162,6 +166,11 @@ class Stack:
             feature_store, BaseFeatureStore
         ):
             _raise_type_error(feature_store, BaseFeatureStore)
+        model_deployer = components.get(StackComponentType.MODEL_DEPLOYER)
+        if model_deployer is not None and not isinstance(
+            model_deployer, BaseModelDeployer
+        ):
+            _raise_type_error(model_deployer, BaseModelDeployer)
 
         return Stack(
             name=name,
@@ -172,6 +181,7 @@ class Stack:
             secrets_manager=secrets_manager,
             step_operator=step_operator,
             feature_store=feature_store,
+            model_deployer=model_deployer,
         )
 
     @classmethod
@@ -221,6 +231,7 @@ class Stack:
                 self.secrets_manager,
                 self.step_operator,
                 self.feature_store,
+                self.model_deployer,
             ]
             if component is not None
         }
@@ -264,6 +275,9 @@ class Stack:
     def feature_store(self) -> Optional["BaseFeatureStore"]:
         """The feature store of the stack."""
         return self._feature_store
+    def model_deployer(self) -> Optional["BaseModelDeployer"]:
+        """The model deployer of the stack."""
+        return self._model_deployer
 
     @property
     def runtime_options(self) -> Dict[str, Any]:
