@@ -3,9 +3,9 @@
 set -Eeo pipefail
 
 pre_run () {
-    zenml integration install feast sklearn
+    zenml integration install feast
 }
 
 pre_run_forced () {
-    zenml integration install feast sklearn -f
+    zenml integration install feast -f
 }
