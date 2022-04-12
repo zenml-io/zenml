@@ -267,7 +267,7 @@ def test_registering_a_new_stack_with_already_registered_components(
     )
 
 
-def test_updating_a_new_stack_with_already_registered_components(clean_repo):
+def test_updating_a_stack_with_new_components(clean_repo):
     """Tests that updating a new stack with already registered components
     updates the stack with the new or altered components passed in."""
     current_stack = clean_repo.active_stack
