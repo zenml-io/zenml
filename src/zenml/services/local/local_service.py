@@ -245,8 +245,8 @@ class LocalDaemonService(BaseService):
                 )
                 create_dir_recursive_if_not_exists(self.status.runtime_path)
             else:
-                self.status.runtime_path = (
-                    tempfile.mkdtemp(prefix="zenml-service-"),
+                self.status.runtime_path = tempfile.mkdtemp(
+                    prefix="zenml-service-"
                 )
 
         assert self.status.config_file is not None
