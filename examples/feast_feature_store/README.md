@@ -22,8 +22,17 @@ This example has two simple steps, showing how you can access historical (batch 
 
 # 🖥 Run it locally
 
-## 👣 Step-by-Step `feature-store` run
+## ⏩ SuperQuick `feast_feature_store` run
 
+If you're really in a hurry, and you want just to see this example pipeline run,
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run feast_feature_store
+```
+
+## 👣 Step-by-Step
 ### 📄 Prerequisites
 
 In order to run this example, you need to install and initialize ZenML:
@@ -59,8 +68,8 @@ following way:
 
 ```shell
 # pull example
-zenml example pull feature_store
-cd zenml_examples/feature_store
+zenml example pull feast_feature_store
+cd zenml_examples/feast_feature_store
 
 # Initialize ZenML repo
 zenml init
