@@ -32,6 +32,7 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
 )
+from zenml.logger import get_logger
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseStep,
@@ -39,6 +40,8 @@ from zenml.steps import (
     StepEnvironment,
     step,
 )
+
+logger = get_logger(__name__)
 
 
 class MLFlowDeployerConfig(BaseStepConfig):
@@ -61,6 +64,109 @@ class MLFlowDeployerConfig(BaseStepConfig):
     timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
 
 
+@enable_mlflow
+@step(enable_cache=True)
+def mlflow_model_deployer_step(
+    deploy_decision: bool,
+    model: ModelArtifact,
+    config: MLFlowDeployerConfig,
+) -> MLFlowDeploymentService:
+    """MLflow model deployer pipeline step
+
+    Args:
+        deploy_decision: whether to deploy the model or not
+        model: the model artifact to deploy
+        config: configuration for the deployer step
+
+    Returns:
+        MLflow deployment service
+    """
+    model_deployer = MLFlowModelDeployer.get_active_model_deployer()
+
+    if not config.model_uri:
+        # fetch the MLflow artifacts logged during the pipeline run
+        mlflow_step_env = cast(
+            MLFlowStepEnvironment,
+            Environment()[MLFLOW_STEP_ENVIRONMENT_NAME],
+        )
+        client = MlflowClient()
+        model_uri = ""
+        mlflow_run = mlflow_step_env.mlflow_run
+        if mlflow_run and client.list_artifacts(
+            mlflow_run.info.run_id, config.model_name
+        ):
+            model_uri = get_artifact_uri(config.model_name)
+        config.model_uri = model_uri
+
+    # get pipeline name, step name and run id
+    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
+    pipeline_name = step_env.pipeline_name
+    run_id = step_env.pipeline_run_id
+    step_name = step_env.step_name
+
+    # fetch existing services with same pipeline name, step name and model name
+    existing_services = model_deployer.find_model_server(
+        pipeline_name=pipeline_name,
+        pipeline_step_name=step_name,
+        model_name=config.model_name,
+    )
+
+    # create a config for the new model service
+    predictor_cfg = MLFlowDeploymentConfig(
+        model_name=config.model_name or "",
+        model_uri=config.model_uri or "",
+        workers=config.workers,
+        mlserver=config.mlserver,
+        pipeline_name=pipeline_name,
+        pipeline_run_id=run_id,
+        pipeline_step_name=step_name,
+    )
+
+    # Creating a new service with inactive state and status by default
+    service = MLFlowDeploymentService(predictor_cfg)
+    if existing_services:
+        service = cast(MLFlowDeploymentService, existing_services[0])
+
+    # check for conditions to deploy the model
+    if not config.model_uri:
+        # an MLflow model was not found in the current run, so we simply reuse
+        # the service created during the previous step run
+        if not existing_services:
+            raise RuntimeError(
+                f"An MLflow model with name `{config.model_name}` was not "
+                f"trained in the current pipeline run and no previous "
+                f"service was found."
+            )
+        return service
+
+    if not deploy_decision:
+        logger.info(
+            f"Skipping model deployment because the model quality does not "
+            f"meet the criteria. Loading last service deployed by step "
+            f"'{step_name}' and pipeline '{pipeline_name}' for model "
+            f"'{config.model_name}'..."
+        )
+        # no new deployment is required, so we reuse the existing service
+        return service
+
+    # create a new model deployment and replace an old one if it exists
+    new_service = cast(
+        MLFlowDeploymentService,
+        model_deployer.deploy_model(
+            replace=True,
+            config=predictor_cfg,
+            timeout=config.timeout,
+        ),
+    )
+
+    logger.info(
+        f"MLflow deployment service started and reachable at:\n"
+        f"    {new_service.prediction_uri}\n"
+    )
+
+    return new_service
+
+
 def mlflow_deployer_step(
     enable_cache: bool = True,
     name: Optional[str] = None,
@@ -74,108 +180,12 @@ def mlflow_deployer_step(
     Args:
         enable_cache: Specify whether caching is enabled for this step. If no
             value is passed, caching is enabled by default
+
     Returns:
         an MLflow model deployer pipeline step
     """
-
-    # get active MLFlowModelDeployer stack component
-    mlflow_model_deployer_component = (
-        MLFlowModelDeployer.get_active_model_deployer()
+    logger.warning(
+        "The `mlflow_deployer_step` function is deprecated. Please "
+        "use the built-in `mlflow_model_deployer_step` step instead."
     )
-
-    @enable_mlflow
-    @step(enable_cache=enable_cache, name=name)
-    def mlflow_model_deployer(
-        deploy_decision: bool,
-        model: ModelArtifact,
-        config: MLFlowDeployerConfig,
-    ) -> MLFlowDeploymentService:
-        """MLflow model deployer pipeline step
-
-        Args:
-            deploy_decision: whether to deploy the model or not
-            model: the model artifact to deploy
-            config: configuration for the deployer step
-
-        Returns:
-            MLflow deployment service
-        """
-
-        if not config.model_uri:
-            # fetch the MLflow artifacts logged during the pipeline run
-            mlflow_step_env = cast(
-                MLFlowStepEnvironment,
-                Environment()[MLFLOW_STEP_ENVIRONMENT_NAME],
-            )
-            client = MlflowClient()
-            model_uri = ""
-            mlflow_run = mlflow_step_env.mlflow_run
-            if mlflow_run and client.list_artifacts(
-                mlflow_run.info.run_id, config.model_name
-            ):
-                model_uri = get_artifact_uri(config.model_name)
-            config.model_uri = model_uri
-
-        # get pipeline name, step name and run id
-        step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-        pipeline_name = step_env.pipeline_name
-        run_id = step_env.pipeline_run_id
-        step_name = step_env.step_name
-
-        # check if an MLFlowModelDeployer stack component is registered
-        if not isinstance(mlflow_model_deployer_component, MLFlowModelDeployer):
-            raise TypeError(
-                "The active stack needs to have a model deployer component"
-                "of type MLFlowModelDeployer registered for this step to work."
-                "You can create a new stack with a MLFlowModelDeployer component"
-                "or update your existing stack to add this component."
-            )
-
-        # fetch existing services with same pipeline name, step name and model name
-        existing_services = mlflow_model_deployer_component.find_model_server(
-            pipeline_name=pipeline_name,
-            pipeline_step_name=step_name,
-            model_name=config.model_name,
-        )
-
-        # create a config for the new model service
-        predictor_cfg = MLFlowDeploymentConfig(
-            model_name=config.model_name or "",
-            model_uri=config.model_uri or "",
-            workers=config.workers,
-            mlserver=config.mlserver,
-            pipeline_name=pipeline_name,
-            pipeline_run_id=run_id,
-            pipeline_step_name=step_name,
-        )
-
-        # Creating a new service with inactive state and status by default
-        service = MLFlowDeploymentService(predictor_cfg)
-        if existing_services:
-            service = cast(MLFlowDeploymentService, existing_services[0])
-
-        # check for conditions to deploy the model
-        if not config.model_uri:
-            # an MLflow model was not found in the current run, so we simply reuse
-            # the service created during the previous step run
-            if not existing_services:
-                raise RuntimeError(
-                    f"An MLflow model with name `{config.model_name}` was not "
-                    f"trained in the current pipeline run and no previous "
-                    f"service was found."
-                )
-            return service
-
-        if not deploy_decision:
-            # no new deployment is required, so we reuse the existing service
-            return service
-
-        # create a new model deployment
-        new_service = mlflow_model_deployer_component.deploy_model(
-            replace=True,
-            config=predictor_cfg,
-            timeout=config.timeout,
-        )
-        return cast(MLFlowDeploymentService, new_service)
-
-    return mlflow_model_deployer
+    return mlflow_model_deployer_step

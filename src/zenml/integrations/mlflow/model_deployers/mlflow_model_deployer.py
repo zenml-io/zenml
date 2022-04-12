@@ -80,18 +80,23 @@ class MLFlowModelDeployer(BaseModelDeployer):
         Returns:
             The MLFlowModelDeployer component of the active stack.
         """
-        mlflow_model_deployer_component = Repository(  # type: ignore[call-arg]
+        model_deployer = Repository(  # type: ignore[call-arg]
             skip_repository_check=True
         ).active_stack.model_deployer
 
-        if not isinstance(mlflow_model_deployer_component, MLFlowModelDeployer):
+        if not model_deployer or not isinstance(
+            model_deployer, MLFlowModelDeployer
+        ):
             raise TypeError(
-                "The active stack needs to have a model deployer component "
-                "of type MLFlowModelDeployer registered for this step to work. "
-                "You can create a new stack with a MLFlowModelDeployer component "
-                "or update your existing stack to add this component."
+                "The active stack needs to have an MLflow model deployer "
+                "component registered to be able to deploy models with MLflow. "
+                "You can create a new stack with an MLflow model "
+                "deployer component or update your existing stack to add this "
+                "component, e.g.:\n\n"
+                "  'zenml model-deployer register mlflow --type=mlflow'\n"
+                "  'zenml stack create stack-name -d mlflow ...'\n"
             )
-        return mlflow_model_deployer_component
+        return model_deployer
 
     def deploy_model(
         self,
@@ -99,36 +104,55 @@ class MLFlowModelDeployer(BaseModelDeployer):
         replace: bool = False,
         timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
     ) -> BaseService:
-        """
-        We assume that the deployment decision is made at the step level and
-        here we have to delete any older services that are running and start
-        a new one.
+        """Create a new MLflow deployment service or update an existing one to
+        serve the supplied model and deployment configuration.
 
-        This method interacts with external serving platforms that manage services.
-        In the case of MLflow, we need to look into the local filesystem at a location
-        where the configuration for the service is stored. Retrieving that, we can
-        check if there's any service that was created for the existing model and
-        can return that or create one depending on the value of replace.
+        This method has two modes of operation, depending on the `replace`
+        argument value:
 
-        - Detect if there is an existing model server instance running serving
-        one or more previous versions of the same model
-        - Deploy the model to the serving platform or update the existing model
-        server instance to include the new model version
-        - Return a Service object that is a representation of the external model
-        server instance. The Service must implement basic operational state
-        tracking and lifecycle management operations for the model server (e.g.
-        start, stop, etc.)
+          * if `replace` is False, calling this method will create a new MLflow
+            deployment server to reflect the model and other configuration
+            parameters specified in the supplied MLflow service `config`.
+
+          * if `replace` is True, this method will first attempt to find an
+            existing MLflow deployment service that is *equivalent* to the
+            supplied configuration parameters. Two or more MLflow deployment
+            services are considered equivalent if they have the same
+            `pipeline_name`, `pipeline_step_name` and `model_name` configuration
+            parameters. To put it differently, two MLflow deployment services
+            are equivalent if they serve versions of the same model deployed by
+            the same pipeline step. If an equivalent MLflow deployment is found,
+            it will be updated in place to reflect the new configuration
+            parameters.
+
+        Callers should set `replace` to True if they want a continuous model
+        deployment workflow that doesn't spin up a new MLflow deployment
+        server for each new model version. If multiple equivalent MLflow
+        deployment servers are found, one is selected at random to be updated
+        and the others are deleted.
 
         Args:
-            replace: If true, the existing services will be replaced with the new one.
-            config: The MLFlowDeploymentConfig object holding the parameters for the
-                new service to be created.
-            timeout: The timeout in seconds for the service to start.
+            config: the configuration of the model to be deployed with MLflow.
+            replace: set this flag to True to find and update an equivalent
+                MLflow deployment server with the new model instead of
+                creating and starting a new deployment server.
+            timeout: the timeout in seconds to wait for the MLflow server
+                to be provisioned and successfully started or updated. If set
+                to 0, the method will return immediately after the MLflow
+                server is provisioned, without waiting for it to fully start.
 
         Returns:
-            The MLFlowDeploymentService object.
+            The ZenML MLflow deployment service object that can be used to
+            interact with the MLflow model server.
+
+        Raises:
+            RuntimeError: if `timeout` is set to a positive value that is
+                exceeded while waiting for the MLflow deployment server
+                to start, or if an operational failure is encountered before
+                it reaches a ready state.
         """
         config = cast(MLFlowDeploymentConfig, config)
+        service = None
 
         # if replace is True, remove all existing services
         if replace is True:
@@ -138,14 +162,39 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 model_name=config.model_name,
             )
 
-            for service in existing_services:
-                service = cast(MLFlowDeploymentService, service)
-                self._clean_up_existing_service(
-                    timeout=timeout, force=True, existing_service=service
-                )
+            for existing_service in existing_services:
+                if service is None:
+                    # keep the most recently created service
+                    service = cast(MLFlowDeploymentService, existing_service)
+                try:
+                    # delete the older services and don't wait for them to
+                    # be deprovisioned
+                    self._clean_up_existing_service(
+                        existing_service=cast(
+                            MLFlowDeploymentService, existing_service
+                        ),
+                        timeout=timeout,
+                        force=True,
+                    )
+                except RuntimeError:
+                    # ignore errors encountered while stopping old services
+                    pass
+        if service:
+            logger.info(
+                f"Updating an existing MLflow deployment service: {service}"
+            )
 
-        # create a new MLFlowDeploymentService instance
-        return cast(BaseService, self._create_new_service(timeout, config))
+            # set the root runtime path with the stack component's UUID
+            config.root_runtime_path = self._get_local_service_root_path()
+            service.stop(timeout=timeout, force=True)
+            service.update(config)
+            service.start(timeout=timeout)
+        else:
+            # create a new MLFlowDeploymentService instance
+            service = self._create_new_service(timeout, config)
+            logger.info(f"Created a new MLflow deployment service: {service}")
+
+        return cast(BaseService, service)
 
     def _clean_up_existing_service(
         self,

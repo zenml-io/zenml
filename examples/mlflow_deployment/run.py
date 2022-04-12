@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import cast
+
 import click
 from pipeline import (
     DeploymentTriggerConfig,
@@ -26,6 +28,7 @@ from pipeline import (
     prediction_service_loader,
     predictor,
     tf_evaluator,
+    tf_predict_preprocessor,
     tf_trainer,
 )
 from rich import print
@@ -34,10 +37,24 @@ from zenml.integrations.mlflow.mlflow_environment import global_mlflow_env
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
+from zenml.integrations.mlflow.services import MLFlowDeploymentService
 from zenml.integrations.mlflow.steps import MLFlowDeployerConfig
 
 
 @click.command()
+@click.option(
+    "--deploy",
+    "-d",
+    is_flag=True,
+    help="Run the deployment pipeline to train and deploy a model",
+)
+@click.option(
+    "--predict",
+    "-p",
+    is_flag=True,
+    help="Run the inference pipeline to send a prediction request "
+    "to the deployed model",
+)
 @click.option("--epochs", default=5, help="Number of epochs for training")
 @click.option("--lr", default=0.003, help="Learning rate for training")
 @click.option(
@@ -45,13 +62,9 @@ from zenml.integrations.mlflow.steps import MLFlowDeployerConfig
     default=0.92,
     help="Minimum accuracy required to deploy the model",
 )
-@click.option(
-    "--stop-service",
-    is_flag=True,
-    default=False,
-    help="Stop the prediction service when done",
-)
-def main(epochs: int, lr: float, min_accuracy: float, stop_service: bool):
+def main(
+    deploy: bool, predict: bool, epochs: int, lr: float, min_accuracy: float
+):
     """Run the MLflow example pipeline"""
 
     # get the MLflow model deployer stack component
@@ -59,47 +72,40 @@ def main(epochs: int, lr: float, min_accuracy: float, stop_service: bool):
         MLFlowModelDeployer.get_active_model_deployer()
     )
 
-    if stop_service:
-        services = mlflow_model_deployer_component.find_model_server(
-            pipeline_name="continuous_deployment_pipeline",
-            pipeline_step_name="model_deployer",
-            model_name="model",
+    if deploy:
+        # Initialize a continuous deployment pipeline run
+        deployment = continuous_deployment_pipeline(
+            importer=importer_mnist(),
+            normalizer=normalizer(),
+            trainer=tf_trainer(config=TrainerConfig(epochs=epochs, lr=lr)),
+            evaluator=tf_evaluator(),
+            deployment_trigger=deployment_trigger(
+                config=DeploymentTriggerConfig(
+                    min_accuracy=min_accuracy,
+                )
+            ),
+            model_deployer=model_deployer(
+                config=MLFlowDeployerConfig(workers=3, timeout=10)
+            ),
         )
-        if services[0]:
-            services[0].stop(timeout=10)
-        return
 
-    # Initialize a continuous deployment pipeline run
-    deployment = continuous_deployment_pipeline(
-        importer=importer_mnist(),
-        normalizer=normalizer(),
-        trainer=tf_trainer(config=TrainerConfig(epochs=epochs, lr=lr)),
-        evaluator=tf_evaluator(),
-        deployment_trigger=deployment_trigger(
-            config=DeploymentTriggerConfig(
-                min_accuracy=min_accuracy,
-            )
-        ),
-        model_deployer=model_deployer(
-            config=MLFlowDeployerConfig(workers=3, timeout=10)
-        ),
-    )
+        deployment.run()
 
-    deployment.run()
+    if predict:
+        # Initialize an inference pipeline run
+        inference = inference_pipeline(
+            dynamic_importer=dynamic_importer(),
+            predict_preprocessor=tf_predict_preprocessor(),
+            prediction_service_loader=prediction_service_loader(
+                MLFlowDeploymentLoaderStepConfig(
+                    pipeline_name="continuous_deployment_pipeline",
+                    pipeline_step_name="mlflow_model_deployer_step",
+                )
+            ),
+            predictor=predictor(),
+        )
 
-    # Initialize an inference pipeline run
-    inference = inference_pipeline(
-        dynamic_importer=dynamic_importer(),
-        prediction_service_loader=prediction_service_loader(
-            MLFlowDeploymentLoaderStepConfig(
-                pipeline_name="continuous_deployment_pipeline",
-                pipeline_step_name="model_deployer",
-            )
-        ),
-        predictor=predictor(),
-    )
-
-    inference.run()
+        inference.run()
 
     with global_mlflow_env() as mlflow_env:
         print(
@@ -113,17 +119,32 @@ def main(epochs: int, lr: float, min_accuracy: float, stop_service: bool):
     # fetch existing services with same pipeline name, step name and model name
     existing_services = mlflow_model_deployer_component.find_model_server(
         pipeline_name="continuous_deployment_pipeline",
-        pipeline_step_name="model_deployer",
+        pipeline_step_name="mlflow_model_deployer_step",
         model_name="model",
     )
 
-    if existing_services[0]:
+    if existing_services:
+        service = cast(MLFlowDeploymentService, existing_services[0])
+        if service.is_running:
+            print(
+                f"The MLflow prediction server is running locally as a daemon "
+                f"process service and accepts inference requests at:\n"
+                f"    {service.prediction_uri}\n"
+                f"To stop the service, run "
+                f"[italic green]`zenml served-models delete "
+                f"{str(service.uuid)}`[/italic green]."
+            )
+        elif service.is_failed:
+            print(
+                f"The MLflow prediction server is in a failed state:\n"
+                f" Last state: '{service.status.state.value}'\n"
+                f" Last error: '{service.status.last_error}'"
+            )
+    else:
         print(
-            f"The MLflow prediction server is running locally as a daemon process "
-            f"and accepts inference requests at:\n"
-            f"    {existing_services[0].prediction_uri}\n"
-            f"To stop the service, re-run the same command and supply the "
-            f"`--stop-service` argument."
+            "No MLflow prediction server is currently running. The deployment "
+            "pipeline must run first to train a model and deploy it. Execute "
+            "the same command with the `--deploy` argument to deploy a model."
         )
 
 
