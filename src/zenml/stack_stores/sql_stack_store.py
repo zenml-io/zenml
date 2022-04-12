@@ -312,7 +312,7 @@ class SqlStackStore(BaseStackStore):
                             .where(ZenStackDefinition.component_type == ctype)
                         )
                         results = session.exec(statement)
-                        component = results.one()
+                        component = results.one_or_none()
                         if component is None:
                             session.add(
                                 ZenStackDefinition(

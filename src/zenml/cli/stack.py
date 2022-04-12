@@ -239,10 +239,9 @@ def update_stack(
         repo = Repository()
         try:
             current_stack = repo.get_stack(stack_name)
-        except KeyError as e:
-            console.print(
+        except KeyError:
+            cli_utils.error(
                 f"Stack `{stack_name}` cannot be updated as it does not exist.",
-                e,
             )
         stack_components = current_stack.components
 

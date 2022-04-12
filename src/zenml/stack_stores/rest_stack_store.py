@@ -64,7 +64,7 @@ class RestStackStore(BaseStackStore):
         super().initialize(url, *args, **kwargs)
         return self
 
-    # Statics:
+    # Static methods:
 
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
@@ -179,6 +179,22 @@ class RestStackStore(BaseStackStore):
         """
         self.post(STACK_COMPONENTS, body=component)
 
+    def update_stack_component(
+        self,
+        current_component: StackComponentWrapper,
+        new_component: StackComponentWrapper,
+    ) -> None:
+        """Update a stack component.
+
+        Args:
+            current_component: The current component to update.
+            new_component: The new component to update with.
+
+        Raises:
+            KeyError: If no stack component exists with the given name.
+        """
+        raise NotImplementedError
+
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
@@ -189,6 +205,20 @@ class RestStackStore(BaseStackStore):
             KeyError: If no stack exists for the given name.
         """
         self.delete(f"{STACKS}/{name}")
+
+    def _save_stack(
+        self,
+        name: str,
+        stack_configuration: Dict[StackComponentType, str],
+        is_update: bool = False,
+    ) -> None:
+        """Add a stack to storage.
+
+        Args:
+            name: The name to save the stack as.
+            stack_configuration: Dict[StackComponentType, str] to persist.
+        """
+        raise NotImplementedError
 
     # Custom implementations:
 
