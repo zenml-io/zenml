@@ -38,6 +38,10 @@ class SequenceClassificationConfig(BaseStepConfig):
     dataset_name = "imdb"
     epochs = 3
     max_seq_length = 128
+    init_lr = 2e-5
+    weight_decay_rate = 0.01
+    text_column = "text"
+    label_column = "label"
 
 
 @step
@@ -69,9 +73,11 @@ def tokenization(
 
     def preprocess_function(examples):
         result = tokenizer(
-            examples["text"], max_length=config.max_seq_length, truncation=True
+            examples[config.text_column],
+            max_length=config.max_seq_length,
+            truncation=True,
         )
-        result["label"] = examples["label"]
+        result["label"] = examples[config.label_column]
         return result
 
     tokenized_datasets = datasets.map(preprocess_function, batched=True)
@@ -100,10 +106,10 @@ def trainer(
         len(tokenized_datasets["train"]) // config.batch_size
     ) * config.epochs
     optimizer, _ = create_optimizer(
-        init_lr=2e-5,
+        init_lr=config.init_lr,
         num_train_steps=num_train_steps,
-        weight_decay_rate=0.01,
-        num_warmup_steps=0,
+        weight_decay_rate=config.weight_decay_rate,
+        num_warmup_steps=num_train_steps * 0.1,
     )
 
     # Compile model

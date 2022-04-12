@@ -33,12 +33,15 @@ from zenml.steps import BaseStepConfig, step
 class TokenClassificationConfig(BaseStepConfig):
     """Config for the token-classification"""
 
-    task = "ner"  # Should be one of "ner", "pos" or "chunk"
     pretrained_model = "distilbert-base-uncased"
     batch_size = 16
     dataset_name = "conll2003"
     label_all_tokens = True
     epochs = 3
+    init_lr = 2e-5
+    weight_decay_rate = 0.01
+    text_column = "tokens"
+    label_column = "ner_tags"
 
 
 @step
@@ -70,11 +73,13 @@ def tokenization(
 
     def tokenize_and_align_labels(examples):
         tokenized_inputs = tokenizer(
-            examples["tokens"], truncation=True, is_split_into_words=True
+            examples[config.text_column],
+            truncation=True,
+            is_split_into_words=True,
         )
 
         labels = []
-        for i, label in enumerate(examples[f"{config.task}_tags"]):
+        for i, label in enumerate(examples[config.label_column]):
             word_ids = tokenized_inputs.word_ids(batch_index=i)
             previous_word_idx = None
             label_ids = []
@@ -113,9 +118,7 @@ def trainer(
     """Build and Train token classification model"""
     # Get label list
     label_list = (
-        tokenized_datasets["train"]
-        .features[f"{config.task}_tags"]
-        .feature.names
+        tokenized_datasets["train"].features[config.label_column].feature.names
     )
 
     # Load pre-trained model from huggingface hub
@@ -132,10 +135,10 @@ def trainer(
         len(tokenized_datasets["train"]) // config.batch_size
     ) * config.epochs
     optimizer, _ = create_optimizer(
-        init_lr=2e-5,
+        init_lr=config.init_lr,
         num_train_steps=num_train_steps,
-        weight_decay_rate=0.01,
-        num_warmup_steps=0,
+        weight_decay_rate=config.weight_decay_rate,
+        num_warmup_steps=num_train_steps * 0.1,
     )
 
     # Compile model

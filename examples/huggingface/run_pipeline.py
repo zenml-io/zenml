@@ -23,7 +23,7 @@ from token_classification import TokenClassificationConfig
 @click.option(
     "--nlp_task",
     default="token-classification",
-    help="Name NLP task i.e. token-classificaion",
+    help="Name NLP task i.e. token-classificaion, sequence-classification",
 )
 @click.option(
     "--pretrained_model",
@@ -40,13 +40,46 @@ from token_classification import TokenClassificationConfig
     default=3,
     help="Number of epochs for training",
 )
-def main(nlp_task: str, pretrained_model: str, batch_size: int, epochs: int):
+@click.option(
+    "--max_seq_length",
+    default=128,
+    help="Max sequence length for training",
+)
+@click.option(
+    "--init_lr",
+    default=2e-5,
+    help="Initial learning rate for training",
+)
+@click.option(
+    "--weight_decay_rate",
+    default=0.01,
+    help="Weight decay rate for training",
+)
+@click.option(
+    "--text_column",
+    default="text",
+    help="Column name for text in the dataset",
+)
+@click.option(
+    "--label_column",
+    default="label",
+    help="Column name for label in the dataset",
+)
+@click.option(
+    "--dataset_name",
+    default="imdb",
+    help="Name of the dataset to be used",
+)
+def main(
+    nlp_task: str, pretrained_model: str, batch_size: int, epochs: int, **kwargs
+):
     if nlp_task == "token-classification":
         # Run Pipeline
         token_classification_config = TokenClassificationConfig(
             pretrained_model=pretrained_model,
             epochs=epochs,
             batch_size=batch_size,
+            **kwargs,
         )
         pipeline = token_classification.token_classifier_train_eval_pipeline(
             importer=token_classification.data_importer(
@@ -71,6 +104,7 @@ def main(nlp_task: str, pretrained_model: str, batch_size: int, epochs: int):
             pretrained_model=pretrained_model,
             epochs=epochs,
             batch_size=batch_size,
+            **kwargs,
         )
         pipeline = sequence_classification.seq_classifier_train_eval_pipeline(
             importer=sequence_classification.data_importer(
