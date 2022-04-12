@@ -58,10 +58,8 @@ body:
       description: Please specify minor version in the above description if relevant.
       multiple: false
       options:
-        - 3.6
         - 3.7
         - 3.8
-        - 3.9
 
   - type: dropdown
     id: os

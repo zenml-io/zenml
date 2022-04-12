@@ -32,12 +32,14 @@ from .example_validations import (
 )
 
 
-# shtutil.copytree on python 3.6/3.7 doesn't allow copying to an existing
-# directory
-def copytree(src: str, dst: str) -> None:
-    for item in os.listdir(src):
-        s = os.path.join(src, item)
-        d = os.path.join(dst, item)
+def copy_example_files(example_dir: str, dst_dir: str) -> None:
+    for item in os.listdir(example_dir):
+        if item == ".zen":
+            # don't copy any existing ZenML repository
+            continue
+
+        s = os.path.join(example_dir, item)
+        d = os.path.join(dst_dir, item)
         if os.path.isdir(s):
             shutil.copytree(s, d)
         else:
@@ -121,6 +123,55 @@ examples = [
     ExampleIntegrationTestConfiguration(
         name="whylogs", validation_function=whylogs_example_validation
     ),
+    ExampleIntegrationTestConfiguration(
+        name="statistics",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=3,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="lineage",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=4,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="dag_visualizer",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline",
+            step_count=3,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="standard_interfaces",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="TrainingPipeline",
+            step_count=6,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="airflow_local",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline",
+            step_count=4,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="class_based_api",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="TrainingPipeline",
+            step_count=6,
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="functional_api",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline",
+            step_count=4,
+        ),
+    ),
 ]
 
 # flake8: noqa: C901
@@ -138,11 +189,11 @@ if sys.platform != "win32":
     "example_configuration",
     [pytest.param(example, id=example.name) for example in examples],
 )
-@pytest.mark.parametrize("repo_fixture_name", ["clean_repo"])
 def test_run_example(
     example_configuration: ExampleIntegrationTestConfiguration,
     repo_fixture_name: str,
     request: pytest.FixtureRequest,
+    virtualenv: str,
 ) -> None:
     """Runs the given examples and validates they ran correctly.
 
@@ -153,6 +204,8 @@ def test_run_example(
             active stack of the repository given by the fixture.
         request: Pytest fixture needed to run the fixture given in the
             `repo_fixture_name` argument
+        virtualenv: Either a separate cloned environment for each test, or an
+                    empty string.
     """
     # run the fixture given by repo_fixture_name
     repo = request.getfixturevalue(repo_fixture_name)
@@ -161,7 +214,7 @@ def test_run_example(
     examples_directory = Path(repo.original_cwd) / "examples"
 
     # Copy all example files into the repository directory
-    copytree(
+    copy_example_files(
         str(examples_directory / example_configuration.name), str(repo.root)
     )
 

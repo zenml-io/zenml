@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
 from sklearn.base import ClassifierMixin
@@ -20,8 +20,16 @@ from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 
-def get_digits() -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+
+def get_digits() -> Tuple[
+    "NDArray[np.float64]",
+    "NDArray[np.float64]",
+    "NDArray[np.int64]",
+    "NDArray[np.int64]",
+]:
     """Returns the digits dataset in the form of a tuple of numpy
     arrays."""
     digits = load_digits()

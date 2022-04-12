@@ -248,7 +248,6 @@ def get_source(value: Any) -> str:
             src = inspect.getsource(value)
         finally:
             inspect.getfile = _old_getfile
-        inspect.getfile = _old_getfile
     else:
         # Use standard inspect if running outside a notebook
         src = inspect.getsource(value)
@@ -261,7 +260,7 @@ def get_hashed_source(value: Any) -> str:
         source_code = get_source(value)
     except TypeError:
         raise TypeError(
-            f"Unable to compute the hash of source code of object: {object}."
+            f"Unable to compute the hash of source code of object: {value}."
         )
     return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
 

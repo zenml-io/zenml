@@ -1,14 +1,26 @@
 name: Kubeflow
-on: workflow_dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Use tmate session for debugging'
+        required: false
+        type: boolean
+  workflow_call:
 
 jobs:
-  integration_tests:
+  kubeflow_tests:
+    name: kubeflow_tests
     runs-on: ubuntu-latest
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: 'utf-8'
 
     steps:
+      - uses: actions/checkout@v2
+
       # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
       # as the TF images are too large for the GH action runner disk
       - name: Free disk space
@@ -26,33 +38,31 @@ jobs:
           echo "Available storage:"
           df -h
 
-      - uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
+      - name: Setup environment with Poetry
+        uses: ./.github/actions/setup_environment
 
       - name: Install K3D and kubectl
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          source $VENV
+          zenml integration install kubeflow -f
 
-      - name: Install poetry
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install "poetry"
-
-      - name: Install Dependencies
-        run: |
-          python -m poetry install
-          python -m poetry run zenml integration install kubeflow -f
+      - name: Install Linux System Dependencies
+        if: runner.os=='Linux'
+        run: sudo apt install graphviz
 
       - name: Build docker image
         # this step can be much faster if we use an image that copies the
         # lockfile that was generated in the previous step
         run: docker build -t zenml-base-image:latest -f docker/base-dev.Dockerfile .
 
+      - name: Setup tmate session
+        if: ${{ github.event.inputs.tags }}
+        uses: mxschmitt/action-tmate@v3
+
       - name: Run tests
-        run: python -m poetry run pytest tests/integration/test_examples_on_kubeflow.py -s
+        run: |
+          source $VENV
+          pytest tests/integration/test_examples.py -s --on-kubeflow --use-virtualenv
