@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import shutil
+from pathlib import Path
 from typing import ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -65,6 +66,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
             "MODEL_URI": service_instance.config.model_uri,
             "MODEL_NAME": service_instance.config.model_name,
             "SERVICE_PATH": service_instance.status.runtime_path,
+            "DAEMON_PID": str(service_instance.status.pid),
         }
 
     @staticmethod
@@ -192,7 +194,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
     def find_model_server(
         self,
-        running: bool = True,
+        running: bool = False,
         service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
         pipeline_run_id: Optional[str] = None,
@@ -237,10 +239,12 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
         # find all services that match the input criteria
         for root, dirs, files in os.walk(services_path):
+            if service_uuid and Path(root).name != str(service_uuid):
+                continue
             for file in files:
                 if file == SERVICE_DAEMON_CONFIG_FILE_NAME:
                     service_config_path = os.path.join(root, file)
-                    logger.info(
+                    logger.debug(
                         "Loading service daemon configuration from %s",
                         service_config_path,
                     )
@@ -257,13 +261,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
                             f"Expected service type MLFlowDeploymentService but got "
                             f"{type(existing_service)} instead"
                         )
+                    existing_service.update_status()
                     if self._matches_search_criteria(existing_service, config):
-                        if running:
-                            if existing_service.is_running:
-                                services.append(
-                                    cast(BaseService, existing_service)
-                                )
-                        else:
+                        if not running or existing_service.is_running:
                             services.append(cast(BaseService, existing_service))
 
         return services
@@ -288,17 +288,22 @@ class MLFlowModelDeployer(BaseModelDeployer):
         # check if the existing service matches the input criteria
         if (
             (
-                not existing_service_config.pipeline_name
+                not config.pipeline_name
                 or existing_service_config.pipeline_name == config.pipeline_name
             )
             and (
-                not existing_service_config.model_name
+                not config.model_name
                 or existing_service_config.model_name == config.model_name
             )
             and (
-                not existing_service_config.pipeline_step_name
+                not config.pipeline_step_name
                 or existing_service_config.pipeline_step_name
                 == config.pipeline_step_name
+            )
+            and (
+                not config.pipeline_run_id
+                or existing_service_config.pipeline_run_id
+                == config.pipeline_run_id
             )
         ):
             return True
@@ -319,13 +324,11 @@ class MLFlowModelDeployer(BaseModelDeployer):
             force: If True, force the service to stop.
         """
         # get list of all services
-        existing_services = self.find_model_server()
+        existing_services = self.find_model_server(service_uuid=uuid)
 
-        # if uuid of service matches input uuid, stop the service
-        for service in existing_services:
-            if service.uuid == uuid:
-                service.stop(timeout=timeout, force=force)
-                break
+        # if the service exists, stop it
+        if existing_services:
+            existing_services[0].stop(timeout=timeout, force=force)
 
     def start_model_server(
         self, uuid: UUID, timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -336,13 +339,11 @@ class MLFlowModelDeployer(BaseModelDeployer):
             uuid: UUID of the model server to start.
         """
         # get list of all services
-        existing_services = self.find_model_server()
+        existing_services = self.find_model_server(service_uuid=uuid)
 
-        # if uuid of service matches input uuid, start the service
-        for service in existing_services:
-            if service.uuid == uuid:
-                service.start(timeout=timeout)
-                break
+        # if the service exists, start it
+        if existing_services:
+            existing_services[0].start(timeout=timeout)
 
     def delete_model_server(
         self,
@@ -356,13 +357,11 @@ class MLFlowModelDeployer(BaseModelDeployer):
             uuid: UUID of the model server to delete.
         """
         # get list of all services
-        existing_services = self.find_model_server()
+        existing_services = self.find_model_server(service_uuid=uuid)
 
-        # if uuid of service matches input uuid, clean up the service
-        for service in existing_services:
-            service = cast(MLFlowDeploymentService, service)
-            if service.uuid == uuid:
-                self._clean_up_existing_service(
-                    existing_service=service, timeout=timeout, force=force
-                )
-                break
+        # if the service exists, clean it up
+        if existing_services:
+            service = cast(MLFlowDeploymentService, existing_services[0])
+            self._clean_up_existing_service(
+                existing_service=service, timeout=timeout, force=force
+            )

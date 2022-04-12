@@ -255,6 +255,11 @@ class LocalDaemonService(BaseService):
         with open(self.status.config_file, "w") as f:
             f.write(self.json(indent=4))
 
+        # delete the previous PID file, in case a previous daemon process
+        # crashed and left a stale PID file
+        if os.path.exists(self.status.pid_file):
+            os.remove(self.status.pid_file)
+
         command = [
             sys.executable,
             "-m",
