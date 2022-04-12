@@ -115,12 +115,6 @@ from zenml.integrations.seldon.steps import (
     help="Specify the name of a Kubernetes secret to be passed to Seldon Core "
     "deployments to authenticate to the Artifact Store",
 )
-@click.option(
-    "--stop-service",
-    is_flag=True,
-    default=False,
-    help="Stop the prediction service when done",
-)
 def main(
     deploy: bool,
     predict: bool,
