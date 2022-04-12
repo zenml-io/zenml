@@ -184,6 +184,23 @@ ZenML puts a lot of emphasis on guaranteed tracking of inputs across pipeline st
 Metadata are the pieces of information tracked about the pipelines, experiments and configurations that you are running 
 with ZenML. Metadata are stored inside the metadata store.
 
+## Model Deployer
+
+Model Deployers integrate with external tools, services or platforms responsible
+for online model serving. Online serving is the process of hosting and loading
+machine-learning models as part of a managed web service and providing access to
+the models through an API endpoint like HTTP or GRPC. Once deployed, you can
+send inference requests to the model through the web service's API and receive
+fast, low-latency responses.
+
+Configuring a Model Deployer as part of your ZenML Stack enables you to
+implement continuous model deployment pipelines that train models and
+continuously deploy them to a model prediction web service. The Model Deployer
+also acts as a registry for models that are served with ZenML. You can use the
+Model Deployer to list all models that are currently deployed for online
+inference, to query specific models served during a particular pipeline run
+or step, or to suspend, resume or delete a model server.
+
 ## Orchestrator
 
 An orchestrator manages the running of each step of the pipeline, administering the actual pipeline runs. The orchestrator is especially important, as it defines **where** the actual pipeline job runs. Think of it as the 

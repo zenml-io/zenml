@@ -62,7 +62,6 @@ class LocalSecretsManager(BaseSecretsManager):
             kwargs["secrets_file"] = get_secret_store_path(temp_uuid)
             kwargs["uuid"] = temp_uuid
         super().__init__(*args, **kwargs)
-        self._create_secrets_file__if_not_exists()
 
     def _create_secrets_file__if_not_exists(self) -> None:
         """Makes sure the secrets yaml file exists"""

@@ -47,7 +47,8 @@ def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
 @click.pass_context
 def secret(ctx: click.Context) -> None:
     """Secrets for storing key-value pairs for use in authentication."""
-    # TODO [ENG-724]: Ensure the stack actually contains an active secrets manager
+    # TODO [ENG-724]: Ensure the stack actually contains an active secrets
+    #  manager
     ctx.obj = Repository().active_stack.components.get(
         StackComponentType.SECRETS_MANAGER, None
     )
