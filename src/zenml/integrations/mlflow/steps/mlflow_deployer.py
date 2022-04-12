@@ -108,7 +108,7 @@ def mlflow_deployer_step(
                 Environment()[MLFLOW_STEP_ENVIRONMENT_NAME],
             )
             client = MlflowClient()
-            model_uri = ''
+            model_uri = ""
             mlflow_run = mlflow_step_env.mlflow_run
             if mlflow_run and client.list_artifacts(
                 mlflow_run.info.run_id, config.model_name
