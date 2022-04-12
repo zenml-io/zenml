@@ -40,10 +40,16 @@ class ServiceConfig(BaseTypedModel):
     Attributes:
         name: name for the service instance
         description: description of the service
+        pipeline_name: name of the pipeline that spun up the service
+        pipeline_run_id: ID of the pipeline run that spun up the service
+        pipeline_step_name: name of the pipeline step that spun up the service
     """
 
     name: str = ""
     description: str = ""
+    pipeline_name: str = ""
+    pipeline_run_id: str = ""
+    pipeline_step_name: str = ""
 
 
 class BaseServiceMeta(BaseTypedModelMeta):

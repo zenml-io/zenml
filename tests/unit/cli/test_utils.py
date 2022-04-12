@@ -27,7 +27,7 @@ SAMPLE_CUSTOM_ARGUMENTS = [
 ]
 
 
-@given(sample_datetime=datetimes())
+@given(sample_datetime=datetimes(allow_imaginary=False))
 def test_format_date_formats_a_string_properly(
     sample_datetime: datetime,
 ) -> None:
