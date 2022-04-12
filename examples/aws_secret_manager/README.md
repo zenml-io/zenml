@@ -26,7 +26,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install s3
+zenml integration install aws
 
 # pull example
 zenml example pull aws_secret_manager
@@ -35,11 +35,29 @@ cd zenml_examples/aws_secret_manager
 # Initialize ZenML repo
 zenml init
 ```
+
 ### 🥞 Set up your stack
 
-```bash
-zenml secrets-manager register AWS_SECRETS_MANAGER_NAME -t aws
+To get going with aws make sure to have your aws credential set up locally. We recommend this 
+[guide](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html) to make sure everything is
+set up properly.
 
+```shell
+zenml secrets-manager register aws_secrets_manager -t aws
+zenml stack register secrets_stack -m default -o default -a default -x aws_secrets_manager
+zenml stack set secrets_stack
+```
+
+In case you run into issues here, feel free to use a local secret manager. Just replace `-t aws` with `-t local` to 
+revert to a local version of a secret manager.
+
+### Create a secret
+
+Here we are creating a secret called `example_secret` which contains a single key-value pair:
+{example_secret_key: example_secret_value}
+
+```shell
+zenml secret register example_secret -k example_secret_key -v example_secret_value
 ```
 
 ### ▶️ Run the Code
@@ -58,7 +76,5 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the evidently integration can be found [here](TODO: Link to docs).
-
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
-check out our [docs](TODO: Link to docs)
+Our docs regarding the aws secret manager and secrets in general can be found 
+[here](https://docs.zenml.io/features/secrets).
