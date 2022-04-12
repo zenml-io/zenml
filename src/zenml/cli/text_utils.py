@@ -11,6 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
+from typing import List
+
 from rich.markdown import Markdown
 
 zenml_go_welcome_message = Markdown("""
@@ -45,10 +48,16 @@ zenml_go_thank_you_message = Markdown("""
 🙏  Thank You!
 """)
 
-zenml_go_notebook_tutorial_message = Markdown("""
+
+def zenml_go_notebook_tutorial_message(ipynb_files: List[str]) -> Markdown:
+
+    ipynb_files = [f"- {fi} \n" for fi in ipynb_files]
+    return Markdown(f"""
 ## 🧑‍🏫 Get started with ZenML
 
 The zenml tutorials repository was cloned to your current working directory. 
+Within the repository you can get started on one of these Notebooks:
+{''.join(ipynb_files)}
 Starting a jupyter notebook server now. Feel free to try your hand at our
 tutorial notebooks. If your browser does not open automatically click one of the 
 links below.

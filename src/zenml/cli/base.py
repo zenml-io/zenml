@@ -101,9 +101,8 @@ def go() -> None:
     from zenml.config.global_config import GlobalConfiguration
 
     gc = GlobalConfiguration()
-
     if not gc.user_metadata:
-     _prompt_email(gc)
+        _prompt_email(gc)
 
     console.print(zenml_go_privacy_message, width=80)
 
@@ -112,11 +111,14 @@ def go() -> None:
                         "zenml_tutorial")
 
     cwd = os.getcwd()
+    zenml_tutorial_path = os.path.join(cwd, "zenml_tutorial")
 
-    console.print(zenml_go_notebook_tutorial_message, width=80)
+    ipynb_files = [fi for fi in os.listdir(zenml_tutorial_path)
+                   if fi.endswith(".ipynb")]
+    console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
 
     subprocess.check_call(["jupyter", "notebook"],
-                          cwd=os.path.join(cwd, "zenml_tutorial"))
+                          cwd=zenml_tutorial_path)
 
 
 def _prompt_email(gc: GlobalConfiguration) -> None:
