@@ -24,7 +24,11 @@ import yaml
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
+from zenml.exceptions import (
+    DoesNotExistException,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
 from zenml.services import ServiceState
@@ -250,3 +254,32 @@ def test_update_stack_with_new_component(fresh_stack_store: BaseStackStore):
         get_component_from_wrapper(component)
         for component in current_stack_store.get_stack("default").components
     ]
+
+
+def test_update_non_existent_stack_raises_error(
+    fresh_stack_store: BaseStackStore,
+):
+    """Test updating a non-existent stack raises an error."""
+    current_stack_store = fresh_stack_store
+
+    stack = Stack(
+        name="aria_is_a_cat_not_a_stack",
+        orchestrator=get_component_from_wrapper(
+            current_stack_store.get_stack_component(
+                StackComponentType.ORCHESTRATOR, "default"
+            )
+        ),
+        metadata_store=get_component_from_wrapper(
+            current_stack_store.get_stack_component(
+                StackComponentType.METADATA_STORE, "default"
+            )
+        ),
+        artifact_store=get_component_from_wrapper(
+            current_stack_store.get_stack_component(
+                StackComponentType.ARTIFACT_STORE, "default"
+            )
+        ),
+    )
+
+    with pytest.raises(DoesNotExistException):
+        current_stack_store.update_stack(StackWrapper.from_stack(stack))
