@@ -25,7 +25,11 @@ from zenml.constants import (
     STACKS,
 )
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
+from zenml.exceptions import (
+    DoesNotExistException,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
@@ -272,6 +276,29 @@ class RestStackStore(BaseStackStore):
                 f"Bad API Response. Expected dict, got {type(body)}"
             )
 
+    def update_stack(self, stack: StackWrapper) -> Dict[str, str]:
+        """Update a stack and its components.
+
+        If any of the stacks' components aren't registered in the stack store
+        yet, this method will try to register them as well.
+
+        Args:
+            stack: The stack to update.
+
+        Returns:
+            metadata dict for telemetry or logging.
+
+        Raises:
+            # TODO: add this
+        """
+        body = self.put(STACKS, stack)
+        if isinstance(body, dict):
+            return cast(Dict[str, str], body)
+        else:
+            raise ValueError(
+                f"Bad API Response. Expected dict, got {type(body)}"
+            )
+
     def get_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> StackComponentWrapper:
@@ -374,7 +401,12 @@ class RestStackStore(BaseStackStore):
                     f"{response.text}"
                 )
         elif response.status_code == 404:
-            raise KeyError(*response.json().get("detail", (response.text,)))
+            if "DoesNotExistException" in response.text:
+                raise DoesNotExistException(
+                    *response.json().get("detail", (response.text,))
+                )
+            else:
+                raise KeyError(*response.json().get("detail", (response.text,)))
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
                 raise StackComponentExistsError(
@@ -408,3 +440,8 @@ class RestStackStore(BaseStackStore):
         """Make a POST request to the given endpoint path."""
         endpoint = self.url + path
         return self._handle_response(requests.post(endpoint, data=body.json()))
+
+    def put(self, path: str, body: BaseModel) -> Json:
+        """Make a PUT request to the given endpoint path."""
+        endpoint = self.url + path
+        return self._handle_response(requests.put(endpoint, data=body.json()))

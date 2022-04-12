@@ -27,7 +27,11 @@ from zenml.constants import (
     STACKS,
 )
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
+from zenml.exceptions import (
+    DoesNotExistException,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.repository import Repository
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
@@ -169,6 +173,14 @@ async def register_stack(stack: StackWrapper) -> Dict[str, str]:
         return stack_store.register_stack(stack)
     except (StackExistsError, StackComponentExistsError) as error:
         raise conflict(error) from error
+
+
+@app.put(STACKS, response_model=Dict[str, str], responses={404: error_response})
+async def update_stack(stack: StackWrapper) -> Dict[str, str]:
+    try:
+        return stack_store.update_stack(stack)
+    except DoesNotExistException as error:
+        raise not_found(error) from error
 
 
 @app.get(
