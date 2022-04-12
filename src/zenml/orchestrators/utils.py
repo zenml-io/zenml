@@ -14,14 +14,16 @@
 
 import json
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional, cast
 
 import tfx.orchestration.pipeline as tfx_pipeline
 from tfx.orchestration.portable import data_types, launcher
+from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
@@ -72,16 +74,21 @@ def get_cache_status(
         The caching status of a `tfx` step as a boolean value.
     """
     if execution_info is None:
-        logger.warn("No execution info found when checking for cache status.")
-        return
+        logger.warning("No execution info found when checking cache status.")
+        return False
 
     status = False
     repository = Repository()
-    # TODO [HIGH]: Get the current running stack instead of just the active
+    # TODO [ENG-706]: Get the current running stack instead of just the active
     #   stack
-    metadata_store = repository.get_stack(
-        repository.active_stack_name
-    ).metadata_store
+    active_stack = repository.active_stack
+    if not active_stack:
+        raise RuntimeError(
+            "No active stack is configured for the repository. Run "
+            "`zenml stack set STACK_NAME` to update the active stack."
+        )
+
+    metadata_store = active_stack.metadata_store
 
     step_name_param = (
         INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
@@ -91,7 +98,7 @@ def get_cache_status(
         pipeline_name = execution_info.pipeline_info.id
     else:
         raise KeyError(f"No pipeline info found for step `{step_name}`.")
-    pipeline_run_name = execution_info.pipeline_run_id
+    pipeline_run_name = cast(str, execution_info.pipeline_run_id)
     pipeline = metadata_store.get_pipeline(pipeline_name)
     if pipeline is None:
         logger.error(f"Pipeline {pipeline_name} not found in Metadata Store.")
@@ -116,24 +123,24 @@ def execute_step(
     step_name_param = (
         INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
     )
-    pipeline_step_name = tfx_launcher._pipeline_node.node_info.id  # type: ignore[attr-defined]
+    pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
     start_time = time.time()
     logger.info(f"Step `{pipeline_step_name}` has started.")
     try:
         execution_info = tfx_launcher.launch()
         if execution_info and get_cache_status(execution_info):
             if execution_info.exec_properties:
-                pipeline_run_id = execution_info.pipeline_run_id
                 step_name = json.loads(
                     execution_info.exec_properties[step_name_param]
                 )
                 logger.info(
-                    f"Using cached version of `{pipeline_step_name}` [`{step_name}`] "
-                    f"from pipeline_run_id `{pipeline_run_id}`.",
+                    f"Using cached version of `{pipeline_step_name}` "
+                    f"[`{step_name}`].",
                 )
             else:
                 logger.error(
-                    f"No execution properties found for step `{pipeline_step_name}`."
+                    f"No execution properties found for step "
+                    f"`{pipeline_step_name}`."
                 )
     except RuntimeError as e:
         if "execution has already succeeded" in str(e):
@@ -146,6 +153,16 @@ def execute_step(
 
     run_duration = time.time() - start_time
     logger.info(
-        f"Step `{pipeline_step_name}` has finished in {string_utils.get_human_readable_time(run_duration)}."
+        f"Step `{pipeline_step_name}` has finished in "
+        f"{string_utils.get_human_readable_time(run_duration)}."
     )
     return execution_info
+
+
+def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:
+    """Finds the matching step for a tfx pipeline node."""
+    step_name = node.node_info.id
+    try:
+        return next(step for step in steps if step.name == step_name)
+    except StopIteration:
+        raise RuntimeError(f"Unable to find step with name '{step_name}'.")

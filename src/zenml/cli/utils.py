@@ -14,17 +14,23 @@
 import datetime
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import click
 from dateutil import tz
 from rich import box, table
 from rich.text import Text
 
+from zenml.config.profile_config import ProfileConfiguration
 from zenml.console import console
 from zenml.constants import IS_DEBUG_ENV
+from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.repository import StackConfiguration
+from zenml.model_deployers import BaseModelDeployer
+from zenml.repository import Repository
+from zenml.secret import BaseSecretSchema
+from zenml.services import BaseService
+from zenml.services.service_status import ServiceState
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -108,11 +114,14 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     Args:
       obj: A List containing dictionaries.
     """
-    rich_table = table.Table(box=box.HEAVY_EDGE)
-    for key, _ in obj[0].items():
-        rich_table.add_column(key.upper())
-    for item in obj:
-        rich_table.add_row(*list(item.values()))
+    columns = {key.upper(): None for dict_ in obj for key in dict_.keys()}
+    rich_table = table.Table(*columns.keys(), box=box.HEAVY_EDGE)
+
+    for dict_ in obj:
+        values = columns.copy()
+        values.update(dict_)
+        rich_table.add_row(*list(values.values()))
+
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
     console.print(rich_table)
@@ -137,7 +146,8 @@ def format_integration_list(
 
 
 def print_stack_component_list(
-    components: List[StackComponent], active_component_name: str
+    components: List[StackComponent],
+    active_component_name: Optional[str] = None,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
@@ -146,7 +156,8 @@ def print_stack_component_list(
 
     Args:
         components: List of stack components to print.
-        active_component_name: Name of the component that is currently active.
+        active_component_name: Name of the component that is currently
+            active.
     """
     configurations = []
     for component in components:
@@ -163,7 +174,7 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    component: StackConfiguration, active: bool, stack_name: str
+    config: Dict[StackComponentType, str], active: bool, stack_name: str
 ) -> None:
     """Prints the configuration options of a stack."""
     stack_caption = f"'{stack_name}' stack"
@@ -177,9 +188,8 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE")
     rich_table.add_column("COMPONENT_NAME")
-    items = component.dict().items()
-    for item in items:
-        rich_table.add_row(*list(item))
+    for component_type, name in config.items():
+        rich_table.add_row(component_type.value, name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -192,7 +202,7 @@ def print_stack_component_configuration(
     component: StackComponent, display_name: str, active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component."""
-    title = f"{component.type.value.upper()} Component Configuration"
+    title = f"{component.TYPE.value.upper()} Component Configuration"
     if active_status:
         title += " (ACTIVE)"
     rich_table = table.Table(
@@ -203,6 +213,54 @@ def print_stack_component_configuration(
     rich_table.add_column("COMPONENT_PROPERTY")
     rich_table.add_column("VALUE")
     items = component.dict().items()
+    for item in items:
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+    ]
+    console.print(rich_table)
+
+
+def print_active_profile() -> None:
+    """Print active profile."""
+    repo = Repository()
+    scope = "local" if repo.root else "global"
+    declare(
+        f"Running with active profile: '{repo.active_profile_name}' ({scope})"
+    )
+
+
+def print_active_stack() -> None:
+    """Print active stack."""
+    repo = Repository()
+    declare(f"Running with active stack: '{repo.active_stack_name}'")
+
+
+def print_profile(
+    profile: ProfileConfiguration,
+    active: bool,
+) -> None:
+    """Prints the configuration options of a profile.
+
+    Args:
+        profile: Profile to print.
+        active: Whether the profile is active.
+        name: Name of the profile.
+    """
+    profile_title = f"'{profile.name}' Profile Configuration"
+    if active:
+        profile_title += " (ACTIVE)"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=profile_title,
+        show_lines=True,
+    )
+    rich_table.add_column("PROPERTY")
+    rich_table.add_column("VALUE")
+    items = profile.dict().items()
     for item in items:
         rich_table.add_row(*[str(elem) for elem in item])
 
@@ -268,15 +326,14 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     return r_args
 
 
-def install_package(package: str) -> None:
-    """Installs pypi package into the current environment with pip"""
+def install_packages(packages: List[str]) -> None:
+    """Installs pypi packages into the current environment with pip"""
     command = [
         sys.executable,
         "-m",
         "pip",
         "install",
-        package,
-    ]
+    ] + packages
 
     if not IS_DEBUG_ENV:
         command += [
@@ -300,3 +357,129 @@ def uninstall_package(package: str) -> None:
             package,
         ]
     )
+
+
+def pretty_print_secret(
+    secret: BaseSecretSchema, hide_secret: bool = True
+) -> None:
+    """Given a secret set print all key value pairs associated with the secret
+
+    Args:
+        secret: Secret of type BaseSecretSchema
+        hide_secret: boolean that configures if the secret values are shown
+            on the CLI
+    """
+    stack_dicts = [
+        {
+            "SECRET_NAME": secret.name,
+            "SECRET_KEY": key,
+            "SECRET_VALUE": "***" if hide_secret else value,
+        }
+        for key, value in secret.content.items()
+    ]
+    print_table(stack_dicts)
+
+
+def print_secrets(secrets: List[str]) -> None:
+    """Prints the configuration options of a stack.
+
+    Args:
+        secrets: List of secrets
+    """
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title="Secrets",
+        show_lines=True,
+    )
+    rich_table.add_column("SECRET_NAME")
+    secrets.sort()
+    for item in secrets:
+        rich_table.add_row(item)
+
+    console.print(rich_table)
+
+
+def get_service_status_emoji(service: BaseService) -> str:
+    """Get the rich emoji representing the operational status of a Service.
+
+    Args:
+        service: Service to get emoji for.
+
+    Returns:
+        String representing the emoji.
+    """
+    if service.status.state == ServiceState.ACTIVE:
+        return ":white_check_mark:"
+    if service.status.state == ServiceState.INACTIVE:
+        return ":pause_button:"
+    if service.status.state == ServiceState.ERROR:
+        return ":heavy_exclamation_mark:"
+    return ":hourglass_not_done:"
+
+
+def pretty_print_model_deployer(model_services: List[BaseService]) -> None:
+    """Given a list of served_models print all key value pairs associated with
+    the secret
+
+    Args:
+        model_services:
+    """
+    model_service_dicts = []
+    for model_service in model_services:
+
+        model_service_dicts.append(
+            {
+                "STATUS": get_service_status_emoji(model_service),
+                "UUID": str(model_service.uuid),
+                "PIPELINE_NAME": model_service.config.pipeline_name,
+                "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
+            }
+        )
+
+    print_table(model_service_dicts)
+
+
+def print_served_model_configuration(
+    model_service: BaseService, model_deployer: BaseModelDeployer
+) -> None:
+    """Prints the configuration of a model_service.
+
+    Args:
+        model_service: Specific service instance to
+        model_deployer: Active model deployer
+    """
+    title = f"Properties of Served Model {model_service.uuid}"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title,
+        show_lines=True,
+    )
+    rich_table.add_column("MODEL SERVICE PROPERTY")
+    rich_table.add_column("VALUE")
+
+    # Get implementation specific info
+    served_model_info = model_deployer.get_model_server_info(model_service)
+
+    served_model_info = {
+        **served_model_info,
+        "UUID": str(model_service.uuid),
+        "STATUS": get_service_status_emoji(model_service),
+        "STATUS_MESSAGE": model_service.status.last_error,
+        "PIPELINE_NAME": model_service.config.pipeline_name,
+        "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
+        "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
+    }
+
+    # Sort fields alphabetically
+    sorted_items = {k: v for k, v in sorted(served_model_info.items())}
+
+    for item in sorted_items.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
+    console.print(rich_table)

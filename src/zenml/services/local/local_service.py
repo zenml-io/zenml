@@ -62,7 +62,7 @@ class LocalDaemonServiceStatus(ServiceStatus):
     """
 
     runtime_path: Optional[str] = None
-    # TODO [HIGH]: remove field duplication between XServiceStatus and
+    # TODO [ENG-704]: remove field duplication between XServiceStatus and
     #   XServiceConfig (e.g. keep a private reference to the config in the
     #   status)
     silent_daemon: bool = False
@@ -184,7 +184,7 @@ class LocalDaemonService(BaseService):
     status: LocalDaemonServiceStatus = Field(
         default_factory=LocalDaemonServiceStatus
     )
-    # TODO [MEDIUM]: allow multiple endpoints per service
+    # TODO [ENG-705]: allow multiple endpoints per service
     endpoint: Optional[LocalDaemonServiceEndpoint] = None
 
     def check_status(self) -> Tuple[ServiceState, str]:
@@ -217,7 +217,7 @@ class LocalDaemonService(BaseService):
           method that must be implemented by the subclass
 
         Subclasses that need a different command to launch the service daemon
-        should overrride this method.
+        should override this method.
 
         Returns:
             Command needed to launch the daemon process and the environment

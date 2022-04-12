@@ -110,24 +110,26 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 
 
-# Initialize a pipeline run
-run_1 = mnist_pipeline(
-    importer=importer_mnist(),
-    normalizer=normalizer(),
-    trainer=tf_trainer(config=TrainerConfig(epochs=1)),
-    evaluator=tf_evaluator(),
-)
+if __name__ == "__main__":
 
-# Run the pipeline
-run_1.run()
+    # Initialize a pipeline run
+    run_1 = mnist_pipeline(
+        importer=importer_mnist(),
+        normalizer=normalizer(),
+        trainer=tf_trainer(config=TrainerConfig(epochs=1)),
+        evaluator=tf_evaluator(),
+    )
 
-# Initialize a pipeline run again
-run_2 = mnist_pipeline(
-    importer=importer_mnist(),
-    normalizer=normalizer(),
-    trainer=tf_trainer(config=TrainerConfig(epochs=2)),
-    evaluator=tf_evaluator(),
-)
+    # Run the pipeline
+    run_1.run()
 
-# Run the pipeline again
-run_2.run()
+    # Initialize a pipeline run again
+    run_2 = mnist_pipeline(
+        importer=importer_mnist(),
+        normalizer=normalizer(),
+        trainer=tf_trainer(config=TrainerConfig(epochs=2)),
+        evaluator=tf_evaluator(),
+    )
+
+    # Run the pipeline again
+    run_2.run()

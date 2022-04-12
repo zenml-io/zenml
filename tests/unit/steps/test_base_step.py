@@ -12,15 +12,20 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
-from typing import Optional
+from typing import Dict, List, Optional
 
 import pytest
+from tfx.orchestration.portable.python_executor_operator import (
+    PythonExecutorOperator,
+)
 
 from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.environment import Environment
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.pipelines import pipeline
+from zenml.step_operators.step_executor_operator import StepExecutorOperator
 from zenml.steps import BaseStepConfig, Output, StepContext, step
 
 
@@ -246,6 +251,41 @@ def test_unrecognized_output_in_output_artifact_types():
 
     with pytest.raises(StepInterfaceError):
         some_step()
+
+
+def test_enabling_a_custom_step_operator_for_a_step():
+    """Tests that step operators are disabled by default and can be enabled
+    using the step decorator."""
+
+    @step
+    def step_without_step_operator():
+        pass
+
+    @step(custom_step_operator="some_step_operator")
+    def step_with_step_operator():
+        pass
+
+    assert step_without_step_operator().custom_step_operator is None
+    assert (
+        step_with_step_operator().custom_step_operator == "some_step_operator"
+    )
+
+
+def test_step_executor_operator():
+    """Tests that the step returns the correct executor operator."""
+
+    @step(custom_step_operator=None)
+    def step_without_step_operator():
+        pass
+
+    @step(custom_step_operator="some_step_operator")
+    def step_with_step_operator():
+        pass
+
+    assert (
+        step_without_step_operator().executor_operator is PythonExecutorOperator
+    )
+    assert step_with_step_operator().executor_operator is StepExecutorOperator
 
 
 def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
@@ -681,9 +721,7 @@ def test_calling_a_step_twice_raises_an_exception():
         step_instance()
 
 
-def test_step_sets_global_execution_status_on_environment(
-    clean_repo, one_step_pipeline
-):
+def test_step_sets_global_execution_status_on_environment(one_step_pipeline):
     """Tests that the `Environment.step_is_running` value is set to
     True during step execution."""
 
@@ -697,7 +735,7 @@ def test_step_sets_global_execution_status_on_environment(
 
 
 def test_step_resets_global_execution_status_even_if_the_step_crashes(
-    clean_repo, one_step_pipeline
+    one_step_pipeline,
 ):
     """Tests that the `Environment.step_is_running` value is set to
     False after step execution even if the step crashes."""
@@ -713,7 +751,7 @@ def test_step_resets_global_execution_status_even_if_the_step_crashes(
 
 
 def test_returning_an_object_of_the_wrong_type_raises_an_error(
-    clean_repo, one_step_pipeline
+    one_step_pipeline,
 ):
     """Tests that returning an object of a type that wasn't specified (either
     directly or as part of the `Output` tuple annotation) raises an error."""
@@ -737,9 +775,7 @@ def test_returning_an_object_of_the_wrong_type_raises_an_error(
             pipeline_.run()
 
 
-def test_returning_wrong_amount_of_objects_raises_an_error(
-    clean_repo, one_step_pipeline
-):
+def test_returning_wrong_amount_of_objects_raises_an_error(one_step_pipeline):
     """Tests that returning a different amount of objects than defined (either
     directly or as part of the `Output` tuple annotation) raises an error."""
 
@@ -786,3 +822,70 @@ def test_returning_wrong_amount_of_objects_raises_an_error(
 
         with pytest.raises(StepInterfaceError):
             pipeline_.run()
+
+
+def test_step_can_output_generic_types(one_step_pipeline):
+    """Tests that a step can output generic typing classes."""
+
+    @step
+    def some_step_1() -> Dict:
+        return {}
+
+    @step
+    def some_step_2() -> List:
+        return []
+
+    for step_function in [some_step_1, some_step_2]:
+        pipeline_ = one_step_pipeline(step_function())
+
+        with does_not_raise():
+            pipeline_.run()
+
+
+def test_step_can_have_generic_input_types():
+    """Tests that a step can have generic typing classes as input."""
+
+    @step
+    def step_1() -> Output(dict_output=Dict, list_output=List):
+        return {}, []
+
+    @step
+    def step_2(dict_input: Dict, list_input: List) -> None:
+        pass
+
+    @pipeline
+    def p(s1, s2):
+        s2(*s1())
+
+    with does_not_raise():
+        p(step_1(), step_2()).run()
+
+
+def test_step_can_have_raw_artifacts(clean_repo):
+    """Check that you can bypass materialization with raw artifacts."""
+
+    @step
+    def step_1() -> Output(dict_=Dict, list_=List):
+        return {"some": "data"}, []
+
+    @step
+    def step_2() -> Output(dict_=Dict, list_=List):
+        return {"some": "data"}, []
+
+    @step
+    def step_3(dict_: DataArtifact, list_: ModelArtifact) -> None:
+        assert hasattr(dict_, "uri")
+        assert hasattr(list_, "uri")
+
+    @step
+    def step_4(dict_: Dict, list_: List) -> None:
+        assert type(dict_) is dict
+        assert type(list_) is list
+
+    @pipeline
+    def p(s1, s2, s3, s4):
+        s3(*s1())
+        s4(*s2())
+
+    with does_not_raise():
+        p(step_1(), step_2(), step_3(), step_4()).run()

@@ -38,41 +38,6 @@ class LoggingLevels(Enum):
     CRITICAL = logging.CRITICAL
 
 
-class StackComponentFlavor(StrEnum):
-    """Abstract base class for all stack component flavors."""
-
-
-class ArtifactStoreFlavor(StackComponentFlavor):
-    """All supported artifact store flavors."""
-
-    AZURE = "azure"
-    LOCAL = "local"
-    GCP = "gcp"
-    S3 = "s3"
-
-
-class MetadataStoreFlavor(StackComponentFlavor):
-    """All supported metadata store flavors."""
-
-    SQLITE = "sqlite"
-    MYSQL = "mysql"
-    KUBEFLOW = "kubeflow"
-
-
-class ContainerRegistryFlavor(StackComponentFlavor):
-    """All supported container registry flavors."""
-
-    DEFAULT = "default"
-
-
-class OrchestratorFlavor(StackComponentFlavor):
-    """All supported orchestrator flavors."""
-
-    LOCAL = "local"
-    KUBEFLOW = "kubeflow"
-    AIRFLOW = "airflow"
-
-
 class StackComponentType(StrEnum):
     """All possible types a `StackComponent` can have."""
 
@@ -80,6 +45,10 @@ class StackComponentType(StrEnum):
     METADATA_STORE = "metadata_store"
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
+    STEP_OPERATOR = "step_operator"
+    FEATURE_STORE = "feature_store"
+    SECRETS_MANAGER = "secrets_manager"
+    MODEL_DEPLOYER = "model_deployer"
 
     @property
     def plural(self) -> str:
@@ -94,3 +63,19 @@ class MetadataContextTypes(Enum):
     """All possible types that contexts can have within pipeline nodes"""
 
     STACK = "stack"
+    PIPELINE_REQUIREMENTS = "pipeline_requirements"
+
+
+class SecretSchemaType(StrEnum):
+    """All supported secret schema types."""
+
+    AWS = "aws"
+    ARBITRARY = "arbitrary"
+
+
+class StoreType(StrEnum):
+    """Repository Store Backend Types"""
+
+    LOCAL = "local"
+    SQL = "sql"
+    REST = "rest"

@@ -15,7 +15,7 @@
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Optional, Tuple
 
-import requests  # type: ignore [import]
+import requests
 from pydantic import Field
 
 from zenml.logger import get_logger
@@ -133,8 +133,6 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
             return ServiceState.ERROR, "no HTTP healthcheck URI available"
 
         logger.debug("Running HTTP healthcheck for URI: %s", check_uri)
-
-        error = ""
 
         try:
             if self.config.use_head_request:

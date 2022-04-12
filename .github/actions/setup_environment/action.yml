@@ -28,7 +28,6 @@ runs:
 
     - name: Load cached venv
       id: cached-poetry-dependencies
-      if: steps.cached-poetry-lock.outputs.cache-hit != 'true'
       uses: actions/cache@v2.1.6
       with:
         path: |

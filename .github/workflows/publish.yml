@@ -58,7 +58,7 @@ jobs:
           if [ "$(cat src/zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ]; then ./scripts/publish.sh; else exit 1; fi
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@master
+      - uses: google-github-actions/setup-gcloud@v0
         with:
           service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
           service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}

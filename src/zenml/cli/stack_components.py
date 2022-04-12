@@ -12,12 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import time
+from importlib import import_module
 from typing import Callable, List, Optional
 
 import click
+from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
+from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.repository import Repository
@@ -55,7 +58,7 @@ def _get_stack_component(
 
     component = repo.active_stack.components[component_type]
     cli_utils.declare(
-        f"No orchestrator name given, using `{component.name}` "
+        f"No component name given, using `{component.name}` "
         f"from active stack."
     )
     return component
@@ -68,15 +71,18 @@ def generate_stack_component_get_command(
 
     def get_stack_component_command() -> None:
         """Prints the name of the active component."""
+
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         active_stack = Repository().active_stack
         component = active_stack.components.get(component_type, None)
         display_name = _component_display_name(component_type)
-
         if component:
-            cli_utils.declare(f"Active {display_name}: {component.name}")
+            cli_utils.declare(f"Active {display_name}: '{component.name}'")
         else:
             cli_utils.warning(
-                f"No {display_name} set for active stack ({active_stack.name})."
+                f"No {display_name} set for active stack ('{active_stack.name}')."
             )
 
     return get_stack_component_command
@@ -94,6 +100,9 @@ def generate_stack_component_describe_command(
     )
     def describe_stack_component_command(name: Optional[str]) -> None:
         """Prints details about the active/specified component."""
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         singular_display_name = _component_display_name(component_type)
         plural_display_name = _component_display_name(
             component_type, plural=True
@@ -103,16 +112,31 @@ def generate_stack_component_describe_command(
         if len(components) == 0:
             cli_utils.warning(f"No {plural_display_name} registered.")
             return
+
+        try:
+            component = _get_stack_component(
+                component_type, component_name=name
+            )
+        except KeyError:
+            if name:
+                cli_utils.warning(
+                    f"No {singular_display_name} found for name '{name}'."
+                )
+            else:
+                cli_utils.warning(
+                    f"No {singular_display_name} in active stack."
+                )
+            return
+
         try:
             active_component_name = repo.active_stack.components[
                 component_type
             ].name
+            is_active = active_component_name == component.name
         except KeyError:
-            cli_utils.error(f"No available {component_type}.")
-            return
+            # there is no component of this type in the active stack
+            is_active = False
 
-        component = _get_stack_component(component_type, component_name=name)
-        is_active = active_component_name == component.name
         cli_utils.print_stack_component_configuration(
             component, singular_display_name, is_active
         )
@@ -127,7 +151,12 @@ def generate_stack_component_list_command(
 
     def list_stack_components_command() -> None:
         """Prints a table of stack components."""
+
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         repo = Repository()
+
         components = repo.get_stack_components(component_type)
         display_name = _component_display_name(component_type, plural=True)
         if len(components) == 0:
@@ -137,12 +166,12 @@ def generate_stack_component_list_command(
             active_component_name = repo.active_stack.components[
                 component_type
             ].name
-
-            cli_utils.print_stack_component_list(
-                components, active_component_name=active_component_name
-            )
         except KeyError:
-            cli_utils.error(f"No available {component_type}.")
+            active_component_name = None
+
+        cli_utils.print_stack_component_list(
+            components, active_component_name=active_component_name
+        )
 
     return list_stack_components_command
 
@@ -171,6 +200,7 @@ def generate_stack_component_register_command(
         name: str, flavor: str, args: List[str]
     ) -> None:
         """Registers a stack component."""
+        cli_utils.print_active_profile()
         try:
             parsed_args = cli_utils.parse_unknown_options(args)
         except AssertionError as e:
@@ -199,6 +229,7 @@ def generate_stack_component_delete_command(
     @click.argument("name", type=str)
     def delete_stack_component_command(name: str) -> None:
         """Deletes a stack component."""
+        cli_utils.print_active_profile()
         Repository().deregister_stack_component(
             component_type=component_type,
             name=name,
@@ -217,6 +248,9 @@ def generate_stack_component_up_command(
     @click.argument("name", type=str, required=False)
     def up_stack_component_command(name: Optional[str] = None) -> None:
         """Deploys a stack component locally."""
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         component = _get_stack_component(component_type, component_name=name)
         display_name = _component_display_name(component_type)
 
@@ -266,6 +300,9 @@ def generate_stack_component_down_command(
         name: Optional[str] = None, force: bool = False
     ) -> None:
         """Stops/Tears down the local deployment of a stack component."""
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         component = _get_stack_component(component_type, component_name=name)
         display_name = _component_display_name(component_type)
 
@@ -314,11 +351,14 @@ def generate_stack_component_logs_command(
         name: Optional[str] = None, follow: bool = False
     ) -> None:
         """Displays stack component logs."""
+        cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
         component = _get_stack_component(component_type, component_name=name)
         display_name = _component_display_name(component_type)
         log_file = component.log_file
 
-        if not log_file or not fileio.file_exists(log_file):
+        if not log_file or not fileio.exists(log_file):
             cli_utils.warning(
                 f"Unable to find log file for {display_name} "
                 f"'{component.name}'."
@@ -345,6 +385,30 @@ def generate_stack_component_logs_command(
                 click.echo(f.read())
 
     return stack_component_logs_command
+
+
+def generate_stack_component_explain_command(
+    component_type: StackComponentType,
+) -> Callable[[], None]:
+    """Generates an `explain` command for the specific stack component type."""
+
+    def explain_stack_components_command() -> None:
+        """Explains the concept of the stack component."""
+
+        component_module = import_module(f"zenml.{component_type.plural}")
+
+        if component_module.__doc__ is not None:
+            md = Markdown(component_module.__doc__)
+            console.print(md)
+        else:
+            console.print(
+                "The explain subcommand is yet not available for "
+                "this stack component. For more information, you can "
+                "visit our docs page: https://docs.zenml.io/ and "
+                "stay tuned for future releases."
+            )
+
+    return explain_stack_components_command
 
 
 def register_single_stack_component_cli_commands(
@@ -414,6 +478,12 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "logs", help=f"Display {singular_display_name} logs."
     )(logs_command)
+
+    # zenml stack-component explain
+    explain_command = generate_stack_component_explain_command(component_type)
+    command_group.command(
+        "explain", help=f"Explaining the {plural_display_name}."
+    )(explain_command)
 
 
 def register_all_stack_component_cli_commands() -> None:

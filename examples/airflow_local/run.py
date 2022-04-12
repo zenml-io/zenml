@@ -11,8 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-
 from pipeline import (
     dynamic_importer,
     mnist_pipeline,
@@ -21,14 +19,18 @@ from pipeline import (
     sklearn_trainer,
 )
 
-if __name__ == "__main__":
-    # Initialize a new pipeline run
-    scikit_p = mnist_pipeline(
-        importer=dynamic_importer(),
-        normalizer=normalize_mnist(),
-        trainer=sklearn_trainer(),
-        evaluator=sklearn_evaluator(),
-    )
+# Initialize a new pipeline run
+scikit_p = mnist_pipeline(
+    importer=dynamic_importer(),
+    normalizer=normalize_mnist(),
+    trainer=sklearn_trainer(),
+    evaluator=sklearn_evaluator(),
+)
 
-    # Run the new pipeline
-    scikit_p.run()
+# NOTE: the airflow DAG object returned by the scikit_p.run() call actually
+# needs to be a global object (airflow imports this file and does a for-loop
+# over globals() that checks if there are any DAG instances). That's why the
+# airflow example can't have the `__name__=="__main__"` condition
+
+# Run the new pipeline
+DAG = scikit_p.run()

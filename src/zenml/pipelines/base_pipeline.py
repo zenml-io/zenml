@@ -14,6 +14,7 @@
 import inspect
 from abc import abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
@@ -35,9 +36,13 @@ from zenml.constants import (
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
     SHOULD_PREVENT_PIPELINE_EXECUTION,
 )
-from zenml.exceptions import PipelineConfigurationError, PipelineInterfaceError
+from zenml.exceptions import (
+    PipelineConfigurationError,
+    PipelineInterfaceError,
+    StackValidationError,
+)
 from zenml.integrations.registry import integration_registry
-from zenml.io import fileio
+from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository
@@ -46,6 +51,9 @@ from zenml.steps import BaseStep
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
+if TYPE_CHECKING:
+    from zenml.stack import Stack
+
 logger = get_logger(__name__)
 PIPELINE_INNER_FUNC_NAME: str = "connect"
 PARAM_ENABLE_CACHE: str = "enable_cache"
@@ -53,6 +61,7 @@ PARAM_REQUIRED_INTEGRATIONS: str = "required_integrations"
 PARAM_REQUIREMENTS_FILE: str = "requirements_file"
 PARAM_DOCKERIGNORE_FILE: str = "dockerignore_file"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
+PARAM_SECRETS: str = "secrets"
 
 
 class BasePipelineMeta(type):
@@ -92,6 +101,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
             pipeline.
         requirements_file: Optional path to a pip requirements file that
             contains all requirements to run the pipeline.
+        required_integrations: Optional set of integrations that need to be
+            installed for this pipeline to run.
     """
 
     STEP_SPEC: ClassVar[Dict[str, Any]] = None  # type: ignore[assignment]
@@ -104,6 +115,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.required_integrations = kwargs.pop(PARAM_REQUIRED_INTEGRATIONS, ())
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
         self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
+        self.secrets = kwargs.pop(PARAM_SECRETS, [])
 
         self.name = self.__class__.__name__
         logger.info("Creating run for pipeline: `%s`", self.name)
@@ -251,9 +263,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"'{integration_name}'."
                 ) from e
 
-        if self.requirements_file and fileio.file_exists(
-            self.requirements_file
-        ):
+        if self.requirements_file and fileio.exists(self.requirements_file):
             with fileio.open(self.requirements_file, "r") as f:
                 requirements.update(
                     {
@@ -275,6 +285,24 @@ class BasePipeline(metaclass=BasePipelineMeta):
         raises a PipelineInterfaceError.
         """
         raise PipelineInterfaceError("Cannot set steps manually!")
+
+    def validate_stack(self, stack: "Stack") -> None:
+        """Validates if a stack is able to run this pipeline."""
+        available_step_operators = (
+            {stack.step_operator.name} if stack.step_operator else set()
+        )
+
+        for step in self.steps.values():
+            if (
+                step.custom_step_operator
+                and step.custom_step_operator not in available_step_operators
+            ):
+                raise StackValidationError(
+                    f"Step '{step.name}' requires custom step operator "
+                    f"'{step.custom_step_operator}' which is not configured in "
+                    f"the active stack. Available step operators: "
+                    f"{available_step_operators}."
+                )
 
     def _reset_step_flags(self) -> None:
         """Reset the _has_been_called flag at the beginning of a pipeline run,
@@ -317,7 +345,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # Path of the file where pipeline.run() was called. This is needed by
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
-        dag_filepath = fileio.resolve_relative_path(
+        dag_filepath = utils.resolve_relative_path(
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
         )
         runtime_configuration = RuntimeConfiguration(
@@ -329,12 +357,13 @@ class BasePipeline(metaclass=BasePipelineMeta):
         stack = Repository().active_stack
 
         stack_metadata = {
-            component_type.value: component.flavor.value
+            component_type.value: component.FLAVOR
             for component_type, component in stack.components.items()
         }
         track_event(
             event=AnalyticsEvent.RUN_PIPELINE,
             metadata={
+                "store_type": Repository().active_profile.store_type.value,
                 **stack_metadata,
                 "total_steps": len(self.steps),
                 "schedule": bool(schedule),
@@ -342,6 +371,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
         self._reset_step_flags()
+        self.validate_stack(stack)
 
         return stack.deploy_pipeline(
             self, runtime_configuration=runtime_configuration

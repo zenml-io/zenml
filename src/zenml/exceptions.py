@@ -48,11 +48,6 @@ class InitializationException(ZenMLBaseException):
     repository."""
 
 
-class RepositoryNotFoundError(ZenMLBaseException):
-    """Raised when no ZenML repository directory is found when creating a
-    ZenML repository instance."""
-
-
 class ForbiddenRepositoryAccessError(ZenMLBaseException, RuntimeError):
     """Raised when trying to access a ZenML repository instance while a step
     is executed."""
@@ -127,6 +122,16 @@ class PipelineInterfaceError(ZenMLBaseException):
 
 class ArtifactInterfaceError(ZenMLBaseException):
     """Raises exception when interacting with the Artifact interface
+    in an unsupported way."""
+
+
+class StackComponentInterfaceError(ZenMLBaseException):
+    """Raises exception when interacting with the stack components
+    in an unsupported way."""
+
+
+class ArtifactStoreInterfaceError(ZenMLBaseException):
+    """Raises exception when interacting with the Artifact Store interface
     in an unsupported way."""
 
 

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.enums import MetadataStoreFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.integrations.kubeflow.metadata_stores import KubeflowMetadataStore
 
 
@@ -21,7 +21,5 @@ def test_kubeflow_metadata_store_attributes():
     correctly."""
     metadata_store = KubeflowMetadataStore(name="")
 
-    assert metadata_store.supports_local_execution is True
-    assert metadata_store.supports_remote_execution is True
-    assert metadata_store.type == StackComponentType.METADATA_STORE
-    assert metadata_store.flavor == MetadataStoreFlavor.KUBEFLOW
+    assert metadata_store.TYPE == StackComponentType.METADATA_STORE
+    assert metadata_store.FLAVOR == "kubeflow"

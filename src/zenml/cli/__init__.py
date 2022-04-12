@@ -31,7 +31,7 @@ order to find out which version of ZenML you are running, type:
 If you ever need more information on exactly what a certain command will
 do, use the ``--help`` flag attached to the end of your command string.
 
-For example, to get a sense of all of the commands available to you
+For example, to get a sense of all the commands available to you
 while using the ``zenml`` command, type:
 
 ```bash
@@ -188,7 +188,7 @@ Customizing your Metadata Store
 -------------------------------
 
 The configuration of each pipeline, step, backend, and produced
-artifacts are all tracked within the metadata store. By default ZenML
+artifacts are all tracked within the metadata store. By default, ZenML
 initializes your repository with a metadata store kept on your local
 machine. If you wish to register a new metadata store, do so with the
 ``register`` command:
@@ -283,7 +283,7 @@ zenml container-registry list
 ```
 
 For details about a particular container registry, use the `describe` command.
-By default (without a specific registry name passed in) it will describe the
+By default, (without a specific registry name passed in) it will describe the
 active or currently used container registry:
 
 ```bash
@@ -297,6 +297,137 @@ command:
 zenml container-registry delete
 ```
 
+Setting up a Secrets Manager
+----------------------------
+
+ZenML offers a way to securely store secrets associated with your project. To
+set up a local file-based secrets manager, use the following CLI command:
+
+```bash
+zenml secrets-manager register SECRETS_MANAGER_NAME -t local
+```
+
+This can then be used as part of your Stack (see below).
+
+Using Secrets
+-------------
+
+Secrets are administered by the Secrets Manager. You must first register that
+and then register a stack that includes the secrets manager before you can start
+to use it. To get a full list of all the possible commands, type `zenml secret
+--help`. A ZenML Secret is a collection or grouping of key-value pairs. These
+Secret groupings come in different types, and certain types have predefined keys
+that should be used. For example, an AWS secret has predefined keys of
+`aws_access_key_id` and `aws_secret_access_key` (and an optional
+`aws_session_token`). If you do not have a specific secret type you wish to use,
+ZenML will use the `arbitrary` type to store your key-value pairs.
+
+To register a secret, use the `register` command:
+
+```bash
+zenml secret register SECRET_NAME
+```
+
+If you wish to register a single secret non-interactively, you can
+pass in a key-value pair at the command line, as in the following example:
+
+```shell
+zenml secret register SECRET_NAME -k KEY -v VALUE
+```
+
+Note that the key and value will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `register` command instead.
+
+To list all the secrets available, use the `list` command:
+
+```bash
+zenml secret list
+```
+
+To get the key-value pairs for a particular secret, use the `get` command:
+
+```bash
+zenml secret get SECRET_NAME
+```
+
+To update a secret, use the `update` command:
+
+```bash
+zenml secret update SECRET_NAME
+```
+
+If you wish to update a single secret non-interactively, you can
+pass in a key-value pair at the command line, as in the following example:
+
+```shell
+zenml secret update SECRET_NAME -k KEY -v NEW_VALUE
+```
+
+Note that the key and value will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `update` command instead.
+
+Finally, to delete a secret, use the `delete` command:
+
+```bash
+zenml secret delete SECRET_NAME
+```
+
+Add a Feature Store to your Stack
+---------------------------------
+
+ZenML supports connecting to a Redis-backed Feast feature store as a stack
+component integration. To set up a feature store, use the following CLI command:
+
+```shell zenml feature-store register FEATURE_STORE_NAME -t feast
+--feast_repo=REPO_PATH --online_host HOST_NAME --online_port ONLINE_PORT_NUMBER
+```
+
+Once you have registered your feature store as a stack component, you can use it
+in your ZenML Stack.
+
+Interacting with Deployed Models
+-------------
+
+Deployed models are
+
+
+If you want to simply see what models have been deployed within your stack, run
+the following command:
+
+```bash
+zenml served-models list
+```
+
+This should give you a list of served models containing their uuid, the name
+of the pipeline that produced them including the run id and the step name as
+well as the status.
+This information should help you identify the different models.
+
+If you want further information about a specific model, simply copy the
+UUID and the following command.
+
+```bash
+zenml served-models describe <UUID>
+```
+
+If you are only interested in the prediction-url of the specific model you can
+also run:
+
+```bash
+zenml served-models get-url <UUID>
+```
+
+Finally, you will also be able to start/stop the services using the following
+ two commands:
+
+```bash
+zenml served-models start <UUID>
+zenml served-models stop <UUID>
+```
+
+If you want to completely remove a served model you can also irreversibly delete it using:
+```bash
+zenml served-models delete <UUID>
 Administering the Stack
 -----------------------
 
@@ -319,7 +450,8 @@ zenml stack register STACK_NAME \
 ```
 Each corresponding argument should be the name you passed in as an
 identifier for the artifact store, metadata store or orchestrator when
-you originally registered it.
+you originally registered it. (If you want to use your secrets manager, you
+should pass its name in with the `-x` option flag.)
 
 To list the stacks that you have registered within your current ZenML
 project, type:
@@ -351,8 +483,12 @@ zenml stack get
 from zenml.cli.base import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
+from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.pipeline import *  # noqa
+from zenml.cli.secret import *  # noqa
+from zenml.cli.served_models import *  # noqa
+from zenml.cli.service import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.version import *  # noqa
