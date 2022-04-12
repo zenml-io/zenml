@@ -47,7 +47,7 @@ class HFDatasetMaterializer(BaseMaterializer):
         """
         super().handle_return(ds)
         temp_dir = TemporaryDirectory()
-        ds.sava_to_disk(temp_dir.name)
+        ds.save_to_disk(temp_dir.name)
         fileio.copy_dir(
             temp_dir.name, os.path.join(self.artifact.uri, DEFAULT_DATASET_DIR)
         )
