@@ -478,9 +478,7 @@ def register_single_stack_component_cli_commands(
     )(get_command)
 
     # zenml stack-component describe
-    describe_command = generate_stack_component_describe_command(
-        component_type
-    )
+    describe_command = generate_stack_component_describe_command(component_type)
     command_group.command(
         "describe",
         help=f"Show details about the (active) {singular_display_name}.",
@@ -493,15 +491,22 @@ def register_single_stack_component_cli_commands(
     )(list_command)
 
     # zenml stack-component register
-    register_command = generate_stack_component_register_command(
-        component_type
-    )
+    register_command = generate_stack_component_register_command(component_type)
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "register",
         context_settings=context_settings,
         help=f"Register a new {singular_display_name}.",
     )(register_command)
+
+    # zenml stack-component update
+    update_command = generate_stack_component_update_command(component_type)
+    context_settings = {"ignore_unknown_options": True}
+    command_group.command(
+        "update",
+        context_settings=context_settings,
+        help=f"Update a new {singular_display_name}.",
+    )(update_command)
 
     # zenml stack-component delete
     delete_command = generate_stack_component_delete_command(component_type)
