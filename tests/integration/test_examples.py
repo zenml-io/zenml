@@ -175,16 +175,6 @@ examples = [
     ),
 ]
 
-# flake8: noqa: C901
-if sys.platform != "win32":
-    # daemon functionality is currently not supported on Windows."
-    examples.append(
-        ExampleIntegrationTestConfiguration(
-            name="mlflow_deployment",
-            validation_function=mlflow_deployment_example_validation,
-        )
-    )
-
 
 @pytest.mark.parametrize(
     "example_configuration",
