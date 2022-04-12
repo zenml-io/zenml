@@ -11,9 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.huggingface.materializers.huggingface_materializers import (  # noqa
+from zenml.integrations.huggingface.materializers.huggingface_datasets_materializer import (
     HFDatasetMaterializer,
+)
+from zenml.integrations.huggingface.materializers.huggingface_pt_model_materializer import (
     HFPTModelMaterializer,
+)
+from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
     HFTFModelMaterializer,
+)
+from zenml.integrations.huggingface.materializers.huggingface_tokenizer_materializer import (
     HFTokenizerMaterializer,
 )
