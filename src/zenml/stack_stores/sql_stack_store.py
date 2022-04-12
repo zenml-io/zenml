@@ -325,7 +325,7 @@ class SqlStackStore(BaseStackStore):
                             component.component_name = cname
                             component.component_type = ctype
                             session.add(component)
-                        session.commit()
+                        # session.commit()
             else:
                 stack = ZenStack(name=name, created_by=1)
                 session.add(stack)

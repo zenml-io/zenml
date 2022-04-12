@@ -11,12 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import base64
 import os
 import platform
 import random
 import shutil
+from contextlib import ExitStack as does_not_raise
 
 import pytest
+import yaml
 
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
@@ -26,6 +29,10 @@ from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
 from zenml.services import ServiceState
 from zenml.stack import Stack
+from zenml.stack.stack_component import StackComponent
+from zenml.stack.stack_component_class_registry import (
+    StackComponentClassRegistry,
+)
 from zenml.stack_stores import (
     BaseStackStore,
     LocalStackStore,
@@ -188,3 +195,58 @@ def test_register_deregister_components(fresh_stack_store: BaseStackStore):
         len(stack_store.get_stack_components(StackComponentType.ORCHESTRATOR))
         == 1
     )
+
+
+def get_component_from_wrapper(
+    wrapper: StackComponentWrapper,
+) -> StackComponent:
+    """Instantiate a StackComponent from the Configuration."""
+    component_class = StackComponentClassRegistry.get_class(
+        component_type=wrapper.type, component_flavor=wrapper.flavor
+    )
+    component_config = yaml.safe_load(base64.b64decode(wrapper.config).decode())
+    return component_class.parse_obj(component_config)
+
+
+def test_update_stack_with_new_component(fresh_stack_store: BaseStackStore):
+    """Test updating a stack with a new component"""
+    current_stack_store = fresh_stack_store
+
+    new_orchestrator = LocalOrchestrator(name="new_orchestrator")
+
+    updated_stack = Stack(
+        name="default",
+        orchestrator=new_orchestrator,
+        metadata_store=get_component_from_wrapper(
+            current_stack_store.get_stack_component(
+                StackComponentType.METADATA_STORE, "default"
+            )
+        ),
+        artifact_store=get_component_from_wrapper(
+            current_stack_store.get_stack_component(
+                StackComponentType.ARTIFACT_STORE, "default"
+            )
+        ),
+    )
+
+    with does_not_raise():
+        current_stack_store.update_stack(StackWrapper.from_stack(updated_stack))
+
+    assert (
+        len(
+            current_stack_store.get_stack_components(
+                StackComponentType.ORCHESTRATOR
+            )
+        )
+        == 2
+    )
+    assert new_orchestrator in [
+        get_component_from_wrapper(component)
+        for component in current_stack_store.get_stack_components(
+            StackComponentType.ORCHESTRATOR
+        )
+    ]
+    assert new_orchestrator in [
+        get_component_from_wrapper(component)
+        for component in current_stack_store.get_stack("default").components
+    ]
