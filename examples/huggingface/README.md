@@ -97,10 +97,10 @@ Now we're ready. Execute:
 
 ```shell
 # sequence-classification
-python run_pipeline.py --nlp_task=sequence-classification --pretrained_model=distilbert-base-uncased --epochs=3 --batch_size=16
+python run_pipeline.py --nlp_task=sequence-classification --pretrained_model=distilbert-base-uncased --epochs=3 --batch_size=16 --dataset_name=imdb --text_column=text --label_column=label
 
 # token-classification
-python run_pipeline.py --nlp_task=token-classification --pretrained_model=distilbert-base-uncased --epochs=3 --batch_size=16
+python run_pipeline.py --nlp_task=token-classification --pretrained_model=distilbert-base-uncased --epochs=3 --batch_size=16 --dataset_name=conll2003 --text_column=tokens --label_column=ner_tags
 ```
 
 ### Test pipeline
