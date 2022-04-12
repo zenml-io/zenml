@@ -236,16 +236,15 @@ class LocalDaemonService(BaseService):
         if not self.status.runtime_path or not os.path.exists(
             self.status.runtime_path
         ):
+            # runtimepath points to zenml local stores with uuid to make it
+            # easy to track from other locations.
+            self.status.runtime_path = os.path.join(
+                self.config.root_runtime_path
+                or tempfile.mkdtemp(prefix="zenml-service-"),
+                str(self.uuid),
+            )
             if self.config.root_runtime_path:
-                self.status.runtime_path = os.path.join(
-                    self.config.root_runtime_path,
-                    str(self.uuid),
-                )
                 create_dir_recursive_if_not_exists(self.status.runtime_path)
-            else:
-                self.status.runtime_path = (
-                    tempfile.mkdtemp(prefix="zenml-service-"),
-                )
 
         assert self.status.config_file is not None
         assert self.status.pid_file is not None

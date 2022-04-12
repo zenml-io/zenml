@@ -84,9 +84,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
         if not isinstance(mlflow_model_deployer_component, MLFlowModelDeployer):
             raise TypeError(
-                "The active stack needs to have a model deployer component"
-                "of type MLFlowModelDeployer registered for this step to work."
-                "You can create a new stack with a MLFlowModelDeployer component"
+                "The active stack needs to have a model deployer component "
+                "of type MLFlowModelDeployer registered for this step to work. "
+                "You can create a new stack with a MLFlowModelDeployer component "
                 "or update your existing stack to add this component."
             )
         return mlflow_model_deployer_component
@@ -94,8 +94,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
     def deploy_model(
         self,
         config: ServiceConfig,
-        replace: bool,
-        timeout: int,
+        replace: bool = False,
+        timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
     ) -> BaseService:
         """
         We assume that the deployment decision is made at the step level and
@@ -193,6 +193,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
     def find_model_server(
         self,
         running: bool = True,
+        service_uuid: Optional[UUID] = None,
         pipeline_name: Optional[str] = None,
         pipeline_run_id: Optional[str] = None,
         pipeline_step_name: Optional[str] = None,
@@ -205,6 +206,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
         Args:
             running: If true, only running services will be returned.
+            service_uuid: The UUID of the service that was originally used
+                to deploy the model.
             pipeline_name: Name of the pipeline that the deployed model was part
             of.
             pipeline_run_id: ID of the pipeline run which the deployed model was part of.
