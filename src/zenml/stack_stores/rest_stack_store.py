@@ -401,12 +401,10 @@ class RestStackStore(BaseStackStore):
                     f"{response.text}"
                 )
         elif response.status_code == 404:
-            if "DoesNotExistException" in response.text:
-                raise DoesNotExistException(
-                    *response.json().get("detail", (response.text,))
-                )
-            else:
+            if "DoesNotExistException" not in response.text:
                 raise KeyError(*response.json().get("detail", (response.text,)))
+            message = ": ".join(response.json().get("detail", (response.text,)))
+            raise DoesNotExistException(message)
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
                 raise StackComponentExistsError(
