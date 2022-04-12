@@ -1,4 +1,4 @@
-# ZenML continuous model deployment with Seldon Core
+# 🚀 ZenML continuous model deployment with Seldon Core
 
 [Seldon Core](https://github.com/SeldonIO/seldon-core) is a production grade
 open source model serving platform. It packs a wide range of features built
@@ -19,7 +19,7 @@ a ZenML MLOps stack that features Seldon Core as a model deployer component
 makes for a seamless transition from running experiments locally to deploying
 models in production.
 
-## Overview
+## 🗺 Overview
 
 The example uses the
 [Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset to
@@ -63,9 +63,9 @@ The inference pipeline simulates loading data from a dynamic external source,
 then uses that data to perform online predictions using the running Seldon
 Core prediction server.
 
-## Running the example
+# 🖥 Run it locally
 
-### Pre-requisites
+### 📄 Prerequisites 
 
 For the ZenML Seldon Core deployer to work, three basic things are required:
 
@@ -180,7 +180,7 @@ You should see something like this as the prediction response:
 {"data":{"names":["t:0","t:1","t:2"],"ndarray":[[0.0006985194531162835,0.00366803903943666,0.995633441507447]]},"meta":{"requestPath":{"classifier":"seldonio/sklearnserver:1.13.1"}}}
 ```
 
-### Setting up the ZenML Stack
+### 🥞 Setting up the ZenML Stack
 
 Before you run the example, a ZenML Stack needs to be set up with all the proper
 components. Two different examples of stacks featuring AWS infrastructure
@@ -329,7 +329,7 @@ zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws
 zenml stack set aws
 ```
 
-### Run the project
+### 🏃️Run the code
 To run the continuous deployment pipeline:
 
 ```shell
@@ -496,7 +496,7 @@ CLI command:
 $ zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
-### Clean up
+### 🧽 Clean up
 
 To stop any prediction servers running in the background, use the `zenml model-server list`
 and `zenml model-server delete <uuid>` CLI commands.:
@@ -510,3 +510,10 @@ Then delete the remaining ZenML references.
 ```shell
 rm -rf zenml_examples
 ```
+
+# 📜 Learn more
+
+Our docs regarding the seldon deployment integration can be found [here](TODO: Link to docs).
+
+If you want to learn more about deployment in zenml in general or about how to build your own deployer steps in zenml
+check out our [docs](TODO: Link to docs)

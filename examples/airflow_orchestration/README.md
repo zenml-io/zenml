@@ -81,7 +81,8 @@ file. The username will always be `admin`.
 
 ### 📆 Schedule the airflow DAG
 
-To schedule the DAG, simply run:
+Sometimes you don't want to run your pipeline only once, instead you want to schedule them with a predefined frequency.
+To schedule the DAG to run every 3 minutes for the next 9 minutes, simply run:
 
 ```bash
 python run_schedule.py
