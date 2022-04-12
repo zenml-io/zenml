@@ -66,6 +66,17 @@ class StackComponent(BaseModel, ABC):
         """Set of PyPI requirements for the component."""
         return set(get_requirements_for_module(self.__module__))
 
+    @property
+    def local_path(self) -> Optional[str]:
+        """Path to a local directory used by the component to store persistent
+        information.
+
+        This property should only be implemented by components that need to
+        store persistent information in a directory on the local machine and
+        also need that information to be available during pipeline runs.
+        """
+        return None
+
     def prepare_pipeline_deployment(
         self,
         pipeline: "BasePipeline",
