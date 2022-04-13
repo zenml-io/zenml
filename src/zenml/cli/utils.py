@@ -417,15 +417,19 @@ def get_service_status_emoji(service: BaseService) -> str:
     return ":hourglass_not_done:"
 
 
-def pretty_print_model_deployer(model_services: List[BaseService]) -> None:
+def pretty_print_model_deployer(
+    model_services: List[BaseService], model_deployer: BaseModelDeployer
+) -> None:
     """Given a list of served_models print all key value pairs associated with
     the secret
 
     Args:
-        model_services:
+        model_services: list of model deployment services
+        model_deployer: Active model deployer
     """
     model_service_dicts = []
     for model_service in model_services:
+        served_model_info = model_deployer.get_model_server_info(model_service)
 
         model_service_dicts.append(
             {
@@ -433,6 +437,7 @@ def pretty_print_model_deployer(model_services: List[BaseService]) -> None:
                 "UUID": str(model_service.uuid),
                 "PIPELINE_NAME": model_service.config.pipeline_name,
                 "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
+                "MODEL_NAME": served_model_info.get("MODEL_NAME", ""),
             }
         )
 

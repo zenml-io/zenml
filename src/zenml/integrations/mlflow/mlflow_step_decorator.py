@@ -15,7 +15,10 @@ import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
 from zenml.environment import Environment
-from zenml.integrations.mlflow.mlflow_environment import MLFlowStepEnvironment
+from zenml.integrations.mlflow.mlflow_environment import (
+    MLFlowEnvironment,
+    MLFlowStepEnvironment,
+)
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
 from zenml.steps.utils import STEP_INNER_FUNC_NAME
@@ -148,18 +151,21 @@ def mlflow_step_entrypoint(
                 "Setting up MLflow backend before running step entrypoint %s",
                 func.__name__,
             )
+            # Create and activate the global MLflow environment
+            global_mlflow_env = MLFlowEnvironment()
             step_env = Environment().step_environment
             experiment = experiment_name or step_env.pipeline_name
             step_mlflow_env = MLFlowStepEnvironment(
                 experiment_name=experiment, run_name=step_env.pipeline_run_id
             )
-            with step_mlflow_env:
+            with global_mlflow_env:
+                with step_mlflow_env:
 
-                # should never happen, but just in case
-                assert step_mlflow_env.mlflow_run is not None
+                    # should never happen, but just in case
+                    assert step_mlflow_env.mlflow_run is not None
 
-                with step_mlflow_env.mlflow_run:
-                    return func(*args, **kwargs)
+                    with step_mlflow_env.mlflow_run:
+                        return func(*args, **kwargs)
 
         return cast(F, wrapper)
 
