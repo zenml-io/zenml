@@ -124,6 +124,9 @@ ENABLE_RICH_TRACEBACK = handle_bool_env_var(
     ENV_ZENML_ENABLE_RICH_TRACEBACK, True
 )
 
+# Services
+DEFAULT_SERVICE_START_STOP_TIMEOUT = 10
+
 # API Endpoint paths:
 IS_EMPTY = "/empty"
 STACKS = "/stacks"

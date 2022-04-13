@@ -195,6 +195,7 @@ This stack consists of the following components:
 * an AWS S3 artifact store
 * the local orchestrator
 * the local metadata store
+* a Seldon Core model deployer
 
 To have access to the AWS S3 artifact store from your local workstation, the
 AWS client credentials needs to be properly set up locally as documented in
@@ -233,6 +234,9 @@ kubectl -n zenml-workloads create secret generic seldon-init-container-secret \
     --from-literal=RCLONE_CONFIG_S3_ENV_AUTH=true
 ```
 
+The name of the created secret also needs to be passed to the `run.py` example
+launcher script via its `--secret` command line argument.
+
 NOTE: this is based on the assumption that Seldon Core is running in an EKS
 cluster that already has IAM access enabled and doesn't need any explicit AWS
 credentials. If that is not the case, you will need to set up credentials
@@ -242,19 +246,13 @@ differently. Please look up the variables relevant to your use-case in the
 Configuring the stack can be done like this:
 
 ```
-zenml integration install s3
+zenml integration install s3 seldon
+zenml model-deployer register seldon_eks --type=seldon \
+  --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
+  --base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
 zenml artifact-store register aws --type s3 --path s3://mybucket
-zenml stack register local_with_aws_storage -m default -a aws -o default
+zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks
 zenml stack set local_with_aws_storage
-```
-
-When running the example with this stack, make sure to pass the relevant
-`--kubernetes-context`, `--namespace` and `--base-url` configuration parameter
-values to the example script:
-
-```
-python run.py --predict --kubernetes-context=zenml-eks \
-    --namespace=zenml-workloads --base-url=http://$INGRESS_HOST ...
 ```
 
 #### Full AWS stack
@@ -306,6 +304,9 @@ kubectl -n kubeflow create secret generic seldon-init-container-secret \
     --from-literal=RCLONE_CONFIG_S3_ENV_AUTH=true
 ```
 
+The name of the created secret also needs to be passed to the `run.py` example
+launcher script via its `--secret` command line argument.
+
 NOTE: this is based on the assumption that Seldon Core is running in an EKS
 cluster that already has IAM access enabled and doesn't need any explicit AWS
 credentials. If that is not the case, you will need to set up credentials
@@ -315,36 +316,30 @@ differently. Please look up the variables relevant to your use-case in the
 Configuring the stack can be done like this:
 
 ```
-zenml integration install s3 kubeflow
+zenml integration install s3 kubeflow seldon
+
 zenml artifact-store register aws --type=s3 --path=s3://mybucket
+zenml model-deployer register seldon_aws --type=seldon \
+  --kubernetes_context=zenml-eks --kubernetes_namespace=kubeflow \
+  --base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
 zenml container-registry register aws --type=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
 zenml metadata-store register aws --type=kubeflow
 zenml orchestrator register aws --type=kubeflow --kubernetes_context=zenml-eks --synchronous=True
-zenml stack register aws -m aws -a aws -o aws -c aws
+zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws
 zenml stack set aws
-```
-
-When running the example with this stack, make sure to pass the relevant
-`--kubernetes-context`, `--namespace` and `--base-url` configuration parameter
-values to the example script:
-
-```
-python run.py --predict --kubernetes-context=zenml-eks --namespace=kubeflow \
-  --base-url=http://$INGRESS_HOST ...
 ```
 
 ### Run the project
 To run the continuous deployment pipeline:
 
 ```shell
-python run.py --deploy --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url>
+python run.py --secret seldon-init-container-secret --deploy
 ```
 
 Example output when run with the local orchestrator stack:
 
 ```
-zenml/seldon_deployment$ python run.py --deploy --kubernetes-context=zenml-eks --namespace=zenml-workloads --base-url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com --min-accuracy 0.80 --model-flavor sklearn
+zenml/seldon_deployment$ python run.py --secret seldon-init-container-secret --deploy --min-accuracy 0.80 --model-flavor sklearn
 
 2022-04-06 15:40:28.903233: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
 2022-04-06 15:40:28.903253: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
@@ -386,8 +381,7 @@ Re-running the example with different hyperparameter values will re-train
 the model and update the deployment server to serve the new model:
 
 ```shell
-python run.py --deploy --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url> --epochs=10 --learning_rate=0.1
+python run.py --secret seldon-init-container-secret --deploy --epochs=10 --lr=0.1
 ```
 
 If the input hyperparameter argument values are not changed, the pipeline
@@ -400,14 +394,13 @@ The inference pipeline will use the currently running Seldon Core deployment
 server to perform an online prediction. To run the inference pipeline:
 
 ```shell
-python run.py --predict --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url>
+python run.py --secret seldon-init-container-secret --predict
 ```
 
 Example output when run with the local orchestrator stack:
 
 ```
-zenml/seldon_deployment$ python run.py --predict --kubernetes-context=zenml-eks --namespace=zenml-workloads --base-url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com --model-flavor sklearn
+zenml/seldon_deployment$ python run.py --predict --model-flavor sklearn
 2022-04-06 15:48:02.346731: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
 2022-04-06 15:48:02.346762: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
 Creating run for pipeline: `inference_pipeline`
@@ -441,26 +434,75 @@ training and the Seldon Core model server implementation, the `--model-flavor`
 command line argument can be used:
 
 ```
-python run.py --deploy --predict --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url> --model-flavor sklearn --penalty=l2
+python run.py --secret seldon-init-container-secret --deploy --predict --model-flavor sklearn --penalty=l2
 ```
 
-Finally, to stop the prediction server, simply pass the `--stop-service` flag
-to the example script:
+The `zenml served-models list` CLI command can be run to list the active model servers:
 
 ```shell
-python run.py --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url> --stop-service
+$ zenml served-models list
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         ┃
+┠────────┼──────────────────────────────────────┼────────────────────────────────┼────────────────────────────┨
+┃   ✅   │ 8cbe671b-9fce-4394-a051-68e001f92765 │ continuous_deployment_pipeline │ seldon_model_deployer_step ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+To get more information about a specific model server, such as the prediction URL,
+the `zenml served-models describe <uuid>` CLI command can be run:
+
+```shell
+$ zenml served-models describe 8cbe671b-9fce-4394-a051-68e001f92765
+                          Properties of Served Model 8cbe671b-9fce-4394-a051-68e001f92765                          
+┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ MODEL SERVICE PROPERTY │ VALUE                                                                                  ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ MODEL_NAME             │ mnist                                                                                  ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ MODEL_URI              │ s3://zenfiles/seldon_model_deployer_step/output/884/seldon                             ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_NAME          │ continuous_deployment_pipeline                                                         ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_RUN_ID        │ continuous_deployment_pipeline-11_Apr_22-09_39_27_648527                               ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_STEP_NAME     │ seldon_model_deployer_step                                                             ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PREDICTION_URL         │ http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/… ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ SELDON_DEPLOYMENT      │ zenml-8cbe671b-9fce-4394-a051-68e001f92765                                             ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ STATUS                 │ ✅                                                                                     ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ STATUS_MESSAGE         │ Seldon Core deployment 'zenml-8cbe671b-9fce-4394-a051-68e001f92765' is available       ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ UUID                   │ 8cbe671b-9fce-4394-a051-68e001f92765                                                   ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+The prediction URL can sometimes be more difficult to make out in the detailed
+output, so there is a separate CLI command available to retrieve it:
+
+```shell
+$ zenml served-models get-url 8cbe671b-9fce-4394-a051-68e001f92765
+  Prediction URL of Served Model 8cbe671b-9fce-4394-a051-68e001f92765 is:
+  http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-8cbe67
+1b-9fce-4394-a051-68e001f92765/api/v0.1/predictions
+```
+
+Finally, a model server can be deleted with the `zenml served-models delete <uuid>`
+CLI command:
+
+```shell
+$ zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
 ### Clean up
 
-To stop the prediction server running in the background, pass the
-`--stop-service` flag to the example script:
+To stop any prediction servers running in the background, use the `zenml model-server list`
+and `zenml model-server delete <uuid>` CLI commands.:
 
 ```shell
-python run.py --kubernetes-context=<context> --namespace=<namespace> \
-  --base-url=<base-url> --stop-service
+zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
 Then delete the remaining ZenML references.

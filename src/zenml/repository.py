@@ -130,13 +130,18 @@ class RepositoryMetaClass(ABCMeta):
             ForbiddenRepositoryAccessError: If trying to create a `Repository`
                 instance while a ZenML step is being executed.
         """
-        if Environment().step_is_running:
-            raise ForbiddenRepositoryAccessError(
-                "Unable to access repository during step execution. If you "
-                "require access to the artifact or metadata store, please use "
-                "a `StepContext` inside your step instead.",
-                url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
-            )
+
+        # `skip_repository_check` is a special kwarg that can be passed to
+        # the Repository constructor to bypass the check that prevents the
+        # Repository instance from being accessed from within pipeline steps.
+        if not kwargs.pop("skip_repository_check", False):
+            if Environment().step_is_running:
+                raise ForbiddenRepositoryAccessError(
+                    "Unable to access repository during step execution. If you "
+                    "require access to the artifact or metadata store, please "
+                    "use a `StepContext` inside your step instead.",
+                    url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
+                )
 
         if args or kwargs:
             return cast("Repository", super().__call__(*args, **kwargs))
@@ -895,7 +900,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self.zen_store.register_stack_component(
             StackComponentWrapper.from_component(component)
         )
-
         analytics_metadata = {
             "type": component.TYPE.value,
             "flavor": component.FLAVOR,
