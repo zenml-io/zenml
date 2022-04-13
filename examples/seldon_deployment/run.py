@@ -19,7 +19,7 @@ from pipeline import (
     SeldonDeploymentLoaderStepConfig,
     SklearnTrainerConfig,
     TensorflowTrainerConfig,
-    continuous_deployment_pipeline_cache,
+    continuous_deployment_pipeline,
     deployment_trigger,
     dynamic_importer,
     importer_mnist,
@@ -115,12 +115,6 @@ from zenml.integrations.seldon.steps import (
     help="Specify the name of a Kubernetes secret to be passed to Seldon Core "
     "deployments to authenticate to the Artifact Store",
 )
-@click.option(
-    "--stop-service",
-    is_flag=True,
-    default=False,
-    help="Stop the prediction service when done",
-)
 def main(
     deploy: bool,
     predict: bool,
@@ -168,7 +162,7 @@ def main(
 
     if deploy:
         # Initialize a continuous deployment pipeline run
-        deployment = continuous_deployment_pipeline_cache(
+        deployment = continuous_deployment_pipeline(
             importer=importer_mnist(),
             normalizer=normalizer(),
             trainer=trainer,
@@ -248,4 +242,14 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    main(
+        [
+            "--secret",
+            "seldon-rclone-secret",
+            "--deploy",
+            "--min-accuracy",
+            "0.80",
+            "--model-flavor",
+            "sklearn",
+        ]
+    )

@@ -58,6 +58,9 @@ class SeldonDeployerStepConfig(BaseStepConfig):
 @step(enable_cache=True)
 def seldon_model_deployer_step(
     deploy_decision: bool,
+    custom_deployment: bool,
+    # load_func: Optional[Callable[..., None]],
+    # predict_func: Optional[Callable[..., None]],
     config: SeldonDeployerStepConfig,
     context: StepContext,
     model: ModelArtifact,
@@ -87,6 +90,33 @@ def seldon_model_deployer_step(
     config.service_config.pipeline_name = pipeline_name
     config.service_config.pipeline_run_id = pipeline_run_id
     config.service_config.pipeline_step_name = step_name
+
+    # get the custom deployment functions into paramteres
+    """parameters: List[Dict[str, str]] = []
+    if custom_deployment:
+        # load the model
+        if load_func:
+            parameters.append(
+                {
+                    "name": "load_func",
+                    "type": "STRING",
+                    "value": get_module_source_from_module(load_func),
+                }
+            )
+
+        # deploy the model
+        if predict_func:
+            parameters.append(
+                {
+                    "name": "predict_func",
+                    "type": "STRING",
+                    "value": get_module_source_from_module(predict_func),
+                }
+            )
+
+    # update the step configuration with the parameters
+    config.service_config.parameters = parameters
+    """
 
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
         """Prepare the model files for model serving and create and return a
