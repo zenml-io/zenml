@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import string
 from collections.abc import Iterable
 from io import FileIO
 from pathlib import Path
@@ -20,7 +21,7 @@ from tempfile import NamedTemporaryFile
 from types import GeneratorType
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings, HealthCheck
 from hypothesis.strategies import text
 from tfx.dsl.io.filesystem import NotFoundError
 
@@ -33,6 +34,7 @@ logger = get_logger(__name__)
 
 TEMPORARY_FILE_NAME = "a_file.txt"
 TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
+ALPHABET = set(string.printable) - set('<>:"/\|?*')
 
 
 def test_walk_function_returns_a_generator_object(tmp_path):
@@ -127,19 +129,18 @@ def test_listdir_returns_one_result_for_one_file(tmp_path):
     assert len(fileio.listdir(str(tmp_path))) == 1
 
 
-@pytest.fixture(scope="module")
-@given(sample_file=text())
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
+@given(sample_file=text(min_size=1, alphabet=ALPHABET))
 def test_listdir_returns_empty_list_when_dir_doesnt_exist(
     sample_file, tmp_path
 ):
-    """list_dir should return an empty list when the directory"""
-    """doesn't exist"""
+    """list_dir should return an empty list when the directory doesn't exist"""
     not_a_real_dir = os.path.join(tmp_path, sample_file)
     assert isinstance(fileio.listdir(not_a_real_dir), list)
 
 
-@pytest.fixture(scope="module")
-@given(not_a_file=text(min_size=1))
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
+@given(not_a_file=text(min_size=1, alphabet=ALPHABET))
 def test_open_returns_error_when_file_nonexistent(
     tmp_path, not_a_file: str
 ) -> None:
@@ -148,8 +149,8 @@ def test_open_returns_error_when_file_nonexistent(
         fileio.open(os.path.join(tmp_path, not_a_file), "rb")
 
 
-@pytest.fixture(scope="module")
-@given(random_file=text(min_size=1))
+@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
+@given(random_file=text(min_size=1, alphabet=ALPHABET))
 def test_open_returns_file_object_when_file_exists(
     tmp_path, random_file: str
 ) -> None:
