@@ -27,12 +27,12 @@ class BaseModelDeployer(StackComponent, ABC):
 
     The model deployer serves three major purposes:
 
-    1. it contains all the stack related configuration attributes required to
+    1. It contains all the stack related configuration attributes required to
     interact with the remote model serving tool, service or platform (e.g.
     hostnames, URLs, references to credentials, other client related
     configuration parameters).
 
-    2. it implements the continuous deployment logic necessary to deploy models
+    2. It implements the continuous deployment logic necessary to deploy models
     in a way that updates an existing model server that is already serving a
     previous version of the same model instead of creating a new model server
     for every new model version (see the `deploy_model` abstract method).
@@ -42,7 +42,7 @@ class BaseModelDeployer(StackComponent, ABC):
     each integration, that hides the details of the deployment process away from
     the user.
 
-    3. it acts as a ZenML BaseService registry, where every BaseService instance
+    3. It acts as a ZenML BaseService registry, where every BaseService instance
     is used as an internal representation of a remote model server (see the
     `find_model_server` abstract method). To achieve this, it must be able to
     re-create the configuration of a BaseService from information that is
@@ -151,7 +151,7 @@ class BaseModelDeployer(StackComponent, ABC):
     ) -> None:
         """Abstract method to stop a model server.
 
-        This operation should be reversable. A stopped model server should still
+        This operation should be reversible. A stopped model server should still
         show up in the list of model servers returned by `find_model_server` and
         it should be possible to start it again by calling `start_model_server`.
 
