@@ -24,7 +24,6 @@ from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.repository import Repository
 
 from .example_validations import (
-    caching_example_validation,
     drift_detection_example_validation,
     generate_basic_validation_function,
     mlflow_deployment_example_validation,
@@ -95,7 +94,8 @@ examples = [
     ),
     # TODO [ENG-708]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(
-        name="whylogs_data_profiling", validation_function=whylogs_example_validation
+        name="whylogs_data_profiling",
+        validation_function=whylogs_example_validation,
     ),
     ExampleIntegrationTestConfiguration(
         name="airflow_orchestration",
@@ -103,7 +103,7 @@ examples = [
             pipeline_name="mnist_pipeline",
             step_count=4,
         ),
-    )
+    ),
 ]
 
 # flake8: noqa: C901

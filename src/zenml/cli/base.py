@@ -13,19 +13,21 @@
 #  permissions and limitations under the License.
 import os
 import subprocess
-import textwrap
 from pathlib import Path
 from typing import Optional
-from rich.markdown import Markdown
 
 import click
 from git import Repo  # type: ignore
 
 from zenml.cli.cli import cli
-from zenml.cli.text_utils import zenml_go_privacy_message, \
-    zenml_go_welcome_message, zenml_go_email_prompt, zenml_go_thank_you_message, \
-    zenml_go_notebook_tutorial_message
-from zenml.cli.utils import confirmation, declare, error, warning, title
+from zenml.cli.text_utils import (
+    zenml_go_email_prompt,
+    zenml_go_notebook_tutorial_message,
+    zenml_go_privacy_message,
+    zenml_go_thank_you_message,
+    zenml_go_welcome_message,
+)
+from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.exceptions import InitializationException
@@ -107,18 +109,19 @@ def go() -> None:
     console.print(zenml_go_privacy_message, width=80)
 
     if not os.path.isdir("zenml_tutorial"):
-        Repo.clone_from("https://github.com/zenml-io/zenbytes",
-                        "zenml_tutorial")
+        Repo.clone_from(
+            "https://github.com/zenml-io/zenbytes", "zenml_tutorial"
+        )
 
     cwd = os.getcwd()
     zenml_tutorial_path = os.path.join(cwd, "zenml_tutorial")
 
-    ipynb_files = [fi for fi in os.listdir(zenml_tutorial_path)
-                   if fi.endswith(".ipynb")]
+    ipynb_files = [
+        fi for fi in os.listdir(zenml_tutorial_path) if fi.endswith(".ipynb")
+    ]
     console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
 
-    subprocess.check_call(["jupyter", "notebook"],
-                          cwd=zenml_tutorial_path)
+    subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
 
 
 def _prompt_email(gc: GlobalConfiguration) -> None:
@@ -126,9 +129,9 @@ def _prompt_email(gc: GlobalConfiguration) -> None:
 
     console.print(zenml_go_email_prompt, width=80)
 
-    email = click.prompt(click.style("Email: ", fg="blue"),
-                         default='',
-                         show_default=False)
+    email = click.prompt(
+        click.style("Email: ", fg="blue"), default="", show_default=False
+    )
     if email:
         if len(email) > 0 and email.count("@") != 1:
             warning("That doesn't look like an email, skipping ...")

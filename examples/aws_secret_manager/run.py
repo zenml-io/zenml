@@ -16,16 +16,17 @@ from rich import print
 from zenml.integrations.constants import AWS
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
-from zenml.steps import step, StepContext
+from zenml.steps import StepContext, step
 
 logger = get_logger(__name__)
 
-SECRET_NAME = 'example_secret'
-SECRET_KEY = 'example_secret_key'
+SECRET_NAME = "example_secret"
+SECRET_KEY = "example_secret_key"
+
 
 @step
 def secret_loader(
-        context: StepContext,
+    context: StepContext,
 ) -> None:
     """Load the example secret from the secret manager."""
     # Load Secret from active secret manager. This will fail if no secret
@@ -33,14 +34,16 @@ def secret_loader(
     retrieved_secret = context.stack.secrets_manager.get_secret(SECRET_NAME)
 
     # Load specific secret value from the secret using the secret key
-    print(f"The secret `{SECRET_NAME}` contains the following key-value pair "
-          f"{{{SECRET_KEY}: {retrieved_secret.content[SECRET_KEY]}}}")
+    print(
+        f"The secret `{SECRET_NAME}` contains the following key-value pair "
+        f"{{{SECRET_KEY}: {retrieved_secret.content[SECRET_KEY]}}}"
+    )
     return
 
 
 @pipeline(required_integrations=[AWS])
 def secret_loading_pipeline(
-        data_loader,
+    data_loader,
 ):
     """Define single step pipeline."""
     data_loader()
@@ -51,4 +54,3 @@ if __name__ == "__main__":
         data_loader=secret_loader(),
     )
     pipeline.run()
-

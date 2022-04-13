@@ -62,6 +62,12 @@ Check out our example to see how.
 - **[step_operator_remote_training](step_operator_remote_training/README.md)**: Run your compute intensive steps on one 
 of the big three hyperscalers.
 
+### 🔑 Secret Managers
+The need for a central place to manage Credentials, Keys and Passwords can not be understated. Sometimes pieces of your 
+pipeline will need to access these secrets in order to use them.
+
+- **[aws_secret_manager](aws_secret_manager/README.md) ** Access your secret manager from within a step.
+
 
 ## 🖥 Local Setup
 For each of these examples, ZenML provides a handy CLI command to pull them
