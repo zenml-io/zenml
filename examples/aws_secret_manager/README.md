@@ -1,9 +1,14 @@
 # 🔑 Managing Secrets with AWS Secret Manager
+Most projects involving either cloud infrastructure or of a certain complexity will involve secrets of some kind. A
+ZenML Secret is a grouping of key-value pairs. These are accessed and administered via the ZenML Secret Manager (a stack component).
 
 ## 🗺 Overview
+The example pipeline is simple as can be. In our one and only step we access the stacks active secret manager and
+query for an example called `example_secret`. We then access the contents of this secret and query the secret with the
+unique key: `example_secret_key`. 
 
-
-## 🧰 How the example is implemented
+Similarly, you would be able to pass access keys, password, credentials and so on into your pipeline steps to do with as
+you please.
 
 # 🖥 Run it locally
 
@@ -68,7 +73,13 @@ python run.py
 ```
 
 ### 🧽 Clean up
-In order to clean up, delete the remaining ZenML references.
+In order to clean up, delete the example secret:
+
+```shell
+  zenml secret delete example_secret -k example_secret_key -v example_secret_value
+```
+
+and the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
@@ -78,3 +89,7 @@ rm -rf zenml_examples
 
 Our docs regarding the aws secret manager and secrets in general can be found 
 [here](https://docs.zenml.io/features/secrets).
+
+We also have extensive CLI docs for the 
+[secret manager](https://apidocs.zenml.io/0.7.1/cli/#zenml.cli--setting-up-a-secrets-manager) and the
+[secrets](https://apidocs.zenml.io/0.7.1/cli/#zenml.cli--using-secrets).
