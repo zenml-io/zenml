@@ -48,6 +48,7 @@ from zenml.zen_stores import (
 from zenml.zen_stores.models import (
     StackComponentWrapper,
     StackWrapper,
+    User,
     ZenStoreModel,
 )
 
@@ -520,7 +521,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @staticmethod
     def create_store(
-        profile: ProfileConfiguration, skip_default_stack: bool = False
+        profile: ProfileConfiguration, skip_default_registrations: bool = False
     ) -> BaseZenStore:
         """Create the repository persistence back-end store from a configuration
         profile.
@@ -531,8 +532,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             profile: The configuration profile to use for persisting the
                 repository information.
-            skip_default_stack: If True, the creation of the default stack in
-                the store will be skipped.
+            skip_default_registrations: If `True`, the creation of the default
+                stack and user in the store will be skipped.
 
         Returns:
             The initialized repository store.
@@ -555,12 +556,13 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
 
         if profile.store_type == StoreType.REST:
-            skip_default_stack = True
+            skip_default_registrations = True
 
         if store_class.is_valid_url(profile.store_url):
             store = store_class()
             store.initialize(
-                url=profile.store_url, skip_default_stack=skip_default_stack
+                url=profile.store_url,
+                skip_default_registrations=skip_default_registrations,
             )
             return store
 
@@ -698,6 +700,20 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             RuntimeError: If no profile is set as active.
         """
         return self.active_profile.name
+
+    @property
+    def active_user(self) -> User:
+        """The active user.
+
+        Raises:
+            KeyError: If no user exists for the active username.
+        """
+        return self.zen_store.get_user(self.active_user_name)
+
+    @property
+    def active_user_name(self) -> str:
+        """Name of the active user."""
+        return self.active_profile.active_user
 
     @property
     def stacks(self) -> List[Stack]:

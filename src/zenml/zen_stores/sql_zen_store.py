@@ -438,6 +438,28 @@ class SqlZenStore(BaseZenStore):
                 for user in session.exec(select(UserTable)).all()
             ]
 
+    def get_user(self, user_name: str) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_name: Name of the user to get.
+
+        Returns:
+            The requested user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                user = session.exec(
+                    select(UserTable).where(UserTable.name == user_name)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
+            return User(**user.dict())
+
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
 
@@ -505,6 +527,28 @@ class SqlZenStore(BaseZenStore):
                 Team(**team.dict())
                 for team in session.exec(select(TeamTable)).all()
             ]
+
+    def get_team(self, team_name: str) -> Team:
+        """Gets a specific team.
+
+        Args:
+            team_name: Name of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                team = session.exec(
+                    select(UserTable).where(TeamTable.name == team_name)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
+            return Team(**team.dict())
 
     def create_team(self, team_name: str) -> Team:
         """Creates a new team.
@@ -625,6 +669,30 @@ class SqlZenStore(BaseZenStore):
                 for project in session.exec(select(ProjectTable)).all()
             ]
 
+    def get_project(self, project_name: str) -> Project:
+        """Gets a specific project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                project = session.exec(
+                    select(ProjectTable).where(
+                        ProjectTable.name == project_name
+                    )
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
+            return Project(**project.dict())
+
     def create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
@@ -708,6 +776,28 @@ class SqlZenStore(BaseZenStore):
                     select(RoleAssignmentTable)
                 ).all()
             ]
+
+    def get_role(self, role_name: str) -> Role:
+        """Gets a specific role.
+
+        Args:
+            role_name: Name of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                role = session.exec(
+                    select(RoleTable).where(RoleTable.name == role_name)
+                ).one()
+            except NoResultFound as error:
+                raise KeyError from error
+
+            return Role(**role.dict())
 
     def create_role(self, role_name: str) -> Role:
         """Creates a new role.

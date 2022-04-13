@@ -204,6 +204,10 @@ def test_user_management(fresh_zen_store):
         fresh_zen_store.create_user("aria")
     assert len(fresh_zen_store.users) == 2
 
+    assert fresh_zen_store.get_user("aria").name == "aria"
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_user("not_aria")
+
     fresh_zen_store.create_team("team_aria")
     fresh_zen_store.add_user_to_team(team_name="team_aria", user_name="aria")
 
@@ -238,6 +242,10 @@ def test_team_management(fresh_zen_store):
         fresh_zen_store.create_team("zenml")
     assert len(fresh_zen_store.teams) == 1
 
+    assert fresh_zen_store.get_team("zenml").name == "zenml"
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_team("mlflow")
+
     fresh_zen_store.add_user_to_team(team_name="zenml", user_name="adam")
     fresh_zen_store.add_user_to_team(team_name="zenml", user_name="hamza")
     assert len(fresh_zen_store.get_users_for_team("zenml")) == 2
@@ -271,6 +279,12 @@ def test_project_management(fresh_zen_store):
         fresh_zen_store.create_project("secret_project")
     assert len(fresh_zen_store.projects) == 1
 
+    assert (
+        fresh_zen_store.get_project("secret_project").name == "secret_project"
+    )
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_user("integrate_airflow")
+
     fresh_zen_store.delete_project("secret_project")
     assert len(fresh_zen_store.projects) == 0
 
@@ -291,6 +305,10 @@ def test_role_management(fresh_zen_store):
         # role names need to be unique
         fresh_zen_store.create_role("beautiful")
     assert len(fresh_zen_store.roles) == 1
+
+    assert fresh_zen_store.get_role("beautiful").name == "beautiful"
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_role("office_cat")
 
     fresh_zen_store.assign_role(
         role_name="beautiful", entity_name="aria", is_user=True

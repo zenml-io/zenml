@@ -81,7 +81,7 @@ class RestZenStore(BaseZenStore):
         super().initialize(url, *args, **kwargs)
         return self
 
-    # Statics:
+    # Statistics:
 
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
@@ -323,6 +323,20 @@ class RestZenStore(BaseZenStore):
             )
         return [User.parse_obj(user_dict) for user_dict in body]
 
+    def get_user(self, user_name: str) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_name: Name of the user to get.
+
+        Returns:
+            The requested user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        return User.parse_obj(f"{USERS}/{user_name}")
+
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
 
@@ -365,6 +379,20 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected list, got {type(body)}"
             )
         return [Team.parse_obj(team_dict) for team_dict in body]
+
+    def get_team(self, team_name: str) -> Team:
+        """Gets a specific team.
+
+        Args:
+            team_name: Name of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+        return Team.parse_obj(f"{TEAMS}/{team_name}")
 
     def create_team(self, team_name: str) -> Team:
         """Creates a new team.
@@ -434,6 +462,20 @@ class RestZenStore(BaseZenStore):
             )
         return [Project.parse_obj(project_dict) for project_dict in body]
 
+    def get_project(self, project_name: str) -> Project:
+        """Gets a specific project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+        return Project.parse_obj(f"{PROJECTS}/{project_name}")
+
     def create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
@@ -499,6 +541,20 @@ class RestZenStore(BaseZenStore):
             RoleAssignment.parse_obj(assignment_dict)
             for assignment_dict in body
         ]
+
+    def get_role(self, role_name: str) -> Role:
+        """Gets a specific role.
+
+        Args:
+            role_name: Name of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+        return Role.parse_obj(f"{ROLES}/{role_name}")
 
     def create_role(self, role_name: str) -> Role:
         """Creates a new role.
@@ -755,6 +811,10 @@ class RestZenStore(BaseZenStore):
                     "Bad response from API. Expected json, got\n"
                     f"{response.text}"
                 )
+        elif response.status_code == 401:
+            raise requests.HTTPError(
+                f"{response.status_code} Client Error: Unauthorized request to URL {response.url}: {response.json().get('detail')}"
+            )
         elif response.status_code == 404:
             raise KeyError(*response.json().get("detail", (response.text,)))
         elif response.status_code == 409:
@@ -782,15 +842,30 @@ class RestZenStore(BaseZenStore):
                 f"{response.status_code} with body:\n{response.text}"
             )
 
+    @staticmethod
+    def _get_authentication() -> Tuple[str, str]:
+        """Gets HTTP basic auth credentials."""
+        from zenml.repository import Repository
+
+        return Repository().active_user_name, ""
+
     def get(self, path: str) -> Json:
         """Make a GET request to the given endpoint path."""
-        return self._handle_response(requests.get(self.url + path))
+        return self._handle_response(
+            requests.get(self.url + path, auth=self._get_authentication())
+        )
 
     def delete(self, path: str) -> Json:
         """Make a DELETE request to the given endpoint path."""
-        return self._handle_response(requests.delete(self.url + path))
+        return self._handle_response(
+            requests.delete(self.url + path, auth=self._get_authentication())
+        )
 
     def post(self, path: str, body: BaseModel) -> Json:
         """Make a POST request to the given endpoint path."""
         endpoint = self.url + path
-        return self._handle_response(requests.post(endpoint, data=body.json()))
+        return self._handle_response(
+            requests.post(
+                endpoint, data=body.json(), auth=self._get_authentication()
+            )
+        )

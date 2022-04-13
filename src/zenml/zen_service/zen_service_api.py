@@ -14,7 +14,8 @@
 import os
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 
 import zenml
@@ -77,10 +78,34 @@ if profile.store_type == StoreType.REST:
         "other than the currently active one)"
     )
 zen_store: BaseZenStore = Repository.create_store(
-    profile, skip_default_stack=True
+    profile, skip_default_registrations=True
 )
 
-app = FastAPI(title="ZenML", version=zenml.__version__)
+
+security = HTTPBasic()
+
+
+def authorize(credentials: HTTPBasicCredentials = Depends(security)) -> None:
+    """Authorizes any request to the ZenService.
+
+    Right now this method only checks if the username provided as part of http
+    basic auth credentials is registered in the ZenStore.
+
+    Args:
+        credentials: HTTP basic auth credentials passed to the request.
+    """
+    try:
+        zen_store.get_user(credentials.username)
+    except KeyError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username.",
+        )
+
+
+app = FastAPI(
+    title="ZenML", version=zenml.__version__, dependencies=[Depends(authorize)]
+)
 
 # to run this file locally, execute:
 # uvicorn zenml.zen_service.zen_service_api:app --reload
@@ -248,6 +273,15 @@ async def users() -> List[User]:
     return zen_store.users
 
 
+@app.get(USERS + "/{name}", responses={404: error_response})
+async def get_user(name: str) -> None:
+    """Gets a specific user."""
+    try:
+        zen_store.get_user(user_name=name)
+    except KeyError as error:
+        raise not_found(error) from error
+
+
 @app.post(
     USERS,
     response_model=User,
@@ -304,6 +338,15 @@ async def role_assignments_for_user(
 async def teams() -> List[Team]:
     """Returns all teams."""
     return zen_store.teams
+
+
+@app.get(TEAMS + "/{name}", responses={404: error_response})
+async def get_team(name: str) -> None:
+    """Gets a specific team."""
+    try:
+        zen_store.get_team(team_name=name)
+    except KeyError as error:
+        raise not_found(error) from error
 
 
 @app.post(
@@ -386,6 +429,15 @@ async def projects() -> List[Project]:
     return zen_store.projects
 
 
+@app.get(PROJECTS + "/{name}", responses={404: error_response})
+async def get_projects(name: str) -> None:
+    """Gets a specific project."""
+    try:
+        zen_store.get_project(project_name=name)
+    except KeyError as error:
+        raise not_found(error) from error
+
+
 @app.post(
     PROJECTS,
     response_model=Project,
@@ -414,6 +466,15 @@ async def delete_project(name: str) -> None:
 async def roles() -> List[Role]:
     """Returns all roles."""
     return zen_store.roles
+
+
+@app.get(ROLES + "/{name}", responses={404: error_response})
+async def get_role(name: str) -> None:
+    """Gets a specific role."""
+    try:
+        zen_store.get_role(role_name=name)
+    except KeyError as error:
+        raise not_found(error) from error
 
 
 @app.post(

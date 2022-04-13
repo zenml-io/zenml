@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import requests
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 
 from zenml.constants import ENV_ZENML_DEFAULT_STORE_TYPE
 from zenml.enums import StoreType
@@ -61,6 +61,7 @@ class ProfileConfiguration(BaseModel):
         store_url: URL pointing to the ZenML store backend.
         store_type: Type of the store backend.
         active_stack: Optional name of the active stack.
+        active_user: Name of the active user.
         _config: global configuration to which this profile belongs.
     """
 
@@ -68,6 +69,7 @@ class ProfileConfiguration(BaseModel):
     store_url: Optional[str]
     store_type: StoreType = Field(default_factory=get_default_store_type)
     active_stack: Optional[str]
+    active_user: str
     _config: Optional["GlobalConfiguration"]
 
     def __init__(
@@ -134,6 +136,38 @@ class ProfileConfiguration(BaseModel):
         self.active_stack = stack_name
         self.global_config._write_config()
 
+    @root_validator(pre=True)
+    def _ensure_active_user_is_set(
+        cls, attributes: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Ensures that an active user is set for this profile.
+
+        If the active user is missing and the profile specifies a local store,
+        a default user is used as fallback.
+
+        Raises:
+            RuntimeError: If the active user is missing for a profile with a
+                REST ZenStore.
+        """
+        store_type = attributes.get("store_type") or get_default_store_type()
+
+        if (
+            store_type != StoreType.REST
+            and attributes.get("active_user") is None
+        ):
+            # in case of a local store, fallback to the default user that is
+            # created when initializing the store
+            from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
+
+            attributes["active_user"] = DEFAULT_USERNAME
+
+        if not attributes.get("active_user"):
+            raise RuntimeError(
+                f"Active user missing for profile '{attributes['name']}'."
+            )
+
+        return attributes
+
     class Config:
         """Pydantic configuration class."""
 
@@ -145,3 +179,5 @@ class ProfileConfiguration(BaseModel):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
+        # allow arbitrary attribute types
+        arbitrary_types_allowed = True

@@ -349,6 +349,20 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.users
 
+    def get_user(self, user_name: str) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_name: Name of the user to get.
+
+        Returns:
+            The requested user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        return _get_unique_entity(user_name, collection=self.__store.users)
+
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
 
@@ -403,6 +417,20 @@ class LocalZenStore(BaseZenStore):
             A list of all registered teams.
         """
         return self.__store.teams
+
+    def get_team(self, team_name: str) -> Team:
+        """Gets a specific team.
+
+        Args:
+            team_name: Name of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+        return _get_unique_entity(team_name, collection=self.__store.teams)
 
     def create_team(self, team_name: str) -> Team:
         """Creates a new team.
@@ -487,6 +515,22 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.projects
 
+    def get_project(self, project_name: str) -> Project:
+        """Gets a specific project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+        return _get_unique_entity(
+            project_name, collection=self.__store.projects
+        )
+
     def create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
@@ -553,6 +597,20 @@ class LocalZenStore(BaseZenStore):
             A list of all registered role assignments.
         """
         return self.__store.role_assignments
+
+    def get_role(self, role_name: str) -> Role:
+        """Gets a specific role.
+
+        Args:
+            role_name: Name of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+        return _get_unique_entity(role_name, collection=self.__store.roles)
 
     def create_role(self, role_name: str) -> Role:
         """Creates a new role.
