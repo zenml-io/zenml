@@ -506,7 +506,7 @@ class SeldonClient:
     def sanitize_labels(labels: Dict[str, str]) -> None:
         """Update the label values to be valid Kubernetes labels"""
         for key, value in labels.items():
-            labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value)
+            labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value[:60])
 
     @property
     def namespace(self) -> str:

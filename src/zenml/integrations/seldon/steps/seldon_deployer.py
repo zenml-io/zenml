@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import cast
+from typing import Callable, Dict, List, Optional, cast
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.environment import Environment
@@ -35,6 +35,7 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
+from zenml.utils.source_utils import get_module_source_from_module
 
 logger = get_logger(__name__)
 
@@ -59,8 +60,8 @@ class SeldonDeployerStepConfig(BaseStepConfig):
 def seldon_model_deployer_step(
     deploy_decision: bool,
     custom_deployment: bool,
-    # load_func: Optional[Callable[..., None]],
-    # predict_func: Optional[Callable[..., None]],
+    load_func: Optional[Callable[..., None]],
+    predict_func: Optional[Callable[..., None]],
     config: SeldonDeployerStepConfig,
     context: StepContext,
     model: ModelArtifact,
@@ -92,7 +93,7 @@ def seldon_model_deployer_step(
     config.service_config.pipeline_step_name = step_name
 
     # get the custom deployment functions into paramteres
-    """parameters: List[Dict[str, str]] = []
+    parameters: List[Dict[str, str]] = []
     if custom_deployment:
         # load the model
         if load_func:
@@ -116,7 +117,7 @@ def seldon_model_deployer_step(
 
     # update the step configuration with the parameters
     config.service_config.parameters = parameters
-    """
+    
 
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
         """Prepare the model files for model serving and create and return a
