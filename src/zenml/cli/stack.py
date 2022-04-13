@@ -297,6 +297,77 @@ def update_stack(
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
+@stack.command(
+    "remove-component", context_settings=dict(ignore_unknown_options=True)
+)
+@click.argument("stack_name", type=str, required=True)
+@click.option(
+    "-c",
+    "--container_registry",
+    "container_registry_name",
+    help="Name of the container registry to remove from this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-s",
+    "--step_operator",
+    "step_operator_name",
+    help="Name of the step operator to remove from this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-x",
+    "--secrets_manager",
+    "secrets_manager_name",
+    help="Name of the secrets manager to remove from this stack.",
+    type=str,
+    required=False,
+)
+def remove_stack_component(
+    stack_name: str,
+    container_registry_name: Optional[str] = None,
+    step_operator_name: Optional[str] = None,
+    secrets_manager_name: Optional[str] = None,
+) -> None:
+    """Remove stack components from a stack."""
+    # with console.status(f"Updating stack `{stack_name}`...\n"):
+    repo = Repository()
+    try:
+        current_stack = repo.get_stack(stack_name)
+    except KeyError:
+        cli_utils.error(
+            f"Stack `{stack_name}` cannot be updated as it does not exist.",
+        )
+    stack_components = current_stack.components
+
+    if container_registry_name:
+        stack_components = {
+            key: value
+            for (key, value) in stack_components.items()
+            if key != StackComponentType.CONTAINER_REGISTRY
+        }
+
+    if step_operator_name:
+        stack_components = {
+            key: value
+            for (key, value) in stack_components.items()
+            if key != StackComponentType.STEP_OPERATOR
+        }
+
+    if secrets_manager_name:
+        stack_components = {
+            key: value
+            for (key, value) in stack_components.items()
+            if key != StackComponentType.SECRETS_MANAGER
+        }
+
+    stack_ = Stack.from_components(name=stack_name, components=stack_components)
+    repo.update_stack(stack_)
+    cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
+
+
 @stack.command("list")
 def list_stacks() -> None:
     """List all available stacks in the active profile."""
