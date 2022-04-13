@@ -48,24 +48,35 @@ is also interesting because it involves interacting with systems that are longer
 ZenML interacts with such external systems (e.g. like prediction servers) through
 the `Model Deployer` abstraction. The concrete implementation of this abstraction
 deals with functionality concerning the life-cycle management and tracking of
-external model deployment servers (e.g. process, container, Kubernetes deployment etc.),
-which are represented in ZenML using another abstraction: `Services`.
+external model deployment servers (e.g. processes, containers, Kubernetes "
+deployments etc.), which are represented in ZenML using another abstraction: `Services`.
 
 The first thing needed to be able to deploy machine learning models to external
 model serving platforms with ZenML in a continuous deployment manner is to have
-a Model Deployer registered as part of your ZenML Stack. The Seldon Core Model
-Deployer is one example of a Model Deployer already provided by ZenML as an
-integration, MLflow is coming up next and other Model Deployers will follow.
+a Model Deployer registered as part of your ZenML Stack. MLflow and Seldon
+Core are two examples of Model Deployers already provided by ZenML as an
+integration, with many other Model Deployers to follow. The Model
+Deployer abstraction is also meant to be easily extensible by anyone who wishes
+to implement their own flavor and integrate ZenML with their model serving tool
+of choice.
 
 There are three major roles that a Model Deployer plays in a ZenML Stack:
 
 1. it holds all the stack related configuration attributes required to
 interact with the remote model serving tool, service or platform (e.g.
 hostnames, URLs, references to credentials, other client related
-configuration parameters). This is an example of configuring the Seldon Core
-Model Deployer and registering it as a Stack component:
+configuration parameters). The following are examples of configuring the MLflow
+and Seldon Core Model Deployers and registering them as a Stack component:
 
     ```bash
+    zenml integration install mlflow
+    zenml model-deployer register mlflow --type=mlflow
+    zenml stack register local_with_mlflow -m default -a default -o default -d mlflow
+    zenml stack set local_with_mlflow
+    ```
+
+    ```bash
+    zenml integration install seldon
     zenml model-deployer register seldon --type=seldon \
     --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
     --base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
@@ -78,7 +89,7 @@ in a way that updates an existing model server that is already serving a
 previous version of the same model instead of creating a new model server
 for every new model version. Every model server that the Model Deployer
 provisions externally to deploy a model is represented internally as a
-`Service` object that may be accessed to for visibility and control over
+`Service` object that may be accessed for visibility and control over
 a single model deployment. This functionality can be consumed directly
 from ZenML pipeline steps, but it can also be used outside of the pipeline
 to deploy ad-hoc models. The following code is an example of using the
@@ -132,11 +143,11 @@ Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step:
     ```
 
 3. the Model Deployer acts as a registry for all Services that represent remote
-model servers. External model deployment servers can be queried using a variety
-of criteria, such as the name of the model or the names of the pipeline and step
-that was used to deploy it. The Service objects returned by the Model Deployer
+model servers. External model deployment servers can be listed and filtered using
+a variety of criteria, such as the name of the model or the names of the pipeline and step
+that was used to deploy the model. The Service objects returned by the Model Deployer
 can be used to interact with the remote model server, e.g. to get the operational
-status of a model server, the prediction URI that it exposed, or to stop or
+status of a model server, the prediction URI that it exposes, or to stop or
 delete a model server:
 
     ```python
@@ -226,32 +237,110 @@ def my_step(my_service: MyService) -> ...:
     my_service.stop()  # stops service
 ```
 
-You can see a concrete example of using a Model Deployer to implement a continuous
-training and continuous deployment pipeline with the
-[Seldon Core deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment).
+The ZenML integrations that provide Model Deployer stack components also include
+standard pipeline steps that can simply be inserted into any pipeline to achieve
+a continuous model deployment workflow. These steps take care of all the aspects
+of continuously deploying models to an external server and saving the Service
+configuration into the Artifact Store, where they can be loaded at a later time
+and re-create the initial conditions used to serve a particular model.
 
-Another concrete example of a pipeline step that uses a model deployment `Service` implementation is the `MLFlowDeploymentService`.
-It enables serving models with MLflow deployment server instances, also running locally as daemon processes.
+You can see concrete examples of using a Model Deployer and model deployment
+builtin steps to implement a continuous training and continuous deployment pipeline with the
+[MLflow deployment](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment) and the
+[Seldon Core deployment](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment) examples.
 
-When inserted into a pipeline, a service like the MLflow service takes care of all the aspects of continuously deploying models to an external server. 
-E.g. In the MLflow integration, there is a standard `MLflowDeployerStep` that creates and continuously updates the prediction server to deploy the latest 
-model. All we need to do is add it as a deployer step to our pipeline and provide it with the name of the model to deploy:
+Following are some code snippets extracted from the above mentioned examples that
+give a quick glimpse into using the MLflow and Seldon Core standard model deployer steps:
 
 ```python
-model_deployer = mlflow_deployer_step() 
+from zenml.integrations.mlflow.steps import (
+    MLFlowDeployerConfig,
+    mlflow_model_deployer_step,
+) 
+
+...
+
+@pipeline(required_integrations=[MLFLOW, TENSORFLOW])
+def continuous_deployment_pipeline(
+    importer,
+    normalizer,
+    trainer,
+    evaluator,
+    deployment_trigger,
+    model_deployer,
+):
+    x_train, y_train, x_test, y_test = importer()
+    x_trained_normed, x_test_normed = normalizer(x_train=x_train, x_test=x_test)
+    model = trainer(x_train=x_trained_normed, y_train=y_train)
+    accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
+    deployment_decision = deployment_trigger(accuracy=accuracy)
+    model_deployer(deployment_decision, model)
+
+...
 
 # Initialize a continuous deployment pipeline run
 deployment = continuous_deployment_pipeline(
     ...
-    model_deployer=model_deployer(config=MLFlowDeployerConfig(model_name="my_model", workers=3)),
+    model_deployer=mlflow_model_deployer_step(
+        config=MLFlowDeployerConfig(model_name="model", workers=3, timeout=20)
+    ),
+    ...
 )
+deployment.run()
 ```
 
-This service can also be used to interact with a model prediction server with the following interface:
+
+```python
+from zenml.integrations.seldon.services SeldonDeploymentConfig
+from zenml.integrations.seldon.steps import (
+    SeldonDeployerStepConfig,
+    seldon_model_deployer_step,
+)
+
+...
+
+
+@pipeline(required_integrations=[SELDON, TENSORFLOW, SKLEARN])
+def continuous_deployment_pipeline(
+    importer,
+    normalizer,
+    trainer,
+    evaluator,
+    deployment_trigger,
+    model_deployer,
+):
+    # Link all the steps artifacts together
+    x_train, y_train, x_test, y_test = importer()
+    x_trained_normed, x_test_normed = normalizer(x_train=x_train, x_test=x_test)
+    model = trainer(x_train=x_trained_normed, y_train=y_train)
+    accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
+    deployment_decision = deployment_trigger(accuracy=accuracy)
+    model_deployer(deployment_decision, model)
+
+...
+
+# Initialize a continuous deployment pipeline run
+deployment = continuous_deployment_pipeline(
+    ...
+    model_deployer=seldon_model_deployer_step(
+        config=SeldonDeployerStepConfig(
+            service_config=SeldonDeploymentConfig(
+                model_name="model",
+                replicas=1,
+                implementation="SKLEARN_SERVER",
+                secret_name="seldon-init-container-secret",
+            ),
+            timeout=120,
+        )
+    ),
+    ...
+)
+deployment.run()
+```
+
+The model deployment Service can also be used to interact with a model
+prediction server with the following interface:
 
 ```python
 my_deployment_service.predict(my_data)  # sends data to prediction service with a unified interface
 ```
-
-You can see a concrete example of using Services in a continuous training and continuous deployment setting with the 
-[MLflow deployment example](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment).

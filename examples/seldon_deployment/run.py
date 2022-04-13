@@ -115,12 +115,6 @@ from zenml.integrations.seldon.steps import (
     help="Specify the name of a Kubernetes secret to be passed to Seldon Core "
     "deployments to authenticate to the Artifact Store",
 )
-@click.option(
-    "--stop-service",
-    is_flag=True,
-    default=False,
-    help="Stop the prediction service when done",
-)
 def main(
     deploy: bool,
     predict: bool,
@@ -222,8 +216,9 @@ def main(
                 f"The Seldon prediction server is running remotely as a Kubernetes "
                 f"service and accepts inference requests at:\n"
                 f"    {service.prediction_url}\n"
-                f"To stop the service, re-run the same command and supply the "
-                f"`--stop-service` argument."
+                f"To stop the service, run "
+                f"[italic green]`zenml served-models delete "
+                f"{str(service.uuid)}`[/italic green]."
             )
         elif service.is_failed:
             print(
