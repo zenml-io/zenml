@@ -335,7 +335,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no user with the given name exists.
         """
-        return User.parse_obj(f"{USERS}/{user_name}")
+        return User.parse_obj(self.get(f"{USERS}/{user_name}"))
 
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
@@ -392,7 +392,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no team with the given name exists.
         """
-        return Team.parse_obj(f"{TEAMS}/{team_name}")
+        return Team.parse_obj(self.get(f"{TEAMS}/{team_name}"))
 
     def create_team(self, team_name: str) -> Team:
         """Creates a new team.
@@ -474,7 +474,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no project with the given name exists.
         """
-        return Project.parse_obj(f"{PROJECTS}/{project_name}")
+        return Project.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
 
     def create_project(
         self, project_name: str, description: Optional[str] = None
@@ -554,7 +554,7 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no role with the given name exists.
         """
-        return Role.parse_obj(f"{ROLES}/{role_name}")
+        return Role.parse_obj(self.get(f"{ROLES}/{role_name}"))
 
     def create_role(self, role_name: str) -> Role:
         """Creates a new role.
@@ -608,7 +608,11 @@ class RestZenStore(BaseZenStore):
             "is_user": is_user,
         }
         self._handle_response(
-            requests.post(self.url + ROLE_ASSIGNMENTS, json=data)
+            requests.post(
+                self.url + ROLE_ASSIGNMENTS,
+                json=data,
+                auth=self._get_authentication(),
+            )
         )
 
     def revoke_role(
@@ -637,7 +641,11 @@ class RestZenStore(BaseZenStore):
             "is_user": is_user,
         }
         self._handle_response(
-            requests.delete(self.url + ROLE_ASSIGNMENTS, json=data)
+            requests.delete(
+                self.url + ROLE_ASSIGNMENTS,
+                json=data,
+                auth=self._get_authentication(),
+            )
         )
 
     def get_users_for_team(self, team_name: str) -> List[User]:

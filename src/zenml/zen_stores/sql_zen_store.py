@@ -543,7 +543,7 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             try:
                 team = session.exec(
-                    select(UserTable).where(TeamTable.name == team_name)
+                    select(TeamTable).where(TeamTable.name == team_name)
                 ).one()
             except NoResultFound as error:
                 raise KeyError from error
