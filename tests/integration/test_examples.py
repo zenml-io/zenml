@@ -14,7 +14,6 @@
 import logging
 import os
 import shutil
-import sys
 from pathlib import Path
 from typing import Callable, NamedTuple, TypeVar
 
@@ -26,7 +25,6 @@ from zenml.repository import Repository
 from .example_validations import (
     drift_detection_example_validation,
     generate_basic_validation_function,
-    mlflow_deployment_example_validation,
     mlflow_tracking_example_validation,
     whylogs_example_validation,
 )
@@ -105,16 +103,6 @@ examples = [
         ),
     ),
 ]
-
-# flake8: noqa: C901
-if sys.platform != "win32":
-    # daemon functionality is currently not supported on Windows."
-    examples.append(
-        ExampleIntegrationTestConfiguration(
-            name="mlflow_deployment",
-            validation_function=mlflow_deployment_example_validation,
-        )
-    )
 
 
 @pytest.mark.parametrize(

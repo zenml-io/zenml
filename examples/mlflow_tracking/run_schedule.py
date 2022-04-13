@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from datetime import datetime, timedelta
 
 from pipeline import (
     TrainerConfig,
@@ -22,8 +23,15 @@ from pipeline import (
 )
 
 from zenml.integrations.mlflow.mlflow_environment import global_mlflow_env
+from zenml.pipelines import Schedule
 
 if __name__ == "__main__":
+
+    schedule = Schedule(
+        start_time=datetime.now(),
+        end_time=datetime.now() + timedelta(minutes=10),
+        interval_second=60,
+    )
 
     # Initialize a pipeline run
     run_1 = mlflow_example_pipeline(
@@ -33,7 +41,7 @@ if __name__ == "__main__":
         evaluator=tf_evaluator(),
     )
 
-    run_1.run()
+    run_1.run(schedule=schedule)
 
     # Initialize a pipeline run again
     run_2 = mlflow_example_pipeline(
@@ -43,7 +51,7 @@ if __name__ == "__main__":
         evaluator=tf_evaluator(),
     )
 
-    run_2.run()
+    run_2.run(schedule=schedule)
     with global_mlflow_env() as mlflow_env:
         print(
             "Now run \n "

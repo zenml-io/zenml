@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import uuid
+from typing import Optional
 
 import click
 
@@ -31,11 +32,8 @@ from zenml.repository import Repository
 @cli.group()
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
-    """Served models that are deployed using the active model deployer in the
-    stack
-
-    Args:
-        ctx: Click context to pass to all sub-commands
+    """List and manage served models that are deployed using the active model
+    deployer in the stack.
     """
     ctx.obj = Repository().active_stack.components.get(
         StackComponentType.MODEL_DEPLOYER, None
@@ -48,15 +46,68 @@ def served_models(ctx: click.Context) -> None:
 
 
 @served_models.command("list")
+@click.option(
+    "--pipeline",
+    "-p",
+    type=click.STRING,
+    default=None,
+    help="Show only served models that were deployed by the indicated "
+    "pipeline.",
+)
+@click.option(
+    "--step",
+    "-s",
+    type=click.STRING,
+    default=None,
+    help="Show only served models that were deployed by the indicated "
+    "pipeline step.",
+)
+@click.option(
+    "--pipeline-run",
+    "-r",
+    type=click.STRING,
+    default=None,
+    help="Show only served models that were deployed by the indicated "
+    "pipeline run.",
+)
+@click.option(
+    "--model",
+    "-m",
+    type=click.STRING,
+    default=None,
+    help="Show only served model versions for the given model name.",
+)
+@click.option(
+    "--running",
+    is_flag=True,
+    help="Show only model servers that are currently runing.",
+)
 @click.pass_obj
-def list_models(model_deployer: "BaseModelDeployer") -> None:
+def list_models(
+    model_deployer: "BaseModelDeployer",
+    pipeline: Optional[str],
+    step: Optional[str],
+    pipeline_run: Optional[str],
+    model: Optional[str],
+    running: bool,
+) -> None:
     """Get a list of all served models within the model-deployer stack
     component.
-    Args:
-        model_deployer: Stack component that implements the interface to the
-            underlying model deployer engine
     """
-    pretty_print_model_deployer(model_deployer.find_model_server())
+    services = model_deployer.find_model_server(
+        running=running,
+        pipeline_name=pipeline,
+        pipeline_run_id=pipeline_run,
+        pipeline_step_name=step,
+        model_name=model,
+    )
+    if services:
+        pretty_print_model_deployer(
+            services,
+            model_deployer,
+        )
+    else:
+        warning("No served models found.")
 
 
 @served_models.command("describe")
@@ -65,13 +116,7 @@ def list_models(model_deployer: "BaseModelDeployer") -> None:
 def describe_model(
     model_deployer: "BaseModelDeployer", served_model_uuid: str
 ) -> None:
-    """Describe a specified served model.
-
-    Args:
-        model_deployer: Stack component that implements the interface to the
-            underlying model deployer engine
-        served_model_uuid: UUID of a served model
-    """
+    """Describe a specified served model."""
 
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
@@ -89,12 +134,7 @@ def describe_model(
 def get_url(
     model_deployer: "BaseModelDeployer", served_model_uuid: str
 ) -> None:
-    """Return the prediction url to a specified served model.
-    Args:
-        model_deployer: Stack component that implements the interface to the
-            underlying model deployer engine
-        served_model_uuid: UUID of a served model
-    """
+    """Return the prediction URL to a specified model server."""
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -130,12 +170,7 @@ def get_url(
 def start_model_service(
     model_deployer: "BaseModelDeployer", served_model_uuid: str, timeout: int
 ) -> None:
-    """Start a specified served model.
-    Args:
-        model_deployer: Stack component that implements the interface to the
-            underlying model deployer engine
-        served_model_uuid: UUID of a served model
-    """
+    """Start a specified model server."""
 
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
@@ -144,6 +179,7 @@ def start_model_service(
         model_deployer.start_model_server(
             served_models[0].uuid, timeout=timeout
         )
+        declare(f"Model server {served_models[0]} was started.")
         return
 
     warning(f"No model with uuid: '{served_model_uuid}' could be found.")
@@ -175,12 +211,7 @@ def stop_model_service(
     timeout: int,
     force: bool,
 ) -> None:
-    """Stop a specified served model.
-    Args:
-        model_deployer: Stack component that implements the interface to the
-            underlying model deployer engine
-        served_model_uuid: UUID of a served model
-    """
+    """Stop a specified model server."""
 
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
@@ -189,6 +220,7 @@ def stop_model_service(
         model_deployer.stop_model_server(
             served_models[0].uuid, timeout=timeout, force=force
         )
+        declare(f"Model server {served_models[0]} was stopped.")
         return
 
     warning(f"No model with uuid: '{served_model_uuid}' could be found.")
@@ -220,12 +252,7 @@ def delete_model_service(
     timeout: int,
     force: bool,
 ) -> None:
-    """Delete a specified served model.
-    Args:
-        model_deployer: Stack component that implements the interface to the
-            underlying model deployer engine
-        served_model_uuid: UUID of a served model
-    """
+    """Delete a specified model server."""
 
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
@@ -234,6 +261,7 @@ def delete_model_service(
         model_deployer.delete_model_server(
             served_models[0].uuid, timeout=timeout, force=force
         )
+        declare(f"Model server {served_models[0]} was deleted.")
         return
 
     warning(f"No model with uuid: '{served_model_uuid}' could be found.")

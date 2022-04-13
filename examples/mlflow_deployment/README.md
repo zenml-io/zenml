@@ -37,6 +37,9 @@ The example consists of two individual pipelines:
   by the continuous deployment pipeline to get online predictions based on live
   data
 
+You can control which pipeline to run by passing the `--deploy` and/or the
+`--predict` flag to the `run.py` launcher.
+
 In the deployment pipeline, ZenML's MLflow tracking integration is used to log
 the hyperparameter values -- as well as the trained model itself and the model
 evaluation metrics -- as MLflow experiment tracking artifacts into the local
@@ -45,6 +48,8 @@ to serve the latest MLflow model if its accuracy is above a configured threshold
 
 The MLflow deployment server is running locally as a daemon process that will
 continue to run in the background after the example execution is complete.
+Subsequent runs of the deployment pipeline will restart the existing deployment
+server to serve the more recent model version.
 
 The deployment pipeline has caching enabled to avoid re-training the model if
 the training data and hyperparameter values don't change. When a new model is
@@ -178,8 +183,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install mlflow
-zenml integration install tensorflow
+zenml integration install mlflow tensorflow
 
 # pull example
 zenml example pull mlflow_deployment
@@ -188,47 +192,115 @@ cd zenml_examples/mlflow_deployment
 # initialize
 zenml init
 ```
+### Setting up the ZenML Stack
+
+The example can only be executed with a ZenML stack that has an MLflow model
+deployer as a component. Configuring a new stack with a MLflow model deployer
+could look like this:
+
+```
+zenml integration install mlflow
+zenml model-deployer register mlflow --type=mlflow
+zenml stack register local_with_mlflow -m default -a default -o default -d mlflow
+zenml stack set local_with_mlflow
+```
 
 ### ▶️ Run the Code
-To run the pipeline locally:
+To run the continuous deployment pipeline:
 
 ```shell
-python run.py
+python run.py --deploy
 ```
 
 Re-running the example with different hyperparameter values will re-train
 the model and update the MLflow deployment server to serve the new model:
 
 ```shell
-python run.py --epochs=10 --learning_rate=0.1
+python run.py --deploy --epochs=10 --learning_rate=0.1
 ```
 
 If the input argument values are not changed, the pipeline caching feature
-will kick in and the model will not be re-trained. The inference pipeline
-will use the currently running MLflow deployment server to perform an
-online prediction.
+will kick in and the model will not be re-trained and the MLflow
+deployment server will not be updated with the new model. Similarly, if a new
+model is trained in the deployment pipeline but the model accuracy doesn't
+exceed the configured accuracy threshold, the new model will not be deployed.
 
-Similarly, if a new model is trained in the deployment pipeline but the
-model accuracy doesn't exceed the configured accuracy threshold, the new
-model will not be deployed:
+The inference pipeline will use the currently running MLflow deployment server
+to perform an online prediction. To run the inference pipeline:
 
 ```shell
-python run.py --epochs=1
+python run.py --predict
 ```
 
-Finally, to stop the prediction server, simply pass the `--stop-service` flag
-to the example script:
+The `zenml served-models list` CLI command can be run to list the active model servers:
 
 ```shell
-python run.py --stop-service
+$ zenml served-models list
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┓
+┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         │ MODEL_NAME ┃
+┠────────┼──────────────────────────────────────┼────────────────────────────────┼────────────────────────────┼────────────┨
+┃   ✅   │ 87980237-843f-414f-bf06-931f4da69e56 │ continuous_deployment_pipeline │ mlflow_model_deployer_step │ model      ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━┛
+```
+
+To get more information about a specific model server, such as the prediction URL,
+the `zenml served-models describe <uuid>` CLI command can be run:
+
+```shell
+$ zenml served-models describe 87980237-843f-414f-bf06-931f4da69e56
+        Properties of Served Model 87980237-843f-414f-bf06-931f4da69e56        
+┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ MODEL SERVICE PROPERTY │ VALUE                                              ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ DAEMON_PID             │ 105590                                             ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ MODEL_NAME             │ model                                              ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ MODEL_URI              │ file:///home/stefan/.config/zenml/local_stores/fd… ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ PIPELINE_NAME          │ continuous_deployment_pipeline                     ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ PIPELINE_RUN_ID        │ continuous_deployment_pipeline-12_Apr_22-22_05_32… ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ PIPELINE_STEP_NAME     │ mlflow_model_deployer_step                         ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ PREDICTION_URL         │ http://localhost:8001/invocations                  ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ SERVICE_PATH           │ /home/stefan/.config/zenml/local_stores/3b114be0-… ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ STATUS                 │ ✅                                                 ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ STATUS_MESSAGE         │ service daemon is not running                      ┃
+┠────────────────────────┼────────────────────────────────────────────────────┨
+┃ UUID                   │ 87980237-843f-414f-bf06-931f4da69e56               ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+The prediction URL can sometimes be more difficult to make out in the detailed
+output, so there is a separate CLI command available to retrieve it:
+
+```shell
+$ zenml served-models get-url 87980237-843f-414f-bf06-931f4da69e56
+  Prediction URL of Served Model 87980237-843f-414f-bf06-931f4da69e56 is:
+  http://localhost:8001/invocations
+```
+
+Finally, a model server can be deleted with the `zenml served-models delete <uuid>`
+CLI command:
+
+```shell
+$ zenml served-models delete 87980237-843f-414f-bf06-931f4da69e56
+Model server MLFlowDeploymentService[87980237-843f-414f-bf06-931f4da69e56] 
+(type: model-serving, flavor: mlflow) was deleted.
 ```
 
 ### 🧽 Clean up
-To stop the prediction server running in the background, pass the
-`--stop-service` flag to the example script:
+
+To stop any prediction servers running in the background, use the
+`zenml model-server list` and `zenml model-server delete <uuid>` CLI commands.:
 
 ```shell
-python run.py --stop-service
+zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
 Then delete the remaining ZenML references.
