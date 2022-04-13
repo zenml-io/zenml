@@ -15,13 +15,12 @@
 import os
 import string
 from collections.abc import Iterable
-from io import FileIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from types import GeneratorType
 
 import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis.strategies import text
 from tfx.dsl.io.filesystem import NotFoundError
 
@@ -34,7 +33,7 @@ logger = get_logger(__name__)
 
 TEMPORARY_FILE_NAME = "a_file.txt"
 TEMPORARY_FILE_SEARCH_PREFIX = "a_f*.*"
-ALPHABET = set(string.printable) - set('<>:"/\|?*')
+ALPHABET = string.ascii_letters
 
 
 def test_walk_function_returns_a_generator_object(tmp_path):
@@ -135,8 +134,9 @@ def test_listdir_returns_empty_list_when_dir_doesnt_exist(
     sample_file, tmp_path
 ):
     """list_dir should return an empty list when the directory doesn't exist"""
-    not_a_real_dir = os.path.join(tmp_path, sample_file)
-    assert isinstance(fileio.listdir(not_a_real_dir), list)
+    with pytest.raises(NotFoundError):
+        not_a_real_dir = os.path.join(tmp_path, sample_file)
+        fileio.listdir(not_a_real_dir)
 
 
 @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
@@ -147,19 +147,6 @@ def test_open_returns_error_when_file_nonexistent(
     """Test that open returns a file object"""
     with pytest.raises(NotFoundError):
         fileio.open(os.path.join(tmp_path, not_a_file), "rb")
-
-
-@settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
-@given(random_file=text(min_size=1, alphabet=ALPHABET))
-def test_open_returns_file_object_when_file_exists(
-    tmp_path, random_file: str
-) -> None:
-    """Test that open returns a file object"""
-    with fileio.open(os.path.join(tmp_path, random_file), "w") as _:
-        assert isinstance(
-            fileio.open(os.path.join(tmp_path, random_file), "rb"),
-            FileIO,
-        )
 
 
 def test_copy_moves_file_to_new_location(tmp_path) -> None:
