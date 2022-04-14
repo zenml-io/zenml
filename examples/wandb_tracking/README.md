@@ -1,6 +1,6 @@
 # Integrating wandb tracking into your pipeline
 
-[Weights&Biases](https://www.mlflow.org/docs/latest/tracking.html) is a popular
+[Weights&Biases](https://wandb.ai/site/experiment-tracking) is a popular
 tool that tracks and visualizes experiment runs with their many parameters,
 metrics and output files.
 
@@ -34,7 +34,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow mlflow -f
+zenml integration install tensorflow wandb -f
 
 # pull example
 zenml example pull wandb_tracking
