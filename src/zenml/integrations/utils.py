@@ -16,7 +16,11 @@ import inspect
 import sys
 from typing import List, Optional, Type, cast
 
+from zenml.enums import StackComponentType
 from zenml.integrations.integration import Integration, IntegrationMeta
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_integration_for_module(module_name: str) -> Optional[Type[Integration]]:
@@ -58,3 +62,25 @@ def get_requirements_for_module(module_name: str) -> List[str]:
     """
     integration = get_integration_for_module(module_name)
     return integration.REQUIREMENTS if integration else []
+
+
+def register_flavor(
+    flavor: str,
+    source: str,
+    stack_component_type: StackComponentType,
+    integration: str = None,
+) -> None:
+    """Registers a stack component flavor in the ZenStore."""
+
+    from zenml.repository import Repository
+
+    logger.debug(
+        f"Registering the {StackComponentType} flavor: {flavor}"
+        f'{f" for the integration {integration}." if integration else "."}'
+    )
+    Repository().zen_store.create_flavor(
+        source=source,
+        name=flavor,
+        integration=integration,
+        stack_component_type=stack_component_type,
+    )
