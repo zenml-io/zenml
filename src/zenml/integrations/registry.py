@@ -65,6 +65,12 @@ class IntegrationRegistry(object):
             else:
                 logger.debug(f"Integration `{name}` could not be activated.")
 
+    def declare_integrations(self) -> None:
+        """Method to run only once to declare the stack component flavors
+        within the integrations."""
+        for name, integration in self._integrations.items():
+            integration.declare()
+
     @property
     def list_integration_names(self) -> List[str]:
         """Get a list of all possible integrations"""

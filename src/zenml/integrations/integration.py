@@ -81,6 +81,10 @@ class Integration(metaclass=IntegrationMeta):
             )
             return False
 
-    @staticmethod
-    def activate() -> None:
-        """Abstract method to activate the integration"""
+    @classmethod
+    def activate(cls) -> None:
+        """Abstract method to activate the integration."""
+
+    @classmethod
+    def declare(cls) -> None:
+        """Abstract method to declare new stack component flavor."""

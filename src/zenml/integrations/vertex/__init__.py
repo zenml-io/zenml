@@ -31,8 +31,8 @@ class VertexIntegration(Integration):
     REQUIREMENTS = ["google-cloud-aiplatform>=1.11.0"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
+    def declare(cls) -> None:
+        """Declare the stack component flavors for the Vertex integration."""
         register_flavor(
             flavor=VERTEX_STEP_OPERATOR_FLAVOR,
             source="zenml.integrations.vertex.step_operators.VertexStepOperator",

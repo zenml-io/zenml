@@ -31,8 +31,8 @@ class AirflowIntegration(Integration):
     REQUIREMENTS = ["apache-airflow==2.2.0"]
 
     @classmethod
-    def activate(cls):
-        """Activates all classes required for the airflow integration."""
+    def declare(cls):
+        """Declare the stack component flavors for the Airflow integration."""
         register_flavor(
             flavor=AIRFLOW_ORCHESTRATOR_FLAVOR,
             source="zenml.integrations.airflow.orchestrators.AirflowOrchestrator",

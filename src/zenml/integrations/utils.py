@@ -75,7 +75,7 @@ def register_flavor(
     from zenml.repository import Repository
 
     logger.debug(
-        f"Registering the {StackComponentType} flavor: {flavor}"
+        f"Registering the {stack_component_type} flavor: {flavor}"
         f'{f" for the integration {integration}." if integration else "."}'
     )
     Repository().zen_store.create_flavor(

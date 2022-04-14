@@ -33,8 +33,12 @@ class SeldonIntegration(Integration):
 
     @classmethod
     def activate(cls) -> None:
-        """Activate the Seldon Core integration."""
+        """Activate the Seldon Core integration"""
         from zenml.integrations.seldon import services  # noqa
+
+    @classmethod
+    def declare(cls) -> None:
+        """Declare the stack component flavors for the Seldon Core."""
         register_flavor(
             flavor=SELDON_MODEL_DEPLOYER_FLAVOR,
             source="zenml.integrations.seldon.model_deployers.SeldonModelDeployer",

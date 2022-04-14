@@ -30,8 +30,8 @@ class KubeflowIntegration(Integration):
     REQUIREMENTS = ["kfp==1.8.9"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates all classes required for the airflow integration."""
+    def declare(cls) -> None:
+        """Declare the stack component flavors for the Kubeflow integration."""
         register_flavor(
             flavor=KUBEFLOW_METADATA_STORE_FLAVOR,
             source="zenml.integrations.kubeflow.metadata_stores.KubeflowMetadataStore",

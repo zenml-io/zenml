@@ -805,7 +805,7 @@ class BaseZenStore(ABC):
             )
 
         from zenml.integrations.registry import integration_registry
-        integration_registry.activate_integrations()
+        integration_registry.declare_integrations()
 
     def register_default_stack(self) -> None:
         """Populates the store with the default Stack.

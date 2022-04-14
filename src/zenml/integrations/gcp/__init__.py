@@ -32,8 +32,8 @@ class GcpIntegration(Integration):
     REQUIREMENTS = ["gcsfs"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
+    def declare(cls) -> None:
+        """Declare the stack component flavors for the GCP integration."""
         register_flavor(
             flavor=GCP_ARTIFACT_STORE_FLAVOR,
             source="zenml.integrations.gcp.artifact_stores.GCSArtifactStore",

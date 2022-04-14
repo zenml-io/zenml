@@ -31,8 +31,8 @@ class SagemakerIntegration(Integration):
     REQUIREMENTS = ["sagemaker==2.82.2"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
+    def declare(cls) -> None:
+        """Declare the stack component flavors for the Sagemaker integration."""
         register_flavor(
             flavor=SAGEMAKER_STEP_OPERATOR_FLAVOR,
             source="zenml.integrations.sagemaker.step_operators.SagemakerStepOperator",

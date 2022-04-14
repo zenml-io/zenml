@@ -30,8 +30,8 @@ class AWSIntegration(Integration):
     REQUIREMENTS = ["boto3==1.21.21"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
+    def declare(cls) -> None:
+        """Declare the stack component flavors for the AWS integration."""
         register_flavor(
             flavor=AWS_SECRET_MANAGER_FLAVOR,
             source="zenml.integrations.aws.secrets_manager.AWSSecretsManager",

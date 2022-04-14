@@ -31,8 +31,8 @@ class FeastIntegration(Integration):
     REQUIREMENTS = ["feast[redis]>=0.19.4", "redis-server"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
+    def declare(cls) -> None:
+        """Declare the stack component flavors for the Feast integration."""
         register_flavor(
             flavor=FEAST_FEATURE_STORE_FLAVOR,
             source="zenml.integrations.feast.feature_store.FeastFeatureStore",

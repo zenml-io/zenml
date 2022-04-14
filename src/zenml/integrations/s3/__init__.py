@@ -30,8 +30,8 @@ class S3Integration(Integration):
     REQUIREMENTS = ["s3fs==2022.3.0"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
+    def declare(cls) -> None:
+        """Declare the stack component flavors for the s3 integration."""
         register_flavor(
             flavor=S3_ARTIFACT_STORE_FLAVOR,
             source="zenml.integrations.s3.artifact_stores.S3ArtifactStore",

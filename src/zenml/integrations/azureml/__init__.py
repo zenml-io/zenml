@@ -30,8 +30,8 @@ class AzureMLIntegration(Integration):
     REQUIREMENTS = ["azureml-core==1.39.0.post1"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
+    def declare(cls) -> None:
+        """Declare the stack component flavors for the AzureML integration."""
         register_flavor(
             flavor=AZUREML_STEP_OPERATOR_FLAVOR,
             source="zenml.integrations.azureml.step_operators.AzureMLStepOperator",

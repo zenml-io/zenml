@@ -36,9 +36,11 @@ class MlflowIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activate the MLflow integration."""
-
         from zenml.integrations.mlflow import services  # noqa
 
+    @classmethod
+    def declare(cls) -> None:
+        """Declare the stack component flavors for the MLflow integration"""
         register_flavor(
             flavor=MLFLOW_MODEL_DEPLOYER_FLAVOR,
             source="zenml.integrations.mlflow.model_deployers.MLFlowModelDeployer",

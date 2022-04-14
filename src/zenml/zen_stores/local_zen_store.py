@@ -123,9 +123,7 @@ class LocalZenStore(BaseZenStore):
             self.__store = store_data
             self._write_store()
         elif fileio.exists(self._store_path()):
-            print(self._store_path())
             config_dict = yaml_utils.read_yaml(self._store_path())
-            print(config_dict)
             self.__store = ZenStoreModel.parse_obj(config_dict)
         else:
             self.__store = ZenStoreModel.empty_store()
@@ -870,13 +868,6 @@ class LocalZenStore(BaseZenStore):
         integration: str = None
     ) -> Flavor:
         """ """
-        if _get_unique_entity(
-            name,
-            collection=self.get_flavors_by_type(stack_component_type),
-            ensure_exists=False,
-        ):
-            raise RuntimeError()
-
         flavor = Flavor(
             name=name,
             source=source,
