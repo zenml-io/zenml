@@ -179,7 +179,6 @@ exclude = "airflow/"
 [[tool.mypy.overrides]]
 module = [
     "airflow.*",
-    "transformers.*"  # https://github.com/huggingface/transformers/issues/13390
     ]
 follow_imports = "skip"
 
@@ -187,7 +186,11 @@ follow_imports = "skip"
 
 # import all tfx.proto.* and google files as `Any`
 [[tool.mypy.overrides]]
-module = ["tfx.proto.*", "google.*"]
+module = [
+    "tfx.proto.*",
+    "google.*" ,
+    "transformers.*"  # https://github.com/huggingface/transformers/issues/13390
+]
 follow_imports = "skip"
 
 [[tool.mypy.overrides]]
