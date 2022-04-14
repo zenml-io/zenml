@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
 
@@ -22,7 +21,7 @@ class Flavor(BaseModel):
     """Pydantic object representing the custom implementation of a stack
     component."""
 
-    id: UUID = Field(default_factory=uuid4)
+    name: str
+    integration: str = ""
     type: StackComponentType
     source: str
-    # sha: ???
