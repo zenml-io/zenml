@@ -20,7 +20,7 @@ from transformers import AutoTokenizer
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 from zenml.artifacts import ModelArtifact
-from zenml.io import fileio
+from zenml.io.utils import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_TOKENIZER_DIR = "hf_tokenizer"

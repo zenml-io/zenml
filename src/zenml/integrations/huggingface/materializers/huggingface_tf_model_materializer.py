@@ -20,7 +20,7 @@ from typing import Any, Type
 from transformers import AutoConfig, TFPreTrainedModel
 
 from zenml.artifacts import ModelArtifact
-from zenml.io import fileio
+from zenml.io.utils import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_TF_MODEL_DIR = "hf_tf_model"

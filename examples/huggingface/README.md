@@ -24,8 +24,14 @@ Sequence Classification is an NLP/NLU task, where we assign labels to a given te
     datasets = load_dataset("imdb")
     print(datasets['train'][0])
 
-    {'label': 0, # Sentiment label i.e. 0->Negative 1->Positive
- 'text': 'I rented I AM CURIOUS-YELLOW from my video store because of all the controversy that surrounded it when it was first released in 1967. I also heard that at first it was seized by U.S. customs if it ever tried to enter this country, therefore being a fan of films considered "controversial" I really had to see this for myself.......'}
+    {
+     'label': 0, # Sentiment label i.e. 0->Negative 1->Positive
+     'text': 'I rented I AM CURIOUS-YELLOW from my video store because of
+     all the controversy that surrounded it when it was first released in
+     1967. I also heard that at first it was seized by U.S. customs if it
+     ever tried to enter this country, therefore being a fan of films 
+     considered controversial I really had to see this for myself.....'
+     }
 ```
 
 - Load pre-trained tokenizer: Load pre-trained tokenizer from huggingface transformers.
