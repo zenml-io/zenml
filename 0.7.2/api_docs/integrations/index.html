@@ -37999,7 +37999,7 @@ CONFIG_CLASS            (<a class="autorefs autorefs-internal" title="zenml.step
   </thead>
   <tbody>
     <tr>
-      <td><code>&lt;zenml.steps.step_output.Output object at 0x7fd18c1d1df0&gt;</code></td>
+      <td><code>&lt;zenml.steps.step_output.Output object at 0x7fd2848a8c70&gt;</code></td>
       <td><p>three dataframes representing the splits</p></td>
     </tr>
   </tbody>
@@ -38401,7 +38401,7 @@ exclude_columns: a list of column names to be excluded from the dataset</p>
   </thead>
   <tbody>
     <tr>
-      <td><code>&lt;zenml.steps.step_output.Output object at 0x7fd18c139b80&gt;</code></td>
+      <td><code>&lt;zenml.steps.step_output.Output object at 0x7fd28481ef70&gt;</code></td>
       <td><p>the transformed train, test and validation datasets as
 pd.DataFrames</p></td>
     </tr>
@@ -42377,7 +42377,7 @@ def my_step(...)
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_name</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">wandb_run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">wandb_run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Returns the wandb run for the current step.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span>
 </code></pre></div>
@@ -42444,7 +42444,7 @@ def my_step(...)
 
 
 <h6 id="zenml.integrations.wandb.wandb_environment.WandbStepEnvironment.wandb_run" class="doc doc-heading">
-<code class="highlight language-python"><span class="n">wandb_run</span><span class="p">:</span> <span class="n">Optional</span></code>
+<code class="highlight language-python"><span class="n">wandb_run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span></code>
 
   <span class="doc doc-properties">
       <small class="doc doc-property doc-property-property"><code>property</code></small>
