@@ -27,7 +27,7 @@ analyze the statistics of the data artifacts.
 - **[evidently_drift_detection](evidently_drift_detection/README.md)**: Detect drift with our 
 [evidently](https://github.com/evidentlyai/evidently) integration. 
 
-## 🗂 Experiment Tracking
+## 🧪 Experiment Tracking
 Certain phases of machine learning projects require a large amount of experimentation with many possible approaches. 
 Experiment tracking is vital to capture and compare all your experiments so that you can narrow down your solution 
 space.
