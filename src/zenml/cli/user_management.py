@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 from typing import Optional, Tuple
+from uuid import UUID
 
 import click
 
@@ -58,7 +59,9 @@ def list_users() -> None:
         cli_utils.declare("No users registered.")
         return
 
-    cli_utils.print_pydantic_models(users)
+    cli_utils.print_pydantic_models(
+        users, is_active=lambda u: u.name == Repository().active_user_name
+    )
 
 
 @user.command("create")
@@ -189,9 +192,17 @@ def list_projects(user: Optional[str] = None) -> None:
         except KeyError:
             cli_utils.warning(f"No such user: `{user}`. Showing all projects.")
         else:
-            projects = [p for p in projects if p.id == user_id]
+            projects = [p for p in projects if p.created_by == user_id]
     if projects:
-        cli_utils.print_pydantic_models(projects)
+        active_project = Repository().active_project
+        active: Optional[UUID] = (
+            active_project.id if active_project is not None else None
+        )
+        cli_utils.print_pydantic_models(
+            projects,
+            columns=("name", "description", "creation_date", "default_stack"),
+            is_active=None if active is None else (lambda p: p.id == active),
+        )
     else:
         cli_utils.declare("No projects registered.")
 
@@ -278,7 +289,6 @@ def register_project(
 ) -> None:
     """Register current repository as new project."""
     cli_utils.print_active_profile()
-    breakpoint()
     if Repository.find_repository() is None:
         cli_utils.error(
             "Must be in an active repository to register project. "
