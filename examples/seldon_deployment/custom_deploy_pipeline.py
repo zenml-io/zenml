@@ -14,7 +14,7 @@
 
 import logging
 import os
-from typing import Dict, Iterable, List, Union, cast
+from typing import cast
 
 import joblib
 import numpy as np  # type: ignore [import]
@@ -163,6 +163,23 @@ def deployment_trigger(
     return accuracy > config.min_accuracy
 
 
+class CustomModelParameters(BaseStepConfig):
+    """Parameters that are used to trigger the deployment"""
+
+    model_class: str = None
+
+
+@step
+def custom_class_source_retrive(
+    config: CustomModelParameters,
+) -> str:
+    """Step that retrieves the source path of the custom model class"""
+    if config.model_class:
+        return config.model_class
+    else:
+        return ""
+
+
 class SeldonDeploymentLoaderStepConfig(BaseStepConfig):
     """Seldon deployment loader configuration
 
@@ -267,6 +284,7 @@ def continuous_deployment_pipeline(
     trainer,
     evaluator,
     deployment_trigger,
+    custom_class_source_retrive,
     model_deployer,
 ):
     # Link all the steps artifacts together
@@ -275,12 +293,11 @@ def continuous_deployment_pipeline(
     model = trainer(x_train=x_trained_normed, y_train=y_train)
     accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
     deployment_decision = deployment_trigger(accuracy=accuracy)
+    source = custom_class_source_retrive()
     model_deployer(
         deployment_decision,
         model,
-        custom_deployment=True,
-        load_func=load,
-        predict_func=predict,
+        custom_class_path=source,
     )
 
 
@@ -300,39 +317,30 @@ def inference_pipeline(
     predictor(model_deployment_service, inference_data)
 
 
-@step
-def load(zenml_custom_model: ZenMLCustomModel, model_uri: str = None) -> None:
-    print("load")
-    try:
-        model_file = os.path.join(
-            seldon_core.Storage.download(model_uri), "model.joblib"
-        )
-        zenml_custom_model.model = joblib.load(model_file)
-        zenml_custom_model.ready = True
-    except Exception as ex:
-        logging.exception("Exception during predict", ex)
-        zenml_custom_model.ready = False
+class mycustomdeploy(ZenMLCustomModel):
+    """Custom model deployment class"""
 
+    def __init__(self, model_uri: str = None):
+        super().__init__(model_uri=model_uri)
 
-@step
-def predict(
-    zenml_custom_model: ZenMLCustomModel,
-    X: np.ndarray,
-    names: Iterable[str],
-    meta: Dict = None,
-) -> Union[np.ndarray, List, str, bytes]:
-    """
-    Return a prediction.
+    def load(self):
+        """Load the model from the given path"""
+        try:
+            model_file = os.path.join(
+                seldon_core.Storage.download(self.model_uri), "model.joblib"
+            )
+            self.model = joblib.load(model_file)
+            self.ready = True
+        except Exception as ex:
+            logging.exception("Exception during predict", ex)
+            self.ready = False
 
-    Parameters
-    ----------
-    X : array-like
-    feature_names : array of feature names (optional)
-    """
-
-    try:
-        logger.info("Calling predict_proba")
-        result = zenml_custom_model.model.predict_proba(X)
-        return result
-    except Exception as ex:
-        logging.exception("Exception during predict", ex)
+    def predict(self, X, features_names):
+        """Run a prediction on the given data"""
+        try:
+            logger.info("Calling predict_proba")
+            result = self.model.predict_proba(X)
+            return result
+        except Exception as ex:
+            logging.exception("Exception during predict", ex)
+            raise

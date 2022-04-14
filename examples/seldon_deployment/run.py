@@ -14,12 +14,14 @@
 from typing import cast
 
 import click
-from pipeline import (
+from custom_deploy_pipeline import (
+    CustomModelParameters,
     DeploymentTriggerConfig,
     SeldonDeploymentLoaderStepConfig,
     SklearnTrainerConfig,
     TensorflowTrainerConfig,
     continuous_deployment_pipeline,
+    custom_class_source_retrive,
     deployment_trigger,
     dynamic_importer,
     importer_mnist,
@@ -170,6 +172,11 @@ def main(
             deployment_trigger=deployment_trigger(
                 config=DeploymentTriggerConfig(
                     min_accuracy=min_accuracy,
+                )
+            ),
+            custom_class_source_retrive=custom_class_source_retrive(
+                config=CustomModelParameters(
+                    model_class="custom_deploy_pipeline.mycustomdeploy",
                 )
             ),
             model_deployer=seldon_model_deployer_step(

@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import List
+
 from zenml.environment import BaseEnvironmentComponent
 
 STEP_ENVIRONMENT_NAME = "step_environment"
@@ -44,6 +46,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         pipeline_name: str,
         pipeline_run_id: str,
         step_name: str,
+        pipeline_requirements: List[str],
     ):
         """Initialize the environment of the currently running
         step.
@@ -57,6 +60,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         self._pipeline_name = pipeline_name
         self._pipeline_run_id = pipeline_run_id
         self._step_name = step_name
+        self._pipeline_requirements = pipeline_requirements
 
     @property
     def pipeline_name(self) -> str:
@@ -72,3 +76,8 @@ class StepEnvironment(BaseEnvironmentComponent):
     def step_name(self) -> str:
         """The name of the currently running step."""
         return self._step_name
+
+    @property
+    def pipeline_requirements(self) -> List[str]:
+        """The name of the currently running step."""
+        return self._pipeline_requirements

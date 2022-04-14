@@ -57,6 +57,7 @@ def generate_dockerfile_contents(
     entrypoint: Optional[str] = None,
     requirements: Optional[AbstractSet[str]] = None,
     environment_vars: Optional[Dict[str, str]] = None,
+    extra_build_lines: Optional[List[str]] = None,
 ) -> str:
     """Generates a Dockerfile.
 
@@ -87,6 +88,9 @@ def generate_dockerfile_contents(
     lines.append(
         f"ENV {ENV_ZENML_CONFIG_PATH}=/app/{CONTAINER_ZENML_CONFIG_DIR}"
     )
+
+    if extra_build_lines:
+        lines.extend(extra_build_lines)
 
     if entrypoint:
         lines.append(f"ENTRYPOINT {entrypoint}")
@@ -188,6 +192,8 @@ def build_docker_image(
     environment_vars: Optional[Dict[str, str]] = None,
     use_local_requirements: bool = False,
     base_image: Optional[str] = None,
+    global_configuration: Optional[bool] = True,
+    extra_build_lines: Optional[List[str]] = None,
 ) -> None:
     """Builds a docker image.
 
@@ -220,10 +226,11 @@ def build_docker_image(
         # active profile and the active stack configuration into the build
         # context, to have the active profile and active stack accessible from
         # within the container.
-        GlobalConfiguration().copy_active_configuration(
-            config_path,
-            load_config_path=f"/app/{CONTAINER_ZENML_CONFIG_DIR}",
-        )
+        if global_configuration:
+            GlobalConfiguration().copy_active_configuration(
+                config_path,
+                load_config_path=f"/app/{CONTAINER_ZENML_CONFIG_DIR}",
+            )
 
         if not requirements and use_local_requirements:
             local_requirements = get_current_environment_requirements()
@@ -246,6 +253,7 @@ def build_docker_image(
                 entrypoint=entrypoint,
                 requirements=requirements,
                 environment_vars=environment_vars,
+                extra_build_lines=extra_build_lines,
             )
 
         build_context = create_custom_build_context(
@@ -278,7 +286,8 @@ def build_docker_image(
         _process_stream(output_stream)
     finally:
         # Clean up the temporary build files
-        fileio.rmtree(config_path)
+        if global_configuration:
+            fileio.rmtree(config_path)
 
     logger.info("Finished building docker image.")
 

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from datetime import datetime
-from typing import ClassVar, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.integrations.constants import SELDON
@@ -29,6 +29,11 @@ from zenml.services.service import BaseService, ServiceConfig
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
+from zenml.utils import docker_utils
+from zenml.utils.source_utils import get_source_root_path
+
+if TYPE_CHECKING:
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -362,3 +367,53 @@ class SeldonModelDeployer(BaseModelDeployer):
         if len(services) == 0:
             return
         services[0].stop(timeout=timeout, force=force)
+
+    def prepare_custom_deployment_image(
+        self,
+        stack: "Stack",
+        pipeline_name: str,
+        step_name: str,
+        requirements: List[str],
+        model_name: str,
+        entrypoint_command: List[str],
+    ) -> str:
+        """Prepare a custom Docker image for a Seldon Core model deployment.
+
+        This method prepares a custom Docker image for a Seldon Core model
+        deployment. The image is built and pushed to the container registry
+        configured for the active stack. The image digest is returned.
+
+        Args:
+            stack: the stack that the model deployment is part of.
+            pipeline_name: name of the pipeline that the deployed model was part
+                of.
+            step_name: name of the pipeline model deployment step that deployed
+                the model.
+            requirements: list of requirements to be included in the Dockerfile.
+            entrypoint_command: command to be executed by the Docker image.
+
+        Returns:
+            The image digest of the prepared Docker image.
+        """
+
+        container_registry = stack.container_registry
+
+        if not container_registry:
+            raise RuntimeError("Missing container registry")
+
+        registry_uri = container_registry.uri.rstrip("/")
+        image_name = f"{registry_uri}/zenml-seldon-custom-deploy:{pipeline_name}-{step_name}"
+        environment_vars = {"MODEL_NAME": model_name}
+        extra_build_lines = ["EXPOSE 5000", "EXPOSE 9000"]
+
+        docker_utils.build_docker_image(
+            build_context_path=get_source_root_path(),
+            image_name=image_name,
+            entrypoint=" ".join(entrypoint_command),
+            requirements=set(requirements),
+            environment_vars=environment_vars,
+            global_configuration=False,
+            extra_build_lines=extra_build_lines,
+        )
+        docker_utils.push_docker_image(image_name)
+        return docker_utils.get_image_digest(image_name) or image_name

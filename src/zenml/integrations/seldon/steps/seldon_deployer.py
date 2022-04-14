@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Callable, Dict, List, Optional, cast
+from typing import cast
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.environment import Environment
@@ -35,7 +35,6 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils.source_utils import get_module_source_from_module
 
 logger = get_logger(__name__)
 
@@ -56,15 +55,13 @@ class SeldonDeployerStepConfig(BaseStepConfig):
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT
 
 
-@step(enable_cache=True)
+@step(enable_cache=False)
 def seldon_model_deployer_step(
     deploy_decision: bool,
-    custom_deployment: bool,
-    load_func: Optional[Callable[..., None]],
-    predict_func: Optional[Callable[..., None]],
     config: SeldonDeployerStepConfig,
     context: StepContext,
     model: ModelArtifact,
+    custom_class_path: str,
 ) -> SeldonDeploymentService:
     """Seldon Core model deployer pipeline step
 
@@ -86,38 +83,18 @@ def seldon_model_deployer_step(
     pipeline_name = step_env.pipeline_name
     pipeline_run_id = step_env.pipeline_run_id
     step_name = step_env.step_name
-
+    requirements = step_env.pipeline_requirements
+    model_name = custom_class_path
+    entrypoint_command = [
+        "seldon-core-microservice",
+        "$MODEL_NAME",
+        "--service-type",
+        "MODEL",
+    ]
     # update the step configuration with the real pipeline runtime information
     config.service_config.pipeline_name = pipeline_name
     config.service_config.pipeline_run_id = pipeline_run_id
     config.service_config.pipeline_step_name = step_name
-
-    # get the custom deployment functions into paramteres
-    parameters: List[Dict[str, str]] = []
-    if custom_deployment:
-        # load the model
-        if load_func:
-            parameters.append(
-                {
-                    "name": "load_func",
-                    "type": "STRING",
-                    "value": get_module_source_from_module(load_func),
-                }
-            )
-
-        # deploy the model
-        if predict_func:
-            parameters.append(
-                {
-                    "name": "predict_func",
-                    "type": "STRING",
-                    "value": get_module_source_from_module(predict_func),
-                }
-            )
-
-    # update the step configuration with the parameters
-    config.service_config.parameters = parameters
-    
 
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
         """Prepare the model files for model serving and create and return a
@@ -172,6 +149,18 @@ def seldon_model_deployer_step(
 
         service_config = config.service_config.copy()
         service_config.model_uri = served_model_uri
+
+        # more information about stack ..
+        stack = context.stack
+        model_deployer.prepare_custom_deployment_image(
+            stack,
+            pipeline_name,
+            step_name,
+            requirements,
+            model_name,
+            entrypoint_command,
+        )
+
         return service_config
 
     if not deploy_decision:

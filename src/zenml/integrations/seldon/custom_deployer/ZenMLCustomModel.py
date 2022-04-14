@@ -1,7 +1,4 @@
-import logging
-from typing import Dict, List, Optional, Union
-
-import numpy as np
+from abc import abstractmethod
 
 
 class ZenMLCustomModel(object):
@@ -9,43 +6,30 @@ class ZenMLCustomModel(object):
     Model template. You can load your model parameters in __init__ from a location accessible at runtime
     """
 
-    def __init__(
-        self, load_func: str, predict_func: str, model_uri: str = None
-    ):
+    def __init__(self, model_uri: str):
         """
         Add any initialization parameters. These will be passed at runtime from the graph definition parameters defined in your seldondeployment kubernetes resource manifest.
-
-
-        function_path: path to the python module that contains the predict function.
-        E.g. if the function is `predict` and it's part of a user defined `pipeline.py` python module:
         """
+        print("Initializing")
 
-        from zenml.utils.source_utils import load_source_path_class
-
-        self.load_func = load_source_path_class(load_func)
-        self.predict_func = load_source_path_class(predict_func)
         self.model_uri = model_uri
         self.model = None
         self.ready = False
-        self.load(self.model_uri)
+        self.load()
 
+    @abstractmethod
     def load(self):
         """
-        Load the model from the given path.
+        Load model from file
+
+        Parameters
+        ----------
+        model_path : str
         """
-        try:
-            self.model = self.load_func(self, self.model_uri)
-            self.ready = True
-        except Exception as ex:
-            logging.exception("Exception during custom model loading", ex)
+        print("Load called - will load from file")
 
-    def predict(
-        self,
-        X: Union[np.ndarray, List, str, bytes, Dict],
-        names: Optional[List[str]],
-        meta: Optional[Dict] = None,
-    ) -> Union[np.ndarray, List, str, bytes, Dict]:
-
+    @abstractmethod
+    def predict(self, X, features_names):
         """
         Return a prediction.
 
@@ -54,8 +38,5 @@ class ZenMLCustomModel(object):
         X : array-like
         feature_names : array of feature names (optional)
         """
-        if not self.ready:
-            self.load(self, self.model_uri)
-        else:
-            pass
-        return self.predict_func(self, X, names, meta)
+        print("Predict called - will run identity function")
+        return X
