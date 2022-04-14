@@ -26,6 +26,7 @@ from zenml.steps import BaseStepConfig, Output, step
 
 
 WANDB_PROJECT_NAME = os.getenv('WANDB_PROJECT_NAME')
+WANDB_ENTITY = os.getenv('WANDB_ENTITY')
 WANDB_API_KEY = os.getenv("WANDB_API_KEY")
 if WANDB_PROJECT_NAME is None:
     raise AssertionError("Set the env variable WANDB_PROJECT_NAME please!")
@@ -63,12 +64,14 @@ def normalizer(
 
 
 # Define the step and enable wandb - order of decorators is important here
-@enable_wandb(project_name=WANDB_PROJECT_NAME)
+@enable_wandb(project_name=WANDB_PROJECT_NAME, entity=WANDB_ENTITY)
 @step
 def tf_trainer(
     config: TrainerConfig,
     x_train: np.ndarray,
     y_train: np.ndarray,
+    x_val: np.ndarray,
+    y_val: np.ndarray,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""
@@ -89,7 +92,12 @@ def tf_trainer(
         x_train,
         y_train,
         epochs=config.epochs,
-        callbacks=[WandbCallback()]
+        validation_data=(x_val, y_val),
+        callbacks=[WandbCallback(
+            log_evaluation=True,
+            validation_steps=16,
+            validation_data=(x_val, y_val)
+        )]
     )
 
     # write model
@@ -97,7 +105,7 @@ def tf_trainer(
 
 
 # Define the step and enable wandb - order of decorators is important here
-@enable_wandb(project_name=WANDB_PROJECT_NAME)
+@enable_wandb(project_name=WANDB_PROJECT_NAME, entity=WANDB_ENTITY)
 @step
 def tf_evaluator(
     x_test: np.ndarray,
@@ -121,5 +129,5 @@ def wandb_example_pipeline(
     # Link all the steps artifacts together
     x_train, y_train, x_test, y_test = importer()
     x_trained_normed, x_test_normed = normalizer(x_train=x_train, x_test=x_test)
-    model = trainer(x_train=x_trained_normed, y_train=y_train)
+    model = trainer(x_train=x_trained_normed, y_train=y_train, x_val=x_test, y_val=y_test)
     evaluator(x_test=x_test_normed, y_test=y_test, model=model)
