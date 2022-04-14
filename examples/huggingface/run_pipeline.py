@@ -37,7 +37,7 @@ from token_classification import TokenClassificationConfig
 )
 @click.option(
     "--epochs",
-    default=3,
+    default=1,
     help="Number of epochs for training",
 )
 @click.option(
@@ -58,17 +58,23 @@ from token_classification import TokenClassificationConfig
 @click.option(
     "--text_column",
     default="text",
-    help="Column name for text in the dataset. i.e. For sequence classification, this will be text and for token classification, this will be tokens",
+    help="Column name for text in the dataset. i.e. For sequence "
+    "classification, this will be text and for token classification, "
+    "this will be tokens",
 )
 @click.option(
     "--label_column",
     default="label",
-    help="Column name for label in the dataset. i.e For sequence classification, this will be label and for token classification, this will be ner_tags",
+    help="Column name for label in the dataset. i.e For sequence"
+    " classification, this will be label and for token classification, "
+    "this will be ner_tags",
 )
 @click.option(
     "--dataset_name",
     default="imdb",
-    help="Name of the dataset to be used. i.e For sequence classification, this will be imdb and for token classification, this will be conll2003",
+    help="Name of the dataset to be used. i.e For sequence classification, "
+    "this will be imdb and for token classification, this will be "
+    "conll2003",
 )
 def main(
     nlp_task: str, pretrained_model: str, batch_size: int, epochs: int, **kwargs
