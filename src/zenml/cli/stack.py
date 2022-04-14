@@ -401,6 +401,34 @@ def remove_stack_component(
     cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
+@stack.command("rename")
+@click.argument("current_stack_name", type=str, required=True)
+@click.argument("new_stack_name", type=str, required=True)
+def rename_stack(
+    current_stack_name: str,
+    new_stack_name: str,
+) -> None:
+    """Rename a stack."""
+    # with console.status(f"Updating stack `{stack_name}`...\n"):
+    repo = Repository()
+    try:
+        current_stack = repo.get_stack(current_stack_name)
+    except KeyError:
+        cli_utils.error(
+            f"Stack `{current_stack_name}` cannot be updated as it does not exist.",
+        )
+    stack_components = current_stack.components
+
+    new_stack_ = Stack.from_components(
+        name=new_stack_name, components=stack_components
+    )
+    repo.register_stack(new_stack_)
+    repo.deregister_stack(current_stack_name)
+    cli_utils.declare(
+        f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
+    )
+
+
 @stack.command("list")
 def list_stacks() -> None:
     """List all available stacks in the active profile."""
