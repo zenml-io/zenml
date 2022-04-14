@@ -72,6 +72,7 @@ def generate_dockerfile_contents(
     """
     lines = [f"FROM {base_image}", "WORKDIR /app"]
 
+    # TODO [ENG-781]: Make secrets invisible in the Dockerfile or use a different approach.
     if environment_vars:
         for key, value in environment_vars.items():
             lines.append(f"ENV {key.upper()}={value}")
@@ -119,7 +120,7 @@ def create_custom_build_context(
     )
     if dockerignore_path:
         exclude_patterns = _parse_dockerignore(dockerignore_path)
-    elif fileio.file_exists(default_dockerignore_path):
+    elif fileio.exists(default_dockerignore_path):
         logger.info(
             "Using dockerignore found at path '%s' to create docker "
             "build context.",
@@ -244,6 +245,7 @@ def build_docker_image(
                 base_image=base_image or DEFAULT_BASE_IMAGE,
                 entrypoint=entrypoint,
                 requirements=requirements,
+                environment_vars=environment_vars,
             )
 
         build_context = create_custom_build_context(
@@ -265,7 +267,7 @@ def build_docker_image(
         )
 
         docker_client = DockerClient.from_env()
-        # We use the client api directly here so we can stream the logs
+        # We use the client api directly here, so we can stream the logs
         output_stream = docker_client.images.client.api.build(
             fileobj=build_context,
             custom_context=True,
@@ -276,7 +278,7 @@ def build_docker_image(
         _process_stream(output_stream)
     finally:
         # Clean up the temporary build files
-        fileio.rm_dir(config_path)
+        fileio.rmtree(config_path)
 
     logger.info("Finished building docker image.")
 

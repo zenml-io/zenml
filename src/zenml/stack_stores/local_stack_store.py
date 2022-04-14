@@ -20,11 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
-from zenml.io import fileio
-from zenml.io.utils import (
-    read_file_contents_as_string,
-    write_file_contents_as_string,
-)
+from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper, StackStoreModel
@@ -59,12 +55,12 @@ class LocalStackStore(BaseStackStore):
 
         self._root = self.get_path_from_url(url)
         self._url = f"file://{self._root}"
-        fileio.create_dir_recursive_if_not_exists(str(self._root))
+        utils.create_dir_recursive_if_not_exists(str(self._root))
 
         if stack_data is not None:
             self.__store = stack_data
             self._write_store()
-        elif fileio.file_exists(self._store_path()):
+        elif fileio.exists(self._store_path()):
             config_dict = yaml_utils.read_yaml(self._store_path())
             self.__store = StackStoreModel.parse_obj(config_dict)
         else:
@@ -112,6 +108,7 @@ class LocalStackStore(BaseStackStore):
         scheme = re.search("^([a-z0-9]+://)", url)
         return not scheme or scheme.group() == "file://"
 
+    @property
     def is_empty(self) -> bool:
         """Check if the stack store is empty."""
         return len(self.__store.stacks) == 0
@@ -173,10 +170,10 @@ class LocalStackStore(BaseStackStore):
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
-        fileio.create_dir_recursive_if_not_exists(
+        utils.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
         )
-        write_file_contents_as_string(
+        utils.write_file_contents_as_string(
             component_config_path,
             base64.b64decode(component.config).decode(),
         )
@@ -195,17 +192,12 @@ class LocalStackStore(BaseStackStore):
 
         Args:
             name: The name of the stack to be deleted.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
         """
-        try:
-            del self.__store.stacks[name]
-            self._write_store()
-            logger.info("Deregistered stack with name '%s'.", name)
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack with name '%s': No stack exists "
-                "with this name.",
-                name,
-            )
+        del self.__store.stacks[name]
+        self._write_store()
 
     # Private interface implementations:
 
@@ -232,7 +224,7 @@ class LocalStackStore(BaseStackStore):
             name: The name of the component to fetch.
 
         Returns:
-            Pair of (flavor, congfiguration) for stack component, as string and
+            Pair of (flavor, configuration) for stack component, as string and
             base64-encoded yaml document, respectively
 
         Raises:
@@ -252,7 +244,7 @@ class LocalStackStore(BaseStackStore):
         )
         flavor = components[name]
         config = base64.b64encode(
-            read_file_contents_as_string(component_config_path).encode()
+            utils.read_file_contents_as_string(component_config_path).encode()
         )
         return flavor, config
 
@@ -270,29 +262,20 @@ class LocalStackStore(BaseStackStore):
         Args:
             component_type: The type of component to delete.
             name: Then name of the component to delete.
+
+        Raises:
+            KeyError: If no component exists for given type and name.
         """
-        components = self.__store.stack_components[component_type]
-        try:
-            del components[name]
-            self._write_store()
-            logger.info(
-                "Deregistered stack component (type: %s) with name '%s'.",
-                component_type.value,
-                name,
-            )
-        except KeyError:
-            logger.warning(
-                "Unable to deregister stack component (type: %s) with name "
-                "'%s': No stack component exists with this name.",
-                component_type.value,
-                name,
-            )
         component_config_path = self._get_stack_component_config_path(
             component_type=component_type, name=name
         )
 
-        if fileio.file_exists(component_config_path):
+        if fileio.exists(component_config_path):
             fileio.remove(component_config_path)
+
+        components = self.__store.stack_components[component_type]
+        del components[name]
+        self._write_store()
 
     # Implementation-specific internal methods:
 
@@ -314,7 +297,7 @@ class LocalStackStore(BaseStackStore):
         return str(path)
 
     def _store_path(self) -> str:
-        """Path to the repository configuration file."""
+        """Path to the stack store yaml file."""
         return str(self.root / "stacks.yaml")
 
     def _write_store(self) -> None:

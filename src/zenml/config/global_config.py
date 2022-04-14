@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional, cast
 
 from pydantic import BaseModel, Field, ValidationError, validator
 from pydantic.main import ModelMetaclass
-from semver import VersionInfo  # type: ignore [import]
+from semver import VersionInfo  # type: ignore[import]
 
 from zenml import __version__
 from zenml.config.base_config import BaseConfiguration
@@ -26,8 +26,7 @@ from zenml.config.profile_config import (
     DEFAULT_PROFILE_NAME,
     ProfileConfiguration,
 )
-from zenml.io import fileio
-from zenml.io.utils import get_global_config_directory
+from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -108,7 +107,8 @@ class GlobalConfiguration(
     _config_path: str
 
     def __init__(self, config_path: Optional[str] = None) -> None:
-        """Initializes a GlobalConfiguration object using values from the config file.
+        """Initializes a GlobalConfiguration object using values from the config
+        file.
 
         GlobalConfiguration is a singleton class: only one instance can exist.
         Calling this constructor multiple times will always yield the same
@@ -135,9 +135,7 @@ class GlobalConfiguration(
         config_values = self._read_config()
         super().__init__(**config_values)
 
-        if not fileio.file_exists(self._config_file(config_path)):
-            # if the config file hasn't been written to disk, write it now to
-            # make sure to persist the unique user id
+        if not fileio.exists(self._config_file(config_path)):
             self._write_config()
 
     @classmethod
@@ -159,7 +157,7 @@ class GlobalConfiguration(
         This method is only meant for internal use and testing purposes.
 
         Args:
-            repo: The GlobalConfiguration instance to set as the global
+            config: The GlobalConfiguration instance to set as the global
                 singleton. If None, the global GlobalConfiguration singleton is
                 reset to an empty value.
         """
@@ -253,12 +251,12 @@ class GlobalConfiguration(
         )
 
         config_values = {}
-        if fileio.file_exists(self._config_file()):
+        if fileio.exists(self._config_file()):
             config_values = cast(
                 Dict[str, Any],
                 yaml_utils.read_yaml(self._config_file()),
             )
-        elif fileio.file_exists(legacy_config_file):
+        elif fileio.exists(legacy_config_file):
             config_values = cast(
                 Dict[str, Any], yaml_utils.read_json(legacy_config_file)
             )
@@ -276,8 +274,8 @@ class GlobalConfiguration(
         yaml_dict = json.loads(self.json())
         logger.debug(f"Writing config to {config_file}")
 
-        if not fileio.file_exists(config_file):
-            fileio.create_dir_recursive_if_not_exists(
+        if not fileio.exists(config_file):
+            utils.create_dir_recursive_if_not_exists(
                 config_path or self.config_directory
             )
 
@@ -286,7 +284,7 @@ class GlobalConfiguration(
     @staticmethod
     def default_config_directory() -> str:
         """Path to the default global configuration directory."""
-        return get_global_config_directory()
+        return utils.get_global_config_directory()
 
     def _config_file(self, config_path: Optional[str] = None) -> str:
         """Path to the file where global configuration options are stored.
@@ -332,6 +330,7 @@ class GlobalConfiguration(
             name=repo.active_profile_name,
             active_stack=repo.active_stack_name,
         )
+
         profile._config = config_copy
         # circumvent the profile initialization done in the
         # ProfileConfiguration and the Repository classes to avoid triggering

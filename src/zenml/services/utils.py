@@ -42,6 +42,9 @@ def load_last_service_from_step(
     Returns:
         A BaseService instance that represents the service or None if no service
         was created during the last execution of the pipeline step.
+
+    Raises:
+        KeyError: if the pipeline or step name is not found in the execution.
     """
     if step_context is None:
         repo = Repository()
@@ -51,15 +54,10 @@ def load_last_service_from_step(
             pipeline_name=pipeline_name
         )
     if pipeline is None:
-        raise RuntimeError(f"No pipeline with name `{pipeline_name}` was found")
+        raise KeyError(f"No pipeline with name `{pipeline_name}` was found")
 
     for run in reversed(pipeline.runs):
         step = run.get_step(name=step_name)
-        if step is None:
-            raise RuntimeError(
-                f"No pipeline step with name `{step_name}` was found in "
-                f"pipeline `{pipeline_name}`"
-            )
         for artifact_view in step.outputs.values():
             # filter out anything but service artifacts
             if artifact_view.type == "ServiceArtifact":

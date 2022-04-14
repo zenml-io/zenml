@@ -20,7 +20,7 @@ from zenml.integrations.integration import Integration
 
 
 class MlflowIntegration(Integration):
-    """Definition of Plotly integration for ZenML."""
+    """Definition of MLflow integration for ZenML."""
 
     NAME = MLFLOW
     REQUIREMENTS = [
@@ -32,13 +32,8 @@ class MlflowIntegration(Integration):
     @staticmethod
     def activate() -> None:
         """Activate the MLflow integration."""
+        from zenml.integrations.mlflow import model_deployers  # noqa
         from zenml.integrations.mlflow import services  # noqa
-        from zenml.integrations.mlflow.mlflow_environment import (
-            MLFlowEnvironment,
-        )
-
-        # Create and activate the global MLflow environment
-        MLFlowEnvironment().activate()
 
 
 MlflowIntegration.check_installation()

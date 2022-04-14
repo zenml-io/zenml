@@ -16,12 +16,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.exc import ArgumentError
+from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError
-from zenml.io import fileio
+from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper
@@ -73,7 +73,6 @@ class SqlStackStore(BaseStackStore):
         Args:
             url: odbc path to a database.
             args, kwargs: additional parameters for SQLModel.
-
         Returns:
             The initialized stack store instance.
         """
@@ -85,7 +84,7 @@ class SqlStackStore(BaseStackStore):
 
         local_path = self.get_path_from_url(url)
         if local_path:
-            fileio.create_dir_recursive_if_not_exists(str(local_path.parent))
+            utils.create_dir_recursive_if_not_exists(str(local_path.parent))
 
         self.engine = create_engine(url, *args, **kwargs)
         SQLModel.metadata.create_all(self.engine)
@@ -95,7 +94,6 @@ class SqlStackStore(BaseStackStore):
             session.commit()
 
         super().initialize(url, *args, **kwargs)
-
         return self
 
     # Public interface implementations:
@@ -154,6 +152,7 @@ class SqlStackStore(BaseStackStore):
 
         return True
 
+    @property
     def is_empty(self) -> bool:
         """Check if the stack store is empty."""
         with Session(self.engine) as session:
@@ -251,12 +250,18 @@ class SqlStackStore(BaseStackStore):
 
         Args:
             name: The name of the stack to be deleted.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
         """
         with Session(self.engine) as session:
-            stack = session.exec(
-                select(ZenStack).where(ZenStack.name == name)
-            ).one()
-            session.delete(stack)
+            try:
+                stack = session.exec(
+                    select(ZenStack).where(ZenStack.name == name)
+                ).one()
+                session.delete(stack)
+            except NoResultFound as error:
+                raise KeyError from error
             definitions = session.exec(
                 select(ZenStackDefinition).where(
                     ZenStackDefinition.stack_name == name
@@ -301,7 +306,7 @@ class SqlStackStore(BaseStackStore):
             name: The name of the component to fetch.
 
         Returns:
-            Pair of (flavor, congfiguration) for stack component, as string and
+            Pair of (flavor, configuration) for stack component, as string and
             base64-encoded yaml document, respectively
 
         Raises:
@@ -345,6 +350,9 @@ class SqlStackStore(BaseStackStore):
         Args:
             component_type: The type of component to delete.
             name: Then name of the component to delete.
+
+        Raises:
+            KeyError: If no component exists for given type and name.
         """
         with Session(self.engine) as session:
             component = session.exec(
@@ -355,17 +363,11 @@ class SqlStackStore(BaseStackStore):
             if component is not None:
                 session.delete(component)
                 session.commit()
-                logger.info(
-                    "Deregistered stack component (type: %s) with name '%s'.",
-                    component_type.value,
-                    name,
-                )
             else:
-                logger.warning(
-                    "Unable to deregister stack component (type: %s) with name "
-                    "'%s': No stack component exists with this name.",
-                    component_type.value,
-                    name,
+                raise KeyError(
+                    "Unable to deregister stack component (type: "
+                    f"{component_type.value}) with name '{name}': No stack "
+                    "component exists with this name."
                 )
 
     # Implementation-specific internal methods:

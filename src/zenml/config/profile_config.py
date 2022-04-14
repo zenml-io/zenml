@@ -15,6 +15,7 @@
 import os
 from typing import TYPE_CHECKING, Any, Optional
 
+import requests
 from pydantic import BaseModel, Field
 
 from zenml.constants import ENV_ZENML_DEFAULT_STORE_TYPE
@@ -99,19 +100,23 @@ class ProfileConfiguration(BaseModel):
         logger.info("Initializing profile `%s`...", self.name)
 
         # Create and initialize the profile using a special repository instance.
-        # This also validates and updates the store URL configuration and creates
-        # all necessary resources (e.g. paths, initial DB, default stacks).
+        # This also validates and updates the store URL configuration and
+        # creates all necessary resources (e.g. paths, initial DB, default
+        # stacks).
         repo = Repository(profile=self)
 
         if not self.active_stack:
-            stacks = repo.stacks
+            try:
+                stacks = repo.stacks
+            except requests.exceptions.ConnectionError:
+                stacks = None
             if stacks:
                 self.active_stack = stacks[0].name
 
     def cleanup(self) -> None:
         """Cleanup the profile directory."""
-        if fileio.is_dir(self.config_directory):
-            fileio.rm_dir(self.config_directory)
+        if fileio.isdir(self.config_directory):
+            fileio.rmtree(self.config_directory)
 
     @property
     def global_config(self) -> "GlobalConfiguration":

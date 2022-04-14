@@ -130,17 +130,17 @@ def execute_step(
         execution_info = tfx_launcher.launch()
         if execution_info and get_cache_status(execution_info):
             if execution_info.exec_properties:
-                pipeline_run_id = execution_info.pipeline_run_id
                 step_name = json.loads(
                     execution_info.exec_properties[step_name_param]
                 )
                 logger.info(
-                    f"Using cached version of `{pipeline_step_name}` [`{step_name}`] "
-                    f"from pipeline_run_id `{pipeline_run_id}`.",
+                    f"Using cached version of `{pipeline_step_name}` "
+                    f"[`{step_name}`].",
                 )
             else:
                 logger.error(
-                    f"No execution properties found for step `{pipeline_step_name}`."
+                    f"No execution properties found for step "
+                    f"`{pipeline_step_name}`."
                 )
     except RuntimeError as e:
         if "execution has already succeeded" in str(e):
@@ -153,7 +153,8 @@ def execute_step(
 
     run_duration = time.time() - start_time
     logger.info(
-        f"Step `{pipeline_step_name}` has finished in {string_utils.get_human_readable_time(run_duration)}."
+        f"Step `{pipeline_step_name}` has finished in "
+        f"{string_utils.get_human_readable_time(run_duration)}."
     )
     return execution_info
 

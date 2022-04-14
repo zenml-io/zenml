@@ -85,19 +85,37 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
 )
 @click.argument("integrations", nargs=-1, required=False)
 @click.option(
+    "--ignore-integration",
+    "-i",
+    multiple=True,
+    help="List of integrations to ignore explicitly.",
+)
+@click.option(
     "--force",
     "-f",
     is_flag=True,
     help="Force the installation of the required packages. This will skip the "
     "confirmation step and reinstall existing packages as well",
 )
-def install(integrations: Tuple[str], force: bool = False) -> None:
+def install(
+    integrations: Tuple[str],
+    ignore_integration: Tuple[str],
+    force: bool = False,
+) -> None:
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
     if not integrations:
         # no integrations specified, use all registered integrations
-        integrations = tuple(integration_registry.integrations.keys())
+        integrations = set(integration_registry.integrations.keys())
+        for i in ignore_integration:
+            try:
+                integrations.remove(i)
+            except KeyError:
+                error(
+                    f"Integration {i} does not exist. Available integrations: "
+                    f"{list(integration_registry.integrations.keys())}"
+                )
 
     requirements = []
     integrations_to_install = []

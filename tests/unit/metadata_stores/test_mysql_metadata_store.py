@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.enums import MetadataStoreFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.metadata_stores import MySQLMetadataStore
 
 
@@ -21,7 +21,5 @@ def test_mysql_metadata_store_attributes():
     metadata_store = MySQLMetadataStore(
         name="", host="", port=0, database="", username="", password=""
     )
-    assert metadata_store.supports_local_execution is True
-    assert metadata_store.supports_remote_execution is True
-    assert metadata_store.type == StackComponentType.METADATA_STORE
-    assert metadata_store.flavor == MetadataStoreFlavor.MYSQL
+    assert metadata_store.TYPE == StackComponentType.METADATA_STORE
+    assert metadata_store.FLAVOR == "mysql"

@@ -31,27 +31,6 @@ logger = get_logger(__name__)
 class BaseStackStore(ABC):
     """Base class for accessing data in ZenML Repository and new Service."""
 
-    def register_default_stack(self) -> None:
-        """Populates the store with the default Stack.
-
-        The default stack contains a local orchestrator,
-        a local artifact store and a local SQLite metadata store.
-        """
-
-        # register the default stack
-        stack = Stack.default_local_stack()
-        metadata = self.register_stack(StackWrapper.from_stack(stack))
-        metadata["store_type"] = self.type.value
-        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
-
-    # Public Interface:
-
-    @property
-    @abstractmethod
-    def type(self) -> StoreType:
-        """The type of stack store."""
-
-    @abstractmethod
     def initialize(
         self,
         url: str,
@@ -60,7 +39,6 @@ class BaseStackStore(ABC):
         **kwargs: Any,
     ) -> "BaseStackStore":
         """Initialize the store.
-
         Args:
             url: The URL of the store.
             skip_default_stack: If True, the creation of the default stack will
@@ -69,22 +47,18 @@ class BaseStackStore(ABC):
                 implementation.
             **kwargs: Additional keyword arguments to pass to the concrete
                 store implementation.
-
         Returns:
             The initialized concrete store instance.
         """
 
-        if not skip_default_stack and self.is_empty():
+        if not skip_default_stack and self.is_empty:
 
             logger.info("Initializing store...")
             self.register_default_stack()
 
         return self
 
-    @property
-    @abstractmethod
-    def url(self) -> str:
-        """Get the repository URL."""
+    # Statics:
 
     @staticmethod
     @abstractmethod
@@ -102,13 +76,33 @@ class BaseStackStore(ABC):
     @staticmethod
     @abstractmethod
     def get_local_url(path: str) -> str:
-        """Get a local URL for a given local path."""
+        """Get a local URL for a given local path.
+
+        Args:
+             path: the path string to build a URL out of.
+
+        Returns:
+            Url pointing to the path for the store type.
+        """
 
     @staticmethod
     @abstractmethod
     def is_valid_url(url: str) -> bool:
         """Check if the given url is valid."""
 
+    # Public Interface:
+
+    @property
+    @abstractmethod
+    def type(self) -> StoreType:
+        """The type of stack store."""
+
+    @property
+    @abstractmethod
+    def url(self) -> str:
+        """Get the repository URL."""
+
+    @property
     @abstractmethod
     def is_empty(self) -> bool:
         """Check if the store is empty (no stacks are configured).
@@ -163,6 +157,9 @@ class BaseStackStore(ABC):
 
         Args:
             name: The name of the stack to be deleted.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
         """
 
     # Private interface (must be implemented, not to be called by user):
@@ -189,7 +186,7 @@ class BaseStackStore(ABC):
             name: The name of the component to fetch.
 
         Returns:
-            Pair of (flavor, congfiguration) for stack component, as string and
+            Pair of (flavor, configuration) for stack component, as string and
             base64-encoded yaml document, respectively
 
         Raises:
@@ -218,6 +215,9 @@ class BaseStackStore(ABC):
         Args:
             component_type: The type of component to delete.
             name: Then name of the component to delete.
+
+        Raises:
+            KeyError: If no component exists for given type and name.
         """
 
     # Common code (user facing):
@@ -275,6 +275,17 @@ class BaseStackStore(ABC):
         def __check_component(
             component: StackComponentWrapper,
         ) -> Tuple[StackComponentType, str]:
+            """Try to register a stack component, if it doesn't exist.
+
+            Args:
+                component: StackComponentWrapper to register.
+
+            Returns:
+                metadata key value pair for telemetry.
+
+            Raises:
+                StackComponentExistsError: If a component with same name exists.
+            """
             try:
                 existing_component = self.get_stack_component(
                     component_type=component.type, name=component.name
@@ -353,6 +364,17 @@ class BaseStackStore(ABC):
                     f"registered stack (stack name: '{stack_name}')."
                 )
         self._delete_stack_component(component_type, name=name)
+
+    def register_default_stack(self) -> None:
+        """Populates the store with the default Stack.
+
+        The default stack contains a local orchestrator,
+        a local artifact store and a local SQLite metadata store.
+        """
+        stack = Stack.default_local_stack()
+        metadata = self.register_stack(StackWrapper.from_stack(stack))
+        metadata["store_type"] = self.type.value
+        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
     # Common code (internal implementations, private):
 

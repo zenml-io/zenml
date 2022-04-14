@@ -12,41 +12,83 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import platform
+import random
 import shutil
-from pathlib import Path
 
 import pytest
 
+from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
-from zenml.enums import OrchestratorFlavor, StackComponentType, StoreType
+from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
+from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
+from zenml.services import ServiceState
 from zenml.stack import Stack
-from zenml.stack_stores import BaseStackStore, LocalStackStore, SqlStackStore
+from zenml.stack_stores import (
+    BaseStackStore,
+    LocalStackStore,
+    RestStackStore,
+    SqlStackStore,
+)
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
+from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
+
+logger = get_logger(__name__)
 
 
-def _stack_store_for_type(store_type: StoreType, path: Path) -> BaseStackStore:
+not_windows = platform.system() != "Windows"
+store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * not_windows
+
+
+@pytest.fixture(params=store_types)
+def fresh_stack_store(
+    request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
+) -> BaseStackStore:
+    store_type = request.param
+    tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_stack_store")
+    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
+
     if store_type == StoreType.LOCAL:
-        return LocalStackStore().initialize(str(path))
+        yield LocalStackStore().initialize(str(tmp_path))
     elif store_type == StoreType.SQL:
-        return SqlStackStore().initialize(f"sqlite:///{path / 'store.db'}")
+        yield SqlStackStore().initialize(f"sqlite:///{tmp_path / 'store.db'}")
+    elif store_type == StoreType.REST:
+        port = random.randint(8003, 9000)
+        # create temporary stack store and profile configuration for unit tests
+        backing_stack_store = LocalStackStore().initialize(str(tmp_path))
+        store_profile = ProfileConfiguration(
+            name=f"test_profile_{hash(str(tmp_path))}",
+            store_url=backing_stack_store.url,
+            store_type=backing_stack_store.type,
+        )
+
+        zen_service = ZenService(
+            ZenServiceConfig(
+                port=port,
+                store_profile_configuration=store_profile,
+            )
+        )
+        zen_service.start(timeout=10)
+        # rest stack store can't have trailing slash on url
+        url = zen_service.zen_service_uri.strip("/")
+        yield RestStackStore().initialize(url)
+        zen_service.stop(timeout=10)
+        assert zen_service.check_status()[0] == ServiceState.INACTIVE
     else:
         raise NotImplementedError(f"No StackStore for {store_type}")
 
+    shutil.rmtree(tmp_path)
 
-@pytest.mark.parametrize("store_type", [StoreType.LOCAL, StoreType.SQL])
-def test_register_deregister_stacks(
-    tmp_path_factory: pytest.TempPathFactory, store_type: StoreType
-):
+
+def test_register_deregister_stacks(fresh_stack_store: BaseStackStore):
     """Test creating a new stack store."""
-    tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_stack_store")
-    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
 
     stack = Stack.default_local_stack()
 
     # stack store is pre-initialized with the default stack
-    stack_store = _stack_store_for_type(store_type, tmp_path)
+    stack_store = fresh_stack_store
     assert len(stack_store.stacks) == 1
     assert len(stack_store.stack_configurations) == 1
 
@@ -67,6 +109,10 @@ def test_register_deregister_stacks(
     with pytest.raises(StackExistsError):
         stack_store.register_stack(StackWrapper(name=stack.name, components=[]))
 
+    # can't remove a stack that doesn't exist:
+    with pytest.raises(KeyError):
+        stack_store.deregister_stack("overflow")
+
     # remove the default stack
     stack_store.deregister_stack(stack.name)
     assert len(stack_store.stacks) == 0
@@ -77,17 +123,9 @@ def test_register_deregister_stacks(
     stack_store.register_stack(StackWrapper(name=stack.name, components=[]))
     assert len(stack_store.stacks) == 1
 
-    # clean up the temp fixture (TODO: how to parametrize a fixture?)
-    shutil.rmtree(tmp_path)
 
-
-@pytest.mark.parametrize("store_type", [StoreType.LOCAL, StoreType.SQL])
-def test_register_deregister_components(
-    tmp_path_factory: pytest.TempPathFactory, store_type: StoreType
-):
+def test_register_deregister_components(fresh_stack_store: BaseStackStore):
     """Test adding and removing stack components."""
-    tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_stack_store")
-    os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
 
     required_components = {
         StackComponentType.ARTIFACT_STORE,
@@ -96,7 +134,7 @@ def test_register_deregister_components(
     }
 
     # stack store starts off with the default stack
-    stack_store = _stack_store_for_type(store_type, tmp_path)
+    stack_store = fresh_stack_store
     for component_type in StackComponentType:
         component_type = StackComponentType(component_type)
         if component_type in required_components:
@@ -108,7 +146,8 @@ def test_register_deregister_components(
     orchestrator = stack_store.get_stack_component(
         StackComponentType.ORCHESTRATOR, "default"
     )
-    assert orchestrator.flavor == OrchestratorFlavor.LOCAL
+
+    assert orchestrator.flavor == "local"
     assert orchestrator.name == "default"
 
     # can't add another orchestrator of same name

@@ -17,7 +17,7 @@ import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.container_registries import BaseContainerRegistry
-from zenml.enums import OrchestratorFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.metadata_stores import SQLiteMetadataStore
@@ -29,10 +29,8 @@ def test_kubeflow_orchestrator_attributes():
     correctly."""
     orchestrator = KubeflowOrchestrator(name="")
 
-    assert orchestrator.supports_local_execution is True
-    assert orchestrator.supports_remote_execution is True
-    assert orchestrator.type == StackComponentType.ORCHESTRATOR
-    assert orchestrator.flavor == OrchestratorFlavor.KUBEFLOW
+    assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
+    assert orchestrator.FLAVOR == "kubeflow"
 
 
 def test_kubeflow_orchestrator_stack_validation():

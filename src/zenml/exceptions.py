@@ -125,6 +125,16 @@ class ArtifactInterfaceError(ZenMLBaseException):
     in an unsupported way."""
 
 
+class StackComponentInterfaceError(ZenMLBaseException):
+    """Raises exception when interacting with the stack components
+    in an unsupported way."""
+
+
+class ArtifactStoreInterfaceError(ZenMLBaseException):
+    """Raises exception when interacting with the Artifact Store interface
+    in an unsupported way."""
+
+
 class PipelineConfigurationError(ZenMLBaseException):
     """Raises exceptions when a pipeline configuration contains
     invalid values."""

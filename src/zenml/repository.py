@@ -27,17 +27,22 @@ from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REPOSITORY_DIRECTORY_NAME
-from zenml.enums import StackComponentFlavor, StackComponentType, StoreType
+from zenml.enums import StackComponentType, StoreType
 from zenml.environment import Environment
 from zenml.exceptions import (
     ForbiddenRepositoryAccessError,
     InitializationException,
 )
-from zenml.io import fileio
+from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
-from zenml.stack_stores import BaseStackStore, LocalStackStore, SqlStackStore
+from zenml.stack_stores import (
+    BaseStackStore,
+    LocalStackStore,
+    RestStackStore,
+    SqlStackStore,
+)
 from zenml.stack_stores.models import (
     StackComponentWrapper,
     StackStoreModel,
@@ -124,13 +129,18 @@ class RepositoryMetaClass(ABCMeta):
             ForbiddenRepositoryAccessError: If trying to create a `Repository`
                 instance while a ZenML step is being executed.
         """
-        if Environment().step_is_running:
-            raise ForbiddenRepositoryAccessError(
-                "Unable to access repository during step execution. If you "
-                "require access to the artifact or metadata store, please use "
-                "a `StepContext` inside your step instead.",
-                url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
-            )
+
+        # `skip_repository_check` is a special kwarg that can be passed to
+        # the Repository constructor to bypass the check that prevents the
+        # Repository instance from being accessed from within pipeline steps.
+        if not kwargs.pop("skip_repository_check", False):
+            if Environment().step_is_running:
+                raise ForbiddenRepositoryAccessError(
+                    "Unable to access repository during step execution. If you "
+                    "require access to the artifact or metadata store, please "
+                    "use a `StepContext` inside your step instead.",
+                    url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
+                )
 
         if args or kwargs:
             return cast("Repository", super().__call__(*args, **kwargs))
@@ -253,7 +263,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         new_profile = self._profile
 
         if not self._root:
-            logger.info("Runnning without an active repository root.")
+            logger.info("Running without an active repository root.")
         else:
             logger.debug("Using repository root %s.", self._root)
             self.__config = self._load_config()
@@ -399,7 +409,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
         from zenml.console import console
 
-        if not fileio.file_exists(config_file):
+        if not fileio.exists(config_file):
             return None
 
         config_dict = yaml_utils.read_yaml(config_file)
@@ -475,7 +485,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         # load the repository configuration file if it exists, otherwise use
         # an empty configuration as default
-        if fileio.file_exists(config_path):
+        if fileio.exists(config_path):
             logger.debug(
                 f"Loading repository configuration from {config_path}."
             )
@@ -510,13 +520,14 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         return {
             StoreType.LOCAL: LocalStackStore,
             StoreType.SQL: SqlStackStore,
+            StoreType.REST: RestStackStore,
         }.get(type)
 
     @staticmethod
     def create_store(
         profile: ProfileConfiguration, skip_default_stack: bool = False
     ) -> BaseStackStore:
-        """Create the repository persistance back-end store from a configuration
+        """Create the repository persistence back-end store from a configuration
         profile.
 
         If the configuration profile doesn't specify all necessary configuration
@@ -547,6 +558,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             profile.store_url = store_class.get_local_url(
                 profile.config_directory
             )
+
+        if profile.store_type == StoreType.REST:
+            skip_default_stack = True
 
         if store_class.is_valid_url(profile.store_url):
             store = store_class()
@@ -582,7 +596,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
 
         config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
-        fileio.create_dir_recursive_if_not_exists(config_directory)
+        utils.create_dir_recursive_if_not_exists(config_directory)
         # Initialize the repository configuration at the custom path
         Repository(root=root)
 
@@ -815,7 +829,15 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
         if name == self.active_stack_name:
             raise ValueError(f"Unable to deregister active stack '{name}'.")
-        self.stack_store.deregister_stack(name)
+        try:
+            self.stack_store.deregister_stack(name)
+            logger.info("Deregistered stack with name '%s'.", name)
+        except KeyError:
+            logger.warning(
+                "Unable to deregister stack with name '%s': No stack  "
+                "with this name could be found.",
+                name,
+            )
 
     def get_stack_components(
         self, component_type: StackComponentType
@@ -864,8 +886,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             StackComponentWrapper.from_component(component)
         )
         analytics_metadata = {
-            "type": component.type.value,
-            "flavor": component.flavor.value,
+            "type": component.TYPE.value,
+            "flavor": component.FLAVOR,
         }
         track_event(
             AnalyticsEvent.REGISTERED_STACK_COMPONENT,
@@ -881,7 +903,22 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             component_type: The type of the component to deregister.
             name: The name of the component to deregister.
         """
-        self.stack_store.deregister_stack_component(component_type, name=name)
+        try:
+            self.stack_store.deregister_stack_component(
+                component_type, name=name
+            )
+            logger.info(
+                "Deregistered stack component (type: %s) with name '%s'.",
+                component_type.value,
+                name,
+            )
+        except KeyError:
+            logger.warning(
+                "Unable to deregister stack component (type: %s) with name "
+                "'%s': No stack component with this name could be found.",
+                component_type.value,
+                name,
+            )
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(
@@ -891,7 +928,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             stack_name: If specified, pipelines in the metadata store of the
-                given stack are returned. Otherwise pipelines in the metadata
+                given stack are returned. Otherwise, pipelines in the metadata
                 store of the currently active stack are returned.
 
         Returns:
@@ -920,7 +957,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             pipeline_name: Name of the pipeline.
             stack_name: If specified, pipelines in the metadata store of the
-                given stack are returned. Otherwise pipelines in the metadata
+                given stack are returned. Otherwise, pipelines in the metadata
                 store of the currently active stack are returned.
 
         Returns:
@@ -945,7 +982,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def is_repository_directory(path: Path) -> bool:
         """Checks whether a ZenML repository exists at the given path."""
         config_dir = path / REPOSITORY_DIRECTORY_NAME
-        return fileio.is_dir(str(config_dir))
+        return fileio.isdir(str(config_dir))
 
     @staticmethod
     def find_repository(
@@ -1002,7 +1039,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             if Repository.is_repository_directory(path_):
                 return path_
 
-            if not search_parent_directories or fileio.is_root(str(path_)):
+            if not search_parent_directories or utils.is_root(str(path_)):
                 return None
 
             return _find_repo_helper(path_.parent)
@@ -1023,9 +1060,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             StackComponentClassRegistry,
         )
 
-        flavor = StackComponentFlavor.for_type(wrapper.type)(wrapper.flavor)
         component_class = StackComponentClassRegistry.get_class(
-            component_type=wrapper.type, component_flavor=flavor
+            component_type=wrapper.type, component_flavor=wrapper.flavor
         )
         component_config = yaml.safe_load(
             base64.b64decode(wrapper.config).decode()

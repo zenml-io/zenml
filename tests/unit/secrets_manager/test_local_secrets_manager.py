@@ -14,8 +14,8 @@
 
 import pytest
 
-from zenml.enums import SecretsManagerFlavor, StackComponentType
-from zenml.io.fileio import file_exists
+from zenml.enums import StackComponentType
+from zenml.io.fileio import exists
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
@@ -35,17 +35,23 @@ def local_secrets_manager():
 def test_local_secrets_manager_attributes(local_secrets_manager):
     """Tests that the basic attributes of the local secrets manager are set
     correctly."""
-    assert local_secrets_manager.supports_local_execution is True
-    assert local_secrets_manager.supports_remote_execution is False
-    assert local_secrets_manager.type == StackComponentType.SECRETS_MANAGER
-    assert local_secrets_manager.flavor == SecretsManagerFlavor.LOCAL
+    assert local_secrets_manager.TYPE == StackComponentType.SECRETS_MANAGER
+    assert local_secrets_manager.FLAVOR == "local"
 
 
 def test_local_secrets_manager_creates_file(local_secrets_manager):
     """Tests that the initialization of the local secrets manager creates
     a yaml file at the right location."""
+    name = "test_name"
+    key = "test_key"
+    value = "test_value"
+    some_secret_name = name
+    some_arbitrary_schema = ArbitrarySecretSchema(name=some_secret_name)
+    some_arbitrary_schema.arbitrary_kv_pairs[key] = value
+
+    local_secrets_manager.register_secret(some_arbitrary_schema)
     secrets_file = local_secrets_manager.secrets_file
-    assert file_exists(secrets_file)
+    assert exists(secrets_file)
 
 
 def test_create_key_value(local_secrets_manager):

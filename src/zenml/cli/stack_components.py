@@ -358,7 +358,7 @@ def generate_stack_component_logs_command(
         display_name = _component_display_name(component_type)
         log_file = component.log_file
 
-        if not log_file or not fileio.file_exists(log_file):
+        if not log_file or not fileio.exists(log_file):
             cli_utils.warning(
                 f"Unable to find log file for {display_name} "
                 f"'{component.name}'."

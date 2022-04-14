@@ -26,8 +26,11 @@ from zenml.console import console
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
+from zenml.services import BaseService
+from zenml.services.service_status import ServiceState
 from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -171,9 +174,7 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    config: Dict[StackComponentType, str],
-    active: bool,
-    stack_name: str,
+    config: Dict[StackComponentType, str], active: bool, stack_name: str
 ) -> None:
     """Prints the configuration options of a stack."""
     stack_caption = f"'{stack_name}' stack"
@@ -187,9 +188,8 @@ def print_stack_configuration(
     )
     rich_table.add_column("COMPONENT_TYPE")
     rich_table.add_column("COMPONENT_NAME")
-    items = ([typ.value, name] for typ, name in config.items())
-    for item in items:
-        rich_table.add_row(*item)
+    for component_type, name in config.items():
+        rich_table.add_row(component_type.value, name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -202,7 +202,7 @@ def print_stack_component_configuration(
     component: StackComponent, display_name: str, active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component."""
-    title = f"{component.type.value.upper()} Component Configuration"
+    title = f"{component.TYPE.value.upper()} Component Configuration"
     if active_status:
         title += " (ACTIVE)"
     rich_table = table.Table(
@@ -396,4 +396,95 @@ def print_secrets(secrets: List[str]) -> None:
     for item in secrets:
         rich_table.add_row(item)
 
+    console.print(rich_table)
+
+
+def get_service_status_emoji(service: BaseService) -> str:
+    """Get the rich emoji representing the operational status of a Service.
+
+    Args:
+        service: Service to get emoji for.
+
+    Returns:
+        String representing the emoji.
+    """
+    if service.status.state == ServiceState.ACTIVE:
+        return ":white_check_mark:"
+    if service.status.state == ServiceState.INACTIVE:
+        return ":pause_button:"
+    if service.status.state == ServiceState.ERROR:
+        return ":heavy_exclamation_mark:"
+    return ":hourglass_not_done:"
+
+
+def pretty_print_model_deployer(
+    model_services: List[BaseService], model_deployer: BaseModelDeployer
+) -> None:
+    """Given a list of served_models print all key value pairs associated with
+    the secret
+
+    Args:
+        model_services: list of model deployment services
+        model_deployer: Active model deployer
+    """
+    model_service_dicts = []
+    for model_service in model_services:
+        served_model_info = model_deployer.get_model_server_info(model_service)
+
+        model_service_dicts.append(
+            {
+                "STATUS": get_service_status_emoji(model_service),
+                "UUID": str(model_service.uuid),
+                "PIPELINE_NAME": model_service.config.pipeline_name,
+                "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
+                "MODEL_NAME": served_model_info.get("MODEL_NAME", ""),
+            }
+        )
+
+    print_table(model_service_dicts)
+
+
+def print_served_model_configuration(
+    model_service: BaseService, model_deployer: BaseModelDeployer
+) -> None:
+    """Prints the configuration of a model_service.
+
+    Args:
+        model_service: Specific service instance to
+        model_deployer: Active model deployer
+    """
+    title = f"Properties of Served Model {model_service.uuid}"
+
+    rich_table = table.Table(
+        box=box.HEAVY_EDGE,
+        title=title,
+        show_lines=True,
+    )
+    rich_table.add_column("MODEL SERVICE PROPERTY")
+    rich_table.add_column("VALUE")
+
+    # Get implementation specific info
+    served_model_info = model_deployer.get_model_server_info(model_service)
+
+    served_model_info = {
+        **served_model_info,
+        "UUID": str(model_service.uuid),
+        "STATUS": get_service_status_emoji(model_service),
+        "STATUS_MESSAGE": model_service.status.last_error,
+        "PIPELINE_NAME": model_service.config.pipeline_name,
+        "PIPELINE_RUN_ID": model_service.config.pipeline_run_id,
+        "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
+    }
+
+    # Sort fields alphabetically
+    sorted_items = {k: v for k, v in sorted(served_model_info.items())}
+
+    for item in sorted_items.items():
+        rich_table.add_row(*[str(elem) for elem in item])
+
+    # capitalize entries in first column
+    rich_table.columns[0]._cells = [
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
+    ]
     console.print(rich_table)

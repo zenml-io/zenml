@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import List
+from typing import ClassVar, List
 
-from zenml.enums import SecretsManagerFlavor
+from zenml.enums import StackComponentType
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.stack import StackComponent
 
@@ -22,10 +22,9 @@ from zenml.stack import StackComponent
 class BaseSecretsManager(StackComponent, ABC):
     """Base class for all ZenML secrets managers."""
 
-    @property
-    @abstractmethod
-    def flavor(self) -> SecretsManagerFlavor:
-        """The secrets manager flavor."""
+    # Class configuration
+    TYPE: ClassVar[StackComponentType] = StackComponentType.SECRETS_MANAGER
+    FLAVOR: ClassVar[str]
 
     @abstractmethod
     def register_secret(self, secret: BaseSecretSchema) -> None:

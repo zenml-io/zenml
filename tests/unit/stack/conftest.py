@@ -14,16 +14,12 @@
 import pytest
 
 from zenml.artifact_stores import BaseArtifactStore
-from zenml.enums import StackComponentFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.metadata_stores import BaseMetadataStore
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack, StackComponent, StackValidator
 
-
-class MockFlavor(StackComponentFlavor):
-    """Flavor for mock components."""
-
-    MOCK = "mock"
+MOCK_FLAVOR = "mock_flavor"
 
 
 @pytest.fixture
@@ -32,17 +28,17 @@ def stack_with_mock_components(mocker):
     orchestrator = mocker.Mock(
         spec=BaseOrchestrator,
         type=StackComponentType.ORCHESTRATOR,
-        flavor=MockFlavor.MOCK,
+        flavor=MOCK_FLAVOR,
     )
     metadata_store = mocker.Mock(
         spec=BaseMetadataStore,
         type=StackComponentType.METADATA_STORE,
-        flavor=MockFlavor.MOCK,
+        flavor=MOCK_FLAVOR,
     )
     artifact_store = mocker.Mock(
         spec=BaseArtifactStore,
         type=StackComponentType.ARTIFACT_STORE,
-        flavor=MockFlavor.MOCK,
+        flavor=MOCK_FLAVOR,
     )
 
     return Stack(
@@ -63,17 +59,11 @@ def failing_stack_validator():
 def stub_component():
     class _StubComponent(StackComponent):
         name = "StubComponent"
-        supports_local_execution = False
-        supports_remote_execution = False
         some_public_attribute_name = "Aria"
         _some_private_attribute_name = "Also Aria"
 
-        @property
-        def type(self) -> StackComponentType:
-            return StackComponentType.ORCHESTRATOR
-
-        @property
-        def flavor(self) -> MockFlavor:
-            return MockFlavor.MOCK
+        # Class Configuration
+        TYPE = StackComponentType.ORCHESTRATOR
+        FLAVOR = MOCK_FLAVOR
 
     return _StubComponent()
