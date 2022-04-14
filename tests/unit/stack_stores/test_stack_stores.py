@@ -66,9 +66,10 @@ def fresh_stack_store(
             store_url=backing_stack_store.url,
             store_type=backing_stack_store.type,
         )
-
-        # use environment variable to pass profile into the zen service process
-        os.environ["ZENML_PROFILE_CONFIGURATION"] = store_profile.json()
+        # use environment file to pass profile into the zen service process
+        env_file = str(tmp_path / "environ.env")
+        with open(env_file, "w") as f:
+            f.write(f"ZENML_PROFILE_CONFIGURATION='{store_profile.json()}'")
         port = random.randint(8003, 9000)
         proc = Process(
             target=uvicorn.run,
@@ -77,6 +78,7 @@ def fresh_stack_store(
                 host="127.0.0.1",
                 port=port,
                 log_level="info",
+                env_file=env_file,
             ),
             daemon=True,
         )
