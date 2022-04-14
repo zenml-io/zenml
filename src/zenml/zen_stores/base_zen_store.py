@@ -34,7 +34,6 @@ from zenml.zen_stores.models import (
     User,
 )
 
-
 logger = get_logger(__name__)
 
 
@@ -480,15 +479,14 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def create_flavor(self, source: str) -> Flavor:
-        """Register a new flavor with a given source path.
-
-        Args:
-            source: the source path of the new flavor
-
-        Returns:
-            The newly created flavor
-        """
+    def create_flavor(
+        self,
+        source: str,
+        name: str,
+        stack_component_type: StackComponentType,
+        integration: str = None,
+    ) -> Flavor:
+        """ """
 
     @abstractmethod
     def get_flavor_by_name_and_type(
@@ -670,7 +668,7 @@ class BaseZenStore(ABC):
         self._delete_stack_component(component_type, name=name)
 
     def register_default_flavors(self) -> None:
-        """         """
+        """ """
         from zenml.artifact_stores import LocalArtifactStore
         from zenml.container_registries import BaseContainerRegistry
         from zenml.metadata_stores import (
@@ -689,7 +687,15 @@ class BaseZenStore(ABC):
             LocalSecretsManager,
         ]
         for f in default_flavors:
-            self.create_flavor(f.__module__ + "." + f.__name__)
+            self.create_flavor(
+                name=f.FLAVOR,
+                stack_component_type=f.TYPE,
+                source=f.__module__ + "." + f.__name__,
+                integration="built-in",
+            )
+
+        from zenml.integrations.registry import integration_registry
+        integration_registry.activate_integrations()
 
     def register_default_stack(self) -> None:
         """Populates the store with the default Stack.

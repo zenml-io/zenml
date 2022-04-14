@@ -123,7 +123,9 @@ class LocalZenStore(BaseZenStore):
             self.__store = store_data
             self._write_store()
         elif fileio.exists(self._store_path()):
+            print(self._store_path())
             config_dict = yaml_utils.read_yaml(self._store_path())
+            print(config_dict)
             self.__store = ZenStoreModel.parse_obj(config_dict)
         else:
             self.__store = ZenStoreModel.empty_store()
@@ -775,20 +777,27 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.stack_component_flavors
 
-    def create_flavor(self, source: str) -> Flavor:
-        """Register a new flavor with a given source path.
+    def create_flavor(
+        self,
+        name: str,
+        source: str,
+        stack_component_type: StackComponentType,
+        integration: str = None
+    ) -> Flavor:
+        """ """
+        if _get_unique_entity(
+            name,
+            collection=self.get_flavors_by_type(stack_component_type),
+            ensure_exists=False,
+        ):
+            raise RuntimeError()
 
-        Args:
-            source: the source path of the new flavor
-
-        Returns:
-            The newly created flavor
-        """
-        from zenml.utils.source_utils import import_class_by_path
-
-        flavor_class = import_class_by_path(source)
-
-        flavor = Flavor(source=source, type=flavor_class.TYPE)
+        flavor = Flavor(
+            name=name,
+            source=source,
+            type=stack_component_type,
+            integration=integration,
+        )
 
         self.__store.stack_component_flavors.append(flavor)
         self._write_store()
