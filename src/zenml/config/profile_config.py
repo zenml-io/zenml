@@ -175,6 +175,11 @@ class ProfileConfiguration(BaseModel):
                 f"Active user missing for profile '{attributes['name']}'."
             )
 
+        if store_type == StoreType.REST and attributes.get("store_url") is None:
+            raise RuntimeError(
+                f"Store URL missing for profile '{attributes['name']}'."
+            )
+
         return attributes
 
     class Config:
