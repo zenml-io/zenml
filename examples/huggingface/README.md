@@ -1,4 +1,4 @@
-# 🤗 Implementation of NLP algorithms using Hugging Face & Zenml
+# 🤗 Implementation of NLP algorithms using Hugging Face & ZenML
 
 These examples demonstrate how we can use ZenML and Hugging Face transformers to build, train, & test NLP models.
 
