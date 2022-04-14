@@ -17,6 +17,10 @@ operations on S3 buckets.
 """
 from zenml.integrations.constants import S3
 from zenml.integrations.integration import Integration
+from zenml.enums import StackComponentType
+
+from zenml.integrations.utils import register_flavor
+S3_ARTIFACT_STORE_FLAVOR = "s3"
 
 
 class S3Integration(Integration):
@@ -28,7 +32,12 @@ class S3Integration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.s3 import artifact_stores  # noqa
+        register_flavor(
+            flavor=S3_ARTIFACT_STORE_FLAVOR,
+            source="zenml.integrations.s3.artifact_stores.S3ArtifactStore",
+            stack_component_type=StackComponentType.ARTIFACT_STORE,
+            integration=cls.NAME,
+        )
 
 
 S3Integration.check_installation()

@@ -29,20 +29,17 @@ from typing import (
 import adlfs
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
 from zenml.io.utils import convert_to_str
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 
 PathType = Union[bytes, str]
 
 
-@register_stack_component_class
 class AzureArtifactStore(BaseArtifactStore):
     """Artifact Store for Microsoft Azure based artifacts."""
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "azure"
+    FLAVOR: ClassVar[str] = AZURE_ARTIFACT_STORE_FLAVOR
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"abfs://", "az://"}
     FILESYSTEM: ClassVar[adlfs.AzureBlobFileSystem] = None
 

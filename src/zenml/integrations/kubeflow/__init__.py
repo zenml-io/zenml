@@ -18,7 +18,10 @@ the CLI tool.
 """
 from zenml.integrations.constants import KUBEFLOW
 from zenml.integrations.integration import Integration
-
+from zenml.integrations.utils import register_flavor
+from zenml.enums import StackComponentType
+KUBEFLOW_METADATA_STORE_FLAVOR = "kubeflow"
+KUBEFLOW_ORCHESTRATOR_FLAVOR = "kubeflow"
 
 class KubeflowIntegration(Integration):
     """Definition of Kubeflow Integration for ZenML."""
@@ -29,8 +32,18 @@ class KubeflowIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates all classes required for the airflow integration."""
-        from zenml.integrations.kubeflow import metadata_stores  # noqa
-        from zenml.integrations.kubeflow import orchestrators  # noqa
+        register_flavor(
+            flavor=KUBEFLOW_METADATA_STORE_FLAVOR,
+            source="zenml.integrations.kubeflow.metadata_stores.KubeflowMetadataStore",
+            stack_component_type=StackComponentType.METADATA_STORE,
+            integration=cls.NAME,
+        )
+        register_flavor(
+            flavor=KUBEFLOW_ORCHESTRATOR_FLAVOR,
+            source="zenml.integrations.kubeflow.orchestrators.KubeflowOrchestrator",
+            stack_component_type=StackComponentType.ORCHESTRATOR,
+            integration=cls.NAME,
+        )
 
 
 KubeflowIntegration.check_installation()

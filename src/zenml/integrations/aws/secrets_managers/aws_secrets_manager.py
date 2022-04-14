@@ -16,13 +16,11 @@ from typing import Any, ClassVar, Dict, List
 
 import boto3 as boto3  # type: ignore
 
+from zenml.integrations.aws import AWS_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 
 logger = get_logger(__name__)
 
@@ -47,14 +45,13 @@ def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
     return json.dumps(secret_contents)
 
 
-@register_stack_component_class
 class AWSSecretsManager(BaseSecretsManager):
     """Class to interact with the AWS secrets manager."""
 
     region_name: str = DEFAULT_AWS_REGION
 
     # Class configuration
-    FLAVOR: ClassVar[str] = "aws"
+    FLAVOR: ClassVar[str] = AWS_SECRET_MANAGER_FLAVOR
     CLIENT: ClassVar[Any] = None
 
     @classmethod

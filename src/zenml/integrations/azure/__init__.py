@@ -17,8 +17,12 @@ environment. Specifically, it allows the use of cloud artifact stores,
 and an `io` module to handle file operations on Azure Blob Storage.
 """
 
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import AZURE
 from zenml.integrations.integration import Integration
+from zenml.integrations.utils import register_flavor
+
+AZURE_ARTIFACT_STORE_FLAVOR = "azure"
 
 
 class AzureIntegration(Integration):
@@ -30,7 +34,12 @@ class AzureIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.azure import artifact_stores  # noqa
+        register_flavor(
+            flavor=AZURE_ARTIFACT_STORE_FLAVOR,
+            source="zenml.integrations.azure.artifact_stores.AzureArtifactStore",
+            stack_component_type=StackComponentType.ARTIFACT_STORE,
+            integration=cls.NAME,
+        )
 
 
 AzureIntegration.check_installation()

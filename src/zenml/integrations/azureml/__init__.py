@@ -15,8 +15,12 @@
 The AzureML integration submodule provides a way to run ZenML steps in AzureML.
 """
 
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import AZUREML
 from zenml.integrations.integration import Integration
+from zenml.integrations.utils import register_flavor
+
+AZUREML_STEP_OPERATOR_FLAVOR = "azureml"
 
 
 class AzureMLIntegration(Integration):
@@ -28,7 +32,12 @@ class AzureMLIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.azureml import step_operators  # noqa
+        register_flavor(
+            flavor=AZUREML_STEP_OPERATOR_FLAVOR,
+            source="zenml.integrations.azureml.step_operators.AzureMLStepOperator",
+            stack_component_type=StackComponentType.STEP_OPERATOR,
+            integration=cls.NAME,
+        )
 
 
 AzureMLIntegration.check_installation()

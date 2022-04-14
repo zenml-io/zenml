@@ -24,6 +24,7 @@ import zenml.io.utils
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
+from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowDagRunner,
@@ -37,9 +38,6 @@ from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
 from zenml.stack import StackValidator
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 from zenml.utils import networking_utils
 from zenml.utils.source_utils import get_source_root_path
 
@@ -53,7 +51,6 @@ logger = get_logger(__name__)
 DEFAULT_KFP_UI_PORT = 8080
 
 
-@register_stack_component_class
 class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow.
 
@@ -81,7 +78,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     synchronous = False
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "kubeflow"
+    FLAVOR: ClassVar[str] = KUBEFLOW_ORCHESTRATOR_FLAVOR
 
     @property
     def validator(self) -> Optional[StackValidator]:

@@ -19,15 +19,12 @@ import sagemaker
 from zenml.enums import StackComponentType
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
+from zenml.integrations.sagemaker import SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path
 
 
-@register_stack_component_class
 class SagemakerStepOperator(BaseStepOperator):
     """Step operator to run a step on Sagemaker.
 
@@ -56,7 +53,7 @@ class SagemakerStepOperator(BaseStepOperator):
     experiment_name: Optional[str] = None
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "sagemaker"
+    FLAVOR: ClassVar[str] = SAGEMAKER_STEP_OPERATOR_FLAVOR
 
     @property
     def validator(self) -> Optional[StackValidator]:

@@ -30,20 +30,17 @@ from typing import (
 import s3fs
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.io.utils import convert_to_str
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 
 PathType = Union[bytes, str]
 
 
-@register_stack_component_class
 class S3ArtifactStore(BaseArtifactStore):
     """Artifact Store for Amazon S3 based artifacts."""
 
     # Class variables
-    FLAVOR: ClassVar[str] = "s3"
+    FLAVOR: ClassVar[str] = S3_ARTIFACT_STORE_FLAVOR
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
     FILESYSTEM: ClassVar[s3fs.S3FileSystem] = None
 
@@ -93,7 +90,9 @@ class S3ArtifactStore(BaseArtifactStore):
     def exists(path: PathType) -> bool:
         """Check whether a path exists."""
         S3ArtifactStore._ensure_filesystem_set()
-        return S3ArtifactStore.FILESYSTEM.exists(path=path)  # type: ignore[no-any-return]
+        return S3ArtifactStore.FILESYSTEM.exists(
+            path=path
+            )  # type: ignore[no-any-return]
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
@@ -119,7 +118,9 @@ class S3ArtifactStore(BaseArtifactStore):
     def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
         S3ArtifactStore._ensure_filesystem_set()
-        return S3ArtifactStore.FILESYSTEM.isdir(path=path)  # type: ignore[no-any-return]
+        return S3ArtifactStore.FILESYSTEM.isdir(
+            path=path
+            )  # type: ignore[no-any-return]
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
@@ -135,7 +136,7 @@ class S3ArtifactStore(BaseArtifactStore):
             """Extracts the basename from a file info dict returned by the S3
             filesystem."""
             file_path = cast(str, file_dict["Key"])
-            base_name = file_path[len(path) :]
+            base_name = file_path[len(path):]
             return base_name.lstrip("/")
 
         return [
@@ -197,7 +198,9 @@ class S3ArtifactStore(BaseArtifactStore):
     def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
         S3ArtifactStore._ensure_filesystem_set()
-        return S3ArtifactStore.FILESYSTEM.stat(path=path)  # type: ignore[no-any-return]
+        return S3ArtifactStore.FILESYSTEM.stat(
+            path=path
+            )  # type: ignore[no-any-return]
 
     @staticmethod
     def walk(

@@ -16,8 +16,12 @@ The Airflow integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Airflow orchestrator with
 the CLI tool, then bootstrap using the ``zenml orchestrator up`` command.
 """
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
+from zenml.integrations.utils import register_flavor
+
+AIRFLOW_ORCHESTRATOR_FLAVOR = "airflow"
 
 
 class AirflowIntegration(Integration):
@@ -29,7 +33,12 @@ class AirflowIntegration(Integration):
     @classmethod
     def activate(cls):
         """Activates all classes required for the airflow integration."""
-        from zenml.integrations.airflow import orchestrators  # noqa
+        register_flavor(
+            flavor=AIRFLOW_ORCHESTRATOR_FLAVOR,
+            source="zenml.integrations.airflow.orchestrators.AirflowOrchestrator",
+            stack_component_type=StackComponentType.ORCHESTRATOR,
+            integration=cls.NAME,
+        )
 
 
 AirflowIntegration.check_installation()

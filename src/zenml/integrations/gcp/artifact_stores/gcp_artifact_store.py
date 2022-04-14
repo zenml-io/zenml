@@ -29,20 +29,17 @@ from typing import (
 import gcsfs
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.io.utils import convert_to_str
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 
 PathType = Union[bytes, str]
 
 
-@register_stack_component_class
 class GCPArtifactStore(BaseArtifactStore):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "gcp"
+    FLAVOR: ClassVar[str] = GCP_ARTIFACT_STORE_FLAVOR
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"gs://"}
     FILESYSTEM: ClassVar[gcsfs.GCSFileSystem] = None
 
@@ -91,7 +88,9 @@ class GCPArtifactStore(BaseArtifactStore):
     def exists(path: PathType) -> bool:
         """Check whether a path exists."""
         GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.exists(path=path)  # type: ignore[no-any-return]
+        return GCPArtifactStore.FILESYSTEM.exists(
+            path=path
+            )  # type: ignore[no-any-return]
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
@@ -108,19 +107,25 @@ class GCPArtifactStore(BaseArtifactStore):
             A list of paths that match the given glob pattern.
         """
         GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.glob(path=pattern)  # type: ignore[no-any-return]
+        return GCPArtifactStore.FILESYSTEM.glob(
+            path=pattern
+            )  # type: ignore[no-any-return]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
         GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.isdir(path=path)  # type: ignore[no-any-return]
+        return GCPArtifactStore.FILESYSTEM.isdir(
+            path=path
+            )  # type: ignore[no-any-return]
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
         GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.listdir(path=path)  # type: ignore[no-any-return]
+        return GCPArtifactStore.FILESYSTEM.listdir(
+            path=path
+            )  # type: ignore[no-any-return]
 
     @staticmethod
     def makedirs(path: PathType) -> None:
@@ -176,7 +181,9 @@ class GCPArtifactStore(BaseArtifactStore):
     def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
         GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.stat(path=path)  # type: ignore[no-any-return]
+        return GCPArtifactStore.FILESYSTEM.stat(
+            path=path
+            )  # type: ignore[no-any-return]
 
     @staticmethod
     def walk(
@@ -196,4 +203,6 @@ class GCPArtifactStore(BaseArtifactStore):
         """
         GCPArtifactStore._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
-        return GCPArtifactStore.FILESYSTEM.walk(path=top)  # type: ignore[no-any-return]
+        return GCPArtifactStore.FILESYSTEM.walk(
+            path=top
+            )  # type: ignore[no-any-return]
