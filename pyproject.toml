@@ -80,7 +80,7 @@ pre-commit = "^2.14.0"
 autoflake = "^1.4"
 pyment = "^0.3.3"
 tox = "^3.24.3"
-hypothesis = "^6.23.0"
+hypothesis = "^6.43.1"
 typing-extensions = ">=3.7.4"
 
 # pytest dev dependencies
@@ -177,14 +177,20 @@ show_error_codes = true
 exclude = "airflow/"
 
 [[tool.mypy.overrides]]
-module = "airflow.*"
+module = [
+    "airflow.*",
+    ]
 follow_imports = "skip"
 
 # end of fix
 
 # import all tfx.proto.* and google files as `Any`
 [[tool.mypy.overrides]]
-module = ["tfx.proto.*", "google.*"]
+module = [
+    "tfx.proto.*",
+    "google.*" ,
+    "transformers.*"  # https://github.com/huggingface/transformers/issues/13390
+]
 follow_imports = "skip"
 
 [[tool.mypy.overrides]]

@@ -129,7 +129,7 @@ def main(
             print(
                 f"The MLflow prediction server is running locally as a daemon "
                 f"process service and accepts inference requests at:\n"
-                f"    {service.prediction_uri}\n"
+                f"    {service.prediction_url}\n"
                 f"To stop the service, run "
                 f"[italic green]`zenml served-models delete "
                 f"{str(service.uuid)}`[/italic green]."
