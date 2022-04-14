@@ -1,11 +1,10 @@
-# Integrating Weights & Biases tracking into your pipeline
+# 🏋️ Integrating Weights & Biases tracking into your pipeline
 
 [Weights&Biases](https://wandb.ai/site/experiment-tracking) is a popular
 tool that tracks and visualizes experiment runs with their many parameters,
 metrics and output files.
 
-## Overview
-
+## 🗺 Overview
 This example builds on the [quickstart](../quickstart) but showcases how easily
 Weights & Biases (`wandb`) tracking can be integrated into a ZenML pipeline.
 
@@ -24,9 +23,9 @@ Note that despite `wandb `being used in different steps within a pipeline, ZenML
 and ensures the experiment name is the same as the pipeline name, and the experiment run is the same name 
 as the pipeline run name. This establishes a lineage between pipelines in ZenML and experiments in `wandb`.
 
-## Run it locally
+# 🖥 Run it locally
 
-### Pre-requisites
+### 📄 Prerequisites 
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -44,7 +43,7 @@ cd zenml_examples/wandb_tracking
 zenml init
 ```
 
-### Set up Weights&Biases
+### 🔧 Set up Weights&Biases
 To get this example running, you need to set up a [Weights & Biases] account. You can do this for free [here](https://wandb.ai/login?signup=true).
 
 After signing up, you will be given a username (what Weights & Biases calls an `entity`), and you can go ahead and create your first project.
@@ -52,7 +51,7 @@ After signing up, you will be given a username (what Weights & Biases calls an `
 Note, that in case you have a shared Weights & Biases account, the `entity` can also be your organization or team's name.
 
 
-### Set up Environment Variables
+### ⚙️ Set up Environment Variables
 There are three environment variables that are required (as of this release) to run this example.
 Please note that in the upcoming releases, we will migrate the integration towards a stack component, so 
 this usage will be deprecated. 
@@ -96,3 +95,10 @@ configuration steps, just run the following:
 ```shell
 zenml example run wandb_tracking
 ```
+
+# 📜 Learn more
+
+Our docs regarding the wandb integration can be found [here](TODO: Link to docs).
+
+If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
+check out our [docs](TODO: Link to docs)
