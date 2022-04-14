@@ -1,35 +1,28 @@
 # Integrating wandb tracking into your pipeline
 
-[MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) is a popular
+[Weights&Biases](https://www.mlflow.org/docs/latest/tracking.html) is a popular
 tool that tracks and visualizes experiment runs with their many parameters,
 metrics and output files.
 
 ## Overview
 
 This example builds on the [quickstart](../quickstart) but showcases how easily
-mlflow tracking can be integrated into a ZenML pipeline.
+Weights&Biases (wandb) tracking can be integrated into a ZenML pipeline.
 
 We'll be using the
-[Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset and
+[MNIST](http://yann.lecun.com/exdb/mnist/) dataset and
 will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
 We will run two experiments with different parameters (epochs and learning rate)
-and log these experiments into a local mlflow backend.
+and log these experiments into a wandb backend. 
 
-This example uses an mlflow setup that is based on the local filesystem for
-things like the artifact store. See the [mlflow
-documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost) 
-for details.
-
-In the example script the [mlflow autologger for
-Keras](https://www.mlflow.org/docs/latest/tracking.html#tensorflow-and-keras) is
+In the example script, we use the [Keras WandbCallback](https://docs.wandb.ai/ref/python/integrations/keras/wandbcallback) is
 used within the training step to directly hook into the TensorFlow training and
 it will log out all relevant parameters, metrics and output files. Additionally,
 we explicitly log the test accuracy within the evaluation step.
 
-This example uses an mlflow setup that is based on the local filesystem as
-orchestrator and artifact store. See the [mlflow
-documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflow-on-localhost)
-for details.
+Note that despite wandb being used in different steps within a pipeline, ZenML handles initializing wandb 
+and ensures the experiment name is the same as the pipeline name, and the experiment run is the same name 
+as the pipeline run name. This estabilishes a lineage between pipelines in ZenML and experiments in wandb.
 
 ## Run it locally
 
@@ -41,15 +34,33 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install mlflow
-zenml integration install tensorflow
+zenml integration install tensorflow mlflow -f
 
 # pull example
-zenml example pull mlflow_tracking
-cd zenml_examples/mlflow_tracking
+zenml example pull wandb_tracking
+cd zenml_examples/wandb_tracking
 
 # initialize
 zenml init
+```
+
+### Set up Weights&Biases
+To get this example running, you need to set up a [Weights&Biases] account. You can do this for free [here](https://wandb.ai/login?signup=true).
+
+After signing up, you will be given a username (what Weights&Biases calls an `entity`), and you can go ahead and create your first project.
+
+Note, that in case you have a shared Weights&Biases account, the `entity` can also be your organization/teams name.
+
+
+### Set up Environment Variables
+There are three environment variables that are required (as of this release) to run this example.
+Please note that in the upcoming releases, we will migrate the integration towards a stack component, so 
+this usage will be deprecated. 
+
+```shell
+export WANDB_PROJECT_NAME=PROJECT_NAME # name of wandb project
+export WANDB_ENTITY=ENTITY_NAME  # username or team name
+export WANDB_API_KEY=YOUR_WANDB_ENTITY_KEY  # find this in your wandb dashboard
 ```
 
 ### Run the project
@@ -60,36 +71,28 @@ python run.py
 ```
 
 ### See results
-Now we just need to start the mlflow UI to have a look at our two pipeline runs.
-To do this we need to run:
+The results should be available at the URL: https://wandb.ai/{ENTITY_NAME}/{PROJECT_NAME}/runs/
 
-```shell
-mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE>
-```
+You should see the following visualizations:
 
-Check the terminal output of the pipeline run to see the exact path appropriate
-in your specific case. This will start mlflow at `localhost:5000`. If this port
-is already in use on your machine you may have to specify another port:
+![Table Results](assets/wandb_table_results.png)
 
-```shell
- mlflow ui --backend-store-uri <SPECIFIC_MLRUNS_PATH_GOES_HERE> -p 5001
- ```
+![Chart Results](assets/wandb_charts_results.png)
+
 
 ### Clean up
-In order to clean up, delete the remaining ZenML references as well as the
-`mlruns` directory.
+In order to clean up, delete the remaining ZenML references:
 
 ```shell
 rm -rf zenml_examples
-rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 ```
 
-## SuperQuick `mlflow` run
+## SuperQuick `wandb` run
 
 If you're really in a hurry and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
 ```shell
-zenml example run mlflow_tracking
+zenml example run wandb_tracking
 ```
