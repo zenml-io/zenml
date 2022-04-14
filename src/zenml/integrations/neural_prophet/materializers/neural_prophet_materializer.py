@@ -42,7 +42,7 @@ class NeuralProphetMaterializer(BaseMaterializer):
             A loaded NeuralProphet model.
         """
         super().handle_input(data_type)
-        return torch.load(
+        return torch.load(  # type: ignore[no-untyped-call]
             os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         )  # noqa
 
