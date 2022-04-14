@@ -46,6 +46,7 @@ from zenml.zen_stores import (
     SqlZenStore,
 )
 from zenml.zen_stores.models import (
+    Flavor,
     StackComponentWrapper,
     StackWrapper,
     ZenStoreModel,
@@ -1042,20 +1043,29 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             logger.warning(warning_message)
         return None
 
+    def _flavor_from_wrapper(
+        self,
+        wrapper: Flavor,
+    ):
+        """"""
+        from zenml.utils.source_utils import load_source_path_class
+
+        return load_source_path_class(wrapper.source)
+
     def _component_from_wrapper(
         self, wrapper: StackComponentWrapper
     ) -> StackComponent:
         """Instantiate a StackComponent from the Configuration."""
-        from zenml.stack.stack_component_class_registry import (
-            StackComponentClassRegistry,
-        )
 
-        component_class = StackComponentClassRegistry.get_class(
-            component_type=wrapper.type, component_flavor=wrapper.flavor
+        component_flavor = self.zen_store.get_flavor_by_name_and_type(
+            flavor_name=wrapper.flavor,
+            component_type=wrapper.type,
         )
+        component_class = self._flavor_from_wrapper(component_flavor)
         component_config = yaml.safe_load(
             base64.b64decode(wrapper.config).decode()
         )
+
         return component_class.parse_obj(component_config)
 
     def _stack_from_wrapper(self, wrapper: StackWrapper) -> Stack:
