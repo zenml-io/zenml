@@ -61,8 +61,8 @@ def enable_wandb(
     """Decorator to enable wandb for a step function.
 
     Apply this decorator to a ZenML pipeline step to enable wandb experiment
-    tracking. The wandb tracking configuration (tracking URI, experiment name,
-    run name) will be automatically configured before the step code is executed,
+    tracking. The wandb tracking configuration (project name, experiment name,
+    entity) will be automatically configured before the step code is executed,
     so the step can simply use the `wandb` module to log metrics and artifacts,
     like so:
 
