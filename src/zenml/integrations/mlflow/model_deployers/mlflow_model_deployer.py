@@ -62,7 +62,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         """
 
         return {
-            "PREDICTION_URL": service_instance.endpoint.prediction_uri,
+            "PREDICTION_URL": service_instance.endpoint.prediction_url,
             "MODEL_URI": service_instance.config.model_uri,
             "MODEL_NAME": service_instance.config.model_name,
             "SERVICE_PATH": service_instance.status.runtime_path,
