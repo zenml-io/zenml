@@ -19,7 +19,6 @@ import wandb
 
 from zenml.environment import BaseEnvironmentComponent
 from zenml.logger import get_logger
-from zenml.repository import Repository
 
 logger = get_logger(__name__)
 
@@ -58,7 +57,6 @@ class WandbEnvironment(BaseEnvironmentComponent):
         # TODO [ENG-316]: Implement a way to get the wandb token and set
         #  it as env variable at WANDB_TRACKING_TOKEN
         self._wandb_api_key = os.getenv("WANDB_API_KEY")
-        # self._wandb_tracking_uri = self._local_wandb_backend(repo_root)
 
     @staticmethod
     def _local_wandb_backend(root: Optional[Path] = None) -> str:
@@ -75,7 +73,6 @@ class WandbEnvironment(BaseEnvironmentComponent):
         Returns:
             The wandb tracking URI for the local wandb backend.
         """
-        pass
 
     def activate(self) -> None:
         """Activate the wandb environment for the current stack."""
@@ -86,7 +83,7 @@ class WandbEnvironment(BaseEnvironmentComponent):
         return super().deactivate()
 
     @property
-    def api_key(self) -> str:
+    def api_key(self) -> Optional[str]:
         """Returns the wandb tracking URI for the current stack."""
         return self._wandb_api_key
 
@@ -110,7 +107,13 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
 
     NAME = WANDB_STEP_ENVIRONMENT_NAME
 
-    def __init__(self, project_name: str, experiment_name: str, run_name: str, entity: Optional[str] = None,):
+    def __init__(
+        self,
+        project_name: str,
+        experiment_name: str,
+        run_name: str,
+        entity: Optional[str] = None,
+    ):
         """Initialize a wandb step environment component.
 
         Args:
@@ -134,21 +137,21 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
     def _create_or_reuse_wandb_run(self) -> None:
         """Create or reuse a wandb run for the current step.
 
-        IMPORTANT: this function might cause a race condition. If two or more
+        IMPORTANT: This function might cause a race condition. If two or more
         processes call it at the same time and with the same arguments, it could
         lead to a situation where two or more wandb runs with the same name
         and different IDs are created.
         """
         # Set which experiment is used within wandb
-        logger.debug(
-            "Setting the wandb project name to %s", self._project_name
-        )
+        logger.debug("Setting the wandb project name to %s", self._project_name)
         logger.debug(
             "Setting the wandb group name to %s", self._experiment_name
         )
         api = wandb.Api()
         run_exists = False
-        entity = os.getenv('WANDB_ENTITY') if self._entity is None else self._entity
+        entity = (
+            os.getenv("WANDB_ENTITY") if self._entity is None else self._entity
+        )
         runs = api.runs(f"{entity}/{self._project_name}")
         for run in runs:
             if run.name == self._run_name:
@@ -159,9 +162,7 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
             # Create a new run
             wandb.finish()
             self._run = wandb.init(
-                project=self._project_name,
-                name=self._run_name,
-                entity=entity
+                project=self._project_name, name=self._run_name, entity=entity
             )
 
     def activate(self) -> None:
@@ -170,6 +171,7 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
         return super().activate()
 
     def deactivate(self) -> None:
+        """Deactivate the wandb environment for the current step."""
         return super().deactivate()
 
     @property

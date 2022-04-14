@@ -96,6 +96,7 @@ def enable_wandb(
     """
 
     def inner_decorator(_step: S) -> S:
+        """Inner decorator for step enable_wandb."""
 
         logger.debug(
             "Applying 'enable_wandb' decorator to step %s", _step.__name__
@@ -113,7 +114,9 @@ def enable_wandb(
                 (_step,),
                 {
                     STEP_INNER_FUNC_NAME: staticmethod(
-                        wandb_step_entrypoint(project_name, experiment_name, entity)(source_fn)
+                        wandb_step_entrypoint(
+                            project_name, experiment_name, entity
+                        )(source_fn)
                     ),
                     "__module__": _step.__module__,
                 },
@@ -144,7 +147,7 @@ def wandb_step_entrypoint(
     """
 
     def inner_decorator(func: F) -> F:
-
+        """Inner decorator for step entrypoint."""
         logger.debug(
             "Applying 'wandb_step_entrypoint' decorator to step entrypoint %s",
             func.__name__,
@@ -152,6 +155,7 @@ def wandb_step_entrypoint(
 
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:  # noqa
+            """Wrapper function for decorator"""
             logger.debug(
                 "Setting up wandb backend before running step entrypoint %s",
                 func.__name__,
@@ -159,7 +163,10 @@ def wandb_step_entrypoint(
             step_env = Environment().step_environment
             experiment = experiment_name or step_env.pipeline_name
             step_wandb_env = WandbStepEnvironment(
-                project_name=project_name, experiment_name=experiment, run_name=step_env.pipeline_run_id, entity=entity
+                project_name=project_name,
+                experiment_name=experiment,
+                run_name=step_env.pipeline_run_id,
+                entity=entity,
             )
             with step_wandb_env:
 

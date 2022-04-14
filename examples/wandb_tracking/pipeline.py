@@ -13,20 +13,18 @@
 #  permissions and limitations under the License.
 import os
 
+import numpy as np
+import tensorflow as tf
 import wandb
 from wandb.keras import WandbCallback
 
-import numpy as np
-import tensorflow as tf
-
-from zenml.integrations.constants import WANDB, TENSORFLOW
+from zenml.integrations.constants import TENSORFLOW, WANDB
 from zenml.integrations.wandb.wandb_step_decorator import enable_wandb
 from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, Output, step
 
-
-WANDB_PROJECT_NAME = os.getenv('WANDB_PROJECT_NAME')
-WANDB_ENTITY = os.getenv('WANDB_ENTITY')
+WANDB_PROJECT_NAME = os.getenv("WANDB_PROJECT_NAME")
+WANDB_ENTITY = os.getenv("WANDB_ENTITY")
 WANDB_API_KEY = os.getenv("WANDB_API_KEY")
 if WANDB_PROJECT_NAME is None:
     raise AssertionError("Set the env variable WANDB_PROJECT_NAME please!")
@@ -93,11 +91,13 @@ def tf_trainer(
         y_train,
         epochs=config.epochs,
         validation_data=(x_val, y_val),
-        callbacks=[WandbCallback(
-            log_evaluation=True,
-            validation_steps=16,
-            validation_data=(x_val, y_val)
-        )]
+        callbacks=[
+            WandbCallback(
+                log_evaluation=True,
+                validation_steps=16,
+                validation_data=(x_val, y_val),
+            )
+        ],
     )
 
     # write model
@@ -129,5 +129,7 @@ def wandb_example_pipeline(
     # Link all the steps artifacts together
     x_train, y_train, x_test, y_test = importer()
     x_trained_normed, x_test_normed = normalizer(x_train=x_train, x_test=x_test)
-    model = trainer(x_train=x_trained_normed, y_train=y_train, x_val=x_test, y_val=y_test)
+    model = trainer(
+        x_train=x_trained_normed, y_train=y_train, x_val=x_test, y_val=y_test
+    )
     evaluator(x_test=x_test_normed, y_test=y_test, model=model)

@@ -15,14 +15,11 @@
 from pipeline import (
     TrainerConfig,
     importer_mnist,
-    wandb_example_pipeline,
     normalizer,
     tf_evaluator,
     tf_trainer,
+    wandb_example_pipeline,
 )
-
-from zenml.environment import Environment
-from zenml.integrations.wandb.wandb_environment import WANDB_STEP_ENVIRONMENT_NAME
 
 if __name__ == "__main__":
 

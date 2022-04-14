@@ -23,17 +23,12 @@ class WandbIntegration(Integration):
     """Definition of Plotly integration for ZenML."""
 
     NAME = WANDB
-    REQUIREMENTS = [
-        "wandb>=0.12.12",
-        "Pillow>=9.1.0"
-    ]
+    REQUIREMENTS = ["wandb>=0.12.12", "Pillow>=9.1.0"]
 
     @staticmethod
     def activate() -> None:
         """Activate the Wandb integration."""
-        from zenml.integrations.wandb.wandb_environment import (
-            WandbEnvironment,
-        )
+        from zenml.integrations.wandb.wandb_environment import WandbEnvironment
 
         # Create and activate the global Wandb environment
         WandbEnvironment().activate()
