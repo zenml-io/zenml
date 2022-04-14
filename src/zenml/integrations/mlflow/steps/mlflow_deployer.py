@@ -161,7 +161,7 @@ def mlflow_model_deployer_step(
 
     logger.info(
         f"MLflow deployment service started and reachable at:\n"
-        f"    {new_service.prediction_uri}\n"
+        f"    {new_service.prediction_url}\n"
     )
 
     return new_service
