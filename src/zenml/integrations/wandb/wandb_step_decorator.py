@@ -22,6 +22,8 @@ from zenml.steps.utils import STEP_INNER_FUNC_NAME
 
 logger = get_logger(__name__)
 
+WAND_DEFAULT_PROJECT_NAME = "zenml_default_project"
+
 
 # step entrypoint type
 F = TypeVar("F", bound=Callable[..., Any])
@@ -115,7 +117,9 @@ def enable_wandb(
                 {
                     STEP_INNER_FUNC_NAME: staticmethod(
                         wandb_step_entrypoint(
-                            project_name, experiment_name, entity
+                            project_name or WAND_DEFAULT_PROJECT_NAME,
+                            experiment_name,
+                            entity,
                         )(source_fn)
                     ),
                     "__module__": _step.__module__,
@@ -130,7 +134,7 @@ def enable_wandb(
 
 
 def wandb_step_entrypoint(
-    project_name: str = None,
+    project_name: str,
     experiment_name: Optional[str] = None,
     entity: Optional[str] = None,
 ) -> Callable[[F], F]:

@@ -89,7 +89,7 @@ class WandbEnvironment(BaseEnvironmentComponent):
 
 
 class WandbStepEnvironment(BaseEnvironmentComponent):
-    """Provides information about an wandb step environment.
+    """Provides information about a wandb step environment.
     To access it inside your step function:
 
     ```python
