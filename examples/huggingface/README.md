@@ -109,10 +109,10 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 ```shell
 # install CLI
-pip install zenml transformers datasets
+pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow -f
+zenml integration install tensorflow huggingface -f
 
 # pull example
 cd zenml/examples/huggingface
