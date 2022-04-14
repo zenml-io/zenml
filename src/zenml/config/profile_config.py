@@ -14,7 +14,6 @@
 
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional
-from uuid import UUID
 
 import requests
 from pydantic import BaseModel, Field, root_validator

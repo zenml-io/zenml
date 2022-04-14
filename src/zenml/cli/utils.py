@@ -17,11 +17,13 @@ import sys
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     List,
     Optional,
     Sequence,
     Tuple,
+    TypeVar,
     Union,
 )
 
@@ -137,18 +139,46 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     console.print(rich_table)
 
 
-def print_pydantic_models(models: Sequence[BaseModel]) -> None:
+M = TypeVar("M", bound=BaseModel)
+
+
+def print_pydantic_models(
+    models: Sequence[M],
+    columns: Optional[Sequence[str]] = None,
+    exclude_columns: Sequence[str] = (),
+    is_active: Optional[Callable[[M], bool]] = None,
+) -> None:
     """Prints the list of Pydantic models in a table.
 
     Args:
         models: List of pydantic models that will be represented as a row in
             the table.
+        columns: Optionally specify subset and order of columns to display.
+        exclude_columns: Optionally specify columns to exclude. (Note: `columns`
+            takes precedence over `exclude_columns`.)
+        is_active: Optional function that marks as row as active.
+
     """
-    model_dicts = [
-        {key: str(value) for key, value in model.dict().items()}
-        for model in models
-    ]
-    print_table(model_dicts)
+
+    def __dictify(model: M) -> Dict[str, str]:
+        """Helper function to map over the list to turn Models into dicts."""
+        items = (
+            {
+                key: str(value)
+                for key, value in model.dict().items()
+                if key not in exclude_columns
+            }
+            if columns is None
+            else {key: str(model.dict()[key]) for key in columns}
+        )
+        # prepend an active marker if a function to mark active was passed
+        return (
+            dict(active=":point_right:" if is_active(model) else "", **items)
+            if is_active is not None
+            else items
+        )
+
+    print_table([__dictify(model) for model in models])
 
 
 def format_integration_list(
