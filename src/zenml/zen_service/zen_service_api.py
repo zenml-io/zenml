@@ -24,13 +24,13 @@ from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
     ENV_ZENML_PROFILE_CONFIGURATION,
     ENV_ZENML_PROFILE_NAME,
-    STACKS_EMPTY,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
     STACK_COMPONENTS,
     STACK_CONFIGURATIONS,
     STACKS,
+    STACKS_EMPTY,
     TEAMS,
     USERS,
 )
@@ -461,11 +461,15 @@ async def projects() -> List[Project]:
     return zen_store.projects
 
 
-@authed.get(PROJECTS + "/{name}", responses={404: error_response})
-async def get_project(name: str) -> Project:
-    """Gets a specific project."""
+@authed.get(
+    PROJECTS + "/{project_name}",
+    response_model=Project,
+    responses={404: error_response},
+)
+async def get_project(project_name: str) -> Project:
+    """Get a project for given name."""
     try:
-        return zen_store.get_project(project_name=name)
+        return zen_store.get_project(project_name)
     except KeyError as error:
         raise not_found(error) from error
 

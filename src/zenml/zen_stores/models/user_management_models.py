@@ -107,6 +107,15 @@ class Team(BaseModel):
     name: str
 
 
+def get_active_user_id() -> UUID:
+    from zenml.repository import Repository
+
+    user = Repository().active_user
+    if Repository().zen_store.get_user(user.name).id != user.id:
+        raise RuntimeError("User ID conflict!")
+    return user.id
+
+
 class Project(BaseModel):
     """Pydantic object representing a project.
 
@@ -114,13 +123,17 @@ class Project(BaseModel):
         id: Id of the project.
         creation_date: Date when the project was created.
         name: Name of the project.
+        created_by: ID of the user that created the project.
         description: Optional project description.
+        default_stack: Optional ID of the stack to use by default for pipelines.
     """
 
     id: UUID = Field(default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
+    created_by: UUID = Field(default_factory=get_active_user_id)
     name: str
     description: Optional[str] = None
+    default_stack: Optional[UUID] = None
 
 
 class RoleAssignment(BaseModel):

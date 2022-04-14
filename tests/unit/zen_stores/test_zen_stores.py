@@ -62,8 +62,10 @@ from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
 
 logger = get_logger(__name__)
 
-not_windows = platform.system() != "Windows"
-store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * not_windows
+test_rest = (
+    platform.system() != "Windows" and "ZENML_SKIP_TEST_REST" not in os.environ
+)
+store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * test_rest
 
 
 def get_component_from_wrapper(
@@ -264,8 +266,15 @@ def test_user_management(fresh_zen_store):
     # starts with a default user
     assert len(fresh_zen_store.users) == 1
 
-    fresh_zen_store.create_user("aria")
+    assert fresh_zen_store.users[0].name == "default"
+    default_user = fresh_zen_store.get_user("default")
+    assert default_user.id == fresh_zen_store.users[0].id
+
+    created_user_id = fresh_zen_store.create_user("aria").id
     assert len(fresh_zen_store.users) == 2
+
+    retrieved_user_id = fresh_zen_store.get_user("aria").id
+    assert created_user_id == retrieved_user_id
 
     with pytest.raises(EntityExistsError):
         # usernames need to be unique
@@ -339,19 +348,21 @@ def test_team_management(fresh_zen_store):
 
 def test_project_management(fresh_zen_store):
     """Tests project creation and deletion."""
-    fresh_zen_store.create_project("secret_project")
+    project = fresh_zen_store.create_project("secret_project")
     assert len(fresh_zen_store.projects) == 1
+    assert fresh_zen_store.projects[0].name == "secret_project"
+    assert fresh_zen_store.projects[0].id == project.id
 
     with pytest.raises(EntityExistsError):
         # project names need to be unique
         fresh_zen_store.create_project("secret_project")
     assert len(fresh_zen_store.projects) == 1
 
-    assert (
-        fresh_zen_store.get_project("secret_project").name == "secret_project"
-    )
     with pytest.raises(KeyError):
         fresh_zen_store.get_user("integrate_airflow")
+    retrieved = fresh_zen_store.get_project("secret_project")
+    assert retrieved.name == "secret_project"
+    assert retrieved.id == project.id
 
     fresh_zen_store.delete_project("secret_project")
     assert len(fresh_zen_store.projects) == 0

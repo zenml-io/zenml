@@ -19,13 +19,13 @@ import requests
 from pydantic import BaseModel
 
 from zenml.constants import (
-    STACKS_EMPTY,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
     STACK_COMPONENTS,
     STACK_CONFIGURATIONS,
     STACKS,
+    STACKS_EMPTY,
     TEAMS,
     USERS,
 )
@@ -389,13 +389,13 @@ class RestZenStore(BaseZenStore):
         return [User.parse_obj(user_dict) for user_dict in body]
 
     def get_user(self, user_name: str) -> User:
-        """Gets a specific user.
+        """Get a specific user by name.
 
         Args:
             user_name: Name of the user to get.
 
         Returns:
-            The requested user.
+            The requested user, if it was found.
 
         Raises:
             KeyError: If no user with the given name exists.
@@ -528,16 +528,16 @@ class RestZenStore(BaseZenStore):
         return [Project.parse_obj(project_dict) for project_dict in body]
 
     def get_project(self, project_name: str) -> Project:
-        """Gets a specific project.
+        """Get an existing project by name.
 
         Args:
             project_name: Name of the project to get.
 
         Returns:
-            The requested project.
+            The requested project if one was found.
 
         Raises:
-            KeyError: If no project with the given name exists.
+            KeyError: If there is no such project.
         """
         return Project.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
 

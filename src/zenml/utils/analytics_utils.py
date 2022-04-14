@@ -36,6 +36,10 @@ class AnalyticsEvent(str, Enum):
     # Profile
     INITIALIZED_PROFILE = "Profile initialized"
 
+    # Project
+    CREATED_PROJECT = "Project created"
+    SET_PROJECT = "Project set"
+
     # Components
     REGISTERED_STACK_COMPONENT = "Stack component registered"
     UPDATED_STACK_COMPONENT = "Stack component updated"
