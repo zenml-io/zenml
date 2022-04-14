@@ -22,7 +22,7 @@ we explicitly log the test accuracy within the evaluation step.
 
 Note that despite `wandb `being used in different steps within a pipeline, ZenML handles initializing `wandb` 
 and ensures the experiment name is the same as the pipeline name, and the experiment run is the same name 
-as the pipeline run name. This estabilishes a lineage between pipelines in ZenML and experiments in wandb.
+as the pipeline run name. This establishes a lineage between pipelines in ZenML and experiments in `wandb`.
 
 ## Run it locally
 
