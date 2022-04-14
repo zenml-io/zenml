@@ -207,12 +207,9 @@ def generate_stack_component_register_command(
             cli_utils.error(str(e))
             return
 
-        from zenml.stack.stack_component_class_registry import (
-            StackComponentClassRegistry,
-        )
-
-        component_class = StackComponentClassRegistry.get_class(
-            component_type=component_type, component_flavor=flavor
+        component_class = Repository().zen_store.get_flavor_by_name_and_type(
+            flavor_name=flavor,
+            component_type=component_type,
         )
         component = component_class(name=name, **parsed_args)
         Repository().register_stack_component(component)
@@ -236,12 +233,17 @@ def generate_stack_component_flavor_register_command(
         cli_utils.print_active_profile()
 
         # Check whether the module exists and is the right type
-        cli_utils.validate_component_type_source(
-            source=source, component_type=component_type
+        component_class = cli_utils.validate_component_type_source(
+            source=source,
+            component_type=component_type
         )
 
         # Register the flavor in the given source
-        Repository().zen_store.create_flavor(source=source)
+        Repository().zen_store.create_flavor(
+            name=component_class.FLAVOR,
+            stack_component_type=component_class.TYPE,
+            source=source,
+        )
 
     return register_stack_component_flavor_command
 

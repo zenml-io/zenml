@@ -22,6 +22,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Type,
     Union,
 )
 
@@ -161,7 +162,8 @@ def format_integration_list(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else "",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
+                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
+                # type: ignore[attr-defined]
             }
         )
     return list_of_dicts
@@ -215,7 +217,9 @@ def print_stack_configuration(
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
-        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+        component.upper()
+        for component in rich_table.columns[0]._cells
+        # type: ignore[union-attr]
     ]
     console.print(rich_table)
 
@@ -240,7 +244,9 @@ def print_stack_component_configuration(
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
-        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+        component.upper()
+        for component in rich_table.columns[0]._cells
+        # type: ignore[union-attr]
     ]
     console.print(rich_table)
 
@@ -288,7 +294,9 @@ def print_profile(
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
-        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+        component.upper()
+        for component in rich_table.columns[0]._cells
+        # type: ignore[union-attr]
     ]
     console.print(rich_table)
 
@@ -350,12 +358,7 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
 
 def install_packages(packages: List[str]) -> None:
     """Installs pypi packages into the current environment with pip"""
-    command = [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-    ] + packages
+    command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
         command += [
@@ -423,7 +426,7 @@ def print_secrets(secrets: List[str]) -> None:
 
 def validate_component_type_source(
     source: str, component_type: StackComponentType
-) -> bool:
+) -> Type[StackComponent]:
     """Validates if the given source exists and has the right
     StackComponentType
 
@@ -432,7 +435,5 @@ def validate_component_type_source(
         component_type:
     """
     stack_component_class = load_source_path_class(source)
-
     assert stack_component_class.TYPE == component_type
-
-    return True
+    return stack_component_class
