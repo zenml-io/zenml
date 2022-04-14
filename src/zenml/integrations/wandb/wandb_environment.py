@@ -58,22 +58,6 @@ class WandbEnvironment(BaseEnvironmentComponent):
         #  it as env variable at WANDB_TRACKING_TOKEN
         self._wandb_api_key = os.getenv("WANDB_API_KEY")
 
-    @staticmethod
-    def _local_wandb_backend(root: Optional[Path] = None) -> str:
-        """Returns the local wandb backend inside the zenml artifact
-        repository directory
-
-        Args:
-            root: Optional root directory of the repository. If no path is
-                given, this function tries to find the repository using the
-                environment variable `ZENML_REPOSITORY_PATH` (if set) and
-                recursively searching in the parent directories of the current
-                working directory.
-
-        Returns:
-            The wandb tracking URI for the local wandb backend.
-        """
-
     def activate(self) -> None:
         """Activate the wandb environment for the current stack."""
         return super().activate()
