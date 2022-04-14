@@ -136,6 +136,15 @@ class ProfileConfiguration(BaseModel):
         self.active_stack = stack_name
         self.global_config._write_config()
 
+    def activate_user(self, user_name: str) -> None:
+        """Set the active user for the profile.
+
+        Args:
+            user_name: name of the user to activate
+        """
+        self.active_user = user_name
+        self.global_config._write_config()
+
     @root_validator(pre=True)
     def _ensure_active_user_is_set(
         cls, attributes: Dict[str, Any]

@@ -26,6 +26,28 @@ def user() -> None:
     """Commands for user management."""
 
 
+@user.command("get")
+def get_user() -> None:
+    """Get the active user."""
+    cli_utils.print_active_profile()
+    cli_utils.declare(f"Active user: '{Repository().active_user_name}'")
+
+
+@user.command("set")
+@click.argument("user_name", type=str)
+def set_user(user_name: str) -> None:
+    """Set the active user."""
+    cli_utils.print_active_profile()
+    repo = Repository()
+    try:
+        repo.zen_store.get_user(user_name)
+    except KeyError:
+        cli_utils.error(f"No user with name {user_name}.")
+
+    Repository().active_profile.activate_user(user_name)
+    cli_utils.declare(f"Active user: '{Repository().active_user_name}'")
+
+
 @user.command("list")
 def list_users() -> None:
     """List all users."""
