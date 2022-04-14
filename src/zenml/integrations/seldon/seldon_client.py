@@ -176,6 +176,50 @@ class SeldonDeploymentSpec(BaseModel):
         extra = "ignore"
 
 
+class SeldonDeploymentComponentSpecs(BaseModel):
+    """Component specs for a Seldon Deployment.
+
+    Attributes:
+        name: the name of the Seldon Deployment.
+        spec: the spec for the Seldon Deployment.
+        graph: the serving graph composed of one or more predictive units.
+
+    """
+
+    name: str
+    spec: SeldonDeploymentSpec
+    graph: SeldonDeploymentPredictiveUnit
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # Ignore extra attributes from the CRD that are not reflected here
+        extra = "ignore"
+
+
+class SeldonDeploymentComponentSpec(BaseModel):
+    """Component spec for a Seldon Deployment.
+
+    Attributes:
+        name: the name of the Seldon Deployment.
+        spec: the spec for the Seldon Deployment.
+        graph: the serving graph composed of one or more predictive units.
+
+    """
+
+    volumes: List[k8s_client.V1Volume]
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # Ignore extra attributes from the CRD that are not reflected here
+        extra = "ignore"
+
+
 class SeldonDeploymentStatusState(StrEnum):
     """Possible state values for a Seldon Deployment."""
 
@@ -331,6 +375,13 @@ class SeldonDeployment(BaseModel):
                                 for parameter in parameters
                             ]
                             or [],
+                        ),
+                        componentSpecs=SeldonDeploymentComponentSpecs(
+                            spec=SeldonDeploymentComponentSpec(
+                                # volumes=[SeldonDeploymentVolumes(),],
+                                # initContainers=[SeldonDeploymentInitContainers(),],
+                                # containers=[SeldonDeploymentContainers(),],
+                            ),
                         ),
                     )
                 ],

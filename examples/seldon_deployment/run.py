@@ -45,7 +45,7 @@ from zenml.integrations.seldon.services import (
 )
 from zenml.integrations.seldon.steps import (
     SeldonDeployerStepConfig,
-    seldon_model_deployer_step,
+    seldon_custom_model_deployer_step,
 )
 
 
@@ -140,7 +140,7 @@ def main(
     """
     model_name = "mnist"
     deployment_pipeline_name = "continuous_deployment_pipeline"
-    deployer_step_name = "seldon_model_deployer_step"
+    deployer_step_name = "seldon_custom_model_deployer_step"
 
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
@@ -179,7 +179,7 @@ def main(
                     model_class="custom_deploy_pipeline.mycustomdeploy",
                 )
             ),
-            model_deployer=seldon_model_deployer_step(
+            model_deployer=seldon_custom_model_deployer_step(
                 config=SeldonDeployerStepConfig(
                     service_config=SeldonDeploymentConfig(
                         model_name=model_name,

@@ -55,24 +55,20 @@ class SeldonDeployerStepConfig(BaseStepConfig):
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT
 
 
-@step(enable_cache=False)
+@step(enable_cache=True)
 def seldon_model_deployer_step(
     deploy_decision: bool,
     config: SeldonDeployerStepConfig,
     context: StepContext,
     model: ModelArtifact,
-    custom_class_path: str,
 ) -> SeldonDeploymentService:
     """Seldon Core model deployer pipeline step
-
     This step can be used in a pipeline to implement continuous
     deployment for a ML model with Seldon Core.
-
     Args:
         deploy_decision: whether to deploy the model or not
         config: configuration for the deployer step
         model: the model artifact to deploy
-
     Returns:
         Seldon Core deployment service
     """
@@ -83,14 +79,7 @@ def seldon_model_deployer_step(
     pipeline_name = step_env.pipeline_name
     pipeline_run_id = step_env.pipeline_run_id
     step_name = step_env.step_name
-    requirements = step_env.pipeline_requirements
-    model_name = custom_class_path
-    entrypoint_command = [
-        "seldon-core-microservice",
-        "$MODEL_NAME",
-        "--service-type",
-        "MODEL",
-    ]
+
     # update the step configuration with the real pipeline runtime information
     config.service_config.pipeline_name = pipeline_name
     config.service_config.pipeline_run_id = pipeline_run_id
@@ -99,14 +88,11 @@ def seldon_model_deployer_step(
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
         """Prepare the model files for model serving and create and return a
         Seldon service configuration for the model.
-
         This function ensures that the model files are in the correct format
         and file structure required by the Seldon Core server implementation
         used for model serving.
-
         Args:
             model_uri: the URI of the model artifact being served
-
         Returns:
             The URL to the model ready for serving.
         """
@@ -149,16 +135,146 @@ def seldon_model_deployer_step(
 
         service_config = config.service_config.copy()
         service_config.model_uri = served_model_uri
+        return service_config
+
+    if not deploy_decision:
+        logger.info(
+            f"Skipping model deployment because the model quality does not "
+            f"meet the criteria. Loading last service deployed by step "
+            f"'{step_name}' and pipeline '{pipeline_name}' for model "
+            f"'{config.service_config.model_name}'..."
+        )
+
+        # fetch existing services with same pipeline name, step name and
+        # model name
+        existing_services = model_deployer.find_model_server(
+            pipeline_name=pipeline_name,
+            pipeline_step_name=step_name,
+            model_name=config.service_config.model_name,
+        )
+
+        if existing_services:
+            service = cast(SeldonDeploymentService, existing_services[0])
+        else:
+            # if a previous service was not found, but we also don't need to
+            # create a new one in this iteration because the deployment
+            # decision didn't come through, we simply return a
+            # placeholder service
+            service_config = prepare_service_config(model.uri)
+            service = SeldonDeploymentService(config=service_config)
+        return service
+
+    service_config = prepare_service_config(model.uri)
+
+    # invoke the Seldon Core model deployer to create a new service
+    # or update an existing one that was previously deployed for the same
+    # model
+    service = cast(
+        SeldonDeploymentService,
+        model_deployer.deploy_model(
+            service_config, replace=True, timeout=config.timeout
+        ),
+    )
+
+    logger.info(
+        f"Seldon deployment service started and reachable at:\n"
+        f"    {service.prediction_url}\n"
+    )
+
+    return service
+
+
+@step(enable_cache=False)
+def seldon_custom_model_deployer_step(
+    deploy_decision: bool,
+    config: SeldonDeployerStepConfig,
+    context: StepContext,
+    model: ModelArtifact,
+    custom_class_path: str,
+) -> SeldonDeploymentService:
+    """Seldon Core model deployer pipeline step
+
+    This step can be used in a pipeline to implement continuous
+    deployment for a ML model with Seldon Core.
+
+    Args:
+        deploy_decision: whether to deploy the model or not
+        config: configuration for the deployer step
+        model: the model artifact to deploy
+
+    Returns:
+        Seldon Core deployment service
+    """
+    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+
+    # get pipeline name, step name and run id
+    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
+    pipeline_name = step_env.pipeline_name
+    pipeline_run_id = step_env.pipeline_run_id
+    step_name = step_env.step_name
+
+    # TODO [Medium]: this must be part of pipeline requirements rather than this
+    seldon_requirements = ["seldon-core", "werkzeug==2.0.3"]
+    requirements = step_env.pipeline_requirements.extend(seldon_requirements)
+    model_name = custom_class_path
+    entrypoint_command = [
+        "seldon-core-microservice",
+        "$MODEL_NAME",
+        "--service-type",
+        "MODEL",
+    ]
+    # update the step configuration with the real pipeline runtime information
+    config.service_config.pipeline_name = pipeline_name
+    config.service_config.pipeline_run_id = pipeline_run_id
+    config.service_config.pipeline_step_name = step_name
+
+    def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
+        """Prepare the model files for model serving and create and return a
+        Seldon service configuration for the model.
+
+        This function ensures that the model files are in the correct format
+        and file structure required by the Seldon Core server implementation
+        used for model serving.
+
+        Args:
+            model_uri: the URI of the model artifact being served
+
+        Returns:
+            The URL to the model ready for serving.
+        """
+        served_model_uri = os.path.join(
+            context.get_output_artifact_uri(), "seldon"
+        )
+        fileio.makedirs(served_model_uri)
+
+        # TODO [ENG-773]: determine how to formalize how models are organized into
+        #   folders and sub-folders depending on the model type/format and the
+        #   Seldon Core protocol used to serve the model.
+
+        # TODO [ENG-791]: auto-detect built-in Seldon server implementation
+        #   from the model artifact type
+
+        # TODO [ENG-792]: validate the model artifact type against the
+        #   supported built-in Seldon server implementations
+        if fileio.isdir(model_uri):
+            io_utils.copy_dir(model_uri, served_model_uri)
+        else:
+            fileio.copy(model_uri, served_model_uri)
+
+        service_config = config.service_config.copy()
+        service_config.model_uri = served_model_uri
 
         # more information about stack ..
         stack = context.stack
-        model_deployer.prepare_custom_deployment_image(
-            stack,
-            pipeline_name,
-            step_name,
-            requirements,
-            model_name,
-            entrypoint_command,
+        classifier_docker_image_name = (
+            model_deployer.prepare_custom_deployment_image(
+                stack,
+                pipeline_name,
+                step_name,
+                requirements,
+                model_name,
+                entrypoint_command,
+            )
         )
 
         return service_config
