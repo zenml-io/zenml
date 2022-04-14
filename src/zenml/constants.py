@@ -131,7 +131,7 @@ ZEN_SERVICE_ENTRYPOINT = "zenml.zen_service.zen_service_api:app"
 ZEN_SERVICE_IP = "127.0.0.1"
 
 # API Endpoint paths:
-IS_EMPTY = "/empty"
+STACKS_EMPTY = "/stacks-empty"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
 STACK_CONFIGURATIONS = "/stack-configurations"

@@ -172,7 +172,7 @@ class LocalZenStore(BaseZenStore):
         return not scheme or scheme.group() == "file://"
 
     @property
-    def is_empty(self) -> bool:
+    def stacks_empty(self) -> bool:
         """Check if the zen store is empty."""
         return len(self.__store.stacks) == 0
 

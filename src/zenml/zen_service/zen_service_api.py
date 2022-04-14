@@ -24,7 +24,7 @@ from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
     ENV_ZENML_PROFILE_CONFIGURATION,
     ENV_ZENML_PROFILE_NAME,
-    IS_EMPTY,
+    STACKS_EMPTY,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
@@ -147,10 +147,10 @@ async def health() -> str:
     return "OK"
 
 
-@authed.get(IS_EMPTY, response_model=bool)
-async def is_empty() -> bool:
+@authed.get(STACKS_EMPTY, response_model=bool)
+async def stacks_empty() -> bool:
     """Returns whether stacks are registered or not."""
-    return zen_store.is_empty
+    return zen_store.stacks_empty
 
 
 @authed.get(
