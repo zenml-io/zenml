@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
+import platform
 import random
 import shutil
 
@@ -20,9 +21,14 @@ import pytest
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
+from zenml.exceptions import (
+    EntityExistsError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
+from zenml.services.service_status import ServiceState
 from zenml.stack import Stack
 from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
 from zenml.zen_stores import (
@@ -35,14 +41,11 @@ from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
 
 logger = get_logger(__name__)
 
+not_windows = platform.system() != "Windows"
+store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * not_windows
 
-@pytest.fixture(
-    params=[
-        StoreType.LOCAL,
-        StoreType.SQL,
-        StoreType.REST,
-    ],
-)
+
+@pytest.fixture(params=store_types)
 def fresh_zen_store(
     request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
 ) -> BaseZenStore:
@@ -74,7 +77,8 @@ def fresh_zen_store(
         # rest zen store can't have trailing slash on url
         url = zen_service.zen_service_uri.strip("/")
         yield RestZenStore().initialize(url)
-        zen_service.stop()
+        zen_service.stop(timeout=10)
+        assert zen_service.check_status()[0] == ServiceState.INACTIVE
     else:
         raise NotImplementedError(f"No ZenStore for {store_type}")
 
@@ -195,9 +199,14 @@ def test_user_management(fresh_zen_store):
     fresh_zen_store.create_user("aria")
     assert len(fresh_zen_store.users) == 2
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(EntityExistsError):
         # usernames need to be unique
         fresh_zen_store.create_user("aria")
+    assert len(fresh_zen_store.users) == 2
+
+    assert fresh_zen_store.get_user("aria").name == "aria"
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_user("not_aria")
 
     fresh_zen_store.create_team("team_aria")
     fresh_zen_store.add_user_to_team(team_name="team_aria", user_name="aria")
@@ -216,22 +225,36 @@ def test_user_management(fresh_zen_store):
     assert len(fresh_zen_store.get_users_for_team("team_aria")) == 0
     assert len(fresh_zen_store.role_assignments) == 0
 
+    with pytest.raises(KeyError):
+        # can't delete non-existent user
+        fresh_zen_store.delete_user("aria")
+
 
 def test_team_management(fresh_zen_store):
     """Tests team creation and deletion."""
     fresh_zen_store.create_user("adam")
     fresh_zen_store.create_user("hamza")
     fresh_zen_store.create_team("zenml")
+    assert len(fresh_zen_store.teams) == 1
+
+    with pytest.raises(EntityExistsError):
+        # team names need to be unique
+        fresh_zen_store.create_team("zenml")
+    assert len(fresh_zen_store.teams) == 1
+
+    assert fresh_zen_store.get_team("zenml").name == "zenml"
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_team("mlflow")
 
     fresh_zen_store.add_user_to_team(team_name="zenml", user_name="adam")
     fresh_zen_store.add_user_to_team(team_name="zenml", user_name="hamza")
     assert len(fresh_zen_store.get_users_for_team("zenml")) == 2
 
-    with pytest.raises(Exception):
+    with pytest.raises(KeyError):
         # non-existent team
         fresh_zen_store.add_user_to_team(team_name="airflow", user_name="hamza")
 
-    with pytest.raises(Exception):
+    with pytest.raises(KeyError):
         # non-existent user
         fresh_zen_store.add_user_to_team(team_name="zenml", user_name="elon")
 
@@ -241,13 +264,33 @@ def test_team_management(fresh_zen_store):
     fresh_zen_store.delete_team("zenml")
     assert len(fresh_zen_store.get_teams_for_user("adam")) == 0
 
+    with pytest.raises(KeyError):
+        # can't delete non-existent team
+        fresh_zen_store.delete_team("zenml")
+
 
 def test_project_management(fresh_zen_store):
     """Tests project creation and deletion."""
     fresh_zen_store.create_project("secret_project")
     assert len(fresh_zen_store.projects) == 1
+
+    with pytest.raises(EntityExistsError):
+        # project names need to be unique
+        fresh_zen_store.create_project("secret_project")
+    assert len(fresh_zen_store.projects) == 1
+
+    assert (
+        fresh_zen_store.get_project("secret_project").name == "secret_project"
+    )
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_user("integrate_airflow")
+
     fresh_zen_store.delete_project("secret_project")
     assert len(fresh_zen_store.projects) == 0
+
+    with pytest.raises(KeyError):
+        # can't delete non-existent project
+        fresh_zen_store.delete_project("secret_project")
 
 
 def test_role_management(fresh_zen_store):
@@ -257,6 +300,15 @@ def test_role_management(fresh_zen_store):
     fresh_zen_store.add_user_to_team(user_name="aria", team_name="cats")
     fresh_zen_store.create_role("beautiful")
     assert len(fresh_zen_store.roles) == 1
+
+    with pytest.raises(EntityExistsError):
+        # role names need to be unique
+        fresh_zen_store.create_role("beautiful")
+    assert len(fresh_zen_store.roles) == 1
+
+    assert fresh_zen_store.get_role("beautiful").name == "beautiful"
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_role("office_cat")
 
     fresh_zen_store.assign_role(
         role_name="beautiful", entity_name="aria", is_user=True

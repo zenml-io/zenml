@@ -49,6 +49,7 @@ from zenml.zen_stores.models import (
     Flavor,
     StackComponentWrapper,
     StackWrapper,
+    User,
     ZenStoreModel,
 )
 
@@ -130,13 +131,18 @@ class RepositoryMetaClass(ABCMeta):
             ForbiddenRepositoryAccessError: If trying to create a `Repository`
                 instance while a ZenML step is being executed.
         """
-        if Environment().step_is_running:
-            raise ForbiddenRepositoryAccessError(
-                "Unable to access repository during step execution. If you "
-                "require access to the artifact or metadata store, please use "
-                "a `StepContext` inside your step instead.",
-                url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
-            )
+
+        # `skip_repository_check` is a special kwarg that can be passed to
+        # the Repository constructor to bypass the check that prevents the
+        # Repository instance from being accessed from within pipeline steps.
+        if not kwargs.pop("skip_repository_check", False):
+            if Environment().step_is_running:
+                raise ForbiddenRepositoryAccessError(
+                    "Unable to access repository during step execution. If you "
+                    "require access to the artifact or metadata store, please "
+                    "use a `StepContext` inside your step instead.",
+                    url="https://docs.zenml.io/features/step-fixtures#using-the-stepcontext",
+                )
 
         if args or kwargs:
             return cast("Repository", super().__call__(*args, **kwargs))
@@ -521,7 +527,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @staticmethod
     def create_store(
-        profile: ProfileConfiguration, skip_default_stack: bool = False
+        profile: ProfileConfiguration, skip_default_registrations: bool = False
     ) -> BaseZenStore:
         """Create the repository persistence back-end store from a configuration
         profile.
@@ -532,8 +538,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             profile: The configuration profile to use for persisting the
                 repository information.
-            skip_default_stack: If True, the creation of the default stack in
-                the store will be skipped.
+            skip_default_registrations: If `True`, the creation of the default
+                stack and user in the store will be skipped.
 
         Returns:
             The initialized repository store.
@@ -555,10 +561,14 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 profile.config_directory
             )
 
+        if profile.store_type == StoreType.REST:
+            skip_default_registrations = True
+
         if store_class.is_valid_url(profile.store_url):
             store = store_class()
             store.initialize(
-                url=profile.store_url, skip_default_stack=skip_default_stack
+                url=profile.store_url,
+                skip_default_registrations=skip_default_registrations,
             )
             return store
 
@@ -696,6 +706,20 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             RuntimeError: If no profile is set as active.
         """
         return self.active_profile.name
+
+    @property
+    def active_user(self) -> User:
+        """The active user.
+
+        Raises:
+            KeyError: If no user exists for the active username.
+        """
+        return self.zen_store.get_user(self.active_user_name)
+
+    @property
+    def active_user_name(self) -> str:
+        """Name of the active user."""
+        return self.active_profile.active_user
 
     @property
     def stacks(self) -> List[Stack]:
@@ -877,7 +901,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self.zen_store.register_stack_component(
             StackComponentWrapper.from_component(component)
         )
-
         analytics_metadata = {
             "type": component.TYPE.value,
             "flavor": component.FLAVOR,

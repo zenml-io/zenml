@@ -19,20 +19,33 @@ import requests
 from pydantic import BaseModel
 
 from zenml.constants import (
-    DELETE_COMPONENT,
-    DELETE_STACK,
-    GET_COMPONENTS,
-    GET_STACK_CONFIGURATIONS,
-    GET_STACKS,
     IS_EMPTY,
-    REGISTER_COMPONENT,
-    REGISTER_STACK,
+    PROJECTS,
+    ROLE_ASSIGNMENTS,
+    ROLES,
+    STACK_COMPONENTS,
+    STACK_CONFIGURATIONS,
+    STACKS,
+    TEAMS,
+    USERS,
 )
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError, StackExistsError
+from zenml.exceptions import (
+    EntityExistsError,
+    StackComponentExistsError,
+    StackExistsError,
+)
 from zenml.logger import get_logger
 from zenml.zen_stores import BaseZenStore
-from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
+from zenml.zen_stores.models import (
+    Project,
+    Role,
+    RoleAssignment,
+    StackComponentWrapper,
+    StackWrapper,
+    Team,
+    User,
+)
 
 logger = get_logger(__name__)
 
@@ -41,7 +54,7 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
 class RestZenStore(BaseZenStore):
-    """ZenStore implementation for accessing stack data from a REST api."""
+    """ZenStore implementation for accessing data from a REST api."""
 
     def initialize(
         self,
@@ -59,15 +72,16 @@ class RestZenStore(BaseZenStore):
         Returns:
             The initialized zen store instance.
         """
-        if not self.is_valid_url(url):
+        if not self.is_valid_url(url.strip("/")):
             raise ValueError("Invalid URL for REST store: {url}")
-        self._url = url
+        self._url = url.strip("/")
         if "skip_default_stack" not in kwargs:
             kwargs["skip_default_stack"] = True
+        # breakpoint()
         super().initialize(url, *args, **kwargs)
         return self
 
-    # Statics:
+    # Statistics:
 
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
@@ -110,12 +124,12 @@ class RestZenStore(BaseZenStore):
 
     @property
     def type(self) -> StoreType:
-        """The type of zen store."""
+        """The type of stack store."""
         return StoreType.REST
 
     @property
     def url(self) -> str:
-        """Get the zen store URL."""
+        """Get the stack store URL."""
         return self._url
 
     @property
@@ -147,17 +161,17 @@ class RestZenStore(BaseZenStore):
             KeyError: If no stack exists for the given name.
         """
         return self._parse_stack_configuration(
-            self.get(f"{GET_STACK_CONFIGURATIONS}/{name}")
+            self.get(f"{STACK_CONFIGURATIONS}/{name}")
         )
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configurations for all stacks registered in this zen store.
+        """Configurations for all stacks registered in this stack store.
 
         Returns:
             Dictionary mapping stack names to Dict[StackComponentType, str]'s
         """
-        body = self.get(GET_STACK_CONFIGURATIONS)
+        body = self.get(STACK_CONFIGURATIONS)
         if not isinstance(body, dict):
             raise ValueError(
                 f"Bad API Response. Expected dict, got {type(body)}"
@@ -180,7 +194,7 @@ class RestZenStore(BaseZenStore):
             StackComponentExistsError: If a stack component with the same type
                 and name already exists.
         """
-        self.post(REGISTER_COMPONENT, body=component)
+        self.post(STACK_COMPONENTS, body=component)
 
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
@@ -191,14 +205,14 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        self.get(f"{DELETE_STACK}/{name}")
+        self.delete(f"{STACKS}/{name}")
 
     # Custom implementations:
 
     @property
     def stacks(self) -> List[StackWrapper]:
         """All stacks registered in this repository."""
-        body = self.get(GET_STACKS)
+        body = self.get(STACKS)
         if not isinstance(body, list):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
@@ -217,12 +231,12 @@ class RestZenStore(BaseZenStore):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        return StackWrapper.parse_obj(self.get(f"{GET_STACKS}/{name}"))
+        return StackWrapper.parse_obj(self.get(f"{STACKS}/{name}"))
 
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
 
-        If any of the stacks' components aren't registered in the zen store
+        If any of the stacks' components aren't registered in the stack store
         yet, this method will try to register them as well.
 
         Args:
@@ -237,7 +251,7 @@ class RestZenStore(BaseZenStore):
                 registered and a different component with the same name
                 already exists.
         """
-        body = self.post(REGISTER_STACK, stack)
+        body = self.post(STACKS, stack)
         if isinstance(body, dict):
             return cast(Dict[str, str], body)
         else:
@@ -254,7 +268,7 @@ class RestZenStore(BaseZenStore):
             KeyError: If no component with the requested type and name exists.
         """
         return StackComponentWrapper.parse_obj(
-            self.get(f"{GET_COMPONENTS}/{component_type}/{name}")
+            self.get(f"{STACK_COMPONENTS}/{component_type}/{name}")
         )
 
     def get_stack_components(
@@ -268,7 +282,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             A list of StackComponentConfiguration instances.
         """
-        body = self.get(f"{GET_COMPONENTS}/{component_type}")
+        body = self.get(f"{STACK_COMPONENTS}/{component_type}")
         if not isinstance(body, list):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
@@ -288,7 +302,466 @@ class RestZenStore(BaseZenStore):
             ValueError: if trying to deregister a component that's part
                 of a stack.
         """
-        self.get(f"{DELETE_COMPONENT}/{component_type}/{name}")
+        self.delete(f"{STACK_COMPONENTS}/{component_type}/{name}")
+
+    # User, project and role management
+
+    @property
+    def users(self) -> List[User]:
+        """All registered users.
+
+        Returns:
+            A list of all registered users.
+
+        Raises:
+            ValueError: In case of a bad API response.
+        """
+        body = self.get(USERS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [User.parse_obj(user_dict) for user_dict in body]
+
+    def get_user(self, user_name: str) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_name: Name of the user to get.
+
+        Returns:
+            The requested user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        return User.parse_obj(self.get(f"{USERS}/{user_name}"))
+
+    def create_user(self, user_name: str) -> User:
+        """Creates a new user.
+
+        Args:
+            user_name: Unique username.
+
+        Returns:
+             The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
+        """
+        user = User(name=user_name)
+        return User.parse_obj(self.post(USERS, body=user))
+
+    def delete_user(self, user_name: str) -> None:
+        """Deletes a user.
+
+        Args:
+            user_name: Name of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        self.delete(f"{USERS}/{user_name}")
+
+    @property
+    def teams(self) -> List[Team]:
+        """All registered teams.
+
+        Returns:
+            A list of all registered teams.
+
+        Raises:
+            ValueError: In case of a bad API response.
+        """
+        body = self.get(TEAMS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [Team.parse_obj(team_dict) for team_dict in body]
+
+    def get_team(self, team_name: str) -> Team:
+        """Gets a specific team.
+
+        Args:
+            team_name: Name of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+        return Team.parse_obj(self.get(f"{TEAMS}/{team_name}"))
+
+    def create_team(self, team_name: str) -> Team:
+        """Creates a new team.
+
+        Args:
+            team_name: Unique team name.
+
+        Returns:
+             The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
+        """
+        team = Team(name=team_name)
+        return Team.parse_obj(self.post(TEAMS, body=team))
+
+    def delete_team(self, team_name: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_name: Name of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+        self.delete(f"{TEAMS}/{team_name}")
+
+    def add_user_to_team(self, team_name: str, user_name: str) -> None:
+        """Adds a user to a team.
+
+        Args:
+            team_name: Name of the team.
+            user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
+        """
+        user = User(name=user_name)
+        self.post(f"{TEAMS}/{team_name}/users", user)
+
+    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
+        """Removes a user from a team.
+
+        Args:
+            team_name: Name of the team.
+            user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
+        """
+        self.delete(f"{TEAMS}/{team_name}/users/{user_name}")
+
+    @property
+    def projects(self) -> List[Project]:
+        """All registered projects.
+
+        Returns:
+            A list of all registered projects.
+
+        Raises:
+            ValueError: In case of a bad API response.
+        """
+        body = self.get(PROJECTS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [Project.parse_obj(project_dict) for project_dict in body]
+
+    def get_project(self, project_name: str) -> Project:
+        """Gets a specific project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+        return Project.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
+
+    def create_project(
+        self, project_name: str, description: Optional[str] = None
+    ) -> Project:
+        """Creates a new project.
+
+        Args:
+            project_name: Unique project name.
+            description: Optional project description.
+
+        Returns:
+             The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
+        """
+        project = Project(name=project_name, description=description)
+        return Project.parse_obj(self.post(PROJECTS, body=project))
+
+    def delete_project(self, project_name: str) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+        self.delete(f"{PROJECTS}/{project_name}")
+
+    @property
+    def roles(self) -> List[Role]:
+        """All registered roles.
+
+        Returns:
+            A list of all registered roles.
+
+        Raises:
+            ValueError: In case of a bad API response.
+        """
+        body = self.get(ROLES)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [Role.parse_obj(role_dict) for role_dict in body]
+
+    @property
+    def role_assignments(self) -> List[RoleAssignment]:
+        """All registered role assignments.
+
+        Returns:
+            A list of all registered role assignments.
+
+        Raises:
+            ValueError: In case of a bad API response.
+        """
+        body = self.get(ROLE_ASSIGNMENTS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [
+            RoleAssignment.parse_obj(assignment_dict)
+            for assignment_dict in body
+        ]
+
+    def get_role(self, role_name: str) -> Role:
+        """Gets a specific role.
+
+        Args:
+            role_name: Name of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+        return Role.parse_obj(self.get(f"{ROLES}/{role_name}"))
+
+    def create_role(self, role_name: str) -> Role:
+        """Creates a new role.
+
+        Args:
+            role_name: Unique role name.
+
+        Returns:
+             The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
+        """
+        role = Role(name=role_name)
+        return Role.parse_obj(self.post(ROLES, body=role))
+
+    def delete_role(self, role_name: str) -> None:
+        """Deletes a role.
+
+        Args:
+            role_name: Name of the role to delete.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+        self.delete(f"{ROLES}/{role_name}")
+
+    def assign_role(
+        self,
+        role_name: str,
+        entity_name: str,
+        project_name: Optional[str] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Assigns a role to a user or team.
+
+        Args:
+            role_name: Name of the role to assign.
+            entity_name: User or team name.
+            project_name: Optional project name.
+            is_user: Boolean indicating whether the given `entity_name` refers
+                to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
+        """
+        data = {
+            "role_name": role_name,
+            "entity_name": entity_name,
+            "project_name": project_name,
+            "is_user": is_user,
+        }
+        self._handle_response(
+            requests.post(
+                self.url + ROLE_ASSIGNMENTS,
+                json=data,
+                auth=self._get_authentication(),
+            )
+        )
+
+    def revoke_role(
+        self,
+        role_name: str,
+        entity_name: str,
+        project_name: Optional[str] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Revokes a role from a user or team.
+
+        Args:
+            role_name: Name of the role to revoke.
+            entity_name: User or team name.
+            project_name: Optional project name.
+            is_user: Boolean indicating whether the given `entity_name` refers
+                to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
+        """
+        data = {
+            "role_name": role_name,
+            "entity_name": entity_name,
+            "project_name": project_name,
+            "is_user": is_user,
+        }
+        self._handle_response(
+            requests.delete(
+                self.url + ROLE_ASSIGNMENTS,
+                json=data,
+                auth=self._get_authentication(),
+            )
+        )
+
+    def get_users_for_team(self, team_name: str) -> List[User]:
+        """Fetches all users of a team.
+
+        Args:
+            team_name: Name of the team.
+
+        Returns:
+            List of users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+            ValueError: In case of a bad API response.
+        """
+        body = self.get(f"{TEAMS}/{team_name}/users")
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [User.parse_obj(user_dict) for user_dict in body]
+
+    def get_teams_for_user(self, user_name: str) -> List[Team]:
+        """Fetches all teams for a user.
+
+        Args:
+            user_name: Name of the user.
+
+        Returns:
+            List of teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+            ValueError: In case of a bad API response.
+        """
+        body = self.get(f"{USERS}/{user_name}/teams")
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [Team.parse_obj(team_dict) for team_dict in body]
+
+    def get_role_assignments_for_user(
+        self,
+        user_name: str,
+        project_name: Optional[str] = None,
+        include_team_roles: bool = True,
+    ) -> List[RoleAssignment]:
+        """Fetches all role assignments for a user.
+
+        Args:
+            user_name: Name of the user.
+            project_name: Optional filter to only return roles assigned for
+                this project.
+            include_team_roles: If `True`, includes roles for all teams that
+                the user is part of.
+
+        Returns:
+            List of role assignments for this user.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
+            ValueError: In case of a bad API response.
+        """
+        path = f"{USERS}/{user_name}/role_assignments"
+        if project_name:
+            path += f"?project_name={project_name}"
+
+        body = self.get(path)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        assignments = [
+            RoleAssignment.parse_obj(assignment_dict)
+            for assignment_dict in body
+        ]
+        if include_team_roles:
+            for team in self.get_teams_for_user(user_name):
+                assignments += self.get_role_assignments_for_team(
+                    team.name, project_name=project_name
+                )
+        return assignments
+
+    def get_role_assignments_for_team(
+        self,
+        team_name: str,
+        project_name: Optional[str] = None,
+    ) -> List[RoleAssignment]:
+        """Fetches all role assignments for a team.
+
+        Args:
+            team_name: Name of the user.
+            project_name: Optional filter to only return roles assigned for
+                this project.
+
+        Returns:
+            List of role assignments for this team.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
+            ValueError: In case of a bad API response.
+        """
+        path = f"{TEAMS}/{team_name}/role_assignments"
+        if project_name:
+            path += f"?project_name={project_name}"
+
+        body = self.get(path)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [
+            RoleAssignment.parse_obj(assignment_dict)
+            for assignment_dict in body
+        ]
 
     # Private interface shall not be implemented for REST store, instead the
     # API only provides all public methods, including the ones that would
@@ -346,6 +819,10 @@ class RestZenStore(BaseZenStore):
                     "Bad response from API. Expected json, got\n"
                     f"{response.text}"
                 )
+        elif response.status_code == 401:
+            raise requests.HTTPError(
+                f"{response.status_code} Client Error: Unauthorized request to URL {response.url}: {response.json().get('detail')}"
+            )
         elif response.status_code == 404:
             raise KeyError(*response.json().get("detail", (response.text,)))
         elif response.status_code == 409:
@@ -355,6 +832,10 @@ class RestZenStore(BaseZenStore):
                 )
             elif "StackExistsError" in response.text:
                 raise StackExistsError(
+                    *response.json().get("detail", (response.text,))
+                )
+            elif "EntityExistsError" in response.text:
+                raise EntityExistsError(
                     *response.json().get("detail", (response.text,))
                 )
             else:
@@ -369,11 +850,30 @@ class RestZenStore(BaseZenStore):
                 f"{response.status_code} with body:\n{response.text}"
             )
 
+    @staticmethod
+    def _get_authentication() -> Tuple[str, str]:
+        """Gets HTTP basic auth credentials."""
+        from zenml.repository import Repository
+
+        return Repository().active_user_name, ""
+
     def get(self, path: str) -> Json:
         """Make a GET request to the given endpoint path."""
-        return self._handle_response(requests.get(self.url + path))
+        return self._handle_response(
+            requests.get(self.url + path, auth=self._get_authentication())
+        )
+
+    def delete(self, path: str) -> Json:
+        """Make a DELETE request to the given endpoint path."""
+        return self._handle_response(
+            requests.delete(self.url + path, auth=self._get_authentication())
+        )
 
     def post(self, path: str, body: BaseModel) -> Json:
         """Make a POST request to the given endpoint path."""
         endpoint = self.url + path
-        return self._handle_response(requests.post(endpoint, data=body.json()))
+        return self._handle_response(
+            requests.post(
+                endpoint, data=body.json(), auth=self._get_authentication()
+            )
+        )

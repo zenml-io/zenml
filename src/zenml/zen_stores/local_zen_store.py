@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union, overload
 from uuid import UUID
 
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import StackComponentExistsError
+from zenml.exceptions import EntityExistsError, StackComponentExistsError
 from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.utils import yaml_utils
@@ -352,6 +352,20 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.users
 
+    def get_user(self, user_name: str) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_name: Name of the user to get.
+
+        Returns:
+            The requested user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        return _get_unique_entity(user_name, collection=self.__store.users)
+
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
 
@@ -360,11 +374,16 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
              The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
         """
         if _get_unique_entity(
             user_name, collection=self.__store.users, ensure_exists=False
         ):
-            raise RuntimeError(f"User with name '{user_name}' already exists.")
+            raise EntityExistsError(
+                f"User with name '{user_name}' already exists."
+            )
 
         user = User(name=user_name)
         self.__store.users.append(user)
@@ -376,26 +395,22 @@ class LocalZenStore(BaseZenStore):
 
         Args:
             user_name: Name of the user to delete.
-        """
-        user = _get_unique_entity(
-            user_name, collection=self.__store.users, ensure_exists=False
-        )
-        if user:
-            self.__store.users.remove(user)
-            for user_names in self.__store.team_assignments.values():
-                user_names.discard(user.name)
 
-            self.__store.role_assignments = [
-                assignment
-                for assignment in self.__store.role_assignments
-                if assignment.user_id != user.id
-            ]
-            self._write_store()
-            logger.info("Deleted user %s.", user)
-        else:
-            logger.debug(
-                "User '%s' doesn't exist, not deleting anything.", user_name
-            )
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        user = _get_unique_entity(user_name, collection=self.__store.users)
+        self.__store.users.remove(user)
+        for user_names in self.__store.team_assignments.values():
+            user_names.discard(user.name)
+
+        self.__store.role_assignments = [
+            assignment
+            for assignment in self.__store.role_assignments
+            if assignment.user_id != user.id
+        ]
+        self._write_store()
+        logger.info("Deleted user %s.", user)
 
     @property
     def teams(self) -> List[Team]:
@@ -406,6 +421,20 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.teams
 
+    def get_team(self, team_name: str) -> Team:
+        """Gets a specific team.
+
+        Args:
+            team_name: Name of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+        return _get_unique_entity(team_name, collection=self.__store.teams)
+
     def create_team(self, team_name: str) -> Team:
         """Creates a new team.
 
@@ -414,11 +443,16 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
              The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
         """
         if _get_unique_entity(
             team_name, collection=self.__store.teams, ensure_exists=False
         ):
-            raise RuntimeError(f"Team with name '{team_name}' already exists.")
+            raise EntityExistsError(
+                f"Team with name '{team_name}' already exists."
+            )
 
         team = Team(name=team_name)
         self.__store.teams.append(team)
@@ -430,24 +464,20 @@ class LocalZenStore(BaseZenStore):
 
         Args:
             team_name: Name of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
-        team = _get_unique_entity(
-            team_name, collection=self.__store.teams, ensure_exists=False
-        )
-        if team:
-            self.__store.teams.remove(team)
-            self.__store.team_assignments.pop(team.name, None)
-            self.__store.role_assignments = [
-                assignment
-                for assignment in self.__store.role_assignments
-                if assignment.team_id != team.id
-            ]
-            self._write_store()
-            logger.info("Deleted team %s.", team)
-        else:
-            logger.debug(
-                "Team '%s' doesn't exist, not deleting anything.", team_name
-            )
+        team = _get_unique_entity(team_name, collection=self.__store.teams)
+        self.__store.teams.remove(team)
+        self.__store.team_assignments.pop(team.name, None)
+        self.__store.role_assignments = [
+            assignment
+            for assignment in self.__store.role_assignments
+            if assignment.team_id != team.id
+        ]
+        self._write_store()
+        logger.info("Deleted team %s.", team)
 
     def add_user_to_team(self, team_name: str, user_name: str) -> None:
         """Adds a user to a team.
@@ -455,6 +485,9 @@ class LocalZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
         """
         team = _get_unique_entity(team_name, self.__store.teams)
         user = _get_unique_entity(user_name, self.__store.users)
@@ -467,6 +500,9 @@ class LocalZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
         """
         team = _get_unique_entity(team_name, self.__store.teams)
         user = _get_unique_entity(user_name, self.__store.users)
@@ -482,6 +518,22 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.projects
 
+    def get_project(self, project_name: str) -> Project:
+        """Gets a specific project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+        return _get_unique_entity(
+            project_name, collection=self.__store.projects
+        )
+
     def create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
@@ -493,11 +545,14 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
              The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
         """
         if _get_unique_entity(
             project_name, collection=self.__store.projects, ensure_exists=False
         ):
-            raise RuntimeError(
+            raise EntityExistsError(
                 f"Project with name '{project_name}' already exists."
             )
 
@@ -511,25 +566,22 @@ class LocalZenStore(BaseZenStore):
 
         Args:
             project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
         """
         project = _get_unique_entity(
-            project_name, collection=self.__store.projects, ensure_exists=False
+            project_name, collection=self.__store.projects
         )
-        if project:
-            self.__store.projects.remove(project)
-            self.__store.role_assignments = [
-                assignment
-                for assignment in self.__store.role_assignments
-                if assignment.project_id != project.id
-            ]
+        self.__store.projects.remove(project)
+        self.__store.role_assignments = [
+            assignment
+            for assignment in self.__store.role_assignments
+            if assignment.project_id != project.id
+        ]
 
-            self._write_store()
-            logger.info("Deleted project %s.", project)
-        else:
-            logger.debug(
-                "Project '%s' doesn't exist, not deleting anything.",
-                project_name,
-            )
+        self._write_store()
+        logger.info("Deleted project %s.", project)
 
     @property
     def roles(self) -> List[Role]:
@@ -549,6 +601,20 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.role_assignments
 
+    def get_role(self, role_name: str) -> Role:
+        """Gets a specific role.
+
+        Args:
+            role_name: Name of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+        return _get_unique_entity(role_name, collection=self.__store.roles)
+
     def create_role(self, role_name: str) -> Role:
         """Creates a new role.
 
@@ -557,11 +623,16 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
              The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
         """
         if _get_unique_entity(
             role_name, collection=self.__store.roles, ensure_exists=False
         ):
-            raise RuntimeError(f"Role with name '{role_name}' already exists.")
+            raise EntityExistsError(
+                f"Role with name '{role_name}' already exists."
+            )
 
         role = Role(name=role_name)
         self.__store.roles.append(role)
@@ -573,24 +644,20 @@ class LocalZenStore(BaseZenStore):
 
         Args:
             role_name: Name of the role to delete.
-        """
-        role = _get_unique_entity(
-            role_name, collection=self.__store.roles, ensure_exists=False
-        )
-        if role:
-            self.__store.roles.remove(role)
-            self.__store.role_assignments = [
-                assignment
-                for assignment in self.__store.role_assignments
-                if assignment.role_id != role.id
-            ]
 
-            self._write_store()
-            logger.info("Deleted role %s.", role)
-        else:
-            logger.debug(
-                "Role '%s' doesn't exist, not deleting anything.", role_name
-            )
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+        role = _get_unique_entity(role_name, collection=self.__store.roles)
+        self.__store.roles.remove(role)
+        self.__store.role_assignments = [
+            assignment
+            for assignment in self.__store.role_assignments
+            if assignment.role_id != role.id
+        ]
+
+        self._write_store()
+        logger.info("Deleted role %s.", role)
 
     def assign_role(
         self,
@@ -607,6 +674,9 @@ class LocalZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
         """
         role = _get_unique_entity(role_name, collection=self.__store.roles)
         project_id: Optional[UUID] = None
@@ -644,6 +714,9 @@ class LocalZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
         """
         role = _get_unique_entity(role_name, collection=self.__store.roles)
 
@@ -681,6 +754,9 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
         team = _get_unique_entity(team_name, collection=self.__store.teams)
         user_names = self.__store.team_assignments[team.name]
@@ -694,6 +770,9 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
         user = _get_unique_entity(user_name, collection=self.__store.users)
         team_names = [
@@ -720,6 +799,9 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of role assignments for this user.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
         """
         user = _get_unique_entity(user_name, collection=self.__store.users)
         project_id = (
@@ -754,6 +836,9 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of role assignments for this team.
+
+        Raises:
+            KeyError: If no team or project with the given names exists.
         """
         team = _get_unique_entity(team_name, collection=self.__store.teams)
         project_id = (

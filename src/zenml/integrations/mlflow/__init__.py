@@ -15,12 +15,16 @@
 The mlflow integrations currently enables you to use mlflow tracking as a
 convenient way to visualize your experiment runs within the mlflow ui
 """
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import MLFLOW
 from zenml.integrations.integration import Integration
+from zenml.integrations.utils import register_flavor
+
+MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
 
 
 class MlflowIntegration(Integration):
-    """Definition of Plotly integration for ZenML."""
+    """Definition of MLflow integration for ZenML."""
 
     NAME = MLFLOW
     REQUIREMENTS = [
@@ -29,16 +33,18 @@ class MlflowIntegration(Integration):
         "mlserver-mlflow>=0.5.3",
     ]
 
-    @staticmethod
-    def activate() -> None:
+    @classmethod
+    def activate(cls) -> None:
         """Activate the MLflow integration."""
-        from zenml.integrations.mlflow import services  # noqa
-        from zenml.integrations.mlflow.mlflow_environment import (
-            MLFlowEnvironment,
-        )
 
-        # Create and activate the global MLflow environment
-        MLFlowEnvironment().activate()
+        from zenml.integrations.mlflow import services  # noqa
+
+        register_flavor(
+            flavor=MLFLOW_MODEL_DEPLOYER_FLAVOR,
+            source="zenml.integrations.mlflow.model_deployers.MLFlowModelDeployer",
+            stack_component_type=StackComponentType.MODEL_DEPLOYER,
+            integration=cls.NAME,
+        )
 
 
 MlflowIntegration.check_installation()

@@ -17,19 +17,29 @@ import random
 import pytest
 import requests
 
-from zenml.constants import GET_STACK_CONFIGURATIONS, GET_STACKS
+from zenml.config.profile_config import ProfileConfiguration
+from zenml.constants import STACK_CONFIGURATIONS, STACKS, USERS
 from zenml.services import ServiceState
 from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
+from zenml.zen_stores import LocalZenStore
+from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 
 @pytest.fixture
-def running_zen_service() -> ZenService:
+def running_zen_service(tmp_path_factory: pytest.TempPathFactory) -> ZenService:
     """Spin up a zen service to do tests on."""
+    tmp_path = tmp_path_factory.mktemp("local_zen_store")
+
+    backing_zen_store = LocalZenStore().initialize(str(tmp_path))
+    store_profile = ProfileConfiguration(
+        name=f"test_profile_{hash(str(tmp_path))}",
+        store_url=backing_zen_store.url,
+        store_type=backing_zen_store.type,
+    )
+
     port = random.randint(8003, 9000)
     zen_service = ZenService(
-        ZenServiceConfig(
-            port=port,
-        )
+        ZenServiceConfig(port=port, store_profile_configuration=store_profile)
     )
     zen_service.start(timeout=10)
     yield zen_service
@@ -44,15 +54,38 @@ def running_zen_service() -> ZenService:
 def test_get_stack_endpoints(running_zen_service: ZenService):
     """Test that the stack methods behave as they should."""
     endpoint = running_zen_service.endpoint.status.uri.strip("/")
-    stacks_response = requests.get(endpoint + GET_STACKS)
+
+    stacks_response = requests.get(
+        endpoint + STACKS, auth=(DEFAULT_USERNAME, "")
+    )
     assert stacks_response.status_code == 200
     assert isinstance(stacks_response.json(), (list, tuple))
     assert len(stacks_response.json()) == 1
 
-    configs_response = requests.get(endpoint + GET_STACK_CONFIGURATIONS)
+    configs_response = requests.get(
+        endpoint + STACK_CONFIGURATIONS, auth=(DEFAULT_USERNAME, "")
+    )
     assert configs_response.status_code == 200
     assert isinstance(configs_response.json(), dict)
     assert len(configs_response.json()) == 1
+
+
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="ZenService not supported as daemon on Windows.",
+)
+def test_service_requires_auth(running_zen_service: ZenService):
+    """Test that most service methods require authorization."""
+    endpoint = running_zen_service.endpoint.status.uri.strip("/")
+    stacks_response = requests.get(endpoint + STACKS)
+    assert stacks_response.status_code == 401
+
+    users_response = requests.get(endpoint + USERS)
+    assert users_response.status_code == 401
+
+    # health doesn't require auth
+    health_response = requests.get(endpoint + "/health")
+    assert health_response.status_code == 200
 
 
 @pytest.mark.skipif(

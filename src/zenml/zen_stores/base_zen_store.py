@@ -36,6 +36,8 @@ from zenml.zen_stores.models import (
 
 logger = get_logger(__name__)
 
+DEFAULT_USERNAME = "default"
+
 
 class BaseZenStore(ABC):
     """Base class for accessing data in ZenML Repository and new Service."""
@@ -43,31 +45,35 @@ class BaseZenStore(ABC):
     def initialize(
         self,
         url: str,
-        skip_default_stack: bool = False,
+        skip_default_registrations: bool = False,
         *args: Any,
         **kwargs: Any,
     ) -> "BaseZenStore":
         """Initialize the store.
+
         Args:
             url: The URL of the store.
-            skip_default_stack: If True, the creation of the default stack will
-                be skipped.
+            skip_default_registrations: If `True`, the creation of the default
+                stack and user will be skipped.
             *args: Additional arguments to pass to the concrete store
                 implementation.
             **kwargs: Additional keyword arguments to pass to the concrete
                 store implementation.
+
         Returns:
             The initialized concrete store instance.
         """
-        if not skip_default_stack and self.is_empty:
-            logger.info("Initializing store...")
-            self.register_default_flavors()
-            self.register_default_stack()
+        if not skip_default_registrations:
+            logger.info("Registering default stack and user...")
+            if self.is_empty:
+                self.register_default_flavors()
+                self.register_default_stack()
+
             self.create_default_user()
 
         return self
 
-    # Statics:
+    # Statistics:
 
     @staticmethod
     @abstractmethod
@@ -241,6 +247,20 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
+    def get_user(self, user_name: str) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_name: Name of the user to get.
+
+        Returns:
+            The requested user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+    @abstractmethod
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
 
@@ -249,6 +269,9 @@ class BaseZenStore(ABC):
 
         Returns:
              The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
         """
 
     @abstractmethod
@@ -257,6 +280,9 @@ class BaseZenStore(ABC):
 
         Args:
             user_name: Name of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
 
     @property
@@ -277,6 +303,23 @@ class BaseZenStore(ABC):
 
         Returns:
              The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
+        """
+
+    @abstractmethod
+    def get_team(self, team_name: str) -> Team:
+        """Gets a specific team.
+
+        Args:
+            team_name: Name of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
 
     @abstractmethod
@@ -285,6 +328,9 @@ class BaseZenStore(ABC):
 
         Args:
             team_name: Name of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
 
     @abstractmethod
@@ -294,6 +340,9 @@ class BaseZenStore(ABC):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
         """
 
     @abstractmethod
@@ -303,6 +352,9 @@ class BaseZenStore(ABC):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
         """
 
     @property
@@ -312,6 +364,20 @@ class BaseZenStore(ABC):
 
         Returns:
             A list of all registered projects.
+        """
+
+    @abstractmethod
+    def get_project(self, project_name: str) -> Project:
+        """Gets a specific project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project.
+
+        Raises:
+            KeyError: If no project with the given name exists.
         """
 
     @abstractmethod
@@ -326,6 +392,9 @@ class BaseZenStore(ABC):
 
         Returns:
              The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
         """
 
     @abstractmethod
@@ -334,6 +403,9 @@ class BaseZenStore(ABC):
 
         Args:
             project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
         """
 
     @property
@@ -355,6 +427,20 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
+    def get_role(self, role_name: str) -> Role:
+        """Gets a specific role.
+
+        Args:
+            role_name: Name of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+
+    @abstractmethod
     def create_role(self, role_name: str) -> Role:
         """Creates a new role.
 
@@ -363,6 +449,9 @@ class BaseZenStore(ABC):
 
         Returns:
              The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
         """
 
     @abstractmethod
@@ -371,6 +460,9 @@ class BaseZenStore(ABC):
 
         Args:
             role_name: Name of the role to delete.
+
+        Raises:
+            KeyError: If no role with the given name exists.
         """
 
     @abstractmethod
@@ -389,6 +481,9 @@ class BaseZenStore(ABC):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
         """
 
     @abstractmethod
@@ -407,6 +502,9 @@ class BaseZenStore(ABC):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
         """
 
     @abstractmethod
@@ -418,6 +516,9 @@ class BaseZenStore(ABC):
 
         Returns:
             List of users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
         """
 
     @abstractmethod
@@ -429,6 +530,9 @@ class BaseZenStore(ABC):
 
         Returns:
             List of teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given name exists.
         """
 
     @abstractmethod
@@ -449,6 +553,9 @@ class BaseZenStore(ABC):
 
         Returns:
             List of role assignments for this user.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
         """
 
     @abstractmethod
@@ -466,6 +573,9 @@ class BaseZenStore(ABC):
 
         Returns:
             List of role assignments for this team.
+
+        Raises:
+            KeyError: If no team or project with the given names exists.
         """
 
     # Stack component flavors
@@ -710,7 +820,10 @@ class BaseZenStore(ABC):
 
     def create_default_user(self) -> None:
         """Creates a default user."""
-        self.create_user(user_name="default")
+        try:
+            self.get_user(user_name=DEFAULT_USERNAME)
+        except KeyError:
+            self.create_user(user_name=DEFAULT_USERNAME)
 
     # Common code (internal implementations, private):
 

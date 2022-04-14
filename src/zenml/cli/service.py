@@ -82,7 +82,7 @@ def up_server(port: int, profile: Optional[str]) -> None:
 
     if zen_service.endpoint:
         if zen_service.endpoint.status.port != port:
-            cli_utils.error(
+            cli_utils.warning(
                 textwrap.dedent(
                     f"""
                     You specified port={port} but the service is running at

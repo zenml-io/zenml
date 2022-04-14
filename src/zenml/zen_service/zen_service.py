@@ -5,6 +5,8 @@ import uvicorn  # type: ignore[import]
 from pydantic import Field
 
 from zenml.config.profile_config import ProfileConfiguration
+from zenml.constants import ENV_ZENML_PROFILE_NAME
+from zenml.enums import StoreType
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.services import (
@@ -80,7 +82,7 @@ class ZenService(LocalDaemonService):
         name="zen_service",
         type="zenml",
         flavor="zenml",
-        description="ZenService to manage stacks, user and pipelines",
+        description="ZenService to manage stacks, users and pipelines",
     )
 
     config: ZenServiceConfig
@@ -115,6 +117,15 @@ class ZenService(LocalDaemonService):
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
+        if self.config.store_profile_configuration.store_type == StoreType.REST:
+            raise ValueError(
+                "Service cannot be started with REST store type. Make sure you "
+                "specify a profile with a non-networked persistence backend "
+                "when trying to start the Zen Service. (use command line flag "
+                "`--profile=$PROFILE_NAME` or set the env variable "
+                f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
+                "other than the currently active one)"
+            )
         logger.info(
             "Starting ZenService as blocking "
             "process... press CTRL+C once to stop it."
