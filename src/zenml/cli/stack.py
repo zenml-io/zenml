@@ -224,6 +224,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-f",
+    "--feature_store",
+    "feature_store_name",
+    help="Name of the new feature store for this stack.",
+    type=str,
+    required=False,
+)
 def update_stack(
     stack_name: str,
     metadata_store_name: Optional[str] = None,
@@ -232,6 +240,7 @@ def update_stack(
     container_registry_name: Optional[str] = None,
     step_operator_name: Optional[str] = None,
     secrets_manager_name: Optional[str] = None,
+    feature_store_name: Optional[str] = None,
 ) -> None:
     """Update a stack."""
     # TODO: [LOW] Implement a way to rename the stack
@@ -290,6 +299,14 @@ def update_stack(
                 name=secrets_manager_name,
             )
 
+        if feature_store_name:
+            stack_components[
+                StackComponentType.FEATURE_STORE
+            ] = repo.get_stack_component(
+                StackComponentType.FEATURE_STORE,
+                name=feature_store_name,
+            )
+
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
@@ -325,11 +342,20 @@ def update_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-f",
+    "--feature_store",
+    "feature_store_flag",
+    help="Name of the feature store to remove from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name: str,
     container_registry_flag: Optional[bool] = False,
     step_operator_flag: Optional[bool] = False,
     secrets_manager_flag: Optional[bool] = False,
+    feature_store_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack."""
     # with console.status(f"Updating stack `{stack_name}`...\n"):
@@ -361,6 +387,13 @@ def remove_stack_component(
             key: value
             for (key, value) in stack_components.items()
             if key != StackComponentType.SECRETS_MANAGER
+        }
+
+    if feature_store_flag:
+        stack_components = {
+            key: value
+            for (key, value) in stack_components.items()
+            if key != StackComponentType.FEATURE_STORE
         }
 
     stack_ = Stack.from_components(name=stack_name, components=stack_components)
