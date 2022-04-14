@@ -11,30 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.integrations.constants import HUGGINGFACE
+from zenml.integrations.integration import Integration
 
-AIRFLOW = "airflow"
-AWS = "aws"
-AZURE = "azure"
-AZUREML = "azureml"
-DASH = "dash"
-EVIDENTLY = "evidently"
-FACETS = "facets"
-FEAST = "feast"
-GCP = "gcp"
-GRAPHVIZ = "graphviz"
-KUBEFLOW = "kubeflow"
-MLFLOW = "mlflow"
-PLOTLY = "plotly"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-S3 = "s3"
-SAGEMAKER = "sagemaker"
-SELDON = "seldon"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-VAULT = "vault"
-WHYLOGS = "whylogs"
-WANDB = "wandb"
-VERTEX = "vertex"
-NEURAL_PROPHET = "neural_prophet"
-HUGGINGFACE = "huggingface"
+
+class HuggingfaceIntegration(Integration):
+    """Definition of Huggingface integration for ZenML."""
+
+    NAME = HUGGINGFACE
+    REQUIREMENTS = ["transformers", "datasets"]
+
+    @classmethod
+    def activate(cls) -> None:
+        """Activates the integration."""
+        from zenml.integrations.huggingface import materializers  # noqa
+
+
+HuggingfaceIntegration.check_installation()

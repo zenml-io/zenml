@@ -504,9 +504,17 @@ class SeldonClient:
 
     @staticmethod
     def sanitize_labels(labels: Dict[str, str]) -> None:
-        """Update the label values to be valid Kubernetes labels"""
+        """Update the label values to be valid Kubernetes labels.
+
+        See: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+        """
         for key, value in labels.items():
-            labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value[:60])
+            # Kubernetes labels must be alphanumeric, no longer than
+            # 63 characters, and must begin and end with an alphanumeric
+            # character ([a-z0-9A-Z])
+            labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value)[:63].strip(
+                "-_."
+            )
 
     @property
     def namespace(self) -> str:
