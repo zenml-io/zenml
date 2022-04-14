@@ -64,9 +64,8 @@ class BaseZenStore(ABC):
         """
         if not skip_default_registrations:
             logger.info("Registering default stack and user...")
-            if self.is_empty:
+            if self.stacks_empty:
                 self.register_default_stack()
-
             self.create_default_user()
 
         return self
@@ -117,7 +116,7 @@ class BaseZenStore(ABC):
 
     @property
     @abstractmethod
-    def is_empty(self) -> bool:
+    def stacks_empty(self) -> bool:
         """Check if the store is empty (no stacks are configured).
 
         The implementation of this method should check if the store is empty

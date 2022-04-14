@@ -128,7 +128,7 @@ ENABLE_RICH_TRACEBACK = handle_bool_env_var(
 DEFAULT_SERVICE_START_STOP_TIMEOUT = 10
 
 # API Endpoint paths:
-IS_EMPTY = "/empty"
+STACKS_EMPTY = "/stacks-empty"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
 STACK_CONFIGURATIONS = "/stack-configurations"

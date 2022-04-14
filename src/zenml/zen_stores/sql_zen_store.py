@@ -206,7 +206,7 @@ class SqlZenStore(BaseZenStore):
         return True
 
     @property
-    def is_empty(self) -> bool:
+    def stacks_empty(self) -> bool:
         """Check if the zen store is empty."""
         with Session(self.engine) as session:
             return session.exec(select(ZenStack)).first() is None

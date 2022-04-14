@@ -19,7 +19,7 @@ import requests
 from pydantic import BaseModel
 
 from zenml.constants import (
-    IS_EMPTY,
+    STACKS_EMPTY,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
@@ -133,13 +133,13 @@ class RestZenStore(BaseZenStore):
         return self._url
 
     @property
-    def is_empty(self) -> bool:
+    def stacks_empty(self) -> bool:
         """Check if the store is empty (no stacks are configured).
 
         The implementation of this method should check if the store is empty
         without having to load all the stacks from the persistent storage.
         """
-        empty = self.get(IS_EMPTY)
+        empty = self.get(STACKS_EMPTY)
         if not isinstance(empty, bool):
             raise ValueError(
                 f"Bad API Response. Expected boolean, got:\n{empty}"
