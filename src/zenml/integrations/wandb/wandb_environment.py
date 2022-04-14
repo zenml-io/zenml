@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import wandb
 
@@ -174,6 +174,6 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
         return self._run_name
 
     @property
-    def wandb_run(self) -> Optional:
+    def wandb_run(self) -> Optional[Any]:
         """Returns the wandb run for the current step."""
         return self._run
