@@ -245,13 +245,13 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def get_user(self, user_name: str) -> User:
-        """Gets a specific user.
+        """Get a specific user by name.
 
         Args:
             user_name: Name of the user to get.
 
         Returns:
-            The requested user.
+            The requested user, if it was found.
 
         Raises:
             KeyError: If no user with the given name exists.
@@ -365,16 +365,16 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def get_project(self, project_name: str) -> Project:
-        """Gets a specific project.
+        """Get an existing project by name.
 
         Args:
             project_name: Name of the project to get.
 
         Returns:
-            The requested project.
+            The requested project if one was found.
 
         Raises:
-            KeyError: If no project with the given name exists.
+            KeyError: If there is no such project.
         """
 
     @abstractmethod

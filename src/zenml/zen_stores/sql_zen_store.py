@@ -34,6 +34,7 @@ from zenml.zen_stores.models import (
     Team,
     User,
 )
+from zenml.zen_stores.models.user_management_models import get_active_user_id
 
 logger = get_logger(__name__)
 
@@ -89,6 +90,9 @@ class TeamTable(Team, SQLModel, table=True):
 class ProjectTable(Project, SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     creation_date: datetime = Field(default_factory=datetime.now)
+    created_by: UUID = Field(
+        default_factory=get_active_user_id, foreign_key="usertable.id"
+    )
 
 
 class RoleTable(SQLModel, table=True):
@@ -439,13 +443,13 @@ class SqlZenStore(BaseZenStore):
             ]
 
     def get_user(self, user_name: str) -> User:
-        """Gets a specific user.
+        """Get a specific user by name.
 
         Args:
             user_name: Name of the user to get.
 
         Returns:
-            The requested user.
+            The requested user, if it was found.
 
         Raises:
             KeyError: If no user with the given name exists.
@@ -480,8 +484,9 @@ class SqlZenStore(BaseZenStore):
                 raise EntityExistsError(
                     f"User with name '{user_name}' already exists."
                 )
-            user = UserTable(name=user_name)
-            session.add(user)
+            sql_user = UserTable(name=user_name)
+            user = User(**sql_user.dict())
+            session.add(sql_user)
             session.commit()
         return user
 
@@ -670,16 +675,16 @@ class SqlZenStore(BaseZenStore):
             ]
 
     def get_project(self, project_name: str) -> Project:
-        """Gets a specific project.
+        """Get an existing project by name.
 
         Args:
             project_name: Name of the project to get.
 
         Returns:
-            The requested project.
+            The requested project if one was found.
 
         Raises:
-            KeyError: If no project with the given name exists.
+            KeyError: If there is no such project.
         """
         with Session(self.engine) as session:
             try:

@@ -19,6 +19,7 @@ from abc import ABCMeta
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, cast
+from uuid import UUID
 
 import yaml
 from pydantic import BaseModel, ValidationError
@@ -46,6 +47,7 @@ from zenml.zen_stores import (
     SqlZenStore,
 )
 from zenml.zen_stores.models import (
+    Project,
     StackComponentWrapper,
     StackWrapper,
     User,
@@ -65,6 +67,8 @@ class RepositoryConfiguration(BaseModel):
 
     active_profile_name: Optional[str]
     active_stack_name: Optional[str]
+    project_name: Optional[str] = None
+    project_id: Optional[UUID] = None
 
     class Config:
         """Pydantic configuration class."""
@@ -717,7 +721,14 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @property
     def active_user_name(self) -> str:
-        """Name of the active user."""
+        """Returns the active user name set in the profile.
+
+        Return:
+            The name of the active user.
+
+        Raises:
+            RuntimeError: If no profile is set as active, or no user configured.
+        """
         return self.active_profile.active_user
 
     @property
@@ -932,6 +943,47 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 component_type.value,
                 name,
             )
+
+    def set_active_project(self, project: Project) -> None:
+        """Set the project for the local repository.
+
+        Args:
+            project: zenml.zen_stores.models.user_management_models.Project
+        """
+        if self.__config is None:
+            raise RuntimeError("Invalid repository, no configuration storage.")
+        self.__config.project_name = project.name
+        self.__config.project_id = project.id
+        self._write_config()
+
+    def unset_active_project(self) -> None:
+        """Unset the active project for the local repository."""
+        if self.__config is None:
+            raise RuntimeError("Invalid repository, no configuration storage.")
+        self.__config.project_name = None
+        self.__config.project_id = None
+        self._write_config()
+
+    @property
+    def active_project(self) -> Optional[Project]:
+        """Get the currently active project of the local repository.
+
+        Returns: Project, if one is set that matches the id in the store.
+        """
+        if self.__config is None:
+            raise RuntimeError("Invalid repository, no configuration storage.")
+        project_name = self.__config.project_name
+        if project_name is None:
+            return None
+        project = self.zen_store.get_project(project_name)
+        if self.__config.project_id != project.id:
+            logger.warning(
+                "Local project id and store project id do not match. Treating "
+                "project as unset. Make sure this project was registered with "
+                f"this store under the name `{project_name}`."
+            )
+            return None
+        return project
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(
