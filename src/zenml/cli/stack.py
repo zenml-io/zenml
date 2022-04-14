@@ -304,32 +304,32 @@ def update_stack(
 @click.option(
     "-c",
     "--container_registry",
-    "container_registry_name",
+    "container_registry_flag",
     help="Name of the container registry to remove from this stack.",
-    type=str,
+    is_flag=True,
     required=False,
 )
 @click.option(
     "-s",
     "--step_operator",
-    "step_operator_name",
+    "step_operator_flag",
     help="Name of the step operator to remove from this stack.",
-    type=str,
+    is_flag=True,
     required=False,
 )
 @click.option(
     "-x",
     "--secrets_manager",
-    "secrets_manager_name",
+    "secrets_manager_flag",
     help="Name of the secrets manager to remove from this stack.",
-    type=str,
+    is_flag=True,
     required=False,
 )
 def remove_stack_component(
     stack_name: str,
-    container_registry_name: Optional[str] = None,
-    step_operator_name: Optional[str] = None,
-    secrets_manager_name: Optional[str] = None,
+    container_registry_flag: Optional[bool] = False,
+    step_operator_flag: Optional[bool] = False,
+    secrets_manager_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack."""
     # with console.status(f"Updating stack `{stack_name}`...\n"):
@@ -342,21 +342,21 @@ def remove_stack_component(
         )
     stack_components = current_stack.components
 
-    if container_registry_name:
+    if container_registry_flag:
         stack_components = {
             key: value
             for (key, value) in stack_components.items()
             if key != StackComponentType.CONTAINER_REGISTRY
         }
 
-    if step_operator_name:
+    if step_operator_flag:
         stack_components = {
             key: value
             for (key, value) in stack_components.items()
             if key != StackComponentType.STEP_OPERATOR
         }
 
-    if secrets_manager_name:
+    if secrets_manager_flag:
         stack_components = {
             key: value
             for (key, value) in stack_components.items()
