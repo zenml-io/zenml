@@ -1,10 +1,16 @@
-# Implementation of NLP algorithms using Huggingface & Zenml
+# 🤗 Implementation of NLP algorithms using Huggingface & Zenml
 
 These examples demonstrate how we can use zenml and huggingface transformers to build, train, & test NLP models.
 
-Huggingface; one of our favorite emoji to express thankfulness, love, or appreciation. In the world of AI/ML, [`Hugging Face`](https://huggingface.co/) is a startup in the Natural Language Processing (NLP) domain (now they are expanding to computer vision and RL) , offering its library of SOTA models in particular around the Transformers. More than a thousand companies using their library in production including Bing, Apple, Microsoft etc. Do checkout thier [`Transformers Library`](https://github.com/huggingface/transformers), [`Datasets Library`](https://github.com/huggingface/datasets) and [`Model Hub`](https://huggingface.co/models)
+Huggingface; one of our favorite emoji to express thankfulness, love, or appreciation. In the world of AI/ML, 
+[`Hugging Face`](https://huggingface.co/) is a startup in the Natural Language Processing (NLP) domain (now they are
+expanding to computer vision and RL) , offering its library of SOTA models in particular around the Transformers. More 
+than a thousand companies using their library in production including Bing, Apple, Microsoft etc. Do checkout their 
+[`Transformers Library`](https://github.com/huggingface/transformers), 
+[`Datasets Library`](https://github.com/huggingface/datasets) and [`Model Hub`](https://huggingface.co/models)
 
-NLP is a branch of machine learning that is about helping systems to understand natural text and spoken words in the same way that humans do.
+NLP is a branch of machine learning that is about helping systems to understand natural text and spoken words in the 
+same way that humans do.
 
 The following is a list of common NLP tasks:
 
@@ -14,9 +20,11 @@ The following is a list of common NLP tasks:
 - Text generation using prompt: text-generation
 - Translation: text-translation
 
-## Sequence Classification
+## 📝 Sequence Classification
 
-Sequence Classification is an NLP/NLU task, where we assign labels to a given text, i.e. sentiment classification, natural langauge inference etc. In this example, we will train a sentiment classification model using the [`imdb`](https://huggingface.co/datasets/imdb) dataset.
+Sequence Classification is an NLP/NLU task, where we assign labels to a given text, i.e. sentiment classification, 
+natural langauge inference etc. In this example, we will train a sentiment classification model using the 
+[`imdb`](https://huggingface.co/datasets/imdb) dataset.
 
 - Load dataset: Load sequence-classification dataset in this case it is the `imdb` dataset
 ```python
@@ -41,13 +49,17 @@ Sequence Classification is an NLP/NLU task, where we assign labels to a given te
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 ```
 
-- Tokenize and Prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along with labels
-- Build and Train Model: You can build model or use pre-trained models from huggingface transformers. Use encoded dataset to train model.
+- Tokenize and Prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along 
+with labels
+- Build and Train Model: You can build model or use pre-trained models from huggingface transformers. Use encoded 
+dataset to train model.
 - Evaluate: Evaluate model loss and accuracy
 
-## Token Classification
+## 🪙 Token Classification
 
-Token Classification is an NLP/NLU task, where we assign labels to tokens in a text, i.e. Name entity recognition, Part of speech tagging etc. In this example, we will train a NER model using the [`conll2003`](https://huggingface.co/datasets/conll2003) dataset.
+Token Classification is an NLP/NLU task, where we assign labels to tokens in a text, i.e. Name entity recognition, 
+Part of speech tagging etc. In this example, we will train a NER model using the 
+[`conll2003`](https://huggingface.co/datasets/conll2003) dataset.
 
 - Load dataset: Load token-classification dataset in this case it is `conll2003` dataset
 
@@ -78,18 +90,21 @@ Token Classification is an NLP/NLU task, where we assign labels to tokens in a 
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 ```
 
-- Tokenize and Prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along with labels
-- Build and Train Model: You can build model or use pre-trained models from huggingface transformers. Use encoded dataset to train model.
+- Tokenize and Prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids 
+along with labels
+- Build and Train Model: You can build model or use pre-trained models from huggingface transformers. Use encoded 
+dataset to train model.
 - Evaluate: Evaluate model loss and accuracy
 
-## Run it locally
+# 🖥 Run it locally
 
+### 📄 Prerequisites
 ```shell
 # install CLI
 pip install zenml transformers datasets
 
 # install ZenML integrations
-zenml integration install mlflow tensorflow
+zenml integration install tensorflow -f
 
 # pull example
 cd zenml/examples/huggingface
@@ -98,18 +113,18 @@ cd zenml/examples/huggingface
 zenml init
 ```
 
-### Run the project
+### ▶️ Run the Code
 Now we're ready. Execute:
 
 ```shell
 # sequence-classification
-python run_pipeline.py --nlp_task=sequence-classification --pretrained_model=distilbert-base-uncased --epochs=3 --batch_size=16 --dataset_name=imdb --text_column=text --label_column=label
+python run_pipeline.py --nlp_task=sequence-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=imdb --text_column=text --label_column=label
 
 # token-classification
-python run_pipeline.py --nlp_task=token-classification --pretrained_model=distilbert-base-uncased --epochs=3 --batch_size=16 --dataset_name=conll2003 --text_column=tokens --label_column=ner_tags
+python run_pipeline.py --nlp_task=token-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=conll2003 --text_column=tokens --label_column=ner_tags
 ```
 
-### Test pipeline
+### 🧪 Test pipeline
 
 ```python
 
@@ -148,4 +163,11 @@ tokenizer = load_tokenizer_step.output.read()
 token_classifier = pipeline("token-classification", model=model, tokenizer=tokenizer)
 
 print(token_classifier("Zenml-io is based out of Munich, Germany"))
+```
+
+### 🧽 Clean up
+In order to clean up, delete the remaining ZenML references.
+
+```shell
+rm -rf zenml_examples
 ```

@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import mlflow
 import tensorflow as tf
 from datasets import load_dataset
 from datasets.dataset_dict import DatasetDict
@@ -25,7 +24,6 @@ from transformers import (
     create_optimizer,
 )
 
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
 from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, step
 
@@ -108,7 +106,6 @@ def tokenization(
     return tokenized_datasets
 
 
-@enable_mlflow
 @step
 def trainer(
     config: TokenClassificationConfig,
@@ -154,12 +151,10 @@ def trainer(
         ),
     )
 
-    mlflow.tensorflow.autolog()
     model.fit(train_set, epochs=config.epochs)
     return model
 
 
-@enable_mlflow
 @step
 def evaluator(
     config: TokenClassificationConfig,
@@ -183,7 +178,6 @@ def evaluator(
 
     # Calculate loss
     test_loss = model.evaluate(validation_set, verbose=1)
-    mlflow.log_metric("val_loss", test_loss)
     return test_loss
 
 
