@@ -77,7 +77,6 @@ class RestZenStore(BaseZenStore):
         self._url = url.strip("/")
         if "skip_default_stack" not in kwargs:
             kwargs["skip_default_stack"] = True
-        # breakpoint()
         super().initialize(url, *args, **kwargs)
         return self
 
