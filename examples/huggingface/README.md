@@ -1,8 +1,8 @@
-# Implementation of NLP algorithms using Huggingface & Zenml
+# Implementation of NLP algorithms using Hugging Face & ZenML
 
-These examples demonstrate how we can use zenml and huggingface transformers to build, train, & test NLP models.
+These examples demonstrate how we can use ZenML and Hugging Face transformers to build, train, & test NLP models.
 
-Huggingface; one of our favorite emoji to express thankfulness, love, or appreciation. In the world of AI/ML, [`Hugging Face`](https://huggingface.co/) is a startup in the Natural Language Processing (NLP) domain (now they are expanding to computer vision and RL) , offering its library of SOTA models in particular around the Transformers. More than a thousand companies using their library in production including Bing, Apple, Microsoft etc. Do checkout thier [`Transformers Library`](https://github.com/huggingface/transformers), [`Datasets Library`](https://github.com/huggingface/datasets) and [`Model Hub`](https://huggingface.co/models)
+Huggingface: one of our favorite emoji to express thankfulness, love, or appreciation. In the world of AI/ML, [`Hugging Face`](https://huggingface.co/) is a startup in the Natural Language Processing (NLP) domain -- now they are expanding to computer vision and RL -- offering its library of SOTA models in particular around Transformers. More than a thousand companies use their library in production including Bing, Apple, Microsoft etc. Do checkout their [`Transformers Library`](https://github.com/huggingface/transformers), [`Datasets Library`](https://github.com/huggingface/datasets) and [`Model Hub`](https://huggingface.co/models).
 
 NLP is a branch of machine learning that is about helping systems to understand natural text and spoken words in the same way that humans do.
 
@@ -16,7 +16,7 @@ The following is a list of common NLP tasks:
 
 ## Sequence Classification
 
-Sequence Classification is an NLP/NLU task, where we assign labels to a given text, i.e. sentiment classification, natural langauge inference etc. In this example, we will train a sentiment classification model using the [`imdb`](https://huggingface.co/datasets/imdb) dataset.
+Sequence Classification is an NLP/NLU task, where we assign labels to a given text, i.e. sentiment classification, natural language inference etc. In this example, we will train a sentiment classification model using the [`imdb`](https://huggingface.co/datasets/imdb) dataset.
 
 - Load dataset: Load sequence-classification dataset in this case it is the `imdb` dataset
 ```python
@@ -34,16 +34,16 @@ Sequence Classification is an NLP/NLU task, where we assign labels to a given te
      }
 ```
 
-- Load pre-trained tokenizer: Load pre-trained tokenizer from huggingface transformers.
+- Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face transformers.
 
 ```python
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 ```
 
-- Tokenize and Prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along with labels
-- Build and Train Model: You can build model or use pre-trained models from huggingface transformers. Use encoded dataset to train model.
-- Evaluate: Evaluate model loss and accuracy
+- Tokenize and prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along with labels.
+- Build and Train Model: You can build model or use pre-trained models from Hugging Face transformers. Use encoded dataset to train model.
+- Evaluate: Evaluate model loss and accuracy.
 
 ## Token Classification
 
@@ -71,16 +71,16 @@ Token Classification is an NLP/NLU task, where we assign labels to tokens in a 
         '.']}
 ```
 
-- Load pre-trained tokenizer: Load pre-trained tokenizer from huggingface transformers.
+- Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face transformers.
 
 ```python
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 ```
 
-- Tokenize and Prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along with labels
+- Tokenize and prepare dataset for training: Use pre-trained tokenizer to tokenize and encode dataset into ids along with labels.
 - Build and Train Model: You can build model or use pre-trained models from huggingface transformers. Use encoded dataset to train model.
-- Evaluate: Evaluate model loss and accuracy
+- Evaluate: Evaluate model loss and accuracy.
 
 ## Run it locally
 
