@@ -35,6 +35,7 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
+from zenml.utils.k8s_utils import create_seldon_core_custom_spec
 
 logger = get_logger(__name__)
 
@@ -275,6 +276,12 @@ def seldon_custom_model_deployer_step(
                 model_name,
                 entrypoint_command,
             )
+        )
+
+        service_config.spec = create_seldon_core_custom_spec(
+            model_uri=service_config.model_uri,
+            custom_docker_image=classifier_docker_image_name,
+            secret_name=service_config.secret_name,
         )
 
         return service_config

@@ -18,6 +18,7 @@ from uuid import UUID
 
 import numpy as np
 import requests
+from kubernetes import client as k8s_client
 from pydantic import Field, ValidationError
 
 from zenml import __version__
@@ -46,6 +47,7 @@ class SeldonDeploymentConfig(ServiceConfig):
             should use the same model name.
         implementation: the Seldon Core implementation used to serve the model.
         replicas: number of replicas to use for the prediction service.
+        parameters: parameters to pass to the Seldon Core implementation.
         secret_name: the name of a Kubernetes secret containing additional
             configuration parameters for the Seldon Core deployment (e.g.
             credentials to access the Artifact Store).
@@ -53,6 +55,7 @@ class SeldonDeploymentConfig(ServiceConfig):
             https://docs.seldon.io/projects/seldon-core/en/latest/reference/apis/metadata.html).
         extra_args: additional arguments to pass to the Seldon Core deployment
             resource configuration.
+        spec: custom Kubernetes resource specification for the Seldon Core
     """
 
     model_uri: str = ""
@@ -64,6 +67,7 @@ class SeldonDeploymentConfig(ServiceConfig):
     secret_name: Optional[str]
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
     extra_args: Dict[str, Any] = Field(default_factory=dict)
+    spec: Optional[k8s_client.V1PodSpec] = (None,)
 
     def get_seldon_deployment_labels(self) -> Dict[str, str]:
         """Generate the labels for the Seldon Core deployment from the
@@ -286,6 +290,7 @@ class SeldonDeploymentService(BaseService):
             labels=self._get_seldon_deployment_labels(),
             parameters=self.config.parameters,
             annotations=self.config.get_seldon_deployment_annotations(),
+            spec=self.config.spec,
         )
         deployment.spec.replicas = self.config.replicas
         deployment.spec.predictors[0].replicas = self.config.replicas

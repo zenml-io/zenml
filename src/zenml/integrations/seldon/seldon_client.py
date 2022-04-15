@@ -128,6 +128,20 @@ class SeldonDeploymentPredictiveUnit(BaseModel):
         extra = "ignore"
 
 
+class SeldonDeploymentComponentSpecs(BaseModel):
+    """Component specs for a Seldon Deployment.
+
+    Attributes:
+        spec: the spec for the Seldon Deployment.
+    """
+
+    spec: Optional[k8s_client.V1PodSpec]
+    # TODO [HIGH]: Add graph field to ComponentSpecs. graph: Optional[SeldonDeploymentPredictiveUnit]
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 class SeldonDeploymentPredictor(BaseModel):
     """Seldon Deployment predictor.
 
@@ -142,6 +156,17 @@ class SeldonDeploymentPredictor(BaseModel):
     graph: SeldonDeploymentPredictiveUnit = Field(
         default_factory=SeldonDeploymentPredictiveUnit
     )
+    componentSpecs: SeldonDeploymentComponentSpecs = Field(
+        default_factory=SeldonDeploymentComponentSpecs
+    )
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # Ignore extra attributes from the CRD that are not reflected here
+        extra = "ignore"
 
     class Config:
         """Pydantic configuration class."""
@@ -166,50 +191,6 @@ class SeldonDeploymentSpec(BaseModel):
     protocol: Optional[str]
     predictors: List[SeldonDeploymentPredictor]
     replicas: int = 1
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # validate attribute assignments
-        validate_assignment = True
-        # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
-
-
-class SeldonDeploymentComponentSpecs(BaseModel):
-    """Component specs for a Seldon Deployment.
-
-    Attributes:
-        name: the name of the Seldon Deployment.
-        spec: the spec for the Seldon Deployment.
-        graph: the serving graph composed of one or more predictive units.
-
-    """
-
-    name: str
-    spec: SeldonDeploymentSpec
-    graph: SeldonDeploymentPredictiveUnit
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # validate attribute assignments
-        validate_assignment = True
-        # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
-
-
-class SeldonDeploymentComponentSpec(BaseModel):
-    """Component spec for a Seldon Deployment.
-
-    Attributes:
-        name: the name of the Seldon Deployment.
-        spec: the spec for the Seldon Deployment.
-        graph: the serving graph composed of one or more predictive units.
-
-    """
-
-    volumes: List[k8s_client.V1Volume]
 
     class Config:
         """Pydantic configuration class."""
@@ -326,6 +307,7 @@ class SeldonDeployment(BaseModel):
         labels: Optional[Dict[str, str]] = None,
         parameters: Optional[List[Dict[str, str]]] = [],
         annotations: Optional[Dict[str, str]] = None,
+        spec: Optional[k8s_client.V1PodSpec] = None,
     ) -> "SeldonDeployment":
         """Build a basic Seldon Deployment object.
 
@@ -339,8 +321,10 @@ class SeldonDeployment(BaseModel):
                 environment variable values (e.g. with credentials for the
                 artifact store) to use with the deployment service.
             labels: A dictionary of labels to apply to the Seldon Deployment.
+            parameters: A list of dictionaries containing environment variable
             annotations: A dictionary of annotations to apply to the Seldon
                 Deployment.
+            spec: A Kubernetes pod spec to use for the Seldon Deployment.
 
         Returns:
             A minimal SeldonDeployment object built from the provided
@@ -377,11 +361,8 @@ class SeldonDeployment(BaseModel):
                             or [],
                         ),
                         componentSpecs=SeldonDeploymentComponentSpecs(
-                            spec=SeldonDeploymentComponentSpec(
-                                # volumes=[SeldonDeploymentVolumes(),],
-                                # initContainers=[SeldonDeploymentInitContainers(),],
-                                # containers=[SeldonDeploymentContainers(),],
-                            ),
+                            spec=spec,
+                            # TODO [HIGH]: Add support for other component types (e.g. graph)
                         ),
                     )
                 ],
