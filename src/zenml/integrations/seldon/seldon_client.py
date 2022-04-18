@@ -15,7 +15,7 @@
 import json
 import re
 import time
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -135,11 +135,16 @@ class SeldonDeploymentComponentSpecs(BaseModel):
         spec: the spec for the Seldon Deployment.
     """
 
-    spec: Optional[k8s_client.V1PodSpec]
+    spec: Optional[Dict[str, Any]]
     # TODO [HIGH]: Add graph field to ComponentSpecs. graph: Optional[SeldonDeploymentPredictiveUnit]
 
     class Config:
-        arbitrary_types_allowed = True
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # Ignore extra attributes from the CRD that are not reflected here
+        extra = "ignore"
 
 
 class SeldonDeploymentPredictor(BaseModel):
@@ -156,17 +161,7 @@ class SeldonDeploymentPredictor(BaseModel):
     graph: SeldonDeploymentPredictiveUnit = Field(
         default_factory=SeldonDeploymentPredictiveUnit
     )
-    componentSpecs: SeldonDeploymentComponentSpecs = Field(
-        default_factory=SeldonDeploymentComponentSpecs
-    )
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # validate attribute assignments
-        validate_assignment = True
-        # Ignore extra attributes from the CRD that are not reflected here
-        extra = "ignore"
+    componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]]
 
     class Config:
         """Pydantic configuration class."""
@@ -307,7 +302,7 @@ class SeldonDeployment(BaseModel):
         labels: Optional[Dict[str, str]] = None,
         parameters: Optional[List[Dict[str, str]]] = [],
         annotations: Optional[Dict[str, str]] = None,
-        spec: Optional[k8s_client.V1PodSpec] = None,
+        spec: Optional[Dict[Any, Any]] = None,
     ) -> "SeldonDeployment":
         """Build a basic Seldon Deployment object.
 
@@ -338,7 +333,6 @@ class SeldonDeployment(BaseModel):
             labels = {}
         if annotations is None:
             annotations = {}
-
         return SeldonDeployment(
             metadata=SeldonDeploymentMetadata(
                 name=name, labels=labels, annotations=annotations
@@ -360,10 +354,12 @@ class SeldonDeployment(BaseModel):
                             ]
                             or [],
                         ),
-                        componentSpecs=SeldonDeploymentComponentSpecs(
-                            spec=spec,
-                            # TODO [HIGH]: Add support for other component types (e.g. graph)
-                        ),
+                        componentSpecs=[
+                            SeldonDeploymentComponentSpecs(
+                                spec=spec
+                                # TODO [HIGH]: Add support for other component types (e.g. graph)
+                            )
+                        ],
                     )
                 ],
             ),
@@ -594,13 +590,13 @@ class SeldonClient:
             # between deployments that are created by ZenML and those that
             # are not
             deployment.mark_as_managed_by_zenml()
-
+            body_deploy = deployment.dict(exclude_none=True)
             response = self._custom_objects_api.create_namespaced_custom_object(
                 group="machinelearning.seldon.io",
                 version="v1",
                 namespace=self._namespace,
                 plural="seldondeployments",
-                body=deployment.dict(exclude_none=True),
+                body=body_deploy,
                 _request_timeout=poll_timeout or None,
             )
             logger.debug("Seldon Core API response: %s", response)

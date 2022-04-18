@@ -169,6 +169,7 @@ class CustomModelParameters(BaseStepConfig):
     model_class: str = None
 
 
+# TODO [HIGH]: This should be a automated way to get the class name rather than hardcoding it
 @step
 def custom_class_source_retrive(
     config: CustomModelParameters,
@@ -285,7 +286,7 @@ def continuous_deployment_pipeline(
     evaluator,
     deployment_trigger,
     custom_class_source_retrive,
-    model_deployer,
+    custom_model_deployer,
 ):
     # Link all the steps artifacts together
     x_train, y_train, x_test, y_test = importer()
@@ -294,7 +295,7 @@ def continuous_deployment_pipeline(
     accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
     deployment_decision = deployment_trigger(accuracy=accuracy)
     source = custom_class_source_retrive()
-    model_deployer(
+    custom_model_deployer(
         deployment_decision,
         model,
         custom_class_path=source,

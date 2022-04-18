@@ -18,7 +18,6 @@ from uuid import UUID
 
 import numpy as np
 import requests
-from kubernetes import client as k8s_client
 from pydantic import Field, ValidationError
 
 from zenml import __version__
@@ -67,7 +66,7 @@ class SeldonDeploymentConfig(ServiceConfig):
     secret_name: Optional[str]
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
     extra_args: Dict[str, Any] = Field(default_factory=dict)
-    spec: Optional[k8s_client.V1PodSpec] = (None,)
+    spec: Optional[Dict[Any, Any]] = Field(default_factory=dict)
 
     def get_seldon_deployment_labels(self) -> Dict[str, str]:
         """Generate the labels for the Seldon Core deployment from the

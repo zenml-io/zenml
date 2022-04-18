@@ -214,9 +214,10 @@ def seldon_custom_model_deployer_step(
     pipeline_run_id = step_env.pipeline_run_id
     step_name = step_env.step_name
 
-    # TODO [Medium]: this must be part of pipeline requirements rather than this
+    # TODO [High]: this must be part of pipeline requirements rather than this
     seldon_requirements = ["seldon-core", "werkzeug==2.0.3"]
-    requirements = step_env.pipeline_requirements.extend(seldon_requirements)
+    pipeline_requirements = step_env.pipeline_requirements
+    requirements = pipeline_requirements + seldon_requirements
     model_name = custom_class_path
     entrypoint_command = [
         "seldon-core-microservice",
@@ -228,63 +229,6 @@ def seldon_custom_model_deployer_step(
     config.service_config.pipeline_name = pipeline_name
     config.service_config.pipeline_run_id = pipeline_run_id
     config.service_config.pipeline_step_name = step_name
-
-    def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
-        """Prepare the model files for model serving and create and return a
-        Seldon service configuration for the model.
-
-        This function ensures that the model files are in the correct format
-        and file structure required by the Seldon Core server implementation
-        used for model serving.
-
-        Args:
-            model_uri: the URI of the model artifact being served
-
-        Returns:
-            The URL to the model ready for serving.
-        """
-        served_model_uri = os.path.join(
-            context.get_output_artifact_uri(), "seldon"
-        )
-        fileio.makedirs(served_model_uri)
-
-        # TODO [ENG-773]: determine how to formalize how models are organized into
-        #   folders and sub-folders depending on the model type/format and the
-        #   Seldon Core protocol used to serve the model.
-
-        # TODO [ENG-791]: auto-detect built-in Seldon server implementation
-        #   from the model artifact type
-
-        # TODO [ENG-792]: validate the model artifact type against the
-        #   supported built-in Seldon server implementations
-        if fileio.isdir(model_uri):
-            io_utils.copy_dir(model_uri, served_model_uri)
-        else:
-            fileio.copy(model_uri, served_model_uri)
-
-        service_config = config.service_config.copy()
-        service_config.model_uri = served_model_uri
-
-        # more information about stack ..
-        stack = context.stack
-        classifier_docker_image_name = (
-            model_deployer.prepare_custom_deployment_image(
-                stack,
-                pipeline_name,
-                step_name,
-                requirements,
-                model_name,
-                entrypoint_command,
-            )
-        )
-
-        service_config.spec = create_seldon_core_custom_spec(
-            model_uri=service_config.model_uri,
-            custom_docker_image=classifier_docker_image_name,
-            secret_name=service_config.secret_name,
-        )
-
-        return service_config
 
     if not deploy_decision:
         logger.info(
@@ -309,11 +253,33 @@ def seldon_custom_model_deployer_step(
             # create a new one in this iteration because the deployment
             # decision didn't come through, we simply return a
             # placeholder service
-            service_config = prepare_service_config(model.uri)
+            service_config = config.service_config.copy()
+            service_config.model_uri = model.uri
             service = SeldonDeploymentService(config=service_config)
         return service
 
-    service_config = prepare_service_config(model.uri)
+    service_config = config.service_config.copy()
+    service_config.model_uri = model.uri
+
+    # more information about stack ..
+    stack = context.stack
+    classifier_docker_image_name = (
+        model_deployer.prepare_custom_deployment_image(
+            stack,
+            pipeline_name,
+            step_name,
+            requirements,
+            model_name,
+            entrypoint_command,
+        )
+    )
+
+    # create specification for the custom deployment
+    service_config.spec = create_seldon_core_custom_spec(
+        model_uri=service_config.model_uri,
+        custom_docker_image=classifier_docker_image_name,
+        secret_name=service_config.secret_name,
+    )
 
     # invoke the Seldon Core model deployer to create a new service
     # or update an existing one that was previously deployed for the same

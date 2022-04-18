@@ -142,7 +142,7 @@ def main(
     deployment_pipeline_name = "continuous_deployment_pipeline"
     deployer_step_name = "seldon_custom_model_deployer_step"
 
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+    custom_model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
     if model_flavor == "tensorflow":
         seldon_implementation = "TENSORFLOW_SERVER"
@@ -176,10 +176,11 @@ def main(
             ),
             custom_class_source_retrive=custom_class_source_retrive(
                 config=CustomModelParameters(
+                    # TODO [HIGH]: This should be a automated way to get the class name rather than hardcoding it
                     model_class="custom_deploy_pipeline.mycustomdeploy",
                 )
             ),
-            model_deployer=seldon_custom_model_deployer_step(
+            custom_model_deployer=seldon_custom_model_deployer_step(
                 config=SeldonDeployerStepConfig(
                     service_config=SeldonDeploymentConfig(
                         model_name=model_name,
@@ -218,7 +219,7 @@ def main(
 
         inference.run()
 
-    services = model_deployer.find_model_server(
+    services = custom_model_deployer.find_model_server(
         pipeline_name=deployment_pipeline_name,
         pipeline_step_name=deployer_step_name,
         model_name=model_name,

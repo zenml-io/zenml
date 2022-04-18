@@ -73,4 +73,4 @@ def create_seldon_core_custom_spec(
             init_container,
         ],
         containers=[container],
-    )
+    ).to_dict()
