@@ -262,10 +262,9 @@ def seldon_custom_model_deployer_step(
     service_config.model_uri = model.uri
 
     # more information about stack ..
-    stack = context.stack
     classifier_docker_image_name = (
         model_deployer.prepare_custom_deployment_image(
-            stack,
+            context.stack,
             pipeline_name,
             step_name,
             requirements,

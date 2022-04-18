@@ -18,7 +18,7 @@ class ZenMLCustomModel(object):
         self.load()
 
     @abstractmethod
-    def load(self):
+    def load(self) -> None:
         """
         Load model from file
 

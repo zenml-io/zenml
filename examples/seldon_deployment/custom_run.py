@@ -14,12 +14,14 @@
 from typing import cast
 
 import click
-from pipeline import (
+from custom_deploy_pipeline import (
+    CustomModelParameters,
     DeploymentTriggerConfig,
     SeldonDeploymentLoaderStepConfig,
     SklearnTrainerConfig,
     TensorflowTrainerConfig,
     continuous_deployment_pipeline,
+    custom_class_source_retrive,
     deployment_trigger,
     dynamic_importer,
     importer_mnist,
@@ -43,7 +45,7 @@ from zenml.integrations.seldon.services import (
 )
 from zenml.integrations.seldon.steps import (
     SeldonDeployerStepConfig,
-    seldon_model_deployer_step,
+    seldon_custom_model_deployer_step,
 )
 
 
@@ -69,12 +71,12 @@ from zenml.integrations.seldon.steps import (
 )
 @click.option(
     "--epochs",
-    default=5,
+    default=7,
     help="Number of epochs for training (tensorflow hyperparam)",
 )
 @click.option(
     "--lr",
-    default=0.003,
+    default=0.002,
     help="Learning rate for training (tensorflow hyperparam, default: 0.003)",
 )
 @click.option(
@@ -138,9 +140,9 @@ def main(
     """
     model_name = "mnist"
     deployment_pipeline_name = "continuous_deployment_pipeline"
-    deployer_step_name = "seldon_model_deployer_step"
+    deployer_step_name = "seldon_custom_model_deployer_step"
 
-    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+    custom_model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
     if model_flavor == "tensorflow":
         seldon_implementation = "TENSORFLOW_SERVER"
@@ -172,7 +174,13 @@ def main(
                     min_accuracy=min_accuracy,
                 )
             ),
-            model_deployer=seldon_model_deployer_step(
+            custom_class_source_retrive=custom_class_source_retrive(
+                config=CustomModelParameters(
+                    # TODO [HIGH]: This should be a automated way to get the class name rather than hardcoding it
+                    model_class="custom_deploy_pipeline.mycustomdeploy",
+                )
+            ),
+            custom_model_deployer=seldon_custom_model_deployer_step(
                 config=SeldonDeployerStepConfig(
                     service_config=SeldonDeploymentConfig(
                         model_name=model_name,
@@ -181,6 +189,13 @@ def main(
                         secret_name=secret,
                     ),
                     timeout=120,
+                    parameters=[
+                        {
+                            "name": "method",
+                            "type": "STRING",
+                            "value": "predict_proba",
+                        },
+                    ],
                 )
             ),
         )
@@ -204,7 +219,7 @@ def main(
 
         inference.run()
 
-    services = model_deployer.find_model_server(
+    services = custom_model_deployer.find_model_server(
         pipeline_name=deployment_pipeline_name,
         pipeline_step_name=deployer_step_name,
         model_name=model_name,
@@ -236,4 +251,14 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    main(
+        [
+            "--secret",
+            "seldon-rclone-secret",
+            "--deploy",
+            "--min-accuracy",
+            "0.80",
+            "--model-flavor",
+            "sklearn",
+        ]
+    )

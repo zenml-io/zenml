@@ -389,6 +389,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 of.
             step_name: name of the pipeline model deployment step that deployed
                 the model.
+            model_name: name of the deployed model.
             requirements: list of requirements to be included in the Dockerfile.
             entrypoint_command: command to be executed by the Docker image.
 
