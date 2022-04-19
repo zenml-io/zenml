@@ -37,7 +37,7 @@ def subtract_numbers(first_num: int, random_num: int) -> Output(result=int):
 
 
 @pipeline
-def airflow_example_pipeline_6(
+def airflow_example_pipeline(
     get_first_num,
     get_random_int,
     subtract_numbers
@@ -49,7 +49,7 @@ def airflow_example_pipeline_6(
 
 
 # Initialize a new pipeline run
-aep = airflow_example_pipeline_6(
+aep = airflow_example_pipeline(
     get_first_num=get_first_num(),
     get_random_int=get_random_int(),
     subtract_numbers=subtract_numbers(),
