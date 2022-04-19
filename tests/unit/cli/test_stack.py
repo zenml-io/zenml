@@ -162,3 +162,34 @@ def test_remove_component_from_nonexistent_stack_fails(clean_repo) -> None:
     runner = CliRunner()
     result = runner.invoke(remove_stack_component, ["not_a_stack", "-x"])
     assert result.exit_code == 1
+
+
+def test_remove_core_component_from_stack_fails(clean_repo) -> None:
+    """Test stack remove-component of core component fails."""
+    runner = CliRunner()
+    result = runner.invoke(
+        remove_stack_component, [clean_repo.active_stack.name, "-o"]
+    )
+    assert result.exit_code != 0
+    assert clean_repo.active_stack.orchestrator is not None
+
+
+def test_remove_non_core_component_from_stack_succeeds(clean_repo) -> None:
+    """Test stack remove-component of non-core component succeeds."""
+    local_secrets_manager = LocalSecretsManager(name="arias_secrets_manager")
+    clean_repo.register_stack_component(local_secrets_manager)
+    runner = CliRunner()
+    runner.invoke(
+        update_stack,
+        [clean_repo.active_stack.name, "-x", "arias_secrets_manager"],
+    )
+    assert clean_repo.active_stack.secrets_manager is not None
+    assert (
+        clean_repo.get_stack(clean_repo.active_stack.name).secrets_manager
+        == local_secrets_manager
+    )
+    result = runner.invoke(
+        remove_stack_component, [clean_repo.active_stack.name, "-x"]
+    )
+    assert result.exit_code == 0
+    assert clean_repo.active_stack.secrets_manager is None
