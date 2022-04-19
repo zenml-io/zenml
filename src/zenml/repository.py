@@ -994,7 +994,10 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """Set the project for the local repository.
 
         Args:
-            project: zenml.zen_stores.models.user_management_models.Project
+            project: a project class to set as active.
+
+        Raises:
+            RuntimeError: if not in an initialized repository directory.
         """
         if self.__config is None:
             raise RuntimeError("Invalid repository, no configuration storage.")
@@ -1003,7 +1006,11 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self._write_config()
 
     def unset_active_project(self) -> None:
-        """Unset the active project for the local repository."""
+        """Unset the active project for the local repository.
+
+        Raises:
+            RuntimeError: if not in an initialized repository directory.
+        """
         if self.__config is None:
             raise RuntimeError("Invalid repository, no configuration storage.")
         self.__config.project_name = None
