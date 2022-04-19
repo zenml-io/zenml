@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 import os
 import shutil
+import uuid
 from pathlib import Path
-from typing import ClassVar, Dict, List, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.constants import (
@@ -45,11 +46,43 @@ logger = get_logger(__name__)
 
 @register_stack_component_class
 class MLFlowModelDeployer(BaseModelDeployer):
-    """MLflow implementation of the BaseModelDeployer"""
+    """MLflow implementation of the BaseModelDeployer
+
+    Attributes:
+        service_path: the path where the local MLflow deployment service
+        configuration, PID and log files are stored.
+    """
+
+    service_path: str
 
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW
-    LOCAL: ClassVar[bool] = True
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        if "service_path" not in kwargs:
+            component_uuid = kwargs.get("uuid", uuid.uuid4())
+            kwargs["service_path"] = self.get_service_path(component_uuid)
+            kwargs["uuid"] = component_uuid
+        super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def get_service_path(uuid: uuid.UUID) -> str:
+        """Get the path the path where the local MLflow deployment service
+        configuration, PID and log files are stored.
+
+        Args:
+            uuid: The UUID of the MLflow model deployer.
+
+        Returns:
+            The service path.
+        """
+        service_path = os.path.join(
+            get_global_config_directory(),
+            LOCAL_STORES_DIRECTORY_NAME,
+            str(uuid),
+        )
+        create_dir_recursive_if_not_exists(service_path)
+        return service_path
 
     @property
     def local_path(self) -> str:
@@ -60,19 +93,13 @@ class MLFlowModelDeployer(BaseModelDeployer):
         Returns:
             The path to the local service root directory.
         """
-        service_path = os.path.join(
-            get_global_config_directory(),
-            LOCAL_STORES_DIRECTORY_NAME,
-            str(self.uuid),
-        )
-        create_dir_recursive_if_not_exists(service_path)
-        return service_path
+        return self.service_path
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
         service_instance: "MLFlowDeploymentService",
     ) -> Dict[str, Optional[str]]:
-        """ "Return implementation specific information that might be relevant
+        """Return implementation specific information that might be relevant
         to the user.
 
         Args:
