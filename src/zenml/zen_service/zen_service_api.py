@@ -82,6 +82,12 @@ zen_store: BaseZenStore = Repository.create_store(
 )
 
 
+class ErrorModel(BaseModel):
+    detail: Any
+
+
+error_response = dict(model=ErrorModel)
+
 security = HTTPBasic()
 
 
@@ -104,17 +110,12 @@ def authorize(credentials: HTTPBasicCredentials = Depends(security)) -> None:
 
 
 app = FastAPI(title="ZenML", version=zenml.__version__)
-requires_authorization = APIRouter(dependencies=[Depends(authorize)])
+requires_authorization = APIRouter(
+    dependencies=[Depends(authorize)], responses={401: error_response}
+)
 
 # to run this file locally, execute:
 # uvicorn zenml.zen_service.zen_service_api:app --reload
-
-
-class ErrorModel(BaseModel):
-    detail: Any
-
-
-error_response = dict(model=ErrorModel)
 
 
 def error_detail(error: Exception) -> List[str]:
