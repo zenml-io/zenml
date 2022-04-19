@@ -24,6 +24,7 @@ from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "entire_model.pt"
+CHECKPOINT_FILENAME = "checkpoint.pt"
 
 
 class PyTorchMaterializer(BaseMaterializer):
@@ -51,7 +52,15 @@ class PyTorchMaterializer(BaseMaterializer):
             model: A torch.nn.Module or a dict to pass into model.save
         """
         super().handle_return(model)
+
+        # Save entire model to artifact directory, This is the default behavior for loading model in development phase (training, evaluation)
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
         ) as f:
             torch.save(model, f)
+
+        # Save model checkpoint to artifact directory, This is the default behavior for loading model in production phase (inference)
+        with fileio.open(
+            os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "wb"
+        ) as f:
+            torch.save(model.state_dict(), f)
