@@ -4,6 +4,10 @@ description: "Install Poetry, loads cached venv if applicable, and performs misc
 runs:
   using: "composite"
   steps:
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=date::$(date +'calendar-week-%W')"
+
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
@@ -33,8 +37,9 @@ runs:
         path: |
           .venv
           poetry.lock
-        # Cache the complete venv dir for a given os, python version, pyproject.toml
-        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+        # Cache the complete venv dir for a given os, python version,
+        # pyproject.toml, and the current calendar week
+        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}
 
     - name: Install Project
       shell: bash
