@@ -6,8 +6,8 @@ setup_stack () {
   zenml orchestrator register airflow_orchestrator --type=airflow || \
     msg "${WARNING}Reusing preexisting orchestrator ${NOFORMAT}airflow_orchestrator"
   zenml stack register local_airflow_stack \
-      -m local_metadata_store \
-      -a local_artifact_store \
+      -m default \
+      -a default \
       -o airflow_orchestrator || \
     msg "${WARNING}Reusing preexisting stack ${NOFORMAT}local_airflow_stack"
 

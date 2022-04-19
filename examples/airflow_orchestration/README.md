@@ -4,12 +4,13 @@ ZenML pipelines can be executed natively as Airflow DAGs. This brings together
 the power of the Airflow orchestration with the ML-specific benefits of ZenML
 pipelines. Each ZenML step can be run as an Airflow
 [`PythonOperator`](https://airflow.apache.org/docs/apache-airflow/stable/howto/operator/python.html),
-and executes Airflow natively. We will use the MNIST dataset again (pull it from
-a Mock API).
+and executes Airflow natively. We will use a very simplified pipeline that consist of only three steps.
+The pipeline performs a very simple operation. The subtraction of a random integer from a given integer.
+
+![Dag](assets/DAG.png)
 
 Note that this tutorial installs and deploys Airflow locally on your machine,
-but in a production setting that part might be already done. Please read the
-other airflow tutorials that cover that case.
+but in a production you might be already have a deployed Airflow instance. 
 
 # 🖥 Run it locally
 
@@ -50,8 +51,8 @@ zenml init
 ```bash
 zenml orchestrator register airflow_orchestrator --type airflow
 zenml stack register airflow_stack \
-    -m local_metadata_store \
-    -a local_artifact_store \
+    -m default \
+    -a default \
     -o airflow_orchestrator
 zenml stack set airflow_stack
 ```
@@ -79,14 +80,15 @@ file. The username will always be `admin`.
   folder here, so you can just navigate to the one that is present.
   {% endhint %}
 
-### 📆 Schedule the airflow DAG
-
-Sometimes you don't want to run your pipeline only once, instead you want to schedule them with a predefined frequency.
-To schedule the DAG to run every 3 minutes for the next 9 minutes, simply run:
+### 📆 Run or schedule the airflow DAG
 
 ```bash
-python run_schedule.py
+python run.py
 ```
+
+Sometimes you don't want to run your pipeline only once, instead you want to schedule them with a predefined frequency.
+To schedule the DAG to run every 3 minutes for the next 9 minutes, simply open `run.py` and uncomment the lines at the 
+end of the file.
 
 After a few seconds, you should be able to see the executed dag
 [here](http://0.0.0.0:8080/tree?dag_id=mnist_pipeline)
