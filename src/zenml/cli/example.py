@@ -37,6 +37,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
+EXCLUDED_EXAMPLE_DIRS = ["add_your_own"]
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 EXAMPLES_RUN_SCRIPT = "run_example.sh"
 SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
@@ -372,14 +373,16 @@ class GitExamplesHandler(object):
         Args:
           example_name: Name of an example.
         """
-        example_dict = {e.name: e for e in self.examples}
+        example_dict = {e.name: e
+                        for e in self.examples
+                        if e.name not in EXCLUDED_EXAMPLE_DIRS}
         if example_name:
             if example_name in example_dict.keys():
                 return [example_dict[example_name]]
             else:
                 raise KeyError(
                     f"Example {example_name} does not exist! "
-                    f"Available examples: {[example_dict.keys()]}"
+                    f"Available examples: {[k for k in example_dict.keys()]}"
                 )
         else:
             return self.examples
@@ -665,8 +668,8 @@ def run(
 
     if sys.platform == "win32":
         logger.info(
-            "If you are running examples on Windows, make sure that you have an "
-            "associated application with executing .sh files. If you don't "
+            "If you are running examples on Windows, make sure that you have "
+            "an associated application with executing .sh files. If you don't "
             "have any and you see a pop-up during 'zenml example run', we "
             "suggest to use the Git BASH: https://gitforwindows.org/"
         )
