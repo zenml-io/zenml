@@ -17,9 +17,9 @@ setup_stack () {
 }
 
 pre_run () {
-  zenml integration install airflow sklearn
+  zenml integration install airflow
 }
 
 pre_run_forced () {
-  zenml integration install airflow sklearn -f
+  zenml integration install airflow -f
 }
