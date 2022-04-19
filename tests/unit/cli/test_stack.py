@@ -111,3 +111,8 @@ def test_updating_nonexistent_stack_fails(clean_repo) -> None:
 
     assert result.exit_code == 1
     assert clean_repo.get_stack("default").secrets_manager is None
+
+
+def test_renaming_nonexistent_stack_fails(clean_repo) -> None:
+    """Test stack rename of nonexistent stack fails."""
+    CliRunner()

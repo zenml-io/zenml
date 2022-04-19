@@ -243,7 +243,6 @@ def update_stack(
     feature_store_name: Optional[str] = None,
 ) -> None:
     """Update a stack."""
-    # TODO: [LOW] Implement a way to rename the stack
     with console.status(f"Updating stack `{stack_name}`...\n"):
         repo = Repository()
         try:
@@ -358,47 +357,49 @@ def remove_stack_component(
     feature_store_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack."""
-    # with console.status(f"Updating stack `{stack_name}`...\n"):
-    repo = Repository()
-    try:
-        current_stack = repo.get_stack(stack_name)
-    except KeyError:
-        cli_utils.error(
-            f"Stack `{stack_name}` cannot be updated as it does not exist.",
+    with console.status(f"Updating stack `{stack_name}`...\n"):
+        repo = Repository()
+        try:
+            current_stack = repo.get_stack(stack_name)
+        except KeyError:
+            cli_utils.error(
+                f"Stack `{stack_name}` cannot be updated as it does not exist.",
+            )
+        stack_components = current_stack.components
+
+        if container_registry_flag:
+            stack_components = {
+                key: value
+                for (key, value) in stack_components.items()
+                if key != StackComponentType.CONTAINER_REGISTRY
+            }
+
+        if step_operator_flag:
+            stack_components = {
+                key: value
+                for (key, value) in stack_components.items()
+                if key != StackComponentType.STEP_OPERATOR
+            }
+
+        if secrets_manager_flag:
+            stack_components = {
+                key: value
+                for (key, value) in stack_components.items()
+                if key != StackComponentType.SECRETS_MANAGER
+            }
+
+        if feature_store_flag:
+            stack_components = {
+                key: value
+                for (key, value) in stack_components.items()
+                if key != StackComponentType.FEATURE_STORE
+            }
+
+        stack_ = Stack.from_components(
+            name=stack_name, components=stack_components
         )
-    stack_components = current_stack.components
-
-    if container_registry_flag:
-        stack_components = {
-            key: value
-            for (key, value) in stack_components.items()
-            if key != StackComponentType.CONTAINER_REGISTRY
-        }
-
-    if step_operator_flag:
-        stack_components = {
-            key: value
-            for (key, value) in stack_components.items()
-            if key != StackComponentType.STEP_OPERATOR
-        }
-
-    if secrets_manager_flag:
-        stack_components = {
-            key: value
-            for (key, value) in stack_components.items()
-            if key != StackComponentType.SECRETS_MANAGER
-        }
-
-    if feature_store_flag:
-        stack_components = {
-            key: value
-            for (key, value) in stack_components.items()
-            if key != StackComponentType.FEATURE_STORE
-        }
-
-    stack_ = Stack.from_components(name=stack_name, components=stack_components)
-    repo.update_stack(stack_)
-    cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
+        repo.update_stack(stack_)
+        cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
 @stack.command("rename")
