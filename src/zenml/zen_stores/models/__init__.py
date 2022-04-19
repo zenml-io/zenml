@@ -21,6 +21,7 @@ from zenml.zen_stores.models.user_management_models import (
     RoleAssignment,
     Team,
     User,
+    get_active_user_id,
 )
 from zenml.zen_stores.models.zen_store_model import ZenStoreModel
 
@@ -33,4 +34,5 @@ __all__ = [
     "Project",
     "Role",
     "RoleAssignment",
+    "get_active_user_id",
 ]

@@ -325,21 +325,18 @@ def unset_project() -> None:
 def delete_project(project_name: Optional[str] = None) -> None:
     """Delete a project. If name isn't specified, delete current project."""
     cli_utils.print_active_profile()
-    if project_name is None:
-        project = Repository().active_project
-        if project is None:
-            cli_utils.error(
-                "No project specified or currently active. Can't delete anything."
-            )
-        name = project.name  # type: ignore[union-attr]
-    else:
-        name = project_name
-
+    active_project = Repository().active_project
+    active_project_name = project.name if active_project is not None else None
+    name = project_name or active_project_name
+    if name is None:
+        cli_utils.error(
+            "No project specified or currently active. Can't delete anything."
+        )
     cli_utils.confirmation(f"Are you sure you want to delete project `{name}`?")
-    if project_name is None:
+    if name == active_project_name:
         unset_project()
     try:
-        Repository().zen_store.delete_project(project_name=name)
+        Repository().zen_store.delete_project(project_name=name)  # type: ignore[arg-type]
     except KeyError:
         cli_utils.warning(f"No project found for name '{name}'.")
 
