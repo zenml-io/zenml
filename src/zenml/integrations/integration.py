@@ -12,12 +12,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import shutil
-from typing import Any, Dict, List, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Type, cast
 
 import pkg_resources
 
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
@@ -86,5 +89,5 @@ class Integration(metaclass=IntegrationMeta):
         """Abstract method to activate the integration."""
 
     @classmethod
-    def declare(cls) -> None:
+    def declare(cls, store: "BaseZenStore") -> None:
         """Abstract method to declare new stack component flavor."""

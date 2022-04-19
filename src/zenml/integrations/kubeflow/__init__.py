@@ -16,12 +16,18 @@ The Kubeflow integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Kubeflow orchestrator with
 the CLI tool.
 """
+from typing import TYPE_CHECKING
+
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import KUBEFLOW
 from zenml.integrations.integration import Integration
-from zenml.integrations.utils import register_flavor
-from zenml.enums import StackComponentType
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
+
 KUBEFLOW_METADATA_STORE_FLAVOR = "kubeflow"
 KUBEFLOW_ORCHESTRATOR_FLAVOR = "kubeflow"
+
 
 class KubeflowIntegration(Integration):
     """Definition of Kubeflow Integration for ZenML."""
@@ -30,16 +36,16 @@ class KubeflowIntegration(Integration):
     REQUIREMENTS = ["kfp==1.8.9"]
 
     @classmethod
-    def declare(cls) -> None:
+    def declare(cls, store: "BaseZenStore"):
         """Declare the stack component flavors for the Kubeflow integration."""
-        register_flavor(
-            flavor=KUBEFLOW_METADATA_STORE_FLAVOR,
+        store.create_flavor(
+            name=KUBEFLOW_METADATA_STORE_FLAVOR,
             source="zenml.integrations.kubeflow.metadata_stores.KubeflowMetadataStore",
             stack_component_type=StackComponentType.METADATA_STORE,
             integration=cls.NAME,
         )
-        register_flavor(
-            flavor=KUBEFLOW_ORCHESTRATOR_FLAVOR,
+        store.create_flavor(
+            name=KUBEFLOW_ORCHESTRATOR_FLAVOR,
             source="zenml.integrations.kubeflow.orchestrators.KubeflowOrchestrator",
             stack_component_type=StackComponentType.ORCHESTRATOR,
             integration=cls.NAME,

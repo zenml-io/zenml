@@ -64,7 +64,7 @@ class BaseZenStore(ABC):
             The initialized concrete store instance.
         """
         if not skip_default_registrations:
-            logger.info("Registering default stack and user...")
+            logger.info("Registering default flavors, stack and user...")
             if self.is_empty:
                 self.register_default_flavors()
                 self.register_default_stack()
@@ -805,7 +805,8 @@ class BaseZenStore(ABC):
             )
 
         from zenml.integrations.registry import integration_registry
-        integration_registry.declare_integrations()
+
+        integration_registry.declare_integrations(store=self)
 
     def register_default_stack(self) -> None:
         """Populates the store with the default Stack.

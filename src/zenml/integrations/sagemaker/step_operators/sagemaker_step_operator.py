@@ -17,9 +17,9 @@ from typing import ClassVar, List, Optional
 import sagemaker
 
 from zenml.enums import StackComponentType
+from zenml.integrations.sagemaker import SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
-from zenml.integrations.sagemaker import SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path

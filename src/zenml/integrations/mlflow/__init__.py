@@ -15,11 +15,14 @@
 The mlflow integrations currently enables you to use mlflow tracking as a
 convenient way to visualize your experiment runs within the mlflow ui
 """
+from typing import TYPE_CHECKING
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import MLFLOW
 from zenml.integrations.integration import Integration
-from zenml.integrations.utils import register_flavor
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
 
 
@@ -39,10 +42,10 @@ class MlflowIntegration(Integration):
         from zenml.integrations.mlflow import services  # noqa
 
     @classmethod
-    def declare(cls) -> None:
+    def declare(cls, store: "BaseZenStore"):
         """Declare the stack component flavors for the MLflow integration"""
-        register_flavor(
-            flavor=MLFLOW_MODEL_DEPLOYER_FLAVOR,
+        store.create_flavor(
+            name=MLFLOW_MODEL_DEPLOYER_FLAVOR,
             source="zenml.integrations.mlflow.model_deployers.MLFlowModelDeployer",
             stack_component_type=StackComponentType.MODEL_DEPLOYER,
             integration=cls.NAME,

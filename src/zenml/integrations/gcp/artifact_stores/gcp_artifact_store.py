@@ -90,7 +90,7 @@ class GCPArtifactStore(BaseArtifactStore):
         GCPArtifactStore._ensure_filesystem_set()
         return GCPArtifactStore.FILESYSTEM.exists(
             path=path
-            )  # type: ignore[no-any-return]
+        )  # type: ignore[no-any-return]
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
@@ -109,7 +109,7 @@ class GCPArtifactStore(BaseArtifactStore):
         GCPArtifactStore._ensure_filesystem_set()
         return GCPArtifactStore.FILESYSTEM.glob(
             path=pattern
-            )  # type: ignore[no-any-return]
+        )  # type: ignore[no-any-return]
 
     @staticmethod
     def isdir(path: PathType) -> bool:
@@ -117,7 +117,7 @@ class GCPArtifactStore(BaseArtifactStore):
         GCPArtifactStore._ensure_filesystem_set()
         return GCPArtifactStore.FILESYSTEM.isdir(
             path=path
-            )  # type: ignore[no-any-return]
+        )  # type: ignore[no-any-return]
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
@@ -125,7 +125,7 @@ class GCPArtifactStore(BaseArtifactStore):
         GCPArtifactStore._ensure_filesystem_set()
         return GCPArtifactStore.FILESYSTEM.listdir(
             path=path
-            )  # type: ignore[no-any-return]
+        )  # type: ignore[no-any-return]
 
     @staticmethod
     def makedirs(path: PathType) -> None:
@@ -183,7 +183,7 @@ class GCPArtifactStore(BaseArtifactStore):
         GCPArtifactStore._ensure_filesystem_set()
         return GCPArtifactStore.FILESYSTEM.stat(
             path=path
-            )  # type: ignore[no-any-return]
+        )  # type: ignore[no-any-return]
 
     @staticmethod
     def walk(
@@ -205,4 +205,4 @@ class GCPArtifactStore(BaseArtifactStore):
         # TODO [ENG-153]: Additional params
         return GCPArtifactStore.FILESYSTEM.walk(
             path=top
-            )  # type: ignore[no-any-return]
+        )  # type: ignore[no-any-return]

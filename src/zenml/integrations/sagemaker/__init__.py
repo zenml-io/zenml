@@ -16,11 +16,14 @@ The Sagemaker integration submodule provides a way to run ZenML steps in
 Sagemaker.
 """
 
+from typing import TYPE_CHECKING
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SAGEMAKER
 from zenml.integrations.integration import Integration
-from zenml.integrations.utils import register_flavor
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 SAGEMAKER_STEP_OPERATOR_FLAVOR = "sagemaker"
 
 
@@ -31,10 +34,10 @@ class SagemakerIntegration(Integration):
     REQUIREMENTS = ["sagemaker==2.82.2"]
 
     @classmethod
-    def declare(cls) -> None:
+    def declare(cls, store: "BaseZenStore"):
         """Declare the stack component flavors for the Sagemaker integration."""
-        register_flavor(
-            flavor=SAGEMAKER_STEP_OPERATOR_FLAVOR,
+        store.create_flavor(
+            name=SAGEMAKER_STEP_OPERATOR_FLAVOR,
             source="zenml.integrations.sagemaker.step_operators.SagemakerStepOperator",
             stack_component_type=StackComponentType.STEP_OPERATOR,
             integration=cls.NAME,

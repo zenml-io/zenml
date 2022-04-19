@@ -19,6 +19,7 @@ from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.integrations.integration import Integration
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
 
@@ -65,11 +66,11 @@ class IntegrationRegistry(object):
             else:
                 logger.debug(f"Integration `{name}` could not be activated.")
 
-    def declare_integrations(self) -> None:
+    def declare_integrations(self, store: "BaseZenStore") -> None:
         """Method to run only once to declare the stack component flavors
         within the integrations."""
         for name, integration in self._integrations.items():
-            integration.declare()
+            integration.declare(store=store)
 
     @property
     def list_integration_names(self) -> List[str]:

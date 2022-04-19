@@ -15,11 +15,14 @@
 The AzureML integration submodule provides a way to run ZenML steps in AzureML.
 """
 
+from typing import TYPE_CHECKING
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import AZUREML
 from zenml.integrations.integration import Integration
-from zenml.integrations.utils import register_flavor
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 AZUREML_STEP_OPERATOR_FLAVOR = "azureml"
 
 
@@ -30,10 +33,10 @@ class AzureMLIntegration(Integration):
     REQUIREMENTS = ["azureml-core==1.39.0.post1"]
 
     @classmethod
-    def declare(cls) -> None:
+    def declare(cls, store: "BaseZenStore"):
         """Declare the stack component flavors for the AzureML integration."""
-        register_flavor(
-            flavor=AZUREML_STEP_OPERATOR_FLAVOR,
+        store.create_flavor(
+            name=AZUREML_STEP_OPERATOR_FLAVOR,
             source="zenml.integrations.azureml.step_operators.AzureMLStepOperator",
             stack_component_type=StackComponentType.STEP_OPERATOR,
             integration=cls.NAME,

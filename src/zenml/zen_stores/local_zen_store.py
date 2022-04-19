@@ -865,7 +865,7 @@ class LocalZenStore(BaseZenStore):
         name: str,
         source: str,
         stack_component_type: StackComponentType,
-        integration: str = None
+        integration: str = '',
     ) -> Flavor:
         """ """
         flavor = Flavor(

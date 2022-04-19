@@ -92,7 +92,7 @@ class S3ArtifactStore(BaseArtifactStore):
         S3ArtifactStore._ensure_filesystem_set()
         return S3ArtifactStore.FILESYSTEM.exists(
             path=path
-            )  # type: ignore[no-any-return]
+        )  # type: ignore[no-any-return]
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
@@ -120,7 +120,7 @@ class S3ArtifactStore(BaseArtifactStore):
         S3ArtifactStore._ensure_filesystem_set()
         return S3ArtifactStore.FILESYSTEM.isdir(
             path=path
-            )  # type: ignore[no-any-return]
+        )  # type: ignore[no-any-return]
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
@@ -136,7 +136,7 @@ class S3ArtifactStore(BaseArtifactStore):
             """Extracts the basename from a file info dict returned by the S3
             filesystem."""
             file_path = cast(str, file_dict["Key"])
-            base_name = file_path[len(path):]
+            base_name = file_path[len(path) :]
             return base_name.lstrip("/")
 
         return [
@@ -203,7 +203,7 @@ class S3ArtifactStore(BaseArtifactStore):
         S3ArtifactStore._ensure_filesystem_set()
         return S3ArtifactStore.FILESYSTEM.stat(
             path=path
-            )  # type: ignore[no-any-return]
+        )  # type: ignore[no-any-return]
 
     @staticmethod
     def walk(

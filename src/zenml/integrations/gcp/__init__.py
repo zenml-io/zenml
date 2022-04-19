@@ -16,12 +16,14 @@ The GCP integration submodule provides a way to run ZenML pipelines in a cloud
 environment. Specifically, it allows the use of cloud artifact stores, metadata
 stores, and an `io` module to handle file operations on Google Cloud Storage (GCS).
 """
+from typing import TYPE_CHECKING
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import GCP
 from zenml.integrations.integration import Integration
 
-from zenml.integrations.utils import register_flavor
-
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 GCP_ARTIFACT_STORE_FLAVOR = "gcs"
 
 
@@ -32,10 +34,10 @@ class GcpIntegration(Integration):
     REQUIREMENTS = ["gcsfs"]
 
     @classmethod
-    def declare(cls) -> None:
+    def declare(cls, store: "BaseZenStore"):
         """Declare the stack component flavors for the GCP integration."""
-        register_flavor(
-            flavor=GCP_ARTIFACT_STORE_FLAVOR,
+        store.create_flavor(
+            name=GCP_ARTIFACT_STORE_FLAVOR,
             source="zenml.integrations.gcp.artifact_stores.GCSArtifactStore",
             stack_component_type=StackComponentType.ARTIFACT_STORE,
             integration=cls.NAME,

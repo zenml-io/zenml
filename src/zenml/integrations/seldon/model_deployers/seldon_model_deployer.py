@@ -30,7 +30,7 @@ from zenml.services.service import BaseService, ServiceConfig
 logger = get_logger(__name__)
 
 DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT = 300
-from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
+
 
 class SeldonModelDeployer(BaseModelDeployer):
     """Seldon Core model deployer stack component implementation.

@@ -15,11 +15,14 @@
 The Seldon Core integration allows you to use the Seldon Core model serving
 platform to implement continuous model deployment.
 """
+from typing import TYPE_CHECKING
+
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import SELDON
 from zenml.integrations.integration import Integration
-from zenml.integrations.utils import register_flavor
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.base_zen_store import BaseZenStore
 SELDON_MODEL_DEPLOYER_FLAVOR = "seldon"
 
 
@@ -37,10 +40,10 @@ class SeldonIntegration(Integration):
         from zenml.integrations.seldon import services  # noqa
 
     @classmethod
-    def declare(cls) -> None:
+    def declare(cls, store: "BaseZenStore"):
         """Declare the stack component flavors for the Seldon Core."""
-        register_flavor(
-            flavor=SELDON_MODEL_DEPLOYER_FLAVOR,
+        store.create_flavor(
+            name=SELDON_MODEL_DEPLOYER_FLAVOR,
             source="zenml.integrations.seldon.model_deployers.SeldonModelDeployer",
             stack_component_type=StackComponentType.MODEL_DEPLOYER,
             integration=cls.NAME,

@@ -234,8 +234,7 @@ def generate_stack_component_flavor_register_command(
 
         # Check whether the module exists and is the right type
         component_class = cli_utils.validate_component_type_source(
-            source=source,
-            component_type=component_type
+            source=source, component_type=component_type
         )
 
         # Register the flavor in the given source

@@ -441,6 +441,7 @@ def validate_component_type_source(
     assert stack_component_class.TYPE == component_type
     return stack_component_class
 
+
 def get_service_status_emoji(service: BaseService) -> str:
     """Get the rich emoji representing the operational status of a Service.
 
