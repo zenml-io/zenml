@@ -16,7 +16,7 @@ import pytest
 from click.testing import CliRunner
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.cli.stack import describe_stack, update_stack
+from zenml.cli.stack import describe_stack, rename_stack, update_stack
 from zenml.orchestrators import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
@@ -115,4 +115,38 @@ def test_updating_nonexistent_stack_fails(clean_repo) -> None:
 
 def test_renaming_nonexistent_stack_fails(clean_repo) -> None:
     """Test stack rename of nonexistent stack fails."""
-    CliRunner()
+    runner = CliRunner()
+    result = runner.invoke(rename_stack, ["not_a_stack", "a_new_stack"])
+    assert result.exit_code == 1
+    with pytest.raises(KeyError):
+        clean_repo.get_stack("not_a_stack")
+
+
+def test_renaming_active_stack_fails(clean_repo) -> None:
+    """Test stack rename of active stack fails."""
+    runner = CliRunner()
+    result = runner.invoke(rename_stack, ["default", "arias_default"])
+    assert result.exit_code == 1
+    with pytest.raises(KeyError):
+        clean_repo.get_stack("arias_default")
+
+
+def test_renaming_non_active_stack_succeeds(clean_repo) -> None:
+    """Test stack rename of non-active stack succeeds."""
+    registered_stack = clean_repo.active_stack
+    new_stack = Stack(
+        name="arias_stack",
+        orchestrator=registered_stack.orchestrator,
+        metadata_store=registered_stack.metadata_store,
+        artifact_store=registered_stack.artifact_store,
+    )
+    clean_repo.register_stack(new_stack)
+
+    runner = CliRunner()
+    result = runner.invoke(rename_stack, ["arias_stack", "arias_renamed_stack"])
+    assert result.exit_code == 0
+    assert clean_repo.get_stack("arias_renamed_stack") is not None
+    assert (
+        clean_repo.get_stack("arias_renamed_stack").name
+        == "arias_renamed_stack"
+    )
