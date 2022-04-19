@@ -23,7 +23,7 @@ class SeldonIntegration(Integration):
     """Definition of Seldon Core integration for ZenML."""
 
     NAME = SELDON
-    REQUIREMENTS = ["kubernetes==18.20.0", "seldon-core==1.13.0"]
+    REQUIREMENTS = ["kubernetes==18.20.0", "seldon-core==1.13.1", "werkzeug==2.0.3"]
 
     @staticmethod
     def activate() -> None:

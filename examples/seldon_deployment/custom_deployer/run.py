@@ -49,7 +49,7 @@ from zenml.integrations.seldon.steps import (
 )
 @click.option(
     "--epochs",
-    default=7,
+    default=3,
     help="Number of epochs for training (tensorflow hyperparam)",
 )
 @click.option(

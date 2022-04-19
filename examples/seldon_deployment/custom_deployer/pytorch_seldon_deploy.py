@@ -24,7 +24,7 @@ import torch.optim as optim
 import torchvision
 from torch.utils.data import DataLoader
 
-from zenml import pipelines
+from zenml.pipelines import pipeline
 from zenml.integrations.constants import PYTORCH
 from zenml.integrations.seldon.custom_deployer.ZenMLCustomModel import (
     ZenMLCustomModel,
@@ -64,7 +64,7 @@ def data_loader(
     """Returns a torch Dataloader from two np arrays."""
     data_loader = torch.utils.data.DataLoader(
         torchvision.datasets.MNIST(
-            "/data/",
+            "/Users/safoine-zenml/work-dir/mnist/data",
             train=train_set,
             download=True,
             transform=torchvision.transforms.Compose(
@@ -90,7 +90,7 @@ class TrainerConfig(BaseStepConfig):
     shuffle: bool = True
 
 
-@step
+@step()
 def torch_trainer(
     config: TrainerConfig,
 ) -> nn.Module:
@@ -182,7 +182,7 @@ def deployment_trigger(
 
 
 # Define the pipeline
-@pipelines(required_integrations=[PYTORCH])
+@pipeline(enable_cache=False, required_integrations=[PYTORCH])
 def seldon_pytorch_deployment_pipeline(
     trainer,
     evaluator,
