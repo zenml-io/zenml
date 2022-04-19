@@ -12,13 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
 import pytest
 from click.testing import CliRunner
 
 from zenml.cli.stack import describe_stack
 
 NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
+
+# TODO [HIGH]: Add tests for these commands using REST, SQL and local options
 
 
 def test_stack_describe_contains_local_stack() -> None:

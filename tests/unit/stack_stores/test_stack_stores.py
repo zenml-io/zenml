@@ -31,6 +31,9 @@ from zenml.exceptions import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
+from zenml.secrets_managers.local.local_secrets_manager import (
+    LocalSecretsManager,
+)
 from zenml.services import ServiceState
 from zenml.stack import Stack
 from zenml.stack.stack_component import StackComponent
@@ -251,6 +254,57 @@ def test_update_stack_with_new_component(fresh_stack_store: BaseStackStore):
         )
     ]
     assert new_orchestrator in [
+        get_component_from_wrapper(component)
+        for component in current_stack_store.get_stack("default").components
+    ]
+
+
+def test_update_stack_when_component_not_part_of_stack(
+    fresh_stack_store: BaseStackStore,
+):
+    """Test adding a new component as part of an existing stack."""
+    current_stack_store = fresh_stack_store
+
+    local_secrets_manager = LocalSecretsManager(name="local_secrets_manager")
+
+    updated_stack = Stack(
+        name="default",
+        orchestrator=get_component_from_wrapper(
+            current_stack_store.get_stack_component(
+                StackComponentType.ORCHESTRATOR, "default"
+            )
+        ),
+        metadata_store=get_component_from_wrapper(
+            current_stack_store.get_stack_component(
+                StackComponentType.METADATA_STORE, "default"
+            )
+        ),
+        artifact_store=get_component_from_wrapper(
+            current_stack_store.get_stack_component(
+                StackComponentType.ARTIFACT_STORE, "default"
+            )
+        ),
+        secrets_manager=local_secrets_manager,
+    )
+
+    with does_not_raise():
+        current_stack_store.update_stack(StackWrapper.from_stack(updated_stack))
+
+    assert (
+        len(
+            current_stack_store.get_stack_components(
+                StackComponentType.SECRETS_MANAGER
+            )
+        )
+        == 1
+    )
+    assert local_secrets_manager in [
+        get_component_from_wrapper(component)
+        for component in current_stack_store.get_stack_components(
+            StackComponentType.SECRETS_MANAGER
+        )
+    ]
+    assert local_secrets_manager in [
         get_component_from_wrapper(component)
         for component in current_stack_store.get_stack("default").components
     ]
