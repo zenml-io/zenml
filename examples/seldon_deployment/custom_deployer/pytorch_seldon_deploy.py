@@ -24,11 +24,11 @@ import torch.optim as optim
 import torchvision
 from torch.utils.data import DataLoader
 
-from zenml.pipelines import pipeline
 from zenml.integrations.constants import PYTORCH
 from zenml.integrations.seldon.custom_deployer.ZenMLCustomModel import (
     ZenMLCustomModel,
 )
+from zenml.pipelines import pipeline
 from zenml.steps import step
 from zenml.steps.base_step_config import BaseStepConfig
 
@@ -182,7 +182,7 @@ def deployment_trigger(
 
 
 # Define the pipeline
-@pipeline(enable_cache=False, required_integrations=[PYTORCH])
+@pipeline(enable_cache=True, required_integrations=[PYTORCH])
 def seldon_pytorch_deployment_pipeline(
     trainer,
     evaluator,
