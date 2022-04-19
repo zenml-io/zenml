@@ -17,6 +17,7 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
+import yaml
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from pydantic import BaseModel, Field, ValidationError
@@ -158,7 +159,7 @@ class SeldonDeploymentPredictor(BaseModel):
 
     name: str
     replicas: int = 1
-    graph: SeldonDeploymentPredictiveUnit = Field(
+    graph: Optional[SeldonDeploymentPredictiveUnit] = Field(
         default_factory=SeldonDeploymentPredictiveUnit
     )
     componentSpecs: Optional[List[SeldonDeploymentComponentSpecs]]
@@ -343,16 +344,16 @@ class SeldonDeployment(BaseModel):
                     SeldonDeploymentPredictor(
                         name=model_name or "",
                         graph=SeldonDeploymentPredictiveUnit(
-                            name="default",
-                            type=SeldonDeploymentPredictiveUnitType.MODEL,
-                            modelUri=model_uri or "",
-                            implementation=implementation or "",
-                            envSecretRefName=secret_name,
-                            parameters=[
-                                SeldonDeploymentParameters(**parameter)
-                                for parameter in parameters
-                            ]
-                            or [],
+                            name="classifier",
+                            type=SeldonDeploymentPredictiveUnitType.MODEL
+                            # modelUri=model_uri or "",
+                            # implementation=implementation or "",
+                            # envSecretRefName=secret_name,
+                            # parameters=[
+                            #    SeldonDeploymentParameters(**parameter)
+                            #    for parameter in parameters
+                            # ]
+                            # or [],
                         ),
                         componentSpecs=[
                             SeldonDeploymentComponentSpecs(
@@ -591,6 +592,7 @@ class SeldonClient:
             # are not
             deployment.mark_as_managed_by_zenml()
             body_deploy = deployment.dict(exclude_none=True)
+            logger.info(yaml.dump(body_deploy))
             response = self._custom_objects_api.create_namespaced_custom_object(
                 group="machinelearning.seldon.io",
                 version="v1",

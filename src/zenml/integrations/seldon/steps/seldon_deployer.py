@@ -202,6 +202,8 @@ def seldon_custom_model_deployer_step(
         deploy_decision: whether to deploy the model or not
         config: configuration for the deployer step
         model: the model artifact to deploy
+        custom_class_path: the path to the custom model deployer class
+        context: the step context
 
     Returns:
         Seldon Core deployment service

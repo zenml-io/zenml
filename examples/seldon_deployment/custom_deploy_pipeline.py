@@ -328,7 +328,7 @@ class mycustomdeploy(ZenMLCustomModel):
         """Load the model from the given path"""
         try:
             model_file = os.path.join(
-                seldon_core.Storage.download(self.model_uri), "model.joblib"
+                seldon_core.Storage.download(self.model_uri), "model"
             )
             self.model = joblib.load(model_file)
             self.ready = True

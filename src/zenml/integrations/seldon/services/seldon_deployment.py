@@ -60,7 +60,7 @@ class SeldonDeploymentConfig(ServiceConfig):
     model_uri: str = ""
     model_name: str = "default"
     # TODO [ENG-775]: have an enum of all supported Seldon Core implementations
-    implementation: str
+    implementation: Optional[str]
     replicas: int = 1
     parameters: Optional[List[Dict[str, str]]] = []
     secret_name: Optional[str]
@@ -111,6 +111,7 @@ class SeldonDeploymentConfig(ServiceConfig):
             "zenml.service_config": self.json(),
             "zenml.version": __version__,
         }
+
         return annotations
 
     @classmethod

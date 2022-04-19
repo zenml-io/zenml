@@ -21,12 +21,17 @@ def create_seldon_core_custom_spec(
 ) -> k8s_client.V1PodSpec:
     """Create a custom pod spec for the seldon core container.
 
+    Attributes:
+        model_uri (str): The URI of the model to load.
+        custom_docker_image (str): The docker image to use.
+        secret_name (str): The name of the secret to use.
+
     Returns:
         A pod spec for the seldon core container.
     """
     volume = k8s_client.V1Volume(
         name="classifier-provision-location",
-        empty_dir=k8s_client.V1EmptyDirVolumeSource(),
+        empty_dir={},
     )
     init_container = k8s_client.V1Container(
         name="classifier-model-initializer",
@@ -40,7 +45,9 @@ def create_seldon_core_custom_spec(
         ],
         env_from=[
             k8s_client.V1EnvFromSource(
-                secret_ref=k8s_client.V1SecretEnvSource(name=secret_name)
+                secret_ref=k8s_client.V1SecretEnvSource(
+                    name=secret_name, optional=False
+                )
             )
         ],
     )
@@ -64,13 +71,17 @@ def create_seldon_core_custom_spec(
             )
         ],
     )
-    return k8s_client.V1PodSpec(
+
+    spec = k8s_client.V1PodSpec(
         volumes=[
             volume,
         ],
-        image_pull_secrets=[image_pull_secret],
         init_containers=[
             init_container,
         ],
+        image_pull_secrets=[image_pull_secret],
         containers=[container],
-    ).to_dict()
+    )
+
+    api = k8s_client.ApiClient()
+    return api.sanitize_for_serialization(spec)
