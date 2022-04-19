@@ -865,9 +865,20 @@ class LocalZenStore(BaseZenStore):
         name: str,
         source: str,
         stack_component_type: StackComponentType,
-        integration: str = '',
+        integration: str = "",
     ) -> Flavor:
         """ """
+
+        if _get_unique_entity(
+            name,
+            collection=self.get_flavors_by_type(stack_component_type),
+            ensure_exists=False,
+        ):
+            raise EntityExistsError(
+                f"The flavor '{name}' for the stack component type "
+                f"'{stack_component_type.plural}' already exists."
+            )
+
         flavor = Flavor(
             name=name,
             source=source,

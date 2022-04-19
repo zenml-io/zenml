@@ -64,8 +64,8 @@ class BaseZenStore(ABC):
             The initialized concrete store instance.
         """
         if not skip_default_registrations:
-            logger.info("Registering default flavors, stack and user...")
             if self.is_empty:
+                logger.info("Registering default flavors, stack and user...")
                 self.register_default_flavors()
                 self.register_default_stack()
 

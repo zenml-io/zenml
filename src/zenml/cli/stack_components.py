@@ -22,6 +22,7 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.console import console
 from zenml.enums import StackComponentType
+from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
@@ -238,11 +239,14 @@ def generate_stack_component_flavor_register_command(
         )
 
         # Register the flavor in the given source
-        Repository().zen_store.create_flavor(
-            name=component_class.FLAVOR,
-            stack_component_type=component_class.TYPE,
-            source=source,
-        )
+        try:
+            Repository().zen_store.create_flavor(
+                name=component_class.FLAVOR,
+                stack_component_type=component_class.TYPE,
+                source=source,
+            )
+        except EntityExistsError as e:
+            cli_utils.error(e)
 
     return register_stack_component_flavor_command
 
