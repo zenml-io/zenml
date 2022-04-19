@@ -17,6 +17,7 @@ from typing import Any, Type, Union
 
 import torch
 from torch.nn import Module  # type: ignore[attr-defined]
+from zenml.io import fileio
 
 from zenml.artifacts import ModelArtifact
 from zenml.integrations.pytorch.materializers.pytorch_types import TorchDict
@@ -38,9 +39,10 @@ class PyTorchMaterializer(BaseMaterializer):
             A loaded pytorch model.
         """
         super().handle_input(data_type)
-        return torch.load(  # type: ignore[no-untyped-call]
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        )  # noqa
+        with fileio.open(
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
+        ) as f:
+            return torch.load(f)  # type: ignore[no-untyped-call]  # noqa
 
     def handle_return(self, model: Union[Module, TorchDict]) -> None:
         """Writes a PyTorch model.
@@ -49,4 +51,7 @@ class PyTorchMaterializer(BaseMaterializer):
             model: A torch.nn.Module or a dict to pass into model.save
         """
         super().handle_return(model)
-        torch.save(model, os.path.join(self.artifact.uri, DEFAULT_FILENAME))
+        with fileio.open(
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
+        ) as f:
+            torch.save(model, f)
