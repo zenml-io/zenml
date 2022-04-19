@@ -16,8 +16,8 @@ import os
 from tempfile import TemporaryDirectory
 from typing import Any, Type
 
-from datasets import Dataset, load_from_disk  # type: ignore [import]
-from datasets.dataset_dict import DatasetDict  # type: ignore [import]
+from datasets import Dataset, load_from_disk  # type: ignore[attr-defined]
+from datasets.dataset_dict import DatasetDict
 
 from zenml.artifacts import DataArtifact
 from zenml.io import utils as fileio_utils
