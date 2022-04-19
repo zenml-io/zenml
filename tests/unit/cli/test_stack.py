@@ -16,7 +16,12 @@ import pytest
 from click.testing import CliRunner
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.cli.stack import describe_stack, rename_stack, update_stack
+from zenml.cli.stack import (
+    describe_stack,
+    remove_stack_component,
+    rename_stack,
+    update_stack,
+)
 from zenml.orchestrators import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
@@ -150,3 +155,10 @@ def test_renaming_non_active_stack_succeeds(clean_repo) -> None:
         clean_repo.get_stack("arias_renamed_stack").name
         == "arias_renamed_stack"
     )
+
+
+def test_remove_component_from_nonexistent_stack_fails(clean_repo) -> None:
+    """Test stack remove-component of nonexistent stack fails."""
+    runner = CliRunner()
+    result = runner.invoke(remove_stack_component, ["not_a_stack", "-x"])
+    assert result.exit_code == 1
