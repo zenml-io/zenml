@@ -86,12 +86,14 @@ zenml example run [EXAMPLE NAME]
 This will pull examples from the latest release, copy them to your current working directory and run it using the
 [run_example.sh](../run_example.sh).
 
-In order to test your local example you'll need to make sure that your local code is used instead of the
-latest release version. To do this you need to run the following commands:
+However, this only works with branches on the main zenml github repository. In order to validate your example, navigate
+into the examples folder and run the following command:
 
-# TODO: IMPLEMENT THIS
+```shell
+./run_example.sh --executable [NAME_OF_YOUR_EXAMPLE]/run.py
+```
 
-## ➕ Add to main REAMDE file
+## ➕ Add to main README file
 
 In the [main README](../README.md), make sure to add your example to the correct cluster or create a new cluster with a
 description if your integration does not fit the preexisting ones.
