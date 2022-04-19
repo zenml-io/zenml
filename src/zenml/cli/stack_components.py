@@ -208,11 +208,29 @@ def generate_stack_component_register_command(
             cli_utils.error(str(e))
             return
 
-        component_class = Repository().zen_store.get_flavor_by_name_and_type(
+        flavor = Repository().zen_store.get_flavor_by_name_and_type(
             flavor_name=flavor,
             component_type=component_type,
         )
-        component = component_class(name=name, **parsed_args)
+        try:
+            component = flavor.to_class()(name=name, **parsed_args)
+        except (ModuleNotFoundError, ImportError, NotImplementedError):
+            if flavor.integration:
+                cli_utils.error(
+                    f"The {component_type} flavor '{flavor.name}' is a part of "
+                    f"ZenML's '{flavor.integration}' integration, which is "
+                    f"currently not installed on your system. You can install "
+                    f"it by executing: 'zenml integration install "
+                    f"{flavor.integration}'."
+                )
+            else:
+                cli_utils.error(
+                    f"The custom flavor '{flavor.name}' can not be used as "
+                    f"it can not be imported in its current state. Please make "
+                    f"sure that the implementation is in a state which can be "
+                    f"imported as a module."
+                )
+
         Repository().register_stack_component(component)
         cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 

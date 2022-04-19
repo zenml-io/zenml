@@ -25,3 +25,7 @@ class Flavor(BaseModel):
     integration: str = ""
     type: StackComponentType
     source: str
+
+    def to_class(self):
+        from zenml.utils.source_utils import load_source_path_class
+        return load_source_path_class(source=self.source)
