@@ -81,7 +81,7 @@ class RestZenStore(BaseZenStore):
         super().initialize(url, *args, **kwargs)
         return self
 
-    # Statistics:
+    # Statics:
 
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
