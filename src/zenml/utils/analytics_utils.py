@@ -38,6 +38,7 @@ class AnalyticsEvent(str, Enum):
 
     # Components
     REGISTERED_STACK_COMPONENT = "Stack component registered"
+    UPDATED_STACK_COMPONENT = "Stack component updated"
 
     # Stack
     REGISTERED_STACK = "Stack registered"

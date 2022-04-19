@@ -245,7 +245,6 @@ def generate_stack_component_update_command(
         name: str, flavor: str, args: List[str]
     ) -> None:
         """Updates a stack component."""
-        # TODO: [LOW] Implement a way to rename an individual stack component
         cli_utils.print_active_profile()
         try:
             parsed_args = cli_utils.parse_unknown_options(args)
@@ -478,7 +477,9 @@ def register_single_stack_component_cli_commands(
     )(get_command)
 
     # zenml stack-component describe
-    describe_command = generate_stack_component_describe_command(component_type)
+    describe_command = generate_stack_component_describe_command(
+        component_type
+    )
     command_group.command(
         "describe",
         help=f"Show details about the (active) {singular_display_name}.",
@@ -491,7 +492,9 @@ def register_single_stack_component_cli_commands(
     )(list_command)
 
     # zenml stack-component register
-    register_command = generate_stack_component_register_command(component_type)
+    register_command = generate_stack_component_register_command(
+        component_type
+    )
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "register",

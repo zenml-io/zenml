@@ -189,19 +189,33 @@ class LocalStackStore(BaseStackStore):
 
     def update_stack_component(
         self,
-        current_component: StackComponentWrapper,
+        component_name: str,
+        component_type: str,
         new_component: StackComponentWrapper,
     ) -> None:
-        """Update a stack component.
+        """Update a stack component."""
+        components = self.__store.stack_components[component.type]
 
-        Args:
-            current_component: The current component to update.
-            new_component: The new component to update with.
+        # write the component configuration file
+        component_config_path = self._get_stack_component_config_path(
+            component_type=component.type, name=component.name
+        )
+        utils.create_dir_recursive_if_not_exists(
+            os.path.dirname(component_config_path)
+        )
+        utils.write_file_contents_as_string(
+            component_config_path,
+            base64.b64decode(component.config).decode(),
+        )
 
-        Raises:
-            KeyError: If no stack component exists with the given name.
-        """
-        raise NotImplementedError
+        # add the component to the stack store dict and write it to disk
+        components[component.name] = component.flavor
+        self._write_store()
+        logger.info(
+            "Updated stack component with type '%s' and name '%s'.",
+            component.type,
+            component.name,
+        )
 
     def deregister_stack(self, name: str) -> None:
         """Remove a stack from storage.
