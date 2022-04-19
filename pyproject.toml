@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.7.1"
+version = "0.7.2"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -177,14 +177,20 @@ show_error_codes = true
 exclude = "airflow/"
 
 [[tool.mypy.overrides]]
-module = "airflow.*"
+module = [
+    "airflow.*",
+    ]
 follow_imports = "skip"
 
 # end of fix
 
 # import all tfx.proto.* and google files as `Any`
 [[tool.mypy.overrides]]
-module = ["tfx.proto.*", "google.*"]
+module = [
+    "tfx.proto.*",
+    "google.*" ,
+    "transformers.*"  # https://github.com/huggingface/transformers/issues/13390
+]
 follow_imports = "skip"
 
 [[tool.mypy.overrides]]
@@ -222,6 +228,7 @@ module = [
     "azureml.*",
     "google.*",
     "neuralprophet.*",
+    "wandb.*",
 ]
 ignore_missing_imports = true
 

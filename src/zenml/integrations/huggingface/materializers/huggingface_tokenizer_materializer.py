@@ -16,11 +16,13 @@ import os
 from tempfile import TemporaryDirectory
 from typing import Any, Type
 
-from transformers import AutoTokenizer
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+from transformers import AutoTokenizer  # type: ignore [import]
+from transformers.tokenization_utils_base import (  # type: ignore [import]
+    PreTrainedTokenizerBase,
+)
 
 from zenml.artifacts import ModelArtifact
-from zenml.io.utils import fileio
+from zenml.io import utils as fileio_utils
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_TOKENIZER_DIR = "hf_tokenizer"
@@ -48,7 +50,7 @@ class HFTokenizerMaterializer(BaseMaterializer):
         super().handle_return(tokenizer)
         temp_dir = TemporaryDirectory()
         tokenizer.save_pretrained(temp_dir.name)
-        fileio.copy_dir(
+        fileio_utils.copy_dir(
             temp_dir.name,
             os.path.join(self.artifact.uri, DEFAULT_TOKENIZER_DIR),
         )
