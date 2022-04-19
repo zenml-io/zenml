@@ -56,5 +56,6 @@ class HFTFModelMaterializer(BaseMaterializer):
         temp_dir = TemporaryDirectory()
         model.save_pretrained(temp_dir.name)
         fileio_utils.copy_dir(
-            temp_dir.name, os.path.join(self.artifact.uri, DEFAULT_TF_MODEL_DIR)
+            temp_dir.name,
+            os.path.join(self.artifact.uri, DEFAULT_TF_MODEL_DIR),
         )

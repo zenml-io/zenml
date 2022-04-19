@@ -8,7 +8,7 @@
 
 At its core, **ZenML pipelines execute ML-specific workflows** from sourcing data to splitting, preprocessing, training, all the way to the evaluation of results and even serving. There are many built-in batteries to support common ML development tasks. ZenML is not here to replace the great tools that solve these individual problems. Rather, it **integrates natively with popular ML tooling** and gives standard abstraction to write your workflows.
 
-🎉 **Version 0.7.1 out now!** [Check out the release notes here](https://github.com/zenml-io/zenml/releases).
+🎉 **Version 0.7.2 out now!** [Check out the release notes here](https://github.com/zenml-io/zenml/releases).
 
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project/zenml/)
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)

@@ -1,3 +1,46 @@
+# 0.7.2
+
+0.7.2 is a minor release which quickly patches some bugs found in the last
+release to do with Seldon and Mlflow deployment.
+
+This release also features initial versions of two amazing new integrations:
+[HuggingFace](https://huggingface.co/) and [Weights&Biases](https://wandb.ai/site)!
+
+- HuggingFace models are now supported to be passed through ZenML pipelines!
+- You can now track your pipeline runs with Weights&Biases with the new
+`enable_wandb` decorator!
+
+Continuous model deployment with MLflow has been improved with ZenML 0.7.2. A new
+MLflow Model Deployer Stack component is now available and needs to be part of
+your stack to be able to deploy models:
+
+```bash
+zenml integration install mlflow
+zenml model-deployer register mlflow --type=mlflow
+zenml stack register local_with_mlflow -m default -a default -o default -d mlflow
+zenml stack set local_with_mlflow
+```
+
+The MLflow Model Deployer is yet another addition to the list of Model Deployers
+available in ZenML. You can read more on deploying models to production with MLflow
+in our [Continuous Training and Deployment documentation section](https://docs.zenml.io/features/continuous-training-and-deployment) and our [MLflow deployment example](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment).
+
+## What's Changed
+* Fix the seldon deployment example by @htahir1 in https://github.com/zenml-io/zenml/pull/511
+* Create base deployer and refactor MLflow deployer implementation by @wjayesh in https://github.com/zenml-io/zenml/pull/489
+* Add nlp example by @Ankur3107 in https://github.com/zenml-io/zenml/pull/467
+* Fix typos by @strickvl in https://github.com/zenml-io/zenml/pull/515
+* Bugfix/hypothesis given doesnt work with fixture by @jwwwb in https://github.com/zenml-io/zenml/pull/513
+* Bug: fix long Kubernetes labels in Seldon deployments by @stefannica in https://github.com/zenml-io/zenml/pull/514
+* Change prediction_uri to prediction_url in MLflow deployer by @stefannica in https://github.com/zenml-io/zenml/pull/516
+* Simplify HuggingFace Integration by @AlexejPenner in https://github.com/zenml-io/zenml/pull/517
+* Weights & Biases Basic Integration by @htahir1 in https://github.com/zenml-io/zenml/pull/518
+
+## New Contributors
+* @Ankur3107 made their first contribution in https://github.com/zenml-io/zenml/pull/467
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.7.1...0.7.2
+
 # 0.7.1
 
 The release introduces the [Seldon Core](https://github.com/SeldonIO/seldon-core) ZenML integration, featuring the
