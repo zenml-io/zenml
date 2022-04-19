@@ -4,10 +4,6 @@ description: "Install Poetry, loads cached venv if applicable, and performs misc
 runs:
   using: "composite"
   steps:
-    - name: Get current date
-      id: date
-      run: echo "::set-output name=date::$(date +'calendar-week-%W')"
-
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
@@ -29,6 +25,11 @@ runs:
       with:
         virtualenvs-create: true
         virtualenvs-in-project: true
+
+    - name: Get current date
+      shell: bash
+      id: date
+      run: echo "::set-output name=date::$(date +'calendar-week-%W')"
 
     - name: Load cached venv
       id: cached-poetry-dependencies
