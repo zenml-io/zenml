@@ -11,7 +11,7 @@ class ZenMLCustomModel(object):
     Model template. You can load your model parameters in __init__ from a location accessible at runtime
     """
 
-    def __init__(self, model_uri: str) -> None:
+    def __init__(self, model_uri: str, *args: Any, **kwargs: Any) -> None:
         """
         Add any initialization parameters. These will be passed at runtime from the graph definition parameters defined in your seldondeployment kubernetes resource manifest.
         """
@@ -38,6 +38,8 @@ class ZenMLCustomModel(object):
         self,
         X: Array_Like,
         features_names: Optional[List[str]],
+        *args: Any,
+        **kwargs: Any
     ) -> Array_Like:
         """
         Return a prediction.

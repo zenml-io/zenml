@@ -210,7 +210,7 @@ class mnistpytorch(ZenMLCustomModel):
         try:
             model_file = os.path.join(
                 seldon_core.Storage.download(self.model_uri),
-                "checkpoint_model.pt",
+                "checkpoint.pt",
             )
             logger.info(model_file)
             self.class_names = ["class:{}".format(str(i)) for i in range(10)]
