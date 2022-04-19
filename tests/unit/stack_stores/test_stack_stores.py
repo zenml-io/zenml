@@ -56,6 +56,17 @@ not_windows = platform.system() != "Windows"
 store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * not_windows
 
 
+def get_component_from_wrapper(
+    wrapper: StackComponentWrapper,
+) -> StackComponent:
+    """Instantiate a StackComponent from the Configuration."""
+    component_class = StackComponentClassRegistry.get_class(
+        component_type=wrapper.type, component_flavor=wrapper.flavor
+    )
+    component_config = yaml.safe_load(base64.b64decode(wrapper.config).decode())
+    return component_class.parse_obj(component_config)
+
+
 @pytest.fixture(params=store_types)
 def fresh_stack_store(
     request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
@@ -202,17 +213,6 @@ def test_register_deregister_components(fresh_stack_store: BaseStackStore):
         len(stack_store.get_stack_components(StackComponentType.ORCHESTRATOR))
         == 1
     )
-
-
-def get_component_from_wrapper(
-    wrapper: StackComponentWrapper,
-) -> StackComponent:
-    """Instantiate a StackComponent from the Configuration."""
-    component_class = StackComponentClassRegistry.get_class(
-        component_type=wrapper.type, component_flavor=wrapper.flavor
-    )
-    component_config = yaml.safe_load(base64.b64decode(wrapper.config).decode())
-    return component_class.parse_obj(component_config)
 
 
 def test_update_stack_with_new_component(fresh_stack_store: BaseStackStore):

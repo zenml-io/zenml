@@ -15,7 +15,8 @@
 import pytest
 from click.testing import CliRunner
 
-from zenml.cli.stack import describe_stack
+from zenml.artifact_stores import LocalArtifactStore
+from zenml.cli.stack import describe_stack, update_stack
 
 NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
@@ -38,3 +39,16 @@ def test_stack_describe_fails_for_bad_input(
     runner = CliRunner()
     result = runner.invoke(describe_stack, [not_a_stack])
     assert result.exit_code == 1
+
+
+def test_updating_active_stack_fails(clean_repo) -> None:
+    """Test stack update of active stack fails."""
+    new_artifact_store = LocalArtifactStore(name="arias_store", path="/meow")
+    clean_repo.register_stack_component(new_artifact_store)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        update_stack, ["default", "-a", "artifact_store_name"]
+    )
+    assert result.exit_code == 1
+    assert clean_repo.active_stack.artifact_store != new_artifact_store
