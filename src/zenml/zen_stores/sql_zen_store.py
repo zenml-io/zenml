@@ -33,8 +33,8 @@ from zenml.zen_stores.models import (
     StackComponentWrapper,
     Team,
     User,
+    get_active_user_id,
 )
-from zenml.zen_stores.models.user_management_models import get_active_user_id
 
 logger = get_logger(__name__)
 

@@ -721,9 +721,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @property
     def active_user_name(self) -> str:
-        """Returns the active user name set in the profile.
+        """Get the active user name set in the profile.
 
-        Return:
+        Returns:
             The name of the active user.
 
         Raises:
@@ -968,7 +968,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def active_project(self) -> Optional[Project]:
         """Get the currently active project of the local repository.
 
-        Returns: Project, if one is set that matches the id in the store.
+        Returns:
+             Project, if one is set that matches the id in the store.
         """
         if self.__config is None:
             raise RuntimeError("Invalid repository, no configuration storage.")

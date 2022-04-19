@@ -23,6 +23,12 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
+def get_active_user_id() -> UUID:
+    from zenml.repository import Repository
+
+    return Repository().active_user.id
+
+
 # This probably makes more sense to be a resource?
 class Operation(BaseModel):
     """Pydantic object representing an operation that requires permission.
@@ -105,15 +111,6 @@ class Team(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
     name: str
-
-
-def get_active_user_id() -> UUID:
-    from zenml.repository import Repository
-
-    user = Repository().active_user
-    if Repository().zen_store.get_user(user.name).id != user.id:
-        raise RuntimeError("User ID conflict!")
-    return user.id
 
 
 class Project(BaseModel):
