@@ -189,7 +189,6 @@ follow_imports = "skip"
 module = [
     "tfx.proto.*",
     "google.*" ,
-    "transformers.*"  # https://github.com/huggingface/transformers/issues/13390
 ]
 follow_imports = "skip"
 
