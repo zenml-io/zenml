@@ -312,7 +312,7 @@ class GlobalConfiguration(
         Args:
             config_path: path where the active configuration copy should be saved
             load_config_path: path that will be used to load the configuration
-                copy. This can be set to a value different than `config_path`
+                copy. This can be set to a value different from `config_path`
                 if the configuration copy will be loaded from a different
                 path, e.g. when the global config copy is copied to a
                 container image. This will be reflected in the paths and URLs
