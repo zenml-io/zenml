@@ -25,7 +25,13 @@ import uvicorn
 from requests.exceptions import ConnectionError
 
 from zenml.config.profile_config import ProfileConfiguration
-from zenml.constants import REPOSITORY_DIRECTORY_NAME
+from zenml.constants import (
+    DEFAULT_SERVICE_START_STOP_TIMEOUT,
+    ENV_ZENML_PROFILE_CONFIGURATION,
+    REPOSITORY_DIRECTORY_NAME,
+    ZEN_SERVICE_ENTRYPOINT,
+    ZEN_SERVICE_IP,
+)
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
@@ -69,24 +75,26 @@ def fresh_stack_store(
         # use environment file to pass profile into the zen service process
         env_file = str(tmp_path / "environ.env")
         with open(env_file, "w") as f:
-            f.write(f"ZENML_PROFILE_CONFIGURATION='{store_profile.json()}'")
+            f.write(
+                f"{ENV_ZENML_PROFILE_CONFIGURATION}='{store_profile.json()}'"
+            )
         port = random.randint(8003, 9000)
         proc = Process(
             target=uvicorn.run,
-            args=("zenml.zen_service.zen_service_api:app",),
+            args=(ZEN_SERVICE_ENTRYPOINT,),
             kwargs=dict(
-                host="127.0.0.1",
+                host=ZEN_SERVICE_IP,
                 port=port,
                 log_level="info",
                 env_file=env_file,
             ),
             daemon=True,
         )
-        url = f"http://localhost:{port}"
+        url = f"http://{ZEN_SERVICE_IP}:{port}"
         proc.start()
 
         # wait 10 seconds for server to start
-        for t in range(10):
+        for t in range(DEFAULT_SERVICE_START_STOP_TIMEOUT):
             try:
                 if requests.head(f"{url}/health").status_code == 200:
                     break
@@ -104,7 +112,7 @@ def fresh_stack_store(
         assert proc.is_alive()
         proc.kill()
         # wait 10 seconds for process to be killed:
-        for t in range(10):
+        for t in range(DEFAULT_SERVICE_START_STOP_TIMEOUT):
             if proc.is_alive():
                 time.sleep(1)
             else:
