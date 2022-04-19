@@ -24,7 +24,7 @@ import torch.optim as optim
 import torchvision
 from torch.utils.data import DataLoader
 
-from zenml.integrations.constants import PYTORCH
+from zenml.integrations.constants import PYTORCH, SELDON
 from zenml.integrations.seldon.custom_deployer.ZenMLCustomModel import (
     ZenMLCustomModel,
 )
@@ -182,7 +182,7 @@ def deployment_trigger(
 
 
 # Define the pipeline
-@pipeline(enable_cache=True, required_integrations=[PYTORCH])
+@pipeline(enable_cache=True, required_integrations=[SELDON, PYTORCH])
 def seldon_pytorch_deployment_pipeline(
     trainer,
     evaluator,
@@ -209,20 +209,22 @@ class mnistpytorch(ZenMLCustomModel):
         """Load the model from the given path"""
         try:
             model_file = os.path.join(
-                seldon_core.Storage.download(self.model_uri), "entire_model.pt"
+                seldon_core.Storage.download(self.model_uri),
+                "checkpoint_model.pt",
             )
+            logger.info(model_file)
             self.class_names = ["class:{}".format(str(i)) for i in range(10)]
             self.model = Net()
-            self.model = self.model.load_state_dict(
-                torch.load(model_file), strict=False
-            )
+            model_checkpoints = torch.load(model_file)
+            # self.model.load_state_dict(model_checkpoints["model_state_dict"])
+            self.model.load_state_dict(model_checkpoints)
             self.model.eval()
             self.ready = True
         except Exception as ex:
             logger.exception("Exception during predict", ex)
             self.ready = False
 
-    def predict(self, X, features_names):
+    def predict(self, X, feature_names=None):
         """Run a prediction on the given data"""
         try:
             logger.info("Starting the prediction")

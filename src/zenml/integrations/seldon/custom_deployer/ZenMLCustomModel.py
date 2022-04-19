@@ -31,7 +31,7 @@ class ZenMLCustomModel(object):
         ----------
         model_path : str
         """
-        print("Load called - will load from file")
+        raise NotImplementedError
 
     @abstractmethod
     def predict(
@@ -47,5 +47,4 @@ class ZenMLCustomModel(object):
         X : array-like
         feature_names : array of feature names (optional)
         """
-        print("Predict called - will run identity function")
-        return X
+        raise NotImplementedError

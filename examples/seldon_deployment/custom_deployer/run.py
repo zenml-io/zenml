@@ -132,7 +132,7 @@ def main(
                         container_registry_secret_name=container_registry_secret,
                     ),
                     timeout=120,
-                    custom_class_path="cutom_deployer.pytorch_seldon_deploy.mnistpytorch",
+                    custom_class_path="custom_deployer.pytorch_seldon_deploy.mnistpytorch",
                 )
             ),
         )
