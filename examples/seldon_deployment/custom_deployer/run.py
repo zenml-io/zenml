@@ -14,27 +14,13 @@
 from typing import cast
 
 import click
-from custom_deploy_pipeline import (
-    CustomModelParameters,
+from pytorch_seldon_deploy import (
     DeploymentTriggerConfig,
-    SeldonDeploymentLoaderStepConfig,
-    SklearnTrainerConfig,
-    TensorflowTrainerConfig,
-    continuous_deployment_pipeline,
-    custom_class_source_retrive,
+    TrainerConfig,
     deployment_trigger,
-    dynamic_importer,
-    importer_mnist,
-    inference_pipeline,
-    normalizer,
-    prediction_service_loader,
-    predictor,
-    sklearn_evaluator,
-    sklearn_predict_preprocessor,
-    sklearn_trainer,
-    tf_evaluator,
-    tf_predict_preprocessor,
-    tf_trainer,
+    seldon_pytorch_deployment_pipeline,
+    torch_evaluator,
+    torch_trainer,
 )
 from rich import print
 
@@ -57,17 +43,9 @@ from zenml.integrations.seldon.steps import (
     help="Run the deployment pipeline to train and deploy a model",
 )
 @click.option(
-    "--predict",
-    "-p",
-    is_flag=True,
-    help="Run the inference pipeline to send a prediction request "
-    "to the deployed model",
-)
-@click.option(
-    "--model-flavor",
-    default="tensorflow",
-    type=click.Choice(["tensorflow", "sklearn"]),
-    help="Flavor of model being trained",
+    "--batch-size",
+    default=4,
+    help="Number of epochs for training (tensorflow hyperparam)",
 )
 @click.option(
     "--epochs",
@@ -76,37 +54,17 @@ from zenml.integrations.seldon.steps import (
 )
 @click.option(
     "--lr",
-    default=0.002,
+    default=0.01,
     help="Learning rate for training (tensorflow hyperparam, default: 0.003)",
 )
 @click.option(
-    "--solver",
-    default="saga",
-    type=click.Choice(["newton-cg", "lbfgs", "liblinear", "sag", "saga"]),
-    help="Algorithm to use in the optimization problem "
-    "(sklearn hyperparam, default: saga)",
-)
-@click.option(
-    "--penalty",
-    default="l1",
-    type=click.Choice(["l1", "l2", "elasticnet", "none"]),
-    help="Regularization (penalty) norm (sklearn hyperparam, default: l1)",
-)
-@click.option(
-    "--penalty-strength",
-    default=1.0,
-    type=float,
-    help="Regularization (penalty) strength (sklearn hyperparam, default: 1.0)",
-)
-@click.option(
-    "--toleration",
-    default=0.1,
-    type=float,
-    help="Tolerance for stopping criteria (sklearn hyperparam, default: 0.1)",
+    "--momentum",
+    default=0.5,
+    help="Learning rate for training (tensorflow hyperparam, default: 0.003)",
 )
 @click.option(
     "--min-accuracy",
-    default=0.92,
+    default=0.80,
     help="Minimum accuracy required to deploy the model (default: 0.92)",
 )
 @click.option(
@@ -117,56 +75,47 @@ from zenml.integrations.seldon.steps import (
     help="Specify the name of a Kubernetes secret to be passed to Seldon Core "
     "deployments to authenticate to the Artifact Store",
 )
+@click.option(
+    "--container-registry-secret",
+    "-cx",
+    type=str,
+    required=True,
+    help="Specify the name of a Kubernetes secret to be passed to Seldon Core "
+    "deployments to authenticate to the Artifact Store",
+)
 def main(
     deploy: bool,
-    predict: bool,
-    model_flavor: str,
+    batch_size: int,
     epochs: int,
     lr: float,
-    solver: str,
-    penalty: str,
-    penalty_strength: float,
-    toleration: float,
+    momentum: float,
     min_accuracy: float,
     secret: str,
+    container_registry_secret: str,
 ):
     """Run the Seldon example continuous deployment or inference pipeline
 
     Example usage:
 
-        python run.py --deploy --predict --model-flavor tensorflow \
-             --min-accuracy 0.80 --secret seldon-init-container-secret
+        python run.py --deploy --predict --min-accuracy 0.80 \
+            --secret seldon-rclone-secret --container-registry-secret seldon-rclone-secret
 
     """
     model_name = "mnist"
-    deployment_pipeline_name = "continuous_deployment_pipeline"
+    deployment_pipeline_name = "seldon_pytorch_deployment_pipeline"
     deployer_step_name = "seldon_custom_model_deployer_step"
 
     custom_model_deployer = SeldonModelDeployer.get_active_model_deployer()
 
-    if model_flavor == "tensorflow":
-        seldon_implementation = "TENSORFLOW_SERVER"
-        trainer_config = TensorflowTrainerConfig(epochs=epochs, lr=lr)
-        trainer = tf_trainer(trainer_config)
-        evaluator = tf_evaluator()
-        predict_preprocessor = tf_predict_preprocessor()
-    else:
-        seldon_implementation = "SKLEARN_SERVER"
-        trainer_config = SklearnTrainerConfig(
-            solver=solver,
-            penalty=penalty,
-            C=penalty_strength,
-            tol=toleration,
-        )
-        trainer = sklearn_trainer(trainer_config)
-        evaluator = sklearn_evaluator()
-        predict_preprocessor = sklearn_predict_preprocessor()
+    trainer_config = TrainerConfig(
+        batch_size=batch_size, epochs=epochs, lr=lr, momentum=momentum
+    )
+    trainer = torch_trainer(trainer_config)
+    evaluator = torch_evaluator()
 
     if deploy:
         # Initialize a continuous deployment pipeline run
-        deployment = continuous_deployment_pipeline(
-            importer=importer_mnist(),
-            normalizer=normalizer(),
+        deployment = seldon_pytorch_deployment_pipeline(
             trainer=trainer,
             evaluator=evaluator,
             deployment_trigger=deployment_trigger(
@@ -174,50 +123,21 @@ def main(
                     min_accuracy=min_accuracy,
                 )
             ),
-            custom_class_source_retrive=custom_class_source_retrive(
-                config=CustomModelParameters(
-                    # TODO [HIGH]: This should be a automated way to get the class name rather than hardcoding it
-                    model_class="custom_deploy_pipeline.mycustomdeploy",
-                )
-            ),
             custom_model_deployer=seldon_custom_model_deployer_step(
                 config=SeldonDeployerStepConfig(
                     service_config=SeldonDeploymentConfig(
                         model_name=model_name,
                         replicas=1,
-                        implementation=seldon_implementation,
                         secret_name=secret,
+                        container_registry_secret_name=container_registry_secret,
                     ),
                     timeout=120,
-                    parameters=[
-                        {
-                            "name": "method",
-                            "type": "STRING",
-                            "value": "predict_proba",
-                        },
-                    ],
+                    custom_class_path="cutom_deployer.pytorch_seldon_deploy.mnistpytorch",
                 )
             ),
         )
 
         deployment.run()
-
-    if predict:
-        # Initialize an inference pipeline run
-        inference = inference_pipeline(
-            dynamic_importer=dynamic_importer(),
-            predict_preprocessor=predict_preprocessor,
-            prediction_service_loader=prediction_service_loader(
-                SeldonDeploymentLoaderStepConfig(
-                    pipeline_name=deployment_pipeline_name,
-                    step_name=deployer_step_name,
-                    model_name=model_name,
-                )
-            ),
-            predictor=predictor(),
-        )
-
-        inference.run()
 
     services = custom_model_deployer.find_model_server(
         pipeline_name=deployment_pipeline_name,
@@ -258,7 +178,7 @@ if __name__ == "__main__":
             "--deploy",
             "--min-accuracy",
             "0.80",
-            "--model-flavor",
-            "sklearn",
+            "--container-registry-secret",
+            "seldon-rclone-secret",
         ]
     )

@@ -17,7 +17,6 @@ import re
 import time
 from typing import Any, Dict, List, Optional
 
-import yaml
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from pydantic import BaseModel, Field, ValidationError
@@ -303,6 +302,7 @@ class SeldonDeployment(BaseModel):
         labels: Optional[Dict[str, str]] = None,
         parameters: Optional[List[Dict[str, str]]] = [],
         annotations: Optional[Dict[str, str]] = None,
+        is_custom_deployment: Optional[bool] = False,
         spec: Optional[Dict[Any, Any]] = None,
     ) -> "SeldonDeployment":
         """Build a basic Seldon Deployment object.
@@ -334,6 +334,26 @@ class SeldonDeployment(BaseModel):
             labels = {}
         if annotations is None:
             annotations = {}
+        if parameters is None:
+            parameters = []
+        if is_custom_deployment:
+            graph = SeldonDeploymentPredictiveUnit(
+                name="classifier", type=SeldonDeploymentPredictiveUnitType.MODEL
+            )
+        else:
+            graph = SeldonDeploymentPredictiveUnit(
+                name="classifier",
+                type=SeldonDeploymentPredictiveUnitType.MODEL,
+                modelUri=model_uri or "",
+                implementation=implementation or "",
+                envSecretRefName=secret_name,
+                parameters=[
+                    SeldonDeploymentParameters(**parameter)
+                    for parameter in parameters
+                ]
+                or [],
+            )
+
         return SeldonDeployment(
             metadata=SeldonDeploymentMetadata(
                 name=name, labels=labels, annotations=annotations
@@ -343,18 +363,7 @@ class SeldonDeployment(BaseModel):
                 predictors=[
                     SeldonDeploymentPredictor(
                         name=model_name or "",
-                        graph=SeldonDeploymentPredictiveUnit(
-                            name="classifier",
-                            type=SeldonDeploymentPredictiveUnitType.MODEL
-                            # modelUri=model_uri or "",
-                            # implementation=implementation or "",
-                            # envSecretRefName=secret_name,
-                            # parameters=[
-                            #    SeldonDeploymentParameters(**parameter)
-                            #    for parameter in parameters
-                            # ]
-                            # or [],
-                        ),
+                        graph=graph,
                         componentSpecs=[
                             SeldonDeploymentComponentSpecs(
                                 spec=spec
@@ -592,7 +601,6 @@ class SeldonClient:
             # are not
             deployment.mark_as_managed_by_zenml()
             body_deploy = deployment.dict(exclude_none=True)
-            logger.info(yaml.dump(body_deploy))
             response = self._custom_objects_api.create_namespaced_custom_object(
                 group="machinelearning.seldon.io",
                 version="v1",

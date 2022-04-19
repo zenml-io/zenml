@@ -50,10 +50,13 @@ class SeldonDeploymentConfig(ServiceConfig):
         secret_name: the name of a Kubernetes secret containing additional
             configuration parameters for the Seldon Core deployment (e.g.
             credentials to access the Artifact Store).
+        container_registry_secret_name: the name of a Kubernetes secret containing
+            additional configuration parameters for the container registry.
         model_metadata: optional model metadata information (see
             https://docs.seldon.io/projects/seldon-core/en/latest/reference/apis/metadata.html).
         extra_args: additional arguments to pass to the Seldon Core deployment
             resource configuration.
+        is_custom_deployment:
         spec: custom Kubernetes resource specification for the Seldon Core
     """
 
@@ -64,8 +67,10 @@ class SeldonDeploymentConfig(ServiceConfig):
     replicas: int = 1
     parameters: Optional[List[Dict[str, str]]] = []
     secret_name: Optional[str]
+    container_registry_secret_name: Optional[str] = None
     model_metadata: Dict[str, Any] = Field(default_factory=dict)
     extra_args: Dict[str, Any] = Field(default_factory=dict)
+    is_custom_deployment: Optional[bool] = False
     spec: Optional[Dict[Any, Any]] = Field(default_factory=dict)
 
     def get_seldon_deployment_labels(self) -> Dict[str, str]:
@@ -290,6 +295,7 @@ class SeldonDeploymentService(BaseService):
             labels=self._get_seldon_deployment_labels(),
             parameters=self.config.parameters,
             annotations=self.config.get_seldon_deployment_annotations(),
+            is_custom_deployment=self.config.is_custom_deployment,
             spec=self.config.spec,
         )
         deployment.spec.replicas = self.config.replicas

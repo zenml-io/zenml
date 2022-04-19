@@ -395,14 +395,15 @@ class _FunctionExecutor(BaseExecutor):
         """
         requirements = Repository().active_stack.requirements()
 
-        # Add pipeline requirements from the corresponding node context
-        for context in self._context.pipeline_node.contexts.contexts:
-            if context.type.name == "pipeline_requirements":
-                pipeline_requirements = context.properties[
-                    "pipeline_requirements"
-                ].field_value.string_value.split(" ")
-                requirements.update(pipeline_requirements)
-                break
+        if self._context:
+            # Add pipeline requirements from the corresponding node context
+            for context in self._context.pipeline_node.contexts.contexts:
+                if context.type.name == "pipeline_requirements":
+                    pipeline_requirements = context.properties[
+                        "pipeline_requirements"
+                    ].field_value.string_value.split(" ")
+                    requirements.update(pipeline_requirements)
+                    break
 
         # TODO [ENG-696]: Find a nice way to set this if the running version of
         #  ZenML is not an official release (e.g. on a development branch)

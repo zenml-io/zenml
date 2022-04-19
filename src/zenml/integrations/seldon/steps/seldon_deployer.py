@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import cast
+from typing import Optional, cast
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.environment import Environment
@@ -54,6 +54,7 @@ class SeldonDeployerStepConfig(BaseStepConfig):
 
     service_config: SeldonDeploymentConfig
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT
+    custom_class_path: Optional[str] = None
 
 
 @step(enable_cache=True)
@@ -191,7 +192,6 @@ def seldon_custom_model_deployer_step(
     config: SeldonDeployerStepConfig,
     context: StepContext,
     model: ModelArtifact,
-    custom_class_path: str,
 ) -> SeldonDeploymentService:
     """Seldon Core model deployer pipeline step
 
@@ -208,7 +208,17 @@ def seldon_custom_model_deployer_step(
     Returns:
         Seldon Core deployment service
     """
+    stack = context.stack
+    if not stack:
+        raise RuntimeError(
+            "No active stack is configured for the repository. Run "
+            "`zenml stack set STACK_NAME` to update the active stack."
+        )
+
     model_deployer = SeldonModelDeployer.get_active_model_deployer()
+
+    # declare this step as a custom seldon deployment
+    config.service_config.is_custom_deployment = True
 
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
@@ -217,10 +227,17 @@ def seldon_custom_model_deployer_step(
     step_name = step_env.step_name
 
     # TODO [High]: this must be part of pipeline requirements rather than this
-    seldon_requirements = ["seldon-core", "werkzeug==2.0.3"]
     pipeline_requirements = step_env.pipeline_requirements
-    requirements = pipeline_requirements + seldon_requirements
-    model_name = custom_class_path
+
+    # model class path is required for custom model deployers
+    model_name = config.custom_class_path
+    if not model_name:
+        raise RuntimeError(
+            "The custom model deployer class path must be specified in the "
+            "configuration of the pipeline step."
+        )
+
+    # entrypoint for starting seldon microservice deployment for custom model
     entrypoint_command = [
         "seldon-core-microservice",
         "$MODEL_NAME",
@@ -266,10 +283,10 @@ def seldon_custom_model_deployer_step(
     # more information about stack ..
     classifier_docker_image_name = (
         model_deployer.prepare_custom_deployment_image(
-            context.stack,
+            stack,
             pipeline_name,
             step_name,
-            requirements,
+            pipeline_requirements,
             model_name,
             entrypoint_command,
         )
@@ -280,6 +297,7 @@ def seldon_custom_model_deployer_step(
         model_uri=service_config.model_uri,
         custom_docker_image=classifier_docker_image_name,
         secret_name=service_config.secret_name,
+        container_registry_secret_name=service_config.container_registry_secret_name,
     )
 
     # invoke the Seldon Core model deployer to create a new service

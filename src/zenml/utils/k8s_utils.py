@@ -11,13 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Optional
+
 from kubernetes import client as k8s_client
+
+api = k8s_client.ApiClient()
 
 
 def create_seldon_core_custom_spec(
-    model_uri: str,
-    custom_docker_image: str,
-    secret_name: str,
+    model_uri: Optional[str],
+    custom_docker_image: Optional[str],
+    secret_name: Optional[str],
+    container_registry_secret_name: Optional[str] = None,
 ) -> k8s_client.V1PodSpec:
     """Create a custom pod spec for the seldon core container.
 
@@ -51,7 +56,12 @@ def create_seldon_core_custom_spec(
             )
         ],
     )
-    image_pull_secret = k8s_client.V1LocalObjectReference(name=secret_name)
+    if container_registry_secret_name:
+        image_pull_secret = k8s_client.V1LocalObjectReference(
+            name=container_registry_secret_name
+        )
+    else:
+        image_pull_secret = None
 
     container = k8s_client.V1Container(
         name="classifier",
@@ -83,5 +93,4 @@ def create_seldon_core_custom_spec(
         containers=[container],
     )
 
-    api = k8s_client.ApiClient()
     return api.sanitize_for_serialization(spec)
