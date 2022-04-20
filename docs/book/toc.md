@@ -10,7 +10,6 @@
   * [Installation](guides/basics/installation.md)
   * [Build and Run your first Pipeline](guides/basics/step_pipeline_run.md)
   * [Configure at Runtime](guides/basics/pipeline-configuration.md)
-  * [Inspect Pipeline Run Results](guides/basics/post-execution-workflow.md)
   * [Using Visualizers](guides/basics/visualizers.md)
   * [Step Fixtures](guides/basics/step-fixtures.md)
   * [Access Previous Runs](guides/basics/historic-runs.m)
