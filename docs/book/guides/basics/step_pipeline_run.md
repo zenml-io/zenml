@@ -3,6 +3,9 @@ description: Familiarize yourself with the ZenML Basics
 ---
 
 # Build a Pipeline
+
+{% tabs %}
+{% tab title="guide" %}
 ## Create steps
 
 Steps are the atomic components of a ZenML pipeline. Each step is defined by its inputs, the logic it applies and its 
@@ -71,6 +74,38 @@ Step `my_second_step` has started.
 Step `my_second_step` has finished in 0.067s.
 Pipeline run `first_pipeline-20_Apr_22-16_07_14_577771` has finished in 0.128s.
 ```
+{% endtab %}
+
+{% tab title="TL;DR" %}
+```python
+    from zenml.steps import step, Output
+    from zenml.pipelines import pipeline
+
+    @step
+    def my_first_step() -> Output(output_int=int, output_float=float):
+        """Step that returns a pre-defined integer and float"""
+        return 7, 0.1
+
+
+    @step
+    def my_second_step(input_int: int, input_float: float
+                       ) -> Output(output_int=int, output_float=float):
+        """Step that doubles the inputs"""
+        return 2 * input_int, 2* input_float
+
+
+    @pipeline
+    def first_pipeline(
+        step_1,
+        step_2
+    ):
+        output_1, output_2 = step_1()
+        step_2(output_1, output_2)
+
+    first_pipeline(step_1=my_first_step(), step_2=my_second_step()).run()
+```
+{% endtab %}
+{% endtabs %}
 
 # Interact with completed runs
 
@@ -151,20 +186,4 @@ output = step.output
 # will get you the value from the original materializer used in the pipeline
 output.read()  
 ```
-
-## Visuals
-
-### Seeing statistics
-
-```python
-from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
-    FacetStatisticsVisualizer,
-)
-
-FacetStatisticsVisualizer().visualize(output)
-```
-
-It produces the following visualization:
-
-![Statistics for boston housing dataset](../../assets/statistics-boston-housing.png)
 
