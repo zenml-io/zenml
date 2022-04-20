@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 import os
 import platform
-import random
 import shutil
 import time
 from multiprocessing import Process
@@ -39,6 +38,7 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
 from zenml.stack import Stack
+from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_stores import (
     BaseZenStore,
     LocalZenStore,
@@ -79,7 +79,10 @@ def fresh_zen_store(
             f.write(
                 f"{ENV_ZENML_PROFILE_CONFIGURATION}='{store_profile.json()}'"
             )
-        port = random.randint(8003, 9000)
+        port = scan_for_available_port(start=8003, stop=9000)
+        if not port:
+            raise RuntimeError("No available port found.")
+
         proc = Process(
             target=uvicorn.run,
             args=(ZEN_SERVICE_ENTRYPOINT,),
@@ -101,7 +104,7 @@ def fresh_zen_store(
                     break
                 else:
                     time.sleep(1)
-            except ConnectionError:
+            except Exception:
                 time.sleep(1)
         else:
             proc.kill()
