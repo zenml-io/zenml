@@ -217,7 +217,6 @@ class mnistpytorch(ZenMLCustomModel):
             self.class_names = ["class:{}".format(str(i)) for i in range(10)]
             self.model = Net()
             model_checkpoints = torch.load(model_file)
-            # self.model.load_state_dict(model_checkpoints["model_state_dict"])
             self.model.load_state_dict(model_checkpoints)
             self.model.eval()
             self.ready = True
@@ -225,17 +224,38 @@ class mnistpytorch(ZenMLCustomModel):
             logger.exception("Exception during predict", ex)
             self.ready = False
 
+    def pre_process(self, tensor: torch.Tensor) -> dict:
+        """Pre process the data
+
+        Args:
+            tensor (torch.Tensor): The tensor to pre process
+        """
+        tansformation = torchvision.transforms.Normalize((0.1307,), (0.3081,))
+        processed_tensor = tansformation(tensor.to(torch.float))
+        processed_tensor = processed_tensor.unsqueeze(0)
+        return processed_tensor.float()
+
     def predict(self, X, feature_names=None, *args: Any, **kwargs: Any):
-        """Run a prediction on the given data"""
+        """Run a prediction on the given data
+
+        Args:
+            X (numpy.ndarray): The data to predict on
+            feature_names (list): The names of the features
+
+        Returns:
+            dict: The prediction results
+        """
+
         try:
             logger.info("Starting the prediction")
+            # Convert the inout data to a tensor
             tensor = torch.from_numpy(X).view(-1, 28, 28)
-            logger.info(tensor.shape)
-            t = torchvision.transforms.Normalize((0.1307,), (0.3081,))
-            tensor_norm = t(tensor)
-            tensor_norm = tensor_norm.unsqueeze(0)
-            out = self.model(tensor_norm.float())
+            # Pre process the data
+            processed_tensor = self.pre_process(tensor)
+            # Run the prediction
+            out = self.model(processed_tensor)
             predictions = torch.nn.functional.softmax(out)
+            # Get the prediction
             return predictions.detach().numpy()
         except Exception as ex:
             logger.exception("Exception during predict", ex)
