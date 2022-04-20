@@ -1,6 +1,6 @@
 # Table of contents
 
-- [ZenML 101](index.md)
+- [ZenML](index.md)
 * [Quickstart](introduction/quickstart-guide.md)
 * [Core Concepts](introduction/core-concepts.md)
 
@@ -36,7 +36,8 @@
 
 ## Stack and Stack Components
 
-* [Stack]()
+* [What is a Stack]()
+* [What is a Stack Component]()
   * [Artifact Store](stack_and_components/artifact_store.md)
   * [Metadata Store](stack_and_components/metadata_store.md)
   * [Orchestrator](stack_and_components/orchestrator.md)
@@ -44,12 +45,13 @@
   * [Step Operator](stack_and_components/step_operator.md)
   * [Secret Manager](stack_and_components/secret_manager.md)
   * [Visualizers](stack_and_components/visualizers.md)
-  - [Roadmap](stack_and_components/roadmap.md)
+* [Extensibility]()
+* [Roadmap](stack_and_components/roadmap.md)
 
 ## Support
 
-- [Examples](https://github.com/zenml-io/zenml/tree/main/examples)
-- [Tutorials](https://github.com/zenml-io/zenbytes)
+- [Integration Examples](https://github.com/zenml-io/zenml/tree/main/examples)
+- [Tutorial Notebooks](https://github.com/zenml-io/zenbytes)
 - [ZenML in Practice](https://github.com/zenml-io/zenfiles)
 - [Learn more on Youtube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk_bMw)
 - [Join our Slack](https://zenml.io/slack-invite/)

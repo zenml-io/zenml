@@ -1,5 +1,5 @@
 ---
-description: 'TL;DR: Do *pip install zenml* to install.'
+description: 'TL;DR: Run *pip install zenml*'
 ---
 
 # Installation & Setup
