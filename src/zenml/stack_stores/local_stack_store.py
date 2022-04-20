@@ -189,17 +189,23 @@ class LocalStackStore(BaseStackStore):
 
     def update_stack_component(
         self,
-        component_name: str,
-        component_type: str,
-        new_component: StackComponentWrapper,
+        component: StackComponentWrapper,
     ) -> None:
         """Update a stack component."""
         components = self.__store.stack_components[component.type]
+        if component.name not in components:
+            raise StackComponentExistsError(
+                f"Unable to update stack component (type: {component.type}) "
+                f"with name '{component.name}': No existing stack component "
+                f"found with this name."
+            )
 
         # write the component configuration file
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
+        # TODO [MEDIUM]: consider removing the dir creation as it seems
+        #  unnecessary
         utils.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
         )

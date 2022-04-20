@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import time
 from importlib import import_module
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Type
 
 import click
 from rich.markdown import Markdown
@@ -21,10 +21,23 @@ from rich.markdown import Markdown
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.console import console
+from zenml.constants import MANDATORY_COMPONENT_PROPERTIES
 from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
+
+
+def _get_required_properties(
+    component_class: Type[StackComponent],
+) -> List[str]:
+    """Gets the required properties for a stack component."""
+    return [
+        item[0]
+        for item in component_class.__fields__.items()
+        if (item[1].required is True)
+        and item[0] not in MANDATORY_COMPONENT_PROPERTIES
+    ]
 
 
 def _component_display_name(
@@ -223,7 +236,7 @@ def generate_stack_component_register_command(
 
 def generate_stack_component_update_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, List[str]], None]:
+) -> Callable[[str, List[str]], None]:
     """Generates an `update` command for the specific stack component type."""
     display_name = _component_display_name(component_type)
 
@@ -232,35 +245,41 @@ def generate_stack_component_update_command(
         type=str,
         required=True,
     )
-    @click.option(
-        "--type",
-        "-t",
-        "flavor",
-        help=f"The type of the {display_name} to update.",
-        required=False,
-        type=str,
-    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-    def update_stack_component_command(
-        name: str, flavor: str, args: List[str]
-    ) -> None:
+    def update_stack_component_command(name: str, args: List[str]) -> None:
         """Updates a stack component."""
+        repo = Repository()
         cli_utils.print_active_profile()
+        current_component = repo.get_stack_component(component_type, name)
+        if current_component is None:
+            cli_utils.error(f"No {display_name} found for name '{name}'.")
+
         try:
             parsed_args = cli_utils.parse_unknown_options(args)
         except AssertionError as e:
             cli_utils.error(str(e))
             return
+        for prop in MANDATORY_COMPONENT_PROPERTIES:
+            if prop in parsed_args:
+                cli_utils.error(
+                    f"Cannot update mandatory property '{prop}' of '{name}' {current_component.TYPE}. "
+                )
 
         from zenml.stack.stack_component_class_registry import (
             StackComponentClassRegistry,
         )
 
         component_class = StackComponentClassRegistry.get_class(
-            component_type=component_type, component_flavor=flavor
+            component_type=component_type,
+            component_flavor=current_component.FLAVOR,
         )
-        component = component_class(name=name, **parsed_args)
-        Repository().update_stack_component(component)
+        required_properties = _get_required_properties(component_class)
+        for prop in required_properties:
+            if prop not in parsed_args:
+                parsed_args[prop] = getattr(current_component, prop)
+        updated_component = component_class(name=name, **parsed_args)
+
+        repo.update_stack_component(updated_component)
         cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
 
     return update_stack_component_command

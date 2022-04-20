@@ -185,14 +185,12 @@ class RestStackStore(BaseStackStore):
 
     def update_stack_component(
         self,
-        current_component: StackComponentWrapper,
-        new_component: StackComponentWrapper,
+        component: StackComponentWrapper,
     ) -> None:
         """Update a stack component.
 
         Args:
-            current_component: The current component to update.
-            new_component: The new component to update with.
+            component: The new component to update with.
 
         Raises:
             KeyError: If no stack component exists with the given name.
