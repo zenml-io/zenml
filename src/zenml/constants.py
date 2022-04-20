@@ -135,3 +135,6 @@ IS_EMPTY = "/empty"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
 STACK_CONFIGURATIONS = "/stack-configurations"
+
+# mandatory stack component properties
+MANDATORY_COMPONENT_PROPERTIES = ["name", "uuid"]
