@@ -167,6 +167,38 @@ repo = Repository()
 pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
 run = pipeline.get_run("custom_pipeline_run_name")
 ```
+
+## Setting step parameters using a config file
+
+In addition to setting parameters for your pipeline steps in code as seen above, ZenML also allows you to use a 
+configuration [yaml](https://yaml.org) file. This configuration file must follow the following structure:
+
+```yaml
+steps:
+  step_name:
+    parameters:
+      parameter_name: parameter_value
+      some_other_parameter_name: 2
+  some_other_step_name:
+    ...
+```
+
+For our example from above this results in the following configuration yaml.&#x20;
+
+```yaml
+steps:
+  step_2:
+    parameters:
+      multiplier: 3
+```
+
+Use the configuration file by calling the pipeline method `with_config(...)`:
+
+```python
+first_pipeline(step_1=my_first_step(),
+               step_2=my_second_step()
+               ).with_config("path_to_config.yaml").run()
+```
 {% endtab %}
 
 {% tab title="Code" %}
@@ -320,4 +352,4 @@ output.read()
 {% endtabs %}
 
 
-# 
+# Using Visualizers

@@ -111,4 +111,3 @@ pipeline_instance = my_pipeline(
             
 pipeline_instance.run()
 ```
-
