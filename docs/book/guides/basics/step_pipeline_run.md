@@ -2,40 +2,36 @@
 description: Create your first step.
 ---
 
-If you want to see the code for this chapter of the guide, head over to the 
-[GitHub](https://github.com/zenml-io/zenml/blob/main/examples/functional_api/chapter_1.py).
+# Create steps
 
-# Create an importer step to load data
+Steps are the atomic components of a ZenML pipeline. Each step is defined by its inputs, the logic it applies and its 
+outputs. Here is a very simple example of such a step:
 
-The first thing to do is to load our data. We create a step that can load data from an external source (in this 
-case a [Keras Dataset](https://keras.io/api/datasets/)). This can be done by creating a simple function and 
-decorating it with the `@step` decorator.
-
-## Create steps
-
+{% tabs %}
+{% tab title="Single Output" %}
 ```python
-import numpy as np
-import tensorflow as tf
+from zenml.steps import step
+
+@step
+def my_first_step() -> int:
+    """Step that returns a pre-defined integer"""
+    return 7
+```
+{% endtab %}
+
+{% tab title="Multiple Outputs" %}
+```python
 from zenml.steps import step, Output
 
 @step
-def importer_mnist() -> Output(
-    X_train=np.ndarray, y_train=np.ndarray, X_test=np.ndarray, y_test=np.ndarray
-):
-    """Download the MNIST data and store it as an artifact"""
-    (X_train, y_train), (
-        X_test,
-        y_test,
-    ) = tf.keras.datasets.mnist.load_data()
-    return X_train, y_train, X_test, y_test
+def my_first_step() -> Output(output_int=int, output_float=float):
+    """Step that returns a pre-defined integer and float"""
+    return 7, 0.1
 ```
-
-There are some things to note:
 
 - As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names 
 of each output. If there was only one, we would not need to do this.
-- We could have returned the `tf.keras.datasets.mnist` directly but we wanted to persist the actual data (for 
-caching purposes), rather than the dataset object.
+{% endtab %}
 
 Now we can go ahead and create a pipeline with one step to make sure this step works:
 
@@ -43,33 +39,27 @@ Now we can go ahead and create a pipeline with one step to make sure this step w
 from zenml.pipelines import pipeline
 
 @pipeline
-def load_mnist_pipeline(
-    importer,
+def first_pipeline(
+    first_step,
 ):
     """The simplest possible pipeline"""
     # We just need to call the function
-    importer()
+    first_step()
 
 # run the pipeline
-load_mnist_pipeline(importer=importer_mnist()).run()
+first_pipeline(first_step=my_first_step()).run()
 ```
 
-## Run
-
-You can run this as follows:
-
-```python
-python chapter_1.py
-```
 
 The output will look as follows (note: this is filtered to highlight the most important logs)
 
 ```bash
-Creating pipeline: load_mnist_pipeline
-Cache enabled for pipeline `load_mnist_pipeline`
-Using orchestrator `local_orchestrator` for pipeline `load_mnist_pipeline`. Running pipeline..
-Step `importer_mnist` has started.
-Step `importer_mnist` has finished in 1.726s.
+Creating run for pipeline: `first_pipeline`
+Cache disabled for pipeline `first_pipeline`
+Using stack `default` to run pipeline `first_pipeline`
+Step `my_first_step` has started.
+Step `my_first_step` has finished in 0.048s.
+Pipeline run `first_pipeline-20_Apr_22-14_17_42_279890` has finished in 0.057s.
 ```
 
 ## Inspect
