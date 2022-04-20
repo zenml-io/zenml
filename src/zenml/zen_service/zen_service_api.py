@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
+    ENV_ZENML_PROFILE_CONFIGURATION,
     ENV_ZENML_PROFILE_NAME,
     IS_EMPTY,
     STACK_COMPONENTS,
@@ -36,7 +37,7 @@ from zenml.repository import Repository
 from zenml.stack_stores import BaseStackStore
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
 
-profile_configuration_json = os.environ.get("ZENML_PROFILE_CONFIGURATION")
+profile_configuration_json = os.environ.get(ENV_ZENML_PROFILE_CONFIGURATION)
 profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
 
 # Hopefully profile configuration was passed as env variable:

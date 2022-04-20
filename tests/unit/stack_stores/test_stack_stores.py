@@ -11,18 +11,28 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import base64
 import os
 import platform
 import random
 import shutil
+import time
 from contextlib import ExitStack as does_not_raise
+from multiprocessing import Process
 
 import pytest
+import requests
+import uvicorn
 import yaml
+from requests.exceptions import ConnectionError
 
 from zenml.config.profile_config import ProfileConfiguration
-from zenml.constants import REPOSITORY_DIRECTORY_NAME
+from zenml.constants import (
+    DEFAULT_SERVICE_START_STOP_TIMEOUT,
+    ENV_ZENML_PROFILE_CONFIGURATION,
+    REPOSITORY_DIRECTORY_NAME,
+    ZEN_SERVICE_ENTRYPOINT,
+    ZEN_SERVICE_IP,
+)
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
     DoesNotExistException,
@@ -34,7 +44,6 @@ from zenml.orchestrators import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
 )
-from zenml.services import ServiceState
 from zenml.stack import Stack
 from zenml.stack.stack_component import StackComponent
 from zenml.stack.stack_component_class_registry import (
@@ -47,7 +56,6 @@ from zenml.stack_stores import (
     SqlStackStore,
 )
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
-from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
 
 logger = get_logger(__name__)
 
@@ -80,7 +88,6 @@ def fresh_stack_store(
     elif store_type == StoreType.SQL:
         yield SqlStackStore().initialize(f"sqlite:///{tmp_path / 'store.db'}")
     elif store_type == StoreType.REST:
-        port = random.randint(8003, 9000)
         # create temporary stack store and profile configuration for unit tests
         backing_stack_store = LocalStackStore().initialize(str(tmp_path))
         store_profile = ProfileConfiguration(
@@ -88,19 +95,53 @@ def fresh_stack_store(
             store_url=backing_stack_store.url,
             store_type=backing_stack_store.type,
         )
-
-        zen_service = ZenService(
-            ZenServiceConfig(
-                port=port,
-                store_profile_configuration=store_profile,
+        # use environment file to pass profile into the zen service process
+        env_file = str(tmp_path / "environ.env")
+        with open(env_file, "w") as f:
+            f.write(
+                f"{ENV_ZENML_PROFILE_CONFIGURATION}='{store_profile.json()}'"
             )
+        port = random.randint(8003, 9000)
+        proc = Process(
+            target=uvicorn.run,
+            args=(ZEN_SERVICE_ENTRYPOINT,),
+            kwargs=dict(
+                host=ZEN_SERVICE_IP,
+                port=port,
+                log_level="info",
+                env_file=env_file,
+            ),
+            daemon=True,
         )
-        zen_service.start(timeout=10)
-        # rest stack store can't have trailing slash on url
-        url = zen_service.zen_service_uri.strip("/")
+        url = f"http://{ZEN_SERVICE_IP}:{port}"
+        proc.start()
+
+        # wait 10 seconds for server to start
+        for t in range(DEFAULT_SERVICE_START_STOP_TIMEOUT):
+            try:
+                if requests.head(f"{url}/health").status_code == 200:
+                    break
+                else:
+                    time.sleep(1)
+            except ConnectionError:
+                time.sleep(1)
+        else:
+            proc.kill()
+            raise RuntimeError("Failed to start ZenService server.")
+
         yield RestStackStore().initialize(url)
-        zen_service.stop(timeout=10)
-        assert zen_service.check_status()[0] == ServiceState.INACTIVE
+
+        # make sure there's still a server and tear down
+        assert proc.is_alive()
+        proc.kill()
+        # wait 10 seconds for process to be killed:
+        for t in range(DEFAULT_SERVICE_START_STOP_TIMEOUT):
+            if proc.is_alive():
+                time.sleep(1)
+            else:
+                break
+        else:
+            raise RuntimeError("Failed to shutdown ZenService server.")
     else:
         raise NotImplementedError(f"No StackStore for {store_type}")
 

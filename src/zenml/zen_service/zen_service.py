@@ -5,7 +5,11 @@ import uvicorn  # type: ignore[import]
 from pydantic import Field
 
 from zenml.config.profile_config import ProfileConfiguration
-from zenml.constants import ENV_ZENML_PROFILE_NAME
+from zenml.constants import (
+    ENV_ZENML_PROFILE_NAME,
+    ZEN_SERVICE_ENTRYPOINT,
+    ZEN_SERVICE_IP,
+)
 from zenml.enums import StoreType
 from zenml.logger import get_logger
 from zenml.repository import Repository
@@ -140,8 +144,8 @@ class ZenService(LocalDaemonService):
 
         try:
             uvicorn.run(
-                "zenml.zen_service.zen_service_api:app",
-                host="127.0.0.1",
+                ZEN_SERVICE_ENTRYPOINT,
+                host=ZEN_SERVICE_IP,
                 port=self.endpoint.status.port,
                 log_level="info",
             )
