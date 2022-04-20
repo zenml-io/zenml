@@ -171,14 +171,4 @@ def main(
 
 
 if __name__ == "__main__":
-    main(
-        [
-            "--secret",
-            "seldon-rclone-secret",
-            "--deploy",
-            "--min-accuracy",
-            "0.80",
-            "--container-registry-secret",
-            "seldon-rclone-secret",
-        ]
-    )
+    main()
