@@ -145,14 +145,13 @@ Best of all: We let you and your infra/ops team decide what the underlying tools
 ## Next Steps?
 
 Normally at this point in a quickstart, you'd like to learn more about what the product has to offer (if the docs 
-have succeeded in making you feel so). There are essentially two choices you can make:
+have succeeded in making you feel so). There a a few places you can go from here.
 
-- If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with 
-the [Class-based API](../guides/class-based-api/) guide.
-- If you have a more complex workflow that requires more control over your pipelines, start with 
-the [Functional API](../guides/functional-api/) guide.
+* If you are someone that loves to learn by doing. Check out our [ZenBytes](https://github.com/zenml-io/zenbytes), small 
+tutorials in a Notebook environment.
+* If you are more of a bookworm, feel free to jump straight into our [Developer Guide](../guides/basics/installation.md)
 
 If you're not sure, pick any one of the above. They are the easiest way to learn how ZenML enables MLOps.
 
-However, for those of you who don't want to read guides, then feel free to start perusing the docs with 
-the [Core Concepts](core-concepts.md) before the guides. See you there!
+However, for those of you who don't want to read guides, then feel free to get familiarized with 
+the [Core Concepts](core-concepts.md). See you there!
