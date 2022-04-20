@@ -4,7 +4,7 @@ description: Skip materialization when needed.
 
 # Skip materialization
 
-While in most cases, [materializers](custom-materializer.md) should be used to control 
+While in most cases, [materializers](../basics/custom-materializer.md) should be used to control 
 how artifacts are consumed and output from steps in a pipeline, there is some times a 
 need to have a completely non-materialized artifact in a step.
 

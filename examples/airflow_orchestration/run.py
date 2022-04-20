@@ -11,10 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from datetime import datetime, timedelta
 import random
 
-from zenml.pipelines import pipeline, Schedule
+from zenml.pipelines import pipeline
 from zenml.steps import Output, step
 
 
@@ -45,7 +44,7 @@ def airflow_example_pipeline(
     # Link all the steps artifacts together
     first_num = get_first_num()
     random_num = get_random_int()
-    result = subtract_numbers(first_num, random_num)
+    subtract_numbers(first_num, random_num)
 
 
 # Initialize a new pipeline run

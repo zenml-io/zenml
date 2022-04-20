@@ -1,6 +1,6 @@
 # Step Fixtures
 
-Whether defining steps using the [Functional API](../guides/functional-api) or [Class-based API](../guides/class-based-api), 
+Whether defining steps using the [Functional API](../functional-api) or [Class-based API](../class-based-api), 
 some special parameters can be passed into a step function, which serves different needs.
 
 * An object which is a subclass of `BaseStepConfig`: This object is used to pass run-time parameters to a pipeline run. It can 
