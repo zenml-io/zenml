@@ -36,6 +36,7 @@ from zenml.steps.base_step_config import BaseStepConfig
 logger = logging.getLogger(__name__)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+requirements_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
 
 
 class Net(nn.Module):
@@ -183,7 +184,11 @@ def deployment_trigger(
 
 
 # Define the pipeline
-@pipeline(enable_cache=True, required_integrations=[SELDON, PYTORCH])
+@pipeline(
+    enable_cache=True,
+    required_integrations=[SELDON, PYTORCH],
+    requirements_file=requirements_file,
+)
 def seldon_pytorch_deployment_pipeline(
     trainer,
     evaluator,

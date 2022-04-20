@@ -227,7 +227,7 @@ def seldon_custom_model_deployer_step(
     step_name = step_env.step_name
 
     # TODO [High]: this must be part of pipeline requirements rather than this
-    pipeline_requirements = step_env.pipeline_requirements + ["torchvision"]
+    pipeline_requirements = step_env.pipeline_requirements
 
     # model class path is required for custom model deployers
     model_name = config.custom_class_path
