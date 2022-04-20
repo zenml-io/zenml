@@ -72,14 +72,12 @@ Step `my_second_step` has finished in 0.067s.
 Pipeline run `first_pipeline-20_Apr_22-16_07_14_577771` has finished in 0.128s.
 ```
 
-# Inspect Past runs
-
-## Post-execution workflow
+# Interact with completed runs
 
 After executing a pipeline, the user needs to be able to fetch it from history and perform certain tasks. This page 
 captures these workflows at an orbital level.
 
-## Component Hierarchy
+## Accessing past pipeline runs
 
 In the context of a post-execution workflow, there is an implied hierarchy of some basic ZenML components:
 
@@ -101,28 +99,38 @@ repo = Repository()
 
 #### Pipelines
 
+The repository contains a collection of all created pipelines with at least one run.
+
 ```python
 # get all pipelines from all stacks
 pipelines = repo.get_pipelines()  
 
+# now you can get pipelines by index
+pipeline_x = pipelines[-1]
+
 # or get one pipeline by name and/or stack key
-pipeline = repo.get_pipeline(pipeline_name=..., stack_key=...)
+pipeline_x = repo.get_pipeline(pipeline_name=..., stack_key=...)
 ```
 
 #### Runs
 
-```python
-runs = pipeline.runs  # all runs of a pipeline chronlogically ordered
-run = runs[-1]  # latest run
+Each pipeline can be executed many times. You can easily get a list of all runs like this
 
-# or get it by name
-run = pipeline.get_run(run_name="custom_pipeline_run_name")
+```python
+runs = pipeline_x.runs  # all runs of a pipeline chronlogically ordered
+
+# get the last run by index
+run = runs[-1]
+
+# or get a specific run by name
+run = pipeline_x.get_run(run_name=...)
 ```
 
 #### Steps
 
+Within a given pipeline run you can now zoom in further on the individual steps.
+
 ```python
-# at this point we switch from the `get_` paradigm to properties
 steps = run.steps  # all steps of a pipeline
 step = steps[0]
 print(step.entrypoint_name)
@@ -130,9 +138,11 @@ print(step.entrypoint_name)
 
 #### Outputs
 
+Most of your steps will probably create outputs. You'll be able to inspect these outputs like this:
+
 ```python
 # The outputs of a step
-# if multiple outputs they are accessible by name
+# if there are multiple outputs they are accessible by name
 output = step.outputs["output_name"]
 
 # if one output, use the `.output` property instead 
@@ -140,28 +150,6 @@ output = step.output
 
 # will get you the value from the original materializer used in the pipeline
 output.read()  
-```
-
-### Materializing outputs (or inputs)
-
-Once an output artifact is acquired from history, one can visualize it with any chosen `Visualizer`.
-
-```python
-from zenml.materializers import PandasMaterializer
-
-
-df = output.read(materializer_class=PandasMaterializer)
-df.head()
-```
-
-### Retrieving Model
-
-```python
-from zenml.integrations.tensorflow.materializers.keras_materializer import KerasMaterializer    
-
-
-model = output.read(materializer_class=KerasMaterializer)
-model  # read keras.Model
 ```
 
 ## Visuals
