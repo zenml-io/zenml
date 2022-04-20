@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -60,7 +60,13 @@ class PyTorchMaterializer(BaseMaterializer):
             torch.save(model, f)
 
         # Save model checkpoint to artifact directory, This is the default behavior for loading model in production phase (inference)
-        with fileio.open(
-            os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "wb"
-        ) as f:
-            torch.save(model.state_dict(), f)
+        if isinstance(model, Module):
+
+            with fileio.open(
+                os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "wb"
+            ) as f:
+                torch.save(model.state_dict(), f)
+
+        else:
+            # it's a dictionary here, this is already saved by the previous torch.save and we don't need to do anything here
+            pass
