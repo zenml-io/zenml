@@ -9,6 +9,7 @@
 * [Build a Pipeline]()
   * [Installation](guides/basics/installation.md)
   * [Build and Run your first Pipeline](guides/basics/step_pipeline_run.md)
+  * [Build and Run your first Pipeline](guides/basics/step_pipeline_run_2.md)
   * [Configure at Runtime](guides/basics/pipeline-configuration.md)
   * [Using Visualizers](guides/basics/visualizers.md)
   * [Step Fixtures](guides/basics/step-fixtures.md)
