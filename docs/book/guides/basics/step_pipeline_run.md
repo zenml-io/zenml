@@ -32,6 +32,7 @@ def my_first_step() -> Output(output_int=int, output_float=float):
 - As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names 
 of each output. If there was only one, we would not need to do this.
 {% endtab %}
+{% endtabs %}
 
 Now we can go ahead and create a pipeline with one step to make sure this step works:
 
