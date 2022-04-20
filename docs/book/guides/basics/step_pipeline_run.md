@@ -112,6 +112,8 @@ Pipeline run `first_pipeline-20_Apr_22-16_07_14_577771` has finished in 0.128s.
 After executing a pipeline, the user needs to be able to fetch it from history and perform certain tasks. This page 
 captures these workflows at an orbital level.
 
+{% tabs %}
+{% tab title="Guide" %}
 ## Accessing past pipeline runs
 
 In the context of a post-execution workflow, there is an implied hierarchy of some basic ZenML components:
@@ -186,4 +188,34 @@ output = step.output
 # will get you the value from the original materializer used in the pipeline
 output.read()  
 ```
+{% endtab %}
 
+{% tab title="Code" %}
+```python
+from zenml.repository import Repository
+
+repo = Repository()
+pipelines = repo.get_pipelines()  
+
+# now you can get pipelines by index
+pipeline_x = pipelines[-1]
+
+# all runs of a pipeline chronlogically ordered
+runs = pipeline_x.runs  
+
+# get the last run by index
+run = runs[-1]
+
+# all steps of a pipeline
+steps = run.steps  
+step = steps[0]
+print(step.entrypoint_name)
+
+# The outputs of a step, if there are multiple outputs they are accessible by name
+output = step.outputs["output_int"]
+
+# will get you the value from the original materializer used in the pipeline
+output.read()  
+```
+{% endtab %}
+{% endtabs %}
