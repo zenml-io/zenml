@@ -285,6 +285,51 @@ def generate_stack_component_update_command(
     return update_stack_component_command
 
 
+def generate_stack_component_rename_command(
+    component_type: StackComponentType,
+) -> Callable[[str, str], None]:
+    """Generates a `rename` command for the specific stack component type."""
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name",
+        type=str,
+        required=True,
+    )
+    @click.argument(
+        "new_name",
+        type=str,
+        required=True,
+    )
+    def rename_stack_component_command(name: str, new_name: str) -> None:
+        """Rename a stack component."""
+        repo = Repository()
+        cli_utils.print_active_profile()
+        current_component = repo.get_stack_component(component_type, name)
+        if current_component is None:
+            cli_utils.error(f"No {display_name} found for name '{name}'.")
+
+        from zenml.stack.stack_component_class_registry import (
+            StackComponentClassRegistry,
+        )
+
+        component_class = StackComponentClassRegistry.get_class(
+            component_type=component_type,
+            component_flavor=current_component.FLAVOR,
+        )
+        renamed_component = component_class(name=new_name)
+
+        repo.rename_stack_component(
+            old_name=current_component.name,
+            renamed_component=renamed_component,
+        )
+        cli_utils.declare(
+            f"Successfully renamed {display_name} `{name}` to `{new_name}`."
+        )
+
+    return rename_stack_component_command
+
+
 def generate_stack_component_delete_command(
     component_type: StackComponentType,
 ) -> Callable[[str], None]:
@@ -525,6 +570,12 @@ def register_single_stack_component_cli_commands(
         context_settings=context_settings,
         help=f"Update a new {singular_display_name}.",
     )(update_command)
+
+    # zenml stack-component rename
+    rename_command = generate_stack_component_rename_command(component_type)
+    command_group.command(
+        "rename", help=f"Rename a registered {singular_display_name}."
+    )(rename_command)
 
     # zenml stack-component delete
     delete_command = generate_stack_component_delete_command(component_type)

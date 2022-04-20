@@ -197,6 +197,23 @@ class RestStackStore(BaseStackStore):
         """
         raise NotImplementedError
 
+    def rename_stack_component(
+        self,
+        old_name: str,
+        component: StackComponentWrapper,
+    ) -> None:
+        """Rename a stack component."""
+        raise NotImplementedError
+
+    def update_stacks_after_rename(
+        self,
+        old_name: str,
+        new_name: str,
+        renamed_component_type: StackComponentType,
+    ) -> None:
+        """Update stack components on stacks following a component rename."""
+        raise NotImplementedError
+
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 

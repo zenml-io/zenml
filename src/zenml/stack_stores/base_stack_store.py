@@ -170,6 +170,23 @@ class BaseStackStore(ABC):
         """
 
     @abstractmethod
+    def rename_stack_component(
+        self,
+        old_name: str,
+        component: StackComponentWrapper,
+    ) -> None:
+        """Rename a stack component."""
+
+    @abstractmethod
+    def update_stacks_after_rename(
+        self,
+        old_name: str,
+        new_name: str,
+        renamed_component_type: StackComponentType,
+    ) -> None:
+        """Update stack components on stacks following a component rename."""
+
+    @abstractmethod
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
