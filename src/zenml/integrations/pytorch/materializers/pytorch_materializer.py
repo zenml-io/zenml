@@ -61,12 +61,7 @@ class PyTorchMaterializer(BaseMaterializer):
 
         # Save model checkpoint to artifact directory, This is the default behavior for loading model in production phase (inference)
         if isinstance(model, Module):
-
             with fileio.open(
                 os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "wb"
             ) as f:
                 torch.save(model.state_dict(), f)
-
-        else:
-            # it's a dictionary here, this is already saved by the previous torch.save and we don't need to do anything here
-            pass
