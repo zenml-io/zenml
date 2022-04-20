@@ -11,19 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict
+from typing import Any, ClassVar, Dict
 
 from pydantic import root_validator
 
-from zenml.enums import SecretSchemaType
 from zenml.secret import BaseSecretSchema
+
+ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
 
 
 class ArbitrarySecretSchema(BaseSecretSchema):
     """Schema for arbitrary collections of key value pairs with no
     predefined schema."""
 
-    schema_type: SecretSchemaType = SecretSchemaType.ARBITRARY
+    TYPE: ClassVar[str] = ARBITRARY_SECRET_SCHEMA_TYPE
 
     arbitrary_kv_pairs: Dict[str, Any]
 
