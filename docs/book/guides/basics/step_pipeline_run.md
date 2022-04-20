@@ -32,7 +32,7 @@ from zenml.steps import step, Output
 @step
 def my_second_step(input_int: int, input_float: float) -> Output(output_int=int, output_float=float):
     """Step that doubles the inputs"""
-    return 2 * input_int, 2* input_float
+    return 2 * input_int, 2 * input_float
 ```
 
 Now we can go ahead and create a pipeline with our two steps to make sure they work.
@@ -78,31 +78,130 @@ Pipeline run `first_pipeline-20_Apr_22-16_07_14_577771` has finished in 0.128s.
 
 {% tab title="Code" %}
 ```python
-    from zenml.steps import step, Output
-    from zenml.pipelines import pipeline
+from zenml.steps import step, Output
+from zenml.pipelines import pipeline
 
-    @step
-    def my_first_step() -> Output(output_int=int, output_float=float):
-        """Step that returns a pre-defined integer and float"""
-        return 7, 0.1
-
-
-    @step
-    def my_second_step(input_int: int, input_float: float
-                       ) -> Output(output_int=int, output_float=float):
-        """Step that doubles the inputs"""
-        return 2 * input_int, 2* input_float
+@step
+def my_first_step() -> Output(output_int=int, output_float=float):
+    """Step that returns a pre-defined integer and float"""
+    return 7, 0.1
 
 
-    @pipeline
-    def first_pipeline(
-        step_1,
-        step_2
-    ):
-        output_1, output_2 = step_1()
-        step_2(output_1, output_2)
+@step
+def my_second_step(input_int: int, input_float: float
+                   ) -> Output(output_int=int, output_float=float):
+    """Step that doubles the inputs"""
+    return 2 * input_int, 2 * input_float
 
-    first_pipeline(step_1=my_first_step(), step_2=my_second_step()).run()
+
+@pipeline
+def first_pipeline(
+    step_1,
+    step_2
+):
+    output_1, output_2 = step_1()
+    step_2(output_1, output_2)
+
+first_pipeline(step_1=my_first_step(), step_2=my_second_step()).run()
+```
+{% endtab %}
+{% endtabs %}
+
+# Configure at Runtime
+
+A ZenML pipeline clearly separated business logic from parameter configuration. Business logic is what defines 
+a step and the pipeline. Step and pipeline configurations are used to dynamically set parameters at runtime. 
+
+{% tabs %}
+{% tab title="Guide" %}
+## Step configuration
+
+You can easily add a configuration to a step by creating your configuration as a subclass to the BaseStepConfig. 
+When such a config object is passed to a step, it is not treated like other artifacts. Instead, it gets passed
+into the step when the pipeline is instantiated.
+
+```python
+from zenml.steps import step, Output, BaseStepConfig
+
+class SecondStepConfig(BaseStepConfig):
+    """Trainer params"""
+    multiplier: int = 4
+
+
+@step
+def my_second_step(config: SecondStepConfig, input_int: int, input_float: float
+                   ) -> Output(output_int=int, output_float=float):
+    """Step that multiplie the inputs"""
+    return config.multiplier * input_int, config.multiplier * input_float
+```
+
+The default value for the multiplier is set to 4. However, when the pipeline is instatiated you can
+override the default like this:
+
+```python
+first_pipeline(step_1=my_first_step(),
+               step_2=my_second_step(SecondStepConfig(multiplier=3))
+               ).run()
+```
+
+## Naming a pipeline run
+
+When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current date and time as the name for the 
+pipeline run. In order to change the name for a run, simply pass it as a parameter to the `run()` function:
+
+```python
+first_pipeline_instance.run(run_name="custom_pipeline_run_name")
+```
+
+{% hint style="warning" %}
+Pipeline run names must be unique, so make sure to compute it dynamically if you plan to run your pipeline multiple 
+times.
+{% endhint %}
+
+Once the pipeline run is finished we can easily access this specific run during our post-execution workflow:
+
+```python
+from zenml.repository import Repository
+
+repo = Repository()
+pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
+run = pipeline.get_run("custom_pipeline_run_name")
+```
+{% endtab %}
+
+{% tab title="Code" %}
+```python
+from zenml.steps import step, Output, BaseStepConfig
+from zenml.pipelines import pipeline
+
+@step
+def my_first_step() -> Output(output_int=int, output_float=float):
+    """Step that returns a pre-defined integer and float"""
+    return 7, 0.1
+
+
+class SecondStepConfig(BaseStepConfig):
+    """Trainer params"""
+    multiplier: int = 4
+
+
+@step
+def my_second_step(config: SecondStepConfig, input_int: int, input_float: float
+                   ) -> Output(output_int=int, output_float=float):
+    """Step that multiplie the inputs"""
+    return config.multiplier * input_int, config.multiplier * input_float
+
+@pipeline
+def first_pipeline(
+    step_1,
+    step_2
+):
+    output_1, output_2 = step_1()
+    step_2(output_1, output_2)
+    
+first_pipeline(step_1=my_first_step(),
+               step_2=my_second_step(SecondStepConfig(multiplier=3))
+               ).run(run_name="custom_pipeline_run_name")
 ```
 {% endtab %}
 {% endtabs %}
@@ -219,3 +318,6 @@ output.read()
 ```
 {% endtab %}
 {% endtabs %}
+
+
+# 
