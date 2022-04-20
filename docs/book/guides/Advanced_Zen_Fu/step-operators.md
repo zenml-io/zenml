@@ -109,7 +109,7 @@ zenml step-operator register sagemaker \
 
 * You can also choose a custom docker image that you want ZenML to use as a base image for creating an environment to run your jobs on Vertex AI. 
 
-* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Vertex will use. Check out the [cloud guide](../features/guide-aws-gcp-azure.md) to learn how you can set up an GCP container registry. 
+* A container registry has to be configured in the stack. This registry will be used by ZenML to push your job images that Vertex will use. Check out the [cloud guide](guide-aws-gcp-azure.md) to learn how you can set up an GCP container registry. 
 
 Once you have all these values handy, you can proceed to setting up the components required for your stack.
 

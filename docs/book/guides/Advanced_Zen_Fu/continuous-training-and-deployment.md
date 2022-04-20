@@ -12,7 +12,7 @@ new (fresh) data. (e.g. Every two weeks, take the latest data from an API, and t
 - Continuous Deployment refers to the paradigm where a newly trained models are automatically deployed to a prediction 
 service/server, when a criterion in production is fulfilled (e.g. if a trained model has a certain accuracy, or overall performs better than the previous one, deploy it in production.)
 
-ZenML allows both paradigms with [Schedules](../introduction/core-concepts.md), [Model Deployers](../introduction/core-concepts.md#model-deployer) and [Services](../introduction/core-concepts.md#service).
+ZenML allows both paradigms with [Schedules](../../introduction/core-concepts.md), [Model Deployers](../../introduction/core-concepts.md#model-deployer) and [Services](../../introduction/core-concepts.md#service).
 
 ## Setting a pipeline schedule for Continuous Training (CT)
 

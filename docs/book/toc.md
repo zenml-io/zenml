@@ -18,15 +18,14 @@
   * [Class Based API](guides/basics/class_based_api.md)
   * [Adding Experiment Tracking]()
   * [Drift Detection]()
-* [Advanced Zen-Fu]()
-  * [Create a Cloud Based Stack]()
-  * [Profiles and Centralized Stack Management]()
+* [Advanced Zen-Fu](guides/Advanced_Zen_Fu)
+  * [Create a Cloud Based Stack](guides/Advanced_Zen_Fu/guide-aws-gcp-azure.md)
+  * [Profiles and Centralized Stack Management](guides/Advanced_Zen_Fu/profiles.md)
   * [ZenML Service]()
-  * [Managing your Secrets]()
-  * [Managing External Services]()
-  * [Continuous Training]()
-  * [Continuous Deployment]()
-  * [Using Step Operators]()
+  * [Managing your Secrets](guides/Advanced_Zen_Fu/secrets.md)
+  * [Managing External Services](guides/Advanced_Zen_Fu/services.md)
+  * [Continuous Training and Deployment](guides/Advanced_Zen_Fu/continuous-training-and-deployment.md)
+  * [Using Step Operators](guides/Advanced_Zen_Fu/step-operators.md)
 
 ## ZenML Service
 
