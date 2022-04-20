@@ -22,7 +22,6 @@
 * [Advanced Zen-Fu](guides/Advanced_Zen_Fu)
   * [Create a Cloud Based Stack](guides/Advanced_Zen_Fu/guide-aws-gcp-azure.md)
   * [Profiles and Centralized Stack Management](guides/Advanced_Zen_Fu/profiles.md)
-  * [ZenML Service]()
   * [Managing your Secrets](guides/Advanced_Zen_Fu/secrets.md)
   * [Managing External Services](guides/Advanced_Zen_Fu/services.md)
   * [Continuous Training and Deployment](guides/Advanced_Zen_Fu/continuous-training-and-deployment.md)
@@ -37,7 +36,6 @@
 ## Stack and Stack Components
 
 * [What is a Stack]()
-* [What is a Stack Component]()
   * [Artifact Store](stack_and_components/artifact_store.md)
   * [Metadata Store](stack_and_components/metadata_store.md)
   * [Orchestrator](stack_and_components/orchestrator.md)
