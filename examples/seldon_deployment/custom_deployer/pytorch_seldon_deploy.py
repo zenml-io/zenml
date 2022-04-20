@@ -15,6 +15,7 @@
 
 import logging
 import os
+from typing import Any
 
 import seldon_core
 import torch
@@ -202,7 +203,7 @@ def seldon_pytorch_deployment_pipeline(
 class mnistpytorch(ZenMLCustomModel):
     """Custom model deployment class"""
 
-    def __init__(self, model_uri: str = None):
+    def __init__(self, model_uri: str = None, *args: Any, **kwargs: Any):
         super().__init__(model_uri=model_uri)
 
     def load(self):
@@ -224,11 +225,12 @@ class mnistpytorch(ZenMLCustomModel):
             logger.exception("Exception during predict", ex)
             self.ready = False
 
-    def predict(self, X, feature_names=None):
+    def predict(self, X, feature_names=None, *args: Any, **kwargs: Any):
         """Run a prediction on the given data"""
         try:
             logger.info("Starting the prediction")
             tensor = torch.from_numpy(X).view(-1, 28, 28)
+            logger.info(tensor.shape)
             t = torchvision.transforms.Normalize((0.1307,), (0.3081,))
             tensor_norm = t(tensor)
             tensor_norm = tensor_norm.unsqueeze(0)
