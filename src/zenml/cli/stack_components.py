@@ -40,6 +40,17 @@ def _get_required_properties(
     ]
 
 
+def _get_available_properties(
+    component_class: Type[StackComponent],
+) -> List[str]:
+    """Gets the available non-mandatory properties for a stack component."""
+    return [
+        item[0]
+        for item in component_class.__fields__.items()
+        if item[0] not in MANDATORY_COMPONENT_PROPERTIES
+    ]
+
+
 def _component_display_name(
     component_type: StackComponentType, plural: bool = False
 ) -> str:
@@ -273,6 +284,21 @@ def generate_stack_component_update_command(
             component_type=component_type,
             component_flavor=current_component.FLAVOR,
         )
+        available_properties = _get_available_properties(component_class)
+        for prop in parsed_args.keys():
+            if (prop not in available_properties) and (
+                len(available_properties) > 0
+            ):
+                cli_utils.error(
+                    f"You cannot update the {display_name} `{current_component.name}` with property '{prop}'. You can only update the following properties: {available_properties}."
+                )
+            elif prop not in available_properties:
+                cli_utils.error(
+                    f"You cannot update the {display_name} `{current_component.name}` with property '{prop}' as this {display_name} has no optional properties that can be configured."
+                )
+            else:
+                continue
+
         required_properties = _get_required_properties(component_class)
         for prop in required_properties:
             if prop not in parsed_args:
