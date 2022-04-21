@@ -77,14 +77,15 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     FLAVOR: ClassVar[str] = MLFLOW
     tracking_uri: Optional[str] = None
 
+    def get_tracking_uri(self) -> str:
+        """Resolves and returns the tracking URI."""
+        if self.tracking_uri is None:
+            return _local_mlflow_backend()
+        return self.tracking_uri
+
     def prepare_pipeline_run(self) -> None:
         """Prepares running the pipeline."""
-        if self.tracking_uri is None:
-            set_tracking_uri(_local_mlflow_backend())
-            return
-
-        # TODD [LOW]: Do some tracking_uri validation.
-        set_tracking_uri(self.tracking_uri)
+        set_tracking_uri(self.get_tracking_uri())
 
     def cleanup_pipeline_run(self) -> None:
         """Cleans up resources after the pipeline run is finished."""
