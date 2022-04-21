@@ -415,7 +415,6 @@ class SeldonModelDeployer(BaseModelDeployer):
             environment_vars=environment_vars,
             global_configuration=False,
             extra_build_lines=extra_build_lines,
-            base_image="safoinme/base-image-seldon-deploy-zenml:latest",
         )
         docker_utils.push_docker_image(image_name)
         return docker_utils.get_image_digest(image_name) or image_name
