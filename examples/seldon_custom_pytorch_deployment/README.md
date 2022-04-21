@@ -46,7 +46,13 @@ You can control which pipeline to run by passing the `--deploy` and/or the
 
 When running the deployment pipeline, ZenML wrap everything in the working directory
 in a docker image with needed requirments, and push it to the active container
-regitry. ZenML's Seldon Core integration then is used to prepare seldon deployment definition with the custom docker image created for this pipeline and the trained model from the Artifact Store where it is automatically saved as an artifact by the training step (secrets to access artifact store and container registry can be supplied as command line arguments). A Seldon Core deployment server is launched to serve the latest model version if its accuracy is above a configured threshold (also customizable through a command line argument).
+regitry. ZenML's Seldon Core integration then is used to prepare seldon deployment 
+definition with the custom docker image created for this pipeline and the trained 
+model from the Artifact Store where it is automatically saved as an artifact by the 
+training step (secrets to access artifact store and container registry can be 
+supplied as command line arguments). A Seldon Core deployment server is launched 
+to serve the latest model version if its accuracy is above a configured threshold 
+(also customizable through a command line argument).
 
 The Seldon Core deployment server is provisioned remotely as a Kubernetes
 resource that continues to run after the deployment pipeline run is complete.
@@ -107,11 +113,13 @@ This section is a trimmed up version of the
 [official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup)
 applied to a particular type of Kubernetes cluster, GKE in this case. It assumes
 that an GKE cluster is already set up and configured with IAM access.
+For more informations about configurate access to GKE locally  
+[Install kubectl and configure cluster access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl)
 
-To configure GKE cluster access locally, e.g:
+To view the list of contexts for kubectl, run the following command
 
 ```bash
-aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
+kubectl config current-context
 ```
 
 Install Istio 1.5.0 (required for the latest Seldon Core version):
@@ -165,7 +173,7 @@ kubectl apply -f iris.yaml
 Extract the URL where the model server exposes its prediction API:
 
 ```bash
-export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 ```
 
 Use curl to send a test prediction API request to the server:
@@ -209,10 +217,13 @@ context. The reference used in this example is a Seldon Core installation
 running in an EKS cluster, but any other type of Kubernetes cluster can be used,
 managed or otherwise.
 
-To configure GKE cluster access locally, e.g:
+For more informations about configurate access to GKE locally  
+[Install kubectl and configure cluster access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl)
+
+To view the list of contexts for kubectl, run the following command
 
 ```bash
-aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
+kubectl config current-context
 ```
 
 Set up a namespace for ZenML Seldon Core workloads:
@@ -285,17 +296,19 @@ through a Kubernetes configuration context. The reference used in this example
 is a Kubeflow and Seldon Core installation running in an GKE cluster, but any
 other type of Kubernetes cluster can be used, managed or otherwise.
 
-To configure GKE cluster access locally, run e.g:
+For more informations about configurate access to GKE locally  
+[Install kubectl and configure cluster access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl)
+
+To view the list of contexts for kubectl, run the following command
 
 ```bash
-aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
+kubectl config current-context
 ```
 
-To configure GCP registry access locally, run e.g.:
+To configure GCP container registry access locally, run e.g.:
 
 ```bash
-aws ecr get-login-password --region us-east-1 | docker login --username AWS \
-  --password-stdin 715803424590.dkr.ecr.us-east-1.amazonaws.com
+gcloud auth configure-docker
 ```
 
 Extract the URL where the Seldon Core model server exposes its prediction API, e.g.:
@@ -360,41 +373,82 @@ Example output when run with the local orchestrator stack:
 ```
 zenml/seldon_deployment$ python run.py --secret seldon-rclone-secret --deploy --min-accuracy 0.80
 
-2022-04-06 15:40:28.903233: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
-2022-04-06 15:40:28.903253: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
-Creating run for pipeline: `continuous_deployment_pipeline`
-Cache disabled for pipeline `continuous_deployment_pipeline`
-Using stack `local_with_aws_storage` to run pipeline `continuous_deployment_pipeline`...
-Step `importer_mnist` has started.
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-Step `importer_mnist` has finished in 20.012s.
-Step `normalizer` has started.
-Step `normalizer` has finished in 24.177s.
-Step `sklearn_trainer` has started.
-Step `sklearn_trainer` has finished in 23.150s.
-Step `sklearn_evaluator` has started.
-Step `sklearn_evaluator` has finished in 10.511s.
+Creating run for pipeline: `seldon_pytorch_deployment_pipeline`
+Cache disabled for pipeline `seldon_pytorch_deployment_pipeline`
+Using stack `gcp_stack_seldon` to run pipeline `seldon_pytorch_deployment_pipeline`...
+Step `torch_trainer` has started.
+Train Epoch: 1  Loss: 0.000048
+Train Epoch: 2  Loss: 1.023394
+Train Epoch: 3  Loss: 0.015611
+Step `torch_trainer` has finished in 2m40s.
+Step `torch_evaluator` has started.
+
+Test set: Average loss: 0.0694, Accuracy: 9789/10000 (98%)
+
+Step `torch_evaluator` has finished in 8.094s.
 Step `deployment_trigger` has started.
-Step `deployment_trigger` has finished in 4.965s.
-Step `seldon_model_deployer` has started.
-INFO:asyncio:Loading last service deployed by step model_deployer and pipeline continuous_deployment_pipeline...
-Creating a new Seldon deployment service
+Step `deployment_trigger` has finished in 3.724s.
+Step `seldon_custom_model_deployer_step` has started.
+No explicit dockerignore specified and no file called .dockerignore exists at the build context root (/Users/safoine-zenml/work-dir/zen/zenml/examples/seldon_custom_pytorch_deployment). Creating docker build context with all files inside the build context root directory.
+Building docker image 'gcr.io/zenml-core/zenml-kubeflow/zenml-seldon-custom-deploy:seldon_pytorch_deployment_pipeline-seldon_custom_model_deployer_step', this might take a while...
+Step 1/10 : FROM zenmldocker/zenml:latest
+
+---> 7dfb493a0643
+Step 2/10 : WORKDIR /app
+
+---> Using cache
+---> 6c703dc20964
+Step 3/10 : ENV MODEL_NAME=pytorch_seldon_deploy.mnistpytorch
+
+---> Using cache
+---> 2995806d89d9
+Step 4/10 : RUN pip install --no-cache gcsfs kubernetes==18.20.0 seldon-core==1.13.1 torch torchvision werkzeug==2.0.3 zenml==0.7.2
+
+---> Using cache
+---> 1dab6de5f505
+Step 5/10 : COPY . .
+
+---> 99b786560470
+Step 6/10 : RUN chmod -R a+rw .
+
+---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+---> Running in ec69027db1d5
+---> 1b1a28a83243
+Step 7/10 : ENV ZENML_CONFIG_PATH=/app/.zenconfig
+
+---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+---> Running in ed194ae67635
+---> 433423446c20
+Step 8/10 : EXPOSE 5000
+
+---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+---> Running in f3d6b4d82621
+---> f38d7dd48f72
+Step 9/10 : EXPOSE 9000
+
+---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+---> Running in 891774b6dbaa
+---> dd5f7028b9a3
+Step 10/10 : ENTRYPOINT seldon-core-microservice $MODEL_NAME --service-type MODEL
+
+---> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
+---> Running in a493890bfd2a
+---> 8f5c1bb57b69
+Successfully built 8f5c1bb57b69
+Successfully tagged gcr.io/zenml-core/zenml-kubeflow/zenml-seldon-custom-deploy:seldon_pytorch_deployment_pipeline-seldon_custom_model_deployer_step
+Finished building docker image.
+Pushing docker image 'gcr.io/zenml-core/zenml-kubeflow/zenml-seldon-custom-deploy:seldon_pytorch_deployment_pipeline-seldon_custom_model_deployer_step'.
+Finished pushing docker image.
+Creating a new Seldon deployment service: SeldonDeploymentService[1fcafadd-e918-4170-a506-8c2224506044] (type: model-serving, flavor: seldon)
 Seldon deployment service started and reachable at:
-    http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-1
-6241824-7e17-42d8-bed3-070b51ba29d2/api/v0.1/predictions
+    http://104.155.117.93/seldon/zenml-workloads/zenml-1fcafadd-e918-4170-a506-8c2224506044/api/v0.1/predictions
 
-Step `seldon_model_deployer` has finished in 39.095s.
-Pipeline run `continuous_deployment_pipeline-06_Apr_22-15_40_31_886832` has finished in 2m2s.
+Step `seldon_custom_model_deployer_step` has finished in 1m30s.
+Pipeline run `seldon_pytorch_deployment_pipeline-21_Apr_22-13_10_16_626880` has finished in 4m23s.
 The Seldon prediction server is running remotely as a Kubernetes service and accepts inference requests at:
-    http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-1
-6241824-7e17-42d8-bed3-070b51ba29d2/api/v0.1/predictions
-To stop the service, re-run the same command and supply the `--stop-service` argument.
+    http://104.155.117.93/seldon/zenml-workloads/zenml-1fcafadd-e918-4170-a506-8c2224506044/api/v0.1/predictions
+To stop the service, run `zenml served-models delete 1fcafadd-e918-4170-a506-8c2224506044`.
 ```
-
-Example Kubeflow pipeline when run with the remote Kubeflow stack:
-
-![Kubeflow Deployment Pipeline](assets/kubeflow-deployment.png)
-
 
 Re-running the example with different hyperparameter values will re-train
 the model and update the deployment server to serve the new model:
@@ -409,110 +463,64 @@ Core deployment will not be updated with the new model. Similarly, if a new mode
 is trained in the deployment pipeline but the model accuracy doesn't exceed the
 configured accuracy threshold, the new model will not be deployed.
 
-The inference pipeline will use the currently running Seldon Core deployment
-server to perform an online prediction. To run the inference pipeline:
-
-```shell
-python run.py --secret seldon-rclone-secret --predict
-```
-
-Example output when run with the local orchestrator stack:
-
-```
-zenml/seldon_deployment$ python run.py --predict --model-flavor sklearn
-2022-04-06 15:48:02.346731: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
-2022-04-06 15:48:02.346762: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
-Creating run for pipeline: `inference_pipeline`
-Cache disabled for pipeline `inference_pipeline`
-Using stack `local_with_aws_storage` to run pipeline `inference_pipeline`...
-Step `dynamic_importer` has started.
-INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-Step `dynamic_importer` has finished in 6.284s.
-Step `prediction_service_loader` has started.
-Step `prediction_service_loader` has finished in 7.104s.
-Step `sklearn_predict_preprocessor` has started.
-Step `sklearn_predict_preprocessor` has finished in 5.180s.
-Step `predictor` has started.
-Prediction:  [7 2 1 0 4 1 4 9 6 9 0 6 9 0 1 5 9 7 3 4 9 6 6 5 4 0 7 4 0 1 3 1 3 6 7 2 7
- 1 2 1 1 7 4 2 3 5 1 2 4 4 6 3 5 5 6 0 4 1 9 5 7 8 9 2 7 4 7 4 3 0 7 0 2 9
- 1 7 3 2 9 7 7 6 2 7 8 4 7 3 6 1 3 6 9 3 1 4 1 7 6 9]
-Step `predictor` has finished in 8.009s.
-Pipeline run `inference_pipeline-06_Apr_22-15_48_05_308089` has finished in 26.702s.
-The Seldon prediction server is running remotely as a Kubernetes service and accepts inference requests at:
-    http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-162
-41824-7e17-42d8-bed3-070b51ba29d2/api/v0.1/predictions
-To stop the service, re-run the same command and supply the `--stop-service` argument.
-```
-
-Example Kubeflow pipeline when run with the remote Kubeflow stack:
-
-![Kubeflow Inference Pipeline](assets/kubeflow-prediction.png)
-
-To switch from Tensorflow to sklearn as the libraries used for model
-training and the Seldon Core model server implementation, the `--model-flavor`
-command line argument can be used:
-
-```
-python run.py --secret seldon-init-container-secret --deploy --predict --model-flavor sklearn --penalty=l2
-```
 
 The `zenml served-models list` CLI command can be run to list the active model servers:
 
 ```shell
 $ zenml served-models list
-┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         ┃
-┠────────┼──────────────────────────────────────┼────────────────────────────────┼────────────────────────────┨
-┃   ✅   │ 8cbe671b-9fce-4394-a051-68e001f92765 │ continuous_deployment_pipeline │ seldon_model_deployer_step ┃
-┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┓
+┃ STATUS │ UUID                                 │ PIPELINE_NAME                      │ PIPELINE_STEP_NAME                │ MODEL_NAME ┃
+┠────────┼──────────────────────────────────────┼────────────────────────────────────┼───────────────────────────────────┼────────────┨
+┃   ✅   │ 1fcafadd-e918-4170-a506-8c2224506044 │ seldon_pytorch_deployment_pipeline │ seldon_custom_model_deployer_step │ mnist      ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━┛
 ```
 
 To get more information about a specific model server, such as the prediction URL,
 the `zenml served-models describe <uuid>` CLI command can be run:
 
 ```shell
-$ zenml served-models describe 8cbe671b-9fce-4394-a051-68e001f92765
-                          Properties of Served Model 8cbe671b-9fce-4394-a051-68e001f92765                          
-┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ MODEL SERVICE PROPERTY │ VALUE                                                                                  ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ MODEL_NAME             │ mnist                                                                                  ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ MODEL_URI              │ s3://zenfiles/seldon_model_deployer_step/output/884/seldon                             ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_NAME          │ continuous_deployment_pipeline                                                         ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_RUN_ID        │ continuous_deployment_pipeline-11_Apr_22-09_39_27_648527                               ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ PIPELINE_STEP_NAME     │ seldon_model_deployer_step                                                             ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ PREDICTION_URL         │ http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/… ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ SELDON_DEPLOYMENT      │ zenml-8cbe671b-9fce-4394-a051-68e001f92765                                             ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ STATUS                 │ ✅                                                                                     ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ STATUS_MESSAGE         │ Seldon Core deployment 'zenml-8cbe671b-9fce-4394-a051-68e001f92765' is available       ┃
-┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
-┃ UUID                   │ 8cbe671b-9fce-4394-a051-68e001f92765                                                   ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+$ zenml served-models describe 1fcafadd-e918-4170-a506-8c2224506044
+                                     Properties of Served Model 1fcafadd-e918-4170-a506-8c2224506044                                     
+┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ MODEL SERVICE PROPERTY │ VALUE                                                                                                        ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ MODEL_NAME             │ mnist                                                                                                        ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ MODEL_URI              │ gs://zenml-kubeflow-artifact-store/torch_trainer/output/664                                                  ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_NAME          │ seldon_pytorch_deployment_pipeline                                                                           ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_RUN_ID        │ seldon_pytorch_deployment_pipeline-21_Apr_22-13_10_16_626880                                                 ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_STEP_NAME     │ seldon_custom_model_deployer_step                                                                            ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PREDICTION_URL         │ http://104.155.117.93/seldon/zenml-workloads/zenml-1fcafadd-e918-4170-a506-8c2224506044/api/v0.1/predictions ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ SELDON_DEPLOYMENT      │ zenml-1fcafadd-e918-4170-a506-8c2224506044                                                                   ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ STATUS                 │ ✅                                                                                                           ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ STATUS_MESSAGE         │ Seldon Core deployment 'zenml-1fcafadd-e918-4170-a506-8c2224506044' is available                             ┃
+┠────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
+┃ UUID                   │ 1fcafadd-e918-4170-a506-8c2224506044                                                                         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
 The prediction URL can sometimes be more difficult to make out in the detailed
 output, so there is a separate CLI command available to retrieve it:
 
 ```shell
-$ zenml served-models get-url 8cbe671b-9fce-4394-a051-68e001f92765
-  Prediction URL of Served Model 8cbe671b-9fce-4394-a051-68e001f92765 is:
-  http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-8cbe67
-1b-9fce-4394-a051-68e001f92765/api/v0.1/predictions
+$ zenml served-models get-url 1fcafadd-e918-4170-a506-8c2224506044
+  Prediction URL of Served Model 1fcafadd-e918-4170-a506-8c2224506044 is:
+  http://104.155.117.93/seldon/zenml-workloads/zenml-1fcafadd-e918-4170-a506-8c2224506044/api/v0.1/predictions
 ```
 
 Finally, a model server can be deleted with the `zenml served-models delete <uuid>`
 CLI command:
 
 ```shell
-$ zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
+$ zenml served-models delete 1fcafadd-e918-4170-a506-8c2224506044
+Model server SeldonDeploymentService[1fcafadd-e918-4170-a506-8c2224506044] (type: model-serving, flavor: seldon) was deleted.
 ```
 
 ### Clean up
@@ -521,7 +529,7 @@ To stop any prediction servers running in the background, use the `zenml model-s
 and `zenml model-server delete <uuid>` CLI commands.:
 
 ```shell
-zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
+zenml served-models delete 1fcafadd-e918-4170-a506-8c2224506044
 ```
 
 Then delete the remaining ZenML references.
