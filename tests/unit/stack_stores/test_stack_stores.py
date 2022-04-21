@@ -14,7 +14,6 @@
 
 import os
 import platform
-import random
 import shutil
 import time
 from multiprocessing import Process
@@ -22,7 +21,6 @@ from multiprocessing import Process
 import pytest
 import requests
 import uvicorn
-from requests.exceptions import ConnectionError
 
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
@@ -44,6 +42,7 @@ from zenml.stack_stores import (
     SqlStackStore,
 )
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
+from zenml.utils.networking_utils import scan_for_available_port
 
 logger = get_logger(__name__)
 
@@ -78,7 +77,9 @@ def fresh_stack_store(
             f.write(
                 f"{ENV_ZENML_PROFILE_CONFIGURATION}='{store_profile.json()}'"
             )
-        port = random.randint(8003, 9000)
+        port = scan_for_available_port(start=8003, stop=9000)
+        if not port:
+            raise RuntimeError("No available port found.")
         proc = Process(
             target=uvicorn.run,
             args=(ZEN_SERVICE_ENTRYPOINT,),
@@ -100,7 +101,7 @@ def fresh_stack_store(
                     break
                 else:
                     time.sleep(1)
-            except ConnectionError:
+            except Exception:
                 time.sleep(1)
         else:
             proc.kill()
