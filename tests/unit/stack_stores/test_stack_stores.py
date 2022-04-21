@@ -38,6 +38,9 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
+from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
+    KubeflowOrchestrator,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
@@ -392,3 +395,110 @@ def test_update_non_existent_stack_component_raises_error(
         fresh_stack_store.update_stack_component(
             StackComponentWrapper.from_component(local_secrets_manager)
         )
+
+
+def test_update_real_component_succeeds(
+    fresh_stack_store: BaseStackStore,
+):
+    """Test updating a real component succeeds."""
+    kubeflow_orchestrator = StackComponentWrapper.from_component(
+        KubeflowOrchestrator(name="arias_orchestrator")
+    )
+    fresh_stack_store.register_stack_component(kubeflow_orchestrator)
+
+    updated_kubeflow_orchestrator = StackComponentWrapper.from_component(
+        KubeflowOrchestrator(
+            name="arias_orchestrator",
+            custom_docker_base_image_name="aria/arias_base_image",
+        )
+    )
+    fresh_stack_store.update_stack_component(updated_kubeflow_orchestrator)
+
+    orchestrator_component = get_component_from_wrapper(
+        fresh_stack_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, "arias_orchestrator"
+        )
+    )
+    assert (
+        orchestrator_component.custom_docker_base_image_name
+        == "aria/arias_base_image"
+    )
+
+
+def test_rename_nonexistent_stack_component_fails(
+    fresh_stack_store: BaseStackStore,
+):
+    """Test renaming a non-existent stack component fails."""
+    with pytest.raises(StackComponentExistsError):
+        fresh_stack_store.rename_stack_component(
+            "not_a_secrets_manager",
+            StackComponentWrapper.from_component(
+                LocalSecretsManager(name="local_secrets_manager")
+            ),
+        )
+
+
+def test_rename_core_stack_component_succeeds(
+    fresh_stack_store: BaseStackStore,
+):
+    """Test renaming a core stack component succeeds."""
+    old_name = "default"
+    new_name = "arias_orchestrator"
+    renamed_orchestrator = StackComponentWrapper.from_component(
+        LocalOrchestrator(name=new_name)
+    )
+    fresh_stack_store.rename_stack_component(old_name, renamed_orchestrator)
+    fresh_stack_store.update_stacks_after_rename(
+        old_name, new_name, StackComponentType.ORCHESTRATOR
+    )
+    with pytest.raises(KeyError):
+        assert fresh_stack_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, old_name
+        )
+    stack_components = fresh_stack_store.get_stack("default").components
+    stack_orchestrator = get_component_from_wrapper(
+        [
+            component
+            for component in stack_components
+            if component.name == new_name
+        ][0]
+    )
+    assert stack_orchestrator is not None
+    assert stack_orchestrator.name == new_name
+
+
+def test_rename_non_core_stack_component_succeeds(
+    fresh_stack_store: BaseStackStore,
+):
+    """Test renaming a non-core stack component succeeds."""
+    old_name = "original_kubeflow"
+    new_name = "arias_kubeflow"
+
+    kubeflow_orchestrator = StackComponentWrapper.from_component(
+        KubeflowOrchestrator(name=old_name)
+    )
+    fresh_stack_store.register_stack_component(kubeflow_orchestrator)
+
+    renamed_kubeflow_orchestrator = StackComponentWrapper.from_component(
+        KubeflowOrchestrator(name=new_name)
+    )
+    fresh_stack_store.rename_stack_component(
+        old_name, renamed_kubeflow_orchestrator
+    )
+
+    fresh_stack_store.update_stacks_after_rename(
+        old_name, new_name, StackComponentType.ORCHESTRATOR
+    )
+    with pytest.raises(KeyError):
+        assert fresh_stack_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, old_name
+        )
+
+    stack_orchestrator = get_component_from_wrapper(
+        fresh_stack_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, new_name
+        )
+    )
+
+    assert stack_orchestrator is not None
+    assert stack_orchestrator.name == new_name
