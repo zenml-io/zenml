@@ -130,7 +130,6 @@ def main(
                         model_name=model_name,
                         replicas=1,
                         secret_name=secret,
-                        container_registry_secret_name=container_registry_secret,
                     ),
                     timeout=120,
                     custom_class_path="pytorch_seldon_deploy.mnistpytorch",

@@ -337,42 +337,45 @@ class SeldonDeployment(BaseModel):
         if parameters is None:
             parameters = []
         if is_custom_deployment:
-            graph = SeldonDeploymentPredictiveUnit(
-                name="classifier", type=SeldonDeploymentPredictiveUnitType.MODEL
-            )
+            predictors = [
+                SeldonDeploymentPredictor(
+                    name=model_name or "",
+                    graph=SeldonDeploymentPredictiveUnit(
+                        name="classifier",
+                        type=SeldonDeploymentPredictiveUnitType.MODEL,
+                    ),
+                    componentSpecs=[
+                        SeldonDeploymentComponentSpecs(
+                            spec=spec
+                            # TODO [HIGH]: Add support for other component types (e.g. graph)
+                        )
+                    ],
+                )
+            ]
         else:
-            graph = SeldonDeploymentPredictiveUnit(
-                name="classifier",
-                type=SeldonDeploymentPredictiveUnitType.MODEL,
-                modelUri=model_uri or "",
-                implementation=implementation or "",
-                envSecretRefName=secret_name,
-                parameters=[
-                    SeldonDeploymentParameters(**parameter)
-                    for parameter in parameters
-                ]
-                or [],
-            )
+            predictors = [
+                SeldonDeploymentPredictor(
+                    name=model_name or "",
+                    graph=SeldonDeploymentPredictiveUnit(
+                        name="classifier",
+                        type=SeldonDeploymentPredictiveUnitType.MODEL,
+                        modelUri=model_uri or "",
+                        implementation=implementation or "",
+                        envSecretRefName=secret_name,
+                        parameters=[
+                            SeldonDeploymentParameters(**parameter)
+                            for parameter in parameters
+                        ]
+                        or [],
+                    ),
+                )
+            ]
 
         return SeldonDeployment(
             metadata=SeldonDeploymentMetadata(
                 name=name, labels=labels, annotations=annotations
             ),
-            spec=SeldonDeploymentSpec(
-                name=name,
-                predictors=[
-                    SeldonDeploymentPredictor(
-                        name=model_name or "",
-                        graph=graph,
-                        componentSpecs=[
-                            SeldonDeploymentComponentSpecs(
-                                spec=spec
-                                # TODO [HIGH]: Add support for other component types (e.g. graph)
-                            )
-                        ],
-                    )
-                ],
-            ),
+            spec=SeldonDeploymentSpec(name=name, predictors=predictors),
         )
 
     def is_managed_by_zenml(self) -> bool:
