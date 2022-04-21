@@ -9,7 +9,6 @@
 * [Build a Pipeline](guides/basics/step_pipeline_run_2.md)
   * [Installation](guides/basics/installation.md)
   * [Build and Run your first Pipeline](guides/basics/step_pipeline_run.md)
-  * [Using Visualizers](guides/basics/visualizers.md)
   * [Step Fixtures](guides/basics/step-fixtures.md)
   * [Access Previous Runs](guides/basics/historic-runs.m)
   * [Caching](guides/basics/caching.md)
@@ -20,7 +19,7 @@
 
 * [ZenML Config]()
 * [ZenML Repo and ZenML Profiles]()
-* [Profiles and Centralized Stack Management](guides/Advanced_Zen_Fu/profiles.md)
+* [Profiles and Centralized Stack Management](use_cases/profiles.md)
 * [Stacks and how they work]()
 * [Set up ZenML Service]()
   * [Deploy Locally]()
@@ -28,13 +27,14 @@
 
 ## Use Cases
 
+* [Explore your Data](use_cases/explore_data.md)
 * [Add Experiment Tracking]()
 * [Perform Drift Detection]()
-* [Execute Pipelines in the Cloud](guides/Advanced_Zen_Fu/guide-aws-gcp-azure.md)
-* [Manage your Secrets](guides/Advanced_Zen_Fu/secrets.md)
-* [Manage External Services](guides/Advanced_Zen_Fu/services.md)
-* [Continuous Training and Deployment](guides/Advanced_Zen_Fu/continuous-training-and-deployment.md)
-* [RUN Steps on Specialized Hardware](guides/Advanced_Zen_Fu/step-operators.md)
+* [Execute Pipelines in the Cloud](use_cases/guide-aws-gcp-azure.md)
+* [Manage your Secrets](use_cases/secrets.md)
+* [Manage External Services](use_cases/services.md)
+* [Continuous Training and Deployment](use_cases/continuous-training-and-deployment.md)
+* [RUN Steps on Specialized Hardware](use_cases/step-operators.md)
 
 ## Stack Components, Configuration and Extensibility
 
