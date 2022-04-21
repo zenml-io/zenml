@@ -234,3 +234,37 @@ def test_renaming_non_core_component_succeeds(clean_repo) -> None:
         ).name
         == new_component_name
     )
+
+
+def test_renaming_core_component_succeeds(clean_repo) -> None:
+    """Test renaming a core stack component succeeds."""
+    new_component_name = "arias_orchestrator"
+
+    rename_orchestrator_command = cli.commands["orchestrator"].commands[
+        "rename"
+    ]
+    runner = CliRunner()
+    result = runner.invoke(
+        rename_orchestrator_command,
+        ["default", new_component_name],
+    )
+    assert result.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_repo.get_stack_component(
+            StackComponentType.ORCHESTRATOR, "default"
+        )
+    assert isinstance(
+        clean_repo.get_stack_component(
+            StackComponentType.ORCHESTRATOR, new_component_name
+        ),
+        StackComponent,
+    )
+    assert (
+        clean_repo.get_stack_component(
+            StackComponentType.ORCHESTRATOR, new_component_name
+        ).name
+        == new_component_name
+    )
+    assert (
+        clean_repo.get_stack("default").orchestrator.name == new_component_name
+    )
