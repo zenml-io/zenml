@@ -42,6 +42,7 @@ MLFLOW_TRACKING_PASSWORD = "MLFLOW_TRACKING_PASSWORD"
 MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
 MLFLOW_TRACKING_INSECURE_TLS = "MLFLOW_TRACKING_INSECURE_TLS"
 
+
 # Add validation
 def _local_mlflow_backend() -> str:
     """Returns the local mlflow backend inside the zenml artifact
