@@ -80,6 +80,58 @@ def test_valid_stack_component_update_succeeds(clean_repo) -> None:
     )
 
 
+def test_updating_stack_component_name_or_uuid_fails(clean_repo) -> None:
+    """Test that updating stack component name or uuid fails."""
+    register_container_registry_command = cli.commands[
+        "container-registry"
+    ].commands["register"]
+
+    runner = CliRunner()
+    register_result = runner.invoke(
+        register_container_registry_command,
+        [
+            "new_container_registry",
+            "-t",
+            "default",
+            "--uri=some_random_uri.com",
+        ],
+    )
+    assert register_result.exit_code == 0
+
+    update_container_registry_command = cli.commands[
+        "container-registry"
+    ].commands["update"]
+    update_result1 = runner.invoke(
+        update_container_registry_command,
+        [
+            "new_container_registry",
+            "--name=aria",
+        ],
+    )
+    assert update_result1.exit_code == 1
+    assert (
+        clean_repo.get_stack_component(
+            StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
+        )
+        is not None
+    )
+
+    update_result2 = runner.invoke(
+        update_container_registry_command,
+        [
+            "new_container_registry",
+            "--uuid=aria_uuid",
+        ],
+    )
+    assert update_result2.exit_code == 1
+    assert (
+        clean_repo.get_stack_component(
+            StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
+        )
+        is not None
+    )
+
+
 # def test_stack_describe_contains_local_stack() -> None:
 #     """Test that the stack describe command contains the default local stack"""
 #     runner = CliRunner()
