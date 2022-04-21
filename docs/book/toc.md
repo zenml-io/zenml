@@ -16,25 +16,25 @@
   * [Materializers](guides/basics/custom-materializer.md)
   * [Class Based API](guides/basics/class_based_api.md)
 
-## Use Cases
-
-* [Adding Experiment Tracking]()
-* [Drift Detection]()
-* [Create a Cloud Based Stack](guides/Advanced_Zen_Fu/guide-aws-gcp-azure.md)
-* [Profiles and Centralized Stack Management](guides/Advanced_Zen_Fu/profiles.md)
-* [Managing your Secrets](guides/Advanced_Zen_Fu/secrets.md)
-* [Managing External Services](guides/Advanced_Zen_Fu/services.md)
-* [Continuous Training and Deployment](guides/Advanced_Zen_Fu/continuous-training-and-deployment.md)
-* [Using Step Operators](guides/Advanced_Zen_Fu/step-operators.md)
-
 ## ZenML
 
 * [ZenML Config]()
 * [ZenML Repo and ZenML Profiles]()
+* [Profiles and Centralized Stack Management](guides/Advanced_Zen_Fu/profiles.md)
 * [Stacks and how they work]()
 * [Set up ZenML Service]()
   * [Deploy Locally]()
   * [Deploy on Cloud]()
+
+## Use Cases
+
+* [Add Experiment Tracking]()
+* [Perform Drift Detection]()
+* [Execute Pipelines in the Cloud](guides/Advanced_Zen_Fu/guide-aws-gcp-azure.md)
+* [Manage your Secrets](guides/Advanced_Zen_Fu/secrets.md)
+* [Manage External Services](guides/Advanced_Zen_Fu/services.md)
+* [Continuous Training and Deployment](guides/Advanced_Zen_Fu/continuous-training-and-deployment.md)
+* [RUN Steps on Specialized Hardware](guides/Advanced_Zen_Fu/step-operators.md)
 
 ## Stack Components, Configuration and Extensibility
 
