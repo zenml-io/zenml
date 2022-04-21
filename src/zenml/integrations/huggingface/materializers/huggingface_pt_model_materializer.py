@@ -17,7 +17,7 @@ import os
 from tempfile import TemporaryDirectory
 from typing import Any, Type
 
-from transformers import AutoConfig, PreTrainedModel
+from transformers import AutoConfig, PreTrainedModel  # type: ignore [import]
 
 from zenml.artifacts import ModelArtifact
 from zenml.io import utils as fileio_utils

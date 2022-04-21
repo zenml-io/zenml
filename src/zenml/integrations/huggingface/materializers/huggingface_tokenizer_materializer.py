@@ -16,8 +16,10 @@ import os
 from tempfile import TemporaryDirectory
 from typing import Any, Type
 
-from transformers import AutoTokenizer
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
+from transformers import AutoTokenizer  # type: ignore [import]
+from transformers.tokenization_utils_base import (  # type: ignore [import]
+    PreTrainedTokenizerBase,
+)
 
 from zenml.artifacts import ModelArtifact
 from zenml.io import utils as fileio_utils
