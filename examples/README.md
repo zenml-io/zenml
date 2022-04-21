@@ -43,7 +43,7 @@ model.
 
 - **[mlflow_deployment](mlflow_deployment/README.md)**: Deploys your trained models to a **local** mlflow deployment 
 service and allows you to run predictions against this endpoint.
-- **[seldon_core_deployment](https://github.com/SeldonIO/seldon-core)**: Take you model deployment to the next level 
+- **[seldon_core_deployment](seldon_deployment/README.md)**: Take you model deployment to the next level 
  with Seldon. This example gives you detailed instructions to help you deploy your model onto a kubernetes cluster.
 
 ## 🚅 Pipeline Orchestration

@@ -6,43 +6,45 @@
 
 ## Developer Guide
 
-* [Build a Pipeline]()
+* [Build a Pipeline](guides/basics/step_pipeline_run_2.md)
   * [Installation](guides/basics/installation.md)
   * [Build and Run your first Pipeline](guides/basics/step_pipeline_run.md)
-  * [Build and Run your first Pipeline](guides/basics/step_pipeline_run_2.md)
-  * [Configure at Runtime](guides/basics/pipeline-configuration.md)
   * [Using Visualizers](guides/basics/visualizers.md)
   * [Step Fixtures](guides/basics/step-fixtures.md)
   * [Access Previous Runs](guides/basics/historic-runs.m)
   * [Caching](guides/basics/caching.md)
-  * [Custom Materializers](guides/basics/custom-materializer.md)
+  * [Materializers](guides/basics/custom-materializer.md)
   * [Class Based API](guides/basics/class_based_api.md)
-  * [Adding Experiment Tracking]()
-  * [Drift Detection]()
-* [Advanced Zen-Fu](guides/Advanced_Zen_Fu)
-  * [Create a Cloud Based Stack](guides/Advanced_Zen_Fu/guide-aws-gcp-azure.md)
-  * [Profiles and Centralized Stack Management](guides/Advanced_Zen_Fu/profiles.md)
-  * [Managing your Secrets](guides/Advanced_Zen_Fu/secrets.md)
-  * [Managing External Services](guides/Advanced_Zen_Fu/services.md)
-  * [Continuous Training and Deployment](guides/Advanced_Zen_Fu/continuous-training-and-deployment.md)
-  * [Using Step Operators](guides/Advanced_Zen_Fu/step-operators.md)
 
-## ZenML Service
+## Use Cases
 
+* [Adding Experiment Tracking]()
+* [Drift Detection]()
+* [Create a Cloud Based Stack](guides/Advanced_Zen_Fu/guide-aws-gcp-azure.md)
+* [Profiles and Centralized Stack Management](guides/Advanced_Zen_Fu/profiles.md)
+* [Managing your Secrets](guides/Advanced_Zen_Fu/secrets.md)
+* [Managing External Services](guides/Advanced_Zen_Fu/services.md)
+* [Continuous Training and Deployment](guides/Advanced_Zen_Fu/continuous-training-and-deployment.md)
+* [Using Step Operators](guides/Advanced_Zen_Fu/step-operators.md)
+
+## ZenML
+
+* [ZenML Config]()
+* [ZenML Repo and ZenML Profiles]()
+* [Stacks and how they work]()
 * [Set up ZenML Service]()
   * [Deploy Locally]()
   * [Deploy on Cloud]()
 
-## Stack and Stack Components
+## Stack Components, Configuration and Extensibility
 
-* [What is a Stack]()
-  * [Artifact Store](stack_and_components/artifact_store.md)
-  * [Metadata Store](stack_and_components/metadata_store.md)
-  * [Orchestrator](stack_and_components/orchestrator.md)
-  * [Container Registry](stack_and_components/container_registry.md)
-  * [Step Operator](stack_and_components/step_operator.md)
-  * [Secret Manager](stack_and_components/secret_manager.md)
-  * [Visualizers](stack_and_components/visualizers.md)
+* [Artifact Store](stack_and_components/artifact_store.md)
+* [Metadata Store](stack_and_components/metadata_store.md)
+* [Orchestrator](stack_and_components/orchestrator.md)
+* [Container Registry](stack_and_components/container_registry.md)
+* [Step Operator](stack_and_components/step_operator.md)
+* [Secret Manager](stack_and_components/secret_manager.md)
+* [Visualizers](stack_and_components/visualizers.md)
 * [Extensibility]()
 * [Roadmap](stack_and_components/roadmap.md)
 
@@ -57,6 +59,7 @@
 ## Reference
 
 - [Glossary](reference/glossary.md)
+- [FAQ]()
 - [System Environmental Variables](reference/system-env.md)
 - [CLI Reference](https://apidocs.zenml.io/latest/cli/)
 - [API Reference](https://apidocs.zenml.io/latest/)
