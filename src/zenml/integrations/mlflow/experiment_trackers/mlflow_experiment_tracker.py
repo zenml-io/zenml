@@ -37,6 +37,10 @@ from zenml.stack.stack_component_class_registry import (
 
 logger = get_logger(__name__)
 
+MLFLOW_TRACKING_USERNAME = "MLFLOW_TRACKING_USERNAME"
+MLFLOW_TRACKING_PASSWORD = "MLFLOW_TRACKING_PASSWORD"
+MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
+MLFLOW_TRACKING_INSECURE_TLS = "MLFLOW_TRACKING_INSECURE_TLS"
 
 # Add validation
 def _local_mlflow_backend() -> str:
@@ -76,6 +80,10 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW
     tracking_uri: Optional[str] = None
+    tracking_username: Optional[str] = None
+    tracking_password: Optional[str] = None
+    tracking_token: Optional[str] = None
+    tracking_insecure_tls: bool = False
 
     def get_tracking_uri(self) -> str:
         """Resolves and returns the tracking URI."""
@@ -85,7 +93,16 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     def prepare_pipeline_run(self) -> None:
         """Prepares running the pipeline."""
+        if self.tracking_username:
+            os.environ[MLFLOW_TRACKING_USERNAME] = self.tracking_username
+        if self.tracking_password:
+            os.environ[MLFLOW_TRACKING_PASSWORD] = self.tracking_password
+        if self.tracking_token:
+            os.environ[MLFLOW_TRACKING_TOKEN] = self.tracking_token
         set_tracking_uri(self.get_tracking_uri())
+        os.environ[MLFLOW_TRACKING_INSECURE_TLS] = (
+            "true" if self.tracking_insecure_tls else "false"
+        )
 
     def cleanup_pipeline_run(self) -> None:
         """Cleans up resources after the pipeline run is finished."""
