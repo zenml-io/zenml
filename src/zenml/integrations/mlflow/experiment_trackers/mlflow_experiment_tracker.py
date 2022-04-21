@@ -14,12 +14,23 @@
 import os
 from typing import ClassVar, Optional
 
+from mlflow import (  # type: ignore[import]
+    ActiveRun,
+    get_experiment_by_name,
+    search_runs,
+    set_experiment,
+    set_tracking_uri,
+    start_run,
+)
+from mlflow.entities import Experiment  # type: ignore[import]
+
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
 from zenml.integrations.constants import MLFLOW
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.stack import StackValidator
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -65,3 +76,49 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW
     tracking_uri: Optional[str] = None
+
+    def prepare_pipeline_run(self) -> None:
+        """Prepares running the pipeline."""
+        if self.tracking_uri is None:
+            set_tracking_uri(_local_mlflow_backend())
+            return
+
+        # TODD [LOW]: Do some tracking_uri validation.
+        set_tracking_uri(self.tracking_uri)
+
+    def cleanup_pipeline_run(self) -> None:
+        """Cleans up resources after the pipeline run is finished."""
+        set_tracking_uri("")
+
+    @property
+    def validator(self) -> Optional["StackValidator"]:
+        """The optional validator of the stack component.
+
+        This validator will be called each time a stack with the stack
+        component is initialized. Subclasses should override this property
+        and return a `StackValidator` that makes sure they're not included in
+        any stack that they're not compatible with.
+        """
+        return None
+
+    @property
+    def is_provisioned(self) -> bool:
+        """If the component provisioned resources to run locally."""
+        return True
+
+    @property
+    def is_running(self) -> bool:
+        """If the component is running locally."""
+        return True
+
+    def provision(self) -> None:
+        """Provisions resources to run the component locally."""
+        raise NotImplementedError(
+            f"Provisioning local resources not implemented for {self}."
+        )
+
+    def deprovision(self) -> None:
+        """Deprovisions all local resources of the component."""
+        raise NotImplementedError(
+            f"Deprovisioning local resource not implemented for {self}."
+        )
