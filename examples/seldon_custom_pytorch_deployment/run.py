@@ -79,7 +79,8 @@ from zenml.integrations.seldon.steps import (
     "--container-registry-secret",
     "-cx",
     type=str,
-    required=True,
+    required=False,
+    default=None,
     help="Specify the name of a Kubernetes secret to be passed to Seldon Core "
     "deployments to authenticate to the Artifact Store",
 )

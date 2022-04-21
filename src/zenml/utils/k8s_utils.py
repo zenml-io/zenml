@@ -56,13 +56,9 @@ def create_seldon_core_custom_spec(
             )
         ],
     )
-    if container_registry_secret_name:
-        image_pull_secret = k8s_client.V1LocalObjectReference(
-            name=container_registry_secret_name
-        )
-    else:
-        image_pull_secret = None
-
+    image_pull_secret = k8s_client.V1LocalObjectReference(
+        name=container_registry_secret_name
+    )
     container = k8s_client.V1Container(
         name="classifier",
         image=custom_docker_image,
@@ -82,15 +78,26 @@ def create_seldon_core_custom_spec(
         ],
     )
 
-    spec = k8s_client.V1PodSpec(
-        volumes=[
-            volume,
-        ],
-        init_containers=[
-            init_container,
-        ],
-        image_pull_secrets=[image_pull_secret],
-        containers=[container],
-    )
+    if image_pull_secret:
+        spec = k8s_client.V1PodSpec(
+            volumes=[
+                volume,
+            ],
+            init_containers=[
+                init_container,
+            ],
+            image_pull_secrets=[image_pull_secret],
+            containers=[container],
+        )
+    else:
+        spec = k8s_client.V1PodSpec(
+            volumes=[
+                volume,
+            ],
+            init_containers=[
+                init_container,
+            ],
+            containers=[container],
+        )
 
     return api.sanitize_for_serialization(spec)
