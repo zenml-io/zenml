@@ -247,9 +247,9 @@ Configuring the stack can be done like this:
 
 ```
 zenml integration install s3 seldon
-zenml model-deployer register seldon_gcp --type=seldon \
-  --kubernetes_context=gke_hale-kite-341914_us-east1-b_cluster-1 --kubernetes_namespace=zenml-workloads \
-  --base_url=http://34.139.128.148
+zenml model-deployer register seldon_eks --type=seldon \
+  --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
+  --base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
 zenml artifact-store register aws --type s3 --path s3://mybucket
 zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks
 zenml stack set local_with_aws_storage
@@ -381,7 +381,7 @@ Re-running the example with different hyperparameter values will re-train
 the model and update the deployment server to serve the new model:
 
 ```shell
-python run.py --secret seldon-rclone-secret --deploy --epochs=10 --learning_rate=0.1
+python run.py --secret seldon-init-container-secret --deploy --epochs=10 --lr=0.1
 ```
 
 If the input hyperparameter argument values are not changed, the pipeline
@@ -394,7 +394,7 @@ The inference pipeline will use the currently running Seldon Core deployment
 server to perform an online prediction. To run the inference pipeline:
 
 ```shell
-python run.py --secret seldon-rclone-secret --predict
+python run.py --secret seldon-init-container-secret --predict
 ```
 
 Example output when run with the local orchestrator stack:
