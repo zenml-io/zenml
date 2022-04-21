@@ -343,7 +343,13 @@ def generate_stack_component_rename_command(
             component_type=component_type,
             component_flavor=current_component.FLAVOR,
         )
-        renamed_component = component_class(name=new_name)
+
+        required_properties = _get_required_properties(component_class)
+        extra_args = {}
+        for prop in required_properties:
+            if prop not in extra_args:
+                extra_args[prop] = getattr(current_component, prop)
+        renamed_component = component_class(name=new_name, **extra_args)
 
         repo.rename_stack_component(
             old_name=current_component.name,
