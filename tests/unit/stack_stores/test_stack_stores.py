@@ -379,3 +379,15 @@ def test_update_non_existent_stack_raises_error(
 
     with pytest.raises(DoesNotExistException):
         current_stack_store.update_stack(StackWrapper.from_stack(stack))
+
+
+def test_update_non_existent_stack_component_raises_error(
+    fresh_stack_store: BaseStackStore,
+):
+    """Test updating a non-existent stack component raises an error."""
+    local_secrets_manager = LocalSecretsManager(name="local_secrets_manager")
+
+    with pytest.raises(StackComponentExistsError):
+        fresh_stack_store.update_stack_component(
+            StackComponentWrapper.from_component(local_secrets_manager)
+        )
