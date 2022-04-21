@@ -11,7 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import ClassVar, Literal, Optional
+from typing import ClassVar, Optional
+
+from typing_extensions import Literal
 
 from zenml.secret import register_secret_schema_class
 from zenml.secret.base_secret import BaseSecretSchema

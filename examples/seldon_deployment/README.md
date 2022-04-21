@@ -307,6 +307,16 @@ zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws -x aws
 zenml stack set aws
 ```
 
+ZenML will manage the Seldon Core deployments inside the same `kubeflow`
+namespace where the Kubeflow pipelines are running. You also have to update the set of
+permissions granted by Kubeflow to the Kubernetes service account in the context
+of which Kubeflow pipelines are running to allow the ZenML workloads to create,
+update and delete secrets. You can do so with the below command:
+
+```bash
+kubectl -n kubeflow patch role pipeline-runner --type='json' -p='[{"op": "add", "path": "/rules/0", "value": {"apiGroups": [""], "resources": ["secrets"], "verbs": ["*"]}}]'
+```
+
 As the last step in setting up the stack, we need to configure a ZenML secret
 with the credentials needed by Seldon Core to access the Artifact Store. This is
 covered in the [Managing Seldon Core Credentials section](#managing-seldon-core-credentials).
@@ -333,17 +343,19 @@ you can also use `seldon_gs` for GCS and `seldon_az` for Azure. To read more abo
 secrets, secret schemas and how they are used in ZenML, please refer to the
 [ZenML documentation](https://docs.zenml.io/features/secrets).
 
+The next sections cover two cases involving AWS authentication: with and without
+IAM role access.  Please look up the variables relevant to your use-case in the
+[official Seldon Core documentation](https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials)
+and set them accordingly for your ZenML secret.
 
-To give Seldon Core access to the S3 artifact store, we just need to create a
-`seldon_aws` type secret that sets the `rclone_config_s3_env_auth` attribute
-to `True` and leaves everything else as is. This is based on the assumption that
-the EKS cluster where Seldon Core is running already has
+##### AWS Authentication with Implicit IAM Access
+
+If the EKS cluster where Seldon Core is running already has
 [IAM access](https://docs.aws.amazon.com/eks/latest/userguide/security-iam.html)
-configured to grant the EKS pods access to the AWS S3 bucket and doesn't need
-any explicit AWS credentials. If that is not the case for you, you will
-probably need to set up credentials explicitly in the ZenML secret. Please look
-up the variables relevant to your use-case in the
-[official Seldon Core documentation](https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials) and set them accordingly in the `s3-store` secret.
+configured to grant the EKS nodes access to the AWS S3 bucket, you won't need to
+save any explicit AWS credentials in the ZenML secret. You just have to set the
+`rclone_config_s3_env_auth` attribute value to `True` and leave everything else
+as is:
 
 ```bash
 $ zenml secret register -s seldon_s3 s3-store
@@ -378,6 +390,53 @@ INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/c
 ┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
 
+##### AWS Authentication with Explicit Credentials
+
+If IAM access is not configured for your EKS cluster, or you don't know how to
+configure it, you will need to set up credentials explicitly in the ZenML secret,
+e.g.:
+
+```bash
+$ zenml secret register -s seldon_s3 s3-store
+You have supplied a secret_set_schema with predefined keys. You can fill these
+out sequentially now. Just press ENTER to skip optional secrets that you do not
+want to set
+Secret value for rclone_config_s3_type:
+Secret value for rclone_config_s3_provider:
+Secret value for rclone_config_s3_env_auth: False
+Secret value for rclone_config_s3_access_key_id: ASAK2NSJVO4HDQC7Z25F
+Secret value for rclone_config_s3_secret_access_key: AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+
+Secret value for rclone_config_s3_session_token: AFdfsaSf2SDFfdaWAsfCacs...ASDFsfdfs23sc==
+Secret value for rclone_config_s3_region: us-east-1
+Secret value for rclone_config_s3_endpoint:
+The following secret will be registered.
+┏━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃ SECRET_NAME │ SECRET_KEY                         │ SECRET_VALUE ┃
+┠─────────────┼────────────────────────────────────┼──────────────┨
+┃  s3-store   │ rclone_config_s3_type              │ ***          ┃
+┃  s3-store   │ rclone_config_s3_provider          │ ***          ┃
+┃  s3-store   │ rclone_config_s3_env_auth          │ ***          ┃
+┃  s3-store   │ rclone_config_s3_access_key_id     │ ***          ┃
+┃  s3-store   │ rclone_config_s3_secret_access_key │ ***          ┃
+┃  s3-store   │ rclone_config_s3_session_token     │ ***          ┃
+┃  s3-store   │ rclone_config_s3_region            │ ***          ┃
+┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+
+$ zenml secret get s3-store
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+┏━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ SECRET_NAME │ SECRET_KEY                    │ SECRET_VALUE                  ┃
+┠─────────────┼───────────────────────────────┼───────────────────────────────┨
+┃  s3-store   │ rclone_config_s3_type         │ s3                            ┃
+┃  s3-store   │ rclone_config_s3_provider     │ aws                           ┃
+┃  s3-store   │ rclone_config_s3_env_auth     │ False                         ┃
+┃  s3-store   │ rclone_config_s3_access_key_… │ ASAK2NSJVO4HDQC7Z25F          ┃
+┃  s3-store   │ rclone_config_s3_secret_acce… │ AhkFSfhjj23fSDFfjklsdfj34hkl… ┃
+┃  s3-store   │ rclone_config_s3_session_tok… │ AFdfsaSf2SDFfdaWAsfCacssDsfA… ┃
+┃  s3-store   │ rclone_config_s3_region       │ us-east-1                     ┃
+┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
 
 ### Run the project
 To run the continuous deployment pipeline:
