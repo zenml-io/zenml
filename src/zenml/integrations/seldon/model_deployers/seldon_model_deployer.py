@@ -38,6 +38,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT = 300
+CUSTOM_DEPLOYMENT_IMAGE_NAME = "zenml-seldon-custom-deploy"
 
 
 @register_stack_component_class
@@ -403,7 +404,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             raise RuntimeError("Missing container registry")
 
         registry_uri = container_registry.uri.rstrip("/")
-        image_name = f"{registry_uri}/zenml-seldon-custom-deploy:{pipeline_name}-{step_name}"
+        image_name = f"{registry_uri}/{CUSTOM_DEPLOYMENT_IMAGE_NAME}:{pipeline_name}-{step_name}"
         environment_vars = {"MODEL_NAME": model_name}
         extra_build_lines = ["EXPOSE 5000", "EXPOSE 9000"]
 

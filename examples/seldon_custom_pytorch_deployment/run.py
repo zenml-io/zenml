@@ -132,7 +132,7 @@ def main(
                         secret_name=secret,
                     ),
                     timeout=120,
-                    custom_class_path="pytorch_seldon_deploy.mnistpytorch",
+                    custom_class_path="pytorch_seldon_deploy.MnistPytorch",
                 )
             ),
         )

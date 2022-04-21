@@ -205,14 +205,28 @@ def seldon_pytorch_deployment_pipeline(
     )
 
 
-class mnistpytorch(ZenMLCustomModel):
-    """Custom model deployment class"""
+class MnistPytorch(ZenMLCustomModel):
+    """Custom model deployment class
+
+    This class is used to define the custom model deployment logic.
+    which describe how to load the model, how to run predictions and
+    maybe extra logic to handle pre-processing or post-processing.
+    """
 
     def __init__(self, model_uri: str = None, *args: Any, **kwargs: Any):
         super().__init__(model_uri=model_uri)
 
     def load(self):
-        """Load the model from the given path"""
+        """Loads the model into memory.
+
+        This method is called before the first prediction.
+        and it requires understanding of materializer and how
+        the model is saved after the training.
+
+        Example:
+            For Pytorch example we need the checkpoint file name
+            which is in this case `checkpoint.pt`.
+        """
         try:
             model_file = os.path.join(
                 seldon_core.Storage.download(self.model_uri),
@@ -234,6 +248,9 @@ class mnistpytorch(ZenMLCustomModel):
 
         Args:
             tensor (torch.Tensor): The tensor to pre process
+
+        Returns:
+            dict: The processed data
         """
         tansformation = torchvision.transforms.Normalize((0.1307,), (0.3081,))
         processed_tensor = tansformation(tensor.to(torch.float))

@@ -6,13 +6,15 @@ around deploying models to REST/GRPC microservices that include monitoring and
 logging, model explainers, outlier detectors and various continuous deployment
 strategies such as A/B testing, canary deployments and more.
 
-Seldon Core also comes equipped with a set of built-in model server
-implementations designed to work with standard formats for packaging ML models
-that greatly simplify the process of serving models for real-time inference.
+Seldon Core also comes equipped with a set of built-in model server implementations 
+for packaging ML models which greatly simplify the process of serving models for 
+real-time inference.  
+These built-in model servers are designed to work with some standard formats like tensorflow, sklearn, etc.
 
-While it also allows to deploy custom models when the use-case is not covered by 
-Seldon pre-packaged inference servers. and that is possible by laveraging Seldon
-language wrappers to containerise the machine learning models and logic.
+On top of these, Seldom Core also allows to deploy custom models when the 
+use-case is not covered by Seldon pre-packaged inference servers. and This 
+is possible by leveraging Seldon language wrappers to containerize 
+the machine learning models and logic.
 
 The following example demonstrates how we can build pipeline 
 that train, evaluate and finally serve Pytorch model which require some pre-transformation with Seldon Core.
@@ -24,7 +26,7 @@ makes for a seamless transition from running experiments locally to deploying
 models in production.
 But sometimes the standard [model deployment with Seldon Core](../seldon_deployment)
 is not enough either because our model flavor is not supported by the seldon 
-pre-packaged servers or we need extra custom processing operation before or after
+pre-packaged servers or we need extra custom processing operations before or after
 the prediction. 
 
 ## Overview
@@ -38,20 +40,20 @@ The example consists of an individual pipeline with and User defined Class:
   ingests and processes input data, trains a model and then (re)deploys the
   prediction server that serves the model if it meets some evaluation
   criteria
-  * User defined class that Inherit from ZenMLCustomModel which implement
+  * User defined class that inherits from ZenMLCustomModel which implements
   load and predict functions. (extra functions could be added to the class)
 
 You can control which pipeline to run by passing the `--deploy` and/or the
 `--predict` flag to the `run.py` launcher.
 
-When running the deployment pipeline, ZenML wrap everything in the working directory
-in a docker image with needed requirments, and push it to the active container
-regitry. ZenML's Seldon Core integration then is used to prepare seldon deployment 
-definition with the custom docker image created for this pipeline and the trained 
-model from the Artifact Store where it is automatically saved as an artifact by the 
-training step (secrets to access artifact store and container registry can be 
-supplied as command line arguments). A Seldon Core deployment server is launched 
-to serve the latest model version if its accuracy is above a configured threshold 
+When running the deployment pipeline, ZenML wraps everything within the working directory
+in a docker image with needed requirements, and pushes it to the active container
+regitry. ZenML's Seldon Core integration then is used to prepare a Seldon deployment 
+definition with the custom docker image, which was created for this pipeline, 
+and the trained model. 
+The trained model is loaded from the Artifact Store where it is automatically saved
+as an artifact by the training step. A Seldon Core deployment server is launched to 
+serve the latest model version if its accuracy is above a configured threshold 
 (also customizable through a command line argument).
 
 The Seldon Core deployment server is provisioned remotely as a Kubernetes
@@ -393,47 +395,8 @@ No explicit dockerignore specified and no file called .dockerignore exists at th
 Building docker image 'gcr.io/zenml-core/zenml-kubeflow/zenml-seldon-custom-deploy:seldon_pytorch_deployment_pipeline-seldon_custom_model_deployer_step', this might take a while...
 Step 1/10 : FROM zenmldocker/zenml:latest
 
----> 7dfb493a0643
-Step 2/10 : WORKDIR /app
+...
 
----> Using cache
----> 6c703dc20964
-Step 3/10 : ENV MODEL_NAME=pytorch_seldon_deploy.mnistpytorch
-
----> Using cache
----> 2995806d89d9
-Step 4/10 : RUN pip install --no-cache gcsfs kubernetes==18.20.0 seldon-core==1.13.1 torch torchvision werkzeug==2.0.3 zenml==0.7.2
-
----> Using cache
----> 1dab6de5f505
-Step 5/10 : COPY . .
-
----> 99b786560470
-Step 6/10 : RUN chmod -R a+rw .
-
----> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
----> Running in ec69027db1d5
----> 1b1a28a83243
-Step 7/10 : ENV ZENML_CONFIG_PATH=/app/.zenconfig
-
----> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
----> Running in ed194ae67635
----> 433423446c20
-Step 8/10 : EXPOSE 5000
-
----> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
----> Running in f3d6b4d82621
----> f38d7dd48f72
-Step 9/10 : EXPOSE 9000
-
----> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
----> Running in 891774b6dbaa
----> dd5f7028b9a3
-Step 10/10 : ENTRYPOINT seldon-core-microservice $MODEL_NAME --service-type MODEL
-
----> [Warning] The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
----> Running in a493890bfd2a
----> 8f5c1bb57b69
 Successfully built 8f5c1bb57b69
 Successfully tagged gcr.io/zenml-core/zenml-kubeflow/zenml-seldon-custom-deploy:seldon_pytorch_deployment_pipeline-seldon_custom_model_deployer_step
 Finished building docker image.
