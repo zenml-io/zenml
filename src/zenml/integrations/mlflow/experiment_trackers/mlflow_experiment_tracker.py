@@ -12,15 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from typing import ClassVar
-
-from pydantic import Field
+from typing import ClassVar, Optional
 
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
 from zenml.integrations.constants import MLFLOW
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -65,4 +64,4 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW
-    tracking_uri: str = Field(default_factory=_local_mlflow_backend)
+    tracking_uri: Optional[str] = None

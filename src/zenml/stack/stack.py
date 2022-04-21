@@ -40,6 +40,9 @@ from zenml.utils import string_utils
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
+    from zenml.experiment_trackers.base_experiment_tracker import (
+        BaseExperimentTracker,
+    )
     from zenml.feature_stores import BaseFeatureStore
     from zenml.metadata_stores import BaseMetadataStore
     from zenml.model_deployers import BaseModelDeployer
@@ -75,6 +78,7 @@ class Stack:
         step_operator: Optional["BaseStepOperator"] = None,
         feature_store: Optional["BaseFeatureStore"] = None,
         model_deployer: Optional["BaseModelDeployer"] = None,
+        experiment_tracker: Optional["BaseExperimentTracker"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -90,6 +94,7 @@ class Stack:
         self._secrets_manager = secrets_manager
         self._feature_store = feature_store
         self._model_deployer = model_deployer
+        self._experiment_tracker = experiment_tracker
 
         self.validate()
 
@@ -112,6 +117,7 @@ class Stack:
         """
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
+        from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.metadata_stores import BaseMetadataStore
         from zenml.model_deployers import BaseModelDeployer
@@ -166,11 +172,20 @@ class Stack:
             feature_store, BaseFeatureStore
         ):
             _raise_type_error(feature_store, BaseFeatureStore)
+
         model_deployer = components.get(StackComponentType.MODEL_DEPLOYER)
         if model_deployer is not None and not isinstance(
             model_deployer, BaseModelDeployer
         ):
             _raise_type_error(model_deployer, BaseModelDeployer)
+
+        experiment_tracker = components.get(
+            StackComponentType.EXPERIMENT_TRACKER
+        )
+        if experiment_tracker is not None and not isinstance(
+            experiment_tracker, BaseExperimentTracker
+        ):
+            _raise_type_error(experiment_tracker, BaseExperimentTracker)
 
         return Stack(
             name=name,
@@ -182,6 +197,7 @@ class Stack:
             step_operator=step_operator,
             feature_store=feature_store,
             model_deployer=model_deployer,
+            experiment_tracker=experiment_tracker,
         )
 
     @classmethod
@@ -232,6 +248,7 @@ class Stack:
                 self.step_operator,
                 self.feature_store,
                 self.model_deployer,
+                self.experiment_tracker,
             ]
             if component is not None
         }
@@ -280,6 +297,11 @@ class Stack:
     def model_deployer(self) -> Optional["BaseModelDeployer"]:
         """The model deployer of the stack."""
         return self._model_deployer
+
+    @property
+    def experiment_tracker(self) -> Optional["BaseExperimentTracker"]:
+        """The experiment tracker of the stack."""
+        return self._experiment_tracker
 
     @property
     def runtime_options(self) -> Dict[str, Any]:
