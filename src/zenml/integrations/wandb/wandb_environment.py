@@ -136,7 +136,7 @@ class WandbStepEnvironment(BaseEnvironmentComponent):
         entity = (
             os.getenv("WANDB_ENTITY") if self._entity is None else self._entity
         )
-        runs = api.runs(f"{entity}/{self._project_name}")
+        runs = api.runs(f"{entity}/{self._project_name}")  # type: ignore[no-untyped-call]
         for run in runs:
             if run.name == self._run_name:
                 run_exists = True
