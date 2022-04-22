@@ -847,10 +847,17 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 name,
             )
 
-    def update_stack_component(self, component: StackComponent) -> None:
+    def update_stack_component(
+        self,
+        name: str,
+        component_type: StackComponentType,
+        component: StackComponent,
+    ) -> None:
         """Updates a stack component."""
         self.stack_store.update_stack_component(
-            StackComponentWrapper.from_component(component)
+            name,
+            component_type,
+            StackComponentWrapper.from_component(component),
         )
         analytics_metadata = {
             "type": component.TYPE.value,

@@ -308,7 +308,9 @@ def generate_stack_component_update_command(
                 parsed_args[prop] = getattr(current_component, prop)
         updated_component = component_class(name=name, **parsed_args)
 
-        repo.update_stack_component(updated_component)
+        repo.update_stack_component(
+            name, updated_component.TYPE, updated_component
+        )
         cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
 
     return update_stack_component_command
