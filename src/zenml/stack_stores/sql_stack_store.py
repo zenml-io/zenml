@@ -248,7 +248,7 @@ class SqlStackStore(BaseStackStore):
     def update_stack_component(
         self,
         component: StackComponentWrapper,
-    ) -> None:
+    ) -> Dict[str, str]:
         """Update a stack component.
 
         Args:
@@ -279,11 +279,12 @@ class SqlStackStore(BaseStackStore):
 
             session.add(updated_component)
             session.commit()
-            logger.info(
-                "Updated stack component with type '%s' and name '%s'.",
-                component.type,
-                component.name,
-            )
+        logger.info(
+            "Updated stack component with type '%s' and name '%s'.",
+            component.type,
+            component.name,
+        )
+        return {component.type.value: component.flavor}
 
     def rename_stack_component(
         self,
@@ -319,11 +320,11 @@ class SqlStackStore(BaseStackStore):
                 session.add(definition)
 
             session.commit()
-            logger.info(
-                "Renamed stack component with type '%s' and new name '%s'.",
-                component.type,
-                component.name,
-            )
+        logger.info(
+            "Renamed stack component with type '%s' and new name '%s'.",
+            component.type,
+            component.name,
+        )
 
     def update_stacks_after_rename(
         self,

@@ -186,7 +186,7 @@ class RestStackStore(BaseStackStore):
     def update_stack_component(
         self,
         component: StackComponentWrapper,
-    ) -> None:
+    ) -> Dict[str, str]:
         """Update a stack component.
 
         Args:
@@ -195,7 +195,13 @@ class RestStackStore(BaseStackStore):
         Raises:
             KeyError: If no stack component exists with the given name.
         """
-        raise NotImplementedError
+        body = self.put(STACK_COMPONENTS, body=component)
+        if isinstance(body, dict):
+            return cast(Dict[str, str], body)
+        else:
+            raise ValueError(
+                f"Bad API Response. Expected dict, got {type(body)}"
+            )
 
     def rename_stack_component(
         self,
@@ -304,7 +310,7 @@ class RestStackStore(BaseStackStore):
             metadata dict for telemetry or logging.
 
         Raises:
-            # TODO: add this
+            ValueError: If a dict is not returned from the API.
         """
         body = self.put(STACKS, stack)
         if isinstance(body, dict):

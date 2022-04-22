@@ -159,14 +159,14 @@ class BaseStackStore(ABC):
     def update_stack_component(
         self,
         component: StackComponentWrapper,
-    ) -> None:
+    ) -> Dict[str, str]:
         """Update a stack component.
 
         Args:
             component: The new component to update with.
 
         Raises:
-            KeyError: If no stack component exists with the given name.
+            StackComponentExistsError: If no stack component exists with the given name.
         """
 
     @abstractmethod

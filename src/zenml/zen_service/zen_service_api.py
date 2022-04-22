@@ -184,6 +184,20 @@ async def update_stack(stack: StackWrapper) -> Dict[str, str]:
         raise not_found(error) from error
 
 
+@app.put(
+    STACK_COMPONENTS,
+    response_model=Dict[str, str],
+    responses={404: error_response},
+)
+async def update_stack_component(
+    stack_component: StackComponentWrapper,
+) -> Dict[str, str]:
+    try:
+        return stack_store.update_stack_component(stack_component)
+    except StackComponentExistsError as error:
+        raise not_found(error) from error
+
+
 @app.get(
     STACK_COMPONENTS + "/{component_type}/{name}",
     response_model=StackComponentWrapper,

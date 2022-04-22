@@ -190,7 +190,7 @@ class LocalStackStore(BaseStackStore):
     def update_stack_component(
         self,
         component: StackComponentWrapper,
-    ) -> None:
+    ) -> Dict[str, str]:
         """Update a stack component."""
         components = self.__store.stack_components[component.type]
         if component.name not in components:
@@ -220,6 +220,7 @@ class LocalStackStore(BaseStackStore):
             component.type,
             component.name,
         )
+        return {component.type.value: component.flavor}
 
     def rename_stack_component(
         self,
