@@ -1,6 +1,6 @@
 # Table of contents
 
-- [ZenML](index.md)
+* [ZenML](index.md)
 * [Quickstart](introduction/quickstart-guide.md)
 * [Core Concepts](introduction/core-concepts.md)
 
