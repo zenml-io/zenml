@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 
+import json
 from typing import (
     Any,
     Callable,
@@ -28,6 +29,7 @@ from typing import (
 )
 
 import s3fs
+from pydantic import validator
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.io.utils import convert_to_str
@@ -40,32 +42,91 @@ PathType = Union[bytes, str]
 
 @register_stack_component_class
 class S3ArtifactStore(BaseArtifactStore):
-    """Artifact Store for Amazon S3 based artifacts."""
+    """Artifact Store for S3 based artifacts.
+
+    All attributes of this class except `path` will be passed to the
+    `s3fs.S3FileSystem` initialization. See
+    [here](https://s3fs.readthedocs.io/en/latest/) for more information on how
+    to use those configuration options to connect to any S3-compatible storage.
+
+    When you want to register an S3ArtifactStore from the CLI and need to pass
+    `client_kwargs`, `config_kwargs` or `s3_additional_kwargs`, you should pass
+    them as a json string:
+    ```
+    zenml artifact-store register my_s3_store --type=s3 --path=s3://my_bucket \
+    --client_kwargs='{"endpoint_url": "http://my-s3-endpoint"}'
+    ```
+    """
+
+    key: Optional[str] = None
+    secret: Optional[str] = None
+    token: Optional[str] = None
+    client_kwargs: Optional[Dict[str, Any]] = None
+    config_kwargs: Optional[Dict[str, Any]] = None
+    s3_additional_kwargs: Optional[Dict[str, Any]] = None
+    _filesystem: Optional[s3fs.S3FileSystem] = None
 
     # Class variables
     FLAVOR: ClassVar[str] = "s3"
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
-    FILESYSTEM: ClassVar[s3fs.S3FileSystem] = None
 
-    @classmethod
-    def _ensure_filesystem_set(cls) -> None:
-        """Ensures that the filesystem is set."""
-        if cls.FILESYSTEM is None:
-            cls.FILESYSTEM = s3fs.S3FileSystem()
+    @validator(
+        "client_kwargs", "config_kwargs", "s3_additional_kwargs", pre=True
+    )
+    def _convert_json_string(
+        cls, value: Union[None, str, Dict[str, Any]]
+    ) -> Optional[Dict[str, Any]]:
+        """Converts potential JSON strings passed via the CLI to
+        dictionaries.
 
-    @staticmethod
-    def open(path: PathType, mode: str = "r") -> Any:
+        Raises:
+            TypeError: If the value is not a `str`, `Dict` or `None`.
+            ValueError: If the value is an invalid json string or a json string
+                that does not decode into a dictionary.
+        """
+        if isinstance(value, str):
+            try:
+                dict_ = json.loads(value)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid json string '{value}'") from e
+
+            if not isinstance(dict_, Dict):
+                raise ValueError(
+                    f"Json string '{value}' did not decode into a dictionary."
+                )
+
+            return dict_
+        elif isinstance(value, Dict) or value is None:
+            return value
+        else:
+            raise TypeError(f"{value} is not a json string or a dictionary.")
+
+    @property
+    def filesystem(self) -> s3fs.S3FileSystem:
+        """The s3 filesystem to access this artifact store."""
+        if not self._filesystem:
+            self._filesystem = s3fs.S3FileSystem(
+                key=self.key,
+                secret=self.secret,
+                token=self.token,
+                client_kwargs=self.client_kwargs,
+                config_kwargs=self.config_kwargs,
+                s3_additional_kwargs=self.s3_additional_kwargs,
+            )
+        return self._filesystem
+
+    def open(self, path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
         Args:
             path: Path of the file to open.
             mode: Mode in which to open the file. Currently, only
                 'rb' and 'wb' to read and write binary files are supported.
         """
-        S3ArtifactStore._ensure_filesystem_set()
-        return S3ArtifactStore.FILESYSTEM.open(path=path, mode=mode)
+        return self.filesystem.open(path=path, mode=mode)
 
-    @staticmethod
-    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def copyfile(
+        self, src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Copy a file.
         Args:
             src: The path to copy from.
@@ -78,8 +139,7 @@ class S3ArtifactStore(BaseArtifactStore):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        S3ArtifactStore._ensure_filesystem_set()
-        if not overwrite and S3ArtifactStore.FILESYSTEM.exists(dst):
+        if not overwrite and self.filesystem.exists(dst):
             raise FileExistsError(
                 f"Unable to copy to destination '{convert_to_str(dst)}', "
                 f"file already exists. Set `overwrite=True` to copy anyway."
@@ -87,16 +147,13 @@ class S3ArtifactStore(BaseArtifactStore):
 
         # TODO [ENG-151]: Check if it works with overwrite=True or if we need to
         #  manually remove it first
-        S3ArtifactStore.FILESYSTEM.copy(path1=src, path2=dst)
+        self.filesystem.copy(path1=src, path2=dst)
 
-    @staticmethod
-    def exists(path: PathType) -> bool:
+    def exists(self, path: PathType) -> bool:
         """Check whether a path exists."""
-        S3ArtifactStore._ensure_filesystem_set()
-        return S3ArtifactStore.FILESYSTEM.exists(path=path)  # type: ignore[no-any-return]
+        return self.filesystem.exists(path=path)  # type: ignore[no-any-return]
 
-    @staticmethod
-    def glob(pattern: PathType) -> List[PathType]:
+    def glob(self, pattern: PathType) -> List[PathType]:
         """Return all paths that match the given glob pattern.
         The glob pattern may include:
         - '*' to match any number of characters
@@ -109,22 +166,14 @@ class S3ArtifactStore(BaseArtifactStore):
         Returns:
             A list of paths that match the given glob pattern.
         """
-        S3ArtifactStore._ensure_filesystem_set()
-        return [
-            f"s3://{path}"
-            for path in S3ArtifactStore.FILESYSTEM.glob(path=pattern)
-        ]
+        return [f"s3://{path}" for path in self.filesystem.glob(path=pattern)]
 
-    @staticmethod
-    def isdir(path: PathType) -> bool:
+    def isdir(self, path: PathType) -> bool:
         """Check whether a path is a directory."""
-        S3ArtifactStore._ensure_filesystem_set()
-        return S3ArtifactStore.FILESYSTEM.isdir(path=path)  # type: ignore[no-any-return]
+        return self.filesystem.isdir(path=path)  # type: ignore[no-any-return]
 
-    @staticmethod
-    def listdir(path: PathType) -> List[PathType]:
+    def listdir(self, path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
-        S3ArtifactStore._ensure_filesystem_set()
         # remove s3 prefix if given, so we can remove the directory later as
         # this method is expected to only return filenames
         path = convert_to_str(path)
@@ -140,33 +189,28 @@ class S3ArtifactStore(BaseArtifactStore):
 
         return [
             _extract_basename(dict_)
-            for dict_ in S3ArtifactStore.FILESYSTEM.listdir(path=path)
+            for dict_ in self.filesystem.listdir(path=path)
             # s3fs.listdir also returns the root directory, so we filter
             # it out here
             if _extract_basename(dict_)
         ]
 
-    @staticmethod
-    def makedirs(path: PathType) -> None:
+    def makedirs(self, path: PathType) -> None:
         """Create a directory at the given path. If needed also
         create missing parent directories."""
-        S3ArtifactStore._ensure_filesystem_set()
-        S3ArtifactStore.FILESYSTEM.makedirs(path=path, exist_ok=True)
+        self.filesystem.makedirs(path=path, exist_ok=True)
 
-    @staticmethod
-    def mkdir(path: PathType) -> None:
+    def mkdir(self, path: PathType) -> None:
         """Create a directory at the given path."""
-        S3ArtifactStore._ensure_filesystem_set()
-        S3ArtifactStore.FILESYSTEM.makedir(path=path)
+        self.filesystem.makedir(path=path)
 
-    @staticmethod
-    def remove(path: PathType) -> None:
+    def remove(self, path: PathType) -> None:
         """Remove the file at the given path."""
-        S3ArtifactStore._ensure_filesystem_set()
-        S3ArtifactStore.FILESYSTEM.rm_file(path=path)
+        self.filesystem.rm_file(path=path)
 
-    @staticmethod
-    def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def rename(
+        self, src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Rename source file to destination file.
         Args:
             src: The path of the file to rename.
@@ -179,8 +223,7 @@ class S3ArtifactStore(BaseArtifactStore):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        S3ArtifactStore._ensure_filesystem_set()
-        if not overwrite and S3ArtifactStore.FILESYSTEM.exists(dst):
+        if not overwrite and self.filesystem.exists(dst):
             raise FileExistsError(
                 f"Unable to rename file to '{convert_to_str(dst)}', "
                 f"file already exists. Set `overwrite=True` to rename anyway."
@@ -188,22 +231,18 @@ class S3ArtifactStore(BaseArtifactStore):
 
         # TODO [ENG-152]: Check if it works with overwrite=True or if we need
         #  to manually remove it first
-        S3ArtifactStore.FILESYSTEM.rename(path1=src, path2=dst)
+        self.filesystem.rename(path1=src, path2=dst)
 
-    @staticmethod
-    def rmtree(path: PathType) -> None:
+    def rmtree(self, path: PathType) -> None:
         """Remove the given directory."""
-        S3ArtifactStore._ensure_filesystem_set()
-        S3ArtifactStore.FILESYSTEM.delete(path=path, recursive=True)
+        self.filesystem.delete(path=path, recursive=True)
 
-    @staticmethod
-    def stat(path: PathType) -> Dict[str, Any]:
+    def stat(self, path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
-        S3ArtifactStore._ensure_filesystem_set()
-        return S3ArtifactStore.FILESYSTEM.stat(path=path)  # type: ignore[no-any-return]
+        return self.filesystem.stat(path=path)  # type: ignore[no-any-return]
 
-    @staticmethod
     def walk(
+        self,
         top: PathType,
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
@@ -218,9 +257,6 @@ class S3ArtifactStore(BaseArtifactStore):
             directory path, a list of directories inside the current directory
             and a list of files inside the current directory.
         """
-        S3ArtifactStore._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
-        for directory, subdirectories, files in S3ArtifactStore.FILESYSTEM.walk(
-            path=top
-        ):
+        for directory, subdirectories, files in self.filesystem.walk(path=top):
             yield f"s3://{directory}", subdirectories, files
