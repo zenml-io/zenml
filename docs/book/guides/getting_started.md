@@ -590,18 +590,6 @@ Machine learning pipelines are rerun many times over throughout their developmen
 fast and iterative process that benefits a lot from caching. This makes caching a very powerful tool. (Read 
 [our blogpost](https://blog.zenml.io/caching-ml-pipelines/) for more context on the benefits of caching.)
 
-## 📈 Benefits of Caching
-- **🔁 Iteration Efficiency** - When experimenting, it really pays to have a high frequency of iteration. You learn 
-when and how to course correct earlier and more often. Caching brings you closer to that by making the costs of 
-frequent iteration much lower.
-- **💪 Increased Productivity** - The speed-up in iteration frequency will help you solve problems faster, making 
-stakeholders happier and giving you a greater feeling of agency in your machine learning work.
-- **🌳 Environmental Friendliness** - Caching saves you the 
-[needless repeated computation steps](https://machinelearning.piyasaa.com/greening-ai-rebooting-the-environmental-harms-of-machine/) 
-which mean you use up and waste less energy. It all adds up!
-- **＄ Reduced Costs** - Your bottom-line will thank you! Not only do you save the planet, but your monthly cloud 
-bills might be lower on account of your skipping those repeated steps.
-
 ## Caching in ZenML
 
 ZenML comes with caching enabled by default. As long as there is no change within a step or upstream from it, the 
@@ -656,3 +644,6 @@ detect changes in upstream APIs or in the Filesystem. Make sure you disable cach
 if your pipeline needs to have access to the most up-to date data. During development, you probably don't care as much 
 about the freshness of your data. In that case feel free to keep caching enabled and enjoy the faster runtimes.
 
+
+
+#

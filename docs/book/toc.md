@@ -7,7 +7,7 @@
 ## Developer Guide
 
 * [Build a Pipeline](guides/getting_started.md)
-  * [Installation and Setup](guides/getting_started.md#installation-and-setup)
+  * [Installation and Setup](https://app.gitbook.com/s/LWlYNPPpa3uk98PYtTuB/developer-guide/getting\_started#installation-and-setup)
   * [Getting started with a Pipeline](guides/getting_started.md#getting-started-with-a-pipeline)
   * [Configure at Runtime](guides/getting_started.md#configure-at-runtime)
   * [Interact with completed runs](guides/getting_started.md#interact_with_completed_runs)
