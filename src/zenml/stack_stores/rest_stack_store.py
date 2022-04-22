@@ -300,7 +300,7 @@ class RestStackStore(BaseStackStore):
         Raises:
             ValueError: If a dict is not returned from the API.
         """
-        body = self.put(STACKS, stack)
+        body = self.put(f"{STACK_COMPONENTS}/{name}", body=stack)
         if name != stack.name:
             self.deregister_stack(name)
         if isinstance(body, dict):
