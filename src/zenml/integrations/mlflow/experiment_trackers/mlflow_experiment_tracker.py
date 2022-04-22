@@ -23,7 +23,8 @@ from mlflow import (  # type: ignore[import]
     start_run,
 )
 from mlflow.entities import Experiment  # type: ignore[import]
-from pydantic import root_validator
+from mlflow.store.db.db_types import DATABASE_ENGINES
+from pydantic import root_validator, validator
 
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
@@ -87,9 +88,27 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW
 
+    @validator("tracking_uri")
+    def _ensure_valid_tracking_uri(
+        cls, tracking_uri: Optional[str] = None
+    ) -> Optional[str]:
+        """Ensures that the tracking uri is a valid mlflow tracking uri."""
+        if tracking_uri:
+            valid_schemes = DATABASE_ENGINES + ["http", "https", "file"]
+            if not any(
+                tracking_uri.startswith(scheme) for scheme in valid_schemes
+            ):
+                raise ValueError(
+                    f"MLflow tracking uri does not start with one of the valid "
+                    f"schemes {valid_schemes}. See "
+                    f"https://www.mlflow.org/docs/latest/tracking.html#where-runs-are-recorded "
+                    f"for more information."
+                )
+        return tracking_uri
+
     @root_validator
     def _ensure_authentication_if_necessary(
-        self, values: Dict[str, Any]
+        cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Ensures that credentials or a token for authentication exist when
         running mlflow tracking with a remote backend."""
