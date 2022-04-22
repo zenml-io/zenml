@@ -203,15 +203,13 @@ class LocalStackStore(BaseStackStore):
         Raises:
             KeyError: If no stack component exists with the given name.
         """
-        components = self.__store.stack_components[component.type]
-        if component.name not in components:
+        components = self.__store.stack_components[component_type]
+        if name not in components:
             raise KeyError(
-                f"Unable to update stack component (type: {component.type}) "
-                f"with name '{component.name}': No existing stack component "
+                f"Unable to update stack component (type: {component_type}) "
+                f"with name '{name}': No existing stack component "
                 f"found with this name."
             )
-
-        # write the component configuration file
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
@@ -222,13 +220,21 @@ class LocalStackStore(BaseStackStore):
             component_config_path,
             base64.b64decode(component.config).decode(),
         )
+        if name != component.name:
+            self._delete_stack_component(component_type, name)
 
         # add the component to the stack store dict and write it to disk
         components[component.name] = component.flavor
+
+        for _, conf in self.stack_configurations.items():
+            for component_type, component_name in conf.items():
+                if component_name == name and component_type == component_type:
+                    conf[component_type] = component.name
         self._write_store()
+
         logger.info(
             "Updated stack component with type '%s' and name '%s'.",
-            component.type,
+            component_type,
             component.name,
         )
         return {component.type.value: component.flavor}
@@ -239,37 +245,37 @@ class LocalStackStore(BaseStackStore):
     #     component: StackComponentWrapper,
     # ) -> None:
     #     """Rename a stack component."""
-    #     components = self.__store.stack_components[component.type]
-    #     if old_name not in components:
-    #         raise KeyError(
-    #             f"Unable to rename stack component (type: {component.type}) "
-    #             f"with name '{component.name}': No existing stack component "
-    #             f"found with this name."
-    #         )
-
-    #     # write the component configuration file
-    #     renamed_component_config_path = self._get_stack_component_config_path(
-    #         component_type=component.type, name=component.name
-    #     )
-    #     utils.create_dir_recursive_if_not_exists(
-    #         os.path.dirname(renamed_component_config_path)
-    #     )
-    #     utils.write_file_contents_as_string(
-    #         renamed_component_config_path,
-    #         base64.b64decode(component.config).decode(),
+    # components = self.__store.stack_components[component.type]
+    # if old_name not in components:
+    #     raise KeyError(
+    #         f"Unable to rename stack component (type: {component.type}) "
+    #         f"with name '{component.name}': No existing stack component "
+    #         f"found with this name."
     #     )
 
-    #     # delete the old stack component
-    #     self._delete_stack_component(component.type, old_name)
+    # # write the component configuration file
+    # renamed_component_config_path = self._get_stack_component_config_path(
+    #     component_type=component.type, name=component.name
+    # )
+    # utils.create_dir_recursive_if_not_exists(
+    #     os.path.dirname(renamed_component_config_path)
+    # )
+    # utils.write_file_contents_as_string(
+    #     renamed_component_config_path,
+    #     base64.b64decode(component.config).decode(),
+    # )
 
-    #     # add the component to the stack store dict and write it to disk
-    #     components[component.name] = component.flavor
-    #     self._write_store()
-    #     logger.info(
-    #         "Renamed stack component with type '%s' and new name '%s'.",
-    #         component.type,
-    #         component.name,
-    #     )
+    # # delete the old stack component
+    # self._delete_stack_component(component.type, old_name)
+
+    # # add the component to the stack store dict and write it to disk
+    # components[component.name] = component.flavor
+    # self._write_store()
+    # logger.info(
+    #     "Renamed stack component with type '%s' and new name '%s'.",
+    #     component.type,
+    #     component.name,
+    # )
 
     # def update_stacks_after_rename(
     #     self,
