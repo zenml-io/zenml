@@ -224,7 +224,6 @@ class RestStackStore(BaseStackStore):
         self,
         name: str,
         stack_configuration: Dict[StackComponentType, str],
-        is_update: bool = False,
     ) -> None:
         """Add a stack to storage.
 
@@ -286,7 +285,7 @@ class RestStackStore(BaseStackStore):
                 f"Bad API Response. Expected dict, got {type(body)}"
             )
 
-    def update_stack(self, stack: StackWrapper) -> Dict[str, str]:
+    def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
         """Update a stack and its components.
 
         If any of the stacks' components aren't registered in the stack store
@@ -302,6 +301,8 @@ class RestStackStore(BaseStackStore):
             ValueError: If a dict is not returned from the API.
         """
         body = self.put(STACKS, stack)
+        if name != stack.name:
+            self.deregister_stack(name)
         if isinstance(body, dict):
             return cast(Dict[str, str], body)
         else:

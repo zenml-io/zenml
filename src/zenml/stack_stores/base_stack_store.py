@@ -208,7 +208,6 @@ class BaseStackStore(ABC):
         self,
         name: str,
         stack_configuration: Dict[StackComponentType, str],
-        is_update: bool = False,
     ) -> None:
         """Add a stack to storage.
 
