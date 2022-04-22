@@ -264,8 +264,8 @@ class SqlStackStore(BaseStackStore):
         with Session(self.engine) as session:
             updated_component = session.exec(
                 select(ZenStackComponent)
-                .where(ZenStackComponent.component_type == component.type)
-                .where(ZenStackComponent.name == component.name)
+                .where(ZenStackComponent.component_type == component_type)
+                .where(ZenStackComponent.name == name)
             ).first()
 
             if not updated_component:
@@ -276,12 +276,11 @@ class SqlStackStore(BaseStackStore):
                 )
 
             updated_component.configuration = component.config
-
             session.add(updated_component)
             session.commit()
         logger.info(
             "Updated stack component with type '%s' and name '%s'.",
-            component.type,
+            component_type,
             component.name,
         )
         return {component.type.value: component.flavor}
