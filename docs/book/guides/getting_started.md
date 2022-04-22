@@ -584,7 +584,7 @@ Step `my_second_step` has finished in 0.048s.
 Pipeline run `first_pipeline-22_Apr_22-10_58_51_135729` has finished in 0.153s.
 ```
 
-# How Caching works
+# Caching and ZenML
 
 Machine learning pipelines are rerun many times over throughout their development lifecycle. Prototyping is often a 
 fast and iterative process that benefits a lot from caching. This makes caching a very powerful tool. (Read 

@@ -7,13 +7,16 @@
 ## Developer Guide
 
 * [Build a Pipeline](guides/getting_started.md)
-  * [Installation](guides/getting_started.md#installation-and-setup)
-  * [Step](guistep_pipeline_run_2#getting-started-with-a-pipeline)
-  * [Build and Run your first Pipeline](guides/basics/step_pipeline_run.md)
+  * [Installation and Setup](guides/getting_started.md#installation-and-setup)
+  * [Getting started with a Pipeline](guides/getting_started.md#getting-started-with-a-pipeline)
+  * [Configure at Runtime](guides/getting_started.md#configure-at-runtime)
+  * [Interact with completed runs](guides/getting_started.md#interact_with_completed_runs)
+  * [Visualizing Results](guides/getting_started.md#visualizing-results)
+  * [How data flows through steps](guides/getting_started.md#how-data-flows-through-steps)
+  * [Caching and ZenML](guides/getting_started.md#caching-and-zenml)
+  * 
   * [Step Fixtures](guides/basics/step-fixtures.md)
   * [Access Previous Runs](guides/basics/historic-runs.m)
-  * [Caching](guides/basics/caching.md)
-  * [Materializers](guides/basics/custom-materializer.md)
   * [Class Based API](guides/basics/class_based_api.md)
 
 ## ZenML
