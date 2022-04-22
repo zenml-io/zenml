@@ -69,7 +69,7 @@ If you are doing a manual install of the Kubeflow Pipelines, make sure that the 
 * Authenticate your local `docker` CLI with your ECR registry using the following command. Replace the capitalized words with your values.
 
     ```powershell
-    aws ecr get-login-password --region REGION | docker login --username aws --password-stdin ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com
+    aws ecr get-login-password --region REGION | docker login --username AWS --password-stdin ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com
     ```
 {% endtab %}
 
