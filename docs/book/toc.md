@@ -7,7 +7,7 @@
 ## Developer Guide
 
 * [Build a Pipeline](guides/getting_started.md)
-  * [Installation](guides/getting_started.md#Installation & Setup)
+  * [Installation](guides/getting_started.md#installation-and-setup)
   * [Step](guistep_pipeline_run_2#getting-started-with-a-pipeline)
   * [Build and Run your first Pipeline](guides/basics/step_pipeline_run.md)
   * [Step Fixtures](guides/basics/step-fixtures.md)
