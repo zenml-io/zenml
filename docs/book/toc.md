@@ -6,7 +6,7 @@
 
 ## Developer Guide
 
-* [Build a Pipeline](guides/getting_started.md)
+* [Getting Started](guides/getting_started.md)
 
 ## ZenML
 
