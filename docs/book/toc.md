@@ -7,14 +7,7 @@
 ## Developer Guide
 
 * [Build a Pipeline](guides/getting_started.md)
-  * [Installation and Setup](https://app.gitbook.com/s/LWlYNPPpa3uk98PYtTuB/developer-guide/getting\_started#installation-and-setup)
-  * [Getting started with a Pipeline](https://app.gitbook.com/s/LWlYNPPpa3uk98PYtTuB/developer-guide/getting\_started#getting-started-with-a-pipeline)
-  * [Configure at Runtime](https://app.gitbook.com/s/LWlYNPPpa3uk98PYtTuB/developer-guide/getting\_started#configure-at-runtime)
-  * [Interact with completed runs](https://app.gitbook.com/s/LWlYNPPpa3uk98PYtTuB/developer-guide/getting\_started#interact_with_completed_runs)
-  * [Visualizing Results](https://app.gitbook.com/s/LWlYNPPpa3uk98PYtTuB/developer-guide/getting\_started#visualizing-results)
-  * [How data flows through steps](https://app.gitbook.com/s/LWlYNPPpa3uk98PYtTuB/developer-guide/getting\_started#how-data-flows-through-steps)
-  * [Caching and ZenML](https://app.gitbook.com/s/LWlYNPPpa3uk98PYtTuB/developer-guide/getting\_started#caching-and-zenml)
-  * 
+
   * [Step Fixtures](guides/basics/step-fixtures.md)
   * [Access Previous Runs](guides/basics/historic-runs.m)
   * [Class Based API](guides/basics/class_based_api.md)
