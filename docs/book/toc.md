@@ -40,8 +40,9 @@
 * [Orchestrator](stack_and_components/orchestrator.md)
 * [Container Registry](stack_and_components/container_registry.md)
 * [Step Operator](stack_and_components/step_operator.md)
-* [Secret Manager](stack_and_components/secret_manager.md)
+* [Secret Manager](stack_and_components/secrets_manager.md)
 * [Visualizers](stack_and_components/visualizers.md)
+* [Experiment Tracker](stack_and_components/experiment_tracker.md)
 * [Extensibility]()
 * [Roadmap](stack_and_components/roadmap.md)
 
