@@ -412,12 +412,8 @@ class RestStackStore(BaseStackStore):
                 )
         elif response.status_code == 404:
             if "DoesNotExistException" not in response.text:
-                raise KeyError(
-                    *response.json().get("detail", (response.text,))
-                )
-            message = ": ".join(
-                response.json().get("detail", (response.text,))
-            )
+                raise KeyError(*response.json().get("detail", (response.text,)))
+            message = ": ".join(response.json().get("detail", (response.text,)))
             raise DoesNotExistException(message)
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
@@ -433,9 +429,7 @@ class RestStackStore(BaseStackStore):
                     *response.json().get("detail", (response.text,))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(
-                *response.json().get("detail", (response.text,))
-            )
+            raise RuntimeError(*response.json().get("detail", (response.text,)))
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "

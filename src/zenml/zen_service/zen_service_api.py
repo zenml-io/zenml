@@ -238,9 +238,7 @@ async def deregister_stack_component(
     component_type: StackComponentType, name: str
 ) -> None:
     try:
-        return stack_store.deregister_stack_component(
-            component_type, name=name
-        )
+        return stack_store.deregister_stack_component(component_type, name=name)
     except KeyError as error:
         raise not_found(error) from error
     except ValueError as error:
