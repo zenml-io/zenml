@@ -349,7 +349,7 @@ class BaseStackStore(ABC):
         self._save_stack(stack.name, stack_configuration)
         return metadata
 
-    def update_stack(self, stack: StackWrapper) -> Dict[str, str]:
+    def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
         """Update a stack and its components.
 
         If any of the stack's components aren't registered in the stack store
@@ -387,7 +387,9 @@ class BaseStackStore(ABC):
             typ: name for typ, name in map(__check_component, stack.components)
         }
         metadata = {c.type.value: c.flavor for c in stack.components}
-        self._save_stack(stack.name, stack_configuration, is_update=True)
+        self._save_stack(stack.name, stack_configuration)
+        if name != stack.name:
+            self.deregister_stack(name)
         return metadata
 
     def get_stack_component(

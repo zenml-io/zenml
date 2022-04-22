@@ -183,7 +183,7 @@ async def register_stack(stack: StackWrapper) -> Dict[str, str]:
 )
 async def update_stack(stack: StackWrapper, name: str) -> Dict[str, str]:
     try:
-        return stack_store.update_stack(stack)
+        return stack_store.update_stack(name, stack)
     except DoesNotExistException as error:
         raise not_found(error) from error
 
