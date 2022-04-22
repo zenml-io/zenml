@@ -23,7 +23,7 @@ from mlflow import (  # type: ignore[import]
     start_run,
 )
 from mlflow.entities import Experiment  # type: ignore[import]
-from mlflow.store.db.db_types import DATABASE_ENGINES
+from mlflow.store.db.db_types import DATABASE_ENGINES  # type: ignore[import]
 from pydantic import root_validator, validator
 
 from zenml.artifact_stores import LocalArtifactStore

@@ -15,7 +15,9 @@ import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
 from zenml.environment import Environment
-from zenml.integrations.mlflow.mlflow_environment import MLFlowStepEnvironment
+from zenml.integrations.mlflow.mlflow_step_environment import (
+    MLFlowStepEnvironment,
+)
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
 from zenml.steps.utils import STEP_INNER_FUNC_NAME

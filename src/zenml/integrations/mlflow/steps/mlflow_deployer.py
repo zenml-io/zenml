@@ -20,11 +20,11 @@ from mlflow.tracking import MlflowClient  # type: ignore[import]
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
-from zenml.integrations.mlflow.mlflow_environment import (
+from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+from zenml.integrations.mlflow.mlflow_step_environment import (
     MLFLOW_STEP_ENVIRONMENT_NAME,
     MLFlowStepEnvironment,
 )
-from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )

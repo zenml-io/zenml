@@ -22,7 +22,7 @@ from pipeline import (
     tf_trainer,
 )
 
-from zenml.integrations.mlflow.mlflow_environment import global_mlflow_env
+from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 from zenml.pipelines import Schedule
 
 if __name__ == "__main__":
@@ -52,11 +52,10 @@ if __name__ == "__main__":
     )
 
     run_2.run(schedule=schedule)
-    with global_mlflow_env() as mlflow_env:
-        print(
-            "Now run \n "
-            f"    mlflow ui --backend-store-uri {mlflow_env.tracking_uri}\n"
-            "To inspect your experiment runs within the mlflow ui.\n"
-            "You can find your runs tracked within the `mlflow_example_pipeline`"
-            "experiment. Here you'll also be able to compare the two runs.)"
-        )
+    print(
+        "Now run \n "
+        f"    mlflow ui --backend-store-uri {get_tracking_uri()}\n"
+        "To inspect your experiment runs within the mlflow ui.\n"
+        "You can find your runs tracked within the `mlflow_example_pipeline`"
+        "experiment. Here you'll also be able to compare the two runs.)"
+    )
