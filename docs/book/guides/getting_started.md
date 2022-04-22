@@ -1072,3 +1072,7 @@ first_pipeline(step_1=my_first_step(),
                step_3=my_third_step()).run()
 ```
 </details>
+
+# Using the Class Based API
+
+The class-based ZenML API is defined by the base classes BaseStep and BasePipeline. These interfaces allow our users to maintain a higher level of control while they are creating a step definition and using it within the context of a pipeline.
