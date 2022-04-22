@@ -178,47 +178,36 @@ class RestStackStore(BaseStackStore):
             component: The component to register.
 
         Raises:
-            StackComponentExistsError: If a stack component with the same type
+            KeyError: If a stack component with the same type
                 and name already exists.
         """
         self.post(STACK_COMPONENTS, body=component)
 
     def update_stack_component(
         self,
+        name: str,
+        component_type: StackComponentType,
         component: StackComponentWrapper,
     ) -> Dict[str, str]:
         """Update a stack component.
 
         Args:
+            name: The name of the stack component to update.
+            component_type: The type of the stack component to update.
             component: The new component to update with.
 
         Raises:
             KeyError: If no stack component exists with the given name.
         """
-        body = self.put(STACK_COMPONENTS, body=component)
+        body = self.put(
+            f"{STACK_COMPONENTS}/{component_type}/{name}", body=component
+        )
         if isinstance(body, dict):
             return cast(Dict[str, str], body)
         else:
             raise ValueError(
                 f"Bad API Response. Expected dict, got {type(body)}"
             )
-
-    def rename_stack_component(
-        self,
-        old_name: str,
-        component: StackComponentWrapper,
-    ) -> None:
-        """Rename a stack component."""
-        raise NotImplementedError
-
-    def update_stacks_after_rename(
-        self,
-        old_name: str,
-        new_name: str,
-        renamed_component_type: StackComponentType,
-    ) -> None:
-        """Update stack components on stacks following a component rename."""
-        raise NotImplementedError
 
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
@@ -423,8 +412,12 @@ class RestStackStore(BaseStackStore):
                 )
         elif response.status_code == 404:
             if "DoesNotExistException" not in response.text:
-                raise KeyError(*response.json().get("detail", (response.text,)))
-            message = ": ".join(response.json().get("detail", (response.text,)))
+                raise KeyError(
+                    *response.json().get("detail", (response.text,))
+                )
+            message = ": ".join(
+                response.json().get("detail", (response.text,))
+            )
             raise DoesNotExistException(message)
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
@@ -440,7 +433,9 @@ class RestStackStore(BaseStackStore):
                     *response.json().get("detail", (response.text,))
                 )
         elif response.status_code == 422:
-            raise RuntimeError(*response.json().get("detail", (response.text,)))
+            raise RuntimeError(
+                *response.json().get("detail", (response.text,))
+            )
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "

@@ -176,8 +176,12 @@ async def register_stack(stack: StackWrapper) -> Dict[str, str]:
         raise conflict(error) from error
 
 
-@app.put(STACKS, response_model=Dict[str, str], responses={404: error_response})
-async def update_stack(stack: StackWrapper) -> Dict[str, str]:
+@app.put(
+    STACKS + "/{name}",
+    response_model=Dict[str, str],
+    responses={404: error_response},
+)
+async def update_stack(stack: StackWrapper, name: str) -> Dict[str, str]:
     try:
         return stack_store.update_stack(stack)
     except DoesNotExistException as error:
@@ -185,15 +189,19 @@ async def update_stack(stack: StackWrapper) -> Dict[str, str]:
 
 
 @app.put(
-    STACK_COMPONENTS,
+    STACK_COMPONENTS + "/{component_type}/{name}",
     response_model=Dict[str, str],
     responses={404: error_response},
 )
 async def update_stack_component(
-    stack_component: StackComponentWrapper,
+    component: StackComponentWrapper,
+    name: str,
+    component_type: StackComponentType,
 ) -> Dict[str, str]:
     try:
-        return stack_store.update_stack_component(stack_component)
+        return stack_store.update_stack_component(
+            name, component_type, component
+        )
     except StackComponentExistsError as error:
         raise not_found(error) from error
 
@@ -230,7 +238,9 @@ async def deregister_stack_component(
     component_type: StackComponentType, name: str
 ) -> None:
     try:
-        return stack_store.deregister_stack_component(component_type, name=name)
+        return stack_store.deregister_stack_component(
+            component_type, name=name
+        )
     except KeyError as error:
         raise not_found(error) from error
     except ValueError as error:

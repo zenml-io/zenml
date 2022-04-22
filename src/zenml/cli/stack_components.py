@@ -33,10 +33,10 @@ def _get_required_properties(
 ) -> List[str]:
     """Gets the required properties for a stack component."""
     return [
-        item[0]
-        for item in component_class.__fields__.items()
-        if (item[1].required is True)
-        and item[0] not in MANDATORY_COMPONENT_PROPERTIES
+        field_name
+        for field_name, field in component_class.__fields__.items()
+        if (field.required is True)
+        and field_name not in MANDATORY_COMPONENT_PROPERTIES
     ]
 
 
@@ -45,9 +45,12 @@ def _get_available_properties(
 ) -> List[str]:
     """Gets the available non-mandatory properties for a stack component."""
     return [
-        item[0]
-        for item in component_class.__fields__.items()
-        if item[0] not in MANDATORY_COMPONENT_PROPERTIES
+        field_name
+        for field_name, _ in component_class.__fields__.items()
+        if field_name not in MANDATORY_COMPONENT_PROPERTIES
+        # POSSIBLE ALTERNATIVE?
+        # for name in component_class.__fields__.items()
+        # if name not in MANDATORY_COMPONENT_PROPERTIES
     ]
 
 
@@ -573,7 +576,9 @@ def register_single_stack_component_cli_commands(
     )(get_command)
 
     # zenml stack-component describe
-    describe_command = generate_stack_component_describe_command(component_type)
+    describe_command = generate_stack_component_describe_command(
+        component_type
+    )
     command_group.command(
         "describe",
         help=f"Show details about the (active) {singular_display_name}.",
@@ -586,7 +591,9 @@ def register_single_stack_component_cli_commands(
     )(list_command)
 
     # zenml stack-component register
-    register_command = generate_stack_component_register_command(component_type)
+    register_command = generate_stack_component_register_command(
+        component_type
+    )
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "register",

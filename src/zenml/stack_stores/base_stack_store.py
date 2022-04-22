@@ -83,7 +83,7 @@ class BaseStackStore(ABC):
         """Get a local URL for a given local path.
 
         Args:
-             path: the path string to build a URL out of.
+            path: the path string to build a URL out of.
 
         Returns:
             Url pointing to the path for the store type.
@@ -158,33 +158,37 @@ class BaseStackStore(ABC):
     @abstractmethod
     def update_stack_component(
         self,
+        name: str,
+        component_type: StackComponentType,
         component: StackComponentWrapper,
     ) -> Dict[str, str]:
         """Update a stack component.
 
         Args:
+            name: The name of the stack component to update.
+            component_type: The type of the stack component to update.
             component: The new component to update with.
 
         Raises:
-            StackComponentExistsError: If no stack component exists with the given name.
+            KeyError: If no stack component exists with the given name.
         """
 
-    @abstractmethod
-    def rename_stack_component(
-        self,
-        old_name: str,
-        component: StackComponentWrapper,
-    ) -> None:
-        """Rename a stack component."""
+    # @abstractmethod
+    # def rename_stack_component(
+    #     self,
+    #     old_name: str,
+    #     component: StackComponentWrapper,
+    # ) -> None:
+    #     """Rename a stack component."""
 
-    @abstractmethod
-    def update_stacks_after_rename(
-        self,
-        old_name: str,
-        new_name: str,
-        renamed_component_type: StackComponentType,
-    ) -> None:
-        """Update stack components on stacks following a component rename."""
+    # @abstractmethod
+    # def update_stacks_after_rename(
+    #     self,
+    #     old_name: str,
+    #     new_name: str,
+    #     renamed_component_type: StackComponentType,
+    # ) -> None:
+    #     """Update stack components on stacks following a component rename."""
 
     @abstractmethod
     def deregister_stack(self, name: str) -> None:

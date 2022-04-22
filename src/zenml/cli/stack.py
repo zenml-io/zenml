@@ -232,6 +232,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-d",
+    "--model-deployer",
+    "model_deployer_name",
+    help="Name of the new model deployer for this stack.",
+    type=str,
+    required=False,
+)
 def update_stack(
     stack_name: str,
     metadata_store_name: Optional[str] = None,
@@ -241,6 +249,7 @@ def update_stack(
     step_operator_name: Optional[str] = None,
     secrets_manager_name: Optional[str] = None,
     feature_store_name: Optional[str] = None,
+    model_deployer_name: Optional[str] = None,
 ) -> None:
     """Update a stack."""
     with console.status(f"Updating stack `{stack_name}`...\n"):
@@ -306,6 +315,14 @@ def update_stack(
                 name=feature_store_name,
             )
 
+        if model_deployer_name:
+            stack_components[
+                StackComponentType.MODEL_DEPLOYER
+            ] = repo.get_stack_component(
+                StackComponentType.MODEL_DEPLOYER,
+                name=model_deployer_name,
+            )
+
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
@@ -321,7 +338,7 @@ def update_stack(
     "-c",
     "--container_registry",
     "container_registry_flag",
-    help="Name of the container registry to remove from this stack.",
+    help="Include this to remove the container registry from this stack.",
     is_flag=True,
     required=False,
 )
@@ -329,7 +346,7 @@ def update_stack(
     "-s",
     "--step_operator",
     "step_operator_flag",
-    help="Name of the step operator to remove from this stack.",
+    help="Include this to remove the step operator from this stack.",
     is_flag=True,
     required=False,
 )
@@ -337,7 +354,7 @@ def update_stack(
     "-x",
     "--secrets_manager",
     "secrets_manager_flag",
-    help="Name of the secrets manager to remove from this stack.",
+    help="Include this to remove the secrets manager from this stack.",
     is_flag=True,
     required=False,
 )
@@ -345,7 +362,15 @@ def update_stack(
     "-f",
     "--feature_store",
     "feature_store_flag",
-    help="Name of the feature store to remove from this stack.",
+    help="Include this to remove the feature store from this stack.",
+    is_flag=True,
+    required=False,
+)
+@click.option(
+    "-d",
+    "--model_deployer",
+    "model_deployer_flag",
+    help="Include this to remove the model deployer from this stack.",
     is_flag=True,
     required=False,
 )
@@ -355,6 +380,7 @@ def remove_stack_component(
     step_operator_flag: Optional[bool] = False,
     secrets_manager_flag: Optional[bool] = False,
     feature_store_flag: Optional[bool] = False,
+    model_deployer_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack."""
     with console.status(f"Updating stack `{stack_name}`...\n"):
@@ -393,6 +419,13 @@ def remove_stack_component(
                 key: value
                 for (key, value) in stack_components.items()
                 if key != StackComponentType.FEATURE_STORE
+            }
+
+        if model_deployer_flag:
+            stack_components = {
+                key: value
+                for (key, value) in stack_components.items()
+                if key != StackComponentType.MODEL_DEPLOYER
             }
 
         stack_ = Stack.from_components(

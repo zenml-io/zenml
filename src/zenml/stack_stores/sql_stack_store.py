@@ -247,35 +247,35 @@ class SqlStackStore(BaseStackStore):
 
     def update_stack_component(
         self,
+        name: str,
+        component_type: StackComponentType,
         component: StackComponentWrapper,
     ) -> Dict[str, str]:
         """Update a stack component.
 
         Args:
+            name: The name of the stack component to update.
+            component_type: The type of the stack component to update.
             component: The new component to update with.
 
         Raises:
             KeyError: If no stack component exists with the given name.
         """
         with Session(self.engine) as session:
-            existing_components = session.exec(
-                select(ZenStackComponent).where(
-                    ZenStackComponent.component_type == component.type
-                )
-            ).all()
-            if not existing_components:
-                raise StackComponentExistsError(
-                    f"Unable to update stack component (type: {component.type}) "
-                    f"with name '{component.name}': No existing stack component "
-                    f"found with this name."
-                )
             updated_component = session.exec(
                 select(ZenStackComponent)
                 .where(ZenStackComponent.component_type == component.type)
                 .where(ZenStackComponent.name == component.name)
             ).first()
-            if updated_component:
-                updated_component.configuration = component.config
+
+            if not updated_component:
+                raise KeyError(
+                    f"Unable to update stack component (type: {component.type}) "
+                    f"with name '{component.name}': No existing stack component "
+                    f"found with this name."
+                )
+
+            updated_component.configuration = component.config
 
             session.add(updated_component)
             session.commit()
@@ -286,53 +286,54 @@ class SqlStackStore(BaseStackStore):
         )
         return {component.type.value: component.flavor}
 
-    def rename_stack_component(
-        self,
-        old_name: str,
-        component: StackComponentWrapper,
-    ) -> None:
-        """Rename a stack component."""
-        with Session(self.engine) as session:
-            current_component = session.exec(
-                select(ZenStackComponent)
-                .where(ZenStackComponent.component_type == component.type)
-                .where(ZenStackComponent.name == old_name)
-            ).one_or_none()
-            if not current_component:
-                raise StackComponentExistsError(
-                    f"Unable to rename stack component (type: {component.type}) "
-                    f"with name '{component.name}': No existing stack component "
-                    f"found with this name."
-                )
+    # def rename_stack_component(
+    #     self,
+    #     old_name: str,
+    #     component: StackComponentWrapper,
+    # ) -> None:
+    #     """Rename a stack component."""
+    #     with Session(self.engine) as session:
+    #         current_component = session.exec(
+    #             select(ZenStackComponent)
+    #             .where(ZenStackComponent.component_type == component.type)
+    #             .where(ZenStackComponent.name == old_name)
+    #         ).one_or_none()
+    #         if not current_component:
+    #             raise KeyError(
+    #                 f"Unable to rename stack component (type: {component.type}) "
+    #                 f"with name '{component.name}': No existing stack component "
+    #                 f"found with this name."
+    #             )
 
-            # update the component itself
-            current_component.name = component.name
-            session.add(current_component)
+    #         # update the component itself
+    #         current_component.name = component.name
+    #         session.add(current_component)
 
-            # update the ZenStackDefinitions
-            stack_definitions = session.exec(
-                select(ZenStackDefinition)
-                .where(ZenStackDefinition.component_type == component.type)
-                .where(ZenStackDefinition.component_name == old_name)
-            ).all()
-            for definition in stack_definitions:
-                definition.component_name = component.name
-                session.add(definition)
+    #         # update the ZenStackDefinitions
+    #         stack_definitions = session.exec(
+    #             select(ZenStackDefinition)
+    #             .where(ZenStackDefinition.component_type == component.type)
+    #             .where(ZenStackDefinition.component_name == old_name)
+    #         ).all()
+    #         for definition in stack_definitions:
+    #             definition.component_name = component.name
+    #             session.add(definition)
 
-            session.commit()
-        logger.info(
-            "Renamed stack component with type '%s' and new name '%s'.",
-            component.type,
-            component.name,
-        )
+    #         session.commit()
+    #     logger.info(
+    #         "Renamed stack component with type '%s' and new name '%s'.",
+    #         component.type,
+    #         component.name,
+    #     )
 
-    def update_stacks_after_rename(
-        self,
-        old_name: str,
-        new_name: str,
-        renamed_component_type: StackComponentType,
-    ) -> None:
-        """Update stack components on stacks following a component rename."""
+    # def update_stacks_after_rename(
+    #     self,
+    #     old_name: str,
+    #     new_name: str,
+    #     renamed_component_type: StackComponentType,
+    # ) -> None:
+    #     """Update stack components on stacks following a component rename."""
+    #     pass
 
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
@@ -398,7 +399,6 @@ class SqlStackStore(BaseStackStore):
                             component.component_name = cname
                             component.component_type = ctype
                             session.add(component)
-                        # session.commit()
             else:
                 stack = ZenStack(name=name, created_by=1)
                 session.add(stack)
