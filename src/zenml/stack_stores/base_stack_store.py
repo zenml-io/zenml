@@ -347,6 +347,7 @@ class BaseStackStore(ABC):
         }
         metadata = {c.type.value: c.flavor for c in stack.components}
         self._save_stack(stack.name, stack_configuration)
+        logger.info("Registered stack with name '%s'.", stack.name)
         return metadata
 
     def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
@@ -388,6 +389,7 @@ class BaseStackStore(ABC):
         }
         metadata = {c.type.value: c.flavor for c in stack.components}
         self._save_stack(stack.name, stack_configuration)
+        logger.info("Updated stack with name '%s'.", name)
         if name != stack.name:
             self.deregister_stack(name)
         return metadata

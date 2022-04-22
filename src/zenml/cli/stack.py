@@ -326,7 +326,7 @@ def update_stack(
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
-        repo.update_stack(stack_)
+        repo.update_stack(stack_name, stack_)
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
@@ -431,7 +431,7 @@ def remove_stack_component(
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
-        repo.update_stack(stack_)
+        repo.update_stack(stack_name, stack_)
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 

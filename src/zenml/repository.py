@@ -817,9 +817,11 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         metadata["store_type"] = self.active_profile.store_type.value
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
-    def update_stack(self, stack: Stack) -> None:
+    def update_stack(self, name: str, stack: Stack) -> None:
         """Updates a stack and its components."""
-        metadata = self.stack_store.update_stack(StackWrapper.from_stack(stack))
+        metadata = self.stack_store.update_stack(
+            name, StackWrapper.from_stack(stack)
+        )
         metadata["store_type"] = self.active_profile.store_type.value
         track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
 

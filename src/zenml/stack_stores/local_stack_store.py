@@ -311,7 +311,6 @@ class LocalStackStore(BaseStackStore):
         self,
         name: str,
         stack_configuration: Dict[StackComponentType, str],
-        is_update: bool = False,
     ) -> None:
         """Save a stack.
 
@@ -321,10 +320,6 @@ class LocalStackStore(BaseStackStore):
         """
         self.__store.stacks[name] = stack_configuration
         self._write_store()
-        if is_update:
-            logger.info("Updated stack with name '%s'.", name)
-        else:
-            logger.info("Registered stack with name '%s'.", name)
 
     def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str
