@@ -286,55 +286,6 @@ class SqlStackStore(BaseStackStore):
         )
         return {component.type.value: component.flavor}
 
-    # def rename_stack_component(
-    #     self,
-    #     old_name: str,
-    #     component: StackComponentWrapper,
-    # ) -> None:
-    #     """Rename a stack component."""
-    #     with Session(self.engine) as session:
-    #         current_component = session.exec(
-    #             select(ZenStackComponent)
-    #             .where(ZenStackComponent.component_type == component.type)
-    #             .where(ZenStackComponent.name == old_name)
-    #         ).one_or_none()
-    #         if not current_component:
-    #             raise KeyError(
-    #                 f"Unable to rename stack component (type: {component.type}) "
-    #                 f"with name '{component.name}': No existing stack component "
-    #                 f"found with this name."
-    #             )
-
-    #         # update the component itself
-    #         current_component.name = component.name
-    #         session.add(current_component)
-
-    #         # update the ZenStackDefinitions
-    #         stack_definitions = session.exec(
-    #             select(ZenStackDefinition)
-    #             .where(ZenStackDefinition.component_type == component.type)
-    #             .where(ZenStackDefinition.component_name == old_name)
-    #         ).all()
-    #         for definition in stack_definitions:
-    #             definition.component_name = component.name
-    #             session.add(definition)
-
-    #         session.commit()
-    #     logger.info(
-    #         "Renamed stack component with type '%s' and new name '%s'.",
-    #         component.type,
-    #         component.name,
-    #     )
-
-    # def update_stacks_after_rename(
-    #     self,
-    #     old_name: str,
-    #     new_name: str,
-    #     renamed_component_type: StackComponentType,
-    # ) -> None:
-    #     """Update stack components on stacks following a component rename."""
-    #     pass
-
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
@@ -367,7 +318,6 @@ class SqlStackStore(BaseStackStore):
         self,
         name: str,
         stack_configuration: Dict[StackComponentType, str],
-        is_update: bool = False,
     ) -> None:
         """Save a stack.
 
@@ -376,34 +326,19 @@ class SqlStackStore(BaseStackStore):
             stack_configuration: Dict[StackComponentType, str] to persist.
         """
         with Session(self.engine) as session:
-            if is_update:
-                # CHECK THAT THE STACK EXISTS FIRST
-                for ctype, cname in stack_configuration.items():
-                    if cname is not None:
-                        statement = (
-                            select(ZenStackDefinition)
-                            .where(ZenStackDefinition.stack_name == name)
-                            .where(ZenStackDefinition.component_type == ctype)
-                        )
-                        results = session.exec(statement)
-                        component = results.one_or_none()
-                        if component is None:
-                            session.add(
-                                ZenStackDefinition(
-                                    stack_name=name,
-                                    component_type=ctype,
-                                    component_name=cname,
-                                )
-                            )
-                        else:
-                            component.component_name = cname
-                            component.component_type = ctype
-                            session.add(component)
-            else:
-                stack = ZenStack(name=name, created_by=1)
-                session.add(stack)
-                for ctype, cname in stack_configuration.items():
-                    if cname is not None:
+            for ctype, cname in stack_configuration.items():
+                if cname is None:
+                    stack = ZenStack(name=name, created_by=1)
+                    session.add(stack)
+                else:
+                    statement = (
+                        select(ZenStackDefinition)
+                        .where(ZenStackDefinition.stack_name == name)
+                        .where(ZenStackDefinition.component_type == ctype)
+                    )
+                    results = session.exec(statement)
+                    component = results.one_or_none()
+                    if component is None:
                         session.add(
                             ZenStackDefinition(
                                 stack_name=name,
@@ -411,6 +346,10 @@ class SqlStackStore(BaseStackStore):
                                 component_name=cname,
                             )
                         )
+                    else:
+                        component.component_name = cname
+                        component.component_type = ctype
+                        session.add(component)
             session.commit()
 
     def _get_component_flavor_and_config(

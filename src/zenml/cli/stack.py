@@ -457,8 +457,7 @@ def rename_stack(
             name=new_stack_name, components=stack_components
         )
         try:
-            repo.deregister_stack(current_stack_name)
-            repo.register_stack(new_stack_)
+            repo.update_stack(current_stack_name, new_stack_)
             cli_utils.declare(
                 f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
             )
