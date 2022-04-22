@@ -456,13 +456,12 @@ def test_rename_core_stack_component_succeeds(
             StackComponentType.ORCHESTRATOR, old_name
         )
     stack_components = fresh_stack_store.get_stack("default").components
-    stack_orchestrator = get_component_from_wrapper(
-        [
-            component
-            for component in stack_components
-            if component.name == new_name
-        ][0]
-    )
+    stack_orchestrator = [
+        component
+        for component in stack_components
+        if component.name == new_name
+    ][0]
+
     assert stack_orchestrator is not None
     assert stack_orchestrator.name == new_name
 
