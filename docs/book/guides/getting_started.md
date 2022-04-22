@@ -2,6 +2,88 @@
 description: Familiarize yourself with the ZenML Basics
 ---
 
+# Installation & Setup
+
+## Welcome
+
+Your first step is to install **ZenML**, which comes bundled as a good old `pip` package.
+
+{% hint style="warning" %}
+Please note that we only support Python >= 3.7 <3.9, so please adjust your python environment accordingly.
+{% endhint %}
+
+## Virtual Environment
+
+We highly encourage you to install **ZenML** in a virtual environment. We like to use 
+[virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to manage our Python virtual environments.
+
+## Install with pip
+
+When you're set with your environment, run:
+
+```bash
+pip install zenml
+```
+
+Alternatively, if you’re feeling brave, feel free to install the bleeding edge: **NOTE:** Do so at your own risk;
+no guarantees given!
+
+```bash
+pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
+```
+
+Once the installation is completed, you can check whether the installation was successful through:
+
+### Bash
+
+```bash
+zenml version
+```
+
+### Python
+
+```python
+import zenml
+print(zenml.__version__)
+```
+
+If you would like to learn more about the current release, please visit our[PyPi package page.](https://pypi.org/project/zenml)
+
+## Running with Docker
+
+`zenml` is available as a docker image hosted publicly on [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). Use the following command to get started in a bash environment with `zenml` available:
+
+```
+docker run -it zenmldocker/zenml /bin/bash
+```
+
+## Enabling auto-completion on the CLI
+
+{% tabs %}
+{% tab title="Bash" %}
+For Bash, add this to `~/.bashrc`:
+```bash
+eval "$(_ZENML_COMPLETE=source_bash zenml)"
+```
+{% endtab %}
+
+{% tab title="Zsh" %}
+For Zsh, add this to `~/.zshrc`:
+
+```bash
+eval "$(_ZENML_COMPLETE=source_zsh zenml)"
+```
+{% endtab %}
+
+{% tab title="Fish" %}
+For Fish, add this to `~/.config/fish/completions/foo-bar.fish`:
+
+```bash
+eval (env _ZENML_COMPLETE=source_fish zenml)
+```
+{% endtab %}
+{% endtabs %}
+
 # Getting started with a Pipeline
 
 ## Create steps
@@ -278,7 +360,7 @@ output.read()
 
 ## What is a Visualizer?
 
-Sometimes it makes sense in the [post-execution workflow](post-execution-workflow.md) to actually visualize step outputs. 
+Sometimes it makes sense in the [post-execution workflow](basics/post-execution-workflow.md) to actually visualize step outputs. 
 ZenML has a standard, extensible interface for all visualizers:
 
 ```python
@@ -310,7 +392,7 @@ PipelineRunLineageVisualizer().visualize(latest_run)
 
 It produces the following visualization:
 
-![Lineage Diagram](../../assets/zenml-pipeline-run-lineage-dash.png)
+![Lineage Diagram](../assets/zenml-pipeline-run-lineage-dash.png)
 
 ### Statistics with [`facets`](https://github.com/PAIR-code/facets)
 
@@ -324,7 +406,7 @@ FacetStatisticsVisualizer().visualize(output)
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../../assets/statistics-boston-housing.png)
+![Statistics for boston housing dataset](../assets/statistics-boston-housing.png)
 
 # How data flows through steps
 
@@ -409,21 +491,24 @@ class MyObj:
         self.name = name
 
 @step
-def step1() -> MyObj:
-    return MyObj("jk")
+def my_first_step() -> MyObj:
+    """Step that returns an object of type MyObj"""
+    return MyObj("my_object")
 
 @step
-def step2(my_obj: MyObj):
-    print(my_obj)
+def my_second_step(my_obj: MyObj) -> None:
+    """Step that prints the input object and returns nothing."""
+    print(f"The following object was passed to this step: `{my_obj.name}`")
 
 @pipeline
-def pipe(step1, step2):
-    step2(step1())
+def first_pipeline(
+    step_1,
+    step_2
+):
+    output_1 = step_1()
+    step_2(output_1)
 
-pipe(
-    step1=step1(), 
-    step2=step2()
-).run()
+first_pipeline(step_1=my_first_step(),step_2=my_second_step()).run()
 ```
 
 Running the above without a custom materializer will result in the following error:
@@ -474,10 +559,9 @@ Now ZenML can use this materializer to handle outputs and inputs of your customs
 to see this in action:
 
 ```python
-pipe(
-    step1=step1().with_return_materializers(MyMaterializer),
-    step2=step2()
-).run()
+first_pipeline(
+    step_1=my_first_step().with_return_materializers(MyMaterializer),
+    step_2=my_second_step()).run()
 ```
 
 Please note that for multiple outputs a dictionary can be supplied of type `{OUTPUT_NAME: MATERIALIZER_CLASS}` to the 
@@ -489,16 +573,86 @@ materializer by default.
 This will yield the proper response as follows:
 
 ```shell
-Creating run for pipeline: `pipe`
-Cache enabled for pipeline `pipe`
-Using stack `local_stack` to run pipeline `pipe`...
-Step `step1` has started.
-Step `step1` has finished in 0.035s.
-Step `step2` has started.
+Creating run for pipeline: `first_pipeline`
+Cache enabled for pipeline `first_pipeline`
+Using stack `default` to run pipeline `first_pipeline`...
+Step `my_first_step` has started.
+Step `my_first_step` has finished in 0.081s.
+Step `my_second_step` has started.
 The following object was passed to this step: `my_object`
-Step `step2` has finished in 0.036s.
-Pipeline run `pipe-24_Jan_22-23_12_18_504593` has finished in 0.080s.
+Step `my_second_step` has finished in 0.048s.
+Pipeline run `first_pipeline-22_Apr_22-10_58_51_135729` has finished in 0.153s.
 ```
 
 # How Caching works
+
+Machine learning pipelines are rerun many times over throughout their development lifecycle. Prototyping is often a 
+fast and iterative process that benefits a lot from caching. This makes caching a very powerful tool. (Read 
+[our blogpost](https://blog.zenml.io/caching-ml-pipelines/) for more context on the benefits of caching.)
+
+## 📈 Benefits of Caching
+- **🔁 Iteration Efficiency** - When experimenting, it really pays to have a high frequency of iteration. You learn 
+when and how to course correct earlier and more often. Caching brings you closer to that by making the costs of 
+frequent iteration much lower.
+- **💪 Increased Productivity** - The speed-up in iteration frequency will help you solve problems faster, making 
+stakeholders happier and giving you a greater feeling of agency in your machine learning work.
+- **🌳 Environmental Friendliness** - Caching saves you the 
+[needless repeated computation steps](https://machinelearning.piyasaa.com/greening-ai-rebooting-the-environmental-harms-of-machine/) 
+which mean you use up and waste less energy. It all adds up!
+- **＄ Reduced Costs** - Your bottom-line will thank you! Not only do you save the planet, but your monthly cloud 
+bills might be lower on account of your skipping those repeated steps.
+
+## Caching in ZenML
+
+ZenML comes with caching enabled by default. As long as there is no change within a step or upstream from it, the 
+cached outputs of that step will be used for the next pipeline run. This means that whenever there are code or 
+configuration changes affecting a step, the step will be rerun in the next pipeline execution. Currently, the 
+caching does not automatically detect changes within the file system or on external APIs. Make sure to set caching 
+to `False` on steps that depend on external input or if the step should run regardless of caching.
+
+There are multiple ways to take control of when and where caching is used.
+
+### Caching on a Pipeline Level
+
+On a pipeline level the caching policy can easily be set as a parameter within the decorator. If caching is explicitly 
+turned off on a pipeline level, all steps are run without caching, even if caching is set to true for single 
+steps.
+
+```python
+@pipeline(enable_cache=False)
+def first_pipeline(....):
+    """Pipeline with cache disabled"""
+```
+
+### Control Caching on a Step Level
+
+Caching can also be explicitly turned off at a step level. You might want to turn off caching for steps that take 
+external input (like fetching data from an API/ File IO).
+
+```python
+@step(enable_cache=False)
+def import_data_from_api(...):
+    """Import most up-to-date data from public api"""
+    ...
+    
+@pipeline(enable_cache=True)
+def pipeline(....):
+    """Pipeline with cache disabled"""
+```
+
+### Control Caching within the Runtime Configuration
+
+Sometimes you want to have control over caching at runtime instead of defaulting to the backed in configurations of 
+your pipeline and its steps. ZenML offers a way to override all caching settings of the pipeline at runtime.
+
+```python
+first_pipeline(step_1=..., step_2=...).run(enable_cache=False)
+```
+
+### Invalidation of Cache
+
+Caching is invalidated whenever any changes in step **code** or step **configuration** is detected. ZenML can **not** 
+detect changes in upstream APIs or in the Filesystem. Make sure you disable caching for steps that rely on these sources 
+if your pipeline needs to have access to the most up-to date data. During development, you probably don't care as much 
+about the freshness of your data. In that case feel free to keep caching enabled and enjoy the faster runtimes.
 

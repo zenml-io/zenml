@@ -14,7 +14,7 @@ def getting_started_with_a_pipeline():
     def my_second_step(input_int: int, input_float: float
                        ) -> Output(output_int=int, output_float=float):
         """Step that doubles the inputs"""
-        return 2 * input_int, 2* input_float
+        return 2 * input_int, 2 * input_float
 
 
     @pipeline
@@ -123,18 +123,23 @@ def how_data_flows_through_steps():
                 f.write(my_obj.name)
 
     @step
-    def step1() -> MyObj:
+    def my_first_step() -> MyObj:
+        """Step that returns an object of type MyObj"""
         return MyObj("my_object")
 
     @step
-    def step2(my_obj: MyObj):
-        print(f"The following object was passed to this step: `{my_obj}`")
+    def my_second_step(my_obj: MyObj) -> None:
+        """Step that prints the input object and returns nothing."""
+        print(f"The following object was passed to this step: `{my_obj.name}`")
 
     @pipeline
-    def pipe(step1, step2):
-        step2(step1())
+    def first_pipeline(
+        step_1,
+        step_2
+    ):
+        output_1 = step_1()
+        step_2(output_1)
 
-    pipe(
-        step1=step1().with_return_materializers(MyMaterializer),
-        step2=step2()
-    ).run()
+    first_pipeline(
+        step_1=my_first_step().with_return_materializers(MyMaterializer),
+        step_2=my_second_step()).run()

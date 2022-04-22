@@ -6,8 +6,9 @@
 
 ## Developer Guide
 
-* [Build a Pipeline](guides/basics/step_pipeline_run_2.md)
-  * [Installation](guides/basics/installation.md)
+* [Build a Pipeline](guides/getting_started.md)
+  * [Installation](guides/getting_started.md#Installation & Setup)
+  * [Step](guistep_pipeline_run_2#getting-started-with-a-pipeline)
   * [Build and Run your first Pipeline](guides/basics/step_pipeline_run.md)
   * [Step Fixtures](guides/basics/step-fixtures.md)
   * [Access Previous Runs](guides/basics/historic-runs.m)
