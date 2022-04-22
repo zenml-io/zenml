@@ -7,10 +7,7 @@
 ## Developer Guide
 
 * [Build a Pipeline](guides/getting_started.md)
-  * [Installation and Setup](https://app.gitbook.com/s/LWlYNPPpa3uk98PYtTuB/developer-guide/getting\_started#installation-and-setup)
-  * [Step Fixtures](guides/basics/step-fixtures.md)
-  * [Access Previous Runs](guides/basics/historic-runs.m)
-  * [Class Based API](guides/basics/class_based_api.md)
+  * [Installation and Setup](guides/getting_started.md#installation--setup)
 
 ## ZenML
 
