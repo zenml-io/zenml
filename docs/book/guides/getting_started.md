@@ -186,7 +186,6 @@ first_pipeline(step_1=my_first_step(), step_2=my_second_step()).run()
 ```
 </details>
 
-
 # Configure at Runtime
 
 A ZenML pipeline clearly separated business logic from parameter configuration. Business logic is what defines 
@@ -279,6 +278,57 @@ first_pipeline(step_1=my_first_step(),
                step_2=my_second_step()
                ).with_config("path_to_config.yaml").run()
 ```
+
+<details>
+    <summary>Minimal Code Example</summary>
+
+```python
+from zenml.steps import step, Output, BaseStepConfig
+from zenml.pipelines import pipeline
+
+@step
+def my_first_step() -> Output(output_int=int, output_float=float):
+    """Step that returns a pre-defined integer and float"""
+    return 7, 0.1
+
+class SecondStepConfig(BaseStepConfig):
+    """Trainer params"""
+    multiplier: int = 4
+
+@step
+def my_second_step(config: SecondStepConfig, input_int: int,
+                   input_float: float
+                   ) -> Output(output_int=int, output_float=float):
+    """Step that multiply the inputs"""
+    return config.multiplier * input_int, config.multiplier * input_float
+
+@pipeline
+def first_pipeline(
+        step_1,
+        step_2
+):
+    output_1, output_2 = step_1()
+    step_2(output_1, output_2)
+
+# Set configuration when executing
+first_pipeline(step_1=my_first_step(),
+               step_2=my_second_step(SecondStepConfig(multiplier=3))
+               ).run(run_name="custom_pipeline_run_name")
+
+# Set configuration  based on yml
+first_pipeline(step_1=my_first_step(),
+               step_2=my_second_step()
+               ).with_config("config.yml").run()
+```
+
+With config.yml looking like this
+```yaml
+steps:
+  step_2:
+    parameters:
+      multiplier: 3
+```
+</details>
 
 # Interact with completed runs
 

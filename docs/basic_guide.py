@@ -60,6 +60,10 @@ def configure_at_runtime():
                    step_2=my_second_step(SecondStepConfig(multiplier=3))
                    ).run(run_name="custom_pipeline_run_name")
 
+    first_pipeline(step_1=my_first_step(),
+                   step_2=my_second_step()
+                   ).with_config("config.yml").run()
+
 
 def interact_with_completed_runs():
     from zenml.repository import Repository
@@ -275,4 +279,4 @@ def fetching_historic_runs():
                    step_2=my_second_step(),
                    step_3=my_third_step()).run()
 
-fetching_historic_runs()
+configure_at_runtime()

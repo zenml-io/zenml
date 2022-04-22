@@ -1,0 +1,4 @@
+steps:
+  step_2:
+    parameters:
+      multiplier: 3

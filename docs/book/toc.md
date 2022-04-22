@@ -7,7 +7,6 @@
 ## Developer Guide
 
 * [Build a Pipeline](guides/getting_started.md)
-  * [Installation and Setup](guides/getting_started.md#installation--setup)
 
 ## ZenML
 
