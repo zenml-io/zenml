@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from typing import ClassVar, Optional
+from typing import Any, ClassVar, Dict, Optional
 
 from mlflow import (  # type: ignore[import]
     ActiveRun,
@@ -23,6 +23,7 @@ from mlflow import (  # type: ignore[import]
     start_run,
 )
 from mlflow.entities import Experiment  # type: ignore[import]
+from pydantic import root_validator
 
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
@@ -30,7 +31,6 @@ from zenml.experiment_trackers.base_experiment_tracker import (
 from zenml.integrations.constants import MLFLOW
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.stack import StackValidator
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -78,29 +78,63 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     ```
     """
 
-    # Class Configuration
-    FLAVOR: ClassVar[str] = MLFLOW
     tracking_uri: Optional[str] = None
     tracking_username: Optional[str] = None
     tracking_password: Optional[str] = None
     tracking_token: Optional[str] = None
     tracking_insecure_tls: bool = False
 
+    # Class Configuration
+    FLAVOR: ClassVar[str] = MLFLOW
+
+    @root_validator
+    def _ensure_authentication_if_necessary(
+        self, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Ensures that credentials or a token for authentication exist when
+        running mlflow tracking with a remote backend."""
+        tracking_uri = values.get("tracking_uri")
+
+        if tracking_uri and any(
+            tracking_uri.startswith(prefix)
+            for prefix in ["http://", "https://"]
+        ):
+            # we need either username + password or a token to authenticate to
+            # the remote backend
+            basic_auth = values.get("tracking_username") and values.get(
+                "tracking_password"
+            )
+            token_auth = values.get("tracking_token")
+
+            if not (basic_auth or token_auth):
+                raise ValueError(
+                    f"MLflow experiment tracking with a remote backend "
+                    f"{tracking_uri} is only when specifying either username "
+                    f"and password or a authentication token in your stack "
+                    f"component. To update your component, run the following "
+                    f"command: `zenml experiment-tracker update {self.name} "
+                    f"--tracking_username=MY_USERNAME "
+                    f"--tracking_password=MY_PASSWORD "
+                    f"--tracking_token=MY_TOKEN` and specify either your "
+                    f"username and password or token."
+                )
+
+        return values
+
     def get_tracking_uri(self) -> str:
         """Resolves and returns the tracking URI."""
-        if self.tracking_uri is None:
-            return _local_mlflow_backend()
-        return self.tracking_uri
+        return self.tracking_uri or _local_mlflow_backend()
 
     def prepare_pipeline_run(self) -> None:
         """Prepares running the pipeline."""
+        set_tracking_uri(self.get_tracking_uri())
+
         if self.tracking_username:
             os.environ[MLFLOW_TRACKING_USERNAME] = self.tracking_username
         if self.tracking_password:
             os.environ[MLFLOW_TRACKING_PASSWORD] = self.tracking_password
         if self.tracking_token:
             os.environ[MLFLOW_TRACKING_TOKEN] = self.tracking_token
-        set_tracking_uri(self.get_tracking_uri())
         os.environ[MLFLOW_TRACKING_INSECURE_TLS] = (
             "true" if self.tracking_insecure_tls else "false"
         )
@@ -108,17 +142,6 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     def cleanup_pipeline_run(self) -> None:
         """Cleans up resources after the pipeline run is finished."""
         set_tracking_uri("")
-
-    @property
-    def validator(self) -> Optional["StackValidator"]:
-        """The optional validator of the stack component.
-
-        This validator will be called each time a stack with the stack
-        component is initialized. Subclasses should override this property
-        and return a `StackValidator` that makes sure they're not included in
-        any stack that they're not compatible with.
-        """
-        return None
 
     @property
     def is_provisioned(self) -> bool:
