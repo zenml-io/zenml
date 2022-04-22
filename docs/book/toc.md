@@ -7,7 +7,7 @@
 ## Developer Guide
 
 * [Build a Pipeline](guides/getting_started.md)
-
+  * [Installation and Setup](developer-guide/getting_started#installation-and-setup)
   * [Step Fixtures](guides/basics/step-fixtures.md)
   * [Access Previous Runs](guides/basics/historic-runs.m)
   * [Class Based API](guides/basics/class_based_api.md)

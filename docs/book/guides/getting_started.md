@@ -676,7 +676,7 @@ def my_step(
     ...
 ```
 
-Please note the name of the parameter can be anything, but the type hint is what is important.
+Please note that the name of the parameter can be anything, but the type hint is what is important.
 
 ## Using the `BaseStepConfig`
 
@@ -699,6 +699,7 @@ Therefore, any type that [Pydantic supports](https://pydantic-docs.helpmanual.io
 You can then pass it in a step as follows:
 
 ```python
+from zenml.steps import step
 @step
 def my_step(
     config: MyConfig,
@@ -712,6 +713,7 @@ then one must pass the config in during pipeline run time. You can also override
 dynamically parameterize your pipeline runs.
 
 ```python
+from zenml.pipelines import pipeline
 @pipeline
 def my_pipeline(my_step):
     ...
@@ -723,21 +725,26 @@ pipeline = my_pipeline(
 
 ## Using the `StepContext`
 
-Unlike `BaseStepConfig`, we can pass in the `StepContext` directly to a step without passing it through at run-time.
+Unlike `BaseStepConfig`, we can pass in the `StepContext` directly to a step without explicitely passing it at run-time.
 
-`StepContext` provides additional context inside a step function.  It is used to access materializers and artifact URIs inside a step function. 
+The `StepContext` provides additional context inside a step function. It can be used to access artifacts directly from 
+within the step.
 
 You do not need to create a StepContext object yourself and pass it when creating the step, as long as you specify 
 it in the signature ZenML will create the `StepContext` and automatically pass it when executing your step.
 
-Note: When using a StepContext inside a step, ZenML disables caching for this step by default as the context provides 
+{% hint style="info" %}
+When using a StepContext inside a step, ZenML disables caching for this step by default as the context provides 
 access to external resources which might influence the result of your step execution. 
 To enable caching anyway, explicitly enable it in the @step decorator or when initializing your custom step class.
+{% endhint %}
 
-Within a step, there are many things that you can use the `StepContext` object for. E.g.: 
+Within a step, there are many things that you can use the `StepContext` object for. For example
+materializers, artifact locations, etc ...
 
 ```python
-@enable_INTEGRATION  # can be `enable_whylogs`, `enable_mlflow` etc. 
+from zenml.steps import StepContext, step
+
 @step
 def my_step(
     context: StepContext,
@@ -745,7 +752,74 @@ def my_step(
     context.get_output_materializer()  # Returns a materializer for a given step output.
     context.get_output_artifact_uri()  # Returns the URI for a given step output.
     context.metadata_store  # Access to the [Metadata Store](https://apidocs.zenml.io/latest/api_docs/metadata_stores/)
-    context.INTEGRATION  # Access to an integration, e.g. `context.whylogs`
 ```
 
 For more information, check the [API reference](https://apidocs.zenml.io/latest/api_docs/steps/)
+
+The next [section](#fetching-historic-runs) will directly address one important use for the Step Context.
+
+# Fetching historic runs
+
+## The need to fetch historic runs
+
+Sometimes, it is necessary to fetch information from previous runs in order to make a decision within a currently 
+executing step. Examples of this:
+
+* Fetch the best model evaluation results from all past pipeline runs to decide whether to deploy a newly-trained model.
+* Fetching a model out of a list of trained models.
+* Fetching the latest model produced by a different pipeline to run an inference on.
+
+## Utilizing `StepContext`
+
+ZenML allows users to fetch historical parameters and artifacts using the `StepContext` 
+[fixture](step-fixtures.md).
+
+As an example, see this step that uses the `StepContext` to query the metadata store while running a step.
+We use this to evaluate all models of past training pipeline runs and store the current best model. 
+In our inference pipeline, we could then easily query the metadata store to fetch the best performing model.
+
+```python
+from zenml.steps import step, StepContext
+
+@step
+def my_third_step(context: StepContext, input_int: int) -> bool:
+    """Step that decides if this pipeline run produced the highest value
+    for `input_int`"""
+    highest_int = 0
+
+    # Inspect all past runs of `first_pipeline`
+    try:
+        pipeline_runs = (context.metadata_store
+                                .get_pipeline("first_pipeline")
+                                .runs)
+    except KeyError:
+        # If this is the first time running this pipeline you don't want
+        #  it to fail
+        print('No previous runs found, this run produced the highest '
+              'number by default.')
+        return True
+    else:
+        for run in pipeline_runs:
+            # get the output of the second step
+            try:
+                multiplied_output_int = (run.get_step("step_2")
+                                            .outputs['multiplied_output_int']
+                                            .read())
+            except KeyError:
+                # If you never ran the pipeline or ran it with steps that
+                #  don't produce a step with the name
+                #  `multiplied_output_int` then you don't want this to fail
+                pass
+            else:
+                if multiplied_output_int > highest_int:
+                    highest_int = multiplied_output_int
+
+    if highest_int > input_int:
+        print('Previous runs produced a higher number.')
+        return False  # There was a past run that produced a higher number
+    else:
+        print('This run produced the highest number.')
+        return True  # The current run produced the highest number
+```
+
+Just like that you are able to compare runs with each other from within the run itself. 
