@@ -26,12 +26,14 @@ from mlflow.entities import Experiment  # type: ignore[import]
 from mlflow.store.db.db_types import DATABASE_ENGINES
 from pydantic import root_validator, validator
 
+from zenml.artifact_stores import LocalArtifactStore
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
 from zenml.integrations.constants import MLFLOW
 from zenml.logger import get_logger
 from zenml.repository import Repository
+from zenml.stack import StackValidator
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -44,38 +46,19 @@ MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
 MLFLOW_TRACKING_INSECURE_TLS = "MLFLOW_TRACKING_INSECURE_TLS"
 
 
-# Add validation
-def _local_mlflow_backend() -> str:
-    """Returns the local mlflow backend inside the zenml artifact
-    repository directory
-
-    Returns:
-        The MLflow tracking URI for the local mlflow backend.
-    """
-    repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
-    artifact_store = repo.active_stack.artifact_store
-    local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
-    if not os.path.exists(local_mlflow_backend_uri):
-        os.makedirs(local_mlflow_backend_uri)
-        # TODO [MEDIUM]: safely access (possibly non-existent) artifact stores
-    return "file:" + local_mlflow_backend_uri
-
-
 @register_stack_component_class
 class MLFlowExperimentTracker(BaseExperimentTracker):
-    """Configure the MLFlow Experiment Tracker.
+    """Stores Mlflow configuration options.
 
-    Manages the global MLflow environment in the form of a Stack
-    component. To access it inside your step function or in the post-execution
-    workflow:
-
+    ZenML should take care of configuring MLflow for you, but should you still
+    need access to the configuration inside your step:
     ```python
     from zenml.steps import StepContext
 
     @enable_mlflow
     @step
     def my_step(context: StepContext, ...)
-        context.stack.experiment_tracker  # This is the MLFlowExperimentTracker object
+        context.stack.experiment_tracker  # get the tracking_uri etc. from here
     ```
     """
 
@@ -114,10 +97,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         running mlflow tracking with a remote backend."""
         tracking_uri = values.get("tracking_uri")
 
-        if tracking_uri and any(
-            tracking_uri.startswith(prefix)
-            for prefix in ["http://", "https://"]
-        ):
+        if tracking_uri and cls.is_remote_tracking_uri(tracking_uri):
             # we need either username + password or a token to authenticate to
             # the remote backend
             basic_auth = values.get("tracking_username") and values.get(
@@ -131,8 +111,8 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                     f"{tracking_uri} is only when specifying either username "
                     f"and password or a authentication token in your stack "
                     f"component. To update your component, run the following "
-                    f"command: `zenml experiment-tracker update {self.name} "
-                    f"--tracking_username=MY_USERNAME "
+                    f"command: `zenml experiment-tracker update "
+                    f"{values['name']} --tracking_username=MY_USERNAME "
                     f"--tracking_password=MY_PASSWORD "
                     f"--tracking_token=MY_TOKEN` and specify either your "
                     f"username and password or token."
@@ -140,9 +120,31 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
         return values
 
+    @staticmethod
+    def is_remote_tracking_uri(tracking_uri: str) -> bool:
+        return any(
+            tracking_uri.startswith(prefix)
+            for prefix in ["http://", "https://"]
+        )
+
+    @staticmethod
+    def _local_mlflow_backend() -> str:
+        """Returns the local mlflow backend inside the zenml artifact
+        repository directory
+
+        Returns:
+            The MLflow tracking URI for the local mlflow backend.
+        """
+        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
+        artifact_store = repo.active_stack.artifact_store
+        local_mlflow_backend_uri = os.path.join(artifact_store.path, "mlruns")
+        if not os.path.exists(local_mlflow_backend_uri):
+            os.makedirs(local_mlflow_backend_uri)
+        return "file:" + local_mlflow_backend_uri
+
     def get_tracking_uri(self) -> str:
-        """Resolves and returns the tracking URI."""
-        return self.tracking_uri or _local_mlflow_backend()
+        """Returns the configured tracking URI or a local fallback."""
+        return self.tracking_uri or self._local_mlflow_backend()
 
     def prepare_pipeline_run(self) -> None:
         """Prepares running the pipeline."""
@@ -163,23 +165,18 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         set_tracking_uri("")
 
     @property
-    def is_provisioned(self) -> bool:
-        """If the component provisioned resources to run locally."""
-        return True
-
-    @property
-    def is_running(self) -> bool:
-        """If the component is running locally."""
-        return True
-
-    def provision(self) -> None:
-        """Provisions resources to run the component locally."""
-        raise NotImplementedError(
-            f"Provisioning local resources not implemented for {self}."
-        )
-
-    def deprovision(self) -> None:
-        """Deprovisions all local resources of the component."""
-        raise NotImplementedError(
-            f"Deprovisioning local resource not implemented for {self}."
-        )
+    def validator(self) -> Optional["StackValidator"]:
+        """Validates that the stack has a `LocalArtifactStore` if no tracking
+        uri was specified."""
+        if self.tracking_uri:
+            # user specified a tracking uri, do nothing
+            return None
+        else:
+            # try to fall back to a tracking uri inside the zenml artifact
+            # store. this only works in case of a local artifact store, so we
+            # make sure to prevent stack with other artifact stores for now
+            return StackValidator(
+                custom_validation_function=lambda stack: isinstance(
+                    stack.artifact_store, LocalArtifactStore
+                )
+            )
