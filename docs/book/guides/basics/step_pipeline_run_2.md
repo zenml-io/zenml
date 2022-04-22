@@ -274,6 +274,58 @@ output = step.output
 output.read()  
 ```
 
+# Visualizing Results
+
+## What is a Visualizer?
+
+Sometimes it makes sense in the [post-execution workflow](post-execution-workflow.md) to actually visualize step outputs. 
+ZenML has a standard, extensible interface for all visualizers:
+
+```python
+class BaseVisualizer:
+    """Base class for all ZenML Visualizers."""
+
+    @abstractmethod
+    def visualize(self, object: Any, *args: Any, **kwargs: Any) -> None:
+        """Method to visualize objects."""
+```
+
+The `object` can currently be a `StepView`, a `PipelineRunView` , or a `PipelineView`. (These are all different 
+post-execution objects.)
+
+## Examples of visualizations
+
+### Lineage with [`dash`](https://plotly.com/dash/)
+
+```python
+from zenml.repository import Repository
+from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
+    PipelineRunLineageVisualizer,
+)
+
+repo = Repository()
+latest_run = repo.get_pipelines()[-1].runs[-1]
+PipelineRunLineageVisualizer().visualize(latest_run)
+```
+
+It produces the following visualization:
+
+![Lineage Diagram](../../assets/zenml-pipeline-run-lineage-dash.png)
+
+### Statistics with [`facets`](https://github.com/PAIR-code/facets)
+
+```python
+from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
+    FacetStatisticsVisualizer,
+)
+
+FacetStatisticsVisualizer().visualize(output)
+```
+
+It produces the following visualization:
+
+![Statistics for boston housing dataset](../../assets/statistics-boston-housing.png)
+
 # How data flows through steps
 
 As described above a ZenML pipeline is built in a data centric way. The outputs and inputs
@@ -288,6 +340,9 @@ A materializer dictates how a given artifact can be written to and retrieved fro
 all serialization and deserialization logic. 
 
 ```python
+from typing import Type, Any
+from zenml.materializers.base_materializer import BaseMaterializerMeta
+
 class BaseMaterializer(metaclass=BaseMaterializerMeta):
     """Base Materializer to realize artifact data."""
 
@@ -342,26 +397,7 @@ workflow.
 
 ## Extending the `BaseMaterializer`
 
-In order to control more precisely how data flowing between steps is treated, one can simply extend the 
-`BaseMaterializer` by sub-classing it.
-
-```python
-class MyCustomMaterializer(BaseMaterializer):
-    """Define my own materialization logic"""
-    ASSOCIATED_ARTIFACT_TYPES = (...)
-    ASSOCIATED_TYPES = (...)
-
-
-    def handle_input(self, data_type: Type[Any]) -> Any:
-        # read from self.artifact.uri
-        ...
-
-    def handle_return(self, data: Any) -> None:
-        # write `data` to self.artifact.uri
-        ...
-```
-
-For example, let's say you a custom object called `MyObject` that flows between two steps in a pipeline:
+Let's say you a custom object called `MyObject` that flows between two steps in a pipeline:
 
 ```python
 from zenml.steps import step
@@ -377,7 +413,7 @@ def step1() -> MyObj:
     return MyObj("jk")
 
 @step
-def step1(my_obj: MyObj):
+def step2(my_obj: MyObj):
     print(my_obj)
 
 @pipeline
@@ -401,7 +437,9 @@ For more information, visit https://docs.zenml.io/guides/common-usecases/custom-
 ```
 
 The above basically means that ZenML does not know how to persist the object of type `MyObj` between steps (how could 
-it? We just created this!). Therefore, we can create our own materializer:
+it? We just created this!). Therefore, we can have to create our own materializer. TO do this you can simply extend the 
+`BaseMaterializer` by sub-classing it.
+
 
 ```python
 import os
@@ -432,7 +470,8 @@ class MyMaterializer(BaseMaterializer):
 Pro-tip: Use the ZenML `fileio` handler to ensure your materialization logic works across artifact stores (local and 
 remote like S3 buckets).
 
-Then edit the pipeline as follows:
+Now ZenML can use this materializer to handle outputs and inputs of your customs object. Edit the pipeline as follows, 
+to see this in action:
 
 ```python
 pipe(
@@ -456,7 +495,10 @@ Using stack `local_stack` to run pipeline `pipe`...
 Step `step1` has started.
 Step `step1` has finished in 0.035s.
 Step `step2` has started.
-jk
+The following object was passed to this step: `my_object`
 Step `step2` has finished in 0.036s.
 Pipeline run `pipe-24_Jan_22-23_12_18_504593` has finished in 0.080s.
 ```
+
+# How Caching works
+

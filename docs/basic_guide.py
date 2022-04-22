@@ -87,3 +87,54 @@ def interact_with_completed_runs():
     # will get you the value from the original materializer used in the pipeline
     output.read()
 
+
+def how_data_flows_through_steps():
+    import os
+    from typing import Type
+
+    from zenml.steps import step
+    from zenml.pipelines import pipeline
+
+    from zenml.artifacts import DataArtifact
+    from zenml.io import fileio
+    from zenml.materializers.base_materializer import BaseMaterializer
+
+    class MyObj:
+        def __init__(self, name: str):
+            self.name = name
+
+    class MyMaterializer(BaseMaterializer):
+        ASSOCIATED_TYPES = (MyObj,)
+        ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+
+        def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+            """Read from artifact store"""
+            super().handle_input(data_type)
+            with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
+                             'r') as f:
+                name = f.read()
+            return MyObj(name=name)
+
+        def handle_return(self, my_obj: MyObj) -> None:
+            """Write to artifact store"""
+            super().handle_return(my_obj)
+            with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
+                             'w') as f:
+                f.write(my_obj.name)
+
+    @step
+    def step1() -> MyObj:
+        return MyObj("my_object")
+
+    @step
+    def step2(my_obj: MyObj):
+        print(f"The following object was passed to this step: `{my_obj}`")
+
+    @pipeline
+    def pipe(step1, step2):
+        step2(step1())
+
+    pipe(
+        step1=step1().with_return_materializers(MyMaterializer),
+        step2=step2()
+    ).run()
