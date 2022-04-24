@@ -40,20 +40,23 @@ from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
 from zenml.integrations.mlflow.steps import MLFlowDeployerConfig
 
-DEPLOY = 'deploy'
-PREDICT = 'predict'
-DEPLOY_AND_PREDICT = 'deploy_and_predict'
+DEPLOY = "deploy"
+PREDICT = "predict"
+DEPLOY_AND_PREDICT = "deploy_and_predict"
 
 
 @click.command()
-@click.option('--config', '-c',
-              type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
-              default="deploy_and_predict",
-              help="Optionally you can choose to only run the deployment "
-                   "pipeline to train and deploy a model (`deploy`), or to "
-                   "only run a prediction against the deployed model "
-                   "(`predict`). By default both will be run "
-                   "(`deploy_and_predict`).")
+@click.option(
+    "--config",
+    "-c",
+    type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
+    default="deploy_and_predict",
+    help="Optionally you can choose to only run the deployment "
+    "pipeline to train and deploy a model (`deploy`), or to "
+    "only run a prediction against the deployed model "
+    "(`predict`). By default both will be run "
+    "(`deploy_and_predict`).",
+)
 @click.option("--epochs", default=5, help="Number of epochs for training")
 @click.option("--lr", default=0.003, help="Learning rate for training")
 @click.option(
@@ -61,9 +64,7 @@ DEPLOY_AND_PREDICT = 'deploy_and_predict'
     default=0.92,
     help="Minimum accuracy required to deploy the model",
 )
-def main(
-    config: str, epochs: int, lr: float, min_accuracy: float
-):
+def main(config: str, epochs: int, lr: float, min_accuracy: float):
     """Run the MLflow example pipeline"""
 
     # get the MLflow model deployer stack component

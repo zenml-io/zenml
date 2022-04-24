@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import click
 import classify_sequence
 import classify_token
+import click
 from classify_sequence import SequenceClassificationConfig
 from classify_token import TokenClassificationConfig
 
@@ -22,7 +22,7 @@ from classify_token import TokenClassificationConfig
 @click.command()
 @click.option(
     "--nlp_task",
-    type=click.Choice(['token-classification', 'sequence-classification']),
+    type=click.Choice(["token-classification", "sequence-classification"]),
     default="sequence-classification",
     help="Name NLP task i.e. token-classification, sequence-classification",
 )
@@ -89,9 +89,7 @@ def main(
             **kwargs,
         )
         pipeline = classify_token.token_classifier_train_eval_pipeline(
-            importer=classify_token.data_importer(
-                token_classification_config
-            ),
+            importer=classify_token.data_importer(token_classification_config),
             load_tokenizer=classify_token.load_tokenizer(
                 token_classification_config
             ),
@@ -99,9 +97,7 @@ def main(
                 token_classification_config
             ),
             trainer=classify_token.trainer(token_classification_config),
-            evaluator=classify_token.evaluator(
-                token_classification_config
-            ),
+            evaluator=classify_token.evaluator(token_classification_config),
         )
         pipeline.run()
 
@@ -123,9 +119,7 @@ def main(
             tokenization=classify_sequence.tokenization(
                 sequence_classification_config
             ),
-            trainer=classify_sequence.trainer(
-                sequence_classification_config
-            ),
+            trainer=classify_sequence.trainer(sequence_classification_config),
             evaluator=classify_sequence.evaluator(
                 sequence_classification_config
             ),
