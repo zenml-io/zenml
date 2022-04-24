@@ -3,8 +3,7 @@ description: Familiarize yourself with the ZenML Basics
 ---
 
 # Installation & Setup
-
-## Welcome
+### Welcome
 
 Your first step is to install **ZenML**, which comes bundled as a good old `pip` package.
 
@@ -12,12 +11,12 @@ Your first step is to install **ZenML**, which comes bundled as a good old `pip`
 Please note that we only support Python >= 3.7 <3.9, so please adjust your python environment accordingly.
 {% endhint %}
 
-## Virtual Environment
+### Virtual Environment
 
 We highly encourage you to install **ZenML** in a virtual environment. We like to use 
 [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to manage our Python virtual environments.
 
-## Install with pip
+### Install with pip
 
 When you're set with your environment, run:
 
@@ -47,9 +46,10 @@ import zenml
 print(zenml.__version__)
 ```
 
-If you would like to learn more about the current release, please visit our[PyPi package page.](https://pypi.org/project/zenml)
+If you would like to learn more about the current release, please visit our 
+[PyPi package page.](https://pypi.org/project/zenml)
 
-## Running with Docker
+### Running with Docker
 
 `zenml` is available as a docker image hosted publicly on [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). Use the following command to get started in a bash environment with `zenml` available:
 
@@ -57,7 +57,7 @@ If you would like to learn more about the current release, please visit our[PyPi
 docker run -it zenmldocker/zenml /bin/bash
 ```
 
-## Enabling auto-completion on the CLI
+### Enabling auto-completion on the CLI
 
 {% tabs %}
 {% tab title="Bash" %}
@@ -86,7 +86,7 @@ eval (env _ZENML_COMPLETE=source_fish zenml)
 
 # Getting started with a Pipeline
 
-## Create steps
+### Create steps
 
 Steps are the atomic components of a ZenML pipeline. Each step is defined by its inputs, the logic it applies and its 
 outputs. Here is a very simple example of such a step:
@@ -117,7 +117,7 @@ def my_second_step(input_int: int, input_float: float) -> Output(output_int=int,
 
 Now we can go ahead and create a pipeline with our two steps to make sure they work.
 
-## Define the Pipeline
+### Define the Pipeline
 
 Here we define the pipeline. This is done implementation agnostic by simply routing outputs through the 
 steps within the pipeline. You can think of this as a recipe for how we want data to flow through our steps.
@@ -133,7 +133,7 @@ def first_pipeline(
     step_2(output_1, output_2)
 ```
 
-## Instantiate and run your Pipeline
+### Instantiate and run your Pipeline
 
 With your pipeline recipe in hand you can now specify which particular steps implement the pipeline. And with that, you
 are ready to run:
@@ -191,7 +191,7 @@ first_pipeline(step_1=my_first_step(), step_2=my_second_step()).run()
 A ZenML pipeline clearly separated business logic from parameter configuration. Business logic is what defines 
 a step and the pipeline. Step and pipeline configurations are used to dynamically set parameters at runtime. 
 
-## Step configuration
+### Step configuration
 
 You can easily add a configuration to a step by creating your configuration as a subclass to the BaseStepConfig. 
 When such a config object is passed to a step, it is not treated like other artifacts. Instead, it gets passed
@@ -223,7 +223,7 @@ first_pipeline(step_1=my_first_step(),
 
 This functionality is based on [Step Fixtures](#step-fixtures) which you will learn more about below.
 
-## Naming a pipeline run
+### Naming a pipeline run
 
 When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current date and time as the name for the 
 pipeline run. In order to change the name for a run, simply pass it as a parameter to the `run()` function:
@@ -247,7 +247,7 @@ pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
 run = pipeline.get_run("custom_pipeline_run_name")
 ```
 
-## Setting step parameters using a config file
+### Setting step parameters using a config file
 
 In addition to setting parameters for your pipeline steps in code as seen above, ZenML also allows you to use a 
 configuration [yaml](https://yaml.org) file. This configuration file must follow the following structure:
@@ -335,7 +335,7 @@ steps:
 After executing a pipeline, the user needs to be able to fetch it from history and perform certain tasks. This page 
 captures these workflows at an orbital level.
 
-## Accessing past pipeline runs
+### Accessing past pipeline runs
 
 In the context of a post-execution workflow, there is an implied hierarchy of some basic ZenML components:
 
@@ -345,7 +345,7 @@ repository -> pipelines -> runs -> steps -> outputs
 # where -> implies a 1-many relationship.
 ```
 
-### Repository
+#### Repository
 
 The highest level `repository` object is where to start from.
 
@@ -411,8 +411,7 @@ output.read()
 ```
 
 # Visualizing Results
-
-## What is a Visualizer?
+### What is a Visualizer?
 
 Sometimes it makes sense in the [post-execution workflow](basics/post-execution-workflow.md) to actually visualize step outputs. 
 ZenML has a standard, extensible interface for all visualizers:
@@ -429,7 +428,7 @@ class BaseVisualizer:
 The `object` can currently be a `StepView`, a `PipelineRunView` , or a `PipelineView`. (These are all different 
 post-execution objects.)
 
-## Examples of visualizations
+### Examples of visualizations
 
 ### Lineage with [`dash`](https://plotly.com/dash/)
 
@@ -469,8 +468,7 @@ of steps define how steps are connected and the order in which they are executed
 its very own process that reads and writes its inputs and outputs from and to the artifact store. This is where 
 **materializers** come into play.
 
-
-## What is a materializer?
+### What is a materializer?
 
 A materializer dictates how a given artifact can be written to and retrieved from the artifact store. It contains
 all serialization and deserialization logic. 
@@ -531,7 +529,7 @@ at the right time. i.e. If a ZenML step returns a `pd.DataFrame`, ZenML will try
 `StatisticsArtifact`, `DriftArtifact`, etc. This is simply a tag to query certain artifact types in the post-execution 
 workflow.
 
-## Extending the `BaseMaterializer`
+### Extending the `BaseMaterializer`
 
 Let's say you a custom object called `MyObject` that flows between two steps in a pipeline:
 
@@ -704,7 +702,7 @@ Machine learning pipelines are rerun many times over throughout their developmen
 fast and iterative process that benefits a lot from caching. This makes caching a very powerful tool. (Read 
 [our blogpost](https://blog.zenml.io/caching-ml-pipelines/) for more context on the benefits of caching.)
 
-## Caching in ZenML
+### Caching in ZenML
 
 ZenML comes with caching enabled by default. As long as there is no change within a step or upstream from it, the 
 cached outputs of that step will be used for the next pipeline run. This means that whenever there are code or 
@@ -836,7 +834,7 @@ name `Step Fixtures`.
 
 `Step fixtures` are simple to use: Simply pass a parameter in with the right type hint as follows:
 
-## Using fixtures in the Functional API
+### Using fixtures in the Functional API
 
 ```python
 @step
@@ -850,7 +848,7 @@ def my_step(
 
 Please note that the name of the parameter can be anything, but the type hint is what is important.
 
-## Using the `BaseStepConfig`
+### Using the `BaseStepConfig`
 
 `BaseStepConfig` instances can be passed when creating a step. 
 
@@ -895,7 +893,7 @@ pipeline = my_pipeline(
 )
 ```
 
-## Using the `StepContext`
+### Using the `StepContext`
 
 Unlike `BaseStepConfig`, we can pass in the `StepContext` directly to a step without explicitely passing it at run-time.
 
@@ -931,8 +929,7 @@ For more information, check the [API reference](https://apidocs.zenml.io/latest/
 The next [section](#fetching-historic-runs) will directly address one important use for the Step Context.
 
 # Fetching historic runs
-
-## The need to fetch historic runs
+### The need to fetch historic runs
 
 Sometimes, it is necessary to fetch information from previous runs in order to make a decision within a currently 
 executing step. Examples of this:
@@ -941,7 +938,7 @@ executing step. Examples of this:
 * Fetching a model out of a list of trained models.
 * Fetching the latest model produced by a different pipeline to run an inference on.
 
-## Utilizing `StepContext`
+### Utilizing `StepContext`
 
 ZenML allows users to fetch historical parameters and artifacts using the `StepContext` 
 [fixture](step-fixtures.md).
@@ -1082,7 +1079,7 @@ a pipeline.
 
 We'll be using the code for the [Chapter on Runtiem COnfiguration](#configure-at-runtime) as a point of comparison.
 
-## Subclassing the BaseStep
+### Subclassing the BaseStep
 
 In order to create a step, you will need to create a subclass of the `BaseStep` and implement
 its `entrypoint()` method. This entrypoint contains the logic of the step.
@@ -1124,7 +1121,7 @@ def my_second_step(config: SecondStepConfig, input_int: int,
 {% endtab %}
 {% endtabs %}
 
-## Subclassing the BasePipeline
+### Subclassing the BasePipeline
 
 {% tabs %}
 {% tab title="Class Based API" %}
