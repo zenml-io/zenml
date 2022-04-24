@@ -77,14 +77,26 @@ class ExampleIntegrationTestConfiguration(NamedTuple):
 
 examples = [
     ExampleIntegrationTestConfiguration(
-        name="kubeflow_pipelines_orchestration",
+        name="airflow_orchestration",
         validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline", step_count=4
+            pipeline_name="airflow_example_pipeline", step_count=3
         ),
     ),
     ExampleIntegrationTestConfiguration(
         name="evidently_drift_detection",
         validation_function=drift_detection_example_validation,
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="facets_visualize_statistics",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="boston_housing_pipeline", step_count=3
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="kubeflow_pipelines_orchestration",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="mnist_pipeline", step_count=4
+        ),
     ),
     ExampleIntegrationTestConfiguration(
         name="mlflow_tracking",
@@ -94,14 +106,9 @@ examples = [
     ExampleIntegrationTestConfiguration(
         name="whylogs_data_profiling",
         validation_function=whylogs_example_validation,
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="airflow_orchestration",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline",
-            step_count=4,
-        ),
-    ),
+    )
+    # TODO [HIGH]: Create Integration tests for MLFlow Deployment, Huggingface,
+    #  and Neural Prophet
 ]
 
 
