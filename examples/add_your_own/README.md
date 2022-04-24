@@ -21,43 +21,52 @@ to materialize, we have a minimal pipeline that shows a step that produces this 
 object.
 
   ```python
-  class MyObj:
-      def __init__(self, name: str):
-          self.name = name
-  
-  class MyMaterializer(BaseMaterializer):
-      ASSOCIATED_TYPES = (MyObj,)
-      ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
-  
-      def handle_input(self, data_type: Type[MyObj]) -> MyObj:
-          """Read from artifact store"""
-          super().handle_input(data_type)
-          with fileio.open(os.path.join(self.artifact.uri, "data.txt"), "r") as f:
-              name = f.read()
-          return MyObj(name=name)
-  
-      def handle_return(self, my_obj: MyObj) -> None:
-          """Write to artifact store"""
-          super().handle_return(my_obj)
-          with fileio.open(os.path.join(self.artifact.uri, "data.txt"), "w") as f:
-              f.write(my_obj.name)
-  
-  @step
-  def step1() -> MyObj:
-      return MyObj("jk")
-  
-  @step
-  def step2(my_obj: MyObj):
-      print(my_obj.name)
-  
-  @pipeline
-  def pipe(step1, step2):
-      step2(step1())
-  
-  if __name__ == "__main__":
-      pipe(
-          step1=step1().with_return_materializers(MyMaterializer), step2=step2()
-      ).run()
+from typing import Type
+import os
+
+from zenml.artifacts import DataArtifact
+from zenml.steps import step
+from zenml.pipelines import pipeline
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.io import fileio
+
+class MyObj:
+  def __init__(self, name: str):
+      self.name = name
+
+class MyMaterializer(BaseMaterializer):
+  ASSOCIATED_TYPES = (MyObj,)
+  ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+
+  def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+      """Read from artifact store"""
+      super().handle_input(data_type)
+      with fileio.open(os.path.join(self.artifact.uri, "data.txt"), "r") as f:
+          name = f.read()
+      return MyObj(name=name)
+
+  def handle_return(self, my_obj: MyObj) -> None:
+      """Write to artifact store"""
+      super().handle_return(my_obj)
+      with fileio.open(os.path.join(self.artifact.uri, "data.txt"), "w") as f:
+          f.write(my_obj.name)
+
+@step
+def step1() -> MyObj:
+  return MyObj("jk")
+
+@step
+def step2(my_obj: MyObj):
+  print(my_obj.name)
+
+@pipeline
+def pipe(step1, step2):
+  step2(step1())
+
+if __name__ == "__main__":
+  pipe(
+      step1=step1().with_return_materializers(MyMaterializer), step2=step2()
+  ).run()
   ```
 
 ## 📰 Write the Readme
@@ -65,18 +74,22 @@ object.
 [Here](template_README.md) is a template, make sure to replace everything in square brackets. Depending on your specific
 example feel free to add or remove sections where applicable.
 
-## ⚙️ Create setup.sh
+## (Optional) Create a requirements.txt
+
+In case your example has python requirements that are not ZenML integrations you can also add a requirements.txt 
+file with these packages.
+
+## ⚙️ (Optional) Create setup.sh
 
 The setup.sh file is necessary to support example run cli command. Within the setup.sh file you'll need to define what 
-ZenML integrations need to be installed. Find the template [here](template_setup.sh).
+ZenML integrations need to be installed. Find the template [here](template_setup.sh). In case your example needs more 
+user specific setup, like a tool specific account or system requirement, you **should not** create a setup.sh. In this
+case the `zenml example run <EXAMPLE NAME>` won't be supported.
 
-In case your example has requirements that are not ZenML integrations you can also add a requirements.txt file with
-those packages.
+### 🧪 Test ZenML Example CLI
 
-## 🧪 Test ZenML Example CLI
-
-Our example cli commands serve as a super quick entrypoint for users. As such it is important to make sure your new example can be executed 
-with the following command: 
+Our example cli commands serve as a super quick entrypoint for users. As such it is important to make sure your new 
+example can be executed with the following command: 
 
 ```shell
 zenml example pull

@@ -192,14 +192,13 @@ cd zenml_examples/mlflow_deployment
 # initialize
 zenml init
 ```
-### Setting up the ZenML Stack
+### 🥞 Setting up the ZenML Stack
 
 The example can only be executed with a ZenML stack that has an MLflow model
 deployer as a component. Configuring a new stack with a MLflow model deployer
 could look like this:
 
-```
-zenml integration install mlflow
+```shell
 zenml model-deployer register mlflow --type=mlflow
 zenml stack register local_with_mlflow -m default -a default -o default -d mlflow
 zenml stack set local_with_mlflow
@@ -209,14 +208,14 @@ zenml stack set local_with_mlflow
 To run the continuous deployment pipeline:
 
 ```shell
-python run.py --deploy
+python run.py --config deploy
 ```
 
 Re-running the example with different hyperparameter values will re-train
 the model and update the MLflow deployment server to serve the new model:
 
 ```shell
-python run.py --deploy --epochs=10 --learning_rate=0.1
+python run.py --config deploy --epochs=10 --learning_rate=0.1
 ```
 
 If the input argument values are not changed, the pipeline caching feature
@@ -229,7 +228,7 @@ The inference pipeline will use the currently running MLflow deployment server
 to perform an online prediction. To run the inference pipeline:
 
 ```shell
-python run.py --predict
+python run.py --config predict
 ```
 
 The `zenml served-models list` CLI command can be run to list the active model servers:
@@ -268,7 +267,7 @@ $ zenml served-models describe 87980237-843f-414f-bf06-931f4da69e56
 ┠────────────────────────┼────────────────────────────────────────────────────┨
 ┃ SERVICE_PATH           │ /home/stefan/.config/zenml/local_stores/3b114be0-… ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
-┃ STATUS                 │ ✅                                                 ┃
+┃ STATUS                 │ ✅                                                  ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
 ┃ STATUS_MESSAGE         │ service daemon is not running                      ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨

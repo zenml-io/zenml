@@ -48,7 +48,7 @@ main() {
   zenml_init
 
   if [ -f "setup.sh" ]; then
-    msg "This example requires some additional setup."
+    msg "This example requires some additional setup, Setting up now: ...."
     source "./setup.sh"
     if [ -n "$FORCE" ]; then
       if [[ $(type -t pre_run_forced) == function ]]; then

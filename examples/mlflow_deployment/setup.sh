@@ -2,6 +2,12 @@
 
 set -Eeo pipefail
 
+setup_stack () {
+  zenml model-deployer register mlflow --type=mlflow
+  zenml stack register local_with_mlflow -m default -a default -o default -d mlflow
+  zenml stack set local_with_mlflow
+}
+
 pre_run () {
   zenml integration install tensorflow
   zenml integration install mlflow

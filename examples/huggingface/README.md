@@ -29,27 +29,24 @@ the [`imdb`](https://huggingface.co/datasets/imdb) dataset.
 - Load dataset: Load sequence-classification dataset in this case it is the `imdb` dataset
 
 ```python
-    from datasets import load_dataset
+from datasets import load_dataset
 
 datasets = load_dataset("imdb")
 print(datasets['train'][0])
+```
 
+This is what an example entry would look like:
+```json
 {
-    'label': 0,  # Sentiment label i.e. 0->Negative 1->Positive
-    'text': 'I rented I AM CURIOUS-YELLOW from my video store because of
-    all the controversy that surrounded it when it was first released in
-                                                             1967. I also heard that at first it was seized
-    by U.S.customs if it
-    ever tried to enter this country, therefore being a fan of films
-    considered controversial I really had to see this
-for myself.....'
+"label": 0,  # Sentiment label i.e. 0->Negative 1->Positive
+"text": "I rented I AM CURIOUS-YELLOW from my video store because of all the controversy that surrounded it when it was first released in 1967. I also heard that at first it was seized by U.S.customs if it ever tried to enter this country, therefore being a fan of films considered controversial I really had to see this for myself.....",
 }
 ```
 
 - Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face transformers.
 
 ```python
-    from transformers import AutoTokenizer
+from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 ```
@@ -69,30 +66,31 @@ Part of speech tagging etc. In this example, we will train a NER model using the
 - Load dataset: Load token-classification dataset in this case it is `conll2003` dataset
 
 ```python
-    from datasets import load_dataset
+from datasets import load_dataset
 
 datasets = load_dataset("conll2003")
 print(datasets['train'][0])
-
-{'chunk_tags': [11, 21, 11, 12, 21, 22, 11, 12, 0],
- 'id': '0',
- 'ner_tags': [3, 0, 7, 0, 0, 0, 7, 0, 0],  # list of token classification labels
- 'pos_tags': [22, 42, 16, 21, 35, 37, 16, 21, 7],
- 'tokens': ['EU',
-            'rejects',
-            'German',
-            'call',
-            'to',
-            'boycott',
-            'British',
-            'lamb',
-            '.']}
+```
+```json
+{"chunk_tags": [11, 21, 11, 12, 21, 22, 11, 12, 0],
+ "id": "0",
+ "ner_tags": [3, 0, 7, 0, 0, 0, 7, 0, 0],  # list of token classification labels
+ "pos_tags": [22, 42, 16, 21, 35, 37, 16, 21, 7],
+ "tokens": ["EU",
+            "rejects",
+            "German",
+            "call",
+            "to",
+            "boycott",
+            "British",
+            "lamb",
+            "."]}
 ```
 
 - Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face transformers.
 
 ```python
-    from transformers import AutoTokenizer
+from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 ```
@@ -136,7 +134,6 @@ python run_pipeline.py --nlp_task=token-classification --pretrained_model=distil
 ### 🧪 Test pipeline
 
 ```python
-
 from zenml.repository import Repository
 from transformers import pipeline
 

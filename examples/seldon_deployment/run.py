@@ -46,21 +46,20 @@ from zenml.integrations.seldon.steps import (
     seldon_model_deployer_step,
 )
 
+DEPLOY = 'deploy'
+PREDICT = 'predict'
+DEPLOY_AND_PREDICT = 'deploy_and_predict'
+
 
 @click.command()
-@click.option(
-    "--deploy",
-    "-d",
-    is_flag=True,
-    help="Run the deployment pipeline to train and deploy a model",
-)
-@click.option(
-    "--predict",
-    "-p",
-    is_flag=True,
-    help="Run the inference pipeline to send a prediction request "
-    "to the deployed model",
-)
+@click.option('--config', '-c',
+              type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
+              default="deploy_and_predict",
+              help="Optionally you can choose to only run the deployment "
+                   "pipeline to train and deploy a model (`deploy`), or to "
+                   "only run a prediction against the deployed model "
+                   "(`predict`). By default both will be run "
+                   "(`deploy_and_predict`).")
 @click.option(
     "--model-flavor",
     default="tensorflow",
@@ -116,8 +115,7 @@ from zenml.integrations.seldon.steps import (
     "deployments to authenticate to the Artifact Store",
 )
 def main(
-    deploy: bool,
-    predict: bool,
+    config: str,
     model_flavor: str,
     epochs: int,
     lr: float,
@@ -136,6 +134,9 @@ def main(
              --min-accuracy 0.80 --secret seldon-init-container-secret
 
     """
+    deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
+    predict = config == PREDICT or config == DEPLOY_AND_PREDICT
+
     model_name = "mnist"
     deployment_pipeline_name = "continuous_deployment_pipeline"
     deployer_step_name = "seldon_model_deployer_step"

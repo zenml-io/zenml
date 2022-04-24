@@ -13,17 +13,18 @@
 #  permissions and limitations under the License.
 
 import click
-import sequence_classification
-import token_classification
-from sequence_classification import SequenceClassificationConfig
-from token_classification import TokenClassificationConfig
+import classify_sequence
+import classify_token
+from classify_sequence import SequenceClassificationConfig
+from classify_token import TokenClassificationConfig
 
 
 @click.command()
 @click.option(
     "--nlp_task",
+    type=click.Choice(['token-classification', 'sequence-classification']),
     default="sequence-classification",
-    help="Name NLP task i.e. token-classificaion, sequence-classification",
+    help="Name NLP task i.e. token-classification, sequence-classification",
 )
 @click.option(
     "--pretrained_model",
@@ -87,18 +88,18 @@ def main(
             batch_size=batch_size,
             **kwargs,
         )
-        pipeline = token_classification.token_classifier_train_eval_pipeline(
-            importer=token_classification.data_importer(
+        pipeline = classify_token.token_classifier_train_eval_pipeline(
+            importer=classify_token.data_importer(
                 token_classification_config
             ),
-            load_tokenizer=token_classification.load_tokenizer(
+            load_tokenizer=classify_token.load_tokenizer(
                 token_classification_config
             ),
-            tokenization=token_classification.tokenization(
+            tokenization=classify_token.tokenization(
                 token_classification_config
             ),
-            trainer=token_classification.trainer(token_classification_config),
-            evaluator=token_classification.evaluator(
+            trainer=classify_token.trainer(token_classification_config),
+            evaluator=classify_token.evaluator(
                 token_classification_config
             ),
         )
@@ -112,20 +113,20 @@ def main(
             batch_size=batch_size,
             **kwargs,
         )
-        pipeline = sequence_classification.seq_classifier_train_eval_pipeline(
-            importer=sequence_classification.data_importer(
+        pipeline = classify_sequence.seq_classifier_train_eval_pipeline(
+            importer=classify_sequence.data_importer(
                 sequence_classification_config
             ),
-            load_tokenizer=sequence_classification.load_tokenizer(
+            load_tokenizer=classify_sequence.load_tokenizer(
                 sequence_classification_config
             ),
-            tokenization=sequence_classification.tokenization(
+            tokenization=classify_sequence.tokenization(
                 sequence_classification_config
             ),
-            trainer=sequence_classification.trainer(
+            trainer=classify_sequence.trainer(
                 sequence_classification_config
             ),
-            evaluator=sequence_classification.evaluator(
+            evaluator=classify_sequence.evaluator(
                 sequence_classification_config
             ),
         )

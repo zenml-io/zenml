@@ -39,8 +39,9 @@ The example consists of two individual pipelines:
   by the continuous deployment pipeline to get online predictions based on live
   data
 
-You can control which pipeline to run by passing the `--deploy` and/or the
-`--predict` flag to the `run.py` launcher.
+You can control which pipeline to run by passing the `--config deploy` or the 
+`--config predict` option to the `run.py` launcher. The default is 
+`--config deploy_and_predict` which does both.
 
 In the deployment pipeline, ZenML's Seldon Core integration is used to serve
 the trained model directly from the Artifact Store where it is automatically
@@ -245,7 +246,7 @@ differently. Please look up the variables relevant to your use-case in the
 
 Configuring the stack can be done like this:
 
-```
+```shell
 zenml integration install s3 seldon
 zenml model-deployer register seldon_eks --type=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
@@ -315,7 +316,7 @@ differently. Please look up the variables relevant to your use-case in the
 
 Configuring the stack can be done like this:
 
-```
+```shell
 zenml integration install s3 kubeflow seldon
 
 zenml artifact-store register aws --type=s3 --path=s3://mybucket
@@ -338,7 +339,7 @@ python run.py --secret seldon-init-container-secret --deploy
 
 Example output when run with the local orchestrator stack:
 
-```
+```shell
 zenml/seldon_deployment$ python run.py --secret seldon-init-container-secret --deploy --min-accuracy 0.80 --model-flavor sklearn
 
 2022-04-06 15:40:28.903233: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
@@ -381,7 +382,7 @@ Re-running the example with different hyperparameter values will re-train
 the model and update the deployment server to serve the new model:
 
 ```shell
-python run.py --secret seldon-init-container-secret --deploy --epochs=10 --lr=0.1
+python run.py --secret seldon-init-container-secret --config deploy --epochs=10 --lr=0.1
 ```
 
 If the input hyperparameter argument values are not changed, the pipeline
@@ -394,13 +395,16 @@ The inference pipeline will use the currently running Seldon Core deployment
 server to perform an online prediction. To run the inference pipeline:
 
 ```shell
-python run.py --secret seldon-init-container-secret --predict
+python run.py --secret seldon-init-container-secret --config predict
 ```
 
 Example output when run with the local orchestrator stack:
 
+```shell
+python run.py --config predict --model-flavor sklearn
 ```
-zenml/seldon_deployment$ python run.py --predict --model-flavor sklearn
+
+```shell
 2022-04-06 15:48:02.346731: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
 2022-04-06 15:48:02.346762: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
 Creating run for pipeline: `inference_pipeline`
@@ -433,8 +437,8 @@ To switch from Tensorflow to sklearn as the libraries used for model
 training and the Seldon Core model server implementation, the `--model-flavor`
 command line argument can be used:
 
-```
-python run.py --secret seldon-init-container-secret --deploy --predict --model-flavor sklearn --penalty=l2
+```shell
+python run.py --secret seldon-init-container-secret --model-flavor sklearn --penalty=l2
 ```
 
 The `zenml served-models list` CLI command can be run to list the active model servers:
