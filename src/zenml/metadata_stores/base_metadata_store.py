@@ -52,16 +52,19 @@ class BaseMetadataStore(StackComponent, ABC):
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.METADATA_STORE
 
+    _store: Optional[metadata_store.MetadataStore] = None
+
     @property
     def store(self) -> metadata_store.MetadataStore:
         """General property that hooks into TFX metadata store."""
-        # TODO [ENG-133]: this always gets recreated, is this intended?
-        config = self.get_tfx_metadata_config()
-        return metadata_store.MetadataStore(
-            config,
-            enable_upgrade_migration=self.upgrade_migration_enabled
-            and isinstance(config, metadata_store_pb2.ConnectionConfig),
-        )
+        if self._store is None:
+            config = self.get_tfx_metadata_config()
+            self._store = metadata_store.MetadataStore(
+                config,
+                enable_upgrade_migration=self.upgrade_migration_enabled
+                and isinstance(config, metadata_store_pb2.ConnectionConfig),
+            )
+        return self._store
 
     @property
     @abstractmethod

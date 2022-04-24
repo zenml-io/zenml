@@ -492,7 +492,7 @@ class Stack:
             "Suspending provisioned resources for stack '%s'.", self.name
         )
         for component in self.components.values():
-            if component.is_running:
+            if not component.is_suspended:
                 try:
                     component.suspend()
                     logger.info("Suspended resources for %s.", component)

@@ -14,6 +14,7 @@
 
 import os
 import re
+import sys
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
 import kfp
@@ -41,6 +42,7 @@ from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.utils import networking_utils
+from zenml.utils.daemon import check_if_daemon_is_running
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
@@ -377,13 +379,39 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     @property
     def is_running(self) -> bool:
-        """Returns if the local k3d cluster for this orchestrator is running."""
-        if not self.is_provisioned:
-            return False
+        """Returns if the local k3d cluster and the UI daemon for this
+        orchestrator are both running."""
+        return (
+            self.is_provisioned
+            and self.is_cluster_running
+            and self.is_daemon_running
+        )
 
+    @property
+    def is_suspended(self) -> bool:
+        """Returns if the local k3d cluster and the UI daemon for this
+        orchestrator are both stopped."""
+        return (
+            self.is_provisioned
+            and not self.is_cluster_running
+            and not self.is_daemon_running
+        )
+
+    @property
+    def is_cluster_running(self) -> bool:
+        """Returns if the local k3d cluster for this orchestrator is running."""
         return local_deployment_utils.k3d_cluster_running(
             cluster_name=self._k3d_cluster_name
         )
+
+    @property
+    def is_daemon_running(self) -> bool:
+        """Returns if the local Kubeflow UI daemon for this orchestrator is
+        running."""
+        if sys.platform != "win32":
+            return check_if_daemon_is_running(self._pid_file_path)
+        else:
+            return True
 
     def provision(self) -> None:
         """Provisions a local Kubeflow Pipelines deployment."""
@@ -444,12 +472,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     kubernetes_context=kubernetes_context,
                     local_path=artifact_store.path,
                 )
-
-            local_deployment_utils.start_kfp_ui_daemon(
-                pid_file_path=self._pid_file_path,
-                log_file_path=self.log_file,
-                port=self._get_kfp_ui_daemon_port(),
-            )
         except Exception as e:
             logger.error(e)
             self.list_manual_setup_steps(
@@ -459,13 +481,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def deprovision(self) -> None:
         """Deprovisions a local Kubeflow Pipelines deployment."""
-        if self.is_running:
-            local_deployment_utils.delete_k3d_cluster(
-                cluster_name=self._k3d_cluster_name
+        if self.is_daemon_running:
+            local_deployment_utils.stop_kfp_ui_daemon(
+                pid_file_path=self._pid_file_path
             )
 
-        local_deployment_utils.stop_kfp_ui_daemon(
-            pid_file_path=self._pid_file_path
+        local_deployment_utils.delete_k3d_cluster(
+            cluster_name=self._k3d_cluster_name
         )
 
         if fileio.exists(self.log_file):
@@ -485,32 +507,38 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "resources provisioned for local deployment."
             )
 
-        local_deployment_utils.start_k3d_cluster(
-            cluster_name=self._k3d_cluster_name
-        )
+        if not self.is_cluster_running:
+            local_deployment_utils.start_k3d_cluster(
+                cluster_name=self._k3d_cluster_name
+            )
 
-        kubernetes_context = f"k3d-{self._k3d_cluster_name}"
-        local_deployment_utils.wait_until_kubeflow_pipelines_ready(
-            kubernetes_context=kubernetes_context
-        )
-        local_deployment_utils.start_kfp_ui_daemon(
-            pid_file_path=self._pid_file_path,
-            log_file_path=self.log_file,
-            port=self._get_kfp_ui_daemon_port(),
-        )
+            kubernetes_context = f"k3d-{self._k3d_cluster_name}"
+            local_deployment_utils.wait_until_kubeflow_pipelines_ready(
+                kubernetes_context=kubernetes_context
+            )
+
+        if not self.is_daemon_running:
+            local_deployment_utils.start_kfp_ui_daemon(
+                pid_file_path=self._pid_file_path,
+                log_file_path=self.log_file,
+                port=self._get_kfp_ui_daemon_port(),
+            )
 
     def suspend(self) -> None:
         """Suspends the local k3d cluster."""
-        if not self.is_running:
-            logger.info("Local kubeflow pipelines deployment not running.")
+        if not self.is_provisioned:
+            logger.info("Local kubeflow pipelines deployment not provisioned.")
             return
 
-        local_deployment_utils.stop_k3d_cluster(
-            cluster_name=self._k3d_cluster_name
-        )
-        local_deployment_utils.stop_kfp_ui_daemon(
-            pid_file_path=self._pid_file_path
-        )
+        if self.is_daemon_running:
+            local_deployment_utils.stop_kfp_ui_daemon(
+                pid_file_path=self._pid_file_path
+            )
+
+        if self.is_cluster_running:
+            local_deployment_utils.stop_k3d_cluster(
+                cluster_name=self._k3d_cluster_name
+            )
 
     def _get_environment_vars_from_secrets(
         self, secrets: List[str]
