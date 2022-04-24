@@ -82,7 +82,7 @@ traditional time-series models and deep learning methods. Try this example to fi
 - can be trained using ZenML
 
 ## 🖥 Local Setup
-For each of these examples, ZenML provides a handy CLI command to pull them
+For some of these examples, ZenML provides a handy CLI command to pull them
 directly into your local environment. First install `zenml`:
 
 ```shell

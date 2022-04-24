@@ -20,7 +20,9 @@
 
 ## Use Cases
 
-* [Explore your Data](use_cases/explore_data.md)
+* [Use `zenml example run`](use_cases/zenml-example-cli.md)
+* [Get your data from a Feature Store](use_cases/feature-store.md)
+* [Visualize your Data](use_cases/explore_data.md)
 * [Add Experiment Tracking]()
 * [Perform Drift Detection]()
 * [Execute Pipelines in the Cloud](use_cases/guide-aws-gcp-azure.md)
@@ -28,6 +30,7 @@
 * [Manage External Services](use_cases/services.md)
 * [Continuous Training and Deployment](use_cases/continuous-training-and-deployment.md)
 * [RUN Steps on Specialized Hardware](use_cases/step-operators.md)
+* [Bypassing materialization](use_cases/skip-materialization.md)
 
 ## Stack Components, Configuration and Extensibility
 
