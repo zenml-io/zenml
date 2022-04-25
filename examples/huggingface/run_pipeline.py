@@ -37,6 +37,13 @@ from classify_token import TokenClassificationConfig
     help="Batch Size for training",
 )
 @click.option(
+    "--full-set",
+    is_flag=True,
+    help="By default only a very small subset of the datasets is used in order "
+    "to have a quick end-to-end run. By running with the full datasets "
+    "the runtime increases significantly.",
+)
+@click.option(
     "--epochs",
     default=1,
     help="Number of epochs for training",

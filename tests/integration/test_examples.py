@@ -93,6 +93,12 @@ examples = [
         ),
     ),
     ExampleIntegrationTestConfiguration(
+        name="huggingface",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="seq_classifier_train_eval_pipeline", step_count=5
+        ),
+    ),
+    ExampleIntegrationTestConfiguration(
         name="kubeflow_pipelines_orchestration",
         validation_function=generate_basic_validation_function(
             pipeline_name="mnist_pipeline", step_count=4
@@ -107,7 +113,7 @@ examples = [
         name="whylogs_data_profiling",
         validation_function=whylogs_example_validation,
     )
-    # TODO [HIGH]: Create Integration tests for MLFlow Deployment, Huggingface,
+    # TODO [HIGH]: Create Integration tests for MLFlow Deployment,
     #  and Neural Prophet
 ]
 

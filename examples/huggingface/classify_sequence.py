@@ -34,7 +34,8 @@ class SequenceClassificationConfig(BaseStepConfig):
     pretrained_model = "distilbert-base-uncased"
     batch_size = 16
     dataset_name = "imdb"
-    epochs = 3
+    epochs = 1
+    dummy_run = True
     max_seq_length = 128
     init_lr = 2e-5
     weight_decay_rate = 0.01
@@ -48,7 +49,7 @@ def data_importer(
 ) -> DatasetDict:
     """Load imdb dataset using huggingface datasets"""
     datasets = load_dataset(config.dataset_name)
-    print("Sample Example :", datasets["train"][0])
+    print("Sample Example :", datasets["train"][7])
     return datasets
 
 
@@ -98,10 +99,11 @@ def trainer(
         config.pretrained_model, num_labels=len(label_list)
     )
 
-    # Prepare optimizer
     num_train_steps = (
         len(tokenized_datasets["train"]) // config.batch_size
     ) * config.epochs
+
+    # Prepare optimizer
     optimizer, _ = create_optimizer(
         init_lr=config.init_lr,
         num_train_steps=num_train_steps,
@@ -123,7 +125,10 @@ def trainer(
         label_cols="label",
     )
 
-    model.fit(train_set, epochs=config.epochs)
+    if config.dummy_run:
+        model.fit(train_set.take(10), epochs=config.epochs)
+    else:
+        model.fit(train_set, epochs=config.epochs)
     return model
 
 
@@ -152,7 +157,11 @@ def evaluator(
     )
 
     # Calculate loss
-    test_loss, test_acc = model.evaluate(validation_set, verbose=1)
+
+    if config.dummy_run:
+        test_loss, test_acc = model.evaluate(validation_set.take(10), verbose=1)
+    else:
+        test_loss, test_acc = model.evaluate(validation_set, verbose=1)
     return test_loss
 
 

@@ -35,7 +35,8 @@ class TokenClassificationConfig(BaseStepConfig):
     batch_size = 16
     dataset_name = "conll2003"
     label_all_tokens = True
-    epochs = 3
+    epochs = 1
+    dummy_run = True
     init_lr = 2e-5
     weight_decay_rate = 0.01
     text_column = "tokens"
@@ -150,8 +151,11 @@ def trainer(
             tokenizer, return_tensors="tf"
         ),
     )
+    if config.dummy_run:
+        model.fit(train_set.take(10), epochs=config.epochs)
+    else:
+        model.fit(train_set, epochs=config.epochs)
 
-    model.fit(train_set, epochs=config.epochs)
     return model
 
 
@@ -177,7 +181,10 @@ def evaluator(
     )
 
     # Calculate loss
-    test_loss = model.evaluate(validation_set, verbose=1)
+    if config.dummy_run:
+        test_loss = model.evaluate(validation_set.take(10), verbose=1)
+    else:
+        test_loss = model.evaluate(validation_set, verbose=1)
     return test_loss
 
 
