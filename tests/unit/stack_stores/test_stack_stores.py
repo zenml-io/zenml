@@ -33,11 +33,7 @@ from zenml.constants import (
     ZEN_SERVICE_IP,
 )
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import (
-    DoesNotExistException,
-    StackComponentExistsError,
-    StackExistsError,
-)
+from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
     KubeflowOrchestrator,
 )
@@ -386,7 +382,7 @@ def test_update_non_existent_stack_raises_error(
         ),
     )
 
-    with pytest.raises(DoesNotExistException):
+    with pytest.raises(KeyError):
         current_stack_store.update_stack(
             "aria_is_a_cat_not_a_stack", StackWrapper.from_stack(stack)
         )

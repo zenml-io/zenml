@@ -306,11 +306,7 @@ def generate_stack_component_update_command(
                 else:
                     continue
 
-            required_properties = _get_required_properties(component_class)
-            for prop in required_properties:
-                if prop not in parsed_args:
-                    parsed_args[prop] = getattr(current_component, prop)
-            updated_component = component_class(name=name, **parsed_args)
+            updated_component = current_component.copy(update=parsed_args)
 
             repo.update_stack_component(
                 name, updated_component.TYPE, updated_component
@@ -345,10 +341,10 @@ def generate_stack_component_rename_command(
             if current_component is None:
                 cli_utils.error(f"No {display_name} found for name '{name}'.")
 
-            registered_components = [
+            registered_components = {
                 component.name
                 for component in repo.get_stack_components(component_type)
-            ]
+            }
             if new_name in registered_components:
                 cli_utils.error(
                     f"Unable to rename '{name}' {display_name} to '{new_name}': \nA component of type '{display_name}' with the name '{new_name}' already exists. \nPlease choose a different name."
@@ -610,7 +606,7 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "update",
         context_settings=context_settings,
-        help=f"Update a new {singular_display_name}.",
+        help=f"Update a registered {singular_display_name}.",
     )(update_command)
 
     # zenml stack-component rename

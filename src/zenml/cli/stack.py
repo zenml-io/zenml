@@ -433,7 +433,7 @@ def rename_stack(
             )
         stack_components = current_stack.components
 
-        registered_stacks = [stack.name for stack in repo.stacks]
+        registered_stacks = {stack.name for stack in repo.stacks}
         if new_stack_name in registered_stacks:
             cli_utils.error(
                 f"Stack `{new_stack_name}` already exists. Please choose a different name.",

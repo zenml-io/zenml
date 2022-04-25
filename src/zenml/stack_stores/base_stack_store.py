@@ -19,11 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import yaml
 
 from zenml.enums import StackComponentType, StoreType
-from zenml.exceptions import (
-    DoesNotExistException,
-    StackComponentExistsError,
-    StackExistsError,
-)
+from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.stack import Stack
 from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
@@ -351,7 +347,7 @@ class BaseStackStore(ABC):
         try:
             self.get_stack(name)
         except KeyError:
-            raise DoesNotExistException(
+            raise KeyError(
                 f"Unable to update stack with name '{stack.name}': No existing "
                 f"stack found with this name."
             )

@@ -210,6 +210,13 @@ class LocalStackStore(BaseStackStore):
                 f"with name '{name}': No existing stack component "
                 f"found with this name."
             )
+        elif name != component.name and component.name in components:
+            breakpoint()
+            raise StackComponentExistsError(
+                f"Unable to update stack component (type: {component_type}) "
+                f"with name '{component.name}': a stack component already "
+                f"is registered with this name."
+            )
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
