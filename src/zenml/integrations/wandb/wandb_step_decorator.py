@@ -162,8 +162,8 @@ def wandb_step_entrypoint(
 
             assert isinstance(tracker, WandbExperimentTracker)
             with tracker.configure_wandb(
-                run_name=step_env.step_name,
-                group_name=step_env.pipeline_run_id,
+                run_name=f"{step_env.pipeline_run_id}_{step_env.step_name}",
+                tags=(step_env.pipeline_name, step_env.pipeline_run_id),
                 settings=settings,
             ):
                 return func(*args, **kwargs)

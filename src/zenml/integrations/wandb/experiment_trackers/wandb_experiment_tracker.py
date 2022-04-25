@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import os
 from contextlib import contextmanager
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Tuple
 
 import wandb  # type: ignore[import]
 
@@ -29,10 +29,7 @@ from zenml.stack.stack_component_class_registry import (
 logger = get_logger(__name__)
 
 
-WANDB_PROJECT_NAME = "WANDB_PROJECT_NAME"
-WANDB_ENTITY = "WANDB_ENTITY"
 WANDB_API_KEY = "WANDB_API_KEY"
-WANDB_GROUP = "WANDB_GROUP"
 
 
 @register_stack_component_class
@@ -62,29 +59,27 @@ class WandbExperimentTracker(BaseExperimentTracker):
     FLAVOR: ClassVar[str] = WANDB
 
     def prepare_step_run(self) -> None:
-        """Sets the mlflow tracking uri and credentials."""
+        """Sets the wandb api key."""
         os.environ[WANDB_API_KEY] = self.api_key
-
-    def cleanup_step_run(self) -> None:
-        """Resets the mlflow tracking uri."""
 
     @contextmanager
     def configure_wandb(
         self,
         run_name: str,
-        group_name: str = None,
+        tags: Tuple[str] = (),
         settings: Optional[wandb.Settings] = None,
     ) -> None:
         try:
             logger.info(
-                f"Initializing wandb with project name: {self.project_name}, run_name: {run_name}, entity: {self.entity}, group: {group_name}"
+                f"Initializing wandb with project name: {self.project_name}, "
+                f"run_name: {run_name}, entity: {self.entity}."
             )
             wandb.init(
                 project=self.project_name,
                 name=run_name,
                 entity=self.entity,
                 settings=settings,
-                group=group_name,
+                tags=tags,
             )
             yield
         finally:
