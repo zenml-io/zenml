@@ -44,3 +44,4 @@ from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
 from zenml.integrations.vertex import VertexIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
+from zenml.integrations.xgboost import XgboostIntegration  # noqa
