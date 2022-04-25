@@ -329,30 +329,32 @@ class SqlStackStore(BaseStackStore):
             stack_configuration: Dict[StackComponentType, str] to persist.
         """
         with Session(self.engine) as session:
+            stack = session.exec(
+                select(ZenStack).where(ZenStack.name == name)
+            ).first()
+            if stack is None:
+                stack = ZenStack(name=name, created_by=1)
+                session.add(stack)
             for ctype, cname in stack_configuration.items():
-                if cname is None:
-                    stack = ZenStack(name=name, created_by=1)
-                    session.add(stack)
-                else:
-                    statement = (
-                        select(ZenStackDefinition)
-                        .where(ZenStackDefinition.stack_name == name)
-                        .where(ZenStackDefinition.component_type == ctype)
-                    )
-                    results = session.exec(statement)
-                    component = results.one_or_none()
-                    if component is None:
-                        session.add(
-                            ZenStackDefinition(
-                                stack_name=name,
-                                component_type=ctype,
-                                component_name=cname,
-                            )
+                statement = (
+                    select(ZenStackDefinition)
+                    .where(ZenStackDefinition.stack_name == name)
+                    .where(ZenStackDefinition.component_type == ctype)
+                )
+                results = session.exec(statement)
+                component = results.one_or_none()
+                if component is None:
+                    session.add(
+                        ZenStackDefinition(
+                            stack_name=name,
+                            component_type=ctype,
+                            component_name=cname,
                         )
-                    else:
-                        component.component_name = cname
-                        component.component_type = ctype
-                        session.add(component)
+                    )
+                else:
+                    component.component_name = cname
+                    component.component_type = ctype
+                    session.add(component)
             session.commit()
 
     def _get_component_flavor_and_config(

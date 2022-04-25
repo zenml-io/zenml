@@ -74,9 +74,7 @@ def get_component_from_wrapper(
     component_class = StackComponentClassRegistry.get_class(
         component_type=wrapper.type, component_flavor=wrapper.flavor
     )
-    component_config = yaml.safe_load(
-        base64.b64decode(wrapper.config).decode()
-    )
+    component_config = yaml.safe_load(base64.b64decode(wrapper.config).decode())
     return component_class.parse_obj(component_config)
 
 
@@ -180,9 +178,7 @@ def test_register_deregister_stacks(fresh_stack_store: BaseStackStore):
     with pytest.raises(StackExistsError):
         stack_store.register_stack(StackWrapper.from_stack(stack))
     with pytest.raises(StackExistsError):
-        stack_store.register_stack(
-            StackWrapper(name=stack.name, components=[])
-        )
+        stack_store.register_stack(StackWrapper(name=stack.name, components=[]))
 
     # can't remove a stack that doesn't exist:
     with pytest.raises(KeyError):
@@ -285,7 +281,6 @@ def test_update_stack_with_new_component(fresh_stack_store: BaseStackStore):
             )
         ),
     )
-    breakpoint()
     try:
         current_stack_store.update_stack(
             updated_stack.name, StackWrapper.from_stack(updated_stack)
@@ -342,9 +337,7 @@ def test_update_stack_when_component_not_part_of_stack(
     )
 
     with does_not_raise():
-        current_stack_store.update_stack(
-            StackWrapper.from_stack(updated_stack)
-        )
+        current_stack_store.update_stack(StackWrapper.from_stack(updated_stack))
 
     assert (
         len(
