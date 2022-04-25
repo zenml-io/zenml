@@ -11,9 +11,9 @@
 ## ZenML
 
 * [ZenML Config]()
-* [ZenML Repo and ZenML Profiles]()
-* [Profiles and Centralized Stack Management](use_cases/profiles.md)
-* [Stacks and how they work]()
+* [ZenML Repo]()
+* [Profiles](use_cases/profiles.md)
+* [Stacks]()
 * [Set up ZenML Service]()
   * [Deploy Locally]()
   * [Deploy on Cloud]()
@@ -29,7 +29,7 @@
 * [Manage your Secrets](use_cases/secrets.md)
 * [Manage External Services](use_cases/services.md)
 * [Continuous Training and Deployment](use_cases/continuous-training-and-deployment.md)
-* [RUN Steps on Specialized Hardware](use_cases/step-operators.md)
+* [Run Steps on Specialized Hardware](use_cases/step-operators.md)
 * [Bypassing materialization](use_cases/skip-materialization.md)
 
 ## Stack Components, Configuration and Extensibility

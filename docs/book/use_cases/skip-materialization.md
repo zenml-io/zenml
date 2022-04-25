@@ -14,6 +14,9 @@ artifact is supposed to be stored. One can use a non-materialized artifact by si
 the step:
 
 ```python
+from zenml.artifacts import DataArtifact
+from zenml.steps import step
+
 @step
 def my_step(my_artifact: DataArtifact)  # rather than pd.DataFrame
     pass
@@ -34,7 +37,7 @@ A simple examples show-casing how to use non-materialized artifacts:
 
 ```python
 from typing import Dict, List
-from zenml.artifacts import DataArtifact
+from zenml.artifacts import DataArtifact, ModelArtifact
 from zenml.pipelines import pipeline
 from zenml.steps import Output, step
 
