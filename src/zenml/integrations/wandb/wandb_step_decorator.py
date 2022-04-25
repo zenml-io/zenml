@@ -14,15 +14,16 @@
 import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
+import wandb
+
 from zenml.environment import Environment
-from zenml.integrations.wandb.wandb_environment import WandbStepEnvironment
+from zenml.integrations.wandb.experiment_trackers import WandbExperimentTracker
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps.utils import STEP_INNER_FUNC_NAME
 
 logger = get_logger(__name__)
-
-WAND_DEFAULT_PROJECT_NAME = "zenml_default_project"
 
 
 # step entrypoint type
@@ -42,21 +43,14 @@ def enable_wandb(
 
 @overload
 def enable_wandb(
-    *,
-    project_name: Optional[str] = None,
-    experiment_name: Optional[str] = None,
-    entity: Optional[str] = None,
+    *, settings: Optional[wandb.Settings] = None
 ) -> Callable[[S], S]:
     """Type annotations for wandb step decorator in case of arguments."""
     ...
 
 
 def enable_wandb(
-    _step: Optional[S] = None,
-    *,
-    project_name: Optional[str] = None,
-    experiment_name: Optional[str] = None,
-    entity: Optional[str] = None,
+    _step: Optional[S] = None, *, settings: Optional[wandb.Settings] = None
 ) -> Union[S, Callable[[S], S]]:
     """Decorator to enable wandb for a step function.
 
@@ -117,9 +111,7 @@ def enable_wandb(
                 {
                     STEP_INNER_FUNC_NAME: staticmethod(
                         wandb_step_entrypoint(
-                            project_name or WAND_DEFAULT_PROJECT_NAME,
-                            experiment_name,
-                            entity,
+                            settings=settings,
                         )(source_fn)
                     ),
                     "__module__": _step.__module__,
@@ -134,9 +126,7 @@ def enable_wandb(
 
 
 def wandb_step_entrypoint(
-    project_name: str,
-    experiment_name: Optional[str] = None,
-    entity: Optional[str] = None,
+    settings: Optional[wandb.Settings] = None,
 ) -> Callable[[F], F]:
     """Decorator for a step entrypoint to enable wandb.
 
@@ -165,17 +155,17 @@ def wandb_step_entrypoint(
                 func.__name__,
             )
             step_env = Environment().step_environment
-            experiment = experiment_name or step_env.pipeline_name
-            step_wandb_env = WandbStepEnvironment(
-                project_name=project_name,
-                experiment_name=experiment,
-                run_name=step_env.pipeline_run_id,
-                entity=entity,
-            )
-            with step_wandb_env:
 
-                # should never happen, but just in case
-                assert step_wandb_env.wandb_run is not None
+            tracker = Repository(
+                skip_repository_check=True
+            ).active_stack.experiment_tracker
+
+            assert isinstance(tracker, WandbExperimentTracker)
+            with tracker.configure_wandb(
+                run_name=step_env.step_name,
+                group_name=step_env.pipeline_run_id,
+                settings=settings,
+            ):
                 return func(*args, **kwargs)
 
         return cast(F, wrapper)
