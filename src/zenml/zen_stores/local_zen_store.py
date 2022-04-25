@@ -26,11 +26,11 @@ from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
-    Flavor,
+    ComponentWrapper,
+    FlavorWrapper,
     Project,
     Role,
     RoleAssignment,
-    StackComponentWrapper,
     Team,
     User,
     ZenStoreModel,
@@ -38,7 +38,7 @@ from zenml.zen_stores.models import (
 
 logger = get_logger(__name__)
 
-E = TypeVar("E", bound=Union[User, Team, Project, Role, Flavor])
+E = TypeVar("E", bound=Union[User, Team, Project, Role, FlavorWrapper])
 
 
 @overload
@@ -209,7 +209,7 @@ class LocalZenStore(BaseZenStore):
 
     def register_stack_component(
         self,
-        component: StackComponentWrapper,
+        component: ComponentWrapper,
     ) -> None:
         """Register a stack component.
 
@@ -850,9 +850,10 @@ class LocalZenStore(BaseZenStore):
             team_id=team.id, project_id=project_id
         )
 
-    # Stack component flavor
+    # Handling stack component flavors
+
     @property
-    def flavors(self) -> List[Flavor]:
+    def flavors(self) -> List[FlavorWrapper]:
         """All registered users.
 
         Returns:
@@ -866,8 +867,7 @@ class LocalZenStore(BaseZenStore):
         source: str,
         stack_component_type: StackComponentType,
         integration: str = "",
-    ) -> Flavor:
-        """ """
+    ) -> FlavorWrapper:
 
         if _get_unique_entity(
             name,
@@ -879,7 +879,7 @@ class LocalZenStore(BaseZenStore):
                 f"'{stack_component_type.plural}' already exists."
             )
 
-        flavor = Flavor(
+        flavor = FlavorWrapper(
             name=name,
             source=source,
             type=stack_component_type,
@@ -895,15 +895,12 @@ class LocalZenStore(BaseZenStore):
         self,
         flavor_name: str,
         component_type: StackComponentType,
-        ensure_exists: bool = True,
     ):
         """Fetch a flavor by a given name and type.
 
         Args:
             flavor_name: The name of the flavor
             component_type: Optional, the type of the component
-            ensure_exists: If `True`, raises an error if the entity doesn't
-                exist
 
         Returns:
             Flavor instance if it exists
@@ -916,10 +913,12 @@ class LocalZenStore(BaseZenStore):
         return _get_unique_entity(
             entity_name=flavor_name,
             collection=matches,
-            ensure_exists=ensure_exists,
+            ensure_exists=True,
         )
 
-    def get_flavors_by_type(self, component_type: StackComponentType):
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorWrapper]:
         """Fetch all flavor defined for a specific stack component type.
 
         Args:

@@ -21,10 +21,9 @@ from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
-from zenml.zen_stores.models.flavor_wrapper import FlavorWrapper
-from zenml.repository import Repository
 
-class StackComponentWrapper(BaseModel):
+
+class ComponentWrapper(BaseModel):
     """Serializable Configuration of a StackComponent"""
 
     type: StackComponentType
@@ -34,9 +33,7 @@ class StackComponentWrapper(BaseModel):
     config: bytes  # b64 encoded yaml config
 
     @classmethod
-    def from_component(
-        cls, component: StackComponent
-    ) -> "StackComponentWrapper":
+    def from_component(cls, component: StackComponent) -> "ComponentWrapper":
         return cls(
             type=component.TYPE,
             flavor=component.FLAVOR,
@@ -48,13 +45,13 @@ class StackComponentWrapper(BaseModel):
         )
 
     def to_component(self):
+        from zenml.repository import Repository
+
         flavor_wrapper = Repository().zen_store.get_flavor_by_name_and_type(
             flavor_name=self.flavor,
             component_type=self.type,
         )
-        component_class = flavor.to_
-        component_config = yaml.safe_load(
-            base64.b64decode(wrapper.config).decode()
-        )
+        flavor_class = flavor_wrapper.to_flavor()
+        config = yaml.safe_load(base64.b64decode(self.config).decode())
 
-        return component_class.parse_obj(component_config)
+        return flavor_class.parse_obj(config)

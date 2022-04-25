@@ -24,6 +24,7 @@ from zenml.constants import (
     ROLE_ASSIGNMENTS,
     ROLES,
     STACK_COMPONENTS,
+    FLAVORS,
     STACK_CONFIGURATIONS,
     STACKS,
     TEAMS,
@@ -38,10 +39,11 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
+    ComponentWrapper,
+    FlavorWrapper,
     Project,
     Role,
     RoleAssignment,
-    StackComponentWrapper,
     StackWrapper,
     Team,
     User,
@@ -183,7 +185,7 @@ class RestZenStore(BaseZenStore):
 
     def register_stack_component(
         self,
-        component: StackComponentWrapper,
+        component: ComponentWrapper,
     ) -> None:
         """Register a stack component.
 
@@ -261,19 +263,19 @@ class RestZenStore(BaseZenStore):
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
-    ) -> StackComponentWrapper:
+    ) -> ComponentWrapper:
         """Get a registered stack component.
 
         Raises:
             KeyError: If no component with the requested type and name exists.
         """
-        return StackComponentWrapper.parse_obj(
+        return ComponentWrapper.parse_obj(
             self.get(f"{STACK_COMPONENTS}/{component_type}/{name}")
         )
 
     def get_stack_components(
         self, component_type: StackComponentType
-    ) -> List[StackComponentWrapper]:
+    ) -> List[ComponentWrapper]:
         """Fetches all registered stack components of the given type.
 
         Args:
@@ -287,7 +289,7 @@ class RestZenStore(BaseZenStore):
             raise ValueError(
                 f"Bad API Response. Expected list, got {type(body)}"
             )
-        return [StackComponentWrapper.parse_obj(c) for c in body]
+        return [ComponentWrapper.parse_obj(c) for c in body]
 
     def deregister_stack_component(
         self, component_type: StackComponentType, name: str
@@ -792,6 +794,51 @@ class RestZenStore(BaseZenStore):
     ) -> None:
         """Remove a StackComponent from storage."""
         raise NotImplementedError("Not to be accessed directly in client!")
+
+    # Handling stack component flavors
+
+    @property
+    def flavors(self) -> List[FlavorWrapper]:
+        body = self.get(FLAVORS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [FlavorWrapper.parse_obj(flavor_dict) for flavor_dict in body]
+
+    def create_flavor(
+        self,
+        source: str,
+        name: str,
+        stack_component_type: StackComponentType,
+        integration: str = None,
+    ) -> FlavorWrapper:
+        flavor = FlavorWrapper(
+            name=name,
+            source=source,
+            type=stack_component_type,
+            integration=integration
+        )
+        return FlavorWrapper.parse_obj(self.post(FLAVORS, body=flavor))
+
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorWrapper]:
+        body = self.get(f"{FLAVORS}/{component_type}")
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [FlavorWrapper.parse_obj(flavor_dict) for flavor_dict in body]
+
+    def get_flavor_by_name_and_type(
+        self,
+        flavor_name: str,
+        component_type: StackComponentType,
+    ) -> FlavorWrapper:
+        return FlavorWrapper.parse_obj(
+            self.get(f"{STACK_COMPONENTS}/{component_type}/{flavor_name}")
+        )
 
     # Implementation specific methods:
 

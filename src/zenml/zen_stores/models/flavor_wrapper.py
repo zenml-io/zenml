@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import Type
 
 from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
+from zenml.stack.stack_component import StackComponent
 
 
-class Flavor(BaseModel):
+class FlavorWrapper(BaseModel):
     """Pydantic object representing the custom implementation of a stack
     component."""
 
@@ -26,6 +28,15 @@ class Flavor(BaseModel):
     type: StackComponentType
     source: str
 
-    def to_class(self):
+    @classmethod
+    def from_flavor(cls, flavor: Type[StackComponent]) -> "FlavorWrapper":
+        return FlavorWrapper(
+            name=flavor.FLAVOR,
+            type=flavor.TYPE,
+            source=flavor.__module__ + "." + flavor.__name__,
+        )
+
+    def to_flavor(self):
         from zenml.utils.source_utils import load_source_path_class
+
         return load_source_path_class(source=self.source)

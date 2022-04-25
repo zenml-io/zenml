@@ -19,7 +19,7 @@ from pydantic import BaseModel, validator
 
 from zenml.enums import StackComponentType
 from zenml.zen_stores.models import (
-    Flavor,
+    FlavorWrapper,
     Project,
     Role,
     RoleAssignment,
@@ -50,7 +50,7 @@ class ZenStoreModel(BaseModel):
 
     stacks: Dict[str, Dict[StackComponentType, str]]
     stack_components: DefaultDict[StackComponentType, Dict[str, str]]
-    stack_component_flavors: List[Flavor] = []
+    stack_component_flavors: List[FlavorWrapper] = []
     users: List[User] = []
     teams: List[Team] = []
     projects: List[Project] = []
