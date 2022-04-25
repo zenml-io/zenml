@@ -137,13 +137,13 @@ def test_renaming_stack_to_same_name_as_existing_stack_fails(
         clean_repo.get_stack("not_a_stack")
 
 
-def test_renaming_active_stack_fails(clean_repo) -> None:
+def test_renaming_active_stack_succeeds(clean_repo) -> None:
     """Test stack rename of active stack fails."""
     runner = CliRunner()
     result = runner.invoke(rename_stack, ["default", "arias_default"])
-    assert result.exit_code == 1
-    with pytest.raises(KeyError):
-        clean_repo.get_stack("arias_default")
+    assert result.exit_code == 0
+    assert clean_repo.get_stack("arias_default") is not None
+    assert clean_repo.get_stack("arias_default").name == "arias_default"
 
 
 def test_renaming_non_active_stack_succeeds(clean_repo) -> None:

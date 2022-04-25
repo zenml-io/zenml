@@ -113,7 +113,7 @@ def test_updating_stack_component_name_or_uuid_fails(clean_repo) -> None:
         ],
     )
     assert update_result1.exit_code == 1
-    with does_not_raise:
+    with does_not_raise():
         clean_repo.get_stack_component(
             StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
         )
@@ -126,7 +126,7 @@ def test_updating_stack_component_name_or_uuid_fails(clean_repo) -> None:
         ],
     )
     assert update_result2.exit_code == 1
-    with does_not_raise:
+    with does_not_raise():
         clean_repo.get_stack_component(
             StackComponentType.CONTAINER_REGISTRY, "new_container_registry"
         )
