@@ -822,6 +822,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         metadata = self.stack_store.update_stack(
             name, StackWrapper.from_stack(stack)
         )
+        if self.active_stack_name == name:
+            self.activate_stack(stack.name)
         metadata["store_type"] = self.active_profile.store_type.value
         track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
 

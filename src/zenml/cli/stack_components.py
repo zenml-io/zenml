@@ -48,9 +48,6 @@ def _get_available_properties(
         field_name
         for field_name, _ in component_class.__fields__.items()
         if field_name not in MANDATORY_COMPONENT_PROPERTIES
-        # POSSIBLE ALTERNATIVE?
-        # for name in component_class.__fields__.items()
-        # if name not in MANDATORY_COMPONENT_PROPERTIES
     ]
 
 
@@ -349,21 +346,7 @@ def generate_stack_component_rename_command(
                 f"Unable to rename '{name}' {display_name} to '{new_name}': \nA component of type '{display_name}' with the name '{new_name}' already exists. \nPlease choose a different name."
             )
 
-        from zenml.stack.stack_component_class_registry import (
-            StackComponentClassRegistry,
-        )
-
-        component_class = StackComponentClassRegistry.get_class(
-            component_type=component_type,
-            component_flavor=current_component.FLAVOR,
-        )
-
-        required_properties = _get_required_properties(component_class)
-        extra_args = {}
-        for prop in required_properties:
-            if prop not in extra_args:
-                extra_args[prop] = getattr(current_component, prop)
-        renamed_component = component_class(name=new_name, **extra_args)
+        renamed_component = current_component.copy(update={"name": new_name})
 
         repo.update_stack_component(
             name=name,

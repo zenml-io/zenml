@@ -281,10 +281,26 @@ def test_updating_a_stack_with_new_components(clean_repo):
     )
 
     with does_not_raise():
-        clean_repo.update_stack(updated_stack)
+        clean_repo.update_stack(updated_stack.name, updated_stack)
 
     assert old_orchestrator != clean_repo.active_stack.orchestrator
     assert new_orchestrator == clean_repo.active_stack.orchestrator
+
+
+def test_renaming_stack_with_update_method_succeeds(clean_repo):
+    """Tests that renaming a stack with the update method succeeds."""
+    current_stack = clean_repo.active_stack
+    new_stack_name = "new_stack_name"
+    updated_stack = Stack(
+        name=new_stack_name,
+        orchestrator=current_stack.orchestrator,
+        metadata_store=current_stack.metadata_store,
+        artifact_store=current_stack.artifact_store,
+    )
+
+    with does_not_raise():
+        clean_repo.update_stack(current_stack.name, updated_stack)
+    assert new_stack_name == clean_repo.active_stack_name
 
 
 def test_registering_a_stack_registers_unregistered_components(clean_repo):

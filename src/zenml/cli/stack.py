@@ -461,15 +461,10 @@ def rename_stack(
     new_stack_ = Stack.from_components(
         name=new_stack_name, components=stack_components
     )
-    try:
-        repo.update_stack(current_stack_name, new_stack_)
-        cli_utils.declare(
-            f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
-        )
-    except ValueError:
-        cli_utils.error(
-            f"Stack `{current_stack_name}` cannot be renamed as it is currently the active stack. Please switch to another stack before renaming.",
-        )
+    repo.update_stack(current_stack_name, new_stack_)
+    cli_utils.declare(
+        f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
+    )
 
 
 @stack.command("list")
