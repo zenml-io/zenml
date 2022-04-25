@@ -28,6 +28,7 @@ class AWSIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
+        from zenml.integrations.aws import secret_schemas  # noqa
         from zenml.integrations.aws import secrets_managers  # noqa
 
 

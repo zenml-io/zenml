@@ -369,11 +369,19 @@ def pretty_print_secret(
         hide_secret: boolean that configures if the secret values are shown
             on the CLI
     """
+
+    def get_secret_value(value: Any) -> str:
+        if value is None:
+            return ""
+        if hide_secret:
+            return "***"
+        return str(value)
+
     stack_dicts = [
         {
             "SECRET_NAME": secret.name,
             "SECRET_KEY": key,
-            "SECRET_VALUE": "***" if hide_secret else value,
+            "SECRET_VALUE": get_secret_value(value),
         }
         for key, value in secret.content.items()
     ]
