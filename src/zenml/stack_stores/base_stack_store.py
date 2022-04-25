@@ -346,11 +346,21 @@ class BaseStackStore(ABC):
         """
         try:
             self.get_stack(name)
-        except KeyError:
-            raise KeyError(
+        except KeyError as e:
+            raise e(
                 f"Unable to update stack with name '{stack.name}': No existing "
                 f"stack found with this name."
             )
+
+        try:
+            renamed_stack = self.get_stack(stack.name)
+            if (name != stack.name) and renamed_stack:
+                raise StackExistsError(
+                    f"Unable to update stack with name '{stack.name}': Found "
+                    f"existing stack with this name."
+                )
+        except KeyError:
+            pass
 
         def __check_component(
             component: StackComponentWrapper,

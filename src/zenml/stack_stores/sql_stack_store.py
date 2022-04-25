@@ -275,6 +275,18 @@ class SqlStackStore(BaseStackStore):
                     f"found with this name."
                 )
 
+            new_name_component = session.exec(
+                select(ZenStackComponent)
+                .where(ZenStackComponent.component_type == component_type)
+                .where(ZenStackComponent.name == component.name)
+            ).first()
+            if (name != component.name) and new_name_component is not None:
+                raise StackComponentExistsError(
+                    f"Unable to update stack component (type: "
+                    f"{component.type}) with name '{component.name}': Found "
+                    f"existing stack component with this name."
+                )
+
             updated_component.configuration = component.config
 
             # handle any potential renamed component
@@ -297,12 +309,6 @@ class SqlStackStore(BaseStackStore):
             component_type,
             component.name,
         )
-        # tc = session.exec(
-        #     select(ZenStackComponent)
-        #     .where(ZenStackComponent.component_type == component_type)
-        #     .where(ZenStackComponent.name == component.name)
-        # ).first()
-        # breakpoint()
         return {component.type.value: component.flavor}
 
     def deregister_stack(self, name: str) -> None:
