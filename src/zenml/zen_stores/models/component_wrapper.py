@@ -21,13 +21,14 @@ from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
-
+from zenml.zen_stores.models.flavor_wrapper import FlavorWrapper
+from zenml.repository import Repository
 
 class StackComponentWrapper(BaseModel):
     """Serializable Configuration of a StackComponent"""
 
     type: StackComponentType
-    flavor: str  # due to subclassing, can't properly use enum type here
+    flavor: str
     name: str
     uuid: UUID
     config: bytes  # b64 encoded yaml config
@@ -45,3 +46,15 @@ class StackComponentWrapper(BaseModel):
                 yaml.dump(json.loads(component.json())).encode()
             ),
         )
+
+    def to_component(self):
+        flavor_wrapper = Repository().zen_store.get_flavor_by_name_and_type(
+            flavor_name=self.flavor,
+            component_type=self.type,
+        )
+        component_class = flavor.to_
+        component_config = yaml.safe_load(
+            base64.b64decode(wrapper.config).decode()
+        )
+
+        return component_class.parse_obj(component_config)
