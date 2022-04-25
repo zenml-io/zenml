@@ -26,7 +26,7 @@ def test_validator_with_custom_stack_validation_function():
     stack = Stack.default_local_stack()
 
     def failing_validation_function(_: Stack):
-        return False
+        return False, "Custom error"
 
     failing_validator = StackValidator(
         custom_validation_function=failing_validation_function
@@ -35,7 +35,7 @@ def test_validator_with_custom_stack_validation_function():
         failing_validator.validate(stack)
 
     def successful_validation_function(_: Stack):
-        return True
+        return True, ""
 
     successful_validator = StackValidator(
         custom_validation_function=successful_validation_function

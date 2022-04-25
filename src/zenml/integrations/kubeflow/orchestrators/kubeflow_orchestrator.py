@@ -13,9 +13,8 @@
 #  permissions and limitations under the License.
 
 import os
-import re
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 from uuid import UUID
 
 import kfp
@@ -40,7 +39,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
-from zenml.stack import StackValidator
+from zenml.stack import Stack, StackValidator
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -51,7 +50,6 @@ from zenml.utils.source_utils import get_source_root_path
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
-    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -129,11 +127,73 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a container registry."""
-        # TODO: Add more validations, like the presence of a local container
-        #   registry for local KFP and warn for local paths for remote KFP
+        """Validates that the stack contains a container registry and that
+        requirements are met for local components."""
+
+        def _validate_local_requirements(stack: Stack) -> Tuple[bool, str]:
+
+            container_registry = stack.container_registry
+
+            # should not happen, because the stack validation takes care of
+            # this, but just in case
+            assert container_registry is not None
+
+            if self.kubernetes_context:
+
+                # if the orchestrator is not running in a local k3d cluster,
+                # we cannot have any other local components in our stack, because
+                # we cannot mount the local path into the container. This
+                # may result in problems when running the pipeline, because
+                # the local components will not be available inside the
+                # Kubeflow containers.
+
+                # go through all stack components and identify those that
+                # advertise a local path where they persist information that
+                # they need to be available when running pipelines.
+                for stack_comp in stack.components.values():
+                    local_path = stack_comp.local_path
+                    if not local_path:
+                        continue
+                    return False, (
+                        f"The Kubeflow orchestrator is not running in a local "
+                        f"k3d cluster. The '{stack_comp.name}' "
+                        f"{stack_comp.TYPE.value} is a local stack component "
+                        f"and will not be available in the Kubeflow pipeline "
+                        f"step. Please ensure that you always use non-local "
+                        f"stack components with a remote Kubeflow orchestrator, "
+                        f"otherwise you may run into pipeline execution "
+                        f"problems."
+                    )
+
+                # if the orchestrator is remote, the container registry must
+                # also be remote.
+                if container_registry.is_local:
+                    return False, (
+                        f"The Kubeflow orchestrator is not running in a local "
+                        f"k3d cluster but the {container_registry.name} "
+                        f"container registry URI '{container_registry.uri}' "
+                        f"points to a local container registry. Please ensure "
+                        f"that you always use non-local stack components with "
+                        f"a remote Kubeflow orchestrator, otherwise you will "
+                        f"run into problems."
+                    )
+            else:
+                # if the orchestrator is local, the container registry must
+                # also be local.
+                if not container_registry.is_local:
+                    return False, (
+                        f"The container registry URI '{container_registry.uri}' "
+                        f"doesn't match the expected format 'localhost:$PORT'. "
+                        f"The local Kubeflow orchestrator only works with a "
+                        f"local container registry because it cannot "
+                        f"authenticate to external container registries."
+                    )
+
+            return True, ""
+
         return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY}
+            required_components={StackComponentType.CONTAINER_REGISTRY},
+            custom_validation_function=_validate_local_requirements,
         )
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
@@ -497,21 +557,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
         container_registry = Repository().active_stack.container_registry
-        if not container_registry:
-            raise ProvisioningError(
-                "Unable to provision local Kubeflow Pipelines deployment: "
-                "Missing container registry in current stack."
-            )
 
-        if self.is_local and not re.fullmatch(
-            r"localhost:[0-9]{4,5}", container_registry.uri
-        ):
-            raise ProvisioningError(
-                f"Container registry URI '{container_registry.uri}' doesn't "
-                f"match the expected format 'localhost:$PORT'. Provisioning "
-                f"a local Kubeflow orchestrator only works with local container "
-                f"registries."
-            )
+        # should not happen, because the stack validation takes care of this,
+        # but just in case
+        assert container_registry is not None
 
         fileio.makedirs(self.root_directory)
 

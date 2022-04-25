@@ -15,7 +15,7 @@ import os
 import subprocess
 import sys
 import time
-from typing import ClassVar, Optional, Union, cast
+from typing import ClassVar, Optional, Tuple, Union, cast
 
 from kubernetes import config as k8s_config
 from ml_metadata.proto import metadata_store_pb2
@@ -70,8 +70,12 @@ class KubeflowMetadataStore(BaseMetadataStore):
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a KFP orchestrator."""
 
-        def _ensure_kfp_orchestrator(stack: Stack) -> bool:
-            return stack.orchestrator.FLAVOR == KUBEFLOW
+        def _ensure_kfp_orchestrator(stack: Stack) -> Tuple[bool, str]:
+            return (
+                stack.orchestrator.FLAVOR == KUBEFLOW,
+                "The Kubeflow metadata store can only be used with a Kubeflow "
+                "orchestrator.",
+            )
 
         return StackValidator(
             custom_validation_function=_ensure_kfp_orchestrator
