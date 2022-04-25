@@ -432,9 +432,8 @@ class RestStackStore(BaseStackStore):
                 )
         elif response.status_code == 422:
             raise RuntimeError(*response.json().get("detail", (response.text,)))
-        # elif response.status_code == 500:
-        #     breakpoint()
-        #     raise KeyError(*response.json().get("detail", (response.text,)))
+        elif response.status_code == 500:
+            raise KeyError(response.text)
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "

@@ -346,8 +346,8 @@ class BaseStackStore(ABC):
         """
         try:
             self.get_stack(name)
-        except KeyError as e:
-            raise e(
+        except KeyError:
+            raise KeyError(
                 f"Unable to update stack with name '{stack.name}': No existing "
                 f"stack found with this name."
             )
