@@ -818,7 +818,14 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
     def update_stack(self, name: str, stack: Stack) -> None:
-        """Updates a stack and its components."""
+        """Updates a stack and its components.
+
+        Args:
+            name: The original name of the stack.
+            stack: The new stack to use as the updated version.
+
+        Raises:
+            KeyError: If no stack exists for the given name."""
         metadata = self.stack_store.update_stack(
             name, StackWrapper.from_stack(stack)
         )
@@ -855,7 +862,15 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         component_type: StackComponentType,
         component: StackComponent,
     ) -> None:
-        """Updates a stack component."""
+        """Updates a stack component.
+
+        Args:
+            name: The original name of the stack component.
+            component_type: The type of the component to update.
+            component: The new component to update with.
+
+        Raises:
+            KeyError: If no such stack component exists."""
         self.stack_store.update_stack_component(
             name,
             component_type,

@@ -165,7 +165,7 @@ class BaseStackStore(ABC):
         """Update a stack component.
 
         Args:
-            name: The name of the stack component to update.
+            name: The original name of the stack component.
             component_type: The type of the stack component to update.
             component: The new component to update with.
 
@@ -339,7 +339,8 @@ class BaseStackStore(ABC):
         yet, this method will try to register them as well.
 
         Args:
-            stack: The stack to update.
+            name: The original name of the stack.
+            stack: The new stack to use in the update.
 
         Returns:
             metadata dict for telemetry or logging.

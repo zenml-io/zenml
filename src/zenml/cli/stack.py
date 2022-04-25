@@ -443,28 +443,28 @@ def rename_stack(
     new_stack_name: str,
 ) -> None:
     """Rename a stack."""
-    # with console.status(f"Renaming stack `{current_stack_name}`...\n"):
-    repo = Repository()
-    try:
-        current_stack = repo.get_stack(current_stack_name)
-    except KeyError:
-        cli_utils.error(
-            f"Stack `{current_stack_name}` cannot be renamed as it does not exist.",
-        )
-    stack_components = current_stack.components
+    with console.status(f"Renaming stack `{current_stack_name}`...\n"):
+        repo = Repository()
+        try:
+            current_stack = repo.get_stack(current_stack_name)
+        except KeyError:
+            cli_utils.error(
+                f"Stack `{current_stack_name}` cannot be renamed as it does not exist.",
+            )
+        stack_components = current_stack.components
 
-    registered_stacks = [stack.name for stack in repo.stacks]
-    if new_stack_name in registered_stacks:
-        cli_utils.error(
-            f"Stack `{new_stack_name}` already exists. Please choose a different name.",
+        registered_stacks = [stack.name for stack in repo.stacks]
+        if new_stack_name in registered_stacks:
+            cli_utils.error(
+                f"Stack `{new_stack_name}` already exists. Please choose a different name.",
+            )
+        new_stack_ = Stack.from_components(
+            name=new_stack_name, components=stack_components
         )
-    new_stack_ = Stack.from_components(
-        name=new_stack_name, components=stack_components
-    )
-    repo.update_stack(current_stack_name, new_stack_)
-    cli_utils.declare(
-        f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
-    )
+        repo.update_stack(current_stack_name, new_stack_)
+        cli_utils.declare(
+            f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
+        )
 
 
 @stack.command("list")
@@ -543,7 +543,6 @@ def delete_stack(stack_name: str) -> None:
     cli_utils.print_active_profile()
 
     with console.status(f"Deleting stack '{stack_name}'...\n"):
-
         cfg = GlobalConfiguration()
         repo = Repository()
 
@@ -591,7 +590,6 @@ def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
     with console.status(
         f"Setting the{scope} active stack to '{stack_name}'..."
     ):
-
         if global_profile:
             repo.active_profile.activate_stack(stack_name)
         else:
@@ -606,7 +604,6 @@ def get_active_stack() -> None:
     cli_utils.print_active_profile()
 
     with console.status("Getting the active stack..."):
-
         repo = Repository()
         cli_utils.declare(f"The active stack is: '{repo.active_stack_name}'")
 

@@ -388,7 +388,7 @@ Once you have registered your feature store as a stack component, you can use it
 in your ZenML Stack.
 
 Interacting with Deployed Models
--------------
+--------------------------------
 
 Deployed models are
 
@@ -430,6 +430,7 @@ zenml served-models stop <UUID>
 If you want to completely remove a served model you can also irreversibly delete it using:
 ```bash
 zenml served-models delete <UUID>
+
 Administering the Stack
 -----------------------
 
@@ -496,6 +497,35 @@ the following command:
 
 ```bash
 zenml stack update --help
+```
+
+To remove a stack component from a stack, use the following command:
+
+```shell
+# assuming you want to remove the secrets-manager and the feature-store
+# from your stack
+zenml stack remove-component -x -f
+```
+
+If you wish to rename your stack, use the following command:
+
+```shell
+zenml stack rename STACK_NAME NEW_STACK_NAME
+```
+
+If you wish to update a specific stack component, use the following command,
+switching out "STACK_COMPONENT" for the component you wish to update (i.e.
+'orchestrator' or 'artifact-store' etc):
+
+```shell
+zenml STACK_COMPONENT update --some_property=NEW_VALUE
+```
+
+Note that you are not permitted to update the stack name or UUID in this way. To
+change the name of your stack component, use the following command:
+
+```shell
+zenml STACK_COMPONENT rename STACK_COMPONENT_NAME NEW_STACK_COMPONENT_NAME
 ```
 """
 

@@ -196,7 +196,7 @@ class LocalStackStore(BaseStackStore):
         """Update a stack component.
 
         Args:
-            name: The name of the stack component to update.
+            name: The original name of the stack component.
             component_type: The type of the stack component to update.
             component: The new component to update with.
 
