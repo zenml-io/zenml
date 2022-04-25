@@ -15,7 +15,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from typing import Callable, NamedTuple, TypeVar
+from typing import Callable, NamedTuple, Optional
 
 import pytest
 
@@ -27,6 +27,7 @@ from .example_validations import (
     drift_detection_example_validation,
     generate_basic_validation_function,
     mlflow_tracking_example_validation,
+    mlflow_tracking_setup,
     whylogs_example_validation,
 )
 
@@ -58,11 +59,6 @@ def example_runner(examples_dir):
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
-ExampleValidationFunction = TypeVar(
-    "ExampleValidationFunction", bound=Callable[[Repository], None]
-)
-
-
 class ExampleIntegrationTestConfiguration(NamedTuple):
     """Configuration options for testing a ZenML example.
 
@@ -70,10 +66,13 @@ class ExampleIntegrationTestConfiguration(NamedTuple):
         name: The name (=directory name) of the example
         validation_function: A function that validates that this example ran
             correctly.
+        setup_function: Optional function that performs any additional setup
+            (e.g. modifying the stack) before the example is run.
     """
 
     name: str
-    validation_function: ExampleValidationFunction
+    validation_function: Callable[[Repository], None]
+    setup_function: Optional[Callable[[Repository], None]] = None
 
 
 examples = [
@@ -117,6 +116,7 @@ examples = [
     ExampleIntegrationTestConfiguration(
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
+        setup_function=mlflow_tracking_setup,
     ),
     # TODO [ENG-708]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(
@@ -210,6 +210,10 @@ def test_run_example(
     copy_example_files(
         str(examples_directory / example_configuration.name), str(tmp_path)
     )
+
+    # allow any additional setup that the example might need
+    if example_configuration.setup_function:
+        example_configuration.setup_function(repo)
 
     # Run the example
     example = LocalExample(name=example_configuration.name, path=tmp_path)

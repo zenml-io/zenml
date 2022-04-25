@@ -14,14 +14,7 @@
 import os
 from typing import Any, ClassVar, Dict, Optional
 
-from mlflow import (  # type: ignore[import]
-    ActiveRun,
-    get_experiment_by_name,
-    search_runs,
-    set_experiment,
-    set_tracking_uri,
-    start_run,
-)
+import mlflow  # type: ignore[import]
 from mlflow.entities import Experiment  # type: ignore[import]
 from mlflow.store.db.db_types import DATABASE_ENGINES  # type: ignore[import]
 from pydantic import root_validator, validator
@@ -146,9 +139,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """Returns the configured tracking URI or a local fallback."""
         return self.tracking_uri or self._local_mlflow_backend()
 
-    def prepare_pipeline_run(self) -> None:
-        """Prepares running the pipeline."""
-        set_tracking_uri(self.get_tracking_uri())
+    def configure_mlflow(self) -> None:
+        """Configures the MLflow tracking URI and any additional credentials."""
+        mlflow.set_tracking_uri(self.get_tracking_uri())
 
         if self.tracking_username:
             os.environ[MLFLOW_TRACKING_USERNAME] = self.tracking_username
@@ -160,9 +153,13 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             "true" if self.tracking_insecure_tls else "false"
         )
 
-    def cleanup_pipeline_run(self) -> None:
-        """Cleans up resources after the pipeline run is finished."""
-        set_tracking_uri("")
+    def prepare_step_run(self) -> None:
+        """Sets the mlflow tracking uri and credentials."""
+        self.configure_mlflow()
+
+    def cleanup_step_run(self) -> None:
+        """Resets the mlflow tracking uri."""
+        mlflow.set_tracking_uri("")
 
     @property
     def validator(self) -> Optional["StackValidator"]:

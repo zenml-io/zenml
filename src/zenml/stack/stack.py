@@ -444,6 +444,16 @@ class Stack:
 
         return return_value
 
+    def prepare_step_run(self) -> None:
+        """Prepares running a step."""
+        for component in self.components.values():
+            component.prepare_step_run()
+
+    def cleanup_step_run(self) -> None:
+        """Cleans up resources after the step run is finished."""
+        for component in self.components.values():
+            component.cleanup_step_run()
+
     @property
     def is_provisioned(self) -> bool:
         """If the stack provisioned resources to run locally."""
