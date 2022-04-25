@@ -16,7 +16,7 @@ your stack to be able to deploy models:
 
 ```bash
 zenml integration install mlflow
-zenml model-deployer register mlflow --type=mlflow
+zenml model-deployer register mlflow --flavor=mlflow
 zenml stack register local_with_mlflow -m default -a default -o default -d mlflow
 zenml stack set local_with_mlflow
 ```

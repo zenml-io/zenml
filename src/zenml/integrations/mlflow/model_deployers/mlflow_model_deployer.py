@@ -89,7 +89,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 "You can create a new stack with an MLflow model "
                 "deployer component or update your existing stack to add this "
                 "component, e.g.:\n\n"
-                "  'zenml model-deployer register mlflow --type=mlflow'\n"
+                "  'zenml model-deployer register mlflow --flavor=mlflow'\n"
                 "  'zenml stack create stack-name -d mlflow ...'\n"
             )
         return model_deployer

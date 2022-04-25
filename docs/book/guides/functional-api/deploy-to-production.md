@@ -62,8 +62,8 @@ Let's stick with the `local_metadata_store` and a `local_artifact_store` for now
 
 ```bash
 # Make sure to create the local registry on port 5000 for it to work 
-zenml container-registry register local_registry --type=default --uri=localhost:5000 
-zenml orchestrator register kubeflow_orchestrator --type=kubeflow
+zenml container-registry register local_registry --flavor=default --uri=localhost:5000 
+zenml orchestrator register kubeflow_orchestrator --flavor=kubeflow
 zenml stack register local_kubeflow_stack \
     -m local_metadata_store \
     -a local_artifact_store \

@@ -70,14 +70,14 @@ and Seldon Core Model Deployers and registering them as a Stack component:
 
     ```bash
     zenml integration install mlflow
-    zenml model-deployer register mlflow --type=mlflow
+    zenml model-deployer register mlflow --flavor=mlflow
     zenml stack register local_with_mlflow -m default -a default -o default -d mlflow
     zenml stack set local_with_mlflow
     ```
 
     ```bash
     zenml integration install seldon
-    zenml model-deployer register seldon --type=seldon \
+    zenml model-deployer register seldon --flavor=seldon \
     --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
     --base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
     ...

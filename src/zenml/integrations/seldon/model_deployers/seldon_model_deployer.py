@@ -101,7 +101,7 @@ class SeldonModelDeployer(BaseModelDeployer):
                 "Core. You can create a new stack with a Seldon Core model "
                 "deployer component or update your existing stack to add this "
                 "component, e.g.:\n\n"
-                "  'zenml model-deployer register seldon --type=seldon "
+                "  'zenml model-deployer register seldon --flavor=seldon "
                 "--kubernetes_context=context-name --kubernetes_namespace="
                 "namespace-name --base_url=https://ingress.cluster.kubernetes'\n"
                 "  'zenml stack create stack-name -d seldon ...'\n"

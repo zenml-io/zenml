@@ -282,7 +282,7 @@ This operator can be registered as follows:
 
 ```bash
 zenml step-operator register sagemaker \
-    --type=sagemaker
+    --flavor=sagemaker
     ...
 ```
 

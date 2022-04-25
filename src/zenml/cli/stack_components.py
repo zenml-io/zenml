@@ -189,8 +189,8 @@ def generate_stack_component_register_command(
         required=True,
     )
     @click.option(
-        "--type",
-        "-t",
+        "--flavor",
+        "-f",
         "flavor",
         help=f"The type of the {display_name} to register.",
         required=True,
@@ -253,7 +253,7 @@ def generate_stack_component_flavor_register_command(
         cli_utils.print_active_profile()
 
         # Check whether the module exists and is the right type
-        component_class = cli_utils.validate_component_type_source(
+        component_class = cli_utils.validate_flavor_source(
             source=source, component_type=component_type
         )
 
@@ -283,7 +283,7 @@ def generate_stack_component_flavor_list_command(
         flavors = Repository().zen_store.get_flavors_by_type(
             component_type=component_type
         )
-        cli_utils.print_pydantic_models(flavors)
+        cli_utils.print_flavor_list(flavors, component_type=component_type)
 
     return list_stack_component_flavor_command
 
