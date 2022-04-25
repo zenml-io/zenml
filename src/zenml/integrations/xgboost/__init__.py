@@ -19,7 +19,7 @@ class XgboostIntegration(Integration):
     """Definition of xgboost integration for ZenML."""
 
     NAME = XGBOOST
-    REQUIREMENTS = ["xgboost"]
+    REQUIREMENTS = ["xgboost>=1.0.0"]
 
     @classmethod
     def activate(cls) -> None:
