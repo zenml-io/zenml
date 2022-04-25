@@ -19,10 +19,7 @@ from zenml.stack import StackComponent
 
 
 class BaseExperimentTracker(StackComponent, ABC):
-    """Base class for all ZenML experiment trackers.
-
-    TBD
-    """
+    """Base class for all ZenML experiment trackers."""
 
     # Class configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.EXPERIMENT_TRACKER

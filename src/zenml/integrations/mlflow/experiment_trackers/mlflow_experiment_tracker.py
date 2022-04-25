@@ -115,6 +115,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     @staticmethod
     def is_remote_tracking_uri(tracking_uri: str) -> bool:
+        """Checks whether the given tracking uri is remote or not."""
         return any(
             tracking_uri.startswith(prefix)
             for prefix in ["http://", "https://"]
