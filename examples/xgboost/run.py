@@ -81,8 +81,8 @@ def xgboost_pipeline(
 ):
     """Links all the steps together in a pipeline"""
     mat_train, mat_test = data_loader()
-    m = trainer(mat_train, mat_test)
-    predictor(m, mat_train)
+    model = trainer(mat_train, mat_test)
+    predictor(model, mat_train)
 
 
 if __name__ == "__main__":
