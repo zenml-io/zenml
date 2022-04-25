@@ -8,13 +8,14 @@ description: Familiarize yourself with the ZenML Basics
 Your first step is to install **ZenML**, which comes bundled as a good old `pip` package.
 
 {% hint style="warning" %}
-Please note that we only support Python >= 3.7 <3.9, so please adjust your python environment accordingly.
+Please note that we only support Python >= 3.7 <3.9, so please adjust your Python environment accordingly.
 {% endhint %}
 
 ### Virtual Environment
 
-We highly encourage you to install **ZenML** in a virtual environment. We like to use 
-[virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/) to manage our Python virtual environments.
+We highly encourage you to install **ZenML** in a virtual environment. We like
+to use [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)
+to manage our Python virtual environments.
 
 ### Install with pip
 
@@ -51,7 +52,7 @@ If you would like to learn more about the current release, please visit our
 
 ### Running with Docker
 
-`zenml` is available as a docker image hosted publicly on [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). Use the following command to get started in a bash environment with `zenml` available:
+`zenml` is available as a Docker image hosted publicly on [DockerHub](https://hub.docker.com/r/zenmldocker/zenml). Use the following command to get started in a bash environment with `zenml` available:
 
 ```
 docker run -it zenmldocker/zenml /bin/bash
@@ -900,7 +901,7 @@ pipeline = my_pipeline(
 
 ### Using the `StepContext`
 
-Unlike `BaseStepConfig`, we can pass in the `StepContext` directly to a step without explicitely passing it at run-time.
+Unlike `BaseStepConfig`, we can pass in the `StepContext` directly to a step without explicitly passing it at run-time.
 
 The `StepContext` provides additional context inside a step function. It can be used to access artifacts directly from 
 within the step.
