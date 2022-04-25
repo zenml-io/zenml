@@ -394,39 +394,19 @@ def remove_stack_component(
         stack_components = current_stack.components
 
         if container_registry_flag:
-            stack_components = {
-                key: value
-                for (key, value) in stack_components.items()
-                if key != StackComponentType.CONTAINER_REGISTRY
-            }
+            stack_components.pop(StackComponentType.CONTAINER_REGISTRY, None)
 
         if step_operator_flag:
-            stack_components = {
-                key: value
-                for (key, value) in stack_components.items()
-                if key != StackComponentType.STEP_OPERATOR
-            }
+            stack_components.pop(StackComponentType.STEP_OPERATOR, None)
 
         if secrets_manager_flag:
-            stack_components = {
-                key: value
-                for (key, value) in stack_components.items()
-                if key != StackComponentType.SECRETS_MANAGER
-            }
+            stack_components.pop(StackComponentType.SECRETS_MANAGER, None)
 
         if feature_store_flag:
-            stack_components = {
-                key: value
-                for (key, value) in stack_components.items()
-                if key != StackComponentType.FEATURE_STORE
-            }
+            stack_components.pop(StackComponentType.FEATURE_STORE, None)
 
         if model_deployer_flag:
-            stack_components = {
-                key: value
-                for (key, value) in stack_components.items()
-                if key != StackComponentType.MODEL_DEPLOYER
-            }
+            stack_components.pop(StackComponentType.MODEL_DEPLOYER, None)
 
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
