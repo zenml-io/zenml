@@ -169,6 +169,45 @@ def test_updating_stack_component_with_unconfigured_property_fails(
         ).favorite_cat
 
 
+def test_renaming_stack_component_to_preexisting_name_fails(
+    clean_repo,
+) -> None:
+    """Test that renaming a component to a name that already is occupied
+    fails."""
+    register_orchestrator_command = cli.commands["orchestrator"].commands[
+        "register"
+    ]
+
+    runner = CliRunner()
+    register_result = runner.invoke(
+        register_orchestrator_command,
+        [
+            "new_orchestrator",
+            "-t",
+            "local",
+        ],
+    )
+    assert register_result.exit_code == 0
+
+    rename_orchestrator_command = cli.commands["orchestrator"].commands[
+        "rename"
+    ]
+    runner = CliRunner()
+    result = runner.invoke(
+        rename_orchestrator_command,
+        ["new_orchestrator", "default"],
+    )
+    assert result.exit_code == 1
+    try:
+        clean_repo.get_stack_component(
+            StackComponentType.ORCHESTRATOR, "new_orchestrator"
+        )
+    except KeyError:
+        assert (
+            False
+        ), "Stack component was renamed to a name that already exists"
+
+
 def test_renaming_nonexistent_stack_component_fails(clean_repo) -> None:
     """Test that renaming nonexistent stack component fails."""
     rename_container_registry_command = cli.commands[
