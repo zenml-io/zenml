@@ -90,7 +90,7 @@ def mlflow_tracking_setup(repository: Repository) -> None:
     # install the mlflow integration so we can import the stack component
     from zenml.cli.integration import install
 
-    install(["mlflow"])
+    install(["mlflow", "--force"])
 
     from zenml.integrations.mlflow.experiment_trackers import (
         MLFlowExperimentTracker,
