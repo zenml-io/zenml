@@ -15,7 +15,7 @@ At its core, **ZenML pipelines execute ML-specific workflows** from sourcing dat
 ![GitHub](https://img.shields.io/github/license/zenml-io/zenml)
 [![Codecov](https://codecov.io/gh/zenml-io/zenml/branch/main/graph/badge.svg)](https://codecov.io/gh/zenml-io/zenml)
 [![Interrogate](docs/interrogate.svg)](https://interrogate.readthedocs.io/en/latest/)
-![Main Workflow Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg)
+[![Main Workflow Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg)](https://github.com/zenml-io/zenml/actions/workflows/ci.yml)
 
 <div align="center">
 Join our <a href="https://zenml.io/slack-invite" target="_blank">
