@@ -44,7 +44,7 @@ from zenml.services import BaseService
 from zenml.services.service_status import ServiceState
 from zenml.stack import StackComponent
 from zenml.utils.source_utils import load_source_path_class
-from zenml.zen_stores.models import ComponentWrapper
+from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
 
 logger = get_logger(__name__)
 
@@ -226,6 +226,42 @@ def print_stack_configuration(
         # type: ignore[union-attr]
     ]
     console.print(rich_table)
+
+
+def print_flavor_list(
+    flavors: List[FlavorWrapper],
+    component_type: StackComponentType,
+) -> None:
+    """Prints the list of flavors."""
+    from zenml.integrations.registry import integration_registry
+
+    flavor_table = []
+    for f in flavors:
+        reachable = False
+
+        if f.integration:
+            if f.integration == 'built-in':
+                reachable = True
+            else:
+                reachable = integration_registry.is_installed(f.integration)
+
+        else:
+            try:
+                validate_flavor_source(f.source, component_type=component_type)
+                reachable = True
+            except (AssertionError, ModuleNotFoundError, ImportError) as e:
+                pass
+
+        flavor_table.append(
+            {
+                "FLAVOR": f.name,
+                "INTEGRATION": f.integration,
+                "READY-TO-USE": ":white_check_mark:" if reachable else "",
+                "SOURCE": f.source if reachable else "",
+            }
+        )
+
+    print_table(flavor_table)
 
 
 def print_stack_component_configuration(
@@ -427,8 +463,9 @@ def print_secrets(secrets: List[str]) -> None:
     console.print(rich_table)
 
 
-def validate_component_type_source(
-    source: str, component_type: StackComponentType
+def validate_flavor_source(
+    source: str,
+    component_type: StackComponentType
 ) -> Type[StackComponent]:
     stack_component_class = load_source_path_class(source)
     assert stack_component_class.TYPE == component_type

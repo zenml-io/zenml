@@ -14,7 +14,8 @@
 """
 The GCP integration submodule provides a way to run ZenML pipelines in a cloud
 environment. Specifically, it allows the use of cloud artifact stores, metadata
-stores, and an `io` module to handle file operations on Google Cloud Storage (GCS).
+stores, and an `io` module to handle file operations on Google Cloud Storage
+(GCS).
 """
 from typing import TYPE_CHECKING
 
