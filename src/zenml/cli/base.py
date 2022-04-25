@@ -21,7 +21,10 @@ from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
+from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.exceptions import InitializationException
+from zenml.io.fileio import exists, rmtree
+from zenml.io.utils import get_global_config_directory
 from zenml.repository import Repository
 
 
@@ -64,18 +67,31 @@ def init(path: Optional[Path]) -> None:
 
 
 @cli.command("clean")
-@click.option("--yes", "-y", type=click.BOOL, default=False)
+@click.option("--yes", "-y", is_flag=True, default=False)
 def clean(yes: bool = False) -> None:
-    """Clean everything in repository.
+    """Delete all ZenML metadata and artifacts.
+
+    This is a destructive operation, primarily intended for use in development.
 
     Args:
       yes: bool:  (Default value = False)
     """
     if not yes:
-        _ = confirmation(
-            "This will completely delete all pipelines, their associated "
+        confirm = confirmation(
+            "DANGER: This will completely delete all pipelines, their associated "
             "artifacts and metadata ever created in this ZenML repository. "
             "Are you sure you want to proceed?"
         )
 
-    error("Not implemented for this version")
+    if yes or confirm:
+        local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
+        global_zen_config = get_global_config_directory()
+        if exists(str(local_zen_repo_config)):
+            rmtree(str(local_zen_repo_config))
+            declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
+        if exists(global_zen_config):
+            rmtree(global_zen_config)
+            declare(f"Deleted global ZenML config from {global_zen_config}.")
+
+    else:
+        declare("Aborting clean.")
