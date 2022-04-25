@@ -83,6 +83,9 @@ your pipeline, as in the following example (taken from the corresponding
 Kubeflow example):
 
 ```python
+from zenml.pipelines import pipeline
+from zenml.integrations.constants import TENSORFLOW
+
 @pipeline(required_integrations=[TENSORFLOW], secrets=["aws"], enable_cache=True)
 def mnist_pipeline(
     importer,
@@ -120,6 +123,8 @@ of accessing the `aws` secret referenced above, you would get the value for the
 `aws_secret_access_key` key with the following code (within a step):
 
 ```python
+import os
+
 os.environ.get('AWS_SECRET_ACCESS_KEY')
 ```
 
