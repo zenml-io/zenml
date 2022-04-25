@@ -74,7 +74,9 @@ def get_component_from_wrapper(
     component_class = StackComponentClassRegistry.get_class(
         component_type=wrapper.type, component_flavor=wrapper.flavor
     )
-    component_config = yaml.safe_load(base64.b64decode(wrapper.config).decode())
+    component_config = yaml.safe_load(
+        base64.b64decode(wrapper.config).decode()
+    )
     return component_class.parse_obj(component_config)
 
 
@@ -178,7 +180,9 @@ def test_register_deregister_stacks(fresh_stack_store: BaseStackStore):
     with pytest.raises(StackExistsError):
         stack_store.register_stack(StackWrapper.from_stack(stack))
     with pytest.raises(StackExistsError):
-        stack_store.register_stack(StackWrapper(name=stack.name, components=[]))
+        stack_store.register_stack(
+            StackWrapper(name=stack.name, components=[])
+        )
 
     # can't remove a stack that doesn't exist:
     with pytest.raises(KeyError):
@@ -281,9 +285,13 @@ def test_update_stack_with_new_component(fresh_stack_store: BaseStackStore):
             )
         ),
     )
-
-    with does_not_raise():
-        current_stack_store.update_stack(StackWrapper.from_stack(updated_stack))
+    breakpoint()
+    try:
+        current_stack_store.update_stack(
+            updated_stack.name, StackWrapper.from_stack(updated_stack)
+        )
+    except KeyError:
+        pytest.fail("Failed to update stack")
 
     assert (
         len(
@@ -334,7 +342,9 @@ def test_update_stack_when_component_not_part_of_stack(
     )
 
     with does_not_raise():
-        current_stack_store.update_stack(StackWrapper.from_stack(updated_stack))
+        current_stack_store.update_stack(
+            StackWrapper.from_stack(updated_stack)
+        )
 
     assert (
         len(
@@ -382,7 +392,9 @@ def test_update_non_existent_stack_raises_error(
     )
 
     with pytest.raises(DoesNotExistException):
-        current_stack_store.update_stack(StackWrapper.from_stack(stack))
+        current_stack_store.update_stack(
+            "aria_is_a_cat_not_a_stack", StackWrapper.from_stack(stack)
+        )
 
 
 def test_update_non_existent_stack_component_raises_error(
@@ -393,7 +405,9 @@ def test_update_non_existent_stack_component_raises_error(
 
     with pytest.raises(StackComponentExistsError):
         fresh_stack_store.update_stack_component(
-            StackComponentWrapper.from_component(local_secrets_manager)
+            local_secrets_manager,
+            StackComponentType.SECRETS_MANAGER,
+            StackComponentWrapper.from_component(local_secrets_manager),
         )
 
 
@@ -412,7 +426,11 @@ def test_update_real_component_succeeds(
             custom_docker_base_image_name="aria/arias_base_image",
         )
     )
-    fresh_stack_store.update_stack_component(updated_kubeflow_orchestrator)
+    fresh_stack_store.update_stack_component(
+        "arias_orchestrator",
+        StackComponentType.ORCHESTRATOR,
+        updated_kubeflow_orchestrator,
+    )
 
     orchestrator_component = get_component_from_wrapper(
         fresh_stack_store.get_stack_component(
@@ -447,9 +465,8 @@ def test_rename_core_stack_component_succeeds(
     renamed_orchestrator = StackComponentWrapper.from_component(
         LocalOrchestrator(name=new_name)
     )
-    fresh_stack_store.rename_stack_component(old_name, renamed_orchestrator)
-    fresh_stack_store.update_stacks_after_rename(
-        old_name, new_name, StackComponentType.ORCHESTRATOR
+    fresh_stack_store.update_stack_component(
+        old_name, StackComponentType.ORCHESTRATOR, renamed_orchestrator
     )
     with pytest.raises(KeyError):
         assert fresh_stack_store.get_stack_component(
@@ -481,13 +498,12 @@ def test_rename_non_core_stack_component_succeeds(
     renamed_kubeflow_orchestrator = StackComponentWrapper.from_component(
         KubeflowOrchestrator(name=new_name)
     )
-    fresh_stack_store.rename_stack_component(
-        old_name, renamed_kubeflow_orchestrator
+    fresh_stack_store.update_stack_component(
+        old_name,
+        StackComponentType.ORCHESTRATOR,
+        renamed_kubeflow_orchestrator,
     )
 
-    fresh_stack_store.update_stacks_after_rename(
-        old_name, new_name, StackComponentType.ORCHESTRATOR
-    )
     with pytest.raises(KeyError):
         assert fresh_stack_store.get_stack_component(
             StackComponentType.ORCHESTRATOR, old_name

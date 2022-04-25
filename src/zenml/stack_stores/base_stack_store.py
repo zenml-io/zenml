@@ -365,7 +365,7 @@ class BaseStackStore(ABC):
             DoesNotExistException: If no stack exists with the given name.
         """
         try:
-            self.get_stack(stack.name)
+            self.get_stack(name)
         except KeyError:
             raise DoesNotExistException(
                 f"Unable to update stack with name '{stack.name}': No existing "
