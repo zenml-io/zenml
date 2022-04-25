@@ -66,6 +66,39 @@ class StackComponent(BaseModel, ABC):
         """Set of PyPI requirements for the component."""
         return set(get_requirements_for_module(self.__module__))
 
+    @property
+    def local_path(self) -> Optional[str]:
+        """Path to a local directory used by the component to store persistent
+        information.
+
+        This property should only be implemented by components that need to
+        store persistent information in a directory on the local machine and
+        also need that information to be available during pipeline runs.
+
+        IMPORTANT: the path returned by this property must always be a path
+        that is relative to the ZenML global config directory. The local
+        Kubeflow orchestrator relies on this convention to correctly mount the
+        local folders in the Kubeflow containers. This is an example of a valid
+        path:
+
+        ```python
+        from zenml.io.utils import get_global_config_directory
+        from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
+
+        ...
+
+        @property
+        def local_path(self) -> Optional[str]:
+
+            return os.path.join(
+                get_global_config_directory(),
+                LOCAL_STORES_DIRECTORY_NAME,
+                str(uuid),
+            )
+        ```
+        """
+        return None
+
     def prepare_pipeline_deployment(
         self,
         pipeline: "BasePipeline",
