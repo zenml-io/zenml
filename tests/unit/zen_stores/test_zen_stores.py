@@ -37,7 +37,7 @@ from zenml.zen_stores import (
     RestZenStore,
     SqlZenStore,
 )
-from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
+from zenml.zen_stores.models import ComponentWrapper, StackWrapper
 
 logger = get_logger(__name__)
 
@@ -154,7 +154,7 @@ def test_register_deregister_components(fresh_zen_store):
     # can't add another orchestrator of same name
     with pytest.raises(StackComponentExistsError):
         zen_store.register_stack_component(
-            StackComponentWrapper.from_component(
+            ComponentWrapper.from_component(
                 LocalOrchestrator(
                     name="default",
                 )
@@ -163,7 +163,7 @@ def test_register_deregister_components(fresh_zen_store):
 
     # but can add one if it has a different name
     zen_store.register_stack_component(
-        StackComponentWrapper.from_component(
+        ComponentWrapper.from_component(
             LocalOrchestrator(
                 name="local_orchestrator_part_2_the_remix",
             )
