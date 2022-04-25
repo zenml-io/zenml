@@ -194,15 +194,15 @@ async def update_stack(stack: StackWrapper, name: str) -> Dict[str, str]:
     responses={404: error_response},
 )
 async def update_stack_component(
-    component: StackComponentWrapper,
     name: str,
     component_type: StackComponentType,
+    component: StackComponentWrapper,
 ) -> Dict[str, str]:
     try:
         return stack_store.update_stack_component(
             name, component_type, component
         )
-    except StackComponentExistsError as error:
+    except KeyError as error:
         raise not_found(error) from error
 
 

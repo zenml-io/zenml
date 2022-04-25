@@ -337,7 +337,9 @@ def test_update_stack_when_component_not_part_of_stack(
     )
 
     with does_not_raise():
-        current_stack_store.update_stack(StackWrapper.from_stack(updated_stack))
+        current_stack_store.update_stack(
+            updated_stack.name, StackWrapper.from_stack(updated_stack)
+        )
 
     assert (
         len(
@@ -396,9 +398,9 @@ def test_update_non_existent_stack_component_raises_error(
     """Test updating a non-existent stack component raises an error."""
     local_secrets_manager = LocalSecretsManager(name="local_secrets_manager")
 
-    with pytest.raises(StackComponentExistsError):
+    with pytest.raises(KeyError):
         fresh_stack_store.update_stack_component(
-            local_secrets_manager,
+            local_secrets_manager.name,
             StackComponentType.SECRETS_MANAGER,
             StackComponentWrapper.from_component(local_secrets_manager),
         )
@@ -440,9 +442,10 @@ def test_rename_nonexistent_stack_component_fails(
     fresh_stack_store: BaseStackStore,
 ):
     """Test renaming a non-existent stack component fails."""
-    with pytest.raises(StackComponentExistsError):
-        fresh_stack_store.rename_stack_component(
+    with pytest.raises(KeyError):
+        fresh_stack_store.update_stack_component(
             "not_a_secrets_manager",
+            StackComponentType.SECRETS_MANAGER,
             StackComponentWrapper.from_component(
                 LocalSecretsManager(name="local_secrets_manager")
             ),
@@ -466,14 +469,14 @@ def test_rename_core_stack_component_succeeds(
             StackComponentType.ORCHESTRATOR, old_name
         )
     stack_components = fresh_stack_store.get_stack("default").components
-    stack_orchestrator = [
+    stack_orchestrators = [
         component
         for component in stack_components
         if component.name == new_name
-    ][0]
+    ]
 
-    assert stack_orchestrator is not None
-    assert stack_orchestrator.name == new_name
+    assert len(stack_orchestrators) > 0
+    assert stack_orchestrators[0].name == new_name
 
 
 def test_rename_non_core_stack_component_succeeds(

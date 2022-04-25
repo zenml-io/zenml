@@ -228,7 +228,7 @@ class LocalStackStore(BaseStackStore):
 
         for _, conf in self.stack_configurations.items():
             for component_type, component_name in conf.items():
-                if component_name == name and component_type == component_type:
+                if component_name == name and component_type == component.type:
                     conf[component_type] = component.name
         self._write_store()
 

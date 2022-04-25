@@ -280,6 +280,16 @@ class SqlStackStore(BaseStackStore):
             # handle any potential renamed component
             updated_component.name = component.name
 
+            # rename components inside stacks
+            updated_stack_definitions = session.exec(
+                select(ZenStackDefinition)
+                .where(ZenStackDefinition.component_type == component_type)
+                .where(ZenStackDefinition.component_name == name)
+            ).all()
+            for stack_definition in updated_stack_definitions:
+                stack_definition.component_name = component.name
+                session.add(stack_definition)
+
             session.add(updated_component)
             session.commit()
         logger.info(
@@ -287,6 +297,12 @@ class SqlStackStore(BaseStackStore):
             component_type,
             component.name,
         )
+        # tc = session.exec(
+        #     select(ZenStackComponent)
+        #     .where(ZenStackComponent.component_type == component_type)
+        #     .where(ZenStackComponent.name == component.name)
+        # ).first()
+        # breakpoint()
         return {component.type.value: component.flavor}
 
     def deregister_stack(self, name: str) -> None:
