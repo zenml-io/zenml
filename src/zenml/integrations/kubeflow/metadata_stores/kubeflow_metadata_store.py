@@ -14,16 +14,16 @@
 import os
 import subprocess
 import sys
-import zenml.io.utils
-
+import time
 from typing import ClassVar, Union
 
 from kubernetes import config as k8s_config
 from ml_metadata.proto import metadata_store_pb2
 
+import zenml.io.utils
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.metadata_stores import MySQLMetadataStore
+from zenml.metadata_stores import BaseMetadataStore
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -45,23 +45,20 @@ def inside_kfp_pod() -> bool:
         return False
 
 
-@register_stack_component_class
-class KubeflowMetadataStore(MySQLMetadataStore):
-    """Kubeflow MySQL backend for ZenML metadata store."""
+DEFAULT_KFP_METADATA_GRPC_PORT = 8081
+DEFAULT_KFP_METADATA_DAEMON_TIMEOUT = 60
 
+
+@register_stack_component_class
+class KubeflowMetadataStore(BaseMetadataStore):
+    """Kubeflow GRPC backend for ZenML metadata store."""
+
+    upgrade_migration_enabled: bool = False
     host: str = "127.0.0.1"
-    port: int = 3306
-    database: str = "metadb"
-    username: str = "root"
-    password: str = ""
+    port: int = DEFAULT_KFP_METADATA_GRPC_PORT
 
     # Class Configuration
     FLAVOR: ClassVar[str] = "kubeflow"
-
-    @property
-    def upgrade_migration_enabled(self) -> bool:
-        """Return False to disable automatic database schema migration."""
-        return False
 
     def get_tfx_metadata_config(
         self,
@@ -70,15 +67,22 @@ class KubeflowMetadataStore(MySQLMetadataStore):
         metadata_store_pb2.MetadataStoreClientConfig,
     ]:
         """Return tfx metadata config for the kubeflow metadata store."""
+        connection_config = metadata_store_pb2.MetadataStoreClientConfig()
         if inside_kfp_pod():
-            connection_config = metadata_store_pb2.MetadataStoreClientConfig()
             connection_config.host = os.environ["METADATA_GRPC_SERVICE_HOST"]
             connection_config.port = int(
                 os.environ["METADATA_GRPC_SERVICE_PORT"]
             )
-            return connection_config
         else:
-            return super().get_tfx_metadata_config()
+            if not self.is_running:
+                raise RuntimeError(
+                    "The KFP metadata daemon is not running. Please run the "
+                    "following command to start it first:\n\n"
+                    "    'zenml metadata-store up'\n"
+                )
+            connection_config.host = self.host
+            connection_config.port = self.port
+        return connection_config
 
     @property
     def root_directory(self) -> str:
@@ -112,16 +116,7 @@ class KubeflowMetadataStore(MySQLMetadataStore):
             if not check_if_daemon_is_running(self._pid_file_path):
                 return False
         else:
-            ...
-
-        try:
-            self.get_pipelines()
-        except Exception as e:
-            logger.error(
-                "Error while checking if kubeflow metadata store is running: %s",
-                e,
-            )
-            return False
+            pass
         return True
 
     def provision(self) -> None:
@@ -144,6 +139,7 @@ class KubeflowMetadataStore(MySQLMetadataStore):
             return
 
         self.start_kfp_metadata_daemon()
+        self.wait_until_metadata_store_ready()
 
     def suspend(self) -> None:
         """Suspends the local k3d cluster."""
@@ -156,30 +152,31 @@ class KubeflowMetadataStore(MySQLMetadataStore):
     def start_kfp_metadata_daemon(self) -> None:
         """Starts a daemon process that forwards ports so the Kubeflow Pipelines
         Metadata MySQL database is accessible on the localhost."""
+
         command = [
             "kubectl",
             "--namespace",
             "kubeflow",
             "port-forward",
-            "svc/mysql",
-            f"{self.port}:3306",
+            "svc/metadata-grpc-service",
+            f"{self.port}:8080",
         ]
 
-        if not networking_utils.port_available(self.port):
-            logger.warning(
-                "Unable to port-forward Kubeflow Pipelines Metadata to local "
-                "port %d because the port is occupied. In order to access the "
-                "Kubeflow Pipelines Metadata locally, please change the metadata "
-                "store configuration to use a free port.",
-                self.port,
-            )
-        elif sys.platform == "win32":
+        if sys.platform == "win32":
             logger.warning(
                 "Daemon functionality not supported on Windows. "
                 "In order to access the Kubeflow Pipelines Metadata locally, "
                 "please run '%s' in a separate command line shell.",
                 self.port,
                 " ".join(command),
+            )
+        elif not networking_utils.port_available(self.port):
+            logger.warning(
+                "Unable to port-forward Kubeflow Pipelines Metadata to local "
+                "port %d because the port is occupied. In order to access the "
+                "Kubeflow Pipelines Metadata locally, please change the metadata "
+                "store configuration to use a free port.",
+                self.port,
             )
         else:
             from zenml.utils import daemon
@@ -213,3 +210,33 @@ class KubeflowMetadataStore(MySQLMetadataStore):
 
                 daemon.stop_daemon(self._pid_file_path)
                 fileio.remove(self._pid_file_path)
+
+    def wait_until_metadata_store_ready(
+        self, timeout: int = DEFAULT_KFP_METADATA_DAEMON_TIMEOUT
+    ) -> None:
+        """Waits until the metadata store connection is ready, an irrecoverable
+        error occurs or the timeout expires."""
+        logger.info(
+            "Waiting for the Kubeflow metadata store to be ready (this might "
+            "take a few minutes)."
+        )
+        while True:
+            try:
+                # it doesn't matter what we call here as long as it exercises
+                # the MLMD connection
+                self.get_pipelines()
+                break
+            except RuntimeError as e:
+                logger.info(
+                    "The Kubeflow metadata store is not ready yet, waiting for "
+                    "10 seconds..."
+                )
+                if timeout <= 0:
+                    raise RuntimeError(
+                        f"An unexpected error was encountered while waiting the "
+                        f"Kubeflow Metadata store to be functional: {str(e)}"
+                    ) from e
+                timeout -= 10
+                time.sleep(10)
+
+        logger.info("The Kubeflow metadata store is functional.")

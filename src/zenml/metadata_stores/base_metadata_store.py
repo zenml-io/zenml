@@ -52,6 +52,7 @@ class BaseMetadataStore(StackComponent, ABC):
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.METADATA_STORE
 
+    upgrade_migration_enabled: bool = True
     _store: Optional[metadata_store.MetadataStore] = None
 
     @property
@@ -65,12 +66,6 @@ class BaseMetadataStore(StackComponent, ABC):
                 and isinstance(config, metadata_store_pb2.ConnectionConfig),
             )
         return self._store
-
-    @property
-    @abstractmethod
-    def upgrade_migration_enabled(self) -> bool:
-        """If it returns True, the library upgrades the db schema and migrates
-        all data if it connects to an old version backend."""
 
     @abstractmethod
     def get_tfx_metadata_config(

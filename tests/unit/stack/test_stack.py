@@ -398,7 +398,7 @@ def test_stack_forwards_suspending_to_all_running_components(
     """Tests that stack suspending calls `component.suspend()` on any
     component that is running."""
     for component in stack_with_mock_components.components.values():
-        component.is_running = True
+        component.is_suspended = False
 
     stack_with_mock_components.suspend()
 
@@ -406,7 +406,7 @@ def test_stack_forwards_suspending_to_all_running_components(
         component.suspend.assert_called_once()
 
     _, any_component = stack_with_mock_components.components.popitem()
-    any_component.is_running = False
+    any_component.is_suspended = True
 
     stack_with_mock_components.suspend()
 

@@ -61,7 +61,7 @@ def daemonize(
         print("Done sleeping, flying away.")
 
     sleeping_daemon(period=30)
-    
+
     print("I'm the daemon's parent!.")
     time.sleep(10) # just to prove that the daemon is running in parallel
     ```
