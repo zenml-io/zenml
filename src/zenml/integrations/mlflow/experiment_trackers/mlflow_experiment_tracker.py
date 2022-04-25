@@ -44,7 +44,8 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     """Stores Mlflow configuration options.
 
     ZenML should take care of configuring MLflow for you, but should you still
-    need access to the configuration inside your step:
+    need access to the configuration inside your step you can do it using a
+    step context:
     ```python
     from zenml.steps import StepContext
 
@@ -53,6 +54,25 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     def my_step(context: StepContext, ...)
         context.stack.experiment_tracker  # get the tracking_uri etc. from here
     ```
+
+    Attributes:
+        tracking_uri: The uri of the mlflow tracking server. If no uri is set,
+            your stack must contain a `LocalArtifactStore` and  ZenML will
+            point MLflow to a subdirectory of your artifact store instead.
+        tracking_username: Username for authenticating with the MLflow
+            tracking server. When a remote tracking uri is specified,
+            either `tracking_token` or `tracking_username` and
+            `tracking_password` must be specified.
+        tracking_password: Password for authenticating with the MLflow
+            tracking server. When a remote tracking uri is specified,
+            either `tracking_token` or `tracking_username` and
+            `tracking_password` must be specified.
+        tracking_token: Token for authenticating with the MLflow
+            tracking server. When a remote tracking uri is specified,
+            either `tracking_token` or `tracking_username` and
+            `tracking_password` must be specified.
+        tracking_insecure_tls: Skips verification of TLS connection to the
+            MLflow tracking server if set to `True`.
     """
 
     tracking_uri: Optional[str] = None
