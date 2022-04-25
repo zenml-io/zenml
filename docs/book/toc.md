@@ -20,12 +20,13 @@
 
 ## Use Cases
 
+* [Integrations with Popular Tools](use_cases/integrations.md)
 * [Use `zenml example run`](use_cases/zenml-example-cli.md)
 * [Get your data from a Feature Store](use_cases/feature-store.md)
 * [Run your Pipeline on Kubeflow](use_cases/run_on_kubeflow.md)
 * [Visualize your Data](use_cases/explore_data.md)
-* [Add Experiment Tracking]()
-* [Perform Drift Detection]()
+* [Add Experiment Tracking](use_cases/experiment_tracking.md)
+* [Perform Drift Detection](use_cases/drift_detection.md)
 * [Execute Pipelines in the Cloud](use_cases/guide-aws-gcp-azure.md)
 * [Manage your Secrets](use_cases/secrets.md)
 * [Manage External Services](use_cases/services.md)
@@ -43,7 +44,7 @@
 * [Secret Manager](stack_and_components/secrets_manager.md)
 * [Visualizers](stack_and_components/visualizers.md)
 * [Experiment Tracker](stack_and_components/experiment_tracker.md)
-* [Extensibility]()
+* [Extensibility](stack_and_components/extensibility.md)
 * [Roadmap](stack_and_components/roadmap.md)
 
 ## Support
