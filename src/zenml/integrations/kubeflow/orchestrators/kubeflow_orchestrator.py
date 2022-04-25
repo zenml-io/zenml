@@ -16,15 +16,18 @@ import os
 import re
 import sys
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from uuid import UUID
 
 import kfp
 import urllib3
 from kfp_server_api.exceptions import ApiException
+from pydantic import root_validator
 
 import zenml.io.utils
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
+from zenml.integrations.constants import KUBEFLOW
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowDagRunner,
@@ -79,15 +82,56 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
-    kubernetes_context: Optional[str] = None
+    kubernetes_context: str = ""
     synchronous = False
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "kubeflow"
+    FLAVOR: ClassVar[str] = KUBEFLOW
+
+    @staticmethod
+    def _get_k3d_cluster_name(uuid: UUID) -> str:
+        """Returns the K3D cluster name corresponding to the orchestrator
+        UUID."""
+        # K3D only allows cluster names with up to 32 characters, use the
+        # first 8 chars of the orchestrator UUID as identifier
+        return f"zenml-kubeflow-{str(uuid)[:8]}"
+
+    @staticmethod
+    def _get_k3d_kubernetes_context(uuid: UUID) -> str:
+        """Returns the name of the kubernetes context associated with the k3d
+        cluster managed locally by ZenML corresponding to the orchestrator
+        UUID."""
+        return f"k3d-{KubeflowOrchestrator._get_k3d_cluster_name(uuid)}"
+
+    @root_validator
+    def set_default_kubernetes_context(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Pydantic root_validator that sets the default `kubernetes_context`
+        value to the value that is used to create the locally managed k3d
+        cluster, if not explicitly set.
+
+        Args:
+            values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the Pydantic constructor
+        """
+        if "kubernetes_context" in values:
+            return values
+        # not likely, due to Pydantic validation, but mypy complains
+        assert "uuid" in values
+
+        values["kubernetes_context"] = cls._get_k3d_kubernetes_context(
+            values["uuid"]
+        )
+        return values
 
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry."""
+        # TODO: Add more validations, like the presence of a local container
+        #   registry for local KFP and warn for local paths for remote KFP
         return StackValidator(
             required_components={StackComponentType.CONTAINER_REGISTRY}
         )
@@ -103,6 +147,15 @@ class KubeflowOrchestrator(BaseOrchestrator):
             return f"{registry_uri}/{base_image_name}"
         else:
             return base_image_name
+
+    @property
+    def is_local(self) -> bool:
+        """Returns `True` if the KFP orchestrator is running locally (i.e. in
+        the local k3d cluster managed by ZenML).
+        """
+        return self.kubernetes_context == self._get_k3d_kubernetes_context(
+            self.uuid
+        )
 
     @property
     def root_directory(self) -> str:
@@ -241,11 +294,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             enable_cache: Whether caching is enabled for this pipeline run.
         """
         try:
-            if self.kubernetes_context:
-                logger.info(
-                    "Running in kubernetes context '%s'.",
-                    self.kubernetes_context,
-                )
+            logger.info(
+                "Running in kubernetes context '%s'.",
+                self.kubernetes_context,
+            )
 
             # upload the pipeline to Kubeflow and start it
             client = kfp.Client(kube_context=self.kubernetes_context)
@@ -321,9 +373,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     @property
     def _k3d_cluster_name(self) -> str:
         """Returns the K3D cluster name."""
-        # K3D only allows cluster names with up to 32 characters, use the
-        # first 8 chars of the orchestrator UUID as identifier
-        return f"zenml-kubeflow-{str(self.uuid)[:8]}"
+        return self._get_k3d_cluster_name(self.uuid)
 
     def _get_k3d_registry_name(self, port: int) -> str:
         """Returns the K3D registry name."""
@@ -373,9 +423,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # local deployment running
             return False
 
-        return local_deployment_utils.k3d_cluster_exists(
-            cluster_name=self._k3d_cluster_name
-        )
+        return self.is_cluster_provisioned
 
     @property
     def is_running(self) -> bool:
@@ -398,8 +446,27 @@ class KubeflowOrchestrator(BaseOrchestrator):
         )
 
     @property
+    def is_cluster_provisioned(self) -> bool:
+        """Returns if the local k3d cluster for this orchestrator is provisioned.
+
+        For remote (i.e. not managed by ZenML) Kubeflow Pipelines installations,
+        this always returned True.
+        """
+        if not self.is_local:
+            return True
+        return local_deployment_utils.k3d_cluster_running(
+            cluster_name=self._k3d_cluster_name
+        )
+
+    @property
     def is_cluster_running(self) -> bool:
-        """Returns if the local k3d cluster for this orchestrator is running."""
+        """Returns if the local k3d cluster for this orchestrator is running.
+
+        For remote (i.e. not managed by ZenML) Kubeflow Pipelines installations,
+        this always returned True.
+        """
+        if not self.is_local:
+            return True
         return local_deployment_utils.k3d_cluster_running(
             cluster_name=self._k3d_cluster_name
         )
@@ -436,15 +503,24 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "Missing container registry in current stack."
             )
 
-        if not re.fullmatch(r"localhost:[0-9]{4,5}", container_registry.uri):
+        if self.is_local and not re.fullmatch(
+            r"localhost:[0-9]{4,5}", container_registry.uri
+        ):
             raise ProvisioningError(
                 f"Container registry URI '{container_registry.uri}' doesn't "
                 f"match the expected format 'localhost:$PORT'. Provisioning "
-                f"stack resources only works for local container registries."
+                f"a local Kubeflow orchestrator only works with local container "
+                f"registries."
             )
 
-        logger.info("Provisioning local Kubeflow Pipelines deployment...")
         fileio.makedirs(self.root_directory)
+
+        if not self.is_local:
+            # don't provision any resources if using a remote KFP installation
+            return
+
+        logger.info("Provisioning local Kubeflow Pipelines deployment...")
+
         container_registry_port = int(container_registry.uri.split(":")[-1])
         container_registry_name = self._get_k3d_registry_name(
             port=container_registry_port
@@ -461,7 +537,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 registry_name=container_registry_name,
                 registry_config_path=self._k3d_registry_config_path,
             )
-            kubernetes_context = f"k3d-{self._k3d_cluster_name}"
+            kubernetes_context = self.kubernetes_context
             local_deployment_utils.deploy_kubeflow_pipelines(
                 kubernetes_context=kubernetes_context
             )
@@ -486,14 +562,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 pid_file_path=self._pid_file_path
             )
 
-        local_deployment_utils.delete_k3d_cluster(
-            cluster_name=self._k3d_cluster_name
-        )
+        if self.is_local:
+            # don't deprovision any resources if using a remote KFP installation
+            local_deployment_utils.delete_k3d_cluster(
+                cluster_name=self._k3d_cluster_name
+            )
+
+            logger.info("Local kubeflow pipelines deployment deprovisioned.")
 
         if fileio.exists(self.log_file):
             fileio.remove(self.log_file)
-
-        logger.info("Local kubeflow pipelines deployment deprovisioned.")
 
     def resume(self) -> None:
         """Resumes the local k3d cluster."""
@@ -507,14 +585,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "resources provisioned for local deployment."
             )
 
-        if not self.is_cluster_running:
+        if self.is_local and not self.is_cluster_running:
+            # don't resume any resources if using a remote KFP installation
             local_deployment_utils.start_k3d_cluster(
                 cluster_name=self._k3d_cluster_name
             )
 
-            kubernetes_context = f"k3d-{self._k3d_cluster_name}"
             local_deployment_utils.wait_until_kubeflow_pipelines_ready(
-                kubernetes_context=kubernetes_context
+                kubernetes_context=self.kubernetes_context
             )
 
         if not self.is_daemon_running:
@@ -522,6 +600,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 pid_file_path=self._pid_file_path,
                 log_file_path=self.log_file,
                 port=self._get_kfp_ui_daemon_port(),
+                kubernetes_context=self.kubernetes_context,
             )
 
     def suspend(self) -> None:
@@ -535,7 +614,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 pid_file_path=self._pid_file_path
             )
 
-        if self.is_cluster_running:
+        if self.is_local and self.is_cluster_running:
+            # don't suspend any resources if using a remote KFP installation
             local_deployment_utils.stop_k3d_cluster(
                 cluster_name=self._k3d_cluster_name
             )

@@ -15,15 +15,21 @@ import os
 import subprocess
 import sys
 import time
-from typing import ClassVar, Union
+from typing import ClassVar, Optional, Union, cast
 
 from kubernetes import config as k8s_config
 from ml_metadata.proto import metadata_store_pb2
 
-import zenml.io.utils
+from zenml.integrations.constants import KUBEFLOW
+from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
+    KubeflowOrchestrator,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata_stores import BaseMetadataStore
+from zenml.repository import Repository
+from zenml.stack import StackValidator
+from zenml.stack.stack import Stack
 from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
@@ -58,7 +64,18 @@ class KubeflowMetadataStore(BaseMetadataStore):
     port: int = DEFAULT_KFP_METADATA_GRPC_PORT
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "kubeflow"
+    FLAVOR: ClassVar[str] = KUBEFLOW
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Validates that the stack contains a KFP orchestrator."""
+
+        def _ensure_kfp_orchestrator(stack: Stack) -> bool:
+            return stack.orchestrator.FLAVOR == KUBEFLOW
+
+        return StackValidator(
+            custom_validation_function=_ensure_kfp_orchestrator
+        )
 
     def get_tfx_metadata_config(
         self,
@@ -85,12 +102,29 @@ class KubeflowMetadataStore(BaseMetadataStore):
         return connection_config
 
     @property
+    def kfp_orchestrator(self) -> KubeflowOrchestrator:
+        """Returns the Kubeflow orchestrator in the active stack."""
+        repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
+        return cast(KubeflowOrchestrator, repo.active_stack.orchestrator)
+
+    @property
+    def kubernetes_context(self) -> str:
+        """Returns the kubernetes context to the cluster where the Kubeflow
+        Pipelines services are running."""
+        return self.kfp_orchestrator.kubernetes_context
+
+    @property
     def root_directory(self) -> str:
         """Returns path to the root directory for all files concerning
-        this orchestrator."""
+        this KFP metadata store.
+
+        Note: the root directory for the KFP metadata store is relative to the
+        root directory of the KFP orchestrator, because it is a sub-component
+        of it.
+        """
         return os.path.join(
-            zenml.io.utils.get_global_config_directory(),
-            "kubeflow",
+            self.kfp_orchestrator.root_directory,
+            "metadata-store",
             str(self.uuid),
         )
 
@@ -155,6 +189,8 @@ class KubeflowMetadataStore(BaseMetadataStore):
 
         command = [
             "kubectl",
+            "--context",
+            self.kubernetes_context,
             "--namespace",
             "kubeflow",
             "port-forward",
@@ -226,7 +262,7 @@ class KubeflowMetadataStore(BaseMetadataStore):
                 # the MLMD connection
                 self.get_pipelines()
                 break
-            except RuntimeError as e:
+            except Exception as e:
                 logger.info(
                     "The Kubeflow metadata store is not ready yet, waiting for "
                     "10 seconds..."
