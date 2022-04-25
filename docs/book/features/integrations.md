@@ -57,6 +57,7 @@ These are the third-party integrations that ZenML currently supports:
 | Tensorflow                | ✅      | Training, Visualizer   | Tensorboard support.                                                                          | [quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart). [kubeflow](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) |
 | Weights & Biases Tracking | ✅      | Experiment Tracking    | Tracks your pipelines and your training runs.                                                 | [wandb_tracking](https://github.com/zenml-io/zenml/tree/main/examples/wandb_tracking)                                                                    |
 | whylogs                   | ✅      | logging                | Integration fully implemented for data logging.                                               | [whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs)                                                                                  |
+| xgboost                   | ✅      | Training               | Support for `Booster` and `DMatrix` materialization.                                          | [xgboost](https://github.com/zenml-io/zenml/tree/main/examples/xgboost)                                                                                  |
 
 ✅ means the integration is already implemented.
 ⛏ means we are looking to implement the integration soon.
