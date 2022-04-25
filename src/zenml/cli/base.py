@@ -23,9 +23,10 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.exceptions import InitializationException
-from zenml.io.fileio import exists, rmtree
+from zenml.io import fileio
 from zenml.io.utils import get_global_config_directory
 from zenml.repository import Repository
+from zenml.utils import yaml_utils
 
 
 @cli.command("init", help="Initialize a ZenML repository.")
@@ -85,13 +86,19 @@ def clean(yes: bool = False) -> None:
 
     if yes or confirm:
         local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
-        global_zen_config = get_global_config_directory()
-        if exists(str(local_zen_repo_config)):
-            rmtree(str(local_zen_repo_config))
+        global_zen_config = Path(get_global_config_directory())
+        if fileio.exists(str(local_zen_repo_config)):
+            fileio.rmtree(str(local_zen_repo_config))
             declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
-        if exists(global_zen_config):
-            rmtree(global_zen_config)
+        if fileio.exists(str(global_zen_config)):
+            config_yaml_path = global_zen_config / "config.yaml"
+            config_yaml_data = yaml_utils.read_yaml(str(config_yaml_path))
+            fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
+
+        fileio.makedirs(str(global_zen_config))
+        yaml_utils.write_yaml(str(config_yaml_path), config_yaml_data)
+        Repository.initialize(root=Path.cwd())
 
     else:
         declare("Aborting clean.")
