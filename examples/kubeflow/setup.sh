@@ -8,8 +8,8 @@ setup_stack () {
   zenml orchestrator register kubeflow_orchestrator --type=kubeflow || \
     msg "${WARNING}Reusing preexisting orchestrator ${NOFORMAT}kubeflow_orchestrator"
   zenml stack register local_kubeflow_stack \
-      -m local_metadata_store \
-      -a local_artifact_store \
+      -m default \
+      -a default \
       -o kubeflow_orchestrator \
       -c local_registry || \
     msg "${WARNING}Reusing preexisting stack ${NOFORMAT}local_kubeflow_stack"
