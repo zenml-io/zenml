@@ -10,11 +10,14 @@
 
 ## ZenML
 
-* [ZenML Config]()
-* [ZenML Repo]()
-* [Profiles](use_cases/profiles.md)
 * [Stacks]()
-* [Set up ZenML Service]()
+* [Profiles](use_cases/profiles.md)
+* [ZenML Repo]()
+* [ZenML Config]()
+
+## ZenML Service
+
+* [ZenML Service]()
   * [Deploy Locally]()
   * [Deploy on Cloud]()
 
@@ -42,6 +45,7 @@
 * [Container Registry](stack_and_components/container_registry.md)
 * [Step Operator](stack_and_components/step_operator.md)
 * [Secret Manager](stack_and_components/secrets_manager.md)
+* [Model Deployer](stack_and_components/model_deployer.md)
 * [Visualizers](stack_and_components/visualizers.md)
 * [Experiment Tracker](stack_and_components/experiment_tracker.md)
 * [Extensibility](stack_and_components/extensibility.md)
