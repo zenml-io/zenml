@@ -24,9 +24,10 @@ zenml example pull quickstart
 # at this point a `zenml_examples` dir will be created with the example(s) inside it
 ```
 
-When ready to run the example, simply type the following command. If there are any dependencies needed to be 
-downloaded for the example to run, the CLI will prompt you to install them.
+Some of our examples can even be run directly from the cli. When ready to run the example, simply type the following 
+command. If there are any dependencies needed to be downloaded for the example to run, the CLI will prompt you to 
+install them.
 
 ```bash
-zenml example run quickstart
+zenml example run mlflow-tracking
 ```
