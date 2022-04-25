@@ -217,7 +217,7 @@ def generate_stack_component_register_command(
             Repository().register_stack_component(component)
             cli_utils.declare(
                 f"Successfully registered {display_name} `{name}`."
-                )
+            )
         except (ModuleNotFoundError, ImportError, NotImplementedError):
             if flavor.integration:
                 cli_utils.error(
@@ -265,7 +265,7 @@ def generate_stack_component_flavor_register_command(
                 source=source,
             )
         except EntityExistsError as e:
-            cli_utils.error(e) # noqa
+            cli_utils.error(e)  # noqa
 
     return register_stack_component_flavor_command
 

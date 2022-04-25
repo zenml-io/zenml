@@ -43,8 +43,8 @@ from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService
 from zenml.services.service_status import ServiceState
 from zenml.stack import StackComponent
-from zenml.zen_stores.models import ComponentWrapper
 from zenml.utils.source_utils import load_source_path_class
+from zenml.zen_stores.models import ComponentWrapper
 
 logger = get_logger(__name__)
 
