@@ -109,7 +109,7 @@ def generate_stack_component_describe_command(
             component_type, plural=True
         )
         repo = Repository()
-        components = repo.get_stack_components(component_type)
+        components = repo.zen_store.get_stack_components(component_type)
         if len(components) == 0:
             cli_utils.warning(f"No {plural_display_name} registered.")
             return
@@ -158,7 +158,7 @@ def generate_stack_component_list_command(
 
         repo = Repository()
 
-        components = repo.get_stack_components(component_type)
+        components = repo.zen_store.get_stack_components(component_type)
         display_name = _component_display_name(component_type, plural=True)
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
@@ -213,7 +213,11 @@ def generate_stack_component_register_command(
             component_type=component_type,
         )
         try:
-            component = flavor.to_class()(name=name, **parsed_args)
+            component = flavor.to_flavor()(name=name, **parsed_args)
+            Repository().register_stack_component(component)
+            cli_utils.declare(
+                f"Successfully registered {display_name} `{name}`."
+                )
         except (ModuleNotFoundError, ImportError, NotImplementedError):
             if flavor.integration:
                 cli_utils.error(
@@ -230,9 +234,6 @@ def generate_stack_component_register_command(
                     f"sure that the implementation is in a state which can be "
                     f"imported as a module."
                 )
-
-        Repository().register_stack_component(component)
-        cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 
     return register_stack_component_command
 
@@ -264,7 +265,7 @@ def generate_stack_component_flavor_register_command(
                 source=source,
             )
         except EntityExistsError as e:
-            cli_utils.error(e)
+            cli_utils.error(e) # noqa
 
     return register_stack_component_flavor_command
 

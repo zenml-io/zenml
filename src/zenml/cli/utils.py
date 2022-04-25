@@ -43,6 +43,7 @@ from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService
 from zenml.services.service_status import ServiceState
 from zenml.stack import StackComponent
+from zenml.zen_stores.models import ComponentWrapper
 from zenml.utils.source_utils import load_source_path_class
 
 logger = get_logger(__name__)
@@ -173,7 +174,7 @@ def format_integration_list(
 
 
 def print_stack_component_list(
-    components: List[StackComponent],
+    components: List[ComponentWrapper],
     active_component_name: Optional[str] = None,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
@@ -278,7 +279,6 @@ def print_profile(
     Args:
         profile: Profile to print.
         active: Whether the profile is active.
-        name: Name of the profile.
     """
     profile_title = f"'{profile.name}' Profile Configuration"
     if active:
@@ -430,13 +430,6 @@ def print_secrets(secrets: List[str]) -> None:
 def validate_component_type_source(
     source: str, component_type: StackComponentType
 ) -> Type[StackComponent]:
-    """Validates if the given source exists and has the right
-    StackComponentType
-
-    Args:
-        source:
-        component_type:
-    """
     stack_component_class = load_source_path_class(source)
     assert stack_component_class.TYPE == component_type
     return stack_component_class
