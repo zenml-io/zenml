@@ -73,7 +73,7 @@ class BaseZenStore(ABC):
 
         return self
 
-    # Statistics:
+    # Statics:
 
     @staticmethod
     @abstractmethod

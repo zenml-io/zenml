@@ -188,5 +188,3 @@ class ProfileConfiguration(BaseModel):
         # all attributes with leading underscore are private and therefore
         # are mutable and not included in serialization
         underscore_attrs_are_private = True
-        # allow arbitrary attribute types
-        arbitrary_types_allowed = True

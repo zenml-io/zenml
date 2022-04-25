@@ -22,6 +22,7 @@ import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
+    ENV_ZENML_PROFILE_CONFIGURATION,
     ENV_ZENML_PROFILE_NAME,
     IS_EMPTY,
     PROJECTS,
@@ -51,7 +52,7 @@ from zenml.zen_stores.models import (
     User,
 )
 
-profile_configuration_json = os.environ.get("ZENML_PROFILE_CONFIGURATION")
+profile_configuration_json = os.environ.get(ENV_ZENML_PROFILE_CONFIGURATION)
 profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
 
 # Hopefully profile configuration was passed as env variable:
@@ -82,6 +83,12 @@ zen_store: BaseZenStore = Repository.create_store(
 )
 
 
+class ErrorModel(BaseModel):
+    detail: Any
+
+
+error_response = dict(model=ErrorModel)
+
 security = HTTPBasic()
 
 
@@ -104,17 +111,12 @@ def authorize(credentials: HTTPBasicCredentials = Depends(security)) -> None:
 
 
 app = FastAPI(title="ZenML", version=zenml.__version__)
-requires_authorization = APIRouter(dependencies=[Depends(authorize)])
+authed = APIRouter(
+    dependencies=[Depends(authorize)], responses={401: error_response}
+)
 
 # to run this file locally, execute:
 # uvicorn zenml.zen_service.zen_service_api:app --reload
-
-
-class ErrorModel(BaseModel):
-    detail: Any
-
-
-error_response = dict(model=ErrorModel)
 
 
 def error_detail(error: Exception) -> List[str]:
@@ -132,7 +134,7 @@ def conflict(error: Exception) -> HTTPException:
     return HTTPException(status_code=409, detail=error_detail(error))
 
 
-@requires_authorization.get("/", response_model=ProfileConfiguration)
+@authed.get("/", response_model=ProfileConfiguration)
 async def service_info() -> ProfileConfiguration:
     """Returns the profile configuration for this service."""
     return profile
@@ -144,13 +146,13 @@ async def health() -> str:
     return "OK"
 
 
-@requires_authorization.get(IS_EMPTY, response_model=bool)
+@authed.get(IS_EMPTY, response_model=bool)
 async def is_empty() -> bool:
     """Returns whether stacks are registered or not."""
     return zen_store.is_empty
 
 
-@requires_authorization.get(
+@authed.get(
     STACK_CONFIGURATIONS + "/{name}",
     response_model=Dict[StackComponentType, str],
     responses={404: error_response},
@@ -163,7 +165,7 @@ async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
         raise not_found(error) from error
 
 
-@requires_authorization.get(
+@authed.get(
     STACK_CONFIGURATIONS,
     response_model=Dict[str, Dict[StackComponentType, str]],
 )
@@ -172,7 +174,7 @@ async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
     return zen_store.stack_configurations
 
 
-@requires_authorization.post(STACK_COMPONENTS, responses={409: error_response})
+@authed.post(STACK_COMPONENTS, responses={409: error_response})
 async def register_stack_component(
     component: ComponentWrapper,
 ) -> None:
@@ -183,9 +185,7 @@ async def register_stack_component(
         raise conflict(error) from error
 
 
-@requires_authorization.delete(
-    STACKS + "/{name}", responses={404: error_response}
-)
+@authed.delete(STACKS + "/{name}", responses={404: error_response})
 async def deregister_stack(name: str) -> None:
     """Deregisters a stack."""
     try:
@@ -194,13 +194,13 @@ async def deregister_stack(name: str) -> None:
         raise not_found(error) from error
 
 
-@requires_authorization.get(STACKS, response_model=List[StackWrapper])
+@authed.get(STACKS, response_model=List[StackWrapper])
 async def stacks() -> List[StackWrapper]:
     """Returns all stacks."""
     return zen_store.stacks
 
 
-@requires_authorization.get(
+@authed.get(
     STACKS + "/{name}",
     response_model=StackWrapper,
     responses={404: error_response},
@@ -213,7 +213,7 @@ async def get_stack(name: str) -> StackWrapper:
         raise not_found(error) from error
 
 
-@requires_authorization.post(
+@authed.post(
     STACKS,
     response_model=Dict[str, str],
     responses={409: error_response},
@@ -226,7 +226,7 @@ async def register_stack(stack: StackWrapper) -> Dict[str, str]:
         raise conflict(error) from error
 
 
-@requires_authorization.get(
+@authed.get(
     STACK_COMPONENTS + "/{component_type}/{name}",
     response_model=ComponentWrapper,
     responses={404: error_response},
@@ -241,7 +241,7 @@ async def get_stack_component(
         raise not_found(error) from error
 
 
-@requires_authorization.get(
+@authed.get(
     STACK_COMPONENTS + "/{component_type}",
     response_model=List[ComponentWrapper],
 )
@@ -252,7 +252,7 @@ async def get_stack_components(
     return zen_store.get_stack_components(component_type)
 
 
-@requires_authorization.delete(
+@authed.delete(
     STACK_COMPONENTS + "/{component_type}/{name}",
     responses={404: error_response, 409: error_response},
 )
@@ -268,13 +268,13 @@ async def deregister_stack_component(
         raise conflict(error) from error
 
 
-@requires_authorization.get(USERS, response_model=List[User])
+@authed.get(USERS, response_model=List[User])
 async def users() -> List[User]:
     """Returns all users."""
     return zen_store.users
 
 
-@requires_authorization.get(USERS + "/{name}", responses={404: error_response})
+@authed.get(USERS + "/{name}", responses={404: error_response})
 async def get_user(name: str) -> User:
     """Gets a specific user."""
     try:
@@ -283,7 +283,7 @@ async def get_user(name: str) -> User:
         raise not_found(error) from error
 
 
-@requires_authorization.post(
+@authed.post(
     USERS,
     response_model=User,
     responses={409: error_response},
@@ -296,9 +296,7 @@ async def create_user(user: User) -> User:
         raise conflict(error) from error
 
 
-@requires_authorization.delete(
-    USERS + "/{name}", responses={404: error_response}
-)
+@authed.delete(USERS + "/{name}", responses={404: error_response})
 async def delete_user(name: str) -> None:
     """Deletes a user."""
     try:
@@ -307,7 +305,7 @@ async def delete_user(name: str) -> None:
         raise not_found(error) from error
 
 
-@requires_authorization.get(
+@authed.get(
     USERS + "/{name}/teams",
     response_model=List[Team],
     responses={404: error_response},
@@ -320,7 +318,7 @@ async def teams_for_user(name: str) -> List[Team]:
         raise not_found(error) from error
 
 
-@requires_authorization.get(
+@authed.get(
     USERS + "/{name}/role_assignments",
     response_model=List[RoleAssignment],
     responses={404: error_response},
@@ -337,13 +335,13 @@ async def role_assignments_for_user(
         raise not_found(error) from error
 
 
-@requires_authorization.get(TEAMS, response_model=List[Team])
+@authed.get(TEAMS, response_model=List[Team])
 async def teams() -> List[Team]:
     """Returns all teams."""
     return zen_store.teams
 
 
-@requires_authorization.get(TEAMS + "/{name}", responses={404: error_response})
+@authed.get(TEAMS + "/{name}", responses={404: error_response})
 async def get_team(name: str) -> Team:
     """Gets a specific team."""
     try:
@@ -352,7 +350,7 @@ async def get_team(name: str) -> Team:
         raise not_found(error) from error
 
 
-@requires_authorization.post(
+@authed.post(
     TEAMS,
     response_model=Team,
     responses={409: error_response},
@@ -365,9 +363,7 @@ async def create_team(team: Team) -> Team:
         raise conflict(error) from error
 
 
-@requires_authorization.delete(
-    TEAMS + "/{name}", responses={404: error_response}
-)
+@authed.delete(TEAMS + "/{name}", responses={404: error_response})
 async def delete_team(name: str) -> None:
     """Deletes a team."""
     try:
@@ -376,7 +372,7 @@ async def delete_team(name: str) -> None:
         raise not_found(error) from error
 
 
-@requires_authorization.get(
+@authed.get(
     TEAMS + "/{name}/users",
     response_model=List[User],
     responses={404: error_response},
@@ -389,9 +385,7 @@ async def users_for_team(name: str) -> List[User]:
         raise not_found(error) from error
 
 
-@requires_authorization.post(
-    TEAMS + "/{name}/users", responses={404: error_response}
-)
+@authed.post(TEAMS + "/{name}/users", responses={404: error_response})
 async def add_user_to_team(name: str, user: User) -> None:
     """Adds a user to a team."""
     try:
@@ -400,7 +394,7 @@ async def add_user_to_team(name: str, user: User) -> None:
         raise not_found(error) from error
 
 
-@requires_authorization.delete(
+@authed.delete(
     TEAMS + "/{team_name}/users/{user_name}", responses={404: error_response}
 )
 async def remove_user_from_team(team_name: str, user_name: str) -> None:
@@ -413,7 +407,7 @@ async def remove_user_from_team(team_name: str, user_name: str) -> None:
         raise not_found(error) from error
 
 
-@requires_authorization.get(
+@authed.get(
     TEAMS + "/{name}/role_assignments",
     response_model=List[RoleAssignment],
     responses={404: error_response},
@@ -430,15 +424,13 @@ async def role_assignments_for_team(
         raise not_found(error) from error
 
 
-@requires_authorization.get(PROJECTS, response_model=List[Project])
+@authed.get(PROJECTS, response_model=List[Project])
 async def projects() -> List[Project]:
     """Returns all projects."""
     return zen_store.projects
 
 
-@requires_authorization.get(
-    PROJECTS + "/{name}", responses={404: error_response}
-)
+@authed.get(PROJECTS + "/{name}", responses={404: error_response})
 async def get_project(name: str) -> Project:
     """Gets a specific project."""
     try:
@@ -447,7 +439,7 @@ async def get_project(name: str) -> Project:
         raise not_found(error) from error
 
 
-@requires_authorization.post(
+@authed.post(
     PROJECTS,
     response_model=Project,
     responses={409: error_response},
@@ -462,9 +454,7 @@ async def create_project(project: Project) -> Project:
         raise conflict(error) from error
 
 
-@requires_authorization.delete(
-    PROJECTS + "/{name}", responses={404: error_response}
-)
+@authed.delete(PROJECTS + "/{name}", responses={404: error_response})
 async def delete_project(name: str) -> None:
     """Deletes a project."""
     try:
@@ -473,13 +463,13 @@ async def delete_project(name: str) -> None:
         raise not_found(error) from error
 
 
-@requires_authorization.get(ROLES, response_model=List[Role])
+@authed.get(ROLES, response_model=List[Role])
 async def roles() -> List[Role]:
     """Returns all roles."""
     return zen_store.roles
 
 
-@requires_authorization.get(ROLES + "/{name}", responses={404: error_response})
+@authed.get(ROLES + "/{name}", responses={404: error_response})
 async def get_role(name: str) -> Role:
     """Gets a specific role."""
     try:
@@ -488,7 +478,7 @@ async def get_role(name: str) -> Role:
         raise not_found(error) from error
 
 
-@requires_authorization.post(
+@authed.post(
     ROLES,
     response_model=Role,
     responses={409: error_response},
@@ -501,9 +491,7 @@ async def create_role(role: Role) -> Role:
         raise conflict(error) from error
 
 
-@requires_authorization.delete(
-    ROLES + "/{name}", responses={404: error_response}
-)
+@authed.delete(ROLES + "/{name}", responses={404: error_response})
 async def delete_role(name: str) -> None:
     """Deletes a role."""
     try:
@@ -512,15 +500,13 @@ async def delete_role(name: str) -> None:
         raise not_found(error) from error
 
 
-@requires_authorization.get(
-    ROLE_ASSIGNMENTS, response_model=List[RoleAssignment]
-)
+@authed.get(ROLE_ASSIGNMENTS, response_model=List[RoleAssignment])
 async def role_assignments() -> List[RoleAssignment]:
     """Returns all role assignments."""
     return zen_store.role_assignments
 
 
-@requires_authorization.post(
+@authed.post(
     ROLE_ASSIGNMENTS,
     responses={404: error_response},
 )
@@ -542,9 +528,7 @@ async def assign_role(data: Dict[str, Any]) -> None:
         raise not_found(error) from error
 
 
-@requires_authorization.delete(
-    ROLE_ASSIGNMENTS, responses={404: error_response}
-)
+@authed.delete(ROLE_ASSIGNMENTS, responses={404: error_response})
 async def revoke_role(data: Dict[str, Any]) -> None:
     """Revokes a role."""
     role_name = data["role_name"]
@@ -565,4 +549,4 @@ async def revoke_role(data: Dict[str, Any]) -> None:
 
 # include the router after all commands have been added to it so FastAPI
 # recognizes them
-app.include_router(requires_authorization)
+app.include_router(authed)

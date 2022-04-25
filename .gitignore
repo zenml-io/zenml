@@ -173,3 +173,6 @@ zenml_examples/
 
 # pyenv local version file
 .python-version
+
+# wandb
+**wandb/

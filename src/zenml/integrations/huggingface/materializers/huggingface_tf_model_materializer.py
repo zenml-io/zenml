@@ -20,7 +20,7 @@ from typing import Any, Type
 from transformers import AutoConfig, TFPreTrainedModel
 
 from zenml.artifacts import ModelArtifact
-from zenml.io.utils import fileio
+from zenml.io import utils as fileio_utils
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_TF_MODEL_DIR = "hf_tf_model"
@@ -55,6 +55,7 @@ class HFTFModelMaterializer(BaseMaterializer):
         super().handle_return(model)
         temp_dir = TemporaryDirectory()
         model.save_pretrained(temp_dir.name)
-        fileio.copy_dir(
-            temp_dir.name, os.path.join(self.artifact.uri, DEFAULT_TF_MODEL_DIR)
+        fileio_utils.copy_dir(
+            temp_dir.name,
+            os.path.join(self.artifact.uri, DEFAULT_TF_MODEL_DIR),
         )
