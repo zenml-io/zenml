@@ -35,26 +35,27 @@ class XGBoostConfig(BaseStepConfig):
 
 
 @step
-def data_loader() -> Output(df_train=xgb.DMatrix, df_test=xgb.DMatrix):
-    """Return the renewable energy dataset as pandas dataframes."""
+def data_loader() -> Output(mat_train=xgb.DMatrix, mat_test=xgb.DMatrix):
+    """Retrieves the data from the demo directory of the XGBoost repo."""
+    # Write data to temporary files to load it with `xgb.DMatrix`.
     with tempfile.NamedTemporaryFile(
         mode="w", delete=False, suffix=".html", encoding="utf-8"
     ) as f:
         f.write(requests.get(TRAIN_SET_RAW).text)
-        df_train = xgb.DMatrix(f.name)
+        mat_train = xgb.DMatrix(f.name)
 
     with tempfile.NamedTemporaryFile(
         mode="w", delete=False, suffix=".html", encoding="utf-8"
     ) as f:
         f.write(requests.get(TEST_SET_RAW).text)
-        df_test = xgb.DMatrix(f.name)
+        mat_test = xgb.DMatrix(f.name)
 
-    return df_train, df_test
+    return mat_train, mat_test
 
 
 @step
 def trainer(
-    config: XGBoostConfig, df_train: xgb.DMatrix, df_test: xgb.DMatrix
+    config: XGBoostConfig, mat_train: xgb.DMatrix, mat_test: xgb.DMatrix
 ) -> xgb.Booster:
     """Trains a XGBoost model on the data."""
     num_round = 2
@@ -63,13 +64,13 @@ def trainer(
         "eta": config.eta,
         "objective": config.objective,
     }
-    return xgb.train(params, df_train, num_round)
+    return xgb.train(params, mat_train, num_round)
 
 
 @step
-def predictor(model: xgb.Booster, df: xgb.DMatrix) -> np.ndarray:
+def predictor(model: xgb.Booster, mat: xgb.DMatrix) -> np.ndarray:
     """Makes predictions on a trained XGBoost booster model."""
-    return model.predict(df)
+    return model.predict(mat)
 
 
 @pipeline(enable_cache=False, required_integrations=[XGBOOST])
@@ -79,9 +80,9 @@ def xgboost_pipeline(
     predictor,
 ):
     """Links all the steps together in a pipeline"""
-    df_train, df_test = data_loader()
-    m = trainer(df_train, df_test)
-    predictor(m, df_train)
+    mat_train, mat_test = data_loader()
+    m = trainer(mat_train, mat_test)
+    predictor(m, mat_train)
 
 
 if __name__ == "__main__":
