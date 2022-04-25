@@ -82,7 +82,8 @@ def test_updating_non_active_stack_succeeds(clean_repo) -> None:
     )
     assert result.exit_code == 0
     assert (
-        clean_repo.get_stack("arias_new_stack").orchestrator == new_orchestrator
+        clean_repo.get_stack("arias_new_stack").orchestrator
+        == new_orchestrator
     )
 
 
@@ -100,7 +101,8 @@ def test_adding_to_stack_succeeds(clean_repo) -> None:
     assert result.exit_code == 0
     assert clean_repo.get_stack("default").secrets_manager is not None
     assert (
-        clean_repo.get_stack("default").secrets_manager == local_secrets_manager
+        clean_repo.get_stack("default").secrets_manager
+        == local_secrets_manager
     )
 
 
@@ -127,6 +129,16 @@ def test_renaming_nonexistent_stack_fails(clean_repo) -> None:
         clean_repo.get_stack("not_a_stack")
 
 
+def test_renaming_stack_to_same_name_as_existing_stack_fails(
+    clean_repo,
+) -> None:
+    runner = CliRunner()
+    result = runner.invoke(rename_stack, ["not_a_stack", "default"])
+    assert result.exit_code == 1
+    with pytest.raises(KeyError):
+        clean_repo.get_stack("not_a_stack")
+
+
 def test_renaming_active_stack_fails(clean_repo) -> None:
     """Test stack rename of active stack fails."""
     runner = CliRunner()
@@ -148,7 +160,9 @@ def test_renaming_non_active_stack_succeeds(clean_repo) -> None:
     clean_repo.register_stack(new_stack)
 
     runner = CliRunner()
-    result = runner.invoke(rename_stack, ["arias_stack", "arias_renamed_stack"])
+    result = runner.invoke(
+        rename_stack, ["arias_stack", "arias_renamed_stack"]
+    )
     assert result.exit_code == 0
     assert clean_repo.get_stack("arias_renamed_stack") is not None
     assert (
