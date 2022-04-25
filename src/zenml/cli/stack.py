@@ -443,28 +443,33 @@ def rename_stack(
     new_stack_name: str,
 ) -> None:
     """Rename a stack."""
-    with console.status(f"Renaming stack `{current_stack_name}`...\n"):
-        repo = Repository()
-        try:
-            current_stack = repo.get_stack(current_stack_name)
-        except KeyError:
-            cli_utils.error(
-                f"Stack `{current_stack_name}` cannot be renamed as it does not exist.",
-            )
-        stack_components = current_stack.components
-
-        new_stack_ = Stack.from_components(
-            name=new_stack_name, components=stack_components
+    # with console.status(f"Renaming stack `{current_stack_name}`...\n"):
+    repo = Repository()
+    try:
+        current_stack = repo.get_stack(current_stack_name)
+    except KeyError:
+        cli_utils.error(
+            f"Stack `{current_stack_name}` cannot be renamed as it does not exist.",
         )
-        try:
-            repo.update_stack(current_stack_name, new_stack_)
-            cli_utils.declare(
-                f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
-            )
-        except ValueError:
-            cli_utils.error(
-                f"Stack `{current_stack_name}` cannot be renamed as it is currently the active stack. Please switch to another stack before renaming.",
-            )
+    stack_components = current_stack.components
+
+    registered_stacks = [stack.name for stack in repo.stacks]
+    if new_stack_name in registered_stacks:
+        cli_utils.error(
+            f"Stack `{new_stack_name}` already exists. Please choose a different name.",
+        )
+    new_stack_ = Stack.from_components(
+        name=new_stack_name, components=stack_components
+    )
+    try:
+        repo.update_stack(current_stack_name, new_stack_)
+        cli_utils.declare(
+            f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
+        )
+    except ValueError:
+        cli_utils.error(
+            f"Stack `{current_stack_name}` cannot be renamed as it is currently the active stack. Please switch to another stack before renaming.",
+        )
 
 
 @stack.command("list")

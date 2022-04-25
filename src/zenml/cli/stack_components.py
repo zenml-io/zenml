@@ -340,9 +340,11 @@ def generate_stack_component_rename_command(
         if current_component is None:
             cli_utils.error(f"No {display_name} found for name '{name}'.")
 
-        try:
-            repo.get_stack_component(component_type, new_name)
-        except KeyError:
+        registered_components = [
+            component.name
+            for component in repo.get_stack_components(component_type)
+        ]
+        if new_name in registered_components:
             cli_utils.error(
                 f"Unable to rename '{name}' {display_name} to '{new_name}': \nA component of type '{display_name}' with the name '{new_name}' already exists. \nPlease choose a different name."
             )
