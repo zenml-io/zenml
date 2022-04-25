@@ -42,10 +42,10 @@ from zenml.exceptions import (
 from zenml.repository import Repository
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
+    ComponentWrapper,
     Project,
     Role,
     RoleAssignment,
-    StackComponentWrapper,
     StackWrapper,
     Team,
     User,
@@ -57,7 +57,7 @@ profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
 # Hopefully profile configuration was passed as env variable:
 if profile_configuration_json:
     profile = ProfileConfiguration.parse_raw(profile_configuration_json)
-# Otherwise check if profile name was passed as env variable:
+# Otherwise, check if profile name was passed as env variable:
 elif profile_name:
     profile = (
         GlobalConfiguration().get_profile(profile_name)
@@ -174,7 +174,7 @@ async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
 
 @requires_authorization.post(STACK_COMPONENTS, responses={409: error_response})
 async def register_stack_component(
-    component: StackComponentWrapper,
+    component: ComponentWrapper,
 ) -> None:
     """Registers a stack component."""
     try:
@@ -228,12 +228,12 @@ async def register_stack(stack: StackWrapper) -> Dict[str, str]:
 
 @requires_authorization.get(
     STACK_COMPONENTS + "/{component_type}/{name}",
-    response_model=StackComponentWrapper,
+    response_model=ComponentWrapper,
     responses={404: error_response},
 )
 async def get_stack_component(
     component_type: StackComponentType, name: str
-) -> StackComponentWrapper:
+) -> ComponentWrapper:
     """Returns the requested stack component."""
     try:
         return zen_store.get_stack_component(component_type, name=name)
@@ -243,11 +243,11 @@ async def get_stack_component(
 
 @requires_authorization.get(
     STACK_COMPONENTS + "/{component_type}",
-    response_model=List[StackComponentWrapper],
+    response_model=List[ComponentWrapper],
 )
 async def get_stack_components(
     component_type: StackComponentType,
-) -> List[StackComponentWrapper]:
+) -> List[ComponentWrapper]:
     """Returns all stack components for the requested type."""
     return zen_store.get_stack_components(component_type)
 
