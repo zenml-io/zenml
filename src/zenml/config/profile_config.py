@@ -109,11 +109,11 @@ class ProfileConfiguration(BaseModel):
 
         if not self.active_stack:
             try:
-                stacks = repo.stacks
+                stacks = repo.stack_configurations
             except requests.exceptions.ConnectionError:
                 stacks = None
             if stacks:
-                self.active_stack = stacks[0].name
+                self.active_stack = list(stacks.keys())[0]
 
     def cleanup(self) -> None:
         """Cleanup the profile directory."""
