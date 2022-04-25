@@ -97,9 +97,9 @@ def mlflow_tracking_setup(repository: Repository) -> None:
     )
 
     components = repository.active_stack.components
-    components[
-        StackComponentType.EXPERIMENT_TRACKER
-    ] = MLFlowExperimentTracker()
+    components[StackComponentType.EXPERIMENT_TRACKER] = MLFlowExperimentTracker(
+        name="mlflow_tracker"
+    )
     stack = Stack.from_components(name="mlflow_stack", components=components)
     repository.register_stack(stack)
     repository.activate_stack(stack.name)
