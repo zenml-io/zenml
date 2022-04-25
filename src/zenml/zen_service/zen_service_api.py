@@ -566,7 +566,7 @@ async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
             name=flavor.name,
             source=flavor.source,
             integration=flavor.integration,
-            stack_component_type=flavor.type
+            stack_component_type=flavor.type,
         )
     except EntityExistsError as error:
         raise conflict(error) from error
@@ -574,7 +574,7 @@ async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
 
 @authed.get(FLAVORS + "/{component_type}", responses={404: error_response})
 async def get_flavor_by_type(
-    component_type: StackComponentType
+    component_type: StackComponentType,
 ) -> List[FlavorWrapper]:
     try:
         return zen_store.get_flavors_by_type(component_type=component_type)
@@ -584,15 +584,13 @@ async def get_flavor_by_type(
 
 @authed.get(
     FLAVORS + "/{component_type}/{name}", responses={404: error_response}
-    )
+)
 async def get_flavor_by_type_and_name(
-    component_type: StackComponentType,
-    name: str
+    component_type: StackComponentType, name: str
 ) -> FlavorWrapper:
     try:
         return zen_store.get_flavor_by_name_and_type(
-            component_type=component_type,
-            flavor_name=name
+            component_type=component_type, flavor_name=name
         )
     except KeyError as error:
         raise not_found(error) from error

@@ -240,7 +240,7 @@ def print_flavor_list(
         reachable = False
 
         if f.integration:
-            if f.integration == 'built-in':
+            if f.integration == "built-in":
                 reachable = True
             else:
                 reachable = integration_registry.is_installed(f.integration)
@@ -249,7 +249,7 @@ def print_flavor_list(
             try:
                 validate_flavor_source(f.source, component_type=component_type)
                 reachable = True
-            except (AssertionError, ModuleNotFoundError, ImportError) as e:
+            except (AssertionError, ModuleNotFoundError, ImportError):
                 pass
 
         flavor_table.append(
@@ -464,8 +464,7 @@ def print_secrets(secrets: List[str]) -> None:
 
 
 def validate_flavor_source(
-    source: str,
-    component_type: StackComponentType
+    source: str, component_type: StackComponentType
 ) -> Type[StackComponent]:
     stack_component_class = load_source_path_class(source)
     assert stack_component_class.TYPE == component_type

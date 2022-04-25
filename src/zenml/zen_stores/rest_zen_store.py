@@ -19,12 +19,12 @@ import requests
 from pydantic import BaseModel
 
 from zenml.constants import (
+    FLAVORS,
     IS_EMPTY,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
     STACK_COMPONENTS,
-    FLAVORS,
     STACK_CONFIGURATIONS,
     STACKS,
     TEAMS,
@@ -817,7 +817,7 @@ class RestZenStore(BaseZenStore):
             name=name,
             source=source,
             type=stack_component_type,
-            integration=integration
+            integration=integration,
         )
         return FlavorWrapper.parse_obj(self.post(FLAVORS, body=flavor))
 
