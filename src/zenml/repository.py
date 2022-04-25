@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import base64
 import json
 import os
 import random
@@ -20,7 +19,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, cast
 
-import yaml
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.base_config import BaseConfiguration
@@ -46,8 +44,7 @@ from zenml.zen_stores import (
     SqlZenStore,
 )
 from zenml.zen_stores.models import (
-    Flavor,
-    StackComponentWrapper,
+    ComponentWrapper,
     StackWrapper,
     User,
     ZenStoreModel,
@@ -603,18 +600,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         # Initialize the repository configuration at the custom path
         Repository(root=root)
 
-    def initialize_store(self) -> None:
-        """Initializes the ZenML store for the repository.
-
-        The store will contain a single stack with a local orchestrator,
-        a local artifact store and a local SQLite metadata store.
-        """
-
-        # register and activate a local stack
-        stack = Stack.default_local_stack()
-        self.register_stack(stack)
-        self.activate_stack(stack.name)
-
     @property
     def root(self) -> Optional[Path]:
         """The root directory of this repository.
@@ -724,7 +709,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     @property
     def stacks(self) -> List[Stack]:
         """All stacks registered in this repository."""
-        return [self._stack_from_wrapper(s) for s in self.zen_store.stacks]
+        return [s.to_stack() for s in self.zen_store.stacks]
 
     @property
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
@@ -790,7 +775,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-        self.zen_store.get_stack_configuration(name)  # raises KeyError
+        self.zen_store.get_stack(name)  # raises KeyError
         if self.__config:
             self.__config.active_stack_name = name
             self._write_config()
@@ -811,7 +796,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             KeyError: If no stack exists for the given name or one of the
                 stacks components is not registered.
         """
-        return self._stack_from_wrapper(self.zen_store.get_stack(name))
+        return self.zen_store.get_stack(name).to_stack()
 
     def register_stack(self, stack: Stack) -> None:
         """Registers a stack and it's components.
@@ -855,15 +840,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 name,
             )
 
-    def get_stack_components(
-        self, component_type: StackComponentType
-    ) -> List[StackComponent]:
-        """Fetches all registered stack components of the given type."""
-        return [
-            self._component_from_wrapper(c)
-            for c in self.zen_store.get_stack_components(component_type)
-        ]
-
     def get_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> StackComponent:
@@ -881,9 +857,11 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             component_type.value,
             name,
         )
-        return self._component_from_wrapper(
-            self.zen_store.get_stack_component(component_type, name=name)
-        )
+
+        return self.zen_store.get_stack_component(
+            name=name,
+            component_type=component_type,
+        ).to_component()
 
     def register_stack_component(
         self,
@@ -899,7 +877,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 and name already exists.
         """
         self.zen_store.register_stack_component(
-            StackComponentWrapper.from_component(component)
+            ComponentWrapper.from_component(component)
         )
         analytics_metadata = {
             "type": component.TYPE.value,
@@ -1065,40 +1043,3 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         if enable_warnings:
             logger.warning(warning_message)
         return None
-
-    def _flavor_from_wrapper(
-        self,
-        wrapper: Flavor,
-    ):
-        """"""
-        from zenml.utils.source_utils import load_source_path_class
-
-        return load_source_path_class(wrapper.source)
-
-    def _component_from_wrapper(
-        self, wrapper: StackComponentWrapper
-    ) -> StackComponent:
-        """Instantiate a StackComponent from the Configuration."""
-
-        component_flavor = self.zen_store.get_flavor_by_name_and_type(
-            flavor_name=wrapper.flavor,
-            component_type=wrapper.type,
-        )
-        component_class = self._flavor_from_wrapper(component_flavor)
-        component_config = yaml.safe_load(
-            base64.b64decode(wrapper.config).decode()
-        )
-
-        return component_class.parse_obj(component_config)
-
-    def _stack_from_wrapper(self, wrapper: StackWrapper) -> Stack:
-        """Instantiate a Stack from the serializable Wrapper."""
-        stack_components = {}
-        for component_wrapper in wrapper.components:
-            component_type = component_wrapper.type
-            component = self._component_from_wrapper(component_wrapper)
-            stack_components[component_type] = component
-
-        return Stack.from_components(
-            name=wrapper.name, components=stack_components
-        )
