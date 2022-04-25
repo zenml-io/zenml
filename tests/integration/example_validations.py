@@ -88,9 +88,9 @@ def drift_detection_example_validation(repository: Repository):
 def mlflow_tracking_setup(repository: Repository) -> None:
     """Adds an MLflow experiment tracking component to the active stack."""
     # install the mlflow integration so we can import the stack component
-    from zenml.cli.integration import install
+    import subprocess
 
-    install(["mlflow", "--force"])
+    subprocess.check_call(["zenml", "integration", "install", "mlflow", "-f"])
 
     from zenml.integrations.mlflow.experiment_trackers import (
         MLFlowExperimentTracker,
