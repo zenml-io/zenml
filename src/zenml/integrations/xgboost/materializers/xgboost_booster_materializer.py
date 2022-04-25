@@ -44,6 +44,9 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         fileio.copy(filepath, temp_file)
         booster = xgb.Booster()
         booster.load_model(temp_file)
+
+        # Cleanup and return
+        fileio.rmtree(temp_dir)
         return booster
 
     def handle_return(self, booster: xgb.Booster) -> None:
@@ -58,9 +61,9 @@ class XgboostBoosterMaterializer(BaseMaterializer):
 
         # Make a temporary phantom artifact
         with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
+            mode="w", suffix=".json", delete=True
         ) as f:
             booster.save_model(f.name)
 
-        # Copy it into artifact store
-        fileio.copy(f.name, filepath)
+            # Copy it into artifact store
+            fileio.copy(f.name, filepath)
