@@ -26,13 +26,13 @@ DEFAULT_FILENAME = "model.json"
 
 
 class XgboostBoosterMaterializer(BaseMaterializer):
-    """Materializer to read data to and from xgboost."""
+    """Materializer to read data to and from xgboost.Booster."""
 
     ASSOCIATED_TYPES = (xgb.Booster,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> xgb.Booster:
-        """Reads a base xgboost model from a serialized JSON file."""
+        """Reads a xgboost Booster model from a serialized JSON file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
@@ -47,10 +47,10 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         return booster
 
     def handle_return(self, booster: xgb.Booster) -> None:
-        """Creates a JSON serialization for a xgboost model.
+        """Creates a JSON serialization for a xgboost Booster model.
 
         Args:
-            booster: A xgboost booster model.
+            booster: A xgboost Booster model.
         """
         super().handle_return(booster)
 
