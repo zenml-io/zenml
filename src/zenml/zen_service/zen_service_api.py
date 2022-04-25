@@ -24,6 +24,7 @@ from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
     ENV_ZENML_PROFILE_CONFIGURATION,
     ENV_ZENML_PROFILE_NAME,
+    FLAVORS,
     IS_EMPTY,
     PROJECTS,
     ROLE_ASSIGNMENTS,
@@ -44,6 +45,7 @@ from zenml.repository import Repository
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
     ComponentWrapper,
+    FlavorWrapper,
     Project,
     Role,
     RoleAssignment,
@@ -67,7 +69,6 @@ elif profile_name:
 # Fallback to what Repository thinks is the active profile
 else:
     profile = Repository().active_profile
-
 
 if profile.store_type == StoreType.REST:
     raise ValueError(
@@ -114,6 +115,7 @@ app = FastAPI(title="ZenML", version=zenml.__version__)
 authed = APIRouter(
     dependencies=[Depends(authorize)], responses={401: error_response}
 )
+
 
 # to run this file locally, execute:
 # uvicorn zenml.zen_service.zen_service_api:app --reload
@@ -542,6 +544,55 @@ async def revoke_role(data: Dict[str, Any]) -> None:
             entity_name=entity_name,
             project_name=project_name,
             is_user=is_user,
+        )
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.get(FLAVORS, response_model=List[FlavorWrapper])
+async def flavors() -> List[FlavorWrapper]:
+    return zen_store.flavors
+
+
+@authed.post(
+    FLAVORS,
+    response_model=FlavorWrapper,
+    responses={409: error_response},
+)
+async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
+    """Creates a user."""
+    try:
+        return zen_store.create_flavor(
+            name=flavor.name,
+            source=flavor.source,
+            integration=flavor.integration,
+            stack_component_type=flavor.type
+        )
+    except EntityExistsError as error:
+        raise conflict(error) from error
+
+
+@authed.get(FLAVORS + "/{component_type}", responses={404: error_response})
+async def get_flavor_by_type(
+    component_type: StackComponentType
+) -> List[FlavorWrapper]:
+    try:
+        return zen_store.get_flavors_by_type(component_type=component_type)
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.get(
+    FLAVORS + "/{component_type}/{name}", responses={404: error_response}
+    )
+async def get_flavor_by_type_and_name(
+    component_type: StackComponentType,
+    name: str
+) -> FlavorWrapper:
+    try:
+        return zen_store.get_flavor_by_name_and_type(
+            component_type=component_type,
+            flavor_name=name
         )
     except KeyError as error:
         raise not_found(error) from error
