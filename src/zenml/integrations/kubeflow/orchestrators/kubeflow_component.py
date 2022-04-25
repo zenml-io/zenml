@@ -35,6 +35,7 @@ from tfx.proto.orchestration import pipeline_pb2
 
 from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
+from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils import source_utils
@@ -152,6 +153,7 @@ class KubeflowComponent:
             arguments.append(_encode_runtime_parameter(param))
 
         stack = Repository().active_stack
+        global_cfg_dir = get_global_config_directory()
 
         # go through all stack components and identify those that advertise
         # a local path where they persist information that they need to be
@@ -162,6 +164,13 @@ class KubeflowComponent:
             local_path = stack_comp.local_path
             if not local_path:
                 continue
+            # double-check this convention, just in case it wasn't respected
+            # as documented in `StackComponent.local_path`
+            if not local_path.startswith(global_cfg_dir):
+                raise ValueError(
+                    f"Local path {local_path} for component {stack_comp.name} "
+                    f"is not in the global config directory ({global_cfg_dir})."
+                )
             has_local_repos = True
             host_path = k8s_client.V1HostPathVolumeSource(
                 path=local_path, type="Directory"
