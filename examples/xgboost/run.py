@@ -73,7 +73,7 @@ def predictor(model: xgb.Booster, mat: xgb.DMatrix) -> np.ndarray:
     return model.predict(mat)
 
 
-@pipeline(enable_cache=False, required_integrations=[XGBOOST])
+@pipeline(enable_cache=True, required_integrations=[XGBOOST])
 def xgboost_pipeline(
     data_loader,
     trainer,
@@ -90,10 +90,4 @@ if __name__ == "__main__":
     pipeline = xgboost_pipeline(
         data_loader=data_loader(), trainer=trainer(), predictor=predictor()
     )
-
     pipeline.run()
-
-    print(
-        "Pipeline has run and model is trained. Please run the "
-        "`post_execution.ipynb` notebook to inspect the results."
-    )
