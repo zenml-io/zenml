@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import tempfile
 from typing import Any, Type
 
 import xgboost as xgb
@@ -34,9 +35,15 @@ class XgboostBoosterMaterializer(BaseMaterializer):
         """Reads a base xgboost model from a serialized JSON file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+
+        # Create a temporary folder
+        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
+        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+
+        # Copy from artifact store to temporary file
+        fileio.copy(filepath, temp_file)
         booster = xgb.Booster()
-        with fileio.open(filepath, "rb") as fid:
-            booster.load_model(fid)
+        booster.load_model(temp_file)
         return booster
 
     def handle_return(self, booster: xgb.Booster) -> None:
@@ -46,6 +53,14 @@ class XgboostBoosterMaterializer(BaseMaterializer):
             booster: A xgboost booster model.
         """
         super().handle_return(booster)
+
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        with fileio.open(filepath, "wb") as fid:
-            booster.save_model(fid)
+
+        # Make a temporary phantom artifact
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", delete=False
+        ) as f:
+            booster.save_model(f.name)
+
+        # Copy it into artifact store
+        fileio.copy(f.name, filepath)
