@@ -863,8 +863,8 @@ class LocalZenStore(BaseZenStore):
 
     def create_flavor(
         self,
-        name: str,
         source: str,
+        name: str,
         stack_component_type: StackComponentType,
         integration: str = "",
     ) -> FlavorWrapper:
@@ -895,7 +895,7 @@ class LocalZenStore(BaseZenStore):
         self,
         flavor_name: str,
         component_type: StackComponentType,
-    ):
+    ) -> FlavorWrapper:
         """Fetch a flavor by a given name and type.
 
         Args:

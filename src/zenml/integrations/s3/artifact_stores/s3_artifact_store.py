@@ -90,9 +90,9 @@ class S3ArtifactStore(BaseArtifactStore):
     def exists(path: PathType) -> bool:
         """Check whether a path exists."""
         S3ArtifactStore._ensure_filesystem_set()
-        return S3ArtifactStore.FILESYSTEM.exists(
+        return S3ArtifactStore.FILESYSTEM.exists(  # type: ignore[no-any-return]
             path=path
-        )  # type: ignore[no-any-return]
+        )
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
@@ -118,9 +118,9 @@ class S3ArtifactStore(BaseArtifactStore):
     def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
         S3ArtifactStore._ensure_filesystem_set()
-        return S3ArtifactStore.FILESYSTEM.isdir(
+        return S3ArtifactStore.FILESYSTEM.isdir(  # type: ignore[no-any-return]
             path=path
-        )  # type: ignore[no-any-return]
+        )
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
@@ -201,9 +201,9 @@ class S3ArtifactStore(BaseArtifactStore):
     def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
         S3ArtifactStore._ensure_filesystem_set()
-        return S3ArtifactStore.FILESYSTEM.stat(
+        return S3ArtifactStore.FILESYSTEM.stat(  # type: ignore[no-any-return]
             path=path
-        )  # type: ignore[no-any-return]
+        )
 
     @staticmethod
     def walk(

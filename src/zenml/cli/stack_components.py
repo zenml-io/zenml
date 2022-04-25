@@ -265,7 +265,7 @@ def generate_stack_component_flavor_register_command(
                 source=source,
             )
         except EntityExistsError as e:
-            cli_utils.error(e)  # noqa
+            cli_utils.error(str(e))
 
     return register_stack_component_flavor_command
 

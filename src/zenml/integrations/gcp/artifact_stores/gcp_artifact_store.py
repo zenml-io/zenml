@@ -88,9 +88,9 @@ class GCPArtifactStore(BaseArtifactStore):
     def exists(path: PathType) -> bool:
         """Check whether a path exists."""
         GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.exists(
+        return GCPArtifactStore.FILESYSTEM.exists(  # type: ignore[no-any-return]
             path=path
-        )  # type: ignore[no-any-return]
+        )
 
     @staticmethod
     def glob(pattern: PathType) -> List[PathType]:
@@ -107,25 +107,25 @@ class GCPArtifactStore(BaseArtifactStore):
             A list of paths that match the given glob pattern.
         """
         GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.glob(
+        return GCPArtifactStore.FILESYSTEM.glob(  # type: ignore[no-any-return]
             path=pattern
-        )  # type: ignore[no-any-return]
+        )
 
     @staticmethod
     def isdir(path: PathType) -> bool:
         """Check whether a path is a directory."""
         GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.isdir(
+        return GCPArtifactStore.FILESYSTEM.isdir(  # type: ignore[no-any-return]
             path=path
-        )  # type: ignore[no-any-return]
+        )
 
     @staticmethod
     def listdir(path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
         GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.listdir(
+        return GCPArtifactStore.FILESYSTEM.listdir(  # type: ignore[no-any-return]
             path=path
-        )  # type: ignore[no-any-return]
+        )
 
     @staticmethod
     def makedirs(path: PathType) -> None:
@@ -181,9 +181,9 @@ class GCPArtifactStore(BaseArtifactStore):
     def stat(path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
         GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.stat(
+        return GCPArtifactStore.FILESYSTEM.stat(  # type: ignore[no-any-return]
             path=path
-        )  # type: ignore[no-any-return]
+        )
 
     @staticmethod
     def walk(
@@ -203,6 +203,6 @@ class GCPArtifactStore(BaseArtifactStore):
         """
         GCPArtifactStore._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
-        return GCPArtifactStore.FILESYSTEM.walk(
+        return GCPArtifactStore.FILESYSTEM.walk(  # type: ignore[no-any-return]
             path=top
-        )  # type: ignore[no-any-return]
+        )

@@ -34,7 +34,7 @@ class SagemakerIntegration(Integration):
     REQUIREMENTS = ["sagemaker==2.82.2"]
 
     @classmethod
-    def declare(cls, store: "BaseZenStore"):
+    def declare(cls, store: "BaseZenStore") -> None:
         """Declare the stack component flavors for the Sagemaker integration."""
         store.create_flavor(
             name=SAGEMAKER_STEP_OPERATOR_FLAVOR,

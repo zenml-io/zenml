@@ -166,8 +166,7 @@ def format_integration_list(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else "",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
-                # type: ignore[attr-defined]
+                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
             }
         )
     return list_of_dicts
@@ -221,9 +220,8 @@ def print_stack_configuration(
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
-        component.upper()
+        component.upper()  # type: ignore[union-attr]
         for component in rich_table.columns[0]._cells
-        # type: ignore[union-attr]
     ]
     console.print(rich_table)
 
@@ -284,9 +282,8 @@ def print_stack_component_configuration(
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
-        component.upper()
+        component.upper()  # type: ignore[union-attr]
         for component in rich_table.columns[0]._cells
-        # type: ignore[union-attr]
     ]
     console.print(rich_table)
 
@@ -333,9 +330,8 @@ def print_profile(
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
-        component.upper()
+        component.upper()  # type: ignore[union-attr]
         for component in rich_table.columns[0]._cells
-        # type: ignore[union-attr]
     ]
     console.print(rich_table)
 

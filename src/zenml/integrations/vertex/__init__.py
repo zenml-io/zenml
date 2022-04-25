@@ -34,7 +34,7 @@ class VertexIntegration(Integration):
     REQUIREMENTS = ["google-cloud-aiplatform>=1.11.0"]
 
     @classmethod
-    def declare(cls, store: "BaseZenStore"):
+    def declare(cls, store: "BaseZenStore") -> None:
         """Declare the stack component flavors for the Vertex integration."""
         store.create_flavor(
             name=VERTEX_STEP_OPERATOR_FLAVOR,

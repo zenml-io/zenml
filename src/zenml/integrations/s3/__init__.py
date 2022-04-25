@@ -34,7 +34,7 @@ class S3Integration(Integration):
     REQUIREMENTS = ["s3fs==2022.3.0"]
 
     @classmethod
-    def declare(cls, store: "BaseZenStore"):
+    def declare(cls, store: "BaseZenStore") -> None:
         """Declare the stack component flavors for the s3 integration."""
         store.create_flavor(
             name=S3_ARTIFACT_STORE_FLAVOR,
