@@ -282,10 +282,12 @@ class SeldonModelDeployer(BaseModelDeployer):
         config = cast(SeldonDeploymentConfig, config)
         service = None
 
-        # update the service configuration with the name of the Kubernetes
-        # secret that is used to authenticate Seldon Core to the Artifact
-        # Store
-        config.secret_name = self._create_or_update_kubernetes_secret()
+        # if a custom Kubernetes secret is not explicitly specified in the
+        # SeldonDeploymentConfig, try to create one from the ZenML secret
+        # configured for the model deployer
+        config.secret_name = (
+            config.secret_name or self._create_or_update_kubernetes_secret()
+        )
 
         # if replace is True, find equivalent Seldon Core deployments
         if replace is True:
