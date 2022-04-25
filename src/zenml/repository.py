@@ -868,16 +868,16 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             metadata=analytics_metadata,
         )
 
-    def rename_stack_component(
-        self, old_name: str, renamed_component: StackComponent
-    ) -> None:
-        """Renames a stack component."""
-        self.stack_store.rename_stack_component(
-            old_name, StackComponentWrapper.from_component(renamed_component)
-        )
-        self.stack_store.update_stacks_after_rename(
-            old_name, renamed_component.name, renamed_component.TYPE
-        )
+    # def rename_stack_component(
+    #     self, old_name: str, renamed_component: StackComponent
+    # ) -> None:
+    #     """Renames a stack component."""
+    #     self.stack_store.rename_stack_component(
+    #         old_name, StackComponentWrapper.from_component(renamed_component)
+    #     )
+    #     self.stack_store.update_stacks_after_rename(
+    #         old_name, renamed_component.name, renamed_component.TYPE
+    #     )
 
     def get_stack_components(
         self, component_type: StackComponentType

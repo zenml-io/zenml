@@ -340,6 +340,13 @@ def generate_stack_component_rename_command(
         if current_component is None:
             cli_utils.error(f"No {display_name} found for name '{name}'.")
 
+        try:
+            repo.get_stack_component(component_type, new_name)
+        except KeyError:
+            cli_utils.error(
+                f"Unable to rename '{name}' {display_name} to '{new_name}': \nA component of type '{display_name}' with the name '{new_name}' already exists. \nPlease choose a different name."
+            )
+
         from zenml.stack.stack_component_class_registry import (
             StackComponentClassRegistry,
         )
@@ -356,9 +363,10 @@ def generate_stack_component_rename_command(
                 extra_args[prop] = getattr(current_component, prop)
         renamed_component = component_class(name=new_name, **extra_args)
 
-        repo.rename_stack_component(
-            old_name=current_component.name,
-            renamed_component=renamed_component,
+        repo.update_stack_component(
+            name=name,
+            component_type=component_type,
+            component=renamed_component,
         )
         cli_utils.declare(
             f"Successfully renamed {display_name} `{name}` to `{new_name}`."

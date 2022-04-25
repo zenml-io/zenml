@@ -276,7 +276,10 @@ class SqlStackStore(BaseStackStore):
                 )
 
             updated_component.configuration = component.config
+
+            # handle any potential renamed component
             updated_component.name = component.name
+
             session.add(updated_component)
             session.commit()
         logger.info(
