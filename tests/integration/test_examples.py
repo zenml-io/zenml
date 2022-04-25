@@ -103,18 +103,28 @@ examples = [
         validation_function=generate_basic_validation_function(
             pipeline_name="mnist_pipeline", step_count=4
         ),
-    ),
+    ),  # TODO [HIGH]: Create Integration tests for MLFlow Deployment
     ExampleIntegrationTestConfiguration(
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="neural_prophet",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="neural_prophet_pipeline", step_count=3
+        ),
     ),
     # TODO [ENG-708]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(
         name="whylogs_data_profiling",
         validation_function=whylogs_example_validation,
-    )
-    # TODO [HIGH]: Create Integration tests for MLFlow Deployment,
-    #  and Neural Prophet
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="xgboost",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="xgboost_pipeline", step_count=3
+        ),
+    ),
 ]
 
 

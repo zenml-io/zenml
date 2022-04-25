@@ -15,7 +15,7 @@ NeuralProphet documentation.
 
 ## 🖥 Run it locally
 
-## ⏩ SuperQuick `evidently` run
+## ⏩ SuperQuick `neural prophet` run
 
 If you're really in a hurry, and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
@@ -67,10 +67,3 @@ In order to clean up, delete the remaining ZenML references.
 ```shell
 rm -rf zenml_examples
 ```
-
-# 📜 Learn more
-
-Our docs regarding the evidently integration can be found [here](TODO: Link to docs).
-
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
-check out our [docs](TODO: Link to docs)
