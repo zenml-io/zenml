@@ -5,5 +5,15 @@ orchestrator is especially important, as it defines where the actual pipeline jo
 pipeline job, that controls how and where each individual step within a pipeline is executed. Therefore, the
 orchestrator can be used to great effect to scale jobs in production.
 
+## CLI
+
 Check out the CLI commands concerning the artifact store
 [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--customizing-your-orchestrator).
+
+## Implementations 
+
+WIP
+
+## Build Your Own
+
+WIP

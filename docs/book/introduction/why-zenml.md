@@ -61,4 +61,4 @@ We wanted to focus on abstractions that can address different needs throughout t
 
 It is important that we integrate within the various tools of the fragmented MLOps landscape. ZenML is fully 
 extensible, so you are free to build in whatever custom tooling you currently use. We already integrate with a number 
-of the most commonly used parts an ML stack: checkout our supported integrations [here](../use_cases/integrations.md).
+of the most commonly used parts an ML stack: checkout our supported integrations [here](../stack_components/integrations.md).

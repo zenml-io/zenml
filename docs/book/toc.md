@@ -23,7 +23,6 @@
 
 ## Use Cases
 
-* [Integrations with Popular Tools](use_cases/integrations.md)
 * [Use `zenml example run`](use_cases/zenml-example-cli.md)
 * [Get your data from a Feature Store](use_cases/feature-store.md)
 * [Run your Pipeline on Kubeflow](use_cases/run_on_kubeflow.md)
@@ -37,19 +36,22 @@
 * [Run Steps on Specialized Hardware](use_cases/step-operators.md)
 * [Bypassing materialization](use_cases/skip-materialization.md)
 
-## Stack Components, Configuration and Extensibility
+## xxx
 
-* [Artifact Store](stack_and_components/artifact_store.md)
-* [Metadata Store](stack_and_components/metadata_store.md)
-* [Orchestrator](stack_and_components/orchestrator.md)
-* [Container Registry](stack_and_components/container_registry.md)
-* [Step Operator](stack_and_components/step_operator.md)
-* [Secret Manager](stack_and_components/secrets_manager.md)
-* [Model Deployer](stack_and_components/model_deployer.md)
-* [Visualizers](stack_and_components/visualizers.md)
-* [Experiment Tracker](stack_and_components/experiment_tracker.md)
-* [Extensibility](stack_and_components/extensibility.md)
-* [Roadmap](stack_and_components/roadmap.md)
+* [Integrations with Popular Tools](stack_components/integrations.md)
+* Stack Components
+  * [Artifact Store](stack_components/artifact_store.md)
+  * [Metadata Store](stack_components/metadata_store.md)
+  * [Orchestrator](stack_components/orchestrator.md)
+  * [Container Registry](stack_components/container_registry.md)
+  * [Step Operator](stack_components/step_operator.md)
+  * [Secret Manager](stack_components/secrets_manager.md)
+  * [Model Deployer](stack_components/model_deployer.md)
+  * [Experiment Tracker](stack_components/experiment_tracker.md)
+* Other Concepts
+  * [Materializer]
+  * [Data Inspection](stack_components/visualizers.md)
+  * [Feature Store]
 
 ## Support
 
@@ -61,6 +63,7 @@
 
 ## Reference
 
+* [Roadmap](reference/roadmap.md)
 - [Glossary](reference/glossary.md)
 - [FAQ]()
 - [System Environmental Variables](reference/system-env.md)

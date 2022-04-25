@@ -33,7 +33,7 @@ zenml integration install sklearn -f
 
 {% hint style="success" %}
 We are just using sklearn for the purposes of illustration; ZenML works with any ML library such as PyTorch, Tensorflow, 
-HuggingFace, PyTorch Lightning, etc. See our [full list of integrations](../use_cases/integrations.md) for a complete overview.
+HuggingFace, PyTorch Lightning, etc. See our [full list of integrations](../stack_components/integrations.md) for a complete overview.
 {% endhint %}
 
 

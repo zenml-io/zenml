@@ -58,7 +58,7 @@ dependencies between the different stages are managed.
 An integration is a third-party tool or platform that implements a ZenML abstraction. 
 A tool can implement many abstractions and therefore an integration can have different 
 entrypoints for the user. We have a consistently updated integrations page which shows all 
-current integrations supported by the ZenML core team [here](../use_cases/integrations.md). 
+current integrations supported by the ZenML core team [here](../stack_components/integrations.md). 
 However, as ZenML is a framework users are encouraged to use these as a guideline and implement 
 their own integrations by extending the various ZenML abstractions.
 

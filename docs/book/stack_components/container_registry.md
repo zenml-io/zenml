@@ -9,5 +9,14 @@ For instance, when you are running a local container-based stack, you would ther
 which stores the container images you create that bundle up your pipeline code. You could also use a remote container
 registry like the Elastic Container Registry at AWS in a more production setting.
 
+## CLI
 Check out the CLI commands concerning the container registry 
 [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--customizing-your-container-registry).
+
+## Implementations 
+
+WIP
+
+## Build Your Own
+
+WIP
