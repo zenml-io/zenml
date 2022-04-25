@@ -2,7 +2,7 @@
 description: Familiarize yourself with the ZenML Basics
 ---
 
-# Installation & Setup
+# Installation
 ### Welcome
 
 Your first step is to install **ZenML**, which comes bundled as a good old `pip` package.
@@ -84,9 +84,9 @@ eval (env _ZENML_COMPLETE=source_fish zenml)
 {% endtab %}
 {% endtabs %}
 
-# Getting started with a Pipeline
+# Steps & Pipelines
 
-### Create steps
+## Step
 
 Steps are the atomic components of a ZenML pipeline. Each step is defined by its inputs, the logic it applies and its 
 outputs. Here is a very simple example of such a step:
@@ -117,13 +117,15 @@ def my_second_step(input_int: int, input_float: float) -> Output(output_int=int,
 
 Now we can go ahead and create a pipeline with our two steps to make sure they work.
 
-### Define the Pipeline
+## Pipeline
 
 Here we define the pipeline. This is done implementation agnostic by simply routing outputs through the 
 steps within the pipeline. You can think of this as a recipe for how we want data to flow through our steps.
 
 
 ```python
+from zenml.pipelines import pipeline
+
 @pipeline
 def first_pipeline(
     step_1,
@@ -186,12 +188,12 @@ first_pipeline(step_1=my_first_step(), step_2=my_second_step()).run()
 ```
 </details>
 
-# Configure at Runtime
+# Runtime Configuration
 
 A ZenML pipeline clearly separated business logic from parameter configuration. Business logic is what defines 
 a step and the pipeline. Step and pipeline configurations are used to dynamically set parameters at runtime. 
 
-### Step configuration
+## Step configuration
 
 You can easily add a configuration to a step by creating your configuration as a subclass to the BaseStepConfig. 
 When such a config object is passed to a step, it is not treated like other artifacts. Instead, it gets passed
@@ -223,30 +225,6 @@ first_pipeline(step_1=my_first_step(),
 
 This functionality is based on [Step Fixtures](#step-fixtures) which you will learn more about below.
 
-### Naming a pipeline run
-
-When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current date and time as the name for the 
-pipeline run. In order to change the name for a run, simply pass it as a parameter to the `run()` function:
-
-```python
-first_pipeline_instance.run(run_name="custom_pipeline_run_name")
-```
-
-{% hint style="warning" %}
-Pipeline run names must be unique, so make sure to compute it dynamically if you plan to run your pipeline multiple 
-times.
-{% endhint %}
-
-Once the pipeline run is finished we can easily access this specific run during our post-execution workflow:
-
-```python
-from zenml.repository import Repository
-
-repo = Repository()
-pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
-run = pipeline.get_run("custom_pipeline_run_name")
-```
-
 ### Setting step parameters using a config file
 
 In addition to setting parameters for your pipeline steps in code as seen above, ZenML also allows you to use a 
@@ -277,6 +255,30 @@ Use the configuration file by calling the pipeline method `with_config(...)`:
 first_pipeline(step_1=my_first_step(),
                step_2=my_second_step()
                ).with_config("path_to_config.yaml").run()
+```
+
+## Pipeline Run Name
+
+When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current date and time as the name for the 
+pipeline run. In order to change the name for a run, simply pass it as a parameter to the `run()` function:
+
+```python
+first_pipeline_instance.run(run_name="custom_pipeline_run_name")
+```
+
+{% hint style="warning" %}
+Pipeline run names must be unique, so make sure to compute it dynamically if you plan to run your pipeline multiple 
+times.
+{% endhint %}
+
+Once the pipeline run is finished we can easily access this specific run during our post-execution workflow:
+
+```python
+from zenml.repository import Repository
+
+repo = Repository()
+pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
+run = pipeline.get_run("custom_pipeline_run_name")
 ```
 
 <details>
@@ -330,7 +332,7 @@ steps:
 ```
 </details>
 
-# Interact with completed runs
+# Post Execution Workflow
 
 After executing a pipeline, the user needs to be able to fetch it from history and perform certain tasks. This page 
 captures these workflows at an orbital level.
@@ -410,13 +412,16 @@ output = step.output
 output.read()  
 ```
 
-# Visualizing Results
+# Visualizers
 ### What is a Visualizer?
 
 Sometimes it makes sense in the [post-execution workflow](basics/post-execution-workflow.md) to actually visualize step outputs. 
 ZenML has a standard, extensible interface for all visualizers:
 
 ```python
+from abc import abstractmethod
+from typing import Any
+
 class BaseVisualizer:
     """Base class for all ZenML Visualizers."""
 
@@ -461,7 +466,7 @@ It produces the following visualization:
 
 ![Statistics for boston housing dataset](../assets/statistics-boston-housing.png)
 
-# How data flows through steps
+# Materializers
 
 As described above a ZenML pipeline is built in a data centric way. The outputs and inputs
 of steps define how steps are connected and the order in which they are executed. Each step should be considered as 
@@ -696,7 +701,7 @@ first_pipeline(
 ```
 </details>
 
-# Caching and ZenML
+# Caching
 
 Machine learning pipelines are rerun many times over throughout their development lifecycle. Prototyping is often a 
 fast and iterative process that benefits a lot from caching. This makes caching a very powerful tool. (Read 
@@ -1070,7 +1075,7 @@ first_pipeline(step_1=my_first_step(),
 ```
 </details>
 
-# Using the Class Based API
+# Class Based API
 
 The class-based ZenML API is defined by the base classes BaseStep and BasePipeline. You'll be subclassing these instead 
 of using the `step` and `pipeline` decorators that you have used in the previous sections. These interfaces allow our 
