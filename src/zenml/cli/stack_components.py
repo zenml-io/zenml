@@ -208,31 +208,31 @@ def generate_stack_component_register_command(
             cli_utils.error(str(e))
             return
 
-        flavor = Repository().zen_store.get_flavor_by_name_and_type(
+        flavor_wrapper = Repository().zen_store.get_flavor_by_name_and_type(
             flavor_name=flavor,
             component_type=component_type,
         )
         try:
-            component = flavor.to_flavor()(name=name, **parsed_args)
+            component = flavor_wrapper.to_flavor()(name=name, **parsed_args)
             Repository().register_stack_component(component)
             cli_utils.declare(
                 f"Successfully registered {display_name} `{name}`."
             )
         except (ModuleNotFoundError, ImportError, NotImplementedError):
-            if flavor.integration:
+            if flavor_wrapper.integration:
                 cli_utils.error(
-                    f"The {component_type} flavor '{flavor.name}' is a part of "
-                    f"ZenML's '{flavor.integration}' integration, which is "
-                    f"currently not installed on your system. You can install "
-                    f"it by executing: 'zenml integration install "
-                    f"{flavor.integration}'."
+                    f"The {component_type} flavor '{flavor_wrapper.name}' is "
+                    f"a part of ZenML's '{flavor_wrapper.integration}' "
+                    f"integration, which is currently not installed on your "
+                    f"system. You can install it by executing: 'zenml "
+                    f"integration install {flavor_wrapper.integration}'."
                 )
             else:
                 cli_utils.error(
-                    f"The custom flavor '{flavor.name}' can not be used as "
-                    f"it can not be imported in its current state. Please make "
-                    f"sure that the implementation is in a state which can be "
-                    f"imported as a module."
+                    f"The custom flavor '{flavor_wrapper.name}' can not be "
+                    f"used as it can not be imported in its current state. "
+                    f"Please make sure that the implementation is in a state "
+                    f"which can be imported as a module."
                 )
 
     return register_stack_component_command

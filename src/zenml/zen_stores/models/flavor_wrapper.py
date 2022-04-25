@@ -36,7 +36,7 @@ class FlavorWrapper(BaseModel):
             source=flavor.__module__ + "." + flavor.__name__,
         )
 
-    def to_flavor(self):
+    def to_flavor(self) -> Type[StackComponent]:
         from zenml.utils.source_utils import load_source_path_class
 
-        return load_source_path_class(source=self.source)
+        return load_source_path_class(source=self.source)  # noqa

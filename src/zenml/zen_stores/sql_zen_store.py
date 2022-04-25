@@ -1132,7 +1132,7 @@ class SqlZenStore(BaseZenStore):
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-        integration: str = None,
+        integration: str = "",
     ) -> FlavorWrapper:
         with Session(self.engine) as session:
             existing_flavor = session.exec(

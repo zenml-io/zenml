@@ -35,7 +35,7 @@ class GcpIntegration(Integration):
     REQUIREMENTS = ["gcsfs"]
 
     @classmethod
-    def declare(cls, store: "BaseZenStore"):
+    def declare(cls, store: "BaseZenStore") -> None:
         """Declare the stack component flavors for the GCP integration."""
         store.create_flavor(
             name=GCP_ARTIFACT_STORE_FLAVOR,

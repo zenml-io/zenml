@@ -34,7 +34,7 @@ class FeastIntegration(Integration):
     REQUIREMENTS = ["feast[redis]>=0.19.4", "redis-server"]
 
     @classmethod
-    def declare(cls, store: "BaseZenStore"):
+    def declare(cls, store: "BaseZenStore") -> None:
         """Declare the stack component flavors for the Feast integration."""
         store.create_flavor(
             name=FEAST_FEATURE_STORE_FLAVOR,

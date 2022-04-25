@@ -35,7 +35,7 @@ class StackWrapper(BaseModel):
             ],
         )
 
-    def to_stack(self):
+    def to_stack(self) -> Stack:
         stack_components = {}
         for component_wrapper in self.components:
             component_type = component_wrapper.type

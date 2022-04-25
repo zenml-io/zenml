@@ -40,7 +40,7 @@ class SeldonIntegration(Integration):
         from zenml.integrations.seldon import services  # noqa
 
     @classmethod
-    def declare(cls, store: "BaseZenStore"):
+    def declare(cls, store: "BaseZenStore") -> None:
         """Declare the stack component flavors for the Seldon Core."""
         store.create_flavor(
             name=SELDON_MODEL_DEPLOYER_FLAVOR,

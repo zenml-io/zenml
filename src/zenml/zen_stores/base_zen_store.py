@@ -594,7 +594,7 @@ class BaseZenStore(ABC):
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-        integration: str = None,
+        integration: str = "",
     ) -> FlavorWrapper:
         pass
 

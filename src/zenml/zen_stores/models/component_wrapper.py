@@ -44,7 +44,7 @@ class ComponentWrapper(BaseModel):
             ),
         )
 
-    def to_component(self):
+    def to_component(self) -> StackComponent:
         from zenml.repository import Repository
 
         flavor_wrapper = Repository().zen_store.get_flavor_by_name_and_type(

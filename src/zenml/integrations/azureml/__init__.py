@@ -33,7 +33,7 @@ class AzureMLIntegration(Integration):
     REQUIREMENTS = ["azureml-core==1.39.0.post1"]
 
     @classmethod
-    def declare(cls, store: "BaseZenStore"):
+    def declare(cls, store: "BaseZenStore") -> None:
         """Declare the stack component flavors for the AzureML integration."""
         store.create_flavor(
             name=AZUREML_STEP_OPERATOR_FLAVOR,

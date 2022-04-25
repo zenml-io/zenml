@@ -36,7 +36,7 @@ class KubeflowIntegration(Integration):
     REQUIREMENTS = ["kfp==1.8.9"]
 
     @classmethod
-    def declare(cls, store: "BaseZenStore"):
+    def declare(cls, store: "BaseZenStore") -> None:
         """Declare the stack component flavors for the Kubeflow integration."""
         store.create_flavor(
             name=KUBEFLOW_METADATA_STORE_FLAVOR,
