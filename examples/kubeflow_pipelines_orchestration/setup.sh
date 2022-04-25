@@ -10,7 +10,7 @@ setup_stack () {
   zenml stack register local_kubeflow_stack \
       -m default \
       -a default \
-      -o default \
+      -o kubeflow_orchestrator \
       -c local_registry || \
     msg "${WARNING}Reusing preexisting stack ${NOFORMAT}local_kubeflow_stack"
 

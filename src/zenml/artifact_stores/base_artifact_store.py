@@ -84,68 +84,60 @@ class BaseArtifactStore(StackComponent, ABC):
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
 
-    @staticmethod
-    def open(name: PathType, mode: str = "r") -> Any:
+    def open(self, name: PathType, mode: str = "r") -> Any:
         """Open a file at the given path."""
         raise NotImplementedError()
 
-    @staticmethod
-    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def copyfile(
+        self, src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Copy a file from the source to the destination."""
         raise NotImplementedError()
 
-    @staticmethod
-    def exists(path: PathType) -> bool:
+    def exists(self, path: PathType) -> bool:
         """Returns `True` if the given path exists."""
         raise NotImplementedError()
 
-    @staticmethod
-    def glob(pattern: PathType) -> List[PathType]:
+    def glob(self, pattern: PathType) -> List[PathType]:
         """Return the paths that match a glob pattern."""
         raise NotImplementedError()
 
-    @staticmethod
-    def isdir(path: PathType) -> bool:
+    def isdir(self, path: PathType) -> bool:
         """Returns whether the given path points to a directory."""
         raise NotImplementedError()
 
-    @staticmethod
-    def listdir(path: PathType) -> List[PathType]:
+    def listdir(self, path: PathType) -> List[PathType]:
         """Returns a list of files under a given directory in the filesystem."""
         raise NotImplementedError()
 
-    @staticmethod
-    def makedirs(path: PathType) -> None:
+    def makedirs(self, path: PathType) -> None:
         """Make a directory at the given path, recursively creating parents."""
         raise NotImplementedError()
 
-    @staticmethod
-    def mkdir(path: PathType) -> None:
+    def mkdir(self, path: PathType) -> None:
         """Make a directory at the given path; parent directory must exist."""
         raise NotImplementedError()
 
-    @staticmethod
-    def remove(path: PathType) -> None:
+    def remove(self, path: PathType) -> None:
         """Remove the file at the given path. Dangerous operation."""
         raise NotImplementedError()
 
-    @staticmethod
-    def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def rename(
+        self, src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Rename source file to destination file."""
         raise NotImplementedError()
 
-    @staticmethod
-    def rmtree(path: PathType) -> None:
+    def rmtree(self, path: PathType) -> None:
         """Deletes dir recursively. Dangerous operation."""
         raise NotImplementedError()
 
-    @staticmethod
-    def stat(path: PathType) -> Any:
+    def stat(self, path: PathType) -> Any:
         """Return the stat descriptor for a given file path."""
         raise NotImplementedError()
 
-    @staticmethod
     def walk(
+        self,
         top: PathType,
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
