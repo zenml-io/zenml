@@ -308,6 +308,7 @@ In total the step functions can be supplied with 3 arguments here:
 {% tabs %}
 {% tab title="config.yaml" %}
 ```yaml
+steps:
   step_2:
     source: my_second_step
     parameters:
@@ -366,7 +367,7 @@ def my_second_step(config: SecondStepConfig, input_int: int,
 {% endtab %}
 {% endtabs %}
 
-When you put it all together you would have something that looks like this:
+### When you put it all together you would have something that looks like this:
 
 {% tabs %}
 {% tab title="CLI Command" %}
@@ -456,7 +457,7 @@ def first_pipeline(
     step_2(output_1, output_2)
 ```
 {% endtab %}
-{% tab title="Running from python" %}
+{% tab title="Equivalent run from python" %}
 This is what the same pipeline run would look like if triggered from within python.
 ```python
 first_pipeline(
