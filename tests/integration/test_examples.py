@@ -75,7 +75,7 @@ class ExampleIntegrationTestConfiguration(NamedTuple):
     name: str
     validation_function: Callable[[Repository], None]
     setup_function: Optional[Callable[[Repository], None]] = None
-    skip_on_windows = False
+    skip_on_windows: bool = False
 
 
 examples = [
