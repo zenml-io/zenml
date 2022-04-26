@@ -464,6 +464,10 @@ def import_python_file(file_path: str) -> types.ModuleType:
     sys.path.append(os.path.dirname(file_path))
     module_name = os.path.splitext(os.path.basename(file_path))[0]
 
+    # In case the module is already fully or partially imported and the module
+    #  path is something like materializer.materializer the full path needs to
+    #  be checked for in the sys.modules to avoid getting an empty namespace
+    #  module
     full_module_path = os.path.splitext(
         os.path.relpath(file_path, os.getcwd())
     )[0].replace("/", ".")
