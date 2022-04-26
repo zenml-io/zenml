@@ -5,12 +5,12 @@ description: Skip materialization when needed.
 # Skip materialization
 
 While in most cases, [materializers](../basics/custom-materializer.md) should be used to control 
-how artifacts are consumed and output from steps in a pipeline, there is some times a 
+how artifacts are consumed and output from steps in a pipeline, you will sometimes 
 need to have a completely non-materialized artifact in a step.
 
-A non-materialized artifact is `BaseArtifact` (or any of its subclasses) and has a propertly `uri` that points 
+A non-materialized artifact is a `BaseArtifact` (or any of its subclasses) and has a property `uri` that points 
 to the unique path in the [artifact store](../introduction/core-concepts.md) where the 
-artifact is supposed to be stored. One can use a non-materialized artifact by simply specifying it as the type in
+artifact is stored. One can use a non-materialized artifact by simply specifying it as the type in
 the step:
 
 ```python
@@ -25,15 +25,15 @@ def my_step(my_artifact: DataArtifact)  # rather than pd.DataFrame
 The list of raw artifact types can be found in `zenml.artifacts.*` and include `ModelArtifact`, `DataArtifact` etc. 
 Materializers link pythonic types to these artifact types implicitly, e.g., a `keras.model` or `torch.nn.Module` are pythonic 
 types that are both linked to `ModelArtifact` implicitly via their materializers. When using artifacts directly, one must 
-be aware of which type they are by looking at the previous steps materializer, i.e., if the previous step produces a 
+be aware of which type they are by looking at the previous step's materializer: if the previous step produces a 
 `ModelArtifact` then you should specify `ModelArtifact` in a non-materialized step.
 
-Be careful: Using artifacts directly like this might have unintended consequences to downstream 
+Be careful: Using artifacts directly like this might have unintended consequences for downstream 
 tasks that rely on materialized artifacts.
 
 ## A simple example
 
-A simple examples show-casing how to use non-materialized artifacts:
+A simple example can suffice to showcase how to use non-materialized artifacts:
 
 ```python
 from typing import Dict, List
@@ -74,6 +74,6 @@ s1 -> s3
 s2 -> s4
 ```
 
-`s1` and `s2` produce identical artifacts, however, `s3` consumes materialized artifacts 
-while `s4` consumes non-materialized artifacts. `s4` will can now use the `dict_.uri` 
+`s1` and `s2` produce identical artifacts, however `s3` consumes materialized artifacts 
+while `s4` consumes non-materialized artifacts. `s4` can now use the `dict_.uri` 
 and `list_.uri` paths directly rather than their materialized counterparts.
