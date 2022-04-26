@@ -114,7 +114,11 @@ class KubeflowMetadataStore(BaseMetadataStore):
     def kubernetes_context(self) -> str:
         """Returns the kubernetes context to the cluster where the Kubeflow
         Pipelines services are running."""
-        return self.kfp_orchestrator.kubernetes_context
+        kubernetes_context = self.kfp_orchestrator.kubernetes_context
+
+        # will never happen, but mypy doesn't know that
+        assert kubernetes_context is not None
+        return kubernetes_context
 
     @property
     def root_directory(self) -> str:

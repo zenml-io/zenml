@@ -588,6 +588,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 registry_config_path=self._k3d_registry_config_path,
             )
             kubernetes_context = self.kubernetes_context
+
+            # will never happen, but mypy doesn't know that
+            assert kubernetes_context is not None
+
             local_deployment_utils.deploy_kubeflow_pipelines(
                 kubernetes_context=kubernetes_context
             )
@@ -635,6 +639,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "resources provisioned for local deployment."
             )
 
+        kubernetes_context = self.kubernetes_context
+
+        # will never happen, but mypy doesn't know that
+        assert kubernetes_context is not None
+
         if self.is_local and not self.is_cluster_running:
             # don't resume any resources if using a remote KFP installation
             local_deployment_utils.start_k3d_cluster(
@@ -642,7 +651,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
             local_deployment_utils.wait_until_kubeflow_pipelines_ready(
-                kubernetes_context=self.kubernetes_context
+                kubernetes_context=kubernetes_context
             )
 
         if not self.is_daemon_running:
@@ -650,7 +659,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 pid_file_path=self._pid_file_path,
                 log_file_path=self.log_file,
                 port=self._get_kfp_ui_daemon_port(),
-                kubernetes_context=self.kubernetes_context,
+                kubernetes_context=kubernetes_context,
             )
 
     def suspend(self) -> None:

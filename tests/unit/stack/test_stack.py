@@ -80,7 +80,7 @@ def test_initializing_a_stack_from_components():
 def test_initializing_a_stack_with_missing_components():
     """Tests that initializing a stack with missing components fails."""
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components={})
+        Stack.from_components(name="", components={}).validate()
 
 
 def test_initializing_a_stack_with_wrong_components():
@@ -95,14 +95,7 @@ def test_initializing_a_stack_with_wrong_components():
     }
 
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components=components)
-
-
-def test_stack_validates_when_initialized(mocker):
-    """Tests that a stack is validated when it's initialized."""
-    mocker.patch.object(Stack, "validate")
-    Stack.default_local_stack()
-    Stack.validate.assert_called_once()
+        Stack.from_components(name="", components=components).validate()
 
 
 def test_stack_returns_all_its_components():

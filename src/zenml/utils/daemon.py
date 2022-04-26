@@ -205,7 +205,11 @@ else:
             devnull = os.devnull
 
         devnull_fd = os.open(devnull, os.O_RDWR)
-        log_fd = os.open(log_file, os.O_CREAT | os.O_RDWR | os.O_APPEND) if log_file else None
+        log_fd = (
+            os.open(log_file, os.O_CREAT | os.O_RDWR | os.O_APPEND)
+            if log_file
+            else None
+        )
         out_fd = log_fd or devnull_fd
 
         os.dup2(devnull_fd, sys.stdin.fileno())

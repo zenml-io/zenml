@@ -48,7 +48,7 @@ def test_kubeflow_orchestrator_stack_validation():
             orchestrator=orchestrator,
             metadata_store=metadata_store,
             artifact_store=artifact_store,
-        )
+        ).validate()
 
     with does_not_raise():
         # valid stack with container registry
@@ -58,4 +58,4 @@ def test_kubeflow_orchestrator_stack_validation():
             metadata_store=metadata_store,
             artifact_store=artifact_store,
             container_registry=container_registry,
-        )
+        ).validate()
