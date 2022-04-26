@@ -1149,7 +1149,7 @@ class SqlZenStore(BaseZenStore):
             sql_flavor = ZenFlavor(
                 name=name,
                 source=source,
-                stack_component_type=StackComponentType,
+                type=stack_component_type,
                 integration=integration,
             )
             wrapper_flavor = FlavorWrapper(**sql_flavor.dict())

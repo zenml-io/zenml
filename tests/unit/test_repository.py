@@ -251,7 +251,7 @@ def test_registering_a_stack_registers_unregistered_components(clean_repo):
 
         clean_repo.get_stack_component(
             component_type=StackComponentType.ORCHESTRATOR,
-            name="new_orchestrator_name"
+            name="new_orchestrator_name",
         )
 
     # if one of the components has a name that is already registered, but it's
@@ -303,7 +303,6 @@ def test_getting_a_nonexisting_stack_component(clean_repo):
             component_type=StackComponentType.ORCHESTRATOR,
             name="definitely_not_a_registered_orchestrator",
         )
-
 
 
 def test_registering_a_stack_component_with_existing_name(clean_repo):

@@ -45,10 +45,7 @@ from zenml.zen_stores import (
     RestZenStore,
     SqlZenStore,
 )
-from zenml.zen_stores.models import (
-    ComponentWrapper, StackWrapper,
-    FlavorWrapper
-)
+from zenml.zen_stores.models import ComponentWrapper, StackWrapper
 
 logger = get_logger(__name__)
 
@@ -431,11 +428,11 @@ def test_flavor_management(fresh_zen_store):
     assert all(
         f.type == StackComponentType.ARTIFACT_STORE
         for f in default_artifact_store_flavors
-        )
-    assert any(f.name == 'local' for f in default_artifact_store_flavors)
+    )
+    assert any(f.name == "local" for f in default_artifact_store_flavors)
 
     local_artifact_store_flavor = fresh_zen_store.get_flavor_by_name_and_type(
-        flavor_name='local',
+        flavor_name="local",
         component_type=StackComponentType.ARTIFACT_STORE,
     )
 
@@ -445,21 +442,21 @@ def test_flavor_management(fresh_zen_store):
     # Check for non-existing flavors
     with pytest.raises(KeyError):
         fresh_zen_store.get_flavor_by_name_and_type(
-            flavor_name='non_existing_flavor',
+            flavor_name="non_existing_flavor",
             component_type=StackComponentType.ARTIFACT_STORE,
         )
 
     fresh_zen_store.create_flavor(
-        name='test',
-        source='test_artifact_store.TestArtifactStore',
+        name="test",
+        source="test_artifact_store.TestArtifactStore",
         stack_component_type=StackComponentType.ARTIFACT_STORE,
     )
 
-    # Check whether the registeration of new flavors is working
+    # Check whether the registration of new flavors is working
     with pytest.raises(EntityExistsError):
         fresh_zen_store.create_flavor(
-            name='test',
-            source='test_artifact_store.TestArtifactStore',
+            name="test",
+            source="test_artifact_store.TestArtifactStore",
             stack_component_type=StackComponentType.ARTIFACT_STORE,
         )
 
@@ -468,10 +465,12 @@ def test_flavor_management(fresh_zen_store):
     )
     num_new_artifact_store_flavors = len(new_artifact_store_flavors)
 
-    assert num_new_artifact_store_flavors == num_default_artifact_store_flavors + 1
+    assert (
+        num_new_artifact_store_flavors == num_default_artifact_store_flavors + 1
+    )
 
     new_artifact_store_flavor = fresh_zen_store.get_flavor_by_name_and_type(
-        flavor_name='test',
+        flavor_name="test",
         component_type=StackComponentType.ARTIFACT_STORE,
     )
     assert new_artifact_store_flavor

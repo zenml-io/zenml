@@ -837,7 +837,7 @@ class RestZenStore(BaseZenStore):
         component_type: StackComponentType,
     ) -> FlavorWrapper:
         return FlavorWrapper.parse_obj(
-            self.get(f"{STACK_COMPONENTS}/{component_type}/{flavor_name}")
+            self.get(f"{FLAVORS}/{component_type}/{flavor_name}")
         )
 
     # Implementation specific methods:
