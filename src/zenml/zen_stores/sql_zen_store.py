@@ -139,6 +139,11 @@ class SqlZenStore(BaseZenStore):
         if local_path:
             utils.create_dir_recursive_if_not_exists(str(local_path.parent))
 
+        # we need to remove `skip_default_registrations` from the kwargs,
+        # because SQLModel will raise an error if it is present
+        sql_kwargs = kwargs.copy()
+        sql_kwargs.pop("skip_default_registrations", False)
+        self.engine = create_engine(url, *args, **sql_kwargs)
         self.engine = create_engine(url, *args, **kwargs)
         SQLModel.metadata.create_all(self.engine)
         with Session(self.engine) as session:
@@ -165,6 +170,8 @@ class SqlZenStore(BaseZenStore):
                 "before using the store."
             )
         return self._url
+
+    # Static methods:
 
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
@@ -298,6 +305,72 @@ class SqlZenStore(BaseZenStore):
             session.add(new_component)
             session.commit()
 
+    def update_stack_component(
+        self,
+        name: str,
+        component_type: StackComponentType,
+        component: StackComponentWrapper,
+    ) -> Dict[str, str]:
+        """Update a stack component.
+
+        Args:
+            name: The original name of the stack component.
+            component_type: The type of the stack component to update.
+            component: The new component to update with.
+
+        Raises:
+            KeyError: If no stack component exists with the given name.
+        """
+        with Session(self.engine) as session:
+            updated_component = session.exec(
+                select(ZenStackComponent)
+                .where(ZenStackComponent.component_type == component_type)
+                .where(ZenStackComponent.name == name)
+            ).first()
+
+            if not updated_component:
+                raise KeyError(
+                    f"Unable to update stack component (type: {component.type}) "
+                    f"with name '{component.name}': No existing stack component "
+                    f"found with this name."
+                )
+
+            new_name_component = session.exec(
+                select(ZenStackComponent)
+                .where(ZenStackComponent.component_type == component_type)
+                .where(ZenStackComponent.name == component.name)
+            ).first()
+            if (name != component.name) and new_name_component is not None:
+                raise StackComponentExistsError(
+                    f"Unable to update stack component (type: "
+                    f"{component.type}) with name '{component.name}': Found "
+                    f"existing stack component with this name."
+                )
+
+            updated_component.configuration = component.config
+
+            # handle any potential renamed component
+            updated_component.name = component.name
+
+            # rename components inside stacks
+            updated_stack_definitions = session.exec(
+                select(ZenStackDefinition)
+                .where(ZenStackDefinition.component_type == component_type)
+                .where(ZenStackDefinition.component_name == name)
+            ).all()
+            for stack_definition in updated_stack_definitions:
+                stack_definition.component_name = component.name
+                session.add(stack_definition)
+
+            session.add(updated_component)
+            session.commit()
+        logger.info(
+            "Updated stack component with type '%s' and name '%s'.",
+            component_type,
+            component.name,
+        )
+        return {component.type.value: component.flavor}
+
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
@@ -326,20 +399,33 @@ class SqlZenStore(BaseZenStore):
 
     # Private interface implementations:
 
-    def _create_stack(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
+    def _save_stack(
+        self,
+        name: str,
+        stack_configuration: Dict[StackComponentType, str],
     ) -> None:
-        """Add a stack to storage.
+        """Save a stack.
 
         Args:
             name: The name to save the stack as.
             stack_configuration: Dict[StackComponentType, str] to persist.
         """
         with Session(self.engine) as session:
-            stack = ZenStack(name=name, created_by=1)
-            session.add(stack)
+            stack = session.exec(
+                select(ZenStack).where(ZenStack.name == name)
+            ).first()
+            if stack is None:
+                stack = ZenStack(name=name, created_by=1)
+                session.add(stack)
             for ctype, cname in stack_configuration.items():
-                if cname is not None:
+                statement = (
+                    select(ZenStackDefinition)
+                    .where(ZenStackDefinition.stack_name == name)
+                    .where(ZenStackDefinition.component_type == ctype)
+                )
+                results = session.exec(statement)
+                component = results.one_or_none()
+                if component is None:
                     session.add(
                         ZenStackDefinition(
                             stack_name=name,
@@ -347,6 +433,10 @@ class SqlZenStore(BaseZenStore):
                             component_name=cname,
                         )
                     )
+                else:
+                    component.component_name = cname
+                    component.component_type = ctype
+                    session.add(component)
             session.commit()
 
     def _get_component_flavor_and_config(

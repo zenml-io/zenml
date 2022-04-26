@@ -813,9 +813,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         return self._stack_from_wrapper(self.zen_store.get_stack(name))
 
     def register_stack(self, stack: Stack) -> None:
-        """Registers a stack and it's components.
+        """Registers a stack and its components.
 
-        If any of the stacks' components aren't registered in the repository
+        If any of the stack's components aren't registered in the repository
         yet, this method will try to register them as well.
 
         Args:
@@ -830,6 +830,23 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         metadata = self.zen_store.register_stack(StackWrapper.from_stack(stack))
         metadata["store_type"] = self.active_profile.store_type.value
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+
+    def update_stack(self, name: str, stack: Stack) -> None:
+        """Updates a stack and its components.
+
+        Args:
+            name: The original name of the stack.
+            stack: The new stack to use as the updated version.
+
+        Raises:
+            KeyError: If no stack exists for the given name."""
+        metadata = self.zen_store.update_stack(
+            name, StackWrapper.from_stack(stack)
+        )
+        if self.active_stack_name == name:
+            self.activate_stack(stack.name)
+        metadata["store_type"] = self.active_profile.store_type.value
+        track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
 
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack.
@@ -853,6 +870,35 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 "with this name could be found.",
                 name,
             )
+
+    def update_stack_component(
+        self,
+        name: str,
+        component_type: StackComponentType,
+        component: StackComponent,
+    ) -> None:
+        """Updates a stack component.
+
+        Args:
+            name: The original name of the stack component.
+            component_type: The type of the component to update.
+            component: The new component to update with.
+
+        Raises:
+            KeyError: If no such stack component exists."""
+        self.zen_store.update_stack_component(
+            name,
+            component_type,
+            StackComponentWrapper.from_component(component),
+        )
+        analytics_metadata = {
+            "type": component.TYPE.value,
+            "flavor": component.FLAVOR,
+        }
+        track_event(
+            AnalyticsEvent.UPDATED_STACK_COMPONENT,
+            metadata=analytics_metadata,
+        )
 
     def get_stack_components(
         self, component_type: StackComponentType

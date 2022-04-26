@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import time
 from importlib import import_module
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Type
 
 import click
 from rich.markdown import Markdown
@@ -21,10 +21,34 @@ from rich.markdown import Markdown
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.console import console
+from zenml.constants import MANDATORY_COMPONENT_PROPERTIES
 from zenml.enums import StackComponentType
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
+
+
+def _get_required_properties(
+    component_class: Type[StackComponent],
+) -> List[str]:
+    """Gets the required properties for a stack component."""
+    return [
+        field_name
+        for field_name, field in component_class.__fields__.items()
+        if (field.required is True)
+        and field_name not in MANDATORY_COMPONENT_PROPERTIES
+    ]
+
+
+def _get_available_properties(
+    component_class: Type[StackComponent],
+) -> List[str]:
+    """Gets the available non-mandatory properties for a stack component."""
+    return [
+        field_name
+        for field_name, _ in component_class.__fields__.items()
+        if field_name not in MANDATORY_COMPONENT_PROPERTIES
+    ]
 
 
 def _component_display_name(
@@ -99,7 +123,10 @@ def generate_stack_component_describe_command(
         required=False,
     )
     def describe_stack_component_command(name: Optional[str]) -> None:
-        """Prints details about the active/specified component."""
+        """Prints details about the active/specified component.
+
+        Args:
+            name: Name of the component to describe."""
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
@@ -201,41 +228,161 @@ def generate_stack_component_register_command(
     ) -> None:
         """Registers a stack component."""
         cli_utils.print_active_profile()
-        try:
-            parsed_args = cli_utils.parse_unknown_options(args)
-        except AssertionError as e:
-            cli_utils.error(str(e))
-            return
+        with console.status(f"Registering {display_name} '{name}'...\n"):
+            try:
+                parsed_args = cli_utils.parse_unknown_options(args)
+            except AssertionError as e:
+                cli_utils.error(str(e))
+                return
 
-        from zenml.stack.stack_component_class_registry import (
-            StackComponentClassRegistry,
-        )
+            from zenml.stack.stack_component_class_registry import (
+                StackComponentClassRegistry,
+            )
 
-        component_class = StackComponentClassRegistry.get_class(
-            component_type=component_type, component_flavor=flavor
-        )
-        component = component_class(name=name, **parsed_args)
-        Repository().register_stack_component(component)
-        cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
+            component_class = StackComponentClassRegistry.get_class(
+                component_type=component_type, component_flavor=flavor
+            )
+            component = component_class(name=name, **parsed_args)
+            Repository().register_stack_component(component)
+            cli_utils.declare(
+                f"Successfully registered {display_name} `{name}`."
+            )
 
     return register_stack_component_command
+
+
+def generate_stack_component_update_command(
+    component_type: StackComponentType,
+) -> Callable[[str, List[str]], None]:
+    """Generates an `update` command for the specific stack component type."""
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name",
+        type=str,
+        required=True,
+    )
+    @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+    def update_stack_component_command(name: str, args: List[str]) -> None:
+        """Updates a stack component."""
+        cli_utils.print_active_profile()
+        with console.status(f"Updating {display_name} '{name}'...\n"):
+            repo = Repository()
+            current_component = repo.get_stack_component(component_type, name)
+            if current_component is None:
+                cli_utils.error(f"No {display_name} found for name '{name}'.")
+
+            try:
+                parsed_args = cli_utils.parse_unknown_options(args)
+            except AssertionError as e:
+                cli_utils.error(str(e))
+                return
+            for prop in MANDATORY_COMPONENT_PROPERTIES:
+                if prop in parsed_args:
+                    cli_utils.error(
+                        f"Cannot update mandatory property '{prop}' of '{name}' {current_component.TYPE}. "
+                    )
+
+            from zenml.stack.stack_component_class_registry import (
+                StackComponentClassRegistry,
+            )
+
+            component_class = StackComponentClassRegistry.get_class(
+                component_type=component_type,
+                component_flavor=current_component.FLAVOR,
+            )
+            available_properties = _get_available_properties(component_class)
+            for prop in parsed_args.keys():
+                if (prop not in available_properties) and (
+                    len(available_properties) > 0
+                ):
+                    cli_utils.error(
+                        f"You cannot update the {display_name} `{current_component.name}` with property '{prop}'. You can only update the following properties: {available_properties}."
+                    )
+                elif prop not in available_properties:
+                    cli_utils.error(
+                        f"You cannot update the {display_name} `{current_component.name}` with property '{prop}' as this {display_name} has no optional properties that can be configured."
+                    )
+                else:
+                    continue
+
+            updated_component = current_component.copy(update=parsed_args)
+
+            repo.update_stack_component(
+                name, updated_component.TYPE, updated_component
+            )
+            cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
+
+    return update_stack_component_command
+
+
+def generate_stack_component_rename_command(
+    component_type: StackComponentType,
+) -> Callable[[str, str], None]:
+    """Generates a `rename` command for the specific stack component type."""
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name",
+        type=str,
+        required=True,
+    )
+    @click.argument(
+        "new_name",
+        type=str,
+        required=True,
+    )
+    def rename_stack_component_command(name: str, new_name: str) -> None:
+        """Rename a stack component."""
+        cli_utils.print_active_profile()
+        with console.status(f"Renaming {display_name} '{name}'...\n"):
+            repo = Repository()
+            current_component = repo.get_stack_component(component_type, name)
+            if current_component is None:
+                cli_utils.error(f"No {display_name} found for name '{name}'.")
+
+            registered_components = {
+                component.name
+                for component in repo.get_stack_components(component_type)
+            }
+            if new_name in registered_components:
+                cli_utils.error(
+                    f"Unable to rename '{name}' {display_name} to '{new_name}': \nA component of type '{display_name}' with the name '{new_name}' already exists. \nPlease choose a different name."
+                )
+
+            renamed_component = current_component.copy(
+                update={"name": new_name}
+            )
+
+            repo.update_stack_component(
+                name=name,
+                component_type=component_type,
+                component=renamed_component,
+            )
+            cli_utils.declare(
+                f"Successfully renamed {display_name} `{name}` to `{new_name}`."
+            )
+
+    return rename_stack_component_command
 
 
 def generate_stack_component_delete_command(
     component_type: StackComponentType,
 ) -> Callable[[str], None]:
     """Generates a `delete` command for the specific stack component type."""
+    display_name = _component_display_name(component_type)
 
     @click.argument("name", type=str)
     def delete_stack_component_command(name: str) -> None:
         """Deletes a stack component."""
         cli_utils.print_active_profile()
-        Repository().deregister_stack_component(
-            component_type=component_type,
-            name=name,
-        )
-        display_name = _component_display_name(component_type)
-        cli_utils.declare(f"Deleted {display_name}: {name}")
+
+        with console.status(f"Deleting {display_name} '{name}'...\n"):
+            Repository().deregister_stack_component(
+                component_type=component_type,
+                name=name,
+            )
+            cli_utils.declare(f"Deleted {display_name}: {name}")
 
     return delete_stack_component_command
 
@@ -452,6 +599,21 @@ def register_single_stack_component_cli_commands(
         context_settings=context_settings,
         help=f"Register a new {singular_display_name}.",
     )(register_command)
+
+    # zenml stack-component update
+    update_command = generate_stack_component_update_command(component_type)
+    context_settings = {"ignore_unknown_options": True}
+    command_group.command(
+        "update",
+        context_settings=context_settings,
+        help=f"Update a registered {singular_display_name}.",
+    )(update_command)
+
+    # zenml stack-component rename
+    rename_command = generate_stack_component_rename_command(component_type)
+    command_group.command(
+        "rename", help=f"Rename a registered {singular_display_name}."
+    )(rename_command)
 
     # zenml stack-component delete
     delete_command = generate_stack_component_delete_command(component_type)
