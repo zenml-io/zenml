@@ -11,20 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.constants import XGBOOST
+from zenml.integrations.constants import LIGHTGBM
 from zenml.integrations.integration import Integration
 
 
-class XgboostIntegration(Integration):
-    """Definition of xgboost integration for ZenML."""
+class LightGBMIntegration(Integration):
+    """Definition of lightgbm integration for ZenML."""
 
-    NAME = XGBOOST
-    REQUIREMENTS = ["xgboost>=1.0.0"]
+    NAME = LIGHTGBM
+    REQUIREMENTS = ["lightgbm>=1.0.0"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.xgboost import materializers  # noqa
+        from zenml.integrations.lightgbm import materializers  # noqa
 
 
-XgboostIntegration.check_installation()
+LightGBMIntegration.check_installation()

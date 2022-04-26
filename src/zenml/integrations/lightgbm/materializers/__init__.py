@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.xgboost.materializers.xgboost_booster_materializer import (  # noqa
-    XgboostBoosterMaterializer,
+from zenml.integrations.lightgbm.materializers.lightgbm_booster_materializer import (  # noqa
+    LightGBMBoosterMaterializer,
 )
-from zenml.integrations.xgboost.materializers.xgboost_dmatrix_materializer import (  # noqa
-    XgboostDMatrixMaterializer,
+from zenml.integrations.lightgbm.materializers.lightgbm_dataset_materializer import (  # noqa
+    LightGBMDatasetMaterializer,
 )

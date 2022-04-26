@@ -16,7 +16,7 @@ import os
 import tempfile
 from typing import Any, Type
 
-import lightgbm as lgbb
+import lightgbm as lgb
 
 from zenml.artifacts import DataArtifact
 from zenml.io import fileio
@@ -25,14 +25,14 @@ from zenml.materializers.base_materializer import BaseMaterializer
 DEFAULT_FILENAME = "data.binary"
 
 
-class LightGBMDMatrixMaterializer(BaseMaterializer):
-    """Materializer to read data to and from lightgbm.DMatrix"""
+class LightGBMDatasetMaterializer(BaseMaterializer):
+    """Materializer to read data to and from lightgbm.Dataset"""
 
-    ASSOCIATED_TYPES = (xgb.DMatrix,)
+    ASSOCIATED_TYPES = (lgb.Dataset,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> xgb.DMatrix:
-        """Reads a lightgbm.DMatrix binary file and loads it."""
+    def handle_input(self, data_type: Type[Any]) -> lgb.Dataset:
+        """Reads a lightgbm.Dataset binary file and loads it."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
@@ -42,23 +42,27 @@ class LightGBMDMatrixMaterializer(BaseMaterializer):
 
         # Copy from artifact store to temporary file
         fileio.copy(filepath, temp_file)
-        matrix = xgb.DMatrix(temp_file)
+        matrix = lgb.Dataset(temp_file, free_raw_data=False)
+        matrix.construct()
 
         # Cleanup and return
-        fileio.rmtree(temp_dir)
+        # fileio.rmtree(temp_dir)
         return matrix
 
-    def handle_return(self, matrix: xgb.DMatrix) -> None:
-        """Creates a binary serialization for a lightgbm.DMatrix object.
+    def handle_return(self, matrix: lgb.Dataset) -> None:
+        """Creates a binary serialization for a lightgbm.Dataset object.
 
         Args:
-            matrix: A lightgbm.DMatrix object.
+            matrix: A lightgbm.Dataset object.
         """
         super().handle_return(matrix)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
-        with tempfile.NamedTemporaryFile(mode="wb", delete=True) as f:
-            matrix.save_binary(f.name)
-            # Copy it into artifact store
-            fileio.copy(f.name, filepath)
+        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
+        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+        matrix.save_binary(temp_file)
+
+        # Copy it into artifact store
+        fileio.copy(temp_file, filepath)
+        fileio.rmtree(temp_dir)

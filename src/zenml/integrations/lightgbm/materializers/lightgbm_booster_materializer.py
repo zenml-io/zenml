@@ -16,22 +16,22 @@ import os
 import tempfile
 from typing import Any, Type
 
-import lightgbm as lgbb
+import lightgbm as lgb
 
 from zenml.artifacts import ModelArtifact
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
-DEFAULT_FILENAME = "model.json"
+DEFAULT_FILENAME = "model.txt"
 
 
 class LightGBMBoosterMaterializer(BaseMaterializer):
     """Materializer to read data to and from lightgbm.Booster."""
 
-    ASSOCIATED_TYPES = (xgb.Booster,)
+    ASSOCIATED_TYPES = (lgb.Booster,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> xgb.Booster:
+    def handle_input(self, data_type: Type[Any]) -> lgb.Booster:
         """Reads a lightgbm Booster model from a serialized JSON file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
@@ -42,14 +42,13 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
 
         # Copy from artifact store to temporary file
         fileio.copy(filepath, temp_file)
-        booster = xgb.Booster()
-        booster.load_model(temp_file)
+        booster = lgb.Booster(model_file=temp_file)
 
         # Cleanup and return
         fileio.rmtree(temp_dir)
         return booster
 
-    def handle_return(self, booster: xgb.Booster) -> None:
+    def handle_return(self, booster: lgb.Booster) -> None:
         """Creates a JSON serialization for a lightgbm Booster model.
 
         Args:
