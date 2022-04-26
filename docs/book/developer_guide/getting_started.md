@@ -269,7 +269,7 @@ zenml pipeline run <NAME-OF-PYTHONFILE> -c <NAME-OF-CONFIG-YAML-FILE>
 
 This will require a config file with a bit more information than how it is described above.
 
-1. You will need to define the name of the pipeline-definition. This
+### You will need to define the name of the pipeline definition. This
 {% tabs %}
 {% tab title="config.yaml" %}
 ```yaml
@@ -296,8 +296,7 @@ def first_pipeline(
 Do **not** instantiate and run your pipeline within the python file that you want to run using the CLI, else your 
 pipeline will be run twice, possibly with different configurations.
 {% endhint %}
-
-2. And you will need to supply the names of the step functions
+### And you will need to supply the names of the step functions
 In total the step functions can be supplied with 3 arguments here:
 * source - name of the Step (Step needs to be in the run.py file)
 * parameters - list of parameters for the StepConfig
