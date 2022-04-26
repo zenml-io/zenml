@@ -17,7 +17,9 @@ from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 import wandb
 
 from zenml.environment import Environment
-from zenml.integrations.wandb.experiment_trackers import WandbExperimentTracker
+from zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker import (
+    WandbExperimentTracker,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.steps import BaseStep
@@ -158,7 +160,7 @@ def wandb_step_entrypoint(
             run_name = f"{step_env.pipeline_run_id}_{step_env.step_name}"
             tags = (step_env.pipeline_name, step_env.pipeline_run_id)
 
-            experiment_tracker = Repository(
+            experiment_tracker = Repository(  # type: ignore[call-arg]
                 skip_repository_check=True
             ).active_stack.experiment_tracker
 

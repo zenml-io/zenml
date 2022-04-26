@@ -28,9 +28,7 @@ class WandbIntegration(Integration):
     @staticmethod
     def activate() -> None:
         """Activate the Wandb integration."""
-        from zenml.integrations.wandb.experiment_trackers import (  # noqa
-            WandbExperimentTracker,
-        )
+        from zenml.integrations.wandb import experiment_trackers  # noqa
 
 
 WandbIntegration.check_installation()

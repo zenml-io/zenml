@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 import os
 from contextlib import contextmanager
-from typing import ClassVar, Optional, Tuple
+from typing import ClassVar, Iterator, Optional, Tuple
 
-import wandb  # type: ignore[import]
+import wandb
 
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
@@ -70,9 +70,9 @@ class WandbExperimentTracker(BaseExperimentTracker):
     def activate_wandb_run(
         self,
         run_name: str,
-        tags: Tuple[str] = (),
+        tags: Tuple[str, ...] = (),
         settings: Optional[wandb.Settings] = None,
-    ) -> None:
+    ) -> Iterator[None]:
         """Activates a wandb run for the duration of this context manager.
 
         Anything logged to wandb that is run while this context manager is
