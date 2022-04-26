@@ -233,17 +233,11 @@ Configuring the stack can be done like this:
 zenml integration install s3 seldon
 zenml model-deployer register seldon_eks --flavor=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
-<<<<<<< HEAD
-  --base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
-zenml artifact-store register aws --flavor s3 --path s3://mybucket
-zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks
-=======
   --base_url=http://$INGRESS_HOST \
   --secret=s3-store
-zenml artifact-store register aws --type s3 --path s3://mybucket
-zenml secrets-manager register local -t local
+zenml artifact-store register aws --flavor=s3 --path s3://mybucket
+zenml secrets-manager register local --flavor=local
 zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks -x local
->>>>>>> origin/develop
 zenml stack set local_with_aws_storage
 ```
 
@@ -310,7 +304,6 @@ zenml metadata-store register aws --flavor=kubeflow
 zenml orchestrator register aws --flavor=kubeflow --kubernetes_context=zenml-eks --synchronous=True
 zenml secrets-manager register aws --flavor=aws
 zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws -x aws
->>>>>>> origin/develop
 zenml stack set aws
 ```
 
