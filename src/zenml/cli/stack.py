@@ -18,7 +18,7 @@ from typing import Optional
 import click
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import cli
+from zenml.cli.cli import GroupExt, cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import StackComponentType
@@ -28,7 +28,10 @@ from zenml.stack import Stack
 
 
 # Stacks
-@cli.group()
+@cli.group(
+    cls=GroupExt,
+    tag="Management Tools",
+)
 def stack() -> None:
     """Stacks to define various environments."""
 

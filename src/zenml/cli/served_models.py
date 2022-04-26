@@ -16,7 +16,7 @@ from typing import Optional
 
 import click
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import GroupExt, cli
 from zenml.cli.utils import (
     declare,
     error,
@@ -29,7 +29,10 @@ from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
 
 
-@cli.group()
+@cli.group(
+    cls=GroupExt,
+    tag="Management Tools",
+)
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
     """List and manage served models that are deployed using the active model

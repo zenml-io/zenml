@@ -17,7 +17,7 @@ from typing import Optional
 
 import click
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import GroupExt, cli
 from zenml.cli.utils import (
     confirmation,
     error,
@@ -43,7 +43,7 @@ def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
 
 
 # Secrets
-@cli.group()
+@cli.group(cls=GroupExt, tag="Management Tools")
 @click.pass_context
 def secret(ctx: click.Context) -> None:
     """Secrets for storing key-value pairs for use in authentication."""

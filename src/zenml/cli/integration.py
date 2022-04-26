@@ -17,7 +17,7 @@ from typing import Optional, Tuple
 import click
 from rich.progress import track
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import GroupExt, cli
 from zenml.cli.utils import (
     confirmation,
     declare,
@@ -37,7 +37,11 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 logger = get_logger(__name__)
 
 
-@cli.group(help="Interact with the requirements of external integrations.")
+@cli.group(
+    cls=GroupExt,
+    tag="Management Tools",
+    help="Interact with the requirements of external integrations.",
+)
 def integration() -> None:
     """Integrations group"""
 

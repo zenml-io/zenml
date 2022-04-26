@@ -22,7 +22,7 @@ import click
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import cli
+from zenml.cli.cli import GroupExt, cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.io.utils import get_global_config_directory
@@ -37,7 +37,10 @@ GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH = os.path.join(
 )
 
 
-@cli.group()
+@cli.group(
+    cls=GroupExt,
+    tag="Management Tools",
+)
 def service() -> None:
     """ZenMl server."""
 

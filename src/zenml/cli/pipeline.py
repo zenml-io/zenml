@@ -17,7 +17,7 @@ from typing import Any
 
 import click
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import GroupExt, cli
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
@@ -52,7 +52,7 @@ def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
         ) from None
 
 
-@cli.group()
+@cli.group(cls=GroupExt, tag="Management Tools")
 def pipeline() -> None:
     """Pipeline group"""
 

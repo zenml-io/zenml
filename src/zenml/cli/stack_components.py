@@ -19,7 +19,7 @@ import click
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import cli
+from zenml.cli.cli import GroupExt, cli
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.io import fileio
@@ -420,7 +420,10 @@ def register_single_stack_component_cli_commands(
     plural_display_name = _component_display_name(component_type, plural=True)
 
     @parent_group.group(
-        command_name, help=f"Commands to interact with {plural_display_name}."
+        command_name,
+        cls=GroupExt,
+        help=f"Commands to interact with {plural_display_name}.",
+        tag="Stack Components",
     )
     def command_group() -> None:
         """Group commands for a single stack component type."""
