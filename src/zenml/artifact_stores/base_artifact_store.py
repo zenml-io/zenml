@@ -57,6 +57,7 @@ def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
     handling."""
 
     def inner_function(*args: Any, **kwargs: Any) -> Any:
+        """Inner function for the decorator"""
         try:
             return _func(*args, **kwargs)
         except FileNotFoundError as e:

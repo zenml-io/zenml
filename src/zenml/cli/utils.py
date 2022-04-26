@@ -470,9 +470,16 @@ def print_secrets(secrets: List[str]) -> None:
 def validate_flavor_source(
     source: str, component_type: StackComponentType
 ) -> Type[StackComponent]:
+    """Utility function to import a StackComponent class from a given source
+    and validate its type.
+
+    Args:
+        source: source path of the implementation
+        component_type: the type of the stack component
+    """
     stack_component_class = load_source_path_class(source)
-    assert stack_component_class.TYPE == component_type
-    return stack_component_class
+    assert stack_component_class.TYPE == component_type  # noqa
+    return stack_component_class  # noqa
 
 
 def get_service_status_emoji(service: BaseService) -> str:

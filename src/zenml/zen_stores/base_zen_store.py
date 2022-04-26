@@ -66,8 +66,8 @@ class BaseZenStore(ABC):
         if not skip_default_registrations:
             logger.info("Registering default flavors, stack and user...")
             self.register_default_flavors()
-
-            self.create_default_user()
+            self.register_default_stack()
+        self.create_default_user()
 
         return self
 
@@ -822,8 +822,8 @@ class BaseZenStore(ABC):
         ]
         for f in default_flavors:
             self.create_flavor(
-                name=f.FLAVOR,
-                stack_component_type=f.TYPE,
+                name=f.FLAVOR,  # type: ignore[attr-defined]
+                stack_component_type=f.TYPE,  # type: ignore[attr-defined]
                 source=f.__module__ + "." + f.__name__,
                 integration="built-in",
             )
