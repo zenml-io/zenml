@@ -155,15 +155,19 @@ def wandb_step_entrypoint(
                 func.__name__,
             )
             step_env = Environment().step_environment
+            run_name = f"{step_env.pipeline_run_id}_{step_env.step_name}"
+            tags = (step_env.pipeline_name, step_env.pipeline_run_id)
 
-            tracker = Repository(
+            experiment_tracker = Repository(
                 skip_repository_check=True
             ).active_stack.experiment_tracker
 
-            assert isinstance(tracker, WandbExperimentTracker)
-            with tracker.configure_wandb(
-                run_name=f"{step_env.pipeline_run_id}_{step_env.step_name}",
-                tags=(step_env.pipeline_name, step_env.pipeline_run_id),
+            if not isinstance(experiment_tracker, WandbExperimentTracker):
+                raise RuntimeError("")
+
+            with experiment_tracker.activate_wandb_run(
+                run_name=run_name,
+                tags=tags,
                 settings=settings,
             ):
                 return func(*args, **kwargs)

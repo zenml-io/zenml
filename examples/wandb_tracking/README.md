@@ -42,6 +42,21 @@ cd zenml_examples/wandb_tracking
 
 # initialize
 zenml init
+
+# Create the stack with the wandb experiment tracker component
+zenml experiment-tracker register wandb_tracker --type=wandb \
+    --entity=<WANDB_ENTITY> \
+    --project_name=<WANDB_PROJECT_NAME> \
+    --api_key=<WANDB_API_KEY>
+
+zenml stack register wandb_stack \
+    -m default \
+    -a default \
+    -o default \
+    -e wandb_tracker
+    
+# Activate the newly created stack
+zenml stack set wandb_stack
 ```
 
 ### Set up Weights&Biases

@@ -49,11 +49,15 @@ class WandbExperimentTracker(BaseExperimentTracker):
     ```
 
     Attributes:
+        entity: Name of an existing wandb entity.
+        project_name: Name of an existing wandb project to log to.
+        api_key: Api key to should be authorized to log to the configured wandb
+            entity and project.
     """
 
-    api_key: str
     entity: str
     project_name: str
+    api_key: str
 
     # Class Configuration
     FLAVOR: ClassVar[str] = WANDB
@@ -63,12 +67,23 @@ class WandbExperimentTracker(BaseExperimentTracker):
         os.environ[WANDB_API_KEY] = self.api_key
 
     @contextmanager
-    def configure_wandb(
+    def activate_wandb_run(
         self,
         run_name: str,
         tags: Tuple[str] = (),
         settings: Optional[wandb.Settings] = None,
     ) -> None:
+        """Activates a wandb run for the duration of this context manager.
+
+        Anything logged to wandb that is run while this context manager is
+        active will automatically log to the same wandb run configured by the
+        run name passed as an argument to this function.
+
+        Args:
+            run_name: Name of the wandb run to create.
+            tags: Tags to attach to the wandb run.
+            settings: Additional settings for the wandb run.
+        """
         try:
             logger.info(
                 f"Initializing wandb with project name: {self.project_name}, "
