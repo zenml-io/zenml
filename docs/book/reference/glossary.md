@@ -127,7 +127,7 @@ all ZenML activity. Every action that can be executed within ZenML must take
 place within such a repository. ZenML repositories are denoted by a local `.zen`
 folder in your project root where various information about your local
 configuration lives, e.g., the active
-[Stack](../use_cases/deploy-to-production.md) that you are using to
+[Stack](../advanced_guide/deploy-to-production.md) that you are using to
 run pipelines, is stored.
 
 ## Secret

@@ -6,51 +6,43 @@
 
 ## Developer Guide
 
-* [Getting Started](guides/getting_started.md)
-
-## ZenML
-
+* [Getting Started](developer_guide/getting_started.md)
 * [Stacks]()
-* [Profiles](use_cases/profiles.md)
-* [ZenML Repo]()
-* [ZenML Config]()
+* [Repo & Config]()
+* [Profiles](advanced_guide/profiles.md)
 
-## ZenML Service
+## Advanced Guide
+
+* [Integrations with Popular Tools](stack_components/integrations.md)
+* [Use `zenml example run`](advanced_guide/zenml-example-cli.md)
+* [Run your Pipeline on Kubeflow](advanced_guide/run_on_kubeflow.md)
+* [Visualize your Data](advanced_guide/explore_data.md)
+* [Add Experiment Tracking](advanced_guide/experiment_tracking.md)
+* [Perform Drift Detection](advanced_guide/drift_detection.md)
+* [Execute Pipelines in the Cloud](advanced_guide/guide-aws-gcp-azure.md)
+* [Manage your Secrets](advanced_guide/secrets.md)
+* [Manage External Services](advanced_guide/services.md)
+* [Continuous Training and Deployment](advanced_guide/continuous-training-and-deployment.md)
+* [Run Steps on Specialized Hardware](advanced_guide/step-operators.md)
+* [Bypassing materialization](advanced_guide/skip-materialization.md)
+
+## Collaborate
 
 * [ZenML Service]()
   * [Deploy Locally]()
   * [Deploy on Cloud]()
 
-## Use Cases
+## Stack Components
 
-* [Use `zenml example run`](use_cases/zenml-example-cli.md)
-* [Run your Pipeline on Kubeflow](use_cases/run_on_kubeflow.md)
-* [Visualize your Data](use_cases/explore_data.md)
-* [Add Experiment Tracking](use_cases/experiment_tracking.md)
-* [Perform Drift Detection](use_cases/drift_detection.md)
-* [Execute Pipelines in the Cloud](use_cases/guide-aws-gcp-azure.md)
-* [Manage your Secrets](use_cases/secrets.md)
-* [Manage External Services](use_cases/services.md)
-* [Continuous Training and Deployment](use_cases/continuous-training-and-deployment.md)
-* [Run Steps on Specialized Hardware](use_cases/step-operators.md)
-* [Bypassing materialization](use_cases/skip-materialization.md)
-
-## xxx
-
-* [Integrations with Popular Tools](stack_components/integrations.md)
-* Stack Components
-  * [Artifact Store](stack_components/artifact_store.md)
-  * [Metadata Store](stack_components/metadata_store.md)
-  * [Orchestrator](stack_components/orchestrator.md)
-  * [Container Registry](stack_components/container_registry.md)
-  * [Step Operator](stack_components/step_operator.md)
-  * [Secret Manager](stack_components/secrets_manager.md)
-  * [Model Deployer](stack_components/model_deployer.md)
-  * [Experiment Tracker](stack_components/experiment_tracker.md)
-* Other Concepts
-  * [Materializer]
-  * [Data Inspection](stack_components/visualizers.md)
-  * [Feature Store]
+* [Artifact Store](stack_components/artifact_store.md)
+* [Metadata Store](stack_components/metadata_store.md)
+* [Orchestrator](stack_components/orchestrator.md)
+* [Container Registry](stack_components/container_registry.md)
+* [Step Operator](stack_components/step_operator.md)
+* [Secret Manager](stack_components/secrets_manager.md)
+* [Model Deployer](stack_components/model_deployer.md)
+* [Experiment Tracker](stack_components/experiment_tracker.md)
+* [Feature Store]
 
 ## Support
 

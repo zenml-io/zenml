@@ -193,7 +193,7 @@ the pipelines.
 
 Profiles are configuration contexts stored on the machine where ZenML is used to run pipelines.
 They can be used to manage multiple individual ZenML global configurations on the same machine. Profiles control
-where the ZenML [Stacks](../use_cases/deploy-to-production.md) are stored.
+where the ZenML [Stacks](../advanced_guide/deploy-to-production.md) are stored.
 
 A `default` Profile is created automatically and set as the active Profile the first time ZenML runs. It is
 sufficient for most use cases that require configuring Stacks used to run ZenML pipelines. However, if you need to
@@ -214,7 +214,7 @@ zenml init
 ```
 
 The initialization creates a local `.zen` folder where various information about your local configuration lives,
-e.g., the Profile and the active [Stack](../use_cases/deploy-to-production.md) that you are using to run
+e.g., the Profile and the active [Stack](../advanced_guide/deploy-to-production.md) that you are using to run
 pipelines.
 
 ## Secrets

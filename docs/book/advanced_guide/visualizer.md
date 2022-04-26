@@ -1,11 +1,18 @@
-# Using Visualizers
+---
+description: An image speaks a thousand words.
+---
+
+# Visualizers
 
 ## What is a visualizer?
 
-Sometimes it makes sense in the post-execution workflow to actually visualize step outputs. 
-ZenML has a standard, extensible interface for all visualizers:
+Sometimes it makes sense in the [post-execution workflow](post-execution-workflow.md) to actually visualize step 
+outputs. ZenML has a standard, extensible interface for all visualizers:
 
 ```python
+from abc import abstractmethod
+from typing import Any
+
 class BaseVisualizer:
     """Base class for all ZenML Visualizers."""
 
@@ -39,20 +46,16 @@ It produces the following visualization:
 ### Statistics with [`facets`](https://github.com/PAIR-code/facets)
 
 ```python
-from zenml.repository import Repository
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
-repo = Repository()
-pipe = repo.get_pipelines()[-1]
-pd_output = pipe.runs[-1].get_step(name="step_with_pd_df_output")
-FacetStatisticsVisualizer().visualize(pd_output)
+
+FacetStatisticsVisualizer().visualize(output)
 ```
 
 It produces the following visualization:
 
 ![Statistics for boston housing dataset](../../assets/statistics-boston-housing.png)
-
 
 ### Distributions with [`whylogs`](https://github.com/whylabs/whylogs)
 

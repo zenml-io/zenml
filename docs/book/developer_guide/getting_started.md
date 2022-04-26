@@ -29,7 +29,7 @@ Alternatively, if you’re feeling brave, feel free to install the bleeding edge
 no guarantees given!
 
 ```bash
-pip install git+https://github.com/zenml-io/zenml.git@main --upgrade
+pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 ```
 
 Once the installation is completed, you can check whether the installation was successful through:
@@ -412,60 +412,6 @@ output = step.output
 # will get you the value from the original materializer used in the pipeline
 output.read()  
 ```
-
-# Visualizers
-### What is a Visualizer?
-
-Sometimes it makes sense in the [post-execution workflow](basics/post-execution-workflow.md) to actually visualize step outputs. 
-ZenML has a standard, extensible interface for all visualizers:
-
-```python
-from abc import abstractmethod
-from typing import Any
-
-class BaseVisualizer:
-    """Base class for all ZenML Visualizers."""
-
-    @abstractmethod
-    def visualize(self, object: Any, *args: Any, **kwargs: Any) -> None:
-        """Method to visualize objects."""
-```
-
-The `object` can currently be a `StepView`, a `PipelineRunView` , or a `PipelineView`. (These are all different 
-post-execution objects.)
-
-### Examples of visualizations
-
-### Lineage with [`dash`](https://plotly.com/dash/)
-
-```python
-from zenml.repository import Repository
-from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
-    PipelineRunLineageVisualizer,
-)
-
-repo = Repository()
-latest_run = repo.get_pipelines()[-1].runs[-1]
-PipelineRunLineageVisualizer().visualize(latest_run)
-```
-
-It produces the following visualization:
-
-![Lineage Diagram](../assets/zenml-pipeline-run-lineage-dash.png)
-
-### Statistics with [`facets`](https://github.com/PAIR-code/facets)
-
-```python
-from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
-    FacetStatisticsVisualizer,
-)
-
-FacetStatisticsVisualizer().visualize(output)
-```
-
-It produces the following visualization:
-
-![Statistics for boston housing dataset](../assets/statistics-boston-housing.png)
 
 # Materializers
 
