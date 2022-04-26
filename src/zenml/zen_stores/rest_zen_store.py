@@ -952,4 +952,8 @@ class RestZenStore(BaseZenStore):
     def put(self, path: str, body: BaseModel) -> Json:
         """Make a PUT request to the given endpoint path."""
         endpoint = self.url + path
-        return self._handle_response(requests.put(endpoint, data=body.json(), auth=self._get_authentication()))
+        return self._handle_response(
+            requests.put(
+                endpoint, data=body.json(), auth=self._get_authentication()
+            )
+        )

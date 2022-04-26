@@ -252,9 +252,7 @@ async def update_stack_component(
 ) -> Dict[str, str]:
     """Updates a stack component."""
     try:
-        return zen_store.update_stack_component(
-            name, component_type, component
-        )
+        return zen_store.update_stack_component(name, component_type, component)
     except KeyError as error:
         raise not_found(error) from error
 

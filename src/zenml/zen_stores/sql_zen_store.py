@@ -400,9 +400,9 @@ class SqlZenStore(BaseZenStore):
     # Private interface implementations:
 
     def _save_stack(
-            self,
-            name: str,
-            stack_configuration: Dict[StackComponentType, str],
+        self,
+        name: str,
+        stack_configuration: Dict[StackComponentType, str],
     ) -> None:
         """Save a stack.
 
@@ -420,8 +420,8 @@ class SqlZenStore(BaseZenStore):
             for ctype, cname in stack_configuration.items():
                 statement = (
                     select(ZenStackDefinition)
-                        .where(ZenStackDefinition.stack_name == name)
-                        .where(ZenStackDefinition.component_type == ctype)
+                    .where(ZenStackDefinition.stack_name == name)
+                    .where(ZenStackDefinition.component_type == ctype)
                 )
                 results = session.exec(statement)
                 component = results.one_or_none()
