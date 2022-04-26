@@ -611,6 +611,19 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorWrapper]:
+        """Fetch all flavor defined for a specific stack component type.
+
+        Args:
+            component_type: The type of the stack component.
+
+        Returns:
+            List of all the flavors for the given stack component type.
+        """
+
+    @abstractmethod
     def get_flavor_by_name_and_type(
         self,
         flavor_name: str,
@@ -628,19 +641,6 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: If no flavor exists with the given name and type
                 or there are more than one instances
-        """
-
-    @abstractmethod
-    def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorWrapper]:
-        """Fetch all flavor defined for a specific stack component type.
-
-        Args:
-            component_type: The type of the stack component.
-
-        Returns:
-            List of all the flavors for the given stack component type.
         """
 
     # Common code (user facing):
@@ -830,6 +830,7 @@ class BaseZenStore(ABC):
 
         # Add the flavors added by the integrations
         from zenml.integrations.registry import integration_registry
+
         integration_registry.declare_integrations(store=self)
 
     def create_default_user(self) -> None:

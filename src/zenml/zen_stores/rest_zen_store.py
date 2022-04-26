@@ -799,6 +799,11 @@ class RestZenStore(BaseZenStore):
 
     @property
     def flavors(self) -> List[FlavorWrapper]:
+        """All registered flavors.
+
+        Returns:
+            A list of all registered flavors.
+        """
         body = self.get(FLAVORS)
         if not isinstance(body, list):
             raise ValueError(
@@ -813,6 +818,21 @@ class RestZenStore(BaseZenStore):
         stack_component_type: StackComponentType,
         integration: str = "",
     ) -> FlavorWrapper:
+        """Creates a new flavor.
+
+        Args:
+            source: the source path to the implemented flavor.
+            name: the name of the flavor.
+            stack_component_type: the corresponding StackComponentType.
+            integration: the name of the integration.
+
+        Returns:
+             The newly created flavor.
+
+        Raises:
+            EntityExistsError: If a flavor with the given name and type
+                already exists.
+        """
         flavor = FlavorWrapper(
             name=name,
             source=source,
@@ -824,6 +844,14 @@ class RestZenStore(BaseZenStore):
     def get_flavors_by_type(
         self, component_type: StackComponentType
     ) -> List[FlavorWrapper]:
+        """Fetch all flavor defined for a specific stack component type.
+
+        Args:
+            component_type: The type of the stack component.
+
+        Returns:
+            List of all the flavors for the given stack component type.
+        """
         body = self.get(f"{FLAVORS}/{component_type}")
         if not isinstance(body, list):
             raise ValueError(
@@ -836,6 +864,19 @@ class RestZenStore(BaseZenStore):
         flavor_name: str,
         component_type: StackComponentType,
     ) -> FlavorWrapper:
+        """Fetch a flavor by a given name and type.
+
+        Args:
+            flavor_name: The name of the flavor.
+            component_type: Optional, the type of the component.
+
+        Returns:
+            Flavor instance if it exists
+
+        Raises:
+            KeyError: If no flavor exists with the given name and type
+                or there are more than one instances
+        """
         return FlavorWrapper.parse_obj(
             self.get(f"{FLAVORS}/{component_type}/{flavor_name}")
         )

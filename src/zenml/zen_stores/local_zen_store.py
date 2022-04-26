@@ -854,10 +854,10 @@ class LocalZenStore(BaseZenStore):
 
     @property
     def flavors(self) -> List[FlavorWrapper]:
-        """All registered users.
+        """All registered flavors.
 
         Returns:
-            A list of all registered users.
+            A list of all registered flavors.
         """
         return self.__store.stack_component_flavors
 
@@ -868,6 +868,21 @@ class LocalZenStore(BaseZenStore):
         stack_component_type: StackComponentType,
         integration: str = "",
     ) -> FlavorWrapper:
+        """Creates a new flavor.
+
+        Args:
+            source: the source path to the implemented flavor.
+            name: the name of the flavor.
+            stack_component_type: the corresponding StackComponentType.
+            integration: the name of the integration.
+
+        Returns:
+             The newly created flavor.
+
+        Raises:
+            EntityExistsError: If a flavor with the given name and type
+                already exists.
+        """
 
         if _get_unique_entity(
             name,
@@ -891,6 +906,23 @@ class LocalZenStore(BaseZenStore):
 
         return flavor
 
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorWrapper]:
+        """Fetch all flavor defined for a specific stack component type.
+
+        Args:
+            component_type: The type of the stack component.
+
+        Returns:
+            List of all the flavors for the given stack component type.
+        """
+        return [
+            f
+            for f in self.__store.stack_component_flavors
+            if f.type == component_type
+        ]
+
     def get_flavor_by_name_and_type(
         self,
         flavor_name: str,
@@ -899,15 +931,15 @@ class LocalZenStore(BaseZenStore):
         """Fetch a flavor by a given name and type.
 
         Args:
-            flavor_name: The name of the flavor
-            component_type: Optional, the type of the component
+            flavor_name: The name of the flavor.
+            component_type: Optional, the type of the component.
 
         Returns:
             Flavor instance if it exists
 
         Raises:
-            KeyError: If no flavor exists with the given name or there are more
-                than one instances
+            KeyError: If no flavor exists with the given name and type
+                or there are more than one instances
         """
         matches = self.get_flavors_by_type(component_type)
         return _get_unique_entity(
@@ -915,23 +947,6 @@ class LocalZenStore(BaseZenStore):
             collection=matches,
             ensure_exists=True,
         )
-
-    def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorWrapper]:
-        """Fetch all flavor defined for a specific stack component type.
-
-        Args:
-            component_type: The type of the stack component
-
-        Returns:
-            List of all the flavors for the given stack component type
-        """
-        return [
-            f
-            for f in self.__store.stack_component_flavors
-            if f.type == component_type
-        ]
 
     # Implementation-specific internal methods:
 
