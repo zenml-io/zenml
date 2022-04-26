@@ -11,19 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import ClassVar, Optional
+from typing import List
 
-from zenml.secret import register_secret_schema_class
-from zenml.secret.base_secret import BaseSecretSchema
+from pydantic import BaseModel
 
-AWS_SECRET_SCHEMA_TYPE = "aws"
+from zenml.stack import Stack
+from zenml.zen_stores.models import StackComponentWrapper
 
 
-@register_secret_schema_class
-class AWSSecretSchema(BaseSecretSchema):
+class StackWrapper(BaseModel):
+    """Network Serializable Wrapper describing a Stack."""
 
-    TYPE: ClassVar[str] = AWS_SECRET_SCHEMA_TYPE
+    name: str
+    components: List[StackComponentWrapper]
 
-    aws_access_key_id: str
-    aws_secret_access_key: str
-    aws_session_token: Optional[str]
+    @classmethod
+    def from_stack(cls, stack: Stack) -> "StackWrapper":
+        return cls(
+            name=stack.name,
+            components=[
+                StackComponentWrapper.from_component(component)
+                for t, component in stack.components.items()
+            ],
+        )

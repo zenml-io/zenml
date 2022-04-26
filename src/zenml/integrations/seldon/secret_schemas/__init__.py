@@ -12,18 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The stack store defines exactly where and how stacks are persisted across their 
-life.
-"""
+## Seldon Secret Schemas
 
-from zenml.stack_stores.base_stack_store import BaseStackStore
-from zenml.stack_stores.local_stack_store import LocalStackStore
-from zenml.stack_stores.rest_stack_store import RestStackStore
-from zenml.stack_stores.sql_stack_store import SqlStackStore
+These are secret schemas that can be used to authenticate Seldon to the
+Artifact Store used to store served ML models.
+"""
+from zenml.integrations.seldon.secret_schemas.secret_schemas import (
+    SELDON_AZUREBLOB_SECRET_SCHEMA_TYPE,
+    SELDON_GS_SECRET_SCHEMA_TYPE,
+    SELDON_S3_SECRET_SCHEMA_TYPE,
+    SeldonAzureSecretSchema,
+    SeldonGSSecretSchema,
+    SeldonS3SecretSchema,
+)
 
 __all__ = [
-    "BaseStackStore",
-    "LocalStackStore",
-    "RestStackStore",
-    "SqlStackStore",
+    "SELDON_AZUREBLOB_SECRET_SCHEMA_TYPE",
+    "SELDON_GS_SECRET_SCHEMA_TYPE",
+    "SELDON_S3_SECRET_SCHEMA_TYPE",
+    "SeldonAzureSecretSchema",
+    "SeldonGSSecretSchema",
+    "SeldonS3SecretSchema",
 ]

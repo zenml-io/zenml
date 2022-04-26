@@ -22,39 +22,52 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import StackComponentExistsError, StackExistsError
 from zenml.logger import get_logger
 from zenml.stack import Stack
-from zenml.stack_stores.models import StackComponentWrapper, StackWrapper
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
+from zenml.zen_stores.models import (
+    Project,
+    Role,
+    RoleAssignment,
+    StackComponentWrapper,
+    StackWrapper,
+    Team,
+    User,
+)
 
 logger = get_logger(__name__)
 
+DEFAULT_USERNAME = "default"
 
-class BaseStackStore(ABC):
+
+class BaseZenStore(ABC):
     """Base class for accessing data in ZenML Repository and new Service."""
 
     def initialize(
         self,
         url: str,
-        skip_default_stack: bool = False,
+        skip_default_registrations: bool = False,
         *args: Any,
         **kwargs: Any,
-    ) -> "BaseStackStore":
+    ) -> "BaseZenStore":
         """Initialize the store.
+
         Args:
             url: The URL of the store.
-            skip_default_stack: If True, the creation of the default stack will
-                be skipped.
+            skip_default_registrations: If `True`, the creation of the default
+                stack and user will be skipped.
             *args: Additional arguments to pass to the concrete store
                 implementation.
             **kwargs: Additional keyword arguments to pass to the concrete
                 store implementation.
+
         Returns:
             The initialized concrete store instance.
         """
+        if not skip_default_registrations:
+            logger.info("Registering default stack and user...")
+            if self.is_empty:
+                self.register_default_stack()
 
-        if not skip_default_stack and self.is_empty:
-
-            logger.info("Initializing store...")
-            self.register_default_stack()
+            self.create_default_user()
 
         return self
 
@@ -95,7 +108,7 @@ class BaseStackStore(ABC):
     @property
     @abstractmethod
     def type(self) -> StoreType:
-        """The type of stack store."""
+        """The type of zen store."""
 
     @property
     @abstractmethod
@@ -130,7 +143,7 @@ class BaseStackStore(ABC):
     @property
     @abstractmethod
     def stack_configurations(self) -> Dict[str, Dict[StackComponentType, str]]:
-        """Configurations for all stacks registered in this stack store.
+        """Configurations for all stacks registered in this zen store.
 
         Returns:
             Dictionary mapping stack names to Dict[StackComponentType, str]'s
@@ -220,11 +233,354 @@ class BaseStackStore(ABC):
             KeyError: If no component exists for given type and name.
         """
 
+    # User, project and role management
+
+    @property
+    @abstractmethod
+    def users(self) -> List[User]:
+        """All registered users.
+
+        Returns:
+            A list of all registered users.
+        """
+
+    @abstractmethod
+    def get_user(self, user_name: str) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_name: Name of the user to get.
+
+        Returns:
+            The requested user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+    @abstractmethod
+    def create_user(self, user_name: str) -> User:
+        """Creates a new user.
+
+        Args:
+            user_name: Unique username.
+
+        Returns:
+             The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
+        """
+
+    @abstractmethod
+    def delete_user(self, user_name: str) -> None:
+        """Deletes a user.
+
+        Args:
+            user_name: Name of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+    @property
+    @abstractmethod
+    def teams(self) -> List[Team]:
+        """All registered teams.
+
+        Returns:
+            A list of all registered teams.
+        """
+
+    @abstractmethod
+    def create_team(self, team_name: str) -> Team:
+        """Creates a new team.
+
+        Args:
+            team_name: Unique team name.
+
+        Returns:
+             The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
+        """
+
+    @abstractmethod
+    def get_team(self, team_name: str) -> Team:
+        """Gets a specific team.
+
+        Args:
+            team_name: Name of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+
+    @abstractmethod
+    def delete_team(self, team_name: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_name: Name of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+
+    @abstractmethod
+    def add_user_to_team(self, team_name: str, user_name: str) -> None:
+        """Adds a user to a team.
+
+        Args:
+            team_name: Name of the team.
+            user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
+        """
+
+    @abstractmethod
+    def remove_user_from_team(self, team_name: str, user_name: str) -> None:
+        """Removes a user from a team.
+
+        Args:
+            team_name: Name of the team.
+            user_name: Name of the user.
+
+        Raises:
+            KeyError: If no user and team with the given names exists.
+        """
+
+    @property
+    @abstractmethod
+    def projects(self) -> List[Project]:
+        """All registered projects.
+
+        Returns:
+            A list of all registered projects.
+        """
+
+    @abstractmethod
+    def get_project(self, project_name: str) -> Project:
+        """Gets a specific project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+
+    @abstractmethod
+    def create_project(
+        self, project_name: str, description: Optional[str] = None
+    ) -> Project:
+        """Creates a new project.
+
+        Args:
+            project_name: Unique project name.
+            description: Optional project description.
+
+        Returns:
+             The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
+        """
+
+    @abstractmethod
+    def delete_project(self, project_name: str) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+
+    @property
+    @abstractmethod
+    def roles(self) -> List[Role]:
+        """All registered roles.
+
+        Returns:
+            A list of all registered roles.
+        """
+
+    @property
+    @abstractmethod
+    def role_assignments(self) -> List[RoleAssignment]:
+        """All registered role assignments.
+
+        Returns:
+            A list of all registered role assignments.
+        """
+
+    @abstractmethod
+    def get_role(self, role_name: str) -> Role:
+        """Gets a specific role.
+
+        Args:
+            role_name: Name of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+
+    @abstractmethod
+    def create_role(self, role_name: str) -> Role:
+        """Creates a new role.
+
+        Args:
+            role_name: Unique role name.
+
+        Returns:
+             The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
+        """
+
+    @abstractmethod
+    def delete_role(self, role_name: str) -> None:
+        """Deletes a role.
+
+        Args:
+            role_name: Name of the role to delete.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+
+    @abstractmethod
+    def assign_role(
+        self,
+        role_name: str,
+        entity_name: str,
+        project_name: Optional[str] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Assigns a role to a user or team.
+
+        Args:
+            role_name: Name of the role to assign.
+            entity_name: User or team name.
+            project_name: Optional project name.
+            is_user: Boolean indicating whether the given `entity_name` refers
+                to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
+        """
+
+    @abstractmethod
+    def revoke_role(
+        self,
+        role_name: str,
+        entity_name: str,
+        project_name: Optional[str] = None,
+        is_user: bool = True,
+    ) -> None:
+        """Revokes a role from a user or team.
+
+        Args:
+            role_name: Name of the role to revoke.
+            entity_name: User or team name.
+            project_name: Optional project name.
+            is_user: Boolean indicating whether the given `entity_name` refers
+                to a user.
+
+        Raises:
+            KeyError: If no role, entity or project with the given names exists.
+        """
+
+    @abstractmethod
+    def get_users_for_team(self, team_name: str) -> List[User]:
+        """Fetches all users of a team.
+
+        Args:
+            team_name: Name of the team.
+
+        Returns:
+            List of users that are part of the team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+
+    @abstractmethod
+    def get_teams_for_user(self, user_name: str) -> List[Team]:
+        """Fetches all teams for a user.
+
+        Args:
+            user_name: Name of the user.
+
+        Returns:
+            List of teams that the user is part of.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+
+    @abstractmethod
+    def get_role_assignments_for_user(
+        self,
+        user_name: str,
+        project_name: Optional[str] = None,
+        include_team_roles: bool = True,
+    ) -> List[RoleAssignment]:
+        """Fetches all role assignments for a user.
+
+        Args:
+            user_name: Name of the user.
+            project_name: Optional filter to only return roles assigned for
+                this project.
+            include_team_roles: If `True`, includes roles for all teams that
+                the user is part of.
+
+        Returns:
+            List of role assignments for this user.
+
+        Raises:
+            KeyError: If no user or project with the given names exists.
+        """
+
+    @abstractmethod
+    def get_role_assignments_for_team(
+        self,
+        team_name: str,
+        project_name: Optional[str] = None,
+    ) -> List[RoleAssignment]:
+        """Fetches all role assignments for a team.
+
+        Args:
+            team_name: Name of the user.
+            project_name: Optional filter to only return roles assigned for
+                this project.
+
+        Returns:
+            List of role assignments for this team.
+
+        Raises:
+            KeyError: If no team or project with the given names exists.
+        """
+
     # Common code (user facing):
 
     @property
     def stacks(self) -> List[StackWrapper]:
-        """All stacks registered in this stack store."""
+        """All stacks registered in this zen store."""
         return [
             self._stack_from_dict(name, conf)
             for name, conf in self.stack_configurations.items()
@@ -247,7 +603,7 @@ class BaseStackStore(ABC):
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
 
-        If any of the stacks' components aren't registered in the stack store
+        If any of the stacks' components aren't registered in the zen store
         yet, this method will try to register them as well.
 
         Args:
@@ -375,6 +731,13 @@ class BaseStackStore(ABC):
         metadata = self.register_stack(StackWrapper.from_stack(stack))
         metadata["store_type"] = self.type.value
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+
+    def create_default_user(self) -> None:
+        """Creates a default user."""
+        try:
+            self.get_user(user_name=DEFAULT_USERNAME)
+        except KeyError:
+            self.create_user(user_name=DEFAULT_USERNAME)
 
     # Common code (internal implementations, private):
 

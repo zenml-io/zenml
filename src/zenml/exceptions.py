@@ -202,6 +202,11 @@ class StackComponentExistsError(ZenMLBaseException):
     already exists."""
 
 
+class EntityExistsError(ZenMLBaseException):
+    """Raised when trying to register a user-management entity with a name that
+    already exists."""
+
+
 class StackValidationError(ZenMLBaseException):
     """Raised when a stack configuration is not valid."""
 

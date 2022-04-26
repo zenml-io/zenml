@@ -107,14 +107,6 @@ from zenml.integrations.seldon.steps import (
     default=0.92,
     help="Minimum accuracy required to deploy the model (default: 0.92)",
 )
-@click.option(
-    "--secret",
-    "-x",
-    type=str,
-    required=True,
-    help="Specify the name of a Kubernetes secret to be passed to Seldon Core "
-    "deployments to authenticate to the Artifact Store",
-)
 def main(
     deploy: bool,
     predict: bool,
@@ -126,14 +118,13 @@ def main(
     penalty_strength: float,
     toleration: float,
     min_accuracy: float,
-    secret: str,
 ):
     """Run the Seldon example continuous deployment or inference pipeline
 
     Example usage:
 
         python run.py --deploy --predict --model-flavor tensorflow \
-             --min-accuracy 0.80 --secret seldon-init-container-secret
+             --min-accuracy 0.80
 
     """
     model_name = "mnist"
@@ -178,7 +169,6 @@ def main(
                         model_name=model_name,
                         replicas=1,
                         implementation=seldon_implementation,
-                        secret_name=secret,
                     ),
                     timeout=120,
                 )
