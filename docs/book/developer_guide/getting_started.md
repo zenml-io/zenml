@@ -310,7 +310,7 @@ In total the step functions can be supplied with 3 arguments here:
 ```yaml
   steps:
     step_1:
-      source: my_first_step
+      source: <step_name>
 ```
 {% endtab %}
 {% tab title="Different File" %}
@@ -318,8 +318,8 @@ In total the step functions can be supplied with 3 arguments here:
   steps:
     step_1:
       source:
-        file: steps/steps.py
-        name: my_first_step
+        file: <relative/file/path.py>
+        name: <step_name>
 ```
 {% endtab %}
 {% endtabs %}
