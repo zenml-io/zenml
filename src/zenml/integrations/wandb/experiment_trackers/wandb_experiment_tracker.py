@@ -51,7 +51,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
     Attributes:
         entity: Name of an existing wandb entity.
         project_name: Name of an existing wandb project to log to.
-        api_key: Api key to should be authorized to log to the configured wandb
+        api_key: API key to should be authorized to log to the configured wandb
             entity and project.
     """
 

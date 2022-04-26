@@ -167,7 +167,7 @@ def mlflow_step_entrypoint(
             with experiment_tracker.activate_mlflow_run(
                 experiment_name=experiment, run_name=step_env.pipeline_run_id
             ):
-                # should never happen, just in case
+                # should never happen; just in case
                 assert experiment_tracker.active_run
 
                 with experiment_tracker.active_run:

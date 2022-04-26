@@ -310,7 +310,7 @@ experiment tracker in one of your stacks, you need to first register it:
 
 ```bash
 zenml experiment-tracker register EXPERIMENT_TRACKER_NAME \
-    --type=EXPERIMENT_TRACKER_TYPE [--EXPERIMENT_TRACKER_OPTIONS]
+    --flavor=EXPERIMENT_TRACKER_TYPE [--EXPERIMENT_TRACKER_OPTIONS]
 ```
 
 If you want the name of the current experiment tracker, use the `get` command:
@@ -328,7 +328,7 @@ zenml experiment-tracker list
 
 For details about a particular experiment tracker, use the `describe` command.
 By default, (without a specific experiment tracker name passed in) it will
-describe the active or currently used experiment tracker:
+describe the active or currently-used experiment tracker:
 
 ```bash
 zenml experiment-tracker describe [EXPERIMENT_TRACKER_NAME]

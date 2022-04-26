@@ -58,7 +58,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     Attributes:
         tracking_uri: The uri of the mlflow tracking server. If no uri is set,
-            your stack must contain a `LocalArtifactStore` and  ZenML will
+            your stack must contain a `LocalArtifactStore` and ZenML will
             point MLflow to a subdirectory of your artifact store instead.
         tracking_username: Username for authenticating with the MLflow
             tracking server. When a remote tracking uri is specified,
@@ -111,7 +111,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Ensures that credentials or a token for authentication exist when
-        running mlflow tracking with a remote backend."""
+        running MLflow tracking with a remote backend."""
         tracking_uri = values.get("tracking_uri")
 
         if tracking_uri and cls.is_remote_tracking_uri(tracking_uri):
@@ -126,7 +126,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 raise ValueError(
                     f"MLflow experiment tracking with a remote backend "
                     f"{tracking_uri} is only possible when specifying either "
-                    f"username and password or a authentication token in your "
+                    f"username and password or an authentication token in your "
                     f"stack component. To update your component, run the "
                     f"following command: `zenml experiment-tracker update "
                     f"{values['name']} --tracking_username=MY_USERNAME "
@@ -147,11 +147,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     @staticmethod
     def _local_mlflow_backend() -> str:
-        """Returns the local mlflow backend inside the zenml artifact
+        """Returns the local MLflow backend inside the ZenML artifact
         repository directory
 
         Returns:
-            The MLflow tracking URI for the local mlflow backend.
+            The MLflow tracking URI for the local MLflow backend.
         """
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
         artifact_store = repo.active_stack.artifact_store
@@ -179,11 +179,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         )
 
     def prepare_step_run(self) -> None:
-        """Sets the mlflow tracking uri and credentials."""
+        """Sets the MLflow tracking uri and credentials."""
         self.configure_mlflow()
 
     def cleanup_step_run(self) -> None:
-        """Resets the mlflow tracking uri."""
+        """Resets the MLflow tracking uri."""
         mlflow.set_tracking_uri("")
 
     @property

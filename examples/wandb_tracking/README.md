@@ -25,7 +25,7 @@ as the pipeline run name. This establishes a lineage between pipelines in ZenML 
 
 ## Run it locally
 
-### Set up a free Weights&Biases account
+### Set up a free Weights & Biases account
 To get this example running, you need to set up a Weights & Biases account. You can do this for free [here](https://wandb.ai/login?signup=true).
 
 ### Pre-requisites
