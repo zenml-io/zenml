@@ -26,6 +26,13 @@ as the pipeline run name. This establishes a lineage between pipelines in ZenML 
 
 ## Run it locally
 
+### Set up Weights&Biases
+To get this example running, you need to set up a [Weights & Biases] account. You can do this for free [here](https://wandb.ai/login?signup=true).
+
+After signing up, you will be given a username (what Weights & Biases calls an `entity`), and you can go ahead and create your first project.
+
+Note, that in case you have a shared Weights & Biases account, the `entity` can also be your organization or team's name.
+
 ### Pre-requisites
 In order to run this example, you need to install and initialize ZenML:
 
@@ -59,25 +66,6 @@ zenml stack register wandb_stack \
 zenml stack set wandb_stack
 ```
 
-### Set up Weights&Biases
-To get this example running, you need to set up a [Weights & Biases] account. You can do this for free [here](https://wandb.ai/login?signup=true).
-
-After signing up, you will be given a username (what Weights & Biases calls an `entity`), and you can go ahead and create your first project.
-
-Note, that in case you have a shared Weights & Biases account, the `entity` can also be your organization or team's name.
-
-
-### Set up Environment Variables
-There are three environment variables that are required (as of this release) to run this example.
-Please note that in the upcoming releases, we will migrate the integration towards a stack component, so 
-this usage will be deprecated. 
-
-```shell
-export WANDB_PROJECT_NAME=PROJECT_NAME # name of wandb project
-export WANDB_ENTITY=ENTITY_NAME  # username or team name
-export WANDB_API_KEY=YOUR_WANDB_ENTITY_KEY  # find this in your wandb dashboard
-```
-
 ### Run the project
 Now we're ready. Execute:
 
@@ -100,14 +88,4 @@ In order to clean up, delete the remaining ZenML references:
 
 ```shell
 rm -rf zenml_examples
-```
-
-## SuperQuick `wandb` run
-
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run wandb_tracking
 ```
