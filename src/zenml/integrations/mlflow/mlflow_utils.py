@@ -52,7 +52,7 @@ def get_tracking_uri() -> str:
             "component, e.g.:\n\n"
             "  'zenml experiment-tracker register mlflow_tracker "
             "--type=mlflow'\n"
-            "  'zenml stack create stack-name -e mlflow_tracker ...'\n"
+            "  'zenml stack register stack-name -e mlflow_tracker ...'\n"
         )
 
     return tracker.get_tracking_uri()

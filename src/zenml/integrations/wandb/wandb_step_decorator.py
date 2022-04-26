@@ -163,7 +163,17 @@ def wandb_step_entrypoint(
             ).active_stack.experiment_tracker
 
             if not isinstance(experiment_tracker, WandbExperimentTracker):
-                raise RuntimeError("")
+                raise ValueError(
+                    "The active stack needs to have a wandb experiment tracker "
+                    "component registered to be able to track experiments "
+                    "using wandb. You can create a new stack with a wandb "
+                    "experiment tracker component or update your existing "
+                    "stack to add this component, e.g.:\n\n"
+                    "  'zenml experiment-tracker register wandb_tracker "
+                    "--type=wandb --entity=<WANDB_ENTITY> --project_name="
+                    "<WANDB_PROJECT_NAME> --api_key=<WANDB_API_KEY>'\n"
+                    "  'zenml stack register stack-name -e wandb_tracker ...'\n"
+                )
 
             with experiment_tracker.activate_wandb_run(
                 run_name=run_name,

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import logging
 import os
+import platform
 import shutil
 from pathlib import Path
 from typing import Callable, NamedTuple, Optional
@@ -68,11 +69,13 @@ class ExampleIntegrationTestConfiguration(NamedTuple):
             correctly.
         setup_function: Optional function that performs any additional setup
             (e.g. modifying the stack) before the example is run.
+        skip_on_windows: If `True`, this example will not run on windows.
     """
 
     name: str
     validation_function: Callable[[Repository], None]
     setup_function: Optional[Callable[[Repository], None]] = None
+    skip_on_windows = False
 
 
 examples = [
@@ -117,6 +120,7 @@ examples = [
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
         setup_function=mlflow_tracking_setup,
+        skip_on_windows=True,
     ),
     # TODO [ENG-708]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(
@@ -198,6 +202,12 @@ def test_run_example(
         virtualenv: Either a separate cloned environment for each test, or an
                     empty string.
     """
+    if example_configuration.skip_on_windows and platform.system() == "Windows":
+        logging.info(
+            f"Skipping example {example_configuration.name} on windows."
+        )
+        return
+
     # run the fixture given by repo_fixture_name
     repo = request.getfixturevalue(repo_fixture_name)
 
