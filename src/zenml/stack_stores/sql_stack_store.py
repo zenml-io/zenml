@@ -86,7 +86,11 @@ class SqlStackStore(BaseStackStore):
         if local_path:
             utils.create_dir_recursive_if_not_exists(str(local_path.parent))
 
-        self.engine = create_engine(url, *args, **kwargs)
+        # we need to remove `skip_default_stack` from the kwargs, because
+        # SQLModel will raise an error if it is present
+        sql_kwargs = kwargs.copy()
+        sql_kwargs.pop("skip_default_stack", False)
+        self.engine = create_engine(url, *args, **sql_kwargs)
         SQLModel.metadata.create_all(self.engine)
         with Session(self.engine) as session:
             if not session.exec(select(ZenUser)).first():
