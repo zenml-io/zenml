@@ -20,6 +20,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    NoReturn,
     Optional,
     Sequence,
     Tuple,
@@ -84,7 +85,7 @@ def declare(text: Union[str, Text]) -> None:
     console.print(text, style="info")
 
 
-def error(text: str) -> None:
+def error(text: str) -> NoReturn:
     """Echo an error string on the CLI.
 
     Args:

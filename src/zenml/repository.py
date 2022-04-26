@@ -994,7 +994,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """Set the project for the local repository.
 
         Args:
-            project: a project class to set as active.
+            project: The project to set as active.
 
         Raises:
             RuntimeError: if not in an initialized repository directory.
