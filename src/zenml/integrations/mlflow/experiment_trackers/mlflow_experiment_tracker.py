@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import os
-from typing import Any, ClassVar, Dict, Optional
+from contextlib import contextmanager
+from typing import Any, ClassVar, Dict, Iterator, Optional
 
 import mlflow  # type: ignore[import]
 from mlflow.entities import Experiment  # type: ignore[import]
@@ -80,6 +81,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     tracking_password: Optional[str] = None
     tracking_token: Optional[str] = None
     tracking_insecure_tls: bool = False
+
+    _active_experiment: Optional[Experiment] = None
+    _active_run: Optional[mlflow.ActiveRun] = None
 
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW
@@ -198,3 +202,85 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                     stack.artifact_store, LocalArtifactStore
                 )
             )
+
+    @property
+    def active_experiment(self) -> Optional[Experiment]:
+        """Returns the currently active MLflow experiment.
+
+        This property will return `None` unless called from within the
+        `MLflowExperimentTracker.activate_mlflow_run` context manager.
+        This context manager is called automatically by ZenML for a
+        `@enable_mlflow`-decorated step.
+        """
+        return self._active_experiment
+
+    @property
+    def active_run(self) -> Optional[mlflow.ActiveRun]:
+        """Returns the currently active MLflow run.
+
+        This property will return `None` unless called from within the
+        `MLflowExperimentTracker.activate_mlflow_run` context manager.
+        This context manager is called automatically by ZenML for a
+        `@enable_mlflow`-decorated step.
+        """
+        return self._active_run
+
+    @contextmanager
+    def activate_mlflow_run(
+        self,
+        experiment_name: str,
+        run_name: str,
+    ) -> Iterator[None]:
+        """Activates a MLflow run for the duration of this context manager.
+
+        Anything logged to MLflow that is run while this context manager is
+        active will automatically log to the same MLflow run configured by the
+        experiment and run name passed as arguments to this function.
+
+        IMPORTANT: this function might cause a race condition. If two or more
+        processes call it at the same time and with the same arguments, it could
+        lead to a situation where two or more MLflow runs with the same name
+        and different IDs are created.
+
+        Args:
+            experiment_name: Name of the MLflow experiment to create or reuse.
+            run_name: Name of the MLflow run to create or reuse.
+        """
+        try:
+            mlflow.set_experiment(experiment_name=experiment_name)
+            self._active_experiment = mlflow.get_experiment_by_name(
+                experiment_name
+            )
+
+            if not self._active_experiment:
+                raise RuntimeError(
+                    f"Failed to create or reuse MLflow "
+                    f"experiment {experiment_name}"
+                )
+            experiment_id = self._active_experiment.experiment_id
+
+            # TODO [ENG-458]: find a solution to avoid race-conditions while
+            #  creating the same MLflow run from parallel steps
+            runs = mlflow.search_runs(
+                experiment_ids=[experiment_id],
+                filter_string=f'tags.mlflow.runName = "{run_name}"',
+                output_format="list",
+            )
+            if runs:
+                run_id = runs[0].info.run_id
+                self._active_run = mlflow.start_run(
+                    run_id=run_id, experiment_id=experiment_id
+                )
+            else:
+                self._active_run = mlflow.start_run(
+                    run_name=run_name, experiment_id=experiment_id
+                )
+            if not self._active_run:
+                raise RuntimeError(
+                    f"Failed to create or reuse MLflow "
+                    f"run {run_name} for experiment {experiment_name}"
+                )
+            yield
+        finally:
+            self._active_experiment = None
+            self._active_run = None

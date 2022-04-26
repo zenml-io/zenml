@@ -31,6 +31,21 @@ from zenml.repository import Repository
 logger = get_logger(__name__)
 
 
+def get_missing_mlflow_experiment_tracker_error() -> ValueError:
+    """Returns a detailed error that describes how to add an MLflow experiment
+    tracker component to your stack."""
+    return ValueError(
+        "The active stack needs to have a MLflow experiment tracker "
+        "component registered to be able to track experiments using "
+        "MLflow. You can create a new stack with a MLflow experiment "
+        "tracker component or update your existing stack to add this "
+        "component, e.g.:\n\n"
+        "  'zenml experiment-tracker register mlflow_tracker "
+        "--type=mlflow'\n"
+        "  'zenml stack register stack-name -e mlflow_tracker ...'\n"
+    )
+
+
 def get_tracking_uri() -> str:
     """Gets the MLflow tracking URI from the active experiment tracking stack
     component.
@@ -44,15 +59,6 @@ def get_tracking_uri() -> str:
     """
     tracker = Repository().active_stack.experiment_tracker
     if tracker is None or not isinstance(tracker, MLFlowExperimentTracker):
-        raise ValueError(
-            "The active stack needs to have a MLflow experiment tracker "
-            "component registered to be able to track experiments using "
-            "MLflow. You can create a new stack with a MLflow experiment "
-            "tracker component or update your existing stack to add this "
-            "component, e.g.:\n\n"
-            "  'zenml experiment-tracker register mlflow_tracker "
-            "--type=mlflow'\n"
-            "  'zenml stack register stack-name -e mlflow_tracker ...'\n"
-        )
+        raise get_missing_mlflow_experiment_tracker_error()
 
     return tracker.get_tracking_uri()

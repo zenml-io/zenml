@@ -20,10 +20,12 @@ from mlflow.tracking import MlflowClient  # type: ignore[import]
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
 from zenml.environment import Environment
+from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
+    MLFlowExperimentTracker,
+)
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
-from zenml.integrations.mlflow.mlflow_step_environment import (
-    MLFLOW_STEP_ENVIRONMENT_NAME,
-    MLFlowStepEnvironment,
+from zenml.integrations.mlflow.mlflow_utils import (
+    get_missing_mlflow_experiment_tracker_error,
 )
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
@@ -33,6 +35,7 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentService,
 )
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseStep,
@@ -85,13 +88,16 @@ def mlflow_model_deployer_step(
 
     if not config.model_uri:
         # fetch the MLflow artifacts logged during the pipeline run
-        mlflow_step_env = cast(
-            MLFlowStepEnvironment,
-            Environment()[MLFLOW_STEP_ENVIRONMENT_NAME],
-        )
+        experiment_tracker = Repository(  # type: ignore[call-arg]
+            skip_repository_check=True
+        ).active_stack.experiment_tracker
+
+        if not isinstance(experiment_tracker, MLFlowExperimentTracker):
+            raise get_missing_mlflow_experiment_tracker_error()
+
         client = MlflowClient()
         model_uri = ""
-        mlflow_run = mlflow_step_env.mlflow_run
+        mlflow_run = experiment_tracker.active_run
         if mlflow_run and client.list_artifacts(
             mlflow_run.info.run_id, config.model_name
         ):

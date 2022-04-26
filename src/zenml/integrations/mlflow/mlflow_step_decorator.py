@@ -15,10 +15,14 @@ import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
 from zenml.environment import Environment
-from zenml.integrations.mlflow.mlflow_step_environment import (
-    MLFlowStepEnvironment,
+from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
+    MLFlowExperimentTracker,
+)
+from zenml.integrations.mlflow.mlflow_utils import (
+    get_missing_mlflow_experiment_tracker_error,
 )
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps.utils import STEP_INNER_FUNC_NAME
 
@@ -150,18 +154,23 @@ def mlflow_step_entrypoint(
                 "Setting up MLflow backend before running step entrypoint %s",
                 func.__name__,
             )
-            # Create and activate the global MLflow environment
             step_env = Environment().step_environment
             experiment = experiment_name or step_env.pipeline_name
-            step_mlflow_env = MLFlowStepEnvironment(
+
+            experiment_tracker = Repository(  # type: ignore[call-arg]
+                skip_repository_check=True
+            ).active_stack.experiment_tracker
+
+            if not isinstance(experiment_tracker, MLFlowExperimentTracker):
+                raise get_missing_mlflow_experiment_tracker_error()
+
+            with experiment_tracker.activate_mlflow_run(
                 experiment_name=experiment, run_name=step_env.pipeline_run_id
-            )
-            with step_mlflow_env:
+            ):
+                # should never happen, just in case
+                assert experiment_tracker.active_run
 
-                # should never happen, but just in case
-                assert step_mlflow_env.mlflow_run is not None
-
-                with step_mlflow_env.mlflow_run:
+                with experiment_tracker.active_run:
                     return func(*args, **kwargs)
 
         return cast(F, wrapper)
