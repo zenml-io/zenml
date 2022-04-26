@@ -291,27 +291,64 @@ def first_pipeline(
 ```
 {% endtab %}
 {% endtabs %}
+
+{% hint style="warning" %}
+Do **not** instantiate and run your pipeline within the python file that you want to run using the CLI, else your 
+pipeline will be run twice, possibly with different configurations.
+{% endhint %}
+
 2. And you will need to supply the names of the step functions
 In total the step functions can be supplied with 3 arguments here:
-* source - name of the Step (needs to be in the run.py file)
+* source - name of the Step (Step needs to be in the run.py file)
 * parameters - list of parameters for the StepConfig
-* materializer - name of Materializer (needs to be in the run.py file)
+* materializers - dict of output_name and corresponding Materializer (Materializer needs to be in the run.py file)
 
 {% tabs %}
 {% tab title="config.yaml" %}
 ```yaml
-steps:
   step_2:
     source: my_second_step
     parameters:
       multiplier: 3
-    materializers: 
+    materializers:
+      output_obj: MyMaterializer
 ```
 {% endtab %}
 {% tab title="run.py" %}
 ```python
-from zenml.steps import step, BaseStepConfig, Output
+import os
+from typing import Type
 
+from zenml.artifacts import DataArtifact
+from zenml.io import fileio
+from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.steps import step, Output, BaseStepConfig
+
+
+class MyObj:
+    def __init__(self, name: str):
+        self.name = name
+
+
+class MyMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MyObj,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+
+    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+        """Read from artifact store"""
+        super().handle_input(data_type)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
+                         'r') as f:
+            name = f.read()
+        return MyObj(name=name)
+
+    def handle_return(self, my_obj: MyObj) -> None:
+        """Write to artifact store"""
+        super().handle_return(my_obj)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
+                         'w') as f:
+            f.write(my_obj.name)
+            
 class SecondStepConfig(BaseStepConfig):
     """Trainer params"""
     multiplier: int = 4
@@ -327,7 +364,7 @@ def my_second_step(config: SecondStepConfig, input_int: int,
 {% endtab %}
 {% endtabs %}
 
-###
+When you put it all together you would have something that looks like this:
 
 {% tabs %}
 {% tab title="CLI Command" %}
@@ -345,13 +382,45 @@ steps:
     source: my_second_step
     parameters:
       multiplier: 3
+    materializers:
+      output_obj: MyMaterializer
 ```
 {% endtab %}
 {% tab title="run.py" %}
 ```python
+import os
+from typing import Type
+
+from zenml.artifacts import DataArtifact
+from zenml.io import fileio
+from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps import step, Output, BaseStepConfig
 from zenml.pipelines import pipeline
 
+
+class MyObj:
+    def __init__(self, name: str):
+        self.name = name
+
+
+class MyMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (MyObj,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+
+    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
+        """Read from artifact store"""
+        super().handle_input(data_type)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
+                         'r') as f:
+            name = f.read()
+        return MyObj(name=name)
+
+    def handle_return(self, my_obj: MyObj) -> None:
+        """Write to artifact store"""
+        super().handle_return(my_obj)
+        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
+                         'w') as f:
+            f.write(my_obj.name)
 
 @step
 def my_first_step() -> Output(output_int=int, output_float=float):
@@ -367,12 +436,16 @@ class SecondStepConfig(BaseStepConfig):
 @step
 def my_second_step(config: SecondStepConfig, input_int: int,
                    input_float: float
-                   ) -> Output(output_int=int, output_float=float):
+                   ) -> Output(output_int=int,
+                               output_float=float,
+                               output_obj=MyObj):
     """Step that multiply the inputs"""
-    return config.multiplier * input_int, config.multiplier * input_float
+    return (config.multiplier * input_int,
+            config.multiplier * input_float,
+            MyObj("Custom-Object"))
 
 
-@pipeline
+@pipeline(enable_cache=False)
 def first_pipeline(
         step_1,
         step_2
@@ -381,14 +454,24 @@ def first_pipeline(
     step_2(output_1, output_2)
 ```
 {% endtab %}
+{% tab title="Running from python" %}
+This is what the same pipeline run would look like if triggered from within python.
+```python
+first_pipeline(
+    step_1=my_first_step(),
+    step_2=(my_second_step(SecondStepConfig(multiplier=3))
+            .with_return_materializers({"output_obj": MyMaterializer}))
+).run()
+```
+{% endtab %}
 {% endtabs %}
-
 
 {% hint style="info" %}
 Pro-Tip: You can easily use this to configure and run your pipeline from within your 
 [github action](https://docs.github.com/en/actions) (or comparable tools). This way you ensure each run is directly 
 associated with an associated code version.
 {% endhint %}
+
 ## Pipeline Run Name
 
 When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current date and time as the name for the 
