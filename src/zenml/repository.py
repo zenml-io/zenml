@@ -857,7 +857,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             component_type.value,
             name,
         )
-
         return self.zen_store.get_stack_component(
             name=name,
             component_type=component_type,

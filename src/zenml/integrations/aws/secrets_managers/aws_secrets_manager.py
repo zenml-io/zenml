@@ -41,7 +41,7 @@ def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
         type
     """
     secret_contents = secret.content
-    secret_contents[ZENML_SCHEMA_NAME] = secret.schema_type
+    secret_contents[ZENML_SCHEMA_NAME] = secret.TYPE
     return json.dumps(secret_contents)
 
 

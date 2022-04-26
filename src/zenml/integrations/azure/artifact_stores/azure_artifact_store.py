@@ -38,19 +38,21 @@ PathType = Union[bytes, str]
 class AzureArtifactStore(BaseArtifactStore):
     """Artifact Store for Microsoft Azure based artifacts."""
 
+    _filesystem: Optional[adlfs.AzureBlobFileSystem] = None
+
     # Class Configuration
     FLAVOR: ClassVar[str] = AZURE_ARTIFACT_STORE_FLAVOR
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"abfs://", "az://"}
-    FILESYSTEM: ClassVar[adlfs.AzureBlobFileSystem] = None
 
-    @classmethod
-    def _ensure_filesystem_set(cls) -> None:
-        """Ensures that the filesystem is set."""
-        if cls.FILESYSTEM is None:
-            cls.FILESYSTEM = adlfs.AzureBlobFileSystem(
+    @property
+    def filesystem(self) -> adlfs.AzureBlobFileSystem:
+        """The adlfs filesystem to access this artifact store."""
+        if not self._filesystem:
+            self._filesystem = adlfs.AzureBlobFileSystem(
                 anon=False,
                 use_listings_cache=False,
             )
+        return self._filesystem
 
     @classmethod
     def _split_path(cls, path: PathType) -> Tuple[str, str]:
@@ -72,19 +74,18 @@ class AzureArtifactStore(BaseArtifactStore):
 
         return prefix, path
 
-    @staticmethod
-    def open(path: PathType, mode: str = "r") -> Any:
+    def open(self, path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
         Args:
             path: Path of the file to open.
             mode: Mode in which to open the file. Currently, only
                 'rb' and 'wb' to read and write binary files are supported.
         """
-        AzureArtifactStore._ensure_filesystem_set()
-        return AzureArtifactStore.FILESYSTEM.open(path=path, mode=mode)
+        return self.filesystem.open(path=path, mode=mode)
 
-    @staticmethod
-    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def copyfile(
+        self, src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Copy a file.
         Args:
             src: The path to copy from.
@@ -97,8 +98,7 @@ class AzureArtifactStore(BaseArtifactStore):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        AzureArtifactStore._ensure_filesystem_set()
-        if not overwrite and AzureArtifactStore.FILESYSTEM.exists(dst):
+        if not overwrite and self.filesystem.exists(dst):
             raise FileExistsError(
                 f"Unable to copy to destination '{convert_to_str(dst)}', "
                 f"file already exists. Set `overwrite=True` to copy anyway."
@@ -106,16 +106,13 @@ class AzureArtifactStore(BaseArtifactStore):
 
         # TODO [ENG-151]: Check if it works with overwrite=True or if we need to
         #  manually remove it first
-        AzureArtifactStore.FILESYSTEM.copy(path1=src, path2=dst)
+        self.filesystem.copy(path1=src, path2=dst)
 
-    @staticmethod
-    def exists(path: PathType) -> bool:
+    def exists(self, path: PathType) -> bool:
         """Check whether a path exists."""
-        AzureArtifactStore._ensure_filesystem_set()
-        return AzureArtifactStore.FILESYSTEM.exists(path=path)  # type: ignore[no-any-return]
+        return self.filesystem.exists(path=path)  # type: ignore[no-any-return]
 
-    @staticmethod
-    def glob(pattern: PathType) -> List[PathType]:
+    def glob(self, pattern: PathType) -> List[PathType]:
         """Return all paths that match the given glob pattern.
         The glob pattern may include:
         - '*' to match any number of characters
@@ -128,24 +125,18 @@ class AzureArtifactStore(BaseArtifactStore):
         Returns:
             A list of paths that match the given glob pattern.
         """
-        AzureArtifactStore._ensure_filesystem_set()
-        prefix, _ = AzureArtifactStore._split_path(pattern)
+        prefix, _ = self._split_path(pattern)
         return [
-            f"{prefix}{path}"
-            for path in AzureArtifactStore.FILESYSTEM.glob(path=pattern)
+            f"{prefix}{path}" for path in self.filesystem.glob(path=pattern)
         ]
 
-    @staticmethod
-    def isdir(path: PathType) -> bool:
+    def isdir(self, path: PathType) -> bool:
         """Check whether a path is a directory."""
-        AzureArtifactStore._ensure_filesystem_set()
-        return AzureArtifactStore.FILESYSTEM.isdir(path=path)  # type: ignore[no-any-return]
+        return self.filesystem.isdir(path=path)  # type: ignore[no-any-return]
 
-    @staticmethod
-    def listdir(path: PathType) -> List[PathType]:
+    def listdir(self, path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
-        AzureArtifactStore._ensure_filesystem_set()
-        _, path = AzureArtifactStore._split_path(path)
+        _, path = self._split_path(path)
 
         def _extract_basename(file_dict: Dict[str, Any]) -> str:
             """Extracts the basename from a file info dict returned by the Azure
@@ -156,30 +147,25 @@ class AzureArtifactStore(BaseArtifactStore):
 
         return [
             _extract_basename(dict_)
-            for dict_ in AzureArtifactStore.FILESYSTEM.listdir(path=path)
+            for dict_ in self.filesystem.listdir(path=path)
         ]
 
-    @staticmethod
-    def makedirs(path: PathType) -> None:
+    def makedirs(self, path: PathType) -> None:
         """Create a directory at the given path. If needed also
         create missing parent directories."""
-        AzureArtifactStore._ensure_filesystem_set()
-        AzureArtifactStore.FILESYSTEM.makedirs(path=path, exist_ok=True)
+        self.filesystem.makedirs(path=path, exist_ok=True)
 
-    @staticmethod
-    def mkdir(path: PathType) -> None:
+    def mkdir(self, path: PathType) -> None:
         """Create a directory at the given path."""
-        AzureArtifactStore._ensure_filesystem_set()
-        AzureArtifactStore.FILESYSTEM.makedir(path=path)
+        self.filesystem.makedir(path=path)
 
-    @staticmethod
-    def remove(path: PathType) -> None:
+    def remove(self, path: PathType) -> None:
         """Remove the file at the given path."""
-        AzureArtifactStore._ensure_filesystem_set()
-        AzureArtifactStore.FILESYSTEM.rm_file(path=path)
+        self.filesystem.rm_file(path=path)
 
-    @staticmethod
-    def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def rename(
+        self, src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Rename source file to destination file.
         Args:
             src: The path of the file to rename.
@@ -192,8 +178,7 @@ class AzureArtifactStore(BaseArtifactStore):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        AzureArtifactStore._ensure_filesystem_set()
-        if not overwrite and AzureArtifactStore.FILESYSTEM.exists(dst):
+        if not overwrite and self.filesystem.exists(dst):
             raise FileExistsError(
                 f"Unable to rename file to '{convert_to_str(dst)}', "
                 f"file already exists. Set `overwrite=True` to rename anyway."
@@ -201,22 +186,18 @@ class AzureArtifactStore(BaseArtifactStore):
 
         # TODO [ENG-152]: Check if it works with overwrite=True or if we need
         #  to manually remove it first
-        AzureArtifactStore.FILESYSTEM.rename(path1=src, path2=dst)
+        self.filesystem.rename(path1=src, path2=dst)
 
-    @staticmethod
-    def rmtree(path: PathType) -> None:
+    def rmtree(self, path: PathType) -> None:
         """Remove the given directory."""
-        AzureArtifactStore._ensure_filesystem_set()
-        AzureArtifactStore.FILESYSTEM.delete(path=path, recursive=True)
+        self.filesystem.delete(path=path, recursive=True)
 
-    @staticmethod
-    def stat(path: PathType) -> Dict[str, Any]:
+    def stat(self, path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
-        AzureArtifactStore._ensure_filesystem_set()
-        return AzureArtifactStore.FILESYSTEM.stat(path=path)  # type: ignore[no-any-return]
+        return self.filesystem.stat(path=path)  # type: ignore[no-any-return]
 
-    @staticmethod
     def walk(
+        self,
         top: PathType,
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
@@ -231,12 +212,11 @@ class AzureArtifactStore(BaseArtifactStore):
             directory path, a list of directories inside the current directory
             and a list of files inside the current directory.
         """
-        AzureArtifactStore._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
-        prefix, _ = AzureArtifactStore._split_path(top)
+        prefix, _ = self._split_path(top)
         for (
             directory,
             subdirectories,
             files,
-        ) in AzureArtifactStore.FILESYSTEM.walk(path=top):
+        ) in self.filesystem.walk(path=top):
             yield f"{prefix}{directory}", subdirectories, files

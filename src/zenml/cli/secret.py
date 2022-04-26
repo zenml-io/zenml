@@ -26,8 +26,9 @@ from zenml.cli.utils import (
     warning,
 )
 from zenml.console import console
-from zenml.enums import SecretSchemaType, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.repository import Repository
+from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 
@@ -65,9 +66,9 @@ def secret(ctx: click.Context) -> None:
     "--schema",
     "-s",
     "secret_schema_type",
-    default=SecretSchemaType.ARBITRARY.value,
+    default=ARBITRARY_SECRET_SCHEMA_TYPE,
     help="Register a secret with an optional schema.",
-    type=click.Choice(SecretSchemaType.values()),
+    type=str,
 )
 @click.option(
     "--key",
@@ -130,7 +131,8 @@ def register_secret(
         )
         for k in secret_keys:
             v = getpass.getpass(f"Secret value for {k}:")
-            secret_contents[k] = v
+            if v:
+                secret_contents[k] = v
 
     elif secret_key and secret_value:
         secret_contents[secret_key] = secret_value

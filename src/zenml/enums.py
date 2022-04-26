@@ -66,13 +66,6 @@ class MetadataContextTypes(Enum):
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
 
 
-class SecretSchemaType(StrEnum):
-    """All supported secret schema types."""
-
-    AWS = "aws"
-    ARBITRARY = "arbitrary"
-
-
 class StoreType(StrEnum):
     """Repository Store Backend Types"""
 

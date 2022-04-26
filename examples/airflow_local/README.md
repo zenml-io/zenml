@@ -38,8 +38,8 @@ zenml init
 ```bash
 zenml orchestrator register airflow_orchestrator --flavor airflow
 zenml stack register airflow_stack \
-    -m local_metadata_store \
-    -a local_artifact_store \
+    -m default \
+    -a default \
     -o airflow_orchestrator
 zenml stack set airflow_stack
 ```

@@ -54,7 +54,6 @@ def running_zen_service(tmp_path_factory: pytest.TempPathFactory) -> ZenService:
 def test_get_stack_endpoints(running_zen_service: ZenService):
     """Test that the stack methods behave as they should."""
     endpoint = running_zen_service.endpoint.status.uri.strip("/")
-
     stacks_response = requests.get(
         endpoint + STACKS, auth=(DEFAULT_USERNAME, "")
     )

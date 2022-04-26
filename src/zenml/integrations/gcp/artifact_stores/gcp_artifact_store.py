@@ -38,30 +38,31 @@ PathType = Union[bytes, str]
 class GCPArtifactStore(BaseArtifactStore):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
+    _filesystem: Optional[gcsfs.GCSFileSystem] = None
+
     # Class Configuration
     FLAVOR: ClassVar[str] = GCP_ARTIFACT_STORE_FLAVOR
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"gs://"}
-    FILESYSTEM: ClassVar[gcsfs.GCSFileSystem] = None
 
-    @classmethod
-    def _ensure_filesystem_set(cls) -> None:
-        """Ensures that the filesystem is set."""
-        if cls.FILESYSTEM is None:
-            cls.FILESYSTEM = gcsfs.GCSFileSystem()
+    @property
+    def filesystem(self) -> gcsfs.GCSFileSystem:
+        """The gcsfs filesystem to access this artifact store."""
+        if not self._filesystem:
+            self._filesystem = gcsfs.GCSFileSystem()
+        return self._filesystem
 
-    @staticmethod
-    def open(path: PathType, mode: str = "r") -> Any:
+    def open(self, path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
         Args:
             path: Path of the file to open.
             mode: Mode in which to open the file. Currently, only
                 'rb' and 'wb' to read and write binary files are supported.
         """
-        GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.open(path=path, mode=mode)
+        return self.filesystem.open(path=path, mode=mode)
 
-    @staticmethod
-    def copyfile(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def copyfile(
+        self, src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Copy a file.
         Args:
             src: The path to copy from.
@@ -74,26 +75,20 @@ class GCPArtifactStore(BaseArtifactStore):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        GCPArtifactStore._ensure_filesystem_set()
-        if not overwrite and GCPArtifactStore.FILESYSTEM.exists(dst):
+        if not overwrite and self.filesystem.exists(dst):
             raise FileExistsError(
                 f"Unable to copy to destination '{convert_to_str(dst)}', "
                 f"file already exists. Set `overwrite=True` to copy anyway."
             )
         # TODO [ENG-151]: Check if it works with overwrite=True or if we need to
         #  manually remove it first
-        GCPArtifactStore.FILESYSTEM.copy(path1=src, path2=dst)
+        self.filesystem.copy(path1=src, path2=dst)
 
-    @staticmethod
-    def exists(path: PathType) -> bool:
+    def exists(self, path: PathType) -> bool:
         """Check whether a path exists."""
-        GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.exists(  # type: ignore[no-any-return]
-            path=path
-        )
+        return self.filesystem.exists(path=path)  # type: ignore[no-any-return]
 
-    @staticmethod
-    def glob(pattern: PathType) -> List[PathType]:
+    def glob(self, pattern: PathType) -> List[PathType]:
         """Return all paths that match the given glob pattern.
         The glob pattern may include:
         - '*' to match any number of characters
@@ -106,48 +101,32 @@ class GCPArtifactStore(BaseArtifactStore):
         Returns:
             A list of paths that match the given glob pattern.
         """
-        GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.glob(  # type: ignore[no-any-return]
-            path=pattern
-        )
+        return self.filesystem.glob(path=pattern)  # type: ignore[no-any-return]
 
-    @staticmethod
-    def isdir(path: PathType) -> bool:
+    def isdir(self, path: PathType) -> bool:
         """Check whether a path is a directory."""
-        GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.isdir(  # type: ignore[no-any-return]
-            path=path
-        )
+        return self.filesystem.isdir(path=path)  # type: ignore[no-any-return]
 
-    @staticmethod
-    def listdir(path: PathType) -> List[PathType]:
+    def listdir(self, path: PathType) -> List[PathType]:
         """Return a list of files in a directory."""
-        GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.listdir(  # type: ignore[no-any-return]
-            path=path
-        )
+        return self.filesystem.listdir(path=path)  # type: ignore[no-any-return]
 
-    @staticmethod
-    def makedirs(path: PathType) -> None:
+    def makedirs(self, path: PathType) -> None:
         """Create a directory at the given path. If needed also
         create missing parent directories."""
-        GCPArtifactStore._ensure_filesystem_set()
-        GCPArtifactStore.FILESYSTEM.makedirs(path=path, exist_ok=True)
+        self.filesystem.makedirs(path=path, exist_ok=True)
 
-    @staticmethod
-    def mkdir(path: PathType) -> None:
+    def mkdir(self, path: PathType) -> None:
         """Create a directory at the given path."""
-        GCPArtifactStore._ensure_filesystem_set()
-        GCPArtifactStore.FILESYSTEM.makedir(path=path)
+        self.filesystem.makedir(path=path)
 
-    @staticmethod
-    def remove(path: PathType) -> None:
+    def remove(self, path: PathType) -> None:
         """Remove the file at the given path."""
-        GCPArtifactStore._ensure_filesystem_set()
-        GCPArtifactStore.FILESYSTEM.rm_file(path=path)
+        self.filesystem.rm_file(path=path)
 
-    @staticmethod
-    def rename(src: PathType, dst: PathType, overwrite: bool = False) -> None:
+    def rename(
+        self, src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
         """Rename source file to destination file.
         Args:
             src: The path of the file to rename.
@@ -160,8 +139,7 @@ class GCPArtifactStore(BaseArtifactStore):
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
         """
-        GCPArtifactStore._ensure_filesystem_set()
-        if not overwrite and GCPArtifactStore.FILESYSTEM.exists(dst):
+        if not overwrite and self.filesystem.exists(dst):
             raise FileExistsError(
                 f"Unable to rename file to '{convert_to_str(dst)}', "
                 f"file already exists. Set `overwrite=True` to rename anyway."
@@ -169,24 +147,18 @@ class GCPArtifactStore(BaseArtifactStore):
 
         # TODO [ENG-152]: Check if it works with overwrite=True or if we need
         #  to manually remove it first
-        GCPArtifactStore.FILESYSTEM.rename(path1=src, path2=dst)
+        self.filesystem.rename(path1=src, path2=dst)
 
-    @staticmethod
-    def rmtree(path: PathType) -> None:
+    def rmtree(self, path: PathType) -> None:
         """Remove the given directory."""
-        GCPArtifactStore._ensure_filesystem_set()
-        GCPArtifactStore.FILESYSTEM.delete(path=path, recursive=True)
+        self.filesystem.delete(path=path, recursive=True)
 
-    @staticmethod
-    def stat(path: PathType) -> Dict[str, Any]:
+    def stat(self, path: PathType) -> Dict[str, Any]:
         """Return stat info for the given path."""
-        GCPArtifactStore._ensure_filesystem_set()
-        return GCPArtifactStore.FILESYSTEM.stat(  # type: ignore[no-any-return]
-            path=path
-        )
+        return self.filesystem.stat(path=path)  # type: ignore[no-any-return]
 
-    @staticmethod
     def walk(
+        self,
         top: PathType,
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
@@ -201,8 +173,5 @@ class GCPArtifactStore(BaseArtifactStore):
             directory path, a list of directories inside the current directory
             and a list of files inside the current directory.
         """
-        GCPArtifactStore._ensure_filesystem_set()
         # TODO [ENG-153]: Additional params
-        return GCPArtifactStore.FILESYSTEM.walk(  # type: ignore[no-any-return]
-            path=top
-        )
+        return self.filesystem.walk(path=top)  # type: ignore[no-any-return]

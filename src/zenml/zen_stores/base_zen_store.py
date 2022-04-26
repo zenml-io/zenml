@@ -25,7 +25,6 @@ from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.zen_stores.models import (
     ComponentWrapper,
-    FlavorWrapper,
     Project,
     Role,
     RoleAssignment,
@@ -64,9 +63,8 @@ class BaseZenStore(ABC):
             The initialized concrete store instance.
         """
         if not skip_default_registrations:
+            logger.info("Registering default stack and user...")
             if self.is_empty:
-                logger.info("Registering default flavors, stack and user...")
-                self.register_default_flavors()
                 self.register_default_stack()
 
             self.create_default_user()
@@ -578,61 +576,6 @@ class BaseZenStore(ABC):
             KeyError: If no team or project with the given names exists.
         """
 
-    # Stack component flavors
-    @property
-    @abstractmethod
-    def flavors(self) -> List[FlavorWrapper]:
-        """All registered flavors.
-
-        Returns:
-            A list of all registered flavors.
-        """
-
-    @abstractmethod
-    def create_flavor(
-        self,
-        source: str,
-        name: str,
-        stack_component_type: StackComponentType,
-        integration: str = "",
-    ) -> FlavorWrapper:
-        pass
-
-    @abstractmethod
-    def get_flavor_by_name_and_type(
-        self,
-        flavor_name: str,
-        component_type: StackComponentType,
-    ) -> FlavorWrapper:
-        """Fetch a flavor by a given name and type.
-
-        Args:
-            flavor_name: The name of the flavor
-            component_type: Optional, the type of the component
-            ensure_exists: If `True`, raises an error if the entity doesn't
-                exist
-
-        Returns:
-            Flavor instance if it exists
-
-        Raises:
-            KeyError: If no flavor exists with the given name or there are more
-                than one instances
-        """
-
-    @abstractmethod
-    def get_flavors_by_type(
-        self, component_type: StackComponentType
-    ) -> List[FlavorWrapper]:
-        """Fetch all flavor defined for a specific stack component type.
-
-        Args:
-            component_type: The type of the stack component
-
-        Returns:
-            List of all the flavors for the given stack component type
-        """
-
     # Common code (user facing):
 
     @property
@@ -777,36 +720,6 @@ class BaseZenStore(ABC):
                     f"registered stack (stack name: '{stack_name}')."
                 )
         self._delete_stack_component(component_type, name=name)
-
-    def register_default_flavors(self) -> None:
-        from zenml.artifact_stores import LocalArtifactStore
-        from zenml.container_registries import BaseContainerRegistry
-        from zenml.metadata_stores import (
-            MySQLMetadataStore,
-            SQLiteMetadataStore,
-        )
-        from zenml.orchestrators import LocalOrchestrator
-        from zenml.secrets_managers import LocalSecretsManager
-
-        default_flavors = [
-            LocalOrchestrator,
-            SQLiteMetadataStore,
-            MySQLMetadataStore,
-            LocalArtifactStore,
-            BaseContainerRegistry,
-            LocalSecretsManager,
-        ]
-        for f in default_flavors:
-            self.create_flavor(
-                name=f.FLAVOR,
-                stack_component_type=f.TYPE,
-                source=f.__module__ + "." + f.__name__,
-                integration="built-in",
-            )
-
-        from zenml.integrations.registry import integration_registry
-
-        integration_registry.declare_integrations(store=self)
 
     def register_default_stack(self) -> None:
         """Populates the store with the default Stack.

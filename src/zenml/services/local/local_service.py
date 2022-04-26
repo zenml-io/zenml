@@ -122,9 +122,24 @@ class LocalDaemonServiceStatus(ServiceStatus):
             )
             return None
         else:
+            import zenml.services.local.local_daemon_entrypoint as daemon_entrypoint
             from zenml.utils.daemon import get_daemon_pid_if_running
 
-            return get_daemon_pid_if_running(pid_file)
+            pid = get_daemon_pid_if_running(pid_file)
+
+            # let's be extra careful here and check that the PID really
+            # belongs to a process that is a local ZenML daemon.
+            # this avoids the situation where a PID file is left over from
+            # a previous daemon run, but another process is using the same
+            # PID.
+            p = psutil.Process(pid)
+            cmd_line = p.cmdline()
+            if (
+                daemon_entrypoint.__name__ not in cmd_line
+                or self.config_file not in cmd_line
+            ):
+                return None
+            return pid
 
 
 class LocalDaemonService(BaseService):

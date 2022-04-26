@@ -129,6 +129,30 @@ class KubeflowOrchestrator(BaseOrchestrator):
             push_docker_image,
         )
 
+        # if the orchestrator is not running in a local k3d cluster,
+        # we cannot mount the local path into the container. This
+        # may result in problems when running the pipeline, because
+        # the local components will not be available inside the
+        # Kubeflow containers.
+        if self.kubernetes_context:
+            # go through all stack components and identify those that advertise
+            # a local path where they persist information that they need to be
+            # available when running pipelines.
+            for stack_comp in stack.components.values():
+                local_path = stack_comp.local_path
+                if not local_path:
+                    continue
+                logger.warning(
+                    "The Kubeflow orchestrator is not running in a local k3d "
+                    "cluster. The '%s' %s is a local stack component and will "
+                    "not be available in the Kubeflow pipeline step. Please "
+                    "ensure that you never combine non-local stack components "
+                    "with a remote orchestrator, otherwise you may run into "
+                    "pipeline execution problems.",
+                    stack_comp.name,
+                    stack_comp.TYPE.value,
+                )
+
         image_name = self.get_docker_image_name(pipeline.name)
 
         requirements = {*stack.requirements(), *pipeline.requirements}

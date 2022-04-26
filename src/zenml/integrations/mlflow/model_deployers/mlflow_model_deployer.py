@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 import os
 import shutil
+import uuid
 from pathlib import Path
-from typing import ClassVar, Dict, List, Optional, cast
+from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.constants import (
@@ -41,16 +42,60 @@ logger = get_logger(__name__)
 
 
 class MLFlowModelDeployer(BaseModelDeployer):
-    """MLflow implementation of the BaseModelDeployer"""
+    """MLflow implementation of the BaseModelDeployer
+
+    Attributes:
+        service_path: the path where the local MLflow deployment service
+        configuration, PID and log files are stored.
+    """
+
+    service_path: str
 
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW_MODEL_DEPLOYER_FLAVOR
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        if "service_path" not in kwargs:
+            component_uuid = kwargs.get("uuid", uuid.uuid4())
+            kwargs["service_path"] = self.get_service_path(component_uuid)
+            kwargs["uuid"] = component_uuid
+        super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def get_service_path(uuid: uuid.UUID) -> str:
+        """Get the path the path where the local MLflow deployment service
+        configuration, PID and log files are stored.
+
+        Args:
+            uuid: The UUID of the MLflow model deployer.
+
+        Returns:
+            The service path.
+        """
+        service_path = os.path.join(
+            get_global_config_directory(),
+            LOCAL_STORES_DIRECTORY_NAME,
+            str(uuid),
+        )
+        create_dir_recursive_if_not_exists(service_path)
+        return service_path
+
+    @property
+    def local_path(self) -> str:
+        """
+        Returns the path to the root directory where all configurations for
+        MLflow deployment daemon processes are stored.
+
+        Returns:
+            The path to the local service root directory.
+        """
+        return self.service_path
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
         service_instance: "MLFlowDeploymentService",
     ) -> Dict[str, Optional[str]]:
-        """ "Return implementation specific information that might be relevant
+        """Return implementation specific information that might be relevant
         to the user.
 
         Args:
@@ -181,7 +226,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
             )
 
             # set the root runtime path with the stack component's UUID
-            config.root_runtime_path = self._get_local_service_root_path()
+            config.root_runtime_path = self.local_path
             service.stop(timeout=timeout, force=True)
             service.update(config)
             service.start(timeout=timeout)
@@ -205,22 +250,6 @@ class MLFlowModelDeployer(BaseModelDeployer):
         service_directory_path = existing_service.status.runtime_path or ""
         shutil.rmtree(service_directory_path)
 
-    def _get_local_service_root_path(self) -> str:
-        """
-        Returns the path to the root directory where all configurations for
-        MLflow deployment daemon processes are stored.
-
-        Returns:
-            The path to the local service root directory.
-        """
-        service_path = os.path.join(
-            get_global_config_directory(),
-            LOCAL_STORES_DIRECTORY_NAME,
-            str(self.uuid),
-        )
-        create_dir_recursive_if_not_exists(service_path)
-        return service_path
-
     # the step will receive a config from the user that mentions the number
     # of workers etc.the step implementation will create a new config using
     # all values from the user and add values like pipeline name, model_uri
@@ -230,7 +259,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
         """Creates a new MLFlowDeploymentService."""
 
         # set the root runtime path with the stack component's UUID
-        config.root_runtime_path = self._get_local_service_root_path()
+        config.root_runtime_path = self.local_path
         # create a new service for the new model
         service = MLFlowDeploymentService(config)
         service.start(timeout=timeout)
@@ -279,11 +308,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
             pipeline_step_name=pipeline_step_name or "",
         )
 
-        # path where the services for this deployer are stored
-        services_path = self._get_local_service_root_path()
-
         # find all services that match the input criteria
-        for root, dirs, files in os.walk(services_path):
+        for root, _, files in os.walk(self.local_path):
             if service_uuid and Path(root).name != str(service_uuid):
                 continue
             for file in files:
