@@ -11,9 +11,9 @@ from zenml.utils import networking_utils, yaml_utils
 
 KFP_VERSION = "1.8.1"
 # Name of the K3S image to use for the local K3D cluster.
-# The version (e.g. v1.21.9) refers to a specific kubernetes release and is
+# The version (e.g. v1.23.5) refers to a specific kubernetes release and is
 # fixed as KFP doesn't support the newest releases immediately.
-K3S_IMAGE_NAME = "rancher/k3s:v1.21.9-k3s1"
+K3S_IMAGE_NAME = "rancher/k3s:v1.23.5-k3s1"
 
 logger = get_logger(__name__)
 
