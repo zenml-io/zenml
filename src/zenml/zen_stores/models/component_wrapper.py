@@ -34,6 +34,12 @@ class ComponentWrapper(BaseModel):
 
     @classmethod
     def from_component(cls, component: StackComponent) -> "ComponentWrapper":
+        """Creates a ComponentWrapper from an actual instance of a Stack
+        Component.
+
+        Args:
+            component: the instance of a StackComponent
+        """
         return cls(
             type=component.TYPE,
             flavor=component.FLAVOR,
@@ -45,6 +51,8 @@ class ComponentWrapper(BaseModel):
         )
 
     def to_component(self) -> StackComponent:
+        """Converts the ComponentWrapper into an actual instance of a Stack
+        Component."""
         from zenml.repository import Repository
 
         flavor_wrapper = Repository().zen_store.get_flavor_by_name_and_type(

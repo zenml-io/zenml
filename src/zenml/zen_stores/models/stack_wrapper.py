@@ -27,6 +27,11 @@ class StackWrapper(BaseModel):
 
     @classmethod
     def from_stack(cls, stack: Stack) -> "StackWrapper":
+        """Creates a StackWrapper from an actual Stack instance.
+
+        Args:
+            stack: the instance of a Stack
+        """
         return cls(
             name=stack.name,
             components=[
@@ -36,6 +41,7 @@ class StackWrapper(BaseModel):
         )
 
     def to_stack(self) -> Stack:
+        """Creates the corresponding Stack instance from the wrapper."""
         stack_components = {}
         for component_wrapper in self.components:
             component_type = component_wrapper.type

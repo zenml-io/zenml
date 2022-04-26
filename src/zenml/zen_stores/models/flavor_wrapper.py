@@ -17,11 +17,12 @@ from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
 from zenml.stack.stack_component import StackComponent
+from zenml.utils.source_utils import load_source_path_class
 
 
 class FlavorWrapper(BaseModel):
-    """Pydantic object representing the custom implementation of a stack
-    component."""
+    """Network serializable wrapper representing the custom implementation of
+    a stack component flavor."""
 
     name: str
     integration: str = ""
@@ -30,6 +31,11 @@ class FlavorWrapper(BaseModel):
 
     @classmethod
     def from_flavor(cls, flavor: Type[StackComponent]) -> "FlavorWrapper":
+        """Creates a FlavorWrapper from a flavor class.
+
+        Args:
+            flavor: the class which defines the flavor
+        """
         return FlavorWrapper(
             name=flavor.FLAVOR,
             type=flavor.TYPE,
@@ -37,6 +43,5 @@ class FlavorWrapper(BaseModel):
         )
 
     def to_flavor(self) -> Type[StackComponent]:
-        from zenml.utils.source_utils import load_source_path_class
-
+        """Imports and returns the class of the flavor."""
         return load_source_path_class(source=self.source)  # noqa
