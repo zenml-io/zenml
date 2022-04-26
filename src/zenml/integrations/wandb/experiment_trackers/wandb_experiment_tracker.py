@@ -55,9 +55,9 @@ class WandbExperimentTracker(BaseExperimentTracker):
             entity and project.
     """
 
-    entity: str
-    project_name: str
     api_key: str
+    entity: Optional[str] = None
+    project_name: Optional[str] = None
 
     # Class Configuration
     FLAVOR: ClassVar[str] = WANDB
