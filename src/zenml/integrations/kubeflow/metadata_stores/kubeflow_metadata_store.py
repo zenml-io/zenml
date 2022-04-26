@@ -34,7 +34,6 @@ from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.utils import networking_utils
-from zenml.utils.daemon import check_if_daemon_is_running
 
 logger = get_logger(__name__)
 
@@ -151,10 +150,16 @@ class KubeflowMetadataStore(BaseMetadataStore):
     def is_running(self) -> bool:
         """If the component is running locally."""
         if sys.platform != "win32":
+            from zenml.utils.daemon import check_if_daemon_is_running
+
             if not check_if_daemon_is_running(self._pid_file_path):
                 return False
         else:
+            # Daemon functionality is not supported on Windows, so the PID
+            # file won't exist. This if clause exists just for mypy to not
+            # complain about missing functions
             pass
+
         return True
 
     def provision(self) -> None:

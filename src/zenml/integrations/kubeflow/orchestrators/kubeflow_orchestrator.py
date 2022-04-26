@@ -44,7 +44,6 @@ from zenml.stack.stack_component_class_registry import (
     register_stack_component_class,
 )
 from zenml.utils import networking_utils
-from zenml.utils.daemon import check_if_daemon_is_running
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
@@ -80,7 +79,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
-    kubernetes_context: str = ""
+    kubernetes_context: Optional[str] = None
     synchronous = False
 
     # Class Configuration
@@ -115,7 +114,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         Returns:
             Values passed to the Pydantic constructor
         """
-        if "kubernetes_context" in values:
+        if values.get("kubernetes_context"):
             return values
         # not likely, due to Pydantic validation, but mypy complains
         assert "uuid" in values
@@ -138,7 +137,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            if self.kubernetes_context:
+            if not self.is_local:
 
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack, because
@@ -536,6 +535,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns if the local Kubeflow UI daemon for this orchestrator is
         running."""
         if sys.platform != "win32":
+            from zenml.utils.daemon import check_if_daemon_is_running
+
             return check_if_daemon_is_running(self._pid_file_path)
         else:
             return True

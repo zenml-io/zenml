@@ -91,8 +91,6 @@ class Stack:
         self._feature_store = feature_store
         self._model_deployer = model_deployer
 
-        self.validate()
-
     @classmethod
     def from_components(
         cls, name: str, components: Dict[StackComponentType, "StackComponent"]
