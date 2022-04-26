@@ -12,11 +12,11 @@ development with powerful integrations on multiple
 for all the MLOps tooling and infrastructure you require for ML in production
 and ZenML aims to bring it all together under one roof.
 
-For example we currently support [Airflow](https://airflow.apache.org/) and
+For example, we currently support [Airflow](https://airflow.apache.org/) and
 [Kubeflow](https://www.kubeflow.org/) as third-party orchestrators for your ML
 pipeline code. Experiment trackers like [MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) and 
 [Weights & Biases](https://wandb.ai/site) can easily be added to your ZenML pipeline. And you can seamlessly 
-transition from a local [MLflow Deployement](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html) to
+transition from a local [MLflow deployment](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html) to
 a deployed model on Kubernetes using [Seldon Core](https://www.seldon.io/).
 
 All of this allows you to write your code now and add the right tool for the job as soon as the need arises. 
