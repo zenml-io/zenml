@@ -146,6 +146,7 @@ up whatever dependencies are required, use the ``run`` subcommand:
 ```bash
 zenml example run quickstart
 ```
+
 Using integrations
 ------------------
 
@@ -208,6 +209,7 @@ metadata store into the CLI with the following command:
 ```bash
 zenml metadata-store delete METADATA_STORE_NAME
 ```
+
 Customizing your Artifact Store
 -------------------------------
 
@@ -231,6 +233,7 @@ artifact store into the CLI with the following command:
 ```bash
 zenml artifact-store delete ARTIFACT_STORE_NAME
 ```
+
 Customizing your Orchestrator
 -----------------------------
 
@@ -428,6 +431,7 @@ zenml served-models stop <UUID>
 If you want to completely remove a served model you can also irreversibly delete it using:
 ```bash
 zenml served-models delete <UUID>
+
 Administering the Stack
 -----------------------
 
@@ -478,6 +482,82 @@ To see which stack is currently set as the default active stack, type:
 ```bash
 zenml stack get
 ```
+
+Managing users, teams, projects and roles
+-----------------------------------------
+
+When using the ZenML service, you can manage permissions by managing users,
+teams, projects and roles using the CLI.
+If you want to create a new user or delete an existing one, run either
+
+```bash
+zenml user create USER_NAME
+```
+or
+```bash
+zenml user delete USER_NAME
+```
+
+To see a list of all users, run:
+```bash
+zenml user list
+```
+
+A team is a grouping of many users that allows you to quickly assign and
+revoke roles. If you want to create a new team, run:
+
+```bash
+zenml team create TEAM_NAME
+```
+To add one or more users to a team, run:
+```bash
+zenml team add TEAM_NAME --user USER_NAME [--user USER_NAME ...]
+```
+Similarly, to remove users from a team run:
+```bash
+zenml team remove TEAM_NAME --user USER_NAME [--user USER_NAME ...]
+```
+To delete a team (keep in mind this will revoke any roles assigned to this
+team from the team members), run:
+```bash
+zenml team delete TEAM_NAME
+```
+
+To see a list of all teams, run:
+```bash
+zenml team list
+```
+
+A role groups permissions and can be assigned to users or teams. To create or
+delete a role, run one of the following commands:
+```bash
+zenml role create ROLE_NAME
+zenml role delete ROLE_NAME
+```
+
+To see a list of all roles, run:
+```bash
+zenml role list
+```
+
+If you want to assign or revoke a role from users or teams, you can run
+
+```bash
+zenml role assign ROLE_NAME --user USER_NAME [--user USER_NAME ...]
+zenml role assign ROLE_NAME --team TEAM_NAME [--team TEAM_NAME ...]
+```
+or
+```bash
+zenml role revoke ROLE_NAME --user USER_NAME [--user USER_NAME ...]
+zenml role revoke ROLE_NAME --team TEAM_NAME [--team TEAM_NAME ...]
+```
+
+You can see a list of all current role assignments by running:
+
+```bash
+zenml role assignment list
+```
+
 """
 
 from zenml.cli.base import *  # noqa
@@ -491,4 +571,5 @@ from zenml.cli.served_models import *  # noqa
 from zenml.cli.service import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
+from zenml.cli.user_management import *  # noqa
 from zenml.cli.version import *  # noqa

@@ -14,10 +14,20 @@
 import datetime
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import click
 from dateutil import tz
+from pydantic import BaseModel
 from rich import box, table
 from rich.text import Text
 
@@ -114,17 +124,31 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
     Args:
       obj: A List containing dictionaries.
     """
-    columns = {key.upper(): None for dict_ in obj for key in dict_.keys()}
-    rich_table = table.Table(*columns.keys(), box=box.HEAVY_EDGE)
+    column_keys = {key: None for dict_ in obj for key in dict_}
+    column_names = [key.upper() for key in column_keys]
+    rich_table = table.Table(*column_names, box=box.HEAVY_EDGE)
 
     for dict_ in obj:
-        values = columns.copy()
-        values.update(dict_)
-        rich_table.add_row(*list(values.values()))
+        values = [dict_.get(key) for key in column_keys]
+        rich_table.add_row(*values)
 
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
     console.print(rich_table)
+
+
+def print_pydantic_models(models: Sequence[BaseModel]) -> None:
+    """Prints the list of Pydantic models in a table.
+
+    Args:
+        models: List of pydantic models that will be represented as a row in
+            the table.
+    """
+    model_dicts = [
+        {key: str(value) for key, value in model.dict().items()}
+        for model in models
+    ]
+    print_table(model_dicts)
 
 
 def format_integration_list(
