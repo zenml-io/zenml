@@ -840,7 +840,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Raises:
             KeyError: If no stack exists for the given name."""
-        metadata = self.stack_store.update_stack(
+        metadata = self.zen_store.update_stack(
             name, StackWrapper.from_stack(stack)
         )
         if self.active_stack_name == name:
@@ -886,7 +886,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Raises:
             KeyError: If no such stack component exists."""
-        self.stack_store.update_stack_component(
+        self.zen_store.update_stack_component(
             name,
             component_type,
             StackComponentWrapper.from_component(component),
