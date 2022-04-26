@@ -257,6 +257,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-e",
+    "--experiment_tracker",
+    "experiment_tracker_name",
+    help="Name of the new experiment tracker for this stack.",
+    type=str,
+    required=False,
+)
 def update_stack(
     stack_name: str,
     metadata_store_name: Optional[str] = None,
@@ -267,6 +275,7 @@ def update_stack(
     secrets_manager_name: Optional[str] = None,
     feature_store_name: Optional[str] = None,
     model_deployer_name: Optional[str] = None,
+    experiment_tracker_name: Optional[str] = None,
 ) -> None:
     """Update a stack."""
     with console.status(f"Updating stack `{stack_name}`...\n"):
@@ -340,6 +349,14 @@ def update_stack(
                 name=model_deployer_name,
             )
 
+        if experiment_tracker_name:
+            stack_components[
+                StackComponentType.EXPERIMENT_TRACKER
+            ] = repo.get_stack_component(
+                StackComponentType.EXPERIMENT_TRACKER,
+                name=experiment_tracker_name,
+            )
+
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
@@ -391,6 +408,14 @@ def update_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-e",
+    "--experiment_tracker",
+    "experiment_tracker_flag",
+    help="Include this to remove the experiment tracker from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name: str,
     container_registry_flag: Optional[bool] = False,
@@ -398,6 +423,7 @@ def remove_stack_component(
     secrets_manager_flag: Optional[bool] = False,
     feature_store_flag: Optional[bool] = False,
     model_deployer_flag: Optional[bool] = False,
+    experiment_tracker_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack."""
     with console.status(f"Updating stack `{stack_name}`...\n"):
@@ -424,6 +450,9 @@ def remove_stack_component(
 
         if model_deployer_flag:
             stack_components.pop(StackComponentType.MODEL_DEPLOYER, None)
+
+        if experiment_tracker_flag:
+            stack_components.pop(StackComponentType.EXPERIMENT_TRACKER, None)
 
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
