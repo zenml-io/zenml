@@ -20,7 +20,8 @@ import click
 from zenml.cli.cli import cli
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
-    StepConfigurationKeys, SourceConfigurationKeys,
+    SourceConfigurationKeys,
+    StepConfigurationKeys,
 )
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
@@ -33,11 +34,13 @@ def _get_module(module: types.ModuleType, config_item: Union[str, dict]) -> Any:
     """"""
     if isinstance(config_item, dict):
         config_item_module = source_utils.import_python_file(
-            config_item[SourceConfigurationKeys.FILE_])
+            config_item[SourceConfigurationKeys.FILE_]
+        )
 
         implementation_name = config_item[SourceConfigurationKeys.NAME_]
-        implemented_class = _get_module_attribute(config_item_module,
-                                                  implementation_name)
+        implemented_class = _get_module_attribute(
+            config_item_module, implementation_name
+        )
         return implemented_class
     elif isinstance(config_item, str):
         step_class = _get_module_attribute(module, config_item)
@@ -52,8 +55,7 @@ def _get_module(module: types.ModuleType, config_item: Union[str, dict]) -> Any:
         )
 
 
-def _get_module_attribute(module: types.ModuleType,
-                          attribute_name: str) -> Any:
+def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
     """Gets an attribute from a module.
 
     Args:
@@ -120,9 +122,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
             # We need to differentiate whether it's a single materializer
             # or a dictionary mapping output names to materializers
             if isinstance(materializers_config, str):
-                materializers = _get_module(
-                    module, materializers_config
-                )
+                materializers = _get_module(module, materializers_config)
             elif isinstance(materializers_config, dict):
                 materializers = {
                     output_name: _get_module(module, source)

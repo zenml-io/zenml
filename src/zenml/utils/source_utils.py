@@ -464,13 +464,11 @@ def import_python_file(file_path: str) -> types.ModuleType:
     sys.path.append(os.path.dirname(file_path))
     module_name = os.path.splitext(os.path.basename(file_path))[0]
 
-    full_module_path = (os.path
-                        .splitext(os.path.relpath(file_path, os.getcwd()))[0]
-                        .replace('/', '.'))
+    full_module_path = os.path.splitext(
+        os.path.relpath(file_path, os.getcwd())
+    )[0].replace("/", ".")
 
     if full_module_path not in sys.modules:
         return importlib.import_module(module_name)
     else:
-        module_name = os.path.splitext(
-            os.path.relpath(file_path, os.getcwd()))[0]
-        return sys.modules[module_name.replace('/', '.')]
+        return sys.modules[full_module_path]
