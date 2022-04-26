@@ -260,6 +260,7 @@ orchestrator into the CLI with the following command:
 ```bash
 zenml orchestrator delete ORCHESTRATOR_NAME
 ```
+
 Customizing your Container Registry
 -----------------------------------
 
@@ -389,7 +390,7 @@ Once you have registered your feature store as a stack component, you can use it
 in your ZenML Stack.
 
 Interacting with Deployed Models
--------------
+--------------------------------
 
 Deployed models are
 
@@ -483,6 +484,53 @@ To see which stack is currently set as the default active stack, type:
 zenml stack get
 ```
 
+If you wish to update a stack that you have already registered, first make sure
+you have registered whatever components you want to use, then use the following
+command:
+
+```bash
+# assuming that you have already registered a new orchestrator
+# with NEW_ORCHESTRATOR_NAME
+zenml stack update STACK_NAME -o NEW_ORCHESTRATOR_NAME
+```
+
+You can update one or many stack components at the same time out of the ones
+that ZenML supports. To see the full list of options for updating a stack, use
+the following command:
+
+```bash
+zenml stack update --help
+```
+
+To remove a stack component from a stack, use the following command:
+
+```shell
+# assuming you want to remove the secrets-manager and the feature-store
+# from your stack
+zenml stack remove-component -x -f
+```
+
+If you wish to rename your stack, use the following command:
+
+```shell
+zenml stack rename STACK_NAME NEW_STACK_NAME
+```
+
+If you wish to update a specific stack component, use the following command,
+switching out "STACK_COMPONENT" for the component you wish to update (i.e.
+'orchestrator' or 'artifact-store' etc):
+
+```shell
+zenml STACK_COMPONENT update --some_property=NEW_VALUE
+```
+
+Note that you are not permitted to update the stack name or UUID in this way. To
+change the name of your stack component, use the following command:
+
+```shell
+zenml STACK_COMPONENT rename STACK_COMPONENT_NAME NEW_STACK_COMPONENT_NAME
+```
+
 Managing users, teams, projects and roles
 -----------------------------------------
 
@@ -557,7 +605,6 @@ You can see a list of all current role assignments by running:
 ```bash
 zenml role assignment list
 ```
-
 """
 
 from zenml.cli.base import *  # noqa
