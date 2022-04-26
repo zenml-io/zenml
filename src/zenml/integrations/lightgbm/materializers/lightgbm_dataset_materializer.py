@@ -43,10 +43,8 @@ class LightGBMDatasetMaterializer(BaseMaterializer):
         # Copy from artifact store to temporary file
         fileio.copy(filepath, temp_file)
         matrix = lgb.Dataset(temp_file, free_raw_data=False)
-        matrix.construct()
 
-        # Cleanup and return
-        # fileio.rmtree(temp_dir)
+        # No clean up this time because matrix is lazy loaded
         return matrix
 
     def handle_return(self, matrix: lgb.Dataset) -> None:

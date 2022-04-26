@@ -63,6 +63,5 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
             mode="w", suffix=".json", delete=True
         ) as f:
             booster.save_model(f.name)
-
             # Copy it into artifact store
             fileio.copy(f.name, filepath)
