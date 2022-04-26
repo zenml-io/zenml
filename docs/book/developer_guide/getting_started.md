@@ -258,6 +258,137 @@ first_pipeline(step_1=my_first_step(),
                ).with_config("path_to_config.yaml").run()
 ```
 
+## Run from CLI
+
+In case you want to have control to configure and run your pipeline from outside your code. For this you can use the 
+ZenML commandline argument:
+
+```shell
+zenml pipeline run <NAME-OF-PYTHONFILE> -c <NAME-OF-CONFIG-YAML-FILE>
+```
+
+This will require a config file with a bit more information than how it is described above.
+
+1. You will need to define the name of the pipeline-definition. This
+{% tabs %}
+{% tab title="config.yaml" %}
+```yaml
+name: first_pipeline
+...
+```
+{% endtab %}
+{% tab title="run.py" %}
+```python
+from zenml.pipelines import pipeline
+
+@pipeline
+def first_pipeline(
+        step_1,
+        step_2
+):
+    output_1, output_2 = step_1()
+    step_2(output_1, output_2)
+```
+{% endtab %}
+{% endtabs %}
+2. And you will need to supply the names of the step functions
+In total the step functions can be supplied with 3 arguments here:
+* source - name of the Step (needs to be in the run.py file)
+* parameters - list of parameters for the StepConfig
+* materializer - name of Materializer (needs to be in the run.py file)
+
+{% tabs %}
+{% tab title="config.yaml" %}
+```yaml
+steps:
+  step_2:
+    source: my_second_step
+    parameters:
+      multiplier: 3
+    materializers: 
+```
+{% endtab %}
+{% tab title="run.py" %}
+```python
+from zenml.steps import step, BaseStepConfig, Output
+
+class SecondStepConfig(BaseStepConfig):
+    """Trainer params"""
+    multiplier: int = 4
+
+
+@step
+def my_second_step(config: SecondStepConfig, input_int: int,
+                   input_float: float
+                   ) -> Output(output_int=int, output_float=float):
+    """Step that multiply the inputs"""
+    return config.multiplier * input_int, config.multiplier * input_float
+```
+{% endtab %}
+{% endtabs %}
+
+###
+
+{% tabs %}
+{% tab title="CLI Command" %}
+```shell
+zenml pipeline run run.py -c config.yaml
+```
+{% endtab %}
+{% tab title="config.yaml" %}
+```yaml
+name: first_pipeline
+steps:
+  step_1:
+    source: my_first_step
+  step_2:
+    source: my_second_step
+    parameters:
+      multiplier: 3
+```
+{% endtab %}
+{% tab title="run.py" %}
+```python
+from zenml.steps import step, Output, BaseStepConfig
+from zenml.pipelines import pipeline
+
+
+@step
+def my_first_step() -> Output(output_int=int, output_float=float):
+    """Step that returns a pre-defined integer and float"""
+    return 7, 0.1
+
+
+class SecondStepConfig(BaseStepConfig):
+    """Trainer params"""
+    multiplier: int = 4
+
+
+@step
+def my_second_step(config: SecondStepConfig, input_int: int,
+                   input_float: float
+                   ) -> Output(output_int=int, output_float=float):
+    """Step that multiply the inputs"""
+    return config.multiplier * input_int, config.multiplier * input_float
+
+
+@pipeline
+def first_pipeline(
+        step_1,
+        step_2
+):
+    output_1, output_2 = step_1()
+    step_2(output_1, output_2)
+```
+{% endtab %}
+{% endtabs %}
+
+
+{% hint style="info" %}
+Pro-Tip: You can easily use this to configure and run your pipeline from within your 
+[github action](https://docs.github.com/en/actions) (or comparable tools). This way you ensure each run is directly 
+associated with an associated code version.
+{% endhint %}
 ## Pipeline Run Name
 
 When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current date and time as the name for the 
