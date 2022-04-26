@@ -581,6 +581,7 @@ class BaseZenStore(ABC):
     @abstractmethod
     def flavors(self) -> List[FlavorWrapper]:
         """All registered flavors.
+
         Returns:
             A list of all registered flavors.
         """
@@ -593,7 +594,21 @@ class BaseZenStore(ABC):
         stack_component_type: StackComponentType,
         integration: str = "",
     ) -> FlavorWrapper:
-        pass
+        """Creates a new flavor.
+
+        Args:
+            source: the source path to the implemented flavor.
+            name: the name of the flavor.
+            stack_component_type: the corresponding StackComponentType.
+            integration: the name of the integration.
+
+        Returns:
+             The newly created flavor.
+
+        Raises:
+            EntityExistsError: If a flavor with the given name and type
+                already exists.
+        """
 
     @abstractmethod
     def get_flavor_by_name_and_type(
@@ -602,16 +617,17 @@ class BaseZenStore(ABC):
         component_type: StackComponentType,
     ) -> FlavorWrapper:
         """Fetch a flavor by a given name and type.
+
         Args:
-            flavor_name: The name of the flavor
-            component_type: Optional, the type of the component
-            ensure_exists: If `True`, raises an error if the entity doesn't
-                exist
+            flavor_name: The name of the flavor.
+            component_type: Optional, the type of the component.
+
         Returns:
             Flavor instance if it exists
+
         Raises:
-            KeyError: If no flavor exists with the given name or there are more
-                than one instances
+            KeyError: If no flavor exists with the given name and type
+                or there are more than one instances
         """
 
     @abstractmethod
@@ -619,10 +635,12 @@ class BaseZenStore(ABC):
         self, component_type: StackComponentType
     ) -> List[FlavorWrapper]:
         """Fetch all flavor defined for a specific stack component type.
+
         Args:
-            component_type: The type of the stack component
+            component_type: The type of the stack component.
+
         Returns:
-            List of all the flavors for the given stack component type
+            List of all the flavors for the given stack component type.
         """
 
     # Common code (user facing):
@@ -781,6 +799,10 @@ class BaseZenStore(ABC):
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
     def register_default_flavors(self) -> None:
+        """Populates the store with the default flavors + the flavors added
+        by integrations.
+        """
+        # Add the default flavors
         from zenml.artifact_stores import LocalArtifactStore
         from zenml.container_registries import BaseContainerRegistry
         from zenml.metadata_stores import (
@@ -806,8 +828,8 @@ class BaseZenStore(ABC):
                 integration="built-in",
             )
 
+        # Add the flavors added by the integrations
         from zenml.integrations.registry import integration_registry
-
         integration_registry.declare_integrations(store=self)
 
     def create_default_user(self) -> None:
