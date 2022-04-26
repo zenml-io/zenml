@@ -13,18 +13,22 @@
 
 ## Advanced Guide
 
-* [Integrations with Popular Tools](stack_components/integrations.md)
-* [Use `zenml example run`](advanced_guide/zenml-example-cli.md)
-* [Run your Pipeline on Kubeflow](advanced_guide/run_on_kubeflow.md)
-* [Visualize your Data](advanced_guide/explore_data.md)
-* [Add Experiment Tracking](advanced_guide/experiment_tracking.md)
-* [Perform Drift Detection](advanced_guide/drift_detection.md)
-* [Execute Pipelines in the Cloud](advanced_guide/guide-aws-gcp-azure.md)
-* [Manage your Secrets](advanced_guide/secrets.md)
-* [Manage External Services](advanced_guide/services.md)
-* [Continuous Training and Deployment](advanced_guide/continuous-training-and-deployment.md)
-* [Run Steps on Specialized Hardware](advanced_guide/step-operators.md)
-* [Bypassing materialization](advanced_guide/skip-materialization.md)
+* Advanced ZenML
+  * [Use `zenml example run`](advanced_guide/zenml-example-cli.md)
+  * [Bypassing materialization](advanced_guide/skip-materialization.md)
+* Integrations
+  * [Integrations with Popular Tools](stack_components/integrations.md)
+  * [Run your Pipeline on Kubeflow](advanced_guide/run_on_kubeflow.md)
+  * [Visualize your Data](advanced_guide/explore_data.md)
+  * [Add Experiment Tracking](advanced_guide/experiment_tracking.md)
+  * [Perform Drift Detection](advanced_guide/drift_detection.md)
+  * [Manage your Secrets](advanced_guide/secrets.md)
+* Cloud
+  * [Manage External Services](advanced_guide/services.md)
+  * [Execute Pipelines in the Cloud](advanced_guide/guide-aws-gcp-azure.md)
+  * [Continuous Training and Deployment](advanced_guide/continuous-training-and-deployment.md)
+  * [Run Steps on Specialized Hardware](advanced_guide/step-operators.md)
+
 
 ## Collaborate
 
