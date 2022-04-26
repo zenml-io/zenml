@@ -27,7 +27,7 @@ def test_gcp_artifact_store_attributes():
     correctly."""
     artifact_store = GCPArtifactStore(name="", path="gs://tmp")
     assert artifact_store.TYPE == StackComponentType.ARTIFACT_STORE
-    assert artifact_store.FLAVOR == "gcp"
+    assert artifact_store.FLAVOR == "gcs"
 
 
 def test_must_be_gcs_path():
