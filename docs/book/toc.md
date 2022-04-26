@@ -24,7 +24,6 @@
 ## Use Cases
 
 * [Use `zenml example run`](use_cases/zenml-example-cli.md)
-* [Get your data from a Feature Store](use_cases/feature-store.md)
 * [Run your Pipeline on Kubeflow](use_cases/run_on_kubeflow.md)
 * [Visualize your Data](use_cases/explore_data.md)
 * [Add Experiment Tracking](use_cases/experiment_tracking.md)
