@@ -88,9 +88,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     @staticmethod
     def _get_k3d_cluster_name(uuid: UUID) -> str:
-        """Returns the K3D cluster name corresponding to the orchestrator
+        """Returns the k3d cluster name corresponding to the orchestrator
         UUID."""
-        # K3D only allows cluster names with up to 32 characters, use the
+        # k3d only allows cluster names with up to 32 characters; use the
         # first 8 chars of the orchestrator UUID as identifier
         return f"zenml-kubeflow-{str(uuid)[:8]}"
 
@@ -510,7 +510,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns if the local k3d cluster for this orchestrator is provisioned.
 
         For remote (i.e. not managed by ZenML) Kubeflow Pipelines installations,
-        this always returned True.
+        this always returns True.
         """
         if not self.is_local:
             return True
@@ -523,7 +523,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns if the local k3d cluster for this orchestrator is running.
 
         For remote (i.e. not managed by ZenML) Kubeflow Pipelines installations,
-        this always returned True.
+        this always returns True.
         """
         if not self.is_local:
             return True

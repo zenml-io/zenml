@@ -222,7 +222,7 @@ class KubeflowMetadataStore(BaseMetadataStore):
             from zenml.utils import daemon
 
             def _daemon_function() -> None:
-                """Port-forwards the Kubeflow Pipelines Metadata pod."""
+                """Forwards the port of the Kubeflow Pipelines Metadata pod ."""
                 subprocess.check_call(command)
 
             daemon.run_as_daemon(
@@ -268,13 +268,13 @@ class KubeflowMetadataStore(BaseMetadataStore):
                 break
             except Exception as e:
                 logger.info(
-                    "The Kubeflow metadata store is not ready yet, waiting for "
+                    "The Kubeflow metadata store is not ready yet. Waiting for "
                     "10 seconds..."
                 )
                 if timeout <= 0:
                     raise RuntimeError(
-                        f"An unexpected error was encountered while waiting the "
-                        f"Kubeflow Metadata store to be functional: {str(e)}"
+                        f"An unexpected error was encountered while waiting for the "
+                        f"Kubeflow metadata store to be functional: {str(e)}"
                     ) from e
                 timeout -= 10
                 time.sleep(10)
