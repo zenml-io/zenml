@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 """CLI to interact with pipelines."""
 import types
-from typing import Any
+from typing import Any, Union
 
 import click
 
 from zenml.cli.cli import cli
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
-    StepConfigurationKeys,
+    StepConfigurationKeys, SourceConfigurationKeys,
 )
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
@@ -29,7 +29,31 @@ from zenml.utils import source_utils, yaml_utils
 logger = get_logger(__name__)
 
 
-def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
+def _get_module(module: types.ModuleType, config_item: Union[str, dict]) -> Any:
+    """"""
+    if isinstance(config_item, dict):
+        config_item_module = source_utils.import_python_file(
+            config_item[SourceConfigurationKeys.FILE_])
+
+        implementation_name = config_item[SourceConfigurationKeys.NAME_]
+        implemented_class = _get_module_attribute(config_item_module,
+                                                  implementation_name)
+        return implemented_class
+    elif isinstance(config_item, str):
+        step_class = _get_module_attribute(module, config_item)
+
+        return step_class
+    else:
+        raise PipelineConfigurationError(
+            f"Only `str` and `dict` values are allowed for "
+            f"'step_source' attribute of a step configuration. You "
+            f"tried to pass in `{config_item}` (type: "
+            f"`{type(config_item).__name__}`)."
+        )
+
+
+def _get_module_attribute(module: types.ModuleType,
+                          attribute_name: str) -> Any:
     """Gets an attribute from a module.
 
     Args:
@@ -85,9 +109,9 @@ def run_pipeline(python_file: str, config_path: str) -> None:
         PipelineConfigurationKeys.STEPS
     ].items():
         StepConfigurationKeys.key_check(step_config)
-        step_class = _get_module_attribute(
-            module, step_config[StepConfigurationKeys.SOURCE_]
-        )
+        source = step_config[StepConfigurationKeys.SOURCE_]
+        step_class = _get_module(module, source)
+
         step_instance = step_class()
         materializers_config = step_config.get(
             StepConfigurationKeys.MATERIALIZERS_, None
@@ -96,12 +120,12 @@ def run_pipeline(python_file: str, config_path: str) -> None:
             # We need to differentiate whether it's a single materializer
             # or a dictionary mapping output names to materializers
             if isinstance(materializers_config, str):
-                materializers = _get_module_attribute(
+                materializers = _get_module(
                     module, materializers_config
                 )
             elif isinstance(materializers_config, dict):
                 materializers = {
-                    output_name: _get_module_attribute(module, source)
+                    output_name: _get_module(module, source)
                     for output_name, source in materializers_config.items()
                 }
             else:
@@ -116,7 +140,6 @@ def run_pipeline(python_file: str, config_path: str) -> None:
             )
 
         steps[step_name] = step_instance
-
     pipeline_instance = pipeline_class(**steps).with_config(
         config_path, overwrite_step_parameters=True
     )

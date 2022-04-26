@@ -457,11 +457,20 @@ def import_python_file(file_path: str) -> types.ModuleType:
         file_path: Path to python file that should be imported.
 
     Returns:
-        The imported module.
+        imported module: Module
     """
     # Add directory of python file to PYTHONPATH so we can import it
     file_path = os.path.abspath(file_path)
     sys.path.append(os.path.dirname(file_path))
-
     module_name = os.path.splitext(os.path.basename(file_path))[0]
-    return importlib.import_module(module_name)
+
+    full_module_path = (os.path
+                        .splitext(os.path.relpath(file_path, os.getcwd()))[0]
+                        .replace('/', '.'))
+
+    if full_module_path not in sys.modules:
+        return importlib.import_module(module_name)
+    else:
+        module_name = os.path.splitext(
+            os.path.relpath(file_path, os.getcwd()))[0]
+        return sys.modules[module_name.replace('/', '.')]
