@@ -1,8 +1,14 @@
 # Gradient Boosting with LightGBM and ZenML
 
-[LightGBM](https://lightgbm.readthedocs.io/en/latest/) is an optimized distributed gradient boosting library designed to be highly efficient, flexible and portable. It implements machine learning algorithms under the Gradient Boosting framework. LightGBM provides a parallel tree boosting (also known as GBDT, GBM) that solve many data science problems in a fast and accurate way. 
+[LightGBM](https://lightgbm.readthedocs.io/en/latest/) is a gradient boosting framework that uses tree based learning algorithms. It is designed to be distributed and efficient with the following advantages:
 
-This example showcases how to train a `lightgbm.Booster` model in a ZenML pipeline. The ZenML `LightGBM` integration includes a custom materializer that persists the trained `lightgbm.Booster` model to and from the artifact store. It also includes materializers for the custom `LightGBM.Dataset` data object.
+- Faster training speed and higher efficiency.
+- Lower memory usage.
+- Better accuracy.
+- Support of parallel, distributed, and GPU learning.
+- Capable of handling large-scale data.
+
+This example showcases how to train a `lightgbm.Booster` model in a ZenML pipeline. The ZenML LightGBM integration includes a custom materializer that persists the trained `lightgbm.Booster` model to and from the artifact store. It also includes materializers for the custom `LightGBM.Dataset` data object.
 
 The data used in this example is the quickstart LightGBM data and is available in the [simple Python example of the LightGBM repository](https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/simple_example.py).
 
