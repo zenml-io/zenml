@@ -301,14 +301,37 @@ pipeline will be run twice, possibly with different configurations.
 ### Supply the names of the step functions (and materializers)
 
 In total the step functions can be supplied with 3 arguments here:
-* source - name of the Step (Step needs to be in the run.py file)
+* source 
+  * name of the step (if it is in the run.py)
+  * dictionary with `file` for the relative filepath to the file containing the step and `name` of the step
+
+{% tabs %}
+{% tab title="Same file" %}
+```yaml
+  steps:
+    step_1:
+      source: my_first_step
+```
+{% endtab %}
+{% tab title="Different File" %}
+```yaml
+  steps:
+    step_1:
+      source:
+        file: steps/steps.py
+        name: my_first_step
+```
+{% endtab %}
+{% endtabs %}
 * parameters - list of parameters for the StepConfig
 * materializers - dict of output_name and corresponding Materializer (Materializer needs to be in the run.py file)
 
 {% tabs %}
 {% tab title="config.yaml" %}
 ```yaml
+...
 steps:
+  ...
   step_2:
     source: my_second_step
     parameters:
