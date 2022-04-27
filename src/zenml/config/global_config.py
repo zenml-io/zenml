@@ -336,9 +336,11 @@ class GlobalConfiguration(
         # ProfileConfiguration and the Repository classes to avoid triggering
         # the analytics and interact directly with the store creation
         config_copy.profiles[profile.name] = profile
-        store = Repository.create_store(profile, skip_default_stack=True)
+        store = Repository.create_store(
+            profile, skip_default_registrations=True
+        )
         # transfer the active stack to the new store
-        store.register_stack(repo.stack_store.get_stack(repo.active_stack_name))
+        store.register_stack(repo.zen_store.get_stack(repo.active_stack_name))
 
         # if a custom load config path is specified, use it to replace the
         # current store local path in the profile URL

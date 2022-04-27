@@ -86,7 +86,7 @@ class ZenService(LocalDaemonService):
         name="zen_service",
         type="zenml",
         flavor="zenml",
-        description="ZenService to manage stacks, user and pipelines",
+        description="ZenService to manage stacks, users and pipelines",
     )
 
     config: ZenServiceConfig

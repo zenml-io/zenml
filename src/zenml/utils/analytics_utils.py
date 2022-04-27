@@ -38,10 +38,12 @@ class AnalyticsEvent(str, Enum):
 
     # Components
     REGISTERED_STACK_COMPONENT = "Stack component registered"
+    UPDATED_STACK_COMPONENT = "Stack component updated"
 
     # Stack
     REGISTERED_STACK = "Stack registered"
     SET_STACK = "Stack set"
+    UPDATED_STACK = "Stack updated"
 
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
@@ -86,7 +88,8 @@ def get_environment() -> str:
 
 
 def track_event(
-    event: Union[str, AnalyticsEvent], metadata: Optional[Dict[str, Any]] = None
+    event: Union[str, AnalyticsEvent],
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> bool:
     """
     Track segment event if user opted-in.
@@ -177,7 +180,8 @@ def parametrized(
 
 @parametrized
 def track(
-    func: Callable[..., Any], event: Optional[Union[str, AnalyticsEvent]] = None
+    func: Callable[..., Any],
+    event: Optional[Union[str, AnalyticsEvent]] = None,
 ) -> Callable[..., Any]:
     """Decorator to track event.
 

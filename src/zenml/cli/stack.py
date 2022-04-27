@@ -177,6 +177,279 @@ def register_stack(
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
 
+@stack.command("update", context_settings=dict(ignore_unknown_options=True))
+@click.argument("stack_name", type=str, required=True)
+@click.option(
+    "-m",
+    "--metadata-store",
+    "metadata_store_name",
+    help="Name of the new metadata store for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-a",
+    "--artifact-store",
+    "artifact_store_name",
+    help="Name of the new artifact store for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-o",
+    "--orchestrator",
+    "orchestrator_name",
+    help="Name of the new orchestrator for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-c",
+    "--container_registry",
+    "container_registry_name",
+    help="Name of the new container registry for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-s",
+    "--step_operator",
+    "step_operator_name",
+    help="Name of the new step operator for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-x",
+    "--secrets_manager",
+    "secrets_manager_name",
+    help="Name of the new secrets manager for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-f",
+    "--feature_store",
+    "feature_store_name",
+    help="Name of the new feature store for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-d",
+    "--model-deployer",
+    "model_deployer_name",
+    help="Name of the new model deployer for this stack.",
+    type=str,
+    required=False,
+)
+def update_stack(
+    stack_name: str,
+    metadata_store_name: Optional[str] = None,
+    artifact_store_name: Optional[str] = None,
+    orchestrator_name: Optional[str] = None,
+    container_registry_name: Optional[str] = None,
+    step_operator_name: Optional[str] = None,
+    secrets_manager_name: Optional[str] = None,
+    feature_store_name: Optional[str] = None,
+    model_deployer_name: Optional[str] = None,
+) -> None:
+    """Update a stack."""
+    with console.status(f"Updating stack `{stack_name}`...\n"):
+        repo = Repository()
+        try:
+            current_stack = repo.get_stack(stack_name)
+        except KeyError:
+            cli_utils.error(
+                f"Stack `{stack_name}` cannot be updated as it does not exist.",
+            )
+        stack_components = current_stack.components
+
+        if metadata_store_name:
+            stack_components[
+                StackComponentType.METADATA_STORE
+            ] = repo.get_stack_component(
+                StackComponentType.METADATA_STORE, name=metadata_store_name
+            )
+
+        if artifact_store_name:
+            stack_components[
+                StackComponentType.ARTIFACT_STORE
+            ] = repo.get_stack_component(
+                StackComponentType.ARTIFACT_STORE, name=artifact_store_name
+            )
+
+        if orchestrator_name:
+            stack_components[
+                StackComponentType.ORCHESTRATOR
+            ] = repo.get_stack_component(
+                StackComponentType.ORCHESTRATOR, name=orchestrator_name
+            )
+
+        if container_registry_name:
+            stack_components[
+                StackComponentType.CONTAINER_REGISTRY
+            ] = repo.get_stack_component(
+                StackComponentType.CONTAINER_REGISTRY,
+                name=container_registry_name,
+            )
+
+        if step_operator_name:
+            stack_components[
+                StackComponentType.STEP_OPERATOR
+            ] = repo.get_stack_component(
+                StackComponentType.STEP_OPERATOR,
+                name=step_operator_name,
+            )
+
+        if secrets_manager_name:
+            stack_components[
+                StackComponentType.SECRETS_MANAGER
+            ] = repo.get_stack_component(
+                StackComponentType.SECRETS_MANAGER,
+                name=secrets_manager_name,
+            )
+
+        if feature_store_name:
+            stack_components[
+                StackComponentType.FEATURE_STORE
+            ] = repo.get_stack_component(
+                StackComponentType.FEATURE_STORE,
+                name=feature_store_name,
+            )
+
+        if model_deployer_name:
+            stack_components[
+                StackComponentType.MODEL_DEPLOYER
+            ] = repo.get_stack_component(
+                StackComponentType.MODEL_DEPLOYER,
+                name=model_deployer_name,
+            )
+
+        stack_ = Stack.from_components(
+            name=stack_name, components=stack_components
+        )
+        repo.update_stack(stack_name, stack_)
+        cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
+
+
+@stack.command(
+    "remove-component", context_settings=dict(ignore_unknown_options=True)
+)
+@click.argument("stack_name", type=str, required=True)
+@click.option(
+    "-c",
+    "--container_registry",
+    "container_registry_flag",
+    help="Include this to remove the container registry from this stack.",
+    is_flag=True,
+    required=False,
+)
+@click.option(
+    "-s",
+    "--step_operator",
+    "step_operator_flag",
+    help="Include this to remove the step operator from this stack.",
+    is_flag=True,
+    required=False,
+)
+@click.option(
+    "-x",
+    "--secrets_manager",
+    "secrets_manager_flag",
+    help="Include this to remove the secrets manager from this stack.",
+    is_flag=True,
+    required=False,
+)
+@click.option(
+    "-f",
+    "--feature_store",
+    "feature_store_flag",
+    help="Include this to remove the feature store from this stack.",
+    is_flag=True,
+    required=False,
+)
+@click.option(
+    "-d",
+    "--model_deployer",
+    "model_deployer_flag",
+    help="Include this to remove the model deployer from this stack.",
+    is_flag=True,
+    required=False,
+)
+def remove_stack_component(
+    stack_name: str,
+    container_registry_flag: Optional[bool] = False,
+    step_operator_flag: Optional[bool] = False,
+    secrets_manager_flag: Optional[bool] = False,
+    feature_store_flag: Optional[bool] = False,
+    model_deployer_flag: Optional[bool] = False,
+) -> None:
+    """Remove stack components from a stack."""
+    with console.status(f"Updating stack `{stack_name}`...\n"):
+        repo = Repository()
+        try:
+            current_stack = repo.get_stack(stack_name)
+        except KeyError:
+            cli_utils.error(
+                f"Stack `{stack_name}` cannot be updated as it does not exist.",
+            )
+        stack_components = current_stack.components
+
+        if container_registry_flag:
+            stack_components.pop(StackComponentType.CONTAINER_REGISTRY, None)
+
+        if step_operator_flag:
+            stack_components.pop(StackComponentType.STEP_OPERATOR, None)
+
+        if secrets_manager_flag:
+            stack_components.pop(StackComponentType.SECRETS_MANAGER, None)
+
+        if feature_store_flag:
+            stack_components.pop(StackComponentType.FEATURE_STORE, None)
+
+        if model_deployer_flag:
+            stack_components.pop(StackComponentType.MODEL_DEPLOYER, None)
+
+        stack_ = Stack.from_components(
+            name=stack_name, components=stack_components
+        )
+        repo.update_stack(stack_name, stack_)
+        cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
+
+
+@stack.command("rename")
+@click.argument("current_stack_name", type=str, required=True)
+@click.argument("new_stack_name", type=str, required=True)
+def rename_stack(
+    current_stack_name: str,
+    new_stack_name: str,
+) -> None:
+    """Rename a stack."""
+    with console.status(f"Renaming stack `{current_stack_name}`...\n"):
+        repo = Repository()
+        try:
+            current_stack = repo.get_stack(current_stack_name)
+        except KeyError:
+            cli_utils.error(
+                f"Stack `{current_stack_name}` cannot be renamed as it does not exist.",
+            )
+        stack_components = current_stack.components
+
+        registered_stacks = {stack.name for stack in repo.stacks}
+        if new_stack_name in registered_stacks:
+            cli_utils.error(
+                f"Stack `{new_stack_name}` already exists. Please choose a different name.",
+            )
+        new_stack_ = Stack.from_components(
+            name=new_stack_name, components=stack_components
+        )
+        repo.update_stack(current_stack_name, new_stack_)
+        cli_utils.declare(
+            f"Stack `{current_stack_name}` successfully renamed as `{new_stack_name}`!"
+        )
+
+
 @stack.command("list")
 def list_stacks() -> None:
     """List all available stacks in the active profile."""
@@ -253,7 +526,6 @@ def delete_stack(stack_name: str) -> None:
     cli_utils.print_active_profile()
 
     with console.status(f"Deleting stack '{stack_name}'...\n"):
-
         cfg = GlobalConfiguration()
         repo = Repository()
 
@@ -301,7 +573,6 @@ def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
     with console.status(
         f"Setting the{scope} active stack to '{stack_name}'..."
     ):
-
         if global_profile:
             repo.active_profile.activate_stack(stack_name)
         else:
@@ -316,7 +587,6 @@ def get_active_stack() -> None:
     cli_utils.print_active_profile()
 
     with console.status("Getting the active stack..."):
-
         repo = Repository()
         cli_utils.declare(f"The active stack is: '{repo.active_stack_name}'")
 

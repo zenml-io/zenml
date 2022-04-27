@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import uuid
+from pathlib import Path
 from typing import Any, ClassVar, Dict, List
 
 from zenml.cli.utils import error
@@ -62,6 +63,11 @@ class LocalSecretsManager(BaseSecretsManager):
             kwargs["secrets_file"] = get_secret_store_path(temp_uuid)
             kwargs["uuid"] = temp_uuid
         super().__init__(*args, **kwargs)
+
+    @property
+    def local_path(self) -> str:
+        """Path to the local directory where the secrets are stored."""
+        return str(Path(self.secrets_file).parent)
 
     def _create_secrets_file__if_not_exists(self) -> None:
         """Makes sure the secrets yaml file exists"""

@@ -13,15 +13,16 @@
 #  permissions and limitations under the License.
 
 from collections import defaultdict
-from typing import DefaultDict, Dict
+from typing import DefaultDict, Dict, List, Set
 
 from pydantic import BaseModel, validator
 
 from zenml.enums import StackComponentType
+from zenml.zen_stores.models import Project, Role, RoleAssignment, Team, User
 
 
-class StackStoreModel(BaseModel):
-    """Pydantic object used for serializing a ZenML Stack Store.
+class ZenStoreModel(BaseModel):
+    """Pydantic object used for serializing a ZenStore.
 
     Attributes:
         version: zenml version number
@@ -29,22 +30,43 @@ class StackStoreModel(BaseModel):
             names and flavors of all stack components.
         stack_components: Contains names and flavors of all registered stack
             components.
+        users: All registered users.
+        teams: All registered teams.
+        projects: All registered projects.
+        roles: All registered roles.
+        role_assignments: All role assignments.
+        team_assignments: Maps team names to names of users that are part of
+            the team.
     """
 
     stacks: Dict[str, Dict[StackComponentType, str]]
     stack_components: DefaultDict[StackComponentType, Dict[str, str]]
+    users: List[User] = []
+    teams: List[Team] = []
+    projects: List[Project] = []
+    roles: List[Role] = []
+    role_assignments: List[RoleAssignment] = []
+    team_assignments: DefaultDict[str, Set[str]] = defaultdict(set)
 
     @validator("stack_components")
-    def _construct_defaultdict(
+    def _construct_stack_components_defaultdict(
         cls, stack_components: Dict[StackComponentType, Dict[str, str]]
     ) -> DefaultDict[StackComponentType, Dict[str, str]]:
         """Ensures that `stack_components` is a defaultdict so stack
         components of a new component type can be added without issues."""
         return defaultdict(dict, stack_components)
 
+    @validator("team_assignments")
+    def _construct_team_assignments_defaultdict(
+        cls, team_assignments: Dict[str, Set[str]]
+    ) -> DefaultDict[str, Set[str]]:
+        """Ensures that `team_assignments` is a defaultdict so users
+        of a new teams can be added without issues."""
+        return defaultdict(set, team_assignments)
+
     @classmethod
-    def empty_store(cls) -> "StackStoreModel":
-        """Initialize a new empty stack store with current zen version."""
+    def empty_store(cls) -> "ZenStoreModel":
+        """Initialize a new empty zen store with current zen version."""
         return cls(stacks={}, stack_components={})
 
     class Config:

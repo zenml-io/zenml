@@ -189,7 +189,7 @@ When you want to configure your ZenML project to access the data from this
 service, you must create a new profile that uses the `rest` store-type:
 
 ```sh
-zenml profile create $PROFILE_NAME --type=rest --url=http://localhost:8000
+zenml profile create $PROFILE_NAME --store-type rest --url http://localhost:8000
 zenml profile set $PROFILE_NAME
 ```
 
