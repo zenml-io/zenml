@@ -195,8 +195,10 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             # store. this only works in case of a local artifact store, so we
             # make sure to prevent stack with other artifact stores for now
             return StackValidator(
-                custom_validation_function=lambda stack: isinstance(
-                    stack.artifact_store, LocalArtifactStore
+                custom_validation_function=lambda stack: (
+                    isinstance(stack.artifact_store, LocalArtifactStore),
+                    "MLflow experiment tracker without a specified tracking "
+                    "uri only works with a local artifact store.",
                 )
             )
 
