@@ -151,6 +151,11 @@ class StackComponent(BaseModel, ABC):
         """If the component is running locally."""
         return True
 
+    @property
+    def is_suspended(self) -> bool:
+        """If the component is suspended."""
+        return not self.is_running
+
     def provision(self) -> None:
         """Provisions resources to run the component locally."""
         raise NotImplementedError(

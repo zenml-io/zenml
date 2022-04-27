@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import TYPE_CHECKING, AbstractSet, Callable, Optional
+from typing import TYPE_CHECKING, AbstractSet, Callable, Optional, Tuple
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
@@ -36,7 +36,9 @@ class StackValidator:
     def __init__(
         self,
         required_components: Optional[AbstractSet[StackComponentType]] = None,
-        custom_validation_function: Optional[Callable[["Stack"], bool]] = None,
+        custom_validation_function: Optional[
+            Callable[["Stack"], Tuple[bool, str]]
+        ] = None,
     ):
         """Initializes a `StackValidator` instance.
 
@@ -44,7 +46,7 @@ class StackValidator:
             required_components: Optional set of stack components that must
                 exist in the stack.
             custom_validation_function: Optional function that returns whether
-                a stack is valid.
+                a stack is valid and an error message to show if not valid.
         """
         self._required_components = required_components or set()
         self._custom_validation_function = custom_validation_function
@@ -63,14 +65,13 @@ class StackValidator:
         if missing_components:
             raise StackValidationError(
                 f"Missing stack components {missing_components} for "
-                f"stack: {stack}"
+                f"stack: {stack.name}"
             )
 
-        if (
-            self._custom_validation_function
-            and not self._custom_validation_function(stack)
-        ):
-            raise StackValidationError(
-                f"Custom validation function failed to validate "
-                f"stack: {stack}"
-            )
+        if self._custom_validation_function:
+            valid, err_msg = self._custom_validation_function(stack)
+            if not valid:
+                raise StackValidationError(
+                    f"Custom validation function failed to validate "
+                    f"stack '{stack.name}': {err_msg}"
+                )
