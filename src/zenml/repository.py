@@ -827,6 +827,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 registered and a different component with the same name
                 already exists.
         """
+        stack.validate()
         metadata = self.zen_store.register_stack(StackWrapper.from_stack(stack))
         metadata["store_type"] = self.active_profile.store_type.value
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
@@ -840,6 +841,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Raises:
             KeyError: If no stack exists for the given name."""
+        stack.validate()
         metadata = self.zen_store.update_stack(
             name, StackWrapper.from_stack(stack)
         )
