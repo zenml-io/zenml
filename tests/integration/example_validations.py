@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 from typing import Dict
 
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.repository import Repository
+from zenml.stack import Stack
 
 
 def generate_basic_validation_function(
@@ -84,6 +85,26 @@ def drift_detection_example_validation(repository: Repository):
     assert output.get("data_drift") is not None
 
 
+def mlflow_tracking_setup(repository: Repository) -> None:
+    """Adds an MLflow experiment tracking component to the active stack."""
+    # install the mlflow integration so we can import the stack component
+    import subprocess
+
+    subprocess.check_call(["zenml", "integration", "install", "mlflow", "-f"])
+
+    from zenml.integrations.mlflow.experiment_trackers import (
+        MLFlowExperimentTracker,
+    )
+
+    components = repository.active_stack.components
+    components[StackComponentType.EXPERIMENT_TRACKER] = MLFlowExperimentTracker(
+        name="mlflow_tracker"
+    )
+    stack = Stack.from_components(name="mlflow_stack", components=components)
+    repository.register_stack(stack)
+    repository.activate_stack(stack.name)
+
+
 def mlflow_tracking_example_validation(repository: Repository):
     """Validates the metadata store after running the mlflow tracking
     example."""
@@ -98,10 +119,13 @@ def mlflow_tracking_example_validation(repository: Repository):
     import mlflow
     from mlflow.tracking import MlflowClient
 
-    from zenml.integrations.mlflow.mlflow_environment import MLFlowEnvironment
+    from zenml.integrations.mlflow.experiment_trackers import (
+        MLFlowExperimentTracker,
+    )
 
-    # Create and activate the global MLflow environment
-    MLFlowEnvironment().activate()
+    experiment_tracker = repository.active_stack.experiment_tracker
+    assert isinstance(experiment_tracker, MLFlowExperimentTracker)
+    experiment_tracker.configure_mlflow()
 
     # fetch the MLflow experiment created for the pipeline runs
     mlflow_experiment = mlflow.get_experiment_by_name(pipeline.name)
