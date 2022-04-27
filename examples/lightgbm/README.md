@@ -5,7 +5,7 @@
 - Faster training speed and higher efficiency.
 - Lower memory usage.
 - Better accuracy.
-- Support of parallel, distributed, and GPU learning.
+- Support for parallel, distributed, and GPU learning.
 - Capable of handling large-scale data.
 
 This example showcases how to train a `lightgbm.Booster` model in a ZenML pipeline. The ZenML LightGBM integration includes a custom materializer that persists the trained `lightgbm.Booster` model to and from the artifact store. It also includes materializers for the custom `LightGBM.Dataset` data object.
