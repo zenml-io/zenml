@@ -14,7 +14,6 @@
 import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
-from zenml.environment import Environment
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
@@ -45,18 +44,13 @@ def enable_mlflow(
 
 
 @overload
-def enable_mlflow(
-    *,
-    experiment_name: Optional[str] = None,
-) -> Callable[[S], S]:
+def enable_mlflow() -> Callable[[S], S]:
     """Type annotations for mlflow step decorator in case of arguments."""
     ...
 
 
 def enable_mlflow(
     _step: Optional[S] = None,
-    *,
-    experiment_name: Optional[str] = None,
 ) -> Union[S, Callable[[S], S]]:
     """Decorator to enable mlflow for a step function.
 
@@ -87,9 +81,6 @@ def enable_mlflow(
 
     Args:
         _step: The decorated step class.
-        experiment_name: optional mlflow experiment name to use for the step.
-            If not provided, the name of the pipeline in the context of which
-            the step is executed will be used as experiment name.
 
     Returns:
         The inner decorator which enhaces the input step class with mlflow
@@ -114,7 +105,7 @@ def enable_mlflow(
                 (_step,),
                 {
                     STEP_INNER_FUNC_NAME: staticmethod(
-                        mlflow_step_entrypoint(experiment_name)(source_fn)
+                        mlflow_step_entrypoint()(source_fn)
                     ),
                     "__module__": _step.__module__,
                 },
@@ -127,15 +118,8 @@ def enable_mlflow(
         return inner_decorator(_step)
 
 
-def mlflow_step_entrypoint(
-    experiment_name: Optional[str] = None,
-) -> Callable[[F], F]:
+def mlflow_step_entrypoint() -> Callable[[F], F]:
     """Decorator for a step entrypoint to enable mlflow.
-
-    Args:
-        experiment_name: optional mlflow experiment name to use for the step.
-            If not provided, the name of the pipeline in the context of which
-            the step is executed will be used as experiment name.
 
     Returns:
         the input function enhanced with mlflow profiling functionality
@@ -154,9 +138,6 @@ def mlflow_step_entrypoint(
                 "Setting up MLflow backend before running step entrypoint %s",
                 func.__name__,
             )
-            step_env = Environment().step_environment
-            experiment = experiment_name or step_env.pipeline_name
-
             experiment_tracker = Repository(  # type: ignore[call-arg]
                 skip_repository_check=True
             ).active_stack.experiment_tracker
@@ -164,14 +145,12 @@ def mlflow_step_entrypoint(
             if not isinstance(experiment_tracker, MLFlowExperimentTracker):
                 raise get_missing_mlflow_experiment_tracker_error()
 
-            with experiment_tracker.activate_mlflow_run(
-                experiment_name=experiment, run_name=step_env.pipeline_run_id
-            ):
-                # should never happen; just in case
-                assert experiment_tracker.active_run
+            active_run = experiment_tracker.active_run
+            if not active_run:
+                raise RuntimeError("No active mlflow run configued.")
 
-                with experiment_tracker.active_run:
-                    return func(*args, **kwargs)
+            with active_run:
+                return func(*args, **kwargs)
 
         return cast(F, wrapper)
 
