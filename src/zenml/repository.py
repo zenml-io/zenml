@@ -211,7 +211,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         if profile:
             # calling this will initialize the store and create the default
             # stack configuration, if missing
-            self._set_active_profile(profile)
+            self._set_active_profile(profile, new_profile=True)
             return
 
         self._set_active_root(root)
@@ -295,7 +295,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         # profile
         self._sanitize_config()
 
-    def _set_active_profile(self, profile: ProfileConfiguration) -> None:
+    def _set_active_profile(
+        self, profile: ProfileConfiguration, new_profile: bool = False
+        ) -> None:
         """Set the supplied configuration profile as the active profile for
         this repository.
 
@@ -307,7 +309,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             profile: configuration profile to set as active.
         """
         self._profile = profile
-        self.zen_store: BaseZenStore = self.create_store(profile)
+        self.zen_store: BaseZenStore = self.create_store(
+            profile, skip_default_registrations=not new_profile
+            )
 
         # Sanitize the repository configuration to reflect the active
         # profile and its store contents
