@@ -28,7 +28,7 @@ from typing import (
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
-from zenml.exceptions import ProvisioningError
+from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
@@ -90,8 +90,6 @@ class Stack:
         self._secrets_manager = secrets_manager
         self._feature_store = feature_store
         self._model_deployer = model_deployer
-
-        self.validate()
 
     @classmethod
     def from_components(
@@ -367,6 +365,17 @@ class Stack:
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
+        self.validate()
+
+        for component in self.components.values():
+            if not component.is_running:
+                raise StackValidationError(
+                    f"The '{component.name}' {component.TYPE} stack component "
+                    f"is not currently running. Please run the following "
+                    f"command to provision and start the component:\n\n"
+                    f"    `zenml stack up`\n"
+                )
+
         for component in self.components.values():
             component.prepare_pipeline_deployment(
                 pipeline=pipeline,
@@ -492,7 +501,7 @@ class Stack:
             "Suspending provisioned resources for stack '%s'.", self.name
         )
         for component in self.components.values():
-            if component.is_running:
+            if not component.is_suspended:
                 try:
                     component.suspend()
                     logger.info("Suspended resources for %s.", component)

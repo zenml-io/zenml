@@ -89,11 +89,16 @@ class VertexStepOperator(BaseStepOperator):
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry."""
 
-        def _ensure_local_orchestrator(stack: Stack) -> bool:
+        def _ensure_local_orchestrator(stack: Stack) -> Tuple[bool, str]:
             # For now this only works on local orchestrator and GCP artifact
             #  store
-            return (stack.orchestrator.FLAVOR == "local") and (
-                stack.artifact_store.FLAVOR == "gcp"
+            return (
+                (
+                    stack.orchestrator.FLAVOR == "local"
+                    and stack.artifact_store.FLAVOR == "gcp"
+                ),
+                "Only local orchestrator and GCP artifact store are currently "
+                "supported",
             )
 
         return StackValidator(

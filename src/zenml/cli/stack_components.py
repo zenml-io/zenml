@@ -453,31 +453,38 @@ def generate_stack_component_down_command(
         component = _get_stack_component(component_type, component_name=name)
         display_name = _component_display_name(component_type)
 
-        if component.is_running and not force:
-            cli_utils.declare(
-                f"Suspending local resources for {display_name} "
-                f"'{component.name}'."
-            )
-            try:
-                component.suspend()
-            except NotImplementedError:
-                cli_utils.error(
-                    f"Provisioning local resources not implemented for "
-                    f"{display_name} '{component.name}'. If you want to "
-                    f"deprovision all resources for this component, use the "
-                    f"`--force/-f` flag."
+        if not force:
+            if not component.is_suspended:
+                cli_utils.declare(
+                    f"Suspending local resources for {display_name} "
+                    f"'{component.name}'."
                 )
-        elif component.is_provisioned and force:
-            cli_utils.declare(
-                f"Deprovisioning resources for {display_name} "
-                f"'{component.name}'."
-            )
-            component.deprovision()
+                try:
+                    component.suspend()
+                except NotImplementedError:
+                    cli_utils.error(
+                        f"Provisioning local resources not implemented for "
+                        f"{display_name} '{component.name}'. If you want to "
+                        f"deprovision all resources for this component, use the "
+                        f"`--force/-f` flag."
+                    )
+            else:
+                cli_utils.declare(
+                    f"No running resources found for {display_name} "
+                    f"'{component.name}'."
+                )
         else:
-            cli_utils.declare(
-                f"No provisioned resources found for {display_name} "
-                f"'{component.name}'."
-            )
+            if component.is_provisioned:
+                cli_utils.declare(
+                    f"Deprovisioning resources for {display_name} "
+                    f"'{component.name}'."
+                )
+                component.deprovision()
+            else:
+                cli_utils.declare(
+                    f"No provisioned resources found for {display_name} "
+                    f"'{component.name}'."
+                )
 
     return down_stack_component_command
 
