@@ -79,7 +79,11 @@ Language Processing (NLP) domain offering its library of SOTA models in particul
 get started using huggingface datasets, models and toeknizers with ZenML.
 - **[neural_prophet](neural_prophet/README.md)**: NeuralProphet is a Time-Series model that bridges the gap between 
 traditional time-series models and deep learning methods. Try this example to find out how this type of model
-- can be trained using ZenML
+can be trained using ZenML
+- **[xgboost](xgboost/README.md)**: [XGBoost](https://xgboost.readthedocs.io/en/stable/) is an optimized distributed 
+gradient boosting library that provides a parallel tree boosting algorithms.
+- **[lightgbm](lightgbm/README.md)**: LightGBM is a gradient boosting framework that uses tree based learning
+algorithms with a focus on distributed, efficient training.
 
 ## 🖥 Local Setup
 For some of these examples, ZenML provides a handy CLI command to pull them
