@@ -30,7 +30,7 @@ from zenml.stack import Stack
 
 NOT_STACKS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
-# TODO [HIGH]: Add tests for these commands using REST, SQL and local options
+# TODO [ENG-828]: Add tests for these commands using REST, SQL and local options
 
 
 def test_stack_describe_contains_local_stack() -> None:

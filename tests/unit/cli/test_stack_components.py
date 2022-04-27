@@ -23,7 +23,7 @@ from zenml.stack.stack_component import StackComponent
 
 NOT_STACK_COMPONENTS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
-# TODO [HIGH]: Add tests for these commands using REST, SQL and local options
+# TODO [ENG-829]: Add tests for these commands using REST, SQL and local options
 
 
 def test_stack_component_update_for_nonexistent_stack_fails(
