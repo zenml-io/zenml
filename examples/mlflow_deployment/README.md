@@ -79,29 +79,24 @@ cd zenml_examples/mlflow_deployment
 
 # initialize
 zenml init
-
-# Create the stack with an mlflow experiment tracker component
-zenml experiment-tracker register mlflow_tracker --type=mlflow
-zenml stack register mlflow_stack \
-    -m default \
-    -a default \
-    -o default \
-    -e mlflow_tracker
-    
-# Activate the newly created stack
-zenml stack set mlflow_stack
 ```
 ### Setting up the ZenML Stack
 
-The example can only be executed with a ZenML stack that has an MLflow model
-deployer as a component. Configuring a new stack with a MLflow model deployer
+The example can only be executed with a ZenML stack that has MLflow model
+deployer and MLflow experiment tracker components. Configuring a new stack 
 could look like this:
 
 ```
 zenml integration install mlflow
-zenml model-deployer register mlflow --type=mlflow
-zenml stack register local_with_mlflow -m default -a default -o default -d mlflow
-zenml stack set local_with_mlflow
+zenml model-deployer register mlflow_deployer --type=mlflow
+zenml experiment-tracker register mlflow_tracker --type=mlflow
+zenml stack register local_with_mlflow \
+  -m default \
+  -a default \
+  -o default \
+  -d mlflow_deployer \
+  -e mlflow_tracker
+zenml stack set local_mlflow_stack
 ```
 
 ### Run the project
