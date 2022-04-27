@@ -20,6 +20,7 @@ from typing import ClassVar, Optional, Tuple, Union, cast
 from kubernetes import config as k8s_config
 from ml_metadata.proto import metadata_store_pb2
 
+from zenml.exceptions import ProvisioningError
 from zenml.integrations.constants import KUBEFLOW
 from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
     KubeflowOrchestrator,
@@ -220,12 +221,12 @@ class KubeflowMetadataStore(BaseMetadataStore):
                 " ".join(command),
             )
         elif not networking_utils.port_available(self.port):
-            logger.warning(
-                "Unable to port-forward Kubeflow Pipelines Metadata to local "
-                "port %d because the port is occupied. In order to access the "
-                "Kubeflow Pipelines Metadata locally, please change the metadata "
-                "store configuration to use a free port.",
-                self.port,
+            raise ProvisioningError(
+                f"Unable to port-forward Kubeflow Pipelines Metadata to local "
+                f"port {self.port} because the port is occupied. In order to "
+                f"access the Kubeflow Pipelines Metadata locally, please "
+                f"change the metadata store configuration to use an available "
+                f"port or stop the other process currently using the port."
             )
         else:
             from zenml.utils import daemon
