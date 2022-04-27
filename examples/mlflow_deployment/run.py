@@ -102,6 +102,7 @@ def main(config: str, epochs: int, lr: float, min_accuracy: float):
                 MLFlowDeploymentLoaderStepConfig(
                     pipeline_name="continuous_deployment_pipeline",
                     pipeline_step_name="mlflow_model_deployer_step",
+                    running=False,
                 )
             ),
             predictor=predictor(),

@@ -31,6 +31,7 @@ class SeldonIntegration(Integration):
     def activate() -> None:
         """Activate the Seldon Core integration."""
         from zenml.integrations.seldon import model_deployers  # noqa
+        from zenml.integrations.seldon import secret_schemas  # noqa
         from zenml.integrations.seldon import services  # noqa
 
 

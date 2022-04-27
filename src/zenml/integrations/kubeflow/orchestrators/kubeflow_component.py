@@ -22,6 +22,7 @@ Note: This requires Kubeflow Pipelines SDK to be installed.
 """
 import json
 import os.path
+import re
 import sys
 from typing import Dict, List, Set
 
@@ -32,11 +33,10 @@ from tfx.dsl.components.base import base_component as tfx_base_component
 from tfx.orchestration import data_types
 from tfx.proto.orchestration import pipeline_pb2
 
-from zenml.artifact_stores import LocalArtifactStore
 from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
+from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
-from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.repository import Repository
 from zenml.utils import source_utils
 
@@ -153,38 +153,41 @@ class KubeflowComponent:
             arguments.append(_encode_runtime_parameter(param))
 
         stack = Repository().active_stack
-        artifact_store = stack.artifact_store
-        metadata_store = stack.metadata_store
+        global_cfg_dir = get_global_config_directory()
 
+        # go through all stack components and identify those that advertise
+        # a local path where they persist information that they need to be
+        # available when running pipelines. For those that do, mount them
+        # into the Kubeflow container.
         has_local_repos = False
-
-        if isinstance(artifact_store, LocalArtifactStore):
+        for stack_comp in stack.components.values():
+            local_path = stack_comp.local_path
+            if not local_path:
+                continue
+            # double-check this convention, just in case it wasn't respected
+            # as documented in `StackComponent.local_path`
+            if not local_path.startswith(global_cfg_dir):
+                raise ValueError(
+                    f"Local path {local_path} for component {stack_comp.name} "
+                    f"is not in the global config directory ({global_cfg_dir})."
+                )
             has_local_repos = True
             host_path = k8s_client.V1HostPathVolumeSource(
-                path=artifact_store.path, type="Directory"
+                path=local_path, type="Directory"
             )
-            volumes[artifact_store.path] = k8s_client.V1Volume(
-                name="local-artifact-store", host_path=host_path
-            )
-            logger.debug(
-                "Adding host path volume for local artifact store (path: %s) "
-                "in kubeflow pipelines container.",
-                artifact_store.path,
-            )
-
-        if isinstance(metadata_store, SQLiteMetadataStore):
-            has_local_repos = True
-            metadata_store_dir = os.path.dirname(metadata_store.uri)
-            host_path = k8s_client.V1HostPathVolumeSource(
-                path=metadata_store_dir, type="Directory"
-            )
-            volumes[metadata_store_dir] = k8s_client.V1Volume(
-                name="local-metadata-store", host_path=host_path
+            volume_name = f"{stack_comp.TYPE.value}-{stack_comp.name}"
+            volumes[local_path] = k8s_client.V1Volume(
+                name=re.sub(r"[^0-9a-zA-Z-]+", "-", volume_name)
+                .strip("-")
+                .lower(),
+                host_path=host_path,
             )
             logger.debug(
-                "Adding host path volume for local metadata store (uri: %s) "
+                "Adding host path volume for %s %s (path: %s) "
                 "in kubeflow pipelines container.",
-                metadata_store.uri,
+                stack_comp.TYPE.value,
+                stack_comp.name,
+                local_path,
             )
 
         self.container_op = dsl.ContainerOp(

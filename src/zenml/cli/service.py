@@ -101,6 +101,7 @@ def up_server(port: int, profile: Optional[str]) -> None:
             )
     else:
         raise ValueError("No endpoint found for Zen Service.")
+
     with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "w") as f:
         f.write(zen_service.json(indent=4))
 
