@@ -513,7 +513,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """
         if not self.is_local:
             return True
-        return local_deployment_utils.k3d_cluster_running(
+        return local_deployment_utils.k3d_cluster_exists(
             cluster_name=self._k3d_cluster_name
         )
 
