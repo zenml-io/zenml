@@ -10,7 +10,7 @@
 
 This example showcases how to train a `lightgbm.Booster` model in a ZenML pipeline. The ZenML LightGBM integration includes a custom materializer that persists the trained `lightgbm.Booster` model to and from the artifact store. It also includes materializers for the custom `LightGBM.Dataset` data object.
 
-The data used in this example is the quickstart LightGBM data and is available in the [simple Python example of the LightGBM repository](https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/simple_example.py).
+The data used in this example is the quickstart LightGBM data and is available in the [simple python example of the LightGBM repository](https://github.com/microsoft/LightGBM/blob/master/examples/python-guide/simple_example.py).
 
 ## Run it locally
 
