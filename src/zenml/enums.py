@@ -72,3 +72,14 @@ class StoreType(StrEnum):
     LOCAL = "local"
     SQL = "sql"
     REST = "rest"
+
+
+class CliCategories(StrEnum):
+    """All possible categories for CLI commands."""
+
+    IDENTITY_AND_SECURITY = "Identity and Security"
+    INTEGRATIONS = "Integrations"
+    MANAGEMENT_TOOLS = "Management Tools"
+    MODEL_DEPLOYMENT = "Model Deployment"
+    OTHER_COMMANDS = "Other Commands"
+    STACK_COMPONENTS = "Stack Components"

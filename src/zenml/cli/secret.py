@@ -26,7 +26,7 @@ from zenml.cli.utils import (
     warning,
 )
 from zenml.console import console
-from zenml.enums import StackComponentType
+from zenml.enums import CliCategories, StackComponentType
 from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -44,7 +44,7 @@ def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
 
 
 # Secrets
-@cli.group(cls=GroupExt, tag="Identity and Security")
+@cli.group(cls=GroupExt, tag=CliCategories.IDENTITY_AND_SECURITY)
 @click.pass_context
 def secret(ctx: click.Context) -> None:
     """Secrets for storing key-value pairs for use in authentication."""

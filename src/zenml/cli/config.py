@@ -26,7 +26,7 @@ from zenml.config.profile_config import (
     get_default_store_type,
 )
 from zenml.console import console
-from zenml.enums import LoggingLevels, StoreType
+from zenml.enums import CliCategories, LoggingLevels, StoreType
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 # Analytics
-@cli.group(cls=GroupExt, tag="Management Tools")
+@cli.group(cls=GroupExt, tag=CliCategories.MANAGEMENT_TOOLS)
 def analytics() -> None:
     """Analytics for opt-in and opt-out"""
 
@@ -68,7 +68,7 @@ def opt_out() -> None:
 
 
 # Logging
-@cli.group(cls=GroupExt, tag="Management Tools")
+@cli.group(cls=GroupExt, tag=CliCategories.MANAGEMENT_TOOLS)
 def logging() -> None:
     """Configuration of logging for ZenML pipelines."""
 
@@ -92,7 +92,7 @@ def set_logging_verbosity(verbosity: str) -> None:
 
 
 # Profiles
-@cli.group(cls=GroupExt, tag="Identity and Security")
+@cli.group(cls=GroupExt, tag=CliCategories.IDENTITY_AND_SECURITY)
 def profile() -> None:
     """Configuration of ZenML profiles."""
 

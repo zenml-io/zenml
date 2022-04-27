@@ -22,6 +22,7 @@ from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
+from zenml.enums import CliCategories
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
 from zenml.utils import source_utils, yaml_utils
@@ -52,7 +53,7 @@ def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
         ) from None
 
 
-@cli.group(cls=GroupExt, tag="Management Tools")
+@cli.group(cls=GroupExt, tag=CliCategories.MANAGEMENT_TOOLS)
 def pipeline() -> None:
     """Pipeline group"""
 

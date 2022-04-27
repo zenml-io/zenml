@@ -24,14 +24,14 @@ from zenml.cli.utils import (
     print_served_model_configuration,
     warning,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import CliCategories, StackComponentType
 from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
 
 
 @cli.group(
     cls=GroupExt,
-    tag="Model Deployment",
+    tag=CliCategories.MODEL_DEPLOYMENT,
 )
 @click.pass_context
 def served_models(ctx: click.Context) -> None:

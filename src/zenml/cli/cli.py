@@ -5,6 +5,7 @@ from click import Command, Context, formatting
 
 from zenml import __version__
 from zenml.cli.formatter import ZenFormatter
+from zenml.enums import CliCategories
 from zenml.logger import set_root_verbosity
 
 
@@ -25,7 +26,7 @@ class GroupExt(click.Group):
         **kwargs: Dict[str, Any],
     ) -> None:
         super(GroupExt, self).__init__(name, commands, **kwargs)
-        self.tag = tag if tag else "Other Commands"
+        self.tag = tag if tag else CliCategories.OTHER_COMMANDS
 
 
 class ZenContext(click.Context):
