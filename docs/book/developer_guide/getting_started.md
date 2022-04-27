@@ -60,6 +60,12 @@ docker run -it zenmldocker/zenml /bin/bash
 
 ### Enabling auto-completion on the CLI
 
+
+{% hint style="warning" %}
+The following commands will only work if you have zenml installed in your global python env. If you are using 
+virtual environments, you'll have to manually export the environment variable whenever you are using that env.
+{% endhint %}
+
 {% tabs %}
 {% tab title="Bash" %}
 For Bash, add this to `~/.bashrc`:
@@ -102,7 +108,8 @@ def my_first_step() -> Output(output_int=int, output_float=float):
 ```
 
 As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names 
-of each output. These names can be used to directly access an output within the [post execution workflow].
+of each output. These names can be used to directly access an output within the 
+[post execution workflow](#post-execution-workflow).
 
 Let's come up with a second step that consumes the output of our first step and performs some sort of transformation
 on it. In this case, let's double the input.
@@ -157,8 +164,13 @@ Step `my_second_step` has started.
 Step `my_second_step` has finished in 0.067s.
 Pipeline run `first_pipeline-20_Apr_22-16_07_14_577771` has finished in 0.128s.
 ```
+
+You'll learn how to inspect the finished run within the chapter on [Post Execution Workflow](#post-execution-workflow).
+
+### Summary in Code
+
 <details>
-    <summary>Minimal Code Example</summary>
+    <summary>Code Example for this Section</summary>
 
 ```python
 from zenml.steps import step, Output
@@ -229,7 +241,7 @@ This functionality is based on [Step Fixtures](#step-fixtures) which you will le
 ### Setting step parameters using a config file
 
 In addition to setting parameters for your pipeline steps in code as seen above, ZenML also allows you to use a 
-configuration [yaml](https://yaml.org) file. This configuration file must follow the following structure:
+configuration [YAML](https://yaml.org) file. This configuration file must follow the following structure:
 
 ```yaml
 steps:
@@ -522,8 +534,10 @@ pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
 run = pipeline.get_run("custom_pipeline_run_name")
 ```
 
+### Summary in Code
+
 <details>
-    <summary>Minimal Code Example</summary>
+    <summary>Code Example for this Section</summary>
 
 ```python
 from zenml.steps import step, Output, BaseStepConfig
@@ -827,8 +841,11 @@ The following object was passed to this step: `my_object`
 Step `my_second_step` has finished in 0.048s.
 Pipeline run `first_pipeline-22_Apr_22-10_58_51_135729` has finished in 0.153s.
 ```
+
+### Summary in Code
+
 <details>
-    <summary>Minimal Code Example</summary>
+    <summary>Code Example of this Section</summary>
 
 ```python
 import os
@@ -948,8 +965,10 @@ detect changes in upstream APIs or in the Filesystem. Make sure you disable cach
 if your pipeline needs to have access to the most up-to date data. During development, you probably don't care as much 
 about the freshness of your data. In that case feel free to keep caching enabled and enjoy the faster runtimes.
 
+### Summary in Code
+
 <details>
-    <summary>Minimal Code Example</summary>
+    <summary>Code Example of this Section</summary>
 
 ```python
 from zenml.steps import step, Output, BaseStepConfig
@@ -1185,8 +1204,10 @@ def my_third_step(context: StepContext, input_int: int) -> bool:
 
 Just like that you are able to compare runs with each other from within the run itself. 
 
+### Summary in Code
+
 <details>
-    <summary>Minimal Code Example</summary>
+    <summary>Code Example of this Section</summary>
 
 ```python
 from random import randint
@@ -1356,8 +1377,11 @@ first_pipeline(step_1=my_first_step(),
 
 You can also mix and match the two APIs to your hearts content. Check out the full Code example below to see how.
 
+
+### Summary in Code
+
 <details>
-    <summary>Minimal Code Example</summary>
+    <summary>Code Example for this Section</summary>
 
 ```python
 from zenml.steps import step, Output, BaseStepConfig, BaseStep

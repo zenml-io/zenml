@@ -6,7 +6,7 @@ description: Bringing Zen into ML(Ops)
 
 ## What is so special about ZenML?
 
-While there are other workflow orchestration tools, ZenML is built because we wanted the following:
+While there are other workflow orchestration tools, ZenML is built :
 
 * We wanted a tool that is **flexible**: Simple Python functions can be converted into a workflow step.
 * We wanted a tool that is **simple:** You can run it locally and with a few commands can get it running on the 
