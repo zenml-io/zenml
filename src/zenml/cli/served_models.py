@@ -31,7 +31,7 @@ from zenml.repository import Repository
 
 @cli.group(
     cls=GroupExt,
-    tag="Management Tools",
+    tag="Model Deployment",
 )
 @click.pass_context
 def served_models(ctx: click.Context) -> None:

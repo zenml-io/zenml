@@ -1,0 +1,108 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
+from typing import Dict, Iterable, Iterator, Optional, Sequence, Tuple
+
+from click import formatting
+from click._compat import term_len
+
+
+def measure_table(rows: Iterable[Tuple[str, str, str]]) -> Tuple[int, ...]:
+    widths: Dict[int, int] = {}
+
+    for row in rows:
+        for idx, col in enumerate(row):
+            widths[idx] = max(widths.get(idx, 0), term_len(col))
+
+    return tuple(y for x, y in sorted(widths.items()))
+
+
+def iter_rows(
+    rows: Iterable[Tuple[str, str, str]], col_count: int
+) -> Iterator[Tuple[str, ...]]:
+    for row in rows:
+        yield row + ("",) * (col_count - len(row))
+
+
+class ZenFormatter(formatting.HelpFormatter):
+    """
+    Override the default HelpFormatter to add a custom
+    format for the help output.
+    """
+
+    def __init__(
+        self,
+        indent_increment: int = 2,
+        width: Optional[int] = None,
+        max_width: Optional[int] = None,
+    ) -> None:
+        super(ZenFormatter, self).__init__(indent_increment, width, max_width)
+        self.current_indent = 0
+
+    def write_zen_dl(
+        self,
+        rows: Sequence[Tuple[str, str, str]],
+        col_max: int = 30,
+        col_spacing: int = 2,
+    ) -> None:
+        """
+        Writes a definition list into the buffer.
+        This is how options are formatted in the help output.
+        The rows are expected to be a sequence of (tag, value, description)
+        """
+        rows = list(sorted((rows), key=lambda x: x[0]))
+        widths = measure_table(rows)
+        if len(widths) != 3:
+            raise TypeError("Expected three columns for definition list")
+
+        first_col = min(widths[0], col_max) + col_spacing
+        second_col = min(widths[1], col_max) + col_spacing * 2
+
+        current_tag = None
+        for (first, second, third) in iter_rows(rows, len(widths)):
+            if current_tag != first:
+                current_tag = first
+                self.write("\n")
+                self.write(f"{'':>{self.current_indent}}{first}:\n")
+
+            if not third:
+                self.write("\n")
+                continue
+
+            if term_len(first) <= first_col - col_spacing:
+                self.write(" " * self.current_indent * 2)
+            else:
+                self.write("\n")
+                self.write(" " * (first_col + self.current_indent))
+
+            self.write(f"{'':>{self.current_indent}}{second}")
+
+            text_width = max(self.width - second_col - 4, 10)
+            wrapped_text = formatting.wrap_text(
+                third, text_width, preserve_paragraphs=True
+            )
+            lines = wrapped_text.splitlines()
+
+            if lines:
+                self.write(
+                    " " * (second_col - term_len(second) + self.current_indent)
+                )
+                self.write(f"{lines[0]}\n")
+
+                for line in lines[1:]:
+                    self.write(
+                        f"{'':>{second_col + self.current_indent * 4 }}{line}\n"
+                    )
+            else:
+                self.write("\n")

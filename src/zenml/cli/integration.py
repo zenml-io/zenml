@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 
 @cli.group(
     cls=GroupExt,
-    tag="Management Tools",
+    tag="Integrations",
     help="Interact with the requirements of external integrations.",
 )
 def integration() -> None:

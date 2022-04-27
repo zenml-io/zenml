@@ -92,7 +92,7 @@ def set_logging_verbosity(verbosity: str) -> None:
 
 
 # Profiles
-@cli.group(cls=GroupExt, tag="Management Tools")
+@cli.group(cls=GroupExt, tag="Identity and Security")
 def profile() -> None:
     """Configuration of ZenML profiles."""
 

@@ -44,7 +44,7 @@ def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
 
 
 # Secrets
-@cli.group(cls=GroupExt, tag="Management Tools")
+@cli.group(cls=GroupExt, tag="Identity and Security")
 @click.pass_context
 def secret(ctx: click.Context) -> None:
     """Secrets for storing key-value pairs for use in authentication."""
