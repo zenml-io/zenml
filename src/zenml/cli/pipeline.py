@@ -31,15 +31,31 @@ logger = get_logger(__name__)
 
 
 def _get_module(module: types.ModuleType, config_item: Union[str, dict]) -> Any:
-    """"""
+    """Based on a config item from the config yaml the corresponding module
+    attribute is loaded.
+
+    Args:
+        module: Base module to use for import if only a function/class name is
+                supplied
+        config_item: Config item loaded from the config yaml
+                        - If it is a string it is the name of a function/class
+                          in the module (e.g `step_name`)
+                        - If it is a dict, it will have a relative filepath and
+                          a function/class name (e.g {`file`: `steps/steps.py`,
+                          `name`: `step_name`}
+
+    Returns:
+         imported function/class
+    """
     if isinstance(config_item, dict):
-        config_item_module = source_utils.import_python_file(
-            config_item[SourceConfigurationKeys.FILE_]
-        )
+        if SourceConfigurationKeys.FILE_ in config_item:
+            module = source_utils.import_python_file(
+                config_item[SourceConfigurationKeys.FILE_]
+            )
 
         implementation_name = config_item[SourceConfigurationKeys.NAME_]
         implemented_class = _get_module_attribute(
-            config_item_module, implementation_name
+            module, implementation_name
         )
         return implemented_class
     elif isinstance(config_item, str):
