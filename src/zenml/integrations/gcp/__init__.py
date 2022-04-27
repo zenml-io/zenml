@@ -17,14 +17,14 @@ environment. Specifically, it allows the use of cloud artifact stores, metadata
 stores, and an `io` module to handle file operations on Google Cloud Storage
 (GCS).
 """
-from typing import TYPE_CHECKING
+
+from typing import List
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import GCP
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
 
-if TYPE_CHECKING:
-    from zenml.zen_stores.base_zen_store import BaseZenStore
 GCP_ARTIFACT_STORE_FLAVOR = "gcs"
 
 
@@ -35,14 +35,16 @@ class GcpIntegration(Integration):
     REQUIREMENTS = ["gcsfs"]
 
     @classmethod
-    def declare(cls, store: "BaseZenStore") -> None:
+    def declare(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the GCP integration."""
-        store.create_flavor(
-            name=GCP_ARTIFACT_STORE_FLAVOR,
-            source="zenml.integrations.gcp.artifact_stores.GCSArtifactStore",
-            stack_component_type=StackComponentType.ARTIFACT_STORE,
-            integration=cls.NAME,
-        )
+        return [
+            FlavorWrapper(
+                name=GCP_ARTIFACT_STORE_FLAVOR,
+                source="zenml.integrations.gcp.artifact_stores.GCSArtifactStore",
+                type=StackComponentType.ARTIFACT_STORE,
+                integration=cls.NAME,
+            )
+        ]
 
 
 GcpIntegration.check_installation()

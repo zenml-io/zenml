@@ -413,32 +413,6 @@ def test_role_management(fresh_zen_store):
 
 def test_flavor_management(fresh_zen_store):
     """Test the management of stack component flavors"""
-    default_flavors = fresh_zen_store.flavors
-
-    # Check whether the default flavors are present
-    assert len(default_flavors) > 0
-
-    default_artifact_store_flavors = fresh_zen_store.get_flavors_by_type(
-        StackComponentType.ARTIFACT_STORE
-    )
-    num_default_artifact_store_flavors = len(default_artifact_store_flavors)
-
-    # Check if the get_by_type works and the result only has ArtifactStores
-    assert num_default_artifact_store_flavors > 0
-    assert all(
-        f.type == StackComponentType.ARTIFACT_STORE
-        for f in default_artifact_store_flavors
-    )
-    assert any(f.name == "local" for f in default_artifact_store_flavors)
-
-    local_artifact_store_flavor = fresh_zen_store.get_flavor_by_name_and_type(
-        flavor_name="local",
-        component_type=StackComponentType.ARTIFACT_STORE,
-    )
-
-    # Check if the get_by_name_and_type works
-    assert local_artifact_store_flavor
-
     # Check for non-existing flavors
     with pytest.raises(KeyError):
         fresh_zen_store.get_flavor_by_name_and_type(
@@ -462,11 +436,6 @@ def test_flavor_management(fresh_zen_store):
 
     new_artifact_store_flavors = fresh_zen_store.get_flavors_by_type(
         StackComponentType.ARTIFACT_STORE
-    )
-    num_new_artifact_store_flavors = len(new_artifact_store_flavors)
-
-    assert (
-        num_new_artifact_store_flavors == num_default_artifact_store_flavors + 1
     )
 
     new_artifact_store_flavor = fresh_zen_store.get_flavor_by_name_and_type(

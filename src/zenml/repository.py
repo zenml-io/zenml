@@ -297,7 +297,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     def _set_active_profile(
         self, profile: ProfileConfiguration, new_profile: bool = False
-        ) -> None:
+    ) -> None:
         """Set the supplied configuration profile as the active profile for
         this repository.
 
@@ -311,7 +311,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self._profile = profile
         self.zen_store: BaseZenStore = self.create_store(
             profile, skip_default_registrations=not new_profile
-            )
+        )
 
         # Sanitize the repository configuration to reflect the active
         # profile and its store contents

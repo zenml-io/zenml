@@ -15,14 +15,12 @@
 The AWS integration provides a way for our users to manage their secrets
 through AWS.
 """
-from typing import TYPE_CHECKING
+from typing import List
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import AWS
 from zenml.integrations.integration import Integration
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.base_zen_store import BaseZenStore
+from zenml.zen_stores.models import FlavorWrapper
 
 AWS_SECRET_MANAGER_FLAVOR = "aws"
 
@@ -34,14 +32,16 @@ class AWSIntegration(Integration):
     REQUIREMENTS = ["boto3==1.21.21"]
 
     @classmethod
-    def declare(cls, store: "BaseZenStore") -> None:
+    def declare(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the AWS integration."""
-        store.create_flavor(
-            name=AWS_SECRET_MANAGER_FLAVOR,
-            source="zenml.integrations.aws.secrets_manager.AWSSecretsManager",
-            stack_component_type=StackComponentType.SECRETS_MANAGER,
-            integration=cls.NAME,
-        )
+        return [
+            FlavorWrapper(
+                name=AWS_SECRET_MANAGER_FLAVOR,
+                source="zenml.integrations.aws.secrets_manager.AWSSecretsManager",
+                type=StackComponentType.SECRETS_MANAGER,
+                integration=cls.NAME,
+            )
+        ]
 
 
 AWSIntegration.check_installation()

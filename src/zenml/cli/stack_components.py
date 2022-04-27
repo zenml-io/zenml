@@ -26,6 +26,7 @@ from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
+from zenml.stack.registry import flavor_registry
 
 
 def _component_display_name(
@@ -208,10 +209,35 @@ def generate_stack_component_register_command(
             cli_utils.error(str(e))
             return
 
-        flavor_wrapper = Repository().zen_store.get_flavor_by_name_and_type(
-            flavor_name=flavor,
-            component_type=component_type,
+        zenml_flavors = flavor_registry.get_flavors_by_type(
+            component_type=component_type
         )
+
+        try:
+            # Try to find if there are any custom flavor implementations
+            flavor_wrapper = Repository().zen_store.get_flavor_by_name_and_type(
+                flavor_name=flavor,
+                component_type=component_type,
+            )
+
+            # If there is one, check whether the same flavor exists as a default
+            # flavor to give out a warning
+            if flavor in zenml_flavors:
+                cli_utils.warning(
+                    f"There is a custom implementation for the flavor "
+                    f"'{flavor}' of a {component_type}, which is currently "
+                    f"overwriting the same flavor provided by ZenML."
+                )
+
+        except KeyError:
+            if flavor in zenml_flavors:
+                flavor_wrapper = zenml_flavors[flavor]
+            else:
+                raise KeyError(
+                    f"There is no flavor '{flavor}' for the type "
+                    f"{component_type}"
+                )
+
         try:
             component = flavor_wrapper.to_flavor()(name=name, **parsed_args)
             Repository().register_stack_component(component)
@@ -280,10 +306,20 @@ def generate_stack_component_flavor_list_command(
         cli_utils.print_active_profile()
 
         # List all the flavors of the component type
-        flavors = Repository().zen_store.get_flavors_by_type(
+        zenml_flavors = [
+            f
+            for f in flavor_registry.get_flavors_by_type(
+                component_type=component_type
+            ).values()
+        ]
+
+        custom_flavors = Repository().zen_store.get_flavors_by_type(
             component_type=component_type
         )
-        cli_utils.print_flavor_list(flavors, component_type=component_type)
+
+        cli_utils.print_flavor_list(
+            zenml_flavors + custom_flavors, component_type=component_type
+        )
 
     return list_stack_component_flavor_command
 

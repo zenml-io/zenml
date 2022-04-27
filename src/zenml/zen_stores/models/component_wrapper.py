@@ -20,7 +20,10 @@ import yaml
 from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
 from zenml.stack import StackComponent
+
+logger = get_logger(__name__)
 
 
 class ComponentWrapper(BaseModel):
@@ -54,11 +57,37 @@ class ComponentWrapper(BaseModel):
         """Converts the ComponentWrapper into an actual instance of a Stack
         Component."""
         from zenml.repository import Repository
+        from zenml.stack.registry import flavor_registry
 
-        flavor_wrapper = Repository().zen_store.get_flavor_by_name_and_type(
-            flavor_name=self.flavor,
-            component_type=self.type,
+        zenml_flavors = flavor_registry.get_flavors_by_type(
+            component_type=self.type
         )
+
+        try:
+            # Try to find if there are any custom flavor implementations
+            flavor_wrapper = Repository().zen_store.get_flavor_by_name_and_type(
+                flavor_name=self.flavor,
+                component_type=self.type,
+            )
+
+            # If there is one, check whether the same flavor exists as a default
+            # flavor to give out a warning
+            if self.flavor in zenml_flavors:
+                logger.warning(
+                    f"There is a custom implementation for the flavor "
+                    f"'{self.flavor}' of a {self.type}, which is currently "
+                    f"overwriting the same flavor provided by ZenML."
+                )
+
+        except KeyError:
+            if self.flavor in zenml_flavors:
+                flavor_wrapper = zenml_flavors[self.flavor]
+            else:
+                raise KeyError(
+                    f"There is no flavor '{self.flavor}' for the type "
+                    f"{self.type}"
+                )
+
         flavor_class = flavor_wrapper.to_flavor()
         config = yaml.safe_load(base64.b64decode(self.config).decode())
 

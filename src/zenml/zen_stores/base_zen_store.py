@@ -64,9 +64,9 @@ class BaseZenStore(ABC):
             The initialized concrete store instance.
         """
         if not skip_default_registrations:
-            logger.info("Registering default flavors, stack and user...")
-            self.register_default_flavors()
-            self.register_default_stack()
+            if self.is_empty:
+                logger.info("Registering default stack...")
+                self.register_default_stack()
         self.create_default_user()
 
         return self
@@ -797,41 +797,6 @@ class BaseZenStore(ABC):
         metadata = self.register_stack(StackWrapper.from_stack(stack))
         metadata["store_type"] = self.type.value
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
-
-    def register_default_flavors(self) -> None:
-        """Populates the store with the default flavors + the flavors added
-        by integrations.
-        """
-        # Add the default flavors
-        from zenml.artifact_stores import LocalArtifactStore
-        from zenml.container_registries import BaseContainerRegistry
-        from zenml.metadata_stores import (
-            MySQLMetadataStore,
-            SQLiteMetadataStore,
-        )
-        from zenml.orchestrators import LocalOrchestrator
-        from zenml.secrets_managers import LocalSecretsManager
-
-        default_flavors = [
-            LocalOrchestrator,
-            SQLiteMetadataStore,
-            MySQLMetadataStore,
-            LocalArtifactStore,
-            BaseContainerRegistry,
-            LocalSecretsManager,
-        ]
-        for f in default_flavors:
-            self.create_flavor(
-                name=f.FLAVOR,  # type: ignore[attr-defined]
-                stack_component_type=f.TYPE,  # type: ignore[attr-defined]
-                source=f.__module__ + "." + f.__name__,
-                integration="built-in",
-            )
-
-        # Add the flavors added by the integrations
-        from zenml.integrations.registry import integration_registry
-
-        integration_registry.declare_integrations(store=self)
 
     def create_default_user(self) -> None:
         """Creates a default user."""

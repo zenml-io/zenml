@@ -16,14 +16,13 @@ The Airflow integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Airflow orchestrator with
 the CLI tool, then bootstrap using the ``zenml orchestrator up`` command.
 """
-from typing import TYPE_CHECKING
+from typing import List
 
 from zenml.enums import StackComponentType
 from zenml.integrations.constants import AIRFLOW
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
 
-if TYPE_CHECKING:
-    from zenml.zen_stores.base_zen_store import BaseZenStore
 AIRFLOW_ORCHESTRATOR_FLAVOR = "airflow"
 
 
@@ -34,14 +33,16 @@ class AirflowIntegration(Integration):
     REQUIREMENTS = ["apache-airflow==2.2.0"]
 
     @classmethod
-    def declare(cls, store: "BaseZenStore"):
+    def declare(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the Airflow integration."""
-        store.create_flavor(
-            name=AIRFLOW_ORCHESTRATOR_FLAVOR,
-            source="zenml.integrations.airflow.orchestrators.AirflowOrchestrator",
-            stack_component_type=StackComponentType.ORCHESTRATOR,
-            integration=cls.NAME,
-        )
+        return [
+            FlavorWrapper(
+                name=AIRFLOW_ORCHESTRATOR_FLAVOR,
+                source="zenml.integrations.airflow.orchestrators.AirflowOrchestrator",
+                type=StackComponentType.ORCHESTRATOR,
+                integration=cls.NAME,
+            )
+        ]
 
 
 AirflowIntegration.check_installation()
