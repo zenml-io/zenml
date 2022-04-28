@@ -118,7 +118,8 @@ on it. In this case, let's double the input.
 from zenml.steps import step, Output
 
 @step
-def my_second_step(input_int: int, input_float: float) -> Output(output_int=int, output_float=float):
+def my_second_step(input_int: int, input_float: float
+                   ) -> Output(output_int=int, output_float=float):
     """Step that doubles the inputs"""
     return 2 * input_int, 2 * input_float
 ```
@@ -223,7 +224,7 @@ class SecondStepConfig(BaseStepConfig):
 @step
 def my_second_step(config: SecondStepConfig, input_int: int, input_float: float
                    ) -> Output(output_int=int, output_float=float):
-    """Step that multiplie the inputs"""
+    """Step that multiply the inputs"""
     return config.multiplier * input_int, config.multiplier * input_float
 ```
 
@@ -279,80 +280,66 @@ ZenML commandline argument:
 zenml pipeline run <NAME-OF-PYTHONFILE> -c <NAME-OF-CONFIG-YAML-FILE>
 ```
 
-This will require a config file with a bit more information than how it is described above.
-
-### Define the name of the pipeline definition
-
-{% tabs %}
-{% tab title="config.yaml" %}
-```yaml
-name: first_pipeline
-...
-```
-{% endtab %}
-{% tab title="run.py" %}
-```python
-from zenml.pipelines import pipeline
-
-@pipeline
-def first_pipeline(
-        step_1,
-        step_2
-):
-    output_1, output_2 = step_1()
-    step_2(output_1, output_2)
-```
-{% endtab %}
-{% endtabs %}
-
 {% hint style="warning" %}
 Do **not** instantiate and run your pipeline within the python file that you want to run using the CLI, else your 
 pipeline will be run twice, possibly with different configurations.
 {% endhint %}
 
+This will require a config file with a bit more information than how it is described above.
+
+### Define the name of the pipeline definition
+
+You will need to define which pipeline to run by it's name. 
+
+```yaml
+name: <name_of_your_pipeline>
+...
+```
+In case you defined your pipeline using decorators this name is the name of the decorated function. If you used the 
+[Class Based API](#class-based-api), it will be the name of your class.
+
+```python
+from zenml.pipelines import pipeline, BasePipeline
+
+@pipeline
+def name_of_your_pipeline(...):
+    ...
+
+class ClassBasedPipelineName(BasePipeline):
+    ...
+```
+
+
 ### Supply the names of the step functions (and materializers)
 
 In total the step functions can be supplied with 3 arguments here:
-* source 
-  * name of the step (if it is in the run.py)
-  * dictionary with `file` for the relative filepath to the file containing the step and `name` of the step
+* source: name of the step (step needs to be in the run.py file)
 
-{% tabs %}
-{% tab title="Same file" %}
 ```yaml
   steps:
     step_1:
       source: <step_name>
 ```
-{% endtab %}
-{% tab title="Different File" %}
-```yaml
-  steps:
-    step_1:
-      source:
-        file: <relative/file/path.py>
-        name: <step_name>
-```
-{% endtab %}
-{% endtabs %}
+
 * parameters - list of parameters for the StepConfig
 * materializers - dict of output_name and corresponding Materializer (Materializer needs to be in the run.py file)
 
-{% tabs %}
-{% tab title="config.yaml" %}
+
 ```yaml
 ...
 steps:
   ...
   step_2:
-    source: my_second_step
+    source: <step_name>
     parameters:
       multiplier: 3
     materializers:
-      output_obj: MyMaterializer
+      output_obj: <MaterializerName>
 ```
-{% endtab %}
-{% tab title="run.py" %}
+
+Again the step name corresponds to the function or class name of your step. The materializer name refers to the class 
+name of your materializer.
+
 ```python
 import os
 from typing import Type
@@ -362,45 +349,14 @@ from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.steps import step, Output, BaseStepConfig
 
-
-class MyObj:
-    def __init__(self, name: str):
-        self.name = name
-
-
-class MyMaterializer(BaseMaterializer):
-    ASSOCIATED_TYPES = (MyObj,)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
-
-    def handle_input(self, data_type: Type[MyObj]) -> MyObj:
-        """Read from artifact store"""
-        super().handle_input(data_type)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
-                         'r') as f:
-            name = f.read()
-        return MyObj(name=name)
-
-    def handle_return(self, my_obj: MyObj) -> None:
-        """Write to artifact store"""
-        super().handle_return(my_obj)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
-                         'w') as f:
-            f.write(my_obj.name)
-            
-class SecondStepConfig(BaseStepConfig):
-    """Trainer params"""
-    multiplier: int = 4
+class MaterializerName(BaseMaterializer):
+    ...
 
 
 @step
-def my_second_step(config: SecondStepConfig, input_int: int,
-                   input_float: float
-                   ) -> Output(output_int=int, output_float=float):
-    """Step that multiply the inputs"""
-    return config.multiplier * input_int, config.multiplier * input_float
+def step_name(...):
+    ...
 ```
-{% endtab %}
-{% endtabs %}
 
 ### When you put it all together you would have something that looks like this:
 
@@ -740,6 +696,7 @@ workflow.
 Let's say you a custom object called `MyObject` that flows between two steps in a pipeline:
 
 ```python
+import logging
 from zenml.steps import step
 from zenml.pipelines import pipeline
 
@@ -755,8 +712,8 @@ def my_first_step() -> MyObj:
 
 @step
 def my_second_step(my_obj: MyObj) -> None:
-    """Step that prints the input object and returns nothing."""
-    print(f"The following object was passed to this step: `{my_obj.name}`")
+    """Step that logs the input object and returns nothing."""
+    logging.info(f"The following object was passed to this step: `{my_obj.name}`")
 
 @pipeline
 def first_pipeline(
@@ -850,6 +807,7 @@ Pipeline run `first_pipeline-22_Apr_22-10_58_51_135729` has finished in 0.153s.
 ```python
 import os
 from typing import Type
+import logging
 
 from zenml.steps import step
 from zenml.pipelines import pipeline
@@ -880,7 +838,7 @@ class MyMaterializer(BaseMaterializer):
         with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
                          'w') as f:
             f.write(my_obj.name)
-
+print
 @step
 def my_first_step() -> MyObj:
     """Step that returns an object of type MyObj"""
@@ -888,8 +846,8 @@ def my_first_step() -> MyObj:
 
 @step
 def my_second_step(my_obj: MyObj) -> None:
-    """Step that prints the input object and returns nothing."""
-    print(f"The following object was passed to this step: `{my_obj.name}`")
+    """Step that log the input object and returns nothing."""
+    logging.info(f"The following object was passed to this step: `{my_obj.name}`")
 
 @pipeline
 def first_pipeline(
