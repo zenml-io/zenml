@@ -75,12 +75,40 @@ class StoreType(StrEnum):
     REST = "rest"
 
 
-class CliCategories(StrEnum):
+class CliCategoriesPriority(Enum):
     """All possible categories for CLI commands."""
 
-    IDENTITY_AND_SECURITY = "Identity and Security"
-    INTEGRATIONS = "Integrations"
-    MANAGEMENT_TOOLS = "Management Tools"
-    MODEL_DEPLOYMENT = "Model Deployment"
-    OTHER_COMMANDS = "Other Commands"
-    STACK_COMPONENTS = "Stack Components"
+    HIGHEST = "0"
+    HIGH = "1"
+    MID = "2"
+    LOW = "3"
+    LOWEST = "5"
+
+
+class CliCategories(Enum):
+    """All possible categories for CLI commands."""
+
+    IDENTITY_AND_SECURITY = {
+        "value": "Identity and Security",
+        "priority": CliCategoriesPriority.LOW.value,
+    }
+    INTEGRATIONS = {
+        "value": "Integrations",
+        "priority": CliCategoriesPriority.MID.value,
+    }
+    MANAGEMENT_TOOLS = {
+        "value": "Management Tools",
+        "priority": CliCategoriesPriority.MID.value,
+    }
+    MODEL_DEPLOYMENT = {
+        "value": "Model Deployment",
+        "priority": CliCategoriesPriority.HIGH.value,
+    }
+    OTHER_COMMANDS = {
+        "value": "Other Commands",
+        "priority": CliCategoriesPriority.LOWEST.value,
+    }
+    STACK_COMPONENTS = {
+        "value": "Stack Components",
+        "priority": CliCategoriesPriority.HIGHEST.value,
+    }
