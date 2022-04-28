@@ -26,7 +26,7 @@ DATA_FILENAME = "data.npz"
 
 
 class SparseMaterializer(BaseMaterializer):
-    """Materializer to read data to and from pandas."""
+    """Materializer to read and write scipy sparse matrices."""
 
     ASSOCIATED_TYPES = (spmatrix,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
@@ -41,7 +41,7 @@ class SparseMaterializer(BaseMaterializer):
         return mat
 
     def handle_return(self, mat: spmatrix) -> None:
-        """Writes a spmatrix to the artifact store as a parquet file.
+        """Writes a spmatrix to the artifact store as a npz file.
 
         Args:
             mat: The spmatrix to write.
