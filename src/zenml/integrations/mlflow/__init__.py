@@ -23,6 +23,7 @@ from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
 MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
+MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR = "mlflow"
 
 
 class MlflowIntegration(Integration):
@@ -49,7 +50,13 @@ class MlflowIntegration(Integration):
                 source="zenml.integrations.mlflow.model_deployers.MLFlowModelDeployer",
                 type=StackComponentType.MODEL_DEPLOYER,
                 integration=cls.NAME,
-            )
+            ),
+            FlavorWrapper(
+                name=MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR,
+                source="zenml.integrations.mlflow.experiment_trackers.MLFlowExperimentTracker",
+                type=StackComponentType.EXPERIMENT_TRACKER,
+                integration=cls.NAME,
+            ),
         ]
 
 

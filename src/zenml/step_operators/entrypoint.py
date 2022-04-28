@@ -30,6 +30,7 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
+from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps.utils import _FunctionExecutor, generate_component_class
 from zenml.utils import source_utils, yaml_utils
@@ -148,9 +149,13 @@ def main(
         input_artifact_type_mapping=input_artifact_type_mapping,
     )
 
+    stack = Repository().active_stack
     execution_info = load_execution_info(execution_info_path)
     executor = configure_executor(executor_class, execution_info=execution_info)
+
+    stack.prepare_step_run()
     run_with_executor(execution_info=execution_info, executor=executor)
+    stack.cleanup_step_run()
 
 
 if __name__ == "__main__":

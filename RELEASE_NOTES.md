@@ -1,3 +1,32 @@
+# 0.7.3
+
+## What's Changed
+* Fix caching & `mypy` errors by @strickvl in https://github.com/zenml-io/zenml/pull/524
+* Switch unit test from local_daemon to multiprocessing by @jwwwb in https://github.com/zenml-io/zenml/pull/508
+* Change Pytorch materializer to support remote storage by @safoinme in https://github.com/zenml-io/zenml/pull/525
+* Remove TODO from Feature Store `init` docstring by @strickvl in https://github.com/zenml-io/zenml/pull/527
+* Fixed typo predicter -> predictor by @MateusGheorghe in https://github.com/zenml-io/zenml/pull/523
+* Fix mypy errors by @strickvl in https://github.com/zenml-io/zenml/pull/528
+* Replaced old local_* logic by @htahir1 in https://github.com/zenml-io/zenml/pull/531
+* capitalize aws username in ECR docs by @wjayesh in https://github.com/zenml-io/zenml/pull/533
+* Build docker base images quicker after release by @schustmi in https://github.com/zenml-io/zenml/pull/537
+* Allow configuration of s3fs by @schustmi in https://github.com/zenml-io/zenml/pull/532
+* Update contributing and fix ci badge to main by @htahir1 in https://github.com/zenml-io/zenml/pull/536
+* Added XGboost integration by @htahir1 in https://github.com/zenml-io/zenml/pull/538
+* Added fa9r to .github/teams.yml. by @fa9r in https://github.com/zenml-io/zenml/pull/539
+* Secret Manager improvements and Seldon Core secret passing by @stefannica in https://github.com/zenml-io/zenml/pull/529
+* User management by @schustmi in https://github.com/zenml-io/zenml/pull/500
+* Update stack and stack components via the CLI by @strickvl in https://github.com/zenml-io/zenml/pull/497
+* Added lightgbm integration by @htahir1 in https://github.com/zenml-io/zenml/pull/544
+* Fix the Kubeflow metadata store and other stack management improvements by @stefannica in https://github.com/zenml-io/zenml/pull/542
+* Experiment tracker stack components by @htahir1 in https://github.com/zenml-io/zenml/pull/530
+
+## New Contributors
+* @MateusGheorghe made their first contribution in https://github.com/zenml-io/zenml/pull/523
+* @fa9r made their first contribution in https://github.com/zenml-io/zenml/pull/539
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.7.2...0.7.3
+
 # 0.7.2
 
 0.7.2 is a minor release which quickly patches some bugs found in the last
