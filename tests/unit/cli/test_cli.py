@@ -37,14 +37,6 @@ def test_cli(runner):
     assert result.exit_code == 0
 
 
-def test_cli_help(runner):
-    """Check that help works"""
-    result = runner.invoke(cli, ["--help"])
-    assert not result.exception
-    assert "Available Commands By Group Category for Zenml:" in result.output
-    assert result.exit_code == 0
-
-
 def test_ZenMLCLI_formatter():
     """
     Test the ZenFormatter class.
