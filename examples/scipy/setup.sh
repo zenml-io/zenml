@@ -3,9 +3,9 @@
 set -Eeo pipefail
 
 pre_run () {
-  zenml integration install scipy
+  zenml integration install sklearn
 }
 
 pre_run_forced () {
-  zenml integration install scipy -f
+  zenml integration install sklearn -f
 }

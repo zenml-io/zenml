@@ -12,41 +12,82 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+import re
+
 import numpy as np
-from scipy.sparse import coo_matrix, csr_matrix
+import pandas as pd
+from scipy.sparse import csr_matrix
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import LogisticRegression
 
-from zenml.integrations.constants import SCIPY
+from zenml.integrations.constants import SKLEARN
 from zenml.pipelines import pipeline
-from zenml.steps import step
+from zenml.steps import Output, step
+
+TRAIN_PATH = os.path.join(os.path.dirname(__file__), "data", "train.csv")
+TEST_PATH = os.path.join(os.path.dirname(__file__), "data", "test.csv")
+
+
+def clean_text(text: str):
+    return re.sub(r"\W", " ", text.lower())
 
 
 @step
-def importer() -> np.ndarray:
-    return np.array([1, 2, 3] * 1000)
+def importer() -> Output(
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
+):
+    train = pd.read_csv(TRAIN_PATH)
+    test = pd.read_csv(TEST_PATH)
+
+    X_train = train["x"].apply(clean_text).to_numpy()
+    X_test = test["x"].apply(clean_text).to_numpy()
+    y_train = train["y"].to_numpy()
+    y_test = test["y"].to_numpy()
+
+    return (X_train, X_test, y_train, y_test)
 
 
 @step
-def sparsifier(arr: np.ndarray) -> csr_matrix:
-    return csr_matrix(arr)
+def vectorizer(
+    train: np.ndarray, test: np.ndarray
+) -> Output(count_vec=BaseEstimator, X_train=csr_matrix, X_test=csr_matrix):
+    count_vec = CountVectorizer(ngram_range=(1, 4), min_df=3)
+    train = count_vec.fit_transform(train)
+    test = count_vec.transform(test)
+    return count_vec, train, test
 
 
 @step
-def reformatter(arr: csr_matrix) -> coo_matrix:
-    return arr.tocoo()
+def trainer(
+    X_train: csr_matrix,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    model = LogisticRegression(solver="liblinear")
+    model.fit(X_train, y_train)
+    return model
 
 
-@pipeline(required_integrations=[SCIPY])
-def pipe(importer, sparsifier, reformatter):
-    X = importer()
-    X = sparsifier(X)
-    X = reformatter(X)
+@step
+def predictor(
+    transformer: BaseEstimator,
+    model: ClassifierMixin,
+    X: np.ndarray,
+) -> np.ndarray:
+    X = transformer.transform(X)
+    return model.predict(X)
 
 
-run = pipe(
-    importer(),
-    sparsifier(),
-    reformatter(),
-)
+@pipeline(enable_cache=False, required_integrations=[SKLEARN])
+def pipe(importer, vectorizer, trainer, predictor):
+    X_train, X_test, y_train, y_test = importer()
+    vec_transformer, X_train_vec, X_test_vec = vectorizer(X_train, X_test)
+    model = trainer(X_train_vec, y_train)
+    predictor(vec_transformer, model, X_test)
+
 
 if __name__ == "__main__":
+
+    run = pipe(importer(), vectorizer(), trainer(), predictor())
     run.run()
