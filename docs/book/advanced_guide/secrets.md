@@ -100,6 +100,9 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 ```
 
+Secrets are made available to steps regardless of whether you're using a local
+secret store or the AWS Secrets Manager.
+
 ## Using the AWS Secrets Manager integration
 
 Amazon offers a managed secrets manager to store and use for AWS services. If
