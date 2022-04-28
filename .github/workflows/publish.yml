@@ -40,9 +40,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m poetry install
-          python -m poetry run zenml integration install airflow -f
-          python -m poetry run zenml integration install pytorch -f
-          python -m poetry run zenml integration install gcp -f
+          python -m poetry run zenml integration install -f --ignore-integration feast
           python -m poetry run pip install click~=8.0.3
 
       # This should be unnecessary, but good to run it.
@@ -58,7 +56,7 @@ jobs:
           if [ "$(cat src/zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ]; then ./scripts/publish.sh; else exit 1; fi
 
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@master
+      - uses: google-github-actions/setup-gcloud@v0
         with:
           service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
           service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}

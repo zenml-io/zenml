@@ -25,14 +25,12 @@ class AzureIntegration(Integration):
     """Definition of Azure integration for ZenML."""
 
     NAME = AZURE
-    REQUIREMENTS = ["adlfs==2021.10.0", "azureml-core==1.39.0"]
+    REQUIREMENTS = ["adlfs==2021.10.0"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.azure import artifact_stores  # noqa
-        from zenml.integrations.azure import io  # noqa
-        from zenml.integrations.azure import step_operators  # noqa
 
 
 AzureIntegration.check_installation()

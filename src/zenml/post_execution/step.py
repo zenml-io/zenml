@@ -134,6 +134,11 @@ class StepView:
         return self.status == ExecutionStatus.CACHED
 
     @property
+    def is_completed(self) -> bool:
+        """Returns whether the step is cached or not."""
+        return self.status == ExecutionStatus.COMPLETED
+
+    @property
     def inputs(self) -> Dict[str, ArtifactView]:
         """Returns all input artifacts that were used to run this step."""
         self._ensure_inputs_outputs_fetched()

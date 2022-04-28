@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ from torch.nn import Module  # type: ignore[attr-defined]
 
 from zenml.artifacts import ModelArtifact
 from zenml.integrations.pytorch.materializers.pytorch_types import TorchDict
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "entire_model.pt"
+CHECKPOINT_FILENAME = "checkpoint.pt"
 
 
 class PyTorchMaterializer(BaseMaterializer):
@@ -38,7 +40,10 @@ class PyTorchMaterializer(BaseMaterializer):
             A loaded pytorch model.
         """
         super().handle_input(data_type)
-        return torch.load(os.path.join(self.artifact.uri, DEFAULT_FILENAME))  # type: ignore[no-untyped-call] # noqa
+        with fileio.open(
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
+        ) as f:
+            return torch.load(f)  # type: ignore[no-untyped-call]  # noqa
 
     def handle_return(self, model: Union[Module, TorchDict]) -> None:
         """Writes a PyTorch model.
@@ -47,4 +52,16 @@ class PyTorchMaterializer(BaseMaterializer):
             model: A torch.nn.Module or a dict to pass into model.save
         """
         super().handle_return(model)
-        torch.save(model, os.path.join(self.artifact.uri, DEFAULT_FILENAME))
+
+        # Save entire model to artifact directory, This is the default behavior for loading model in development phase (training, evaluation)
+        with fileio.open(
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
+        ) as f:
+            torch.save(model, f)
+
+        # Save model checkpoint to artifact directory, This is the default behavior for loading model in production phase (inference)
+        if isinstance(model, Module):
+            with fileio.open(
+                os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "wb"
+            ) as f:
+                torch.save(model.state_dict(), f)

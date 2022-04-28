@@ -23,6 +23,7 @@ from typing import Dict, List, Optional, Tuple
 import psutil
 from pydantic import Field
 
+from zenml.io.utils import create_dir_recursive_if_not_exists
 from zenml.logger import get_logger
 from zenml.services.local.local_service_endpoint import (
     LocalDaemonServiceEndpoint,
@@ -45,9 +46,12 @@ class LocalDaemonServiceConfig(ServiceConfig):
         silent_daemon: set to True to suppress the output of the daemon
             (i.e. redirect stdout and stderr to /dev/null). If False, the
             daemon output will be redirected to a logfile.
+        root_runtime_path: the root path where the service daemon will store
+            service configuration files
     """
 
     silent_daemon: bool = False
+    root_runtime_path: Optional[str] = None
 
 
 class LocalDaemonServiceStatus(ServiceStatus):
@@ -118,9 +122,24 @@ class LocalDaemonServiceStatus(ServiceStatus):
             )
             return None
         else:
+            import zenml.services.local.local_daemon_entrypoint as daemon_entrypoint
             from zenml.utils.daemon import get_daemon_pid_if_running
 
-            return get_daemon_pid_if_running(pid_file)
+            pid = get_daemon_pid_if_running(pid_file)
+
+            # let's be extra careful here and check that the PID really
+            # belongs to a process that is a local ZenML daemon.
+            # this avoids the situation where a PID file is left over from
+            # a previous daemon run, but another process is using the same
+            # PID.
+            p = psutil.Process(pid)
+            cmd_line = p.cmdline()
+            if (
+                daemon_entrypoint.__name__ not in cmd_line
+                or self.config_file not in cmd_line
+            ):
+                return None
+            return pid
 
 
 class LocalDaemonService(BaseService):
@@ -217,7 +236,7 @@ class LocalDaemonService(BaseService):
           method that must be implemented by the subclass
 
         Subclasses that need a different command to launch the service daemon
-        should overrride this method.
+        should override this method.
 
         Returns:
             Command needed to launch the daemon process and the environment
@@ -232,13 +251,29 @@ class LocalDaemonService(BaseService):
         if not self.status.runtime_path or not os.path.exists(
             self.status.runtime_path
         ):
-            self.status.runtime_path = tempfile.mkdtemp(prefix="zenml-service-")
+            # runtime_path points to zenml local stores with uuid to make it
+            # easy to track from other locations.
+            if self.config.root_runtime_path:
+                self.status.runtime_path = os.path.join(
+                    self.config.root_runtime_path,
+                    str(self.uuid),
+                )
+                create_dir_recursive_if_not_exists(self.status.runtime_path)
+            else:
+                self.status.runtime_path = tempfile.mkdtemp(
+                    prefix="zenml-service-"
+                )
 
         assert self.status.config_file is not None
         assert self.status.pid_file is not None
 
         with open(self.status.config_file, "w") as f:
             f.write(self.json(indent=4))
+
+        # delete the previous PID file, in case a previous daemon process
+        # crashed and left a stale PID file
+        if os.path.exists(self.status.pid_file):
+            os.remove(self.status.pid_file)
 
         command = [
             sys.executable,

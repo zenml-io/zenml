@@ -15,12 +15,11 @@
 import datetime
 import os
 import time
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, ClassVar, Dict
 
 from pydantic import root_validator
 
 import zenml.io.utils
-from zenml.enums import OrchestratorFlavor, StackComponentType
 from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
     AirflowDagRunner,
     AirflowPipelineConfig,
@@ -45,26 +44,19 @@ AIRFLOW_ROOT_DIR = "airflow_root"
 DAG_FILEPATH_OPTION_KEY = "dag_filepath"
 
 
-@register_stack_component_class(
-    component_type=StackComponentType.ORCHESTRATOR,
-    component_flavor=OrchestratorFlavor.AIRFLOW,
-)
+@register_stack_component_class
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     airflow_home: str = ""
-    supports_local_execution = True
-    supports_remote_execution = False
+
+    # Class Configuration
+    FLAVOR: ClassVar[str] = "airflow"
 
     def __init__(self, **values: Any):
         """Sets environment variables to configure airflow."""
         super().__init__(**values)
         self._set_env()
-
-    @property
-    def flavor(self) -> OrchestratorFlavor:
-        """The orchestrator flavor."""
-        return OrchestratorFlavor.AIRFLOW
 
     @root_validator
     def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -114,7 +106,9 @@ class AirflowOrchestrator(BaseOrchestrator):
         Args:
             dag_filepath: Path to the file in which the DAG is defined.
         """
-        dags_directory = fileio.resolve_relative_path(self.dags_directory)
+        dags_directory = zenml.io.utils.resolve_relative_path(
+            self.dags_directory
+        )
 
         if dags_directory == os.path.dirname(dag_filepath):
             logger.debug("File is already in airflow DAGs directory.")
@@ -125,7 +119,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             destination_path = os.path.join(
                 dags_directory, os.path.basename(dag_filepath)
             )
-            if fileio.file_exists(destination_path):
+            if fileio.exists(destination_path):
                 logger.info(
                     "File '%s' already exists, overwriting with new DAG file",
                     destination_path,
@@ -138,7 +132,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         Raises:
             FileNotFoundError: If the password file does not exist.
         """
-        if fileio.file_exists(self.password_file):
+        if fileio.exists(self.password_file):
             with open(self.password_file) as file:
                 password = file.read().strip()
         else:
@@ -228,8 +222,10 @@ class AirflowOrchestrator(BaseOrchestrator):
             self._log_webserver_credentials()
             return
 
-        if not fileio.file_exists(self.dags_directory):
-            fileio.create_dir_recursive_if_not_exists(self.dags_directory)
+        if not fileio.exists(self.dags_directory):
+            zenml.io.utils.create_dir_recursive_if_not_exists(
+                self.dags_directory
+            )
 
         from airflow.cli.commands.standalone_command import StandaloneCommand
 
@@ -262,7 +258,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         if self.is_running:
             daemon.stop_daemon(self.pid_file)
 
-        fileio.rm_dir(self.airflow_home)
+        fileio.rmtree(self.airflow_home)
         logger.info("Airflow spun down.")
 
     def run_pipeline(

@@ -15,7 +15,7 @@ import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from json import JSONDecodeError
-from typing import Dict, List, Optional, Tuple, Union
+from typing import ClassVar, Dict, List, Optional, Tuple, Union
 
 from ml_metadata import proto
 from ml_metadata.metadata_store import metadata_store
@@ -29,7 +29,7 @@ from zenml.artifacts.constants import (
     DATATYPE_PROPERTY_KEY,
     MATERIALIZER_PROPERTY_KEY,
 )
-from zenml.enums import ExecutionStatus, MetadataStoreFlavor, StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
 from zenml.post_execution import (
     ArtifactView,
@@ -49,27 +49,23 @@ logger = get_logger(__name__)
 class BaseMetadataStore(StackComponent, ABC):
     """Base class for all ZenML metadata stores."""
 
-    @property
-    def type(self) -> StackComponentType:
-        """The component type."""
-        return StackComponentType.METADATA_STORE
+    # Class Configuration
+    TYPE: ClassVar[StackComponentType] = StackComponentType.METADATA_STORE
 
-    @property
-    @abstractmethod
-    def flavor(self) -> MetadataStoreFlavor:
-        """The metadata store flavor."""
+    upgrade_migration_enabled: bool = True
+    _store: Optional[metadata_store.MetadataStore] = None
 
     @property
     def store(self) -> metadata_store.MetadataStore:
         """General property that hooks into TFX metadata store."""
-        # TODO [ENG-133]: this always gets recreated, is this intended?
-        config = self.get_tfx_metadata_config()
-        return metadata_store.MetadataStore(
-            config,
-            enable_upgrade_migration=isinstance(
-                config, metadata_store_pb2.ConnectionConfig
-            ),
-        )
+        if self._store is None:
+            config = self.get_tfx_metadata_config()
+            self._store = metadata_store.MetadataStore(
+                config,
+                enable_upgrade_migration=self.upgrade_migration_enabled
+                and isinstance(config, metadata_store_pb2.ConnectionConfig),
+            )
+        return self._store
 
     @abstractmethod
     def get_tfx_metadata_config(

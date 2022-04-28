@@ -12,24 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
-
 import mlflow  # type: ignore [import]
 import numpy as np  # type: ignore [import]
 import pandas as pd  # type: ignore [import]
 import requests  # type: ignore [import]
 import tensorflow as tf  # type: ignore [import]
+from rich import print
 
+from zenml.integrations.constants import MLFLOW, TENSORFLOW
 from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
+    MLFlowModelDeployer,
+)
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
-from zenml.integrations.mlflow.steps import mlflow_deployer_step
+from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 from zenml.pipelines import pipeline
-from zenml.services import load_last_service_from_step
-from zenml.steps import BaseStepConfig, Output, StepContext, step
-
-# Path to a pip requirements file that contains requirements necessary to run
-# the pipeline
-requirements_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
+from zenml.steps import BaseStepConfig, Output, step
 
 
 class TrainerConfig(BaseStepConfig):
@@ -127,7 +125,7 @@ def deployment_trigger(
     return accuracy > config.min_accuracy
 
 
-model_deployer = mlflow_deployer_step(name="model_deployer")
+model_deployer = mlflow_model_deployer_step
 
 
 class MLFlowDeploymentLoaderStepConfig(BaseStepConfig):
@@ -139,33 +137,41 @@ class MLFlowDeploymentLoaderStepConfig(BaseStepConfig):
         step_name: the name of the step that deployed the MLflow prediction
             server
         running: when this flag is set, the step only returns a running service
+        model_name: the name of the model that is deployed
     """
 
     pipeline_name: str
-    step_name: str
+    pipeline_step_name: str
     running: bool = True
+    model_name: str = "model"
 
 
 @step(enable_cache=False)
 def prediction_service_loader(
-    config: MLFlowDeploymentLoaderStepConfig, context: StepContext
+    config: MLFlowDeploymentLoaderStepConfig,
 ) -> MLFlowDeploymentService:
     """Get the prediction service started by the deployment pipeline"""
 
-    service = load_last_service_from_step(
+    # get the MLflow model deployer stack component
+    model_deployer = MLFlowModelDeployer.get_active_model_deployer()
+
+    # fetch existing services with same pipeline name, step name and model name
+    existing_services = model_deployer.find_model_server(
         pipeline_name=config.pipeline_name,
-        step_name=config.step_name,
-        step_context=context,
+        pipeline_step_name=config.pipeline_step_name,
+        model_name=config.model_name,
         running=config.running,
     )
-    if not service:
+
+    if not existing_services:
         raise RuntimeError(
             f"No MLflow prediction service deployed by the "
-            f"{config.step_name} step in the {config.pipeline_name} pipeline "
-            f"is currently running."
+            f"{config.pipeline_step_name} step in the {config.pipeline_name} "
+            f"pipeline for the '{config.model_name}' model is currently "
+            f"running."
         )
 
-    return service
+    return existing_services[0]
 
 
 def get_data_from_api():
@@ -188,6 +194,13 @@ def dynamic_importer() -> Output(data=np.ndarray):
 
 
 @step
+def tf_predict_preprocessor(input: np.ndarray) -> Output(data=np.ndarray):
+    """Prepares the data for inference."""
+    input = input / 255.0
+    return input
+
+
+@step
 def predictor(
     service: MLFlowDeploymentService,
     data: np.ndarray,
@@ -197,11 +210,11 @@ def predictor(
     service.start(timeout=10)  # should be a NOP if already started
     prediction = service.predict(data)
     prediction = prediction.argmax(axis=-1)
-
+    print("Prediction: ", prediction)
     return prediction
 
 
-@pipeline(enable_cache=True, requirements_file=requirements_file)
+@pipeline(enable_cache=True, required_integrations=[MLFLOW, TENSORFLOW])
 def continuous_deployment_pipeline(
     importer,
     normalizer,
@@ -216,16 +229,18 @@ def continuous_deployment_pipeline(
     model = trainer(x_train=x_trained_normed, y_train=y_train)
     accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
     deployment_decision = deployment_trigger(accuracy=accuracy)
-    model_deployer(deployment_decision)
+    model_deployer(deployment_decision, model)
 
 
-@pipeline(enable_cache=True, requirements_file=requirements_file)
+@pipeline(enable_cache=True, required_integrations=[MLFLOW, TENSORFLOW])
 def inference_pipeline(
     dynamic_importer,
+    predict_preprocessor,
     prediction_service_loader,
     predictor,
 ):
     # Link all the steps artifacts together
     batch_data = dynamic_importer()
+    inference_data = predict_preprocessor(batch_data)
     model_deployment_service = prediction_service_loader()
-    predictor(model_deployment_service, batch_data)
+    predictor(model_deployment_service, inference_data)
