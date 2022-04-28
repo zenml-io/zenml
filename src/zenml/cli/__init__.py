@@ -301,6 +301,48 @@ command:
 zenml container-registry delete
 ```
 
+Customizing your Step Operator
+------------------------------
+
+Step operators allow you to run individual steps in a custom environment
+different from the default one used by your active orchestrator. One example
+use-case is to run a training step of your pipeline in an environment with GPUs
+available. By default, a default ZenML local stack will not register a step
+operator. If you wish to register a new step operator, do so with the
+`register` command:
+
+```bash
+zenml step-operator register STEP_OPERATOR_NAME --type STEP_OPERATOR_TYPE [--STEP_OPERATOR_OPTIONS]
+```
+
+If you want the name of the current step operator, use the `get` command:
+
+```bash
+zenml step-operator get
+```
+
+To list all step operators available and registered for use, use the
+`list` command:
+
+```bash
+zenml step-operator list
+```
+
+For details about a particular step operator, use the `describe` command.
+By default, (without a specific operator name passed in) it will describe the
+active or currently used step operator:
+
+```bash
+zenml step-operator describe [STEP_OPERATOR_NAME]
+```
+
+To delete a step operator (and all of its contents), use the `delete`
+command:
+
+```bash
+zenml step-operator delete STEP_OPERATOR_NAME
+```
+
 Setting up a Secrets Manager
 ----------------------------
 
