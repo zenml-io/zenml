@@ -18,7 +18,7 @@ from click import formatting
 from click._compat import term_len
 
 
-def measure_table(rows: Iterable[Tuple[str, str, str]]) -> Tuple[int, ...]:
+def measure_table(rows: Iterable[Tuple[str, ...]]) -> Tuple[int, ...]:
     widths: Dict[int, int] = {}
 
     for row in rows:
@@ -29,7 +29,8 @@ def measure_table(rows: Iterable[Tuple[str, str, str]]) -> Tuple[int, ...]:
 
 
 def iter_rows(
-    rows: Iterable[Tuple[str, str, str]], col_count: int
+    rows: Iterable[Tuple[str, ...]],
+    col_count: int,
 ) -> Iterator[Tuple[str, ...]]:
     for row in rows:
         yield row + ("",) * (col_count - len(row))
@@ -38,7 +39,7 @@ def iter_rows(
 class ZenFormatter(formatting.HelpFormatter):
     """
     Override the default HelpFormatter to add a custom
-    format for the help output.
+    format for the help command output.
     """
 
     def __init__(
@@ -50,9 +51,9 @@ class ZenFormatter(formatting.HelpFormatter):
         super(ZenFormatter, self).__init__(indent_increment, width, max_width)
         self.current_indent = 0
 
-    def write_zen_dl(
+    def write_dl(
         self,
-        rows: Sequence[Tuple[str, str, str]],
+        rows: Sequence[Tuple[str, ...]],
         col_max: int = 30,
         col_spacing: int = 2,
     ) -> None:
@@ -63,46 +64,81 @@ class ZenFormatter(formatting.HelpFormatter):
         """
         rows = list(sorted((rows), key=lambda x: x[0]))
         widths = measure_table(rows)
-        if len(widths) != 3:
-            raise TypeError("Expected three columns for definition list")
 
-        first_col = min(widths[0], col_max) + col_spacing
-        second_col = min(widths[1], col_max) + col_spacing * 2
+        if len(widths) == 2:
+            first_col = min(widths[0], col_max) + col_spacing
 
-        current_tag = None
-        for (first, second, third) in iter_rows(rows, len(widths)):
-            if current_tag != first:
-                current_tag = first
-                self.write("\n")
-                self.write(f"{'':>{self.current_indent}}{first}:\n")
+            for first, second in iter_rows(rows, len(widths)):
+                self.write(f"{'':>{self.current_indent}}{first}")
+                if not second:
+                    self.write("\n")
+                    continue
+                if term_len(first) <= first_col - col_spacing:
+                    self.write(" " * (first_col - term_len(first)))
+                else:
+                    self.write("\n")
+                    self.write(" " * (first_col + self.current_indent))
 
-            if not third:
-                self.write("\n")
-                continue
-
-            if term_len(first) <= first_col - col_spacing:
-                self.write(" " * self.current_indent * 2)
-            else:
-                self.write("\n")
-                self.write(" " * (first_col + self.current_indent))
-
-            self.write(f"{'':>{self.current_indent}}{second}")
-
-            text_width = max(self.width - second_col - 4, 10)
-            wrapped_text = formatting.wrap_text(
-                third, text_width, preserve_paragraphs=True
-            )
-            lines = wrapped_text.splitlines()
-
-            if lines:
-                self.write(
-                    " " * (second_col - term_len(second) + self.current_indent)
+                text_width = max(self.width - first_col - 2, 10)
+                wrapped_text = formatting.wrap_text(
+                    second, text_width, preserve_paragraphs=True
                 )
-                self.write(f"{lines[0]}\n")
+                lines = wrapped_text.splitlines()
 
-                for line in lines[1:]:
+                if lines:
+                    self.write(f"{lines[0]}\n")
+
+                    for line in lines[1:]:
+                        self.write(
+                            f"{'':>{first_col + self.current_indent}}{line}\n"
+                        )
+                else:
+                    self.write("\n")
+
+        elif len(widths) == 3:
+
+            first_col = min(widths[0], col_max) + col_spacing
+            second_col = min(widths[1], col_max) + col_spacing * 2
+
+            current_tag = None
+            for (first, second, third) in iter_rows(rows, len(widths)):
+                if current_tag != first:
+                    current_tag = first
+                    self.write("\n")
+                    self.write(f"{'':>{self.current_indent}}{first}:\n")
+
+                if not third:
+                    self.write("\n")
+                    continue
+
+                if term_len(first) <= first_col - col_spacing:
+                    self.write(" " * self.current_indent * 2)
+                else:
+                    self.write("\n")
+                    self.write(" " * (first_col + self.current_indent))
+
+                self.write(f"{'':>{self.current_indent}}{second}")
+
+                text_width = max(self.width - second_col - 4, 10)
+                wrapped_text = formatting.wrap_text(
+                    third, text_width, preserve_paragraphs=True
+                )
+                lines = wrapped_text.splitlines()
+
+                if lines:
                     self.write(
-                        f"{'':>{second_col + self.current_indent * 4 }}{line}\n"
+                        " "
+                        * (second_col - term_len(second) + self.current_indent)
                     )
-            else:
-                self.write("\n")
+                    self.write(f"{lines[0]}\n")
+
+                    for line in lines[1:]:
+                        self.write(
+                            f"{'':>{second_col + self.current_indent * 4 }}{line}\n"
+                        )
+                else:
+                    self.write("\n")
+        else:
+            raise TypeError(
+                "Expected either three or two columns for definition list"
+            )

@@ -83,7 +83,7 @@ class ZenMLCLI(click.Group):
                 with formatter.section(
                     "Available Commands By Group Category for Zenml"
                 ):
-                    formatter.write_zen_dl(rows)
+                    formatter.write_dl(rows)  # type: ignore[arg-type]
 
 
 @click.group(cls=ZenMLCLI)
