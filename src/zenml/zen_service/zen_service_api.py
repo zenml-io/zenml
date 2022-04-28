@@ -37,6 +37,7 @@ from zenml.constants import (
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
+    DoesNotExistException,
     EntityExistsError,
     StackComponentExistsError,
     StackExistsError,
@@ -226,6 +227,36 @@ async def register_stack(stack: StackWrapper) -> Dict[str, str]:
         return zen_store.register_stack(stack)
     except (StackExistsError, StackComponentExistsError) as error:
         raise conflict(error) from error
+
+
+@authed.put(
+    STACKS + "/{name}",
+    response_model=Dict[str, str],
+    responses={404: error_response},
+)
+async def update_stack(stack: StackWrapper, name: str) -> Dict[str, str]:
+    """Updates a stack."""
+    try:
+        return zen_store.update_stack(name, stack)
+    except DoesNotExistException as error:
+        raise not_found(error) from error
+
+
+@authed.put(
+    STACK_COMPONENTS + "/{component_type}/{name}",
+    response_model=Dict[str, str],
+    responses={404: error_response},
+)
+async def update_stack_component(
+    name: str,
+    component_type: StackComponentType,
+    component: ComponentWrapper,
+) -> Dict[str, str]:
+    """Updates a stack component."""
+    try:
+        return zen_store.update_stack_component(name, component_type, component)
+    except KeyError as error:
+        raise not_found(error) from error
 
 
 @authed.get(

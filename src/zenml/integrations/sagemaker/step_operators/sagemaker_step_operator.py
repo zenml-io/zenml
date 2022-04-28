@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import ClassVar, List, Optional
+from typing import ClassVar, List, Optional, Tuple
 
 import sagemaker
 
@@ -59,8 +59,11 @@ class SagemakerStepOperator(BaseStepOperator):
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry."""
 
-        def _ensure_local_orchestrator(stack: Stack) -> bool:
-            return stack.orchestrator.FLAVOR == "local"
+        def _ensure_local_orchestrator(stack: Stack) -> Tuple[bool, str]:
+            return (
+                stack.orchestrator.FLAVOR == "local",
+                "Local orchestrator is required",
+            )
 
         return StackValidator(
             required_components={StackComponentType.CONTAINER_REGISTRY},

@@ -32,6 +32,7 @@ from zenml.constants import (
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
+    DoesNotExistException,
     EntityExistsError,
     StackComponentExistsError,
     StackExistsError,
@@ -79,11 +80,10 @@ class RestZenStore(BaseZenStore):
         self._url = url.strip("/")
         if "skip_default_stack" not in kwargs:
             kwargs["skip_default_stack"] = True
-        # breakpoint()
         super().initialize(url, *args, **kwargs)
         return self
 
-    # Statics:
+    # Static methods:
 
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
@@ -193,10 +193,36 @@ class RestZenStore(BaseZenStore):
             component: The component to register.
 
         Raises:
-            StackComponentExistsError: If a stack component with the same type
+            KeyError: If a stack component with the same type
                 and name already exists.
         """
         self.post(STACK_COMPONENTS, body=component)
+
+    def update_stack_component(
+        self,
+        name: str,
+        component_type: StackComponentType,
+        component: ComponentWrapper,
+    ) -> Dict[str, str]:
+        """Update a stack component.
+
+        Args:
+            name: The original name of the stack component.
+            component_type: The type of the stack component to update.
+            component: The new component to update with.
+
+        Raises:
+            KeyError: If no stack component exists with the given name.
+        """
+        body = self.put(
+            f"{STACK_COMPONENTS}/{component_type}/{name}", body=component
+        )
+        if isinstance(body, dict):
+            return cast(Dict[str, str], body)
+        else:
+            raise ValueError(
+                f"Bad API Response. Expected dict, got {type(body)}"
+            )
 
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
@@ -208,6 +234,19 @@ class RestZenStore(BaseZenStore):
             KeyError: If no stack exists for the given name.
         """
         self.delete(f"{STACKS}/{name}")
+
+    def _save_stack(
+        self,
+        name: str,
+        stack_configuration: Dict[StackComponentType, str],
+    ) -> None:
+        """Add a stack to storage.
+
+        Args:
+            name: The name to save the stack as.
+            stack_configuration: Dict[StackComponentType, str] to persist.
+        """
+        raise NotImplementedError
 
     # Custom implementations:
 
@@ -254,6 +293,32 @@ class RestZenStore(BaseZenStore):
                 already exists.
         """
         body = self.post(STACKS, stack)
+        if isinstance(body, dict):
+            return cast(Dict[str, str], body)
+        else:
+            raise ValueError(
+                f"Bad API Response. Expected dict, got {type(body)}"
+            )
+
+    def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
+        """Update a stack and its components.
+
+        If any of the stack's components aren't registered in the stack store
+        yet, this method will try to register them as well.
+
+        Args:
+            name: The original name of the stack.
+            stack: The new stack to use in the update.
+
+        Returns:
+            metadata dict for telemetry or logging.
+
+        Raises:
+            ValueError: If a dict is not returned from the API.
+        """
+        body = self.put(f"{STACKS}/{name}", body=stack)
+        if name != stack.name:
+            self.deregister_stack(name)
         if isinstance(body, dict):
             return cast(Dict[str, str], body)
         else:
@@ -912,7 +977,10 @@ class RestZenStore(BaseZenStore):
                 f"{response.status_code} Client Error: Unauthorized request to URL {response.url}: {response.json().get('detail')}"
             )
         elif response.status_code == 404:
-            raise KeyError(*response.json().get("detail", (response.text,)))
+            if "DoesNotExistException" not in response.text:
+                raise KeyError(*response.json().get("detail", (response.text,)))
+            message = ": ".join(response.json().get("detail", (response.text,)))
+            raise DoesNotExistException(message)
         elif response.status_code == 409:
             if "StackComponentExistsError" in response.text:
                 raise StackComponentExistsError(
@@ -932,6 +1000,8 @@ class RestZenStore(BaseZenStore):
                 )
         elif response.status_code == 422:
             raise RuntimeError(*response.json().get("detail", (response.text,)))
+        elif response.status_code == 500:
+            raise KeyError(response.text)
         else:
             raise RuntimeError(
                 "Error retrieving from API. Got response "
@@ -962,6 +1032,15 @@ class RestZenStore(BaseZenStore):
         endpoint = self.url + path
         return self._handle_response(
             requests.post(
+                endpoint, data=body.json(), auth=self._get_authentication()
+            )
+        )
+
+    def put(self, path: str, body: BaseModel) -> Json:
+        """Make a PUT request to the given endpoint path."""
+        endpoint = self.url + path
+        return self._handle_response(
+            requests.put(
                 endpoint, data=body.json(), auth=self._get_authentication()
             )
         )

@@ -35,11 +35,6 @@ class SQLiteMetadataStore(BaseMetadataStore):
         """Path to the local directory where the SQLite DB is stored."""
         return str(Path(self.uri).parent)
 
-    @property
-    def upgrade_migration_enabled(self) -> bool:
-        """Return True to enable automatic database schema migration."""
-        return True
-
     def get_tfx_metadata_config(
         self,
     ) -> Union[

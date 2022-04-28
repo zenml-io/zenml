@@ -18,6 +18,8 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
+from pydantic import root_validator
+
 from zenml.constants import (
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
     LOCAL_STORES_DIRECTORY_NAME,
@@ -49,17 +51,23 @@ class MLFlowModelDeployer(BaseModelDeployer):
         configuration, PID and log files are stored.
     """
 
-    service_path: str
+    service_path: str = ""
 
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW_MODEL_DEPLOYER_FLAVOR
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        if "service_path" not in kwargs:
-            component_uuid = kwargs.get("uuid", uuid.uuid4())
-            kwargs["service_path"] = self.get_service_path(component_uuid)
-            kwargs["uuid"] = component_uuid
-        super().__init__(*args, **kwargs)
+    @root_validator
+    def set_service_path(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Sets the service_path attribute value according to the component
+        UUID."""
+        if values.get("service_path"):
+            return values
+
+        # not likely to happen, due to Pydantic validation, but mypy complains
+        assert "uuid" in values
+
+        values["service_path"] = cls.get_service_path(values["uuid"])
+        return values
 
     @staticmethod
     def get_service_path(uuid: uuid.UUID) -> str:

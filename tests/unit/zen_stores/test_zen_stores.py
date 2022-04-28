@@ -15,6 +15,7 @@ import os
 import platform
 import shutil
 import time
+from contextlib import ExitStack as does_not_raise
 from multiprocessing import Process
 
 import pytest
@@ -35,8 +36,14 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
+from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
+    KubeflowOrchestrator,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators import LocalOrchestrator
+from zenml.secrets_managers.local.local_secrets_manager import (
+    LocalSecretsManager,
+)
 from zenml.stack import Stack
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_stores import (
@@ -437,9 +444,239 @@ def test_flavor_management(fresh_zen_store):
     new_artifact_store_flavors = fresh_zen_store.get_flavors_by_type(
         StackComponentType.ARTIFACT_STORE
     )
+    assert new_artifact_store_flavors
 
     new_artifact_store_flavor = fresh_zen_store.get_flavor_by_name_and_type(
         flavor_name="test",
         component_type=StackComponentType.ARTIFACT_STORE,
     )
     assert new_artifact_store_flavor
+
+
+def test_update_stack_with_new_component(fresh_zen_store):
+    """Test updating a stack with a new component"""
+    new_orchestrator = LocalOrchestrator(name="new_orchestrator")
+
+    updated_stack = Stack(
+        name="default",
+        orchestrator=new_orchestrator,
+        metadata_store=fresh_zen_store.get_stack_component(
+            StackComponentType.METADATA_STORE, "default"
+        ).to_component(),
+        artifact_store=fresh_zen_store.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, "default"
+        ).to_component(),
+    )
+    try:
+        fresh_zen_store.update_stack(
+            updated_stack.name, StackWrapper.from_stack(updated_stack)
+        )
+    except KeyError:
+        pytest.fail("Failed to update stack")
+
+    assert (
+        len(
+            fresh_zen_store.get_stack_components(
+                StackComponentType.ORCHESTRATOR
+            )
+        )
+        == 2
+    )
+    assert new_orchestrator in [
+        component.to_component()
+        for component in fresh_zen_store.get_stack_components(
+            StackComponentType.ORCHESTRATOR
+        )
+    ]
+    assert new_orchestrator in [
+        component.to_component()
+        for component in fresh_zen_store.get_stack("default").components
+    ]
+
+
+def test_update_stack_when_component_not_part_of_stack(
+    fresh_zen_store,
+):
+    """Test adding a new component as part of an existing stack."""
+    local_secrets_manager = LocalSecretsManager(name="local_secrets_manager")
+
+    updated_stack = Stack(
+        name="default",
+        orchestrator=fresh_zen_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, "default"
+        ).to_component(),
+        metadata_store=fresh_zen_store.get_stack_component(
+            StackComponentType.METADATA_STORE, "default"
+        ).to_component(),
+        artifact_store=fresh_zen_store.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, "default"
+        ).to_component(),
+        secrets_manager=local_secrets_manager,
+    )
+
+    with does_not_raise():
+        fresh_zen_store.update_stack(
+            updated_stack.name, StackWrapper.from_stack(updated_stack)
+        )
+
+    assert (
+        len(
+            fresh_zen_store.get_stack_components(
+                StackComponentType.SECRETS_MANAGER
+            )
+        )
+        == 1
+    )
+    assert local_secrets_manager in [
+        component.to_component()
+        for component in fresh_zen_store.get_stack_components(
+            StackComponentType.SECRETS_MANAGER
+        )
+    ]
+    assert local_secrets_manager in [
+        component.to_component()
+        for component in fresh_zen_store.get_stack("default").components
+    ]
+
+
+def test_update_non_existent_stack_raises_error(
+    fresh_zen_store,
+):
+    """Test updating a non-existent stack raises an error."""
+    stack = Stack(
+        name="aria_is_a_cat_not_a_stack",
+        orchestrator=fresh_zen_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, "default"
+        ).to_component(),
+        metadata_store=fresh_zen_store.get_stack_component(
+            StackComponentType.METADATA_STORE, "default"
+        ).to_component(),
+        artifact_store=fresh_zen_store.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, "default"
+        ).to_component(),
+    )
+
+    with pytest.raises(KeyError):
+        fresh_zen_store.update_stack(
+            "aria_is_a_cat_not_a_stack", StackWrapper.from_stack(stack)
+        )
+
+
+def test_update_non_existent_stack_component_raises_error(
+    fresh_zen_store,
+):
+    """Test updating a non-existent stack component raises an error."""
+    local_secrets_manager = LocalSecretsManager(name="local_secrets_manager")
+
+    with pytest.raises(KeyError):
+        fresh_zen_store.update_stack_component(
+            local_secrets_manager.name,
+            StackComponentType.SECRETS_MANAGER,
+            ComponentWrapper.from_component(local_secrets_manager),
+        )
+
+
+def test_update_real_component_succeeds(
+    fresh_zen_store,
+):
+    """Test updating a real component succeeds."""
+    kubeflow_orchestrator = ComponentWrapper.from_component(
+        KubeflowOrchestrator(name="arias_orchestrator")
+    )
+    fresh_zen_store.register_stack_component(kubeflow_orchestrator)
+
+    updated_kubeflow_orchestrator = ComponentWrapper.from_component(
+        KubeflowOrchestrator(
+            name="arias_orchestrator",
+            custom_docker_base_image_name="aria/arias_base_image",
+        )
+    )
+    fresh_zen_store.update_stack_component(
+        "arias_orchestrator",
+        StackComponentType.ORCHESTRATOR,
+        updated_kubeflow_orchestrator,
+    )
+
+    orchestrator_component = fresh_zen_store.get_stack_component(
+        StackComponentType.ORCHESTRATOR, "arias_orchestrator"
+    ).to_component()
+
+    assert (
+        orchestrator_component.custom_docker_base_image_name
+        == "aria/arias_base_image"
+    )
+
+
+def test_rename_nonexistent_stack_component_fails(
+    fresh_zen_store,
+):
+    """Test renaming a non-existent stack component fails."""
+    with pytest.raises(KeyError):
+        fresh_zen_store.update_stack_component(
+            "not_a_secrets_manager",
+            StackComponentType.SECRETS_MANAGER,
+            ComponentWrapper.from_component(
+                LocalSecretsManager(name="local_secrets_manager")
+            ),
+        )
+
+
+def test_rename_core_stack_component_succeeds(
+    fresh_zen_store,
+):
+    """Test renaming a core stack component succeeds."""
+    old_name = "default"
+    new_name = "arias_orchestrator"
+    renamed_orchestrator = ComponentWrapper.from_component(
+        LocalOrchestrator(name=new_name)
+    )
+    fresh_zen_store.update_stack_component(
+        old_name, StackComponentType.ORCHESTRATOR, renamed_orchestrator
+    )
+    with pytest.raises(KeyError):
+        assert fresh_zen_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, old_name
+        )
+    stack_components = fresh_zen_store.get_stack("default").components
+    stack_orchestrators = [
+        component
+        for component in stack_components
+        if component.name == new_name
+    ]
+
+    assert len(stack_orchestrators) > 0
+    assert stack_orchestrators[0].name == new_name
+
+
+def test_rename_non_core_stack_component_succeeds(
+    fresh_zen_store,
+):
+    """Test renaming a non-core stack component succeeds."""
+    old_name = "original_kubeflow"
+    new_name = "arias_kubeflow"
+
+    kubeflow_orchestrator = ComponentWrapper.from_component(
+        KubeflowOrchestrator(name=old_name)
+    )
+    fresh_zen_store.register_stack_component(kubeflow_orchestrator)
+
+    renamed_kubeflow_orchestrator = ComponentWrapper.from_component(
+        KubeflowOrchestrator(name=new_name)
+    )
+    fresh_zen_store.update_stack_component(
+        old_name,
+        StackComponentType.ORCHESTRATOR,
+        renamed_kubeflow_orchestrator,
+    )
+
+    with pytest.raises(KeyError):
+        assert fresh_zen_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, old_name
+        )
+
+    stack_orchestrator = fresh_zen_store.get_stack_component(
+        StackComponentType.ORCHESTRATOR, new_name
+    ).to_component()
+
+    assert stack_orchestrator is not None
+    assert stack_orchestrator.name == new_name

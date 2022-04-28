@@ -144,6 +144,8 @@ class LocalZenStore(BaseZenStore):
         """URL of the repository."""
         return self._url
 
+    # Static methods:
+
     @staticmethod
     def get_path_from_url(url: str) -> Optional[Path]:
         """Get the path from a URL.
@@ -249,6 +251,64 @@ class LocalZenStore(BaseZenStore):
             component.name,
         )
 
+    def update_stack_component(
+        self,
+        name: str,
+        component_type: StackComponentType,
+        component: ComponentWrapper,
+    ) -> Dict[str, str]:
+        """Update a stack component.
+
+        Args:
+            name: The original name of the stack component.
+            component_type: The type of the stack component to update.
+            component: The new component to update with.
+
+        Raises:
+            KeyError: If no stack component exists with the given name.
+        """
+        components = self.__store.stack_components[component_type]
+        if name not in components:
+            raise KeyError(
+                f"Unable to update stack component (type: {component_type}) "
+                f"with name '{name}': No existing stack component "
+                f"found with this name."
+            )
+        elif name != component.name and component.name in components:
+            raise StackComponentExistsError(
+                f"Unable to update stack component (type: {component_type}) "
+                f"with name '{component.name}': a stack component already "
+                f"is registered with this name."
+            )
+        component_config_path = self._get_stack_component_config_path(
+            component_type=component.type, name=component.name
+        )
+        utils.create_dir_recursive_if_not_exists(
+            os.path.dirname(component_config_path)
+        )
+        utils.write_file_contents_as_string(
+            component_config_path,
+            base64.b64decode(component.config).decode(),
+        )
+        if name != component.name:
+            self._delete_stack_component(component_type, name)
+
+        # add the component to the stack store dict and write it to disk
+        components[component.name] = component.flavor
+
+        for _, conf in self.stack_configurations.items():
+            for component_type, component_name in conf.items():
+                if component_name == name and component_type == component.type:
+                    conf[component_type] = component.name
+        self._write_store()
+
+        logger.info(
+            "Updated stack component with type '%s' and name '%s'.",
+            component_type,
+            component.name,
+        )
+        return {component.type.value: component.flavor}
+
     def deregister_stack(self, name: str) -> None:
         """Remove a stack from storage.
 
@@ -263,10 +323,12 @@ class LocalZenStore(BaseZenStore):
 
     # Private interface implementations:
 
-    def _create_stack(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
+    def _save_stack(
+        self,
+        name: str,
+        stack_configuration: Dict[StackComponentType, str],
     ) -> None:
-        """Add a stack to storage.
+        """Save a stack.
 
         Args:
             name: The name to save the stack as.
@@ -274,7 +336,6 @@ class LocalZenStore(BaseZenStore):
         """
         self.__store.stacks[name] = stack_configuration
         self._write_store()
-        logger.info("Registered stack with name '%s'.", name)
 
     def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str

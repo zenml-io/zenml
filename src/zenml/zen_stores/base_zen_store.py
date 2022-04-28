@@ -71,7 +71,7 @@ class BaseZenStore(ABC):
 
         return self
 
-    # Statics:
+    # Static methods:
 
     @staticmethod
     @abstractmethod
@@ -92,7 +92,7 @@ class BaseZenStore(ABC):
         """Get a local URL for a given local path.
 
         Args:
-             path: the path string to build a URL out of.
+            path: the path string to build a URL out of.
 
         Returns:
             Url pointing to the path for the store type.
@@ -165,6 +165,24 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
+    def update_stack_component(
+        self,
+        name: str,
+        component_type: StackComponentType,
+        component: ComponentWrapper,
+    ) -> Dict[str, str]:
+        """Update a stack component.
+
+        Args:
+            name: The original name of the stack component.
+            component_type: The type of the stack component to update.
+            component: The new component to update with.
+
+        Raises:
+            KeyError: If no stack component exists with the given name.
+        """
+
+    @abstractmethod
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
@@ -178,8 +196,10 @@ class BaseZenStore(ABC):
     # Private interface (must be implemented, not to be called by user):
 
     @abstractmethod
-    def _create_stack(
-        self, name: str, stack_configuration: Dict[StackComponentType, str]
+    def _save_stack(
+        self,
+        name: str,
+        stack_configuration: Dict[StackComponentType, str],
     ) -> None:
         """Add a stack to storage.
 
@@ -669,7 +689,7 @@ class BaseZenStore(ABC):
     def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
 
-        If any of the stacks' components aren't registered in the zen store
+        If any of the stack's components aren't registered in the zen store
         yet, this method will try to register them as well.
 
         Args:
@@ -726,7 +746,65 @@ class BaseZenStore(ABC):
             typ: name for typ, name in map(__check_component, stack.components)
         }
         metadata = {c.type.value: c.flavor for c in stack.components}
-        self._create_stack(stack.name, stack_configuration)
+        self._save_stack(stack.name, stack_configuration)
+        logger.info("Registered stack with name '%s'.", stack.name)
+        return metadata
+
+    def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
+        """Update a stack and its components.
+
+        If any of the stack's components aren't registered in the stack store
+        yet, this method will try to register them as well.
+
+        Args:
+            name: The original name of the stack.
+            stack: The new stack to use in the update.
+
+        Returns:
+            metadata dict for telemetry or logging.
+
+        Raises:
+            DoesNotExistException: If no stack exists with the given name.
+        """
+        try:
+            self.get_stack(name)
+        except KeyError:
+            raise KeyError(
+                f"Unable to update stack with name '{stack.name}': No existing "
+                f"stack found with this name."
+            )
+
+        try:
+            renamed_stack = self.get_stack(stack.name)
+            if (name != stack.name) and renamed_stack:
+                raise StackExistsError(
+                    f"Unable to update stack with name '{stack.name}': Found "
+                    f"existing stack with this name."
+                )
+        except KeyError:
+            pass
+
+        def __check_component(
+            component: ComponentWrapper,
+        ) -> Tuple[StackComponentType, str]:
+            try:
+                _ = self.get_stack_component(
+                    component_type=component.type, name=component.name
+                )
+            except KeyError:
+                self.register_stack_component(component)
+            return component.type, component.name
+
+        stack_configuration = {
+            typ: name for typ, name in map(__check_component, stack.components)
+        }
+        metadata = {c.type.value: c.flavor for c in stack.components}
+        self._save_stack(stack.name, stack_configuration)
+
+        logger.info("Updated stack with name '%s'.", name)
+        if name != stack.name:
+            self.deregister_stack(name)
+
         return metadata
 
     def get_stack_component(
