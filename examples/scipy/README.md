@@ -1,6 +1,13 @@
 # [SciPy](https://scipy.org/) sparse matrices in ZenML
 
-An elementary data structure widely used in `sklearn` to store sparse arrays.
+An elementary data structure widely used in `sklearn` to store sparse data more efficiently.
+
+
+## 🧰 How the example is implemented
+
+We train a simple linear model to classify text based on sentiment.
+
+The text is represented via a sparse [bag of words](https://en.wikipedia.org/wiki/Bag-of-words_model) vector.
 
 # 🖥 Run it locally
 
