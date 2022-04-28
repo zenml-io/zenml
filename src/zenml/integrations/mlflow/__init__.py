@@ -32,6 +32,7 @@ class MlflowIntegration(Integration):
     @staticmethod
     def activate() -> None:
         """Activate the MLflow integration."""
+        from zenml.integrations.mlflow import experiment_trackers  # noqa
         from zenml.integrations.mlflow import model_deployers  # noqa
         from zenml.integrations.mlflow import services  # noqa
 
