@@ -26,7 +26,7 @@ DATA_FILENAME = "data.npz"
 
 
 class SparseMaterializer(BaseMaterializer):
-    """Materializer to read data to and from pandas."""
+    """Materializer to read and write scipy sparse matrices."""
 
     ASSOCIATED_TYPES = (spmatrix,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
