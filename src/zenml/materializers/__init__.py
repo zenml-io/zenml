@@ -22,12 +22,10 @@ from zenml.materializers.built_in_materializer import BuiltInMaterializer
 from zenml.materializers.numpy_materializer import NumpyMaterializer
 from zenml.materializers.pandas_materializer import PandasMaterializer
 from zenml.materializers.service_materializer import ServiceMaterializer
-from zenml.materializers.sparse_materializer import SparseMaterializer
 
 __all__ = [
     "BuiltInMaterializer",
     "NumpyMaterializer",
     "PandasMaterializer",
     "ServiceMaterializer",
-    "SparseMaterializer",
 ]

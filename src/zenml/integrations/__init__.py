@@ -32,6 +32,7 @@ from zenml.integrations.pytorch import PytorchIntegration  # noqa
 from zenml.integrations.pytorch_lightning import (  # noqa
     PytorchLightningIntegration,
 )
+from zenml.integrations.scipy import ScipyIntegration
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
