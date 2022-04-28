@@ -146,6 +146,7 @@ up whatever dependencies are required, use the ``run`` subcommand:
 ```bash
 zenml example run quickstart
 ```
+
 Using integrations
 ------------------
 
@@ -208,6 +209,7 @@ metadata store into the CLI with the following command:
 ```bash
 zenml metadata-store delete METADATA_STORE_NAME
 ```
+
 Customizing your Artifact Store
 -------------------------------
 
@@ -231,6 +233,7 @@ artifact store into the CLI with the following command:
 ```bash
 zenml artifact-store delete ARTIFACT_STORE_NAME
 ```
+
 Customizing your Orchestrator
 -----------------------------
 
@@ -257,6 +260,7 @@ orchestrator into the CLI with the following command:
 ```bash
 zenml orchestrator delete ORCHESTRATOR_NAME
 ```
+
 Customizing your Container Registry
 -----------------------------------
 
@@ -294,8 +298,179 @@ To delete a container registry (and all of its contents), use the `delete`
 command:
 
 ```bash
-zenml container-registry delete
+zenml container-registry delete REGISTRY_NAME
 ```
+
+Customizing your Experiment Tracker
+-----------------------------------
+
+Experiment trackers let you track your ML experiments by logging the parameters
+and allowing you to compare between different runs. If you want to use an
+experiment tracker in one of your stacks, you need to first register it:
+
+```bash
+zenml experiment-tracker register EXPERIMENT_TRACKER_NAME \
+    --flavor=EXPERIMENT_TRACKER_TYPE [--EXPERIMENT_TRACKER_OPTIONS]
+```
+
+If you want the name of the current experiment tracker, use the `get` command:
+
+```bash
+zenml experiment-tracker get
+```
+
+To list all experiment trackers available and registered for use, use the
+`list` command:
+
+```bash
+zenml experiment-tracker list
+```
+
+For details about a particular experiment tracker, use the `describe` command.
+By default, (without a specific experiment tracker name passed in) it will
+describe the active or currently-used experiment tracker:
+
+```bash
+zenml experiment-tracker describe [EXPERIMENT_TRACKER_NAME]
+```
+
+To delete an experiment tracker, use the `delete` command:
+
+```bash
+zenml experiment-tracker delete EXPERIMENT_TRACKER_NAME
+```
+
+Setting up a Secrets Manager
+----------------------------
+
+ZenML offers a way to securely store secrets associated with your project. To
+set up a local file-based secrets manager, use the following CLI command:
+
+```bash
+zenml secrets-manager register SECRETS_MANAGER_NAME -t local
+```
+
+This can then be used as part of your Stack (see below).
+
+Using Secrets
+-------------
+
+Secrets are administered by the Secrets Manager. You must first register that
+and then register a stack that includes the secrets manager before you can start
+to use it. To get a full list of all the possible commands, type `zenml secret
+--help`. A ZenML Secret is a collection or grouping of key-value pairs. These
+Secret groupings come in different types, and certain types have predefined keys
+that should be used. For example, an AWS secret has predefined keys of
+`aws_access_key_id` and `aws_secret_access_key` (and an optional
+`aws_session_token`). If you do not have a specific secret type you wish to use,
+ZenML will use the `arbitrary` type to store your key-value pairs.
+
+To register a secret, use the `register` command:
+
+```bash
+zenml secret register SECRET_NAME
+```
+
+If you wish to register a single secret non-interactively, you can
+pass in a key-value pair at the command line, as in the following example:
+
+```shell
+zenml secret register SECRET_NAME -k KEY -v VALUE
+```
+
+Note that the key and value will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `register` command instead.
+
+To list all the secrets available, use the `list` command:
+
+```bash
+zenml secret list
+```
+
+To get the key-value pairs for a particular secret, use the `get` command:
+
+```bash
+zenml secret get SECRET_NAME
+```
+
+To update a secret, use the `update` command:
+
+```bash
+zenml secret update SECRET_NAME
+```
+
+If you wish to update a single secret non-interactively, you can
+pass in a key-value pair at the command line, as in the following example:
+
+```shell
+zenml secret update SECRET_NAME -k KEY -v NEW_VALUE
+```
+
+Note that the key and value will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `update` command instead.
+
+Finally, to delete a secret, use the `delete` command:
+
+```bash
+zenml secret delete SECRET_NAME
+```
+
+Add a Feature Store to your Stack
+---------------------------------
+
+ZenML supports connecting to a Redis-backed Feast feature store as a stack
+component integration. To set up a feature store, use the following CLI command:
+
+```shell zenml feature-store register FEATURE_STORE_NAME -t feast
+--feast_repo=REPO_PATH --online_host HOST_NAME --online_port ONLINE_PORT_NUMBER
+```
+
+Once you have registered your feature store as a stack component, you can use it
+in your ZenML Stack.
+
+Interacting with Deployed Models
+--------------------------------
+
+Deployed models are
+
+
+If you want to simply see what models have been deployed within your stack, run
+the following command:
+
+```bash
+zenml served-models list
+```
+
+This should give you a list of served models containing their uuid, the name
+of the pipeline that produced them including the run id and the step name as
+well as the status.
+This information should help you identify the different models.
+
+If you want further information about a specific model, simply copy the
+UUID and the following command.
+
+```bash
+zenml served-models describe <UUID>
+```
+
+If you are only interested in the prediction-url of the specific model you can
+also run:
+
+```bash
+zenml served-models get-url <UUID>
+```
+
+Finally, you will also be able to start/stop the services using the following
+ two commands:
+
+```bash
+zenml served-models start <UUID>
+zenml served-models stop <UUID>
+```
+
+If you want to completely remove a served model you can also irreversibly delete it using:
+```bash
+zenml served-models delete <UUID>
 
 Administering the Stack
 -----------------------
@@ -319,7 +494,8 @@ zenml stack register STACK_NAME \
 ```
 Each corresponding argument should be the name you passed in as an
 identifier for the artifact store, metadata store or orchestrator when
-you originally registered it.
+you originally registered it. (If you want to use your secrets manager, you
+should pass its name in with the `-x` option flag.)
 
 To list the stacks that you have registered within your current ZenML
 project, type:
@@ -346,13 +522,140 @@ To see which stack is currently set as the default active stack, type:
 ```bash
 zenml stack get
 ```
+
+If you wish to update a stack that you have already registered, first make sure
+you have registered whatever components you want to use, then use the following
+command:
+
+```bash
+# assuming that you have already registered a new orchestrator
+# with NEW_ORCHESTRATOR_NAME
+zenml stack update STACK_NAME -o NEW_ORCHESTRATOR_NAME
+```
+
+You can update one or many stack components at the same time out of the ones
+that ZenML supports. To see the full list of options for updating a stack, use
+the following command:
+
+```bash
+zenml stack update --help
+```
+
+To remove a stack component from a stack, use the following command:
+
+```shell
+# assuming you want to remove the secrets-manager and the feature-store
+# from your stack
+zenml stack remove-component -x -f
+```
+
+If you wish to rename your stack, use the following command:
+
+```shell
+zenml stack rename STACK_NAME NEW_STACK_NAME
+```
+
+If you wish to update a specific stack component, use the following command,
+switching out "STACK_COMPONENT" for the component you wish to update (i.e.
+'orchestrator' or 'artifact-store' etc):
+
+```shell
+zenml STACK_COMPONENT update --some_property=NEW_VALUE
+```
+
+Note that you are not permitted to update the stack name or UUID in this way. To
+change the name of your stack component, use the following command:
+
+```shell
+zenml STACK_COMPONENT rename STACK_COMPONENT_NAME NEW_STACK_COMPONENT_NAME
+```
+
+Managing users, teams, projects and roles
+-----------------------------------------
+
+When using the ZenML service, you can manage permissions by managing users,
+teams, projects and roles using the CLI.
+If you want to create a new user or delete an existing one, run either
+
+```bash
+zenml user create USER_NAME
+```
+or
+```bash
+zenml user delete USER_NAME
+```
+
+To see a list of all users, run:
+```bash
+zenml user list
+```
+
+A team is a grouping of many users that allows you to quickly assign and
+revoke roles. If you want to create a new team, run:
+
+```bash
+zenml team create TEAM_NAME
+```
+To add one or more users to a team, run:
+```bash
+zenml team add TEAM_NAME --user USER_NAME [--user USER_NAME ...]
+```
+Similarly, to remove users from a team run:
+```bash
+zenml team remove TEAM_NAME --user USER_NAME [--user USER_NAME ...]
+```
+To delete a team (keep in mind this will revoke any roles assigned to this
+team from the team members), run:
+```bash
+zenml team delete TEAM_NAME
+```
+
+To see a list of all teams, run:
+```bash
+zenml team list
+```
+
+A role groups permissions and can be assigned to users or teams. To create or
+delete a role, run one of the following commands:
+```bash
+zenml role create ROLE_NAME
+zenml role delete ROLE_NAME
+```
+
+To see a list of all roles, run:
+```bash
+zenml role list
+```
+
+If you want to assign or revoke a role from users or teams, you can run
+
+```bash
+zenml role assign ROLE_NAME --user USER_NAME [--user USER_NAME ...]
+zenml role assign ROLE_NAME --team TEAM_NAME [--team TEAM_NAME ...]
+```
+or
+```bash
+zenml role revoke ROLE_NAME --user USER_NAME [--user USER_NAME ...]
+zenml role revoke ROLE_NAME --team TEAM_NAME [--team TEAM_NAME ...]
+```
+
+You can see a list of all current role assignments by running:
+
+```bash
+zenml role assignment list
+```
 """
 
 from zenml.cli.base import *  # noqa
 from zenml.cli.config import *  # noqa
 from zenml.cli.example import *  # noqa
+from zenml.cli.feature import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.pipeline import *  # noqa
+from zenml.cli.secret import *  # noqa
+from zenml.cli.served_models import *  # noqa
+from zenml.cli.service import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
+from zenml.cli.user_management import *  # noqa
 from zenml.cli.version import *  # noqa

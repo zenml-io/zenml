@@ -51,6 +51,8 @@ ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
 ENV_ZENML_PREVENT_PIPELINE_EXECUTION = "ZENML_PREVENT_PIPELINE_EXECUTION"
 ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 ENV_ZENML_DEFAULT_STORE_TYPE = "ZENML_DEFAULT_STORE_TYPE"
+ENV_ZENML_PROFILE_NAME = "ZENML_PROFILE_NAME"
+ENV_ZENML_PROFILE_CONFIGURATION = "ZENML_PROFILE_CONFIGURATION"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -108,12 +110,36 @@ SHOULD_PREVENT_PIPELINE_EXECUTION = handle_bool_env_var(
     ENV_ZENML_PREVENT_PIPELINE_EXECUTION
 )
 
-# Directory Path for local repositories
+# Repository and local store directory paths:
 REPOSITORY_DIRECTORY_NAME = ".zen"
+LOCAL_STORES_DIRECTORY_NAME = "local_stores"
 
 USER_MAIN_MODULE: Optional[str] = None
+
+# Secrets Manager
+ZENML_SCHEMA_NAME = "zenml_schema_name"
+LOCAL_SECRETS_FILENAME = "secrets.yaml"
 
 # Rich config
 ENABLE_RICH_TRACEBACK = handle_bool_env_var(
     ENV_ZENML_ENABLE_RICH_TRACEBACK, True
 )
+
+# Services
+DEFAULT_SERVICE_START_STOP_TIMEOUT = 10
+ZEN_SERVICE_ENTRYPOINT = "zenml.zen_service.zen_service_api:app"
+ZEN_SERVICE_IP = "127.0.0.1"
+
+# API Endpoint paths:
+IS_EMPTY = "/empty"
+STACKS = "/stacks"
+STACK_COMPONENTS = "/components"
+STACK_CONFIGURATIONS = "/stack-configurations"
+USERS = "/users"
+TEAMS = "/teams"
+PROJECTS = "/projects"
+ROLES = "/roles"
+ROLE_ASSIGNMENTS = "/role_assignments"
+
+# mandatory stack component properties
+MANDATORY_COMPONENT_PROPERTIES = ["name", "uuid"]

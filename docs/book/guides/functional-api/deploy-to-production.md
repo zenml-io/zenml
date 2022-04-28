@@ -53,20 +53,20 @@ Output:
 STACKS:
 key                   stack_type    metadata_store_name    artifact_store_name    orchestrator_name      container_registry_name
 --------------------  ------------  ---------------------  ---------------------  ---------------------  -------------------------
-local_stack           base          local_metadata_store   local_artifact_store   local_orchestrator
+local_stack           base          default                default                default
 ```
 
 ![Your local stack when you start.](../../assets/localstack.png)
 
-Let's stick with the `local_metadata_store` and a `local_artifact_store` for now and create a stack with a Kubeflow orchestrator and a local container registry
+Let's stick with the default metadata and artifact stores for now and create a stack with a Kubeflow orchestrator and a default local container registry
 
 ```bash
 # Make sure to create the local registry on port 5000 for it to work 
 zenml container-registry register local_registry --type=default --uri=localhost:5000 
 zenml orchestrator register kubeflow_orchestrator --type=kubeflow
 zenml stack register local_kubeflow_stack \
-    -m local_metadata_store \
-    -a local_artifact_store \
+    -m default \
+    -a default \
     -o kubeflow_orchestrator \
     -c local_registry
 
@@ -142,7 +142,7 @@ zenml stack down
 ### Run the same pipeline on Kubeflow Pipelines deployed to the cloud
 
 We will now run the same pipeline in Kubeflow Pipelines deployed to a cluster on the cloud. 
-Refer to the Cloud Pipelines Deployment Guide [here](../../features/cloud-pipelines/cloud-pipelines.md) to know more and follow along!
+Refer to the Cloud Pipelines Deployment Guide [here](../../features/guide-aws-gcp-azure.md) to know more and follow along!
 
 ## Conclusion
 

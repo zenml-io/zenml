@@ -17,7 +17,7 @@ import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.container_registries import BaseContainerRegistry
-from zenml.enums import OrchestratorFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 from zenml.metadata_stores import SQLiteMetadataStore
@@ -29,10 +29,8 @@ def test_kubeflow_orchestrator_attributes():
     correctly."""
     orchestrator = KubeflowOrchestrator(name="")
 
-    assert orchestrator.supports_local_execution is True
-    assert orchestrator.supports_remote_execution is True
-    assert orchestrator.type == StackComponentType.ORCHESTRATOR
-    assert orchestrator.flavor == OrchestratorFlavor.KUBEFLOW
+    assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
+    assert orchestrator.FLAVOR == "kubeflow"
 
 
 def test_kubeflow_orchestrator_stack_validation():
@@ -41,7 +39,7 @@ def test_kubeflow_orchestrator_stack_validation():
     orchestrator = KubeflowOrchestrator(name="")
     metadata_store = SQLiteMetadataStore(name="", uri="./metadata.db")
     artifact_store = LocalArtifactStore(name="", path=".")
-    container_registry = BaseContainerRegistry(name="", uri="")
+    container_registry = BaseContainerRegistry(name="", uri="localhost:5000")
 
     with pytest.raises(StackValidationError):
         # missing container registry
@@ -50,7 +48,7 @@ def test_kubeflow_orchestrator_stack_validation():
             orchestrator=orchestrator,
             metadata_store=metadata_store,
             artifact_store=artifact_store,
-        )
+        ).validate()
 
     with does_not_raise():
         # valid stack with container registry
@@ -60,4 +58,4 @@ def test_kubeflow_orchestrator_stack_validation():
             metadata_store=metadata_store,
             artifact_store=artifact_store,
             container_registry=container_registry,
-        )
+        ).validate()

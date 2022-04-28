@@ -510,7 +510,10 @@ def main() -> None:
         custom_driver_spec=custom_driver_spec,
         custom_executor_operators=custom_executor_operators,
     )
+
+    repo.active_stack.prepare_step_run()
     execution_info = execute_step(component_launcher)
+    repo.active_stack.prepare_step_run()
 
     if execution_info:
         _dump_ui_metadata(pipeline_node, execution_info, args.metadata_ui_path)

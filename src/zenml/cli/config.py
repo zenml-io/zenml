@@ -83,7 +83,6 @@ def logging() -> None:
 )
 def set_logging_verbosity(verbosity: str) -> None:
     """Set logging level"""
-    # TODO [ENG-150]: Implement this.
     verbosity = verbosity.upper()
     if verbosity not in LoggingLevels.__members__:
         raise KeyError(
@@ -121,8 +120,19 @@ def profile() -> None:
     type=click.Choice(list(StoreType)),
     default=get_default_store_type(),
 )
+@click.option(
+    "--user",
+    "user_name",
+    help="The username that is used to authenticate with the ZenService. This "
+    "is required if you're creating a profile with REST storage.",
+    required=False,
+    type=str,
+)
 def create_profile_command(
-    name: str, url: Optional[str], store_type: Optional[StoreType]
+    name: str,
+    url: Optional[str],
+    store_type: Optional[StoreType],
+    user_name: Optional[str],
 ) -> None:
     """Create a new configuration profile."""
 
@@ -134,7 +144,12 @@ def create_profile_command(
         cli_utils.error(f"Profile {name} already exists.")
         return
     cfg.add_or_update_profile(
-        ProfileConfiguration(name=name, store_url=url, store_type=store_type)
+        ProfileConfiguration(
+            name=name,
+            store_url=url,
+            store_type=store_type,
+            active_user=user_name,
+        )
     )
     cli_utils.declare(f"Profile '{name}' successfully created.")
 
@@ -309,7 +324,7 @@ Registered stack component with type 'metadata_store' and name 'default'.
 Registered stack component with type 'artifact_store' and name 'default'.
 Registered stack with name 'default'.
 Created and activated default profile.
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'default' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL               │ ACTIVE STACK ┃
@@ -324,7 +339,7 @@ automatically registered and set as the active Stack for that Profile.
 
 ```
 $ zenml profile create zenml
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'default' (global)
 Initializing profile `zenml`...
 Initializing store...
@@ -335,7 +350,7 @@ Registered stack with name 'default'.
 Profile 'zenml' successfully created.
 
 $ zenml profile list
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'default' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ PROFILE NAME │ STORE TYPE │ URL               │ ACTIVE STACK ┃
@@ -353,23 +368,23 @@ available as long as that Profile is active.
 
 ```
 $ zenml profile set zenml
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'default' (global)
 Active profile changed to: 'zenml'
 
 $ zenml stack register local -m default -a default -o default
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'zenml' (global)
 Registered stack with name 'local'.
 Stack 'local' successfully registered!
 
 $ zenml stack set local
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'zenml' (global)
 Active stack set to: 'local'
 
 $ zenml stack list
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'zenml' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃
@@ -421,7 +436,7 @@ Running with active profile: 'zenml' (local)
 
 /tmp/zenml$ cd ..
 /tmp$ zenml stack list
-Runnning without an active repository root.
+Running without an active repository root.
 Running with active profile: 'zenml' (global)
 ┏━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
 ┃ ACTIVE │ STACK NAME │ ARTIFACT_STORE │ METADATA_STORE │ ORCHESTRATOR ┃

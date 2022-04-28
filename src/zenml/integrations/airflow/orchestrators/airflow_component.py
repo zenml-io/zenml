@@ -24,6 +24,7 @@ from tfx.orchestration.portable import launcher
 from tfx.proto.orchestration import pipeline_pb2
 
 from zenml.orchestrators.utils import execute_step
+from zenml.repository import Repository
 
 
 def _airflow_component_launcher(
@@ -59,7 +60,10 @@ def _airflow_component_launcher(
         custom_driver_spec=custom_driver_spec,
         custom_executor_operators=custom_executor_operators,
     )
+    stack = Repository().active_stack
+    stack.prepare_step_run()
     execute_step(component_launcher)
+    stack.cleanup_step_run()
 
 
 class AirflowComponent(python.PythonOperator):

@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+import requests
+from pydantic import BaseModel, Field, root_validator
 
 from zenml.constants import ENV_ZENML_DEFAULT_STORE_TYPE
 from zenml.enums import StoreType
@@ -60,6 +61,7 @@ class ProfileConfiguration(BaseModel):
         store_url: URL pointing to the ZenML store backend.
         store_type: Type of the store backend.
         active_stack: Optional name of the active stack.
+        active_user: Name of the active user.
         _config: global configuration to which this profile belongs.
     """
 
@@ -67,6 +69,7 @@ class ProfileConfiguration(BaseModel):
     store_url: Optional[str]
     store_type: StoreType = Field(default_factory=get_default_store_type)
     active_stack: Optional[str]
+    active_user: str
     _config: Optional["GlobalConfiguration"]
 
     def __init__(
@@ -99,19 +102,23 @@ class ProfileConfiguration(BaseModel):
         logger.info("Initializing profile `%s`...", self.name)
 
         # Create and initialize the profile using a special repository instance.
-        # This also validates and updates the store URL configuration and creates
-        # all necessary resources (e.g. paths, initial DB, default stacks).
+        # This also validates and updates the store URL configuration and
+        # creates all necessary resources (e.g. paths, initial DB, default
+        # stacks).
         repo = Repository(profile=self)
 
         if not self.active_stack:
-            stacks = repo.stacks
+            try:
+                stacks = repo.stacks
+            except requests.exceptions.ConnectionError:
+                stacks = None
             if stacks:
                 self.active_stack = stacks[0].name
 
     def cleanup(self) -> None:
         """Cleanup the profile directory."""
-        if fileio.is_dir(self.config_directory):
-            fileio.rm_dir(self.config_directory)
+        if fileio.isdir(self.config_directory):
+            fileio.rmtree(self.config_directory)
 
     @property
     def global_config(self) -> "GlobalConfiguration":
@@ -128,6 +135,47 @@ class ProfileConfiguration(BaseModel):
         """
         self.active_stack = stack_name
         self.global_config._write_config()
+
+    def activate_user(self, user_name: str) -> None:
+        """Set the active user for the profile.
+
+        Args:
+            user_name: name of the user to activate
+        """
+        self.active_user = user_name
+        self.global_config._write_config()
+
+    @root_validator(pre=True)
+    def _ensure_active_user_is_set(
+        cls, attributes: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Ensures that an active user is set for this profile.
+
+        If the active user is missing and the profile specifies a local store,
+        a default user is used as fallback.
+
+        Raises:
+            RuntimeError: If the active user is missing for a profile with a
+                REST ZenStore.
+        """
+        store_type = attributes.get("store_type") or get_default_store_type()
+
+        if (
+            store_type != StoreType.REST
+            and attributes.get("active_user") is None
+        ):
+            # in case of a local store, fallback to the default user that is
+            # created when initializing the store
+            from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
+
+            attributes["active_user"] = DEFAULT_USERNAME
+
+        if not attributes.get("active_user"):
+            raise RuntimeError(
+                f"Active user missing for profile '{attributes['name']}'."
+            )
+
+        return attributes
 
     class Config:
         """Pydantic configuration class."""

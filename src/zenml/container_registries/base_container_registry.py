@@ -11,7 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.enums import ContainerRegistryFlavor, StackComponentType
+import re
+from typing import ClassVar
+
+from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
 
@@ -23,15 +26,16 @@ class BaseContainerRegistry(StackComponent):
     """
 
     uri: str
-    supports_local_execution = True
-    supports_remote_execution = True
+
+    # Class Configuration
+    TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
+    FLAVOR: ClassVar[str] = "default"
 
     @property
-    def type(self) -> StackComponentType:
-        """The component type."""
-        return StackComponentType.CONTAINER_REGISTRY
+    def is_local(self) -> bool:
+        """Returns whether the container registry is local or not.
 
-    @property
-    def flavor(self) -> ContainerRegistryFlavor:
-        """The container registry flavor."""
-        return ContainerRegistryFlavor.DEFAULT
+        Returns:
+            True if the container registry is local, False otherwise.
+        """
+        return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.uri))
