@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI to interact with pipelines."""
+import textwrap
 import types
 from typing import Any, Union
 
@@ -59,9 +60,24 @@ def _get_module(module: types.ModuleType, config_item: Union[str, dict]) -> Any:
         )
         return implemented_class
     elif isinstance(config_item, str):
-        step_class = _get_module_attribute(module, config_item)
+        correct_input = textwrap.dedent(f'''
+        {SourceConfigurationKeys.NAME_}: {config_item}
+        {SourceConfigurationKeys.FILE_}: optional/filepath.py
+        ''')
 
-        return step_class
+        raise PipelineConfigurationError(
+            f"As of ZenML version 0.8.0 `str` entries are no longer supported "
+            f"to define steps or materializers. Instead you will now need to "
+            f"pass a dictionary. This dictionary **has to** contain a "
+            f"`{SourceConfigurationKeys.NAME_}` which refers to the function/"
+            f"class name. If this entity is defined outside the main module,"
+            f"you will need to additionally supply a "
+            f"{SourceConfigurationKeys.FILE_} with the relative forward-slash-"
+            f"separated path to the file. \n"
+            f"You tried to pass in `{config_item}` - however you should have "
+            f"specified the name (and file) like this:"
+            f" {correct_input}"
+        )
     else:
         raise PipelineConfigurationError(
             f"Only `str` and `dict` values are allowed for "
