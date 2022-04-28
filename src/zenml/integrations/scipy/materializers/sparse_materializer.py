@@ -15,8 +15,7 @@
 import os
 from typing import Any, Type
 
-from scipy.sparse import spmatrix
-from scipy.sparse import save_npz, load_npz
+from scipy.sparse import load_npz, save_npz, spmatrix
 
 from zenml.artifacts import DataArtifact
 from zenml.io import fileio
