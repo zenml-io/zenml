@@ -41,7 +41,7 @@ class SparseMaterializer(BaseMaterializer):
         return mat
 
     def handle_return(self, mat: spmatrix) -> None:
-        """Writes a spmatrix to the artifact store as a parquet file.
+        """Writes a spmatrix to the artifact store as a npz file.
 
         Args:
             mat: The spmatrix to write.
