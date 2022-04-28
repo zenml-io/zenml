@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
-from zenml.integrations.constants import SELDON
+from zenml.integrations.seldon import SELDON_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.seldon.seldon_client import SeldonClient
 from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentConfig,
@@ -59,7 +59,7 @@ class SeldonModelDeployer(BaseModelDeployer):
     """
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = SELDON
+    FLAVOR: ClassVar[str] = SELDON_MODEL_DEPLOYER_FLAVOR
 
     kubernetes_context: Optional[str]
     kubernetes_namespace: Optional[str]
@@ -103,15 +103,15 @@ class SeldonModelDeployer(BaseModelDeployer):
             model_deployer, SeldonModelDeployer
         ):
             raise TypeError(
-                "The active stack needs to have a Seldon Core model deployer "
-                "component registered to be able to deploy models with Seldon "
-                "Core. You can create a new stack with a Seldon Core model "
-                "deployer component or update your existing stack to add this "
-                "component, e.g.:\n\n"
-                "  'zenml model-deployer register seldon --flavor=seldon "
-                "--kubernetes_context=context-name --kubernetes_namespace="
-                "namespace-name --base_url=https://ingress.cluster.kubernetes'\n"
-                "  'zenml stack create stack-name -d seldon ...'\n"
+                f"The active stack needs to have a Seldon Core model deployer "
+                f"component registered to be able to deploy models with Seldon "
+                f"Core. You can create a new stack with a Seldon Core model "
+                f"deployer component or update your existing stack to add this "
+                f"component, e.g.:\n\n"
+                f"  'zenml model-deployer register seldon --flavor={SELDON_MODEL_DEPLOYER_FLAVOR} "
+                f"--kubernetes_context=context-name --kubernetes_namespace="
+                f"namespace-name --base_url=https://ingress.cluster.kubernetes'\n"
+                f"  'zenml stack create stack-name -d seldon ...'\n"
             )
         return model_deployer
 

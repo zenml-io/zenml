@@ -137,13 +137,13 @@ class MLFlowModelDeployer(BaseModelDeployer):
             model_deployer, MLFlowModelDeployer
         ):
             raise TypeError(
-                "The active stack needs to have an MLflow model deployer "
-                "component registered to be able to deploy models with MLflow. "
-                "You can create a new stack with an MLflow model "
-                "deployer component or update your existing stack to add this "
-                "component, e.g.:\n\n"
-                "  'zenml model-deployer register mlflow --flavor=mlflow'\n"
-                "  'zenml stack create stack-name -d mlflow ...'\n"
+                f"The active stack needs to have an MLflow model deployer "
+                f"component registered to be able to deploy models with MLflow. "
+                f"You can create a new stack with an MLflow model "
+                f"deployer component or update your existing stack to add this "
+                f"component, e.g.:\n\n"
+                f"  'zenml model-deployer register mlflow --flavor={MLFLOW_MODEL_DEPLOYER_FLAVOR}'\n"
+                f"  'zenml stack create stack-name -d mlflow ...'\n"
             )
         return model_deployer
 
@@ -294,13 +294,14 @@ class MLFlowModelDeployer(BaseModelDeployer):
                 to deploy the model.
             pipeline_name: Name of the pipeline that the deployed model was part
             of.
-            pipeline_run_id: ID of the pipeline run which the deployed model was part of.
-            pipeline_step_name: The name of the pipeline model deployment step that
-                deployed the model.
+            pipeline_run_id: ID of the pipeline run which the deployed model
+                was part of.
+            pipeline_step_name: The name of the pipeline model deployment step
+                that deployed the model.
             model_name: Name of the deployed model.
             model_uri: URI of the deployed model.
-            model_type: Type/format of the deployed model. Not used in this MLflow
-                case.
+            model_type: Type/format of the deployed model. Not used in this
+                MLflow case.
 
         Returns:
             One or more Service objects representing model servers that match
@@ -352,15 +353,18 @@ class MLFlowModelDeployer(BaseModelDeployer):
         existing_service: MLFlowDeploymentService,
         config: MLFlowDeploymentConfig,
     ) -> bool:
-        """Returns true if a service matches the input criteria. If any of the values in
-            the input criteria are None, they are ignored. This allows listing services
-            just by common pipeline names or step names, etc.
+        """Returns true if a service matches the input criteria. If any of
+        the values in the input criteria are None, they are ignored. This
+        allows listing services just by common pipeline names or step names,
+        etc.
 
         Args:
-            existing_service: The materialized Service instance derived from the config
-            of the older (existing) service
-            config: The MLFlowDeploymentConfig object passed to the deploy_model function holding
-            parameters of the new service to be created."""
+            existing_service: The materialized Service instance derived from
+                the config of the older (existing) service
+            config: The MLFlowDeploymentConfig object passed to the
+                deploy_model function holding parameters of the new service
+                to be created.
+        """
 
         existing_service_config = existing_service.config
 

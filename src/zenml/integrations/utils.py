@@ -17,9 +17,6 @@ import sys
 from typing import List, Optional, Type, cast
 
 from zenml.integrations.integration import Integration, IntegrationMeta
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
 
 
 def get_integration_for_module(module_name: str) -> Optional[Type[Integration]]:

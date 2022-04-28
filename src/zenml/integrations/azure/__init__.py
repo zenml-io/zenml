@@ -34,7 +34,7 @@ class AzureIntegration(Integration):
 
     @classmethod
     def declare(cls) -> List[FlavorWrapper]:
-        """Activates the integration."""
+        """Declares the flavors for the integration."""
         return [
             FlavorWrapper(
                 name=AZURE_ARTIFACT_STORE_FLAVOR,
