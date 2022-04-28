@@ -30,6 +30,7 @@ from zenml.cli.utils import (
     warning,
 )
 from zenml.console import console
+from zenml.enums import CliCategories
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -39,7 +40,7 @@ logger = get_logger(__name__)
 
 @cli.group(
     cls=GroupExt,
-    tag="Integrations",
+    tag=CliCategories.INTEGRATION,
     help="Interact with the requirements of external integrations.",
 )
 def integration() -> None:
