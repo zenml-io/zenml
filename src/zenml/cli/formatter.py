@@ -62,7 +62,7 @@ class ZenFormatter(formatting.HelpFormatter):
         This is how options are formatted in the help output.
         The rows are expected to be a sequence of (tag, value, description)
         """
-        rows = list(sorted((rows), key=lambda x: x[0]))
+        rows = list(sorted((rows), key=lambda x: (x[0], x[1])))
         widths = measure_table(rows)
 
         if len(widths) == 2:

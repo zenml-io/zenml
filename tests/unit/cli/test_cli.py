@@ -14,7 +14,6 @@
 
 import click
 import pytest
-from click.core import Group
 from click.testing import CliRunner
 
 from zenml.cli.cli import ZenMLCLI, cli
@@ -28,7 +27,7 @@ def runner(request):
 
 def test_cli_command_defines_a_cli_group() -> None:
     """Check that cli command defines a CLI group when invoked"""
-    assert isinstance(cli, Group)
+    assert isinstance(cli, ZenMLCLI)
 
 
 def test_cli(runner):

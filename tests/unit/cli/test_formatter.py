@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.cli.formatter import ZenFormatter
+from zenml.cli.formatter import ZenFormatter, measure_table
 
 
 def test_write_zen_dl() -> None:
@@ -22,7 +22,7 @@ def test_write_zen_dl() -> None:
     custom_formatter = ZenFormatter(indent_increment=2)
     custom_formatter.indent()
     rows = [("a", "b", "c"), ("d", "e", "f")]
-    custom_formatter.write_zen_dl(rows, col_max=30, col_spacing=2)
+    custom_formatter.write_dl(rows, col_max=30, col_spacing=2)
     print(custom_formatter.buffer)
     assert custom_formatter.buffer == [
         "\n",
@@ -38,3 +38,13 @@ def test_write_zen_dl() -> None:
         "      ",
         "f\n",
     ]
+
+
+def test_measure_table() -> None:
+    """
+    Test the measure_table function.
+    """
+    rows = [("a", "b", "c"), ("d", "e", "f")]
+    assert measure_table(rows) == (1, 1, 1)
+    rows = [("a", "b"), ("cd", "efg")]
+    assert measure_table(rows) == (2, 3)
