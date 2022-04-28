@@ -461,7 +461,6 @@ def import_python_file(file_path: str) -> types.ModuleType:
     """
     # Add directory of python file to PYTHONPATH so we can import it
     file_path = os.path.abspath(file_path)
-    sys.path.append(os.path.dirname(file_path))
     module_name = os.path.splitext(os.path.basename(file_path))[0]
 
     # In case the module is already fully or partially imported and the module
@@ -473,6 +472,8 @@ def import_python_file(file_path: str) -> types.ModuleType:
     )[0].replace("/", ".")
 
     if full_module_path not in sys.modules:
-        return importlib.import_module(module_name)
+        with prepend_python_path(os.path.dirname(file_path)):
+            module = importlib.import_module(module_name)
+        return module
     else:
         return sys.modules[full_module_path]
