@@ -90,6 +90,49 @@ class AWSStepFunctionOrchestrator(BaseOrchestrator):
         logger.debug(f"Using deployment config:\n {deployment_config}")
         logger.debug(f"Using connection config:\n {connection_config}")
 
+
+        # AWS STEP FUNCTION
+        import stepfunctions
+        import logging
+
+        from stepfunctions.steps import *
+        from stepfunctions.steps import ModelStep
+        from stepfunctions.workflow import Workflow
+
+        stepfunctions.set_stream_logger(level=logging.INFO)
+
+        workflow_execution_role = "<execution-role-arn>"  # paste the AmazonSageMaker-StepFunctionsWorkflowExecutionRole ARN from above
+
+        start_pass_state = Pass(state_id="MyPassState")
+        # First we chain the start pass state
+        basic_path = Chain([start_pass_state])
+
+        basic_workflow = Workflow(
+            name="MyWorkflow_Simple", definition=basic_path, role=workflow_execution_role
+        )
+        print(basic_workflow.definition.to_json(pretty=True))
+
+        basic_workflow.create()
+
+        import json
+        import base64
+
+        def lambda_handler(event, context):
+            return {
+                'statusCode': 200,
+                'input': event['input'],
+                'output': base64.b64encode(event['input'].encode()).decode('UTF-8')
+            }
+
+        lambda_state = LambdaStep(
+            state_id="Convert HelloWorld to Base64",
+            parameters={
+                "FunctionName": lambda_handler,  # replace with the name of the function you created
+                "Payload": {"input": "HelloWorld"},
+            },
+        )
+
+
         # Run each component. Note that the pipeline.components list is in
         # topological order.
         for node in pb2_pipeline.nodes:
