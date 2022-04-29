@@ -39,7 +39,7 @@ def test_kubeflow_orchestrator_stack_validation():
     orchestrator = KubeflowOrchestrator(name="")
     metadata_store = SQLiteMetadataStore(name="", uri="./metadata.db")
     artifact_store = LocalArtifactStore(name="", path=".")
-    container_registry = BaseContainerRegistry(name="", uri="")
+    container_registry = BaseContainerRegistry(name="", uri="localhost:5000")
 
     with pytest.raises(StackValidationError):
         # missing container registry
@@ -48,7 +48,7 @@ def test_kubeflow_orchestrator_stack_validation():
             orchestrator=orchestrator,
             metadata_store=metadata_store,
             artifact_store=artifact_store,
-        )
+        ).validate()
 
     with does_not_raise():
         # valid stack with container registry
@@ -58,4 +58,4 @@ def test_kubeflow_orchestrator_stack_validation():
             metadata_store=metadata_store,
             artifact_store=artifact_store,
             container_registry=container_registry,
-        )
+        ).validate()

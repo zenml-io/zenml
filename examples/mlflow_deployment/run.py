@@ -33,7 +33,7 @@ from pipeline import (
 )
 from rich import print
 
-from zenml.integrations.mlflow.mlflow_environment import global_mlflow_env
+from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
     MLFlowModelDeployer,
 )
@@ -100,6 +100,7 @@ def main(
                 MLFlowDeploymentLoaderStepConfig(
                     pipeline_name="continuous_deployment_pipeline",
                     pipeline_step_name="mlflow_model_deployer_step",
+                    running=False,
                 )
             ),
             predictor=predictor(),
@@ -107,14 +108,14 @@ def main(
 
         inference.run()
 
-    with global_mlflow_env() as mlflow_env:
-        print(
-            "You can run:\n "
-            f"[italic green]    mlflow ui --backend-store-uri {mlflow_env.tracking_uri}[/italic green]\n"
-            "...to inspect your experiment runs within the MLflow UI.\n"
-            "You can find your runs tracked within the `mlflow_example_pipeline`"
-            "experiment. There you'll also be able to compare two or more runs.\n\n"
-        )
+    print(
+        "You can run:\n "
+        f"[italic green]    mlflow ui --backend-store-uri {get_tracking_uri()}"
+        "[/italic green]\n ...to inspect your experiment runs within the MLflow"
+        " UI.\nYou can find your runs tracked within the "
+        "`mlflow_example_pipeline` experiment. There you'll also be able to "
+        "compare two or more runs.\n\n"
+    )
 
     # fetch existing services with same pipeline name, step name and model name
     existing_services = mlflow_model_deployer_component.find_model_server(

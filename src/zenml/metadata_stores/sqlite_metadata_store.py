@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from pathlib import Path
 from typing import ClassVar, Union
 
 from ml_metadata.proto import metadata_store_pb2
@@ -30,9 +31,9 @@ class SQLiteMetadataStore(BaseMetadataStore):
     FLAVOR: ClassVar[str] = "sqlite"
 
     @property
-    def upgrade_migration_enabled(self) -> bool:
-        """Return True to enable automatic database schema migration."""
-        return True
+    def local_path(self) -> str:
+        """Path to the local directory where the SQLite DB is stored."""
+        return str(Path(self.uri).parent)
 
     def get_tfx_metadata_config(
         self,

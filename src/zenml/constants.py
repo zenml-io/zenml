@@ -138,3 +138,11 @@ IS_EMPTY = "/empty"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
 STACK_CONFIGURATIONS = "/stack-configurations"
+USERS = "/users"
+TEAMS = "/teams"
+PROJECTS = "/projects"
+ROLES = "/roles"
+ROLE_ASSIGNMENTS = "/role_assignments"
+
+# mandatory stack component properties
+MANDATORY_COMPONENT_PROPERTIES = ["name", "uuid"]

@@ -56,6 +56,11 @@ class LocalArtifactStore(BaseArtifactStore):
     FLAVOR: ClassVar[str] = "local"
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
 
+    @property
+    def local_path(self) -> str:
+        """Path to the local directory where the artifacts are stored."""
+        return self.path
+
     @staticmethod
     def open(name: PathType, mode: str = "r") -> Any:
         """Open a file at the given path."""

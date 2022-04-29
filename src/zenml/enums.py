@@ -49,6 +49,7 @@ class StackComponentType(StrEnum):
     FEATURE_STORE = "feature_store"
     SECRETS_MANAGER = "secrets_manager"
     MODEL_DEPLOYER = "model_deployer"
+    EXPERIMENT_TRACKER = "experiment_tracker"
 
     @property
     def plural(self) -> str:
@@ -64,13 +65,6 @@ class MetadataContextTypes(Enum):
 
     STACK = "stack"
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
-
-
-class SecretSchemaType(StrEnum):
-    """All supported secret schema types."""
-
-    AWS = "aws"
-    ARBITRARY = "arbitrary"
 
 
 class StoreType(StrEnum):

@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 # Analytics
 @cli.group()
 def analytics() -> None:
-    """Analytics for opt-in and opt-out"""
+    """Analytics for opt-in and opt-out."""
 
 
 @analytics.command("get")
@@ -120,8 +120,19 @@ def profile() -> None:
     type=click.Choice(list(StoreType)),
     default=get_default_store_type(),
 )
+@click.option(
+    "--user",
+    "user_name",
+    help="The username that is used to authenticate with the ZenService. This "
+    "is required if you're creating a profile with REST storage.",
+    required=False,
+    type=str,
+)
 def create_profile_command(
-    name: str, url: Optional[str], store_type: Optional[StoreType]
+    name: str,
+    url: Optional[str],
+    store_type: Optional[StoreType],
+    user_name: Optional[str],
 ) -> None:
     """Create a new configuration profile."""
 
@@ -133,7 +144,12 @@ def create_profile_command(
         cli_utils.error(f"Profile {name} already exists.")
         return
     cfg.add_or_update_profile(
-        ProfileConfiguration(name=name, store_url=url, store_type=store_type)
+        ProfileConfiguration(
+            name=name,
+            store_url=url,
+            store_type=store_type,
+            active_user=user_name,
+        )
     )
     cli_utils.declare(f"Profile '{name}' successfully created.")
 
