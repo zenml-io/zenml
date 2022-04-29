@@ -18,7 +18,7 @@ from typing import Optional
 import click
 
 from zenml.cli.cli import cli
-from zenml.cli.utils import confirmation, declare, error
+from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import CONFIG_FILE_NAME, REPOSITORY_DIRECTORY_NAME
@@ -94,14 +94,22 @@ def clean(yes: bool = False) -> None:
         if fileio.exists(str(global_zen_config)):
             config_yaml_path = global_zen_config / CONFIG_FILE_NAME
             config_yaml_data = yaml_utils.read_yaml(str(config_yaml_path))
-            config_yaml_data["profiles"]
-            breakpoint()
+            old_user_id = config_yaml_data["user_id"]
+            for dir_name in fileio.listdir(str(global_zen_config)):
+                if fileio.isdir(str(global_zen_config / str(dir_name))):
+                    warning(
+                        f"Deleting '{str(dir_name)}' directory from global config."
+                    )
             fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
 
-        fileio.makedirs(str(global_zen_config))
-        yaml_utils.write_yaml(str(config_yaml_path), config_yaml_data)
         Repository.initialize(root=Path.cwd())
+        if old_user_id:
+            new_config_yaml_data = yaml_utils.read_yaml(str(config_yaml_path))
+            new_config_yaml_data["user_id"] = old_user_id
+            yaml_utils.write_yaml(str(config_yaml_path), new_config_yaml_data)
+
+        declare(f"Reinitialized ZenML global config at {Path.cwd()}.")
 
     else:
         declare("Aborting clean.")
