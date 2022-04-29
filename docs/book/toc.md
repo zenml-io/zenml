@@ -30,6 +30,7 @@
 * Integrations
   * [Integrations with Popular Tools](stack_components/integrations.md)
   * [Visualize your Data](advanced_guide/explore_data.md)
+  * [Load your Data from Feature Stores](advanced_guide/feature-store.md)
   * [Perform Drift Detection](advanced_guide/drift_detection.md)
   * [Track your Experiments](advanced_guide/experiment_tracking.md)
   * [Run your Pipeline on Kubeflow](advanced_guide/run_on_kubeflow.md)

@@ -1,7 +1,5 @@
 ---
-description:
-ZenML integrates with Feast so you can access your batch and online data via a
-Feature Store
+description: ZenML integrates with Feast so you can access your batch and online data via a Feature Store
 ---
 # Feature Store
 
