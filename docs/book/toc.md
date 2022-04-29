@@ -8,7 +8,7 @@
 
 ## Developer Guide
 
-* [Getting Started]
+* Getting Started
   * [Installation](developer-guide/installation.md)
   * [Steps & Pipelines](developer-guide/steps_and_pipelines.md)
   * [Runtime Configuration](developer-guide/runtime_configuration.md)
