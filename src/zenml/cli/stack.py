@@ -564,9 +564,17 @@ def describe_stack(stack_name: Optional[str]) -> None:
 
 @stack.command("delete")
 @click.argument("stack_name", type=str)
-def delete_stack(stack_name: str) -> None:
+@click.option("--yes", "-y", is_flag=True, required=False)
+def delete_stack(stack_name: str, yes: bool = False) -> None:
     """Delete a stack."""
     cli_utils.print_active_profile()
+    confirmation = yes or cli_utils.confirmation(
+        f"This will delete stack '{stack_name}' from your repository. \n"
+        "Are you sure you want to proceed?"
+    )
+
+    if not confirmation:
+        cli_utils.declare("Stack deletion cancelled.")
 
     with console.status(f"Deleting stack '{stack_name}'...\n"):
         cfg = GlobalConfiguration()
@@ -588,8 +596,8 @@ def delete_stack(stack_name: str) -> None:
             )
             return
 
-        Repository().deregister_stack(stack_name)
-        cli_utils.declare(f"Deleted stack '{stack_name}'.")
+    Repository().deregister_stack(stack_name)
+    cli_utils.declare(f"Deleted stack '{stack_name}'.")
 
 
 @stack.command("set")
