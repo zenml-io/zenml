@@ -21,7 +21,7 @@ from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.constants import REPOSITORY_DIRECTORY_NAME
+from zenml.constants import CONFIG_FILE_NAME, REPOSITORY_DIRECTORY_NAME
 from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.io.utils import get_global_config_directory
@@ -90,9 +90,11 @@ def clean(yes: bool = False) -> None:
         global_zen_config = Path(get_global_config_directory())
         if fileio.exists(str(local_zen_repo_config)):
             fileio.rmtree(str(local_zen_repo_config))
-            declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
+            declare(
+                f"Deleted local ZenML config from {local_zen_repo_config}."
+            )
         if fileio.exists(str(global_zen_config)):
-            config_yaml_path = global_zen_config / "config.yaml"
+            config_yaml_path = global_zen_config / CONFIG_FILE_NAME
             config_yaml_data = yaml_utils.read_yaml(str(config_yaml_path))
             fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
