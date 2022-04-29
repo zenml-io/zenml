@@ -8,7 +8,16 @@
 
 ## Developer Guide
 
-* [Getting Started](developer_guide/getting_started.md)
+* [Getting Started](developer_guide/getting-started)
+  * [Installation](developer_guide/installation.md)
+  * [Steps\&Pipelines](developer_guide/steps_and_pipelines.md)
+  * [Runtime Configuration](developer_guide/runtime_configuration.md)
+  * [Post Execution Workflow](developer_guide/post_execution_workflow.md)
+  * [Materializer](developer_guide/materializer.md)
+  * [Caching](developer_guide/caching.md)
+  * [Step Fixture](developer_guide/step_fixtures.md)
+  * [Fetching Historic Runs](developer_guide/fetching_historic_runs.md)
+  * [Class Based API](developer_guide/class_based_api.md)
 * [Stacks]()
 * [Repo & Config]()
 * [Profiles](advanced_guide/profiles.md)
