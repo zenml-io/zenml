@@ -564,12 +564,13 @@ def describe_stack(stack_name: Optional[str]) -> None:
 
 @stack.command("delete")
 @click.argument("stack_name", type=str)
-@click.option("--yes", "-y", type=click.BOOL, default=False)
+@click.option("--yes", "-y", is_flag=True, required=False)
 def delete_stack(stack_name: str, yes: bool = False) -> None:
     """Delete a stack."""
     cli_utils.print_active_profile()
-
-    if not yes:
+    if yes:
+        confirmation = True
+    else:
         confirmation = cli_utils.confirmation(
             f"This will delete stack '{stack_name}' from your repository. \n"
             "Are you sure you want to proceed?"
