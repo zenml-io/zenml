@@ -568,40 +568,36 @@ def describe_stack(stack_name: Optional[str]) -> None:
 def delete_stack(stack_name: str, yes: bool = False) -> None:
     """Delete a stack."""
     cli_utils.print_active_profile()
-    if yes:
-        confirmation = True
-    else:
-        confirmation = cli_utils.confirmation(
-            f"This will delete stack '{stack_name}' from your repository. \n"
-            "Are you sure you want to proceed?"
-        )
+    confirmation = yes or cli_utils.confirmation(
+        f"This will delete stack '{stack_name}' from your repository. \n"
+        "Are you sure you want to proceed?"
+    )
 
-    if confirmation:
-        with console.status(f"Deleting stack '{stack_name}'...\n"):
-            cfg = GlobalConfiguration()
-            repo = Repository()
-
-            if cfg.active_stack_name == stack_name:
-                cli_utils.error(
-                    f"Stack {stack_name} cannot be deleted while it is globally "
-                    f"active. Please choose a different active global stack first "
-                    f"by running 'zenml stack set --global STACK'."
-                )
-                return
-
-            if repo.active_stack_name == stack_name:
-                cli_utils.error(
-                    f"Stack {stack_name} cannot be deleted while it is "
-                    f"active. Please choose a different active stack first by "
-                    f"running 'zenml stack set STACK'."
-                )
-                return
-
-        Repository().deregister_stack(stack_name)
-        cli_utils.declare(f"Deleted stack '{stack_name}'.")
-
-    else:
+    if not confirmation:
         cli_utils.declare("Stack deletion cancelled.")
+
+    with console.status(f"Deleting stack '{stack_name}'...\n"):
+        cfg = GlobalConfiguration()
+        repo = Repository()
+
+        if cfg.active_stack_name == stack_name:
+            cli_utils.error(
+                f"Stack {stack_name} cannot be deleted while it is globally "
+                f"active. Please choose a different active global stack first "
+                f"by running 'zenml stack set --global STACK'."
+            )
+            return
+
+        if repo.active_stack_name == stack_name:
+            cli_utils.error(
+                f"Stack {stack_name} cannot be deleted while it is "
+                f"active. Please choose a different active stack first by "
+                f"running 'zenml stack set STACK'."
+            )
+            return
+
+    Repository().deregister_stack(stack_name)
+    cli_utils.declare(f"Deleted stack '{stack_name}'.")
 
 
 @stack.command("set")
