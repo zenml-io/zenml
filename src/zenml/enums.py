@@ -77,8 +77,8 @@ class StoreType(StrEnum):
 
 class CliCategories(StrEnum):
     """All possible categories for CLI commands.
-    Note: The order of the categories is important.
-    the same order is used to sort the commands in CLI help output.
+    Note: The order of the categories is important. The same
+    order is used to sort the commands in the CLI help output.
     """
 
     STACK_COMPONENTS = "Stack Components"

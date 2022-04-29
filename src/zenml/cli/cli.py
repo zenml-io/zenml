@@ -15,6 +15,7 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import click
+import rich
 from click import Command, Context, formatting
 
 from zenml import __version__
@@ -62,7 +63,9 @@ class ZenMLCLI(click.Group):
         """
         formatter = ctx.make_formatter()
         self.format_help(ctx, formatter)
-        return formatter.getvalue().rstrip("\n")
+        # TODO [LOW]: Find solution for support console.pager and color support in print
+        rich.print(formatter.getvalue().rstrip("\n"))
+        return ""
 
     def format_commands(
         self, ctx: click.Context, formatter: formatting.HelpFormatter
@@ -116,7 +119,10 @@ class ZenMLCLI(click.Group):
                 help = cmd.get_short_help_str(limit=formatter.width)
                 rows.append((tag.value, subcommand, help))
             if rows:
-                with formatter.section("Available ZenML Commands (grouped)"):
+                colored_section_title = (
+                    "[#af00ff]Available ZenML Commands (grouped)[/#af00ff]"
+                )
+                with formatter.section(colored_section_title):
                     formatter.write_dl(rows)  # type: ignore[arg-type]
 
 

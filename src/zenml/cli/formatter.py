@@ -105,7 +105,9 @@ class ZenFormatter(formatting.HelpFormatter):
                 if current_tag != first:
                     current_tag = first
                     self.write("\n")
-                    self.write(f"{'':>{self.current_indent}}{first}:\n")
+                    self.write(
+                        f"[#af00ff]{'':>{self.current_indent}}{first}:[/#af00ff]\n"
+                    )
 
                 if not third:
                     self.write("\n")
