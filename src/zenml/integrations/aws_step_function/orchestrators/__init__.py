@@ -12,32 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-AIRFLOW = "airflow"
-AWS = "aws"
-AWS_STEP_FUNCTION = "aws_step_function"
-AZURE = "azure"
-AZUREML = "azureml"
-DASH = "dash"
-EVIDENTLY = "evidently"
-FACETS = "facets"
-FEAST = "feast"
-GCP = "gcp"
-GRAPHVIZ = "graphviz"
-KUBEFLOW = "kubeflow"
-MLFLOW = "mlflow"
-PLOTLY = "plotly"
-PYTORCH = "pytorch"
-PYTORCH_L = "pytorch_lightning"
-S3 = "s3"
-SAGEMAKER = "sagemaker"
-SELDON = "seldon"
-SKLEARN = "sklearn"
-TENSORFLOW = "tensorflow"
-VAULT = "vault"
-WHYLOGS = "whylogs"
-WANDB = "wandb"
-VERTEX = "vertex"
-NEURAL_PROPHET = "neural_prophet"
-HUGGINGFACE = "huggingface"
-XGBOOST = "xgboost"
-LIGHTGBM = "lightgbm"
+from zenml.integrations.aws_step_function.orchestrators.aws_step_function_orchestrator import (  # noqa
+    AWSStepFunctionOrchestrator,
+)
