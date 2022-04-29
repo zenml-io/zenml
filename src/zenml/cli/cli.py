@@ -15,7 +15,6 @@
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import click
-import rich
 from click import Command, Context, formatting
 
 from zenml import __version__
@@ -63,8 +62,7 @@ class ZenMLCLI(click.Group):
         """
         formatter = ctx.make_formatter()
         self.format_help(ctx, formatter)
-        rich.print(formatter.getvalue().rstrip("\n"))
-        return ""
+        return formatter.getvalue().rstrip("\n")
 
     def format_commands(
         self, ctx: click.Context, formatter: formatting.HelpFormatter
@@ -76,7 +74,7 @@ class ZenMLCLI(click.Group):
         groups of commands with a tag. In order to call the new custom format
         method, the command must be added to the ZenMLCLI class.
         """
-        commands: List[Tuple[str, str, str, Union[Command, GroupExt]]] = []
+        commands: List[Tuple[CliCategories, str, Union[Command, GroupExt]]] = []
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
             # What is this, the tool lied about a command.  Ignore it
@@ -87,8 +85,7 @@ class ZenMLCLI(click.Group):
             if isinstance(cmd, GroupExt):
                 commands.append(
                     (
-                        cmd.tag.value["priority"],
-                        cmd.tag.value["value"],
+                        cmd.tag,
                         subcommand,
                         cmd,
                     )
@@ -96,19 +93,28 @@ class ZenMLCLI(click.Group):
             else:
                 commands.append(
                     (
-                        CliCategories.OTHER_COMMANDS.value["priority"],
-                        CliCategories.OTHER_COMMANDS.value["value"],
+                        CliCategories.OTHER_COMMANDS,
                         subcommand,
                         cmd,
                     )
                 )
 
         if len(commands):
-            commands = list(sorted((commands), key=lambda x: (x[0], x[1])))
-            rows = []
-            for (_, tag, subcommand, cmd) in commands:
+            ordered_categories = list(CliCategories.__members__.values())
+            commands = list(
+                sorted(
+                    (commands),
+                    key=lambda x: (
+                        ordered_categories.index(x[0]),
+                        x[0].value,
+                        x[1],
+                    ),
+                )
+            )
+            rows: List[Tuple[str, str, str]] = []
+            for (tag, subcommand, cmd) in commands:
                 help = cmd.get_short_help_str(limit=formatter.width)
-                rows.append((tag, subcommand, help))
+                rows.append((tag.value, subcommand, help))
             if rows:
                 with formatter.section("Available ZenML Commands (grouped)"):
                     formatter.write_dl(rows)  # type: ignore[arg-type]

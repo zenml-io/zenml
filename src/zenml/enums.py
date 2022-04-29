@@ -75,40 +75,15 @@ class StoreType(StrEnum):
     REST = "rest"
 
 
-class CliCategoriesPriority(Enum):
-    """All possible categories for CLI commands."""
+class CliCategories(StrEnum):
+    """All possible categories for CLI commands.
+    Note: The order of the categories is important.
+    the same order is used to sort the commands in CLI help output.
+    """
 
-    HIGHEST = "0"
-    HIGH = "1"
-    MID = "2"
-    LOW = "3"
-    LOWEST = "5"
-
-
-class CliCategories(Enum):
-    """All possible categories for CLI commands."""
-
-    IDENTITY_AND_SECURITY = {
-        "value": "Identity and Security",
-        "priority": CliCategoriesPriority.LOW.value,
-    }
-    INTEGRATIONS = {
-        "value": "Integrations",
-        "priority": CliCategoriesPriority.MID.value,
-    }
-    MANAGEMENT_TOOLS = {
-        "value": "Management Tools",
-        "priority": CliCategoriesPriority.MID.value,
-    }
-    MODEL_DEPLOYMENT = {
-        "value": "Model Deployment",
-        "priority": CliCategoriesPriority.HIGH.value,
-    }
-    OTHER_COMMANDS = {
-        "value": "Other Commands",
-        "priority": CliCategoriesPriority.LOWEST.value,
-    }
-    STACK_COMPONENTS = {
-        "value": "Stack Components",
-        "priority": CliCategoriesPriority.HIGHEST.value,
-    }
+    STACK_COMPONENTS = "Stack Components"
+    MODEL_DEPLOYMENT = "Model Deployment"
+    INTEGRATIONS = "Integrations"
+    MANAGEMENT_TOOLS = "Management Tools"
+    IDENTITY_AND_SECURITY = "Identity and Security"
+    OTHER_COMMANDS = "Other Commands"
