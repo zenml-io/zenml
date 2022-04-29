@@ -36,7 +36,7 @@ You can see full examples of using services here:
 * Continuous training and continuous deployment setting with
   the [Seldon deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment).
 
-## Examples services
+## Example services
 
 One concrete example of a `Service` implementation is the `TensorboardService`.
 It enables visualizing [Tensorboard](https://www.tensorflow.org/tensorboard) logs easily by managing a local Tensorboard
@@ -64,4 +64,5 @@ service.stop()
 This couples nicely with the `TensorboardVisualizer` to visualize Tensorboard logs.
 
 Other examples of Services can be found in
-the [continuous training and deployment guide](continuous-training-and-deployment.md).
+the [continuous training and deployment
+guide](continuous-training-and-deployment.md).
