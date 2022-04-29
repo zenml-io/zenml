@@ -55,15 +55,15 @@ def _get_module(module: types.ModuleType, config_item: Union[str, dict]) -> Any:
             )
 
         implementation_name = config_item[SourceConfigurationKeys.NAME_]
-        implemented_class = _get_module_attribute(
-            module, implementation_name
-        )
+        implemented_class = _get_module_attribute(module, implementation_name)
         return implemented_class
     elif isinstance(config_item, str):
-        correct_input = textwrap.dedent(f'''
+        correct_input = textwrap.dedent(
+            f"""
         {SourceConfigurationKeys.NAME_}: {config_item}
         {SourceConfigurationKeys.FILE_}: optional/filepath.py
-        ''')
+        """
+        )
 
         raise PipelineConfigurationError(
             f"As of ZenML version 0.8.0 `str` entries are no longer supported "

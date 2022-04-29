@@ -15,8 +15,8 @@
 import inspect
 import os
 import sys
-from typing import Callable, Any
 from contextlib import ExitStack as does_not_raise
+from typing import Callable
 
 import pytest
 
@@ -85,8 +85,8 @@ def test_import_python_file_for_first_time(clean_repo, mocker, tmp_path):
     """Test that importing a python file as module works and allows for
     importing of module attributes even with module popped from sys path"""
 
-    SOME_MODULE = 'some_module'
-    SOME_FUNC = 'some_func'
+    SOME_MODULE = "some_module"
+    SOME_FUNC = "some_func"
 
     os.chdir(str(tmp_path))
 
@@ -115,8 +115,8 @@ def test_import_python_file_when_already_loaded(clean_repo, mocker, tmp_path):
     """Test that importing a python file as module works even if it is
     already on sys path and allows for importing of module attributes"""
 
-    SOME_MODULE = 'some_module'
-    SOME_FUNC = 'some_func'
+    SOME_MODULE = "some_module"
+    SOME_FUNC = "some_func"
 
     os.chdir(str(tmp_path))
 
@@ -149,10 +149,10 @@ def test_import_python_file(clean_repo, mocker, tmp_path):
     """Test that importing a python file as module works even if it is
     already imported within the another previously loaded module"""
 
-    MAIN_MODULE = 'main_module'
-    SOME_MODULE = 'some_module'
-    SOME_FUNC = 'some_func'
-    OTHER_FUNC = 'other_func'
+    MAIN_MODULE = "main_module"
+    SOME_MODULE = "some_module"
+    SOME_FUNC = "some_func"
+    OTHER_FUNC = "other_func"
 
     os.chdir(str(tmp_path))
 
@@ -161,12 +161,14 @@ def test_import_python_file(clean_repo, mocker, tmp_path):
 
     main_python_file = clean_repo.root / f"{MAIN_MODULE}.py"
     main_python_file.write_text(
-        f"from {SOME_MODULE}.{SOME_MODULE} import {SOME_FUNC}")
+        f"from {SOME_MODULE}.{SOME_MODULE} import {SOME_FUNC}"
+    )
 
     other_python_file = clean_repo.root / SOME_MODULE / f"{SOME_MODULE}.py"
     other_python_file.parent.mkdir()
-    other_python_file.write_text(f"def {SOME_FUNC}(): return 1 \n"
-                                 f"def {OTHER_FUNC}(): return 2")
+    other_python_file.write_text(
+        f"def {SOME_FUNC}(): return 1 \n" f"def {OTHER_FUNC}(): return 2"
+    )
 
     mocker.patch.object(sys, "path", [])
 
