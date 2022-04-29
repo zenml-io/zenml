@@ -90,9 +90,7 @@ def clean(yes: bool = False) -> None:
         global_zen_config = Path(get_global_config_directory())
         if fileio.exists(str(local_zen_repo_config)):
             fileio.rmtree(str(local_zen_repo_config))
-            declare(
-                f"Deleted local ZenML config from {local_zen_repo_config}."
-            )
+            declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
         if fileio.exists(str(global_zen_config)):
             config_yaml_path = global_zen_config / CONFIG_FILE_NAME
             config_yaml_data = yaml_utils.read_yaml(str(config_yaml_path))
