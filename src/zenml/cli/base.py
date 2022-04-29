@@ -94,6 +94,8 @@ def clean(yes: bool = False) -> None:
         if fileio.exists(str(global_zen_config)):
             config_yaml_path = global_zen_config / CONFIG_FILE_NAME
             config_yaml_data = yaml_utils.read_yaml(str(config_yaml_path))
+            config_yaml_data["profiles"]
+            breakpoint()
             fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
 
