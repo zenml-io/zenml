@@ -116,6 +116,9 @@ LOCAL_STORES_DIRECTORY_NAME = "local_stores"
 
 USER_MAIN_MODULE: Optional[str] = None
 
+# Config file name
+CONFIG_FILE_NAME = "config.yaml"
+
 # Secrets Manager
 ZENML_SCHEMA_NAME = "zenml_schema_name"
 LOCAL_SECRETS_FILENAME = "secrets.yaml"

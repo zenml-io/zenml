@@ -79,8 +79,9 @@ def clean(yes: bool = False) -> None:
     """
     if not yes:
         confirm = confirmation(
-            "DANGER: This will completely delete all pipelines, their associated "
-            "artifacts and metadata ever created in this ZenML repository. "
+            "DANGER: This will completely delete all artifacts and metadata ever created \n"
+            "in this ZenML repository. Note: Pipelines and stack components running \n"
+            "non-locally will still exist. Please delete them manually.\n"
             "Are you sure you want to proceed?"
         )
 
