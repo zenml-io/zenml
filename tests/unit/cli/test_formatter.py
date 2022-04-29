@@ -23,16 +23,15 @@ def test_write_zen_dl() -> None:
     custom_formatter.indent()
     rows = [("a", "b", "c"), ("d", "e", "f")]
     custom_formatter.write_dl(rows, col_max=30, col_spacing=2)
-    print(custom_formatter.buffer)
     assert custom_formatter.buffer == [
         "\n",
-        "  a:\n",
+        "[#431d93]  a:[/#431d93]\n",
         "    ",
         "  b",
         "      ",
         "c\n",
         "\n",
-        "  d:\n",
+        "[#431d93]  d:[/#431d93]\n",
         "    ",
         "  e",
         "      ",

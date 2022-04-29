@@ -105,8 +105,9 @@ class ZenFormatter(formatting.HelpFormatter):
                 if current_tag != first:
                     current_tag = first
                     self.write("\n")
+                    # Adding [#431d93] [/#431d93] makes the tag colorful when it is printed by rich print
                     self.write(
-                        f"[#af00ff]{'':>{self.current_indent}}{first}:[/#af00ff]\n"
+                        f"[#431d93]{'':>{self.current_indent}}{first}:[/#431d93]\n"
                     )
 
                 if not third:

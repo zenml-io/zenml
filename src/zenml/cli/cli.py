@@ -120,7 +120,7 @@ class ZenMLCLI(click.Group):
                 rows.append((tag.value, subcommand, help))
             if rows:
                 colored_section_title = (
-                    "[#af00ff]Available ZenML Commands (grouped)[/#af00ff]"
+                    "[dim cyan]Available ZenML Commands (grouped)[/dim cyan]"
                 )
                 with formatter.section(colored_section_title):
                     formatter.write_dl(rows)  # type: ignore[arg-type]
