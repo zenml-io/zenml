@@ -73,3 +73,15 @@ class StoreType(StrEnum):
     LOCAL = "local"
     SQL = "sql"
     REST = "rest"
+
+
+class ContainerRegistry(StrEnum):
+    """Types of container registries."""
+
+    DEFAULT = "default"
+    GITHUB = "github"
+    DOCKERHUB = "dockerhub"
+    AWS = "aws"
+    GCP = "gcp"
+    AZURE = "azure"
+    GITLAB = "gitlab"

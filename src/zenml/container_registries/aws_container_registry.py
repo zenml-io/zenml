@@ -11,15 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import re
 from typing import ClassVar
 
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
+)
 from zenml.enums import ContainerRegistry, StackComponentType
-from zenml.stack import StackComponent
 
 
-class BaseContainerRegistry(StackComponent):
-    """Base class for all ZenML container registries.
+class AWSContainerRegistry(BaseContainerRegistry):
+    """Class for AWS Container Registry.
 
     Attributes:
         uri: The URI of the container registry.
@@ -29,13 +30,4 @@ class BaseContainerRegistry(StackComponent):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistry.DEFAULT
-
-    @property
-    def is_local(self) -> bool:
-        """Returns whether the container registry is local or not.
-
-        Returns:
-            True if the container registry is local, False otherwise.
-        """
-        return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.uri))
+    FLAVOR: ClassVar[str] = ContainerRegistry.AWS
