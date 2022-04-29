@@ -31,7 +31,7 @@ from zenml.utils import source_utils, yaml_utils
 logger = get_logger(__name__)
 
 
-def _get_module(module: types.ModuleType, config_item: Union[str, dict]) -> Any:
+def _get_module(module: types.ModuleType, config_item: Union[str, dict]):
     """Based on a config item from the config yaml the corresponding module
     attribute is loaded.
 

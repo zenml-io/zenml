@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import subprocess
 
 from click.testing import CliRunner
 
@@ -91,7 +92,7 @@ def {PIPELINE_NAME}(
 """
 
 
-def test_pipeline_run_single_file(clean_repo, mocker, tmp_path) -> None:
+def test_pipeline_run_single_file(clean_repo, tmp_path) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the same file."""
     runner = CliRunner()
@@ -158,7 +159,7 @@ def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
     MATERIALIZER_FILE = "materializer_file"
     CUSTOM_OBJ_FILE = "custom_obj_file"
 
-    runner = CliRunner()
+    CliRunner()
 
     os.chdir(str(tmp_path))
     Repository.initialize()
@@ -169,8 +170,8 @@ def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
     new_pipeline_definition = (
         define_sys_path_definition + "\n" + pipeline_definition
     )
-    main_python_file = clean_repo.root / "run.py"
-    main_python_file.write_text(new_pipeline_definition)
+    main_file = clean_repo.root / "run.py"
+    main_file.write_text(new_pipeline_definition)
 
     # Write custom object file
     custom_obj_file = (
@@ -232,8 +233,12 @@ def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
     config_path = str(clean_repo.root / "config.yaml")
     yaml_utils.write_yaml(config_path, run_config)
 
-    # Run Pipeline
-    runner.invoke(pipeline, ["run", "run.py", "-c", "config.yaml"])
+    # Run Pipeline using subprocess as runner.invoke seems to have issues with
+    #  pytest https://github.com/pallets/click/issues/824,
+    #  https://github.com/pytest-dev/pytest/issues/3344
+    subprocess.check_call(
+        ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"]
+    )
 
     # Assert that pipeline completed successfully
     historic_pipeline = Repository().get_pipeline(pipeline_name=PIPELINE_NAME)
@@ -241,4 +246,3 @@ def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
     assert len(historic_pipeline.runs) == 1
 
     assert historic_pipeline.runs[-1].status == ExecutionStatus.COMPLETED
-
