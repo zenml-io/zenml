@@ -21,7 +21,8 @@ from typing import ClassVar, List, Optional, Tuple
 from google.auth import credentials as auth_credentials
 from google.auth import default, load_credentials_from_file
 from google.cloud import aiplatform
-from pydantic import validator as property_validator, ValidationError
+from pydantic import ValidationError
+from pydantic import validator as property_validator
 
 from zenml import __version__
 from zenml.enums import StackComponentType

@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 from typing import ClassVar
 
+from pydantic import ValidationError, validator
+
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
@@ -26,8 +28,22 @@ class AWSContainerRegistry(BaseContainerRegistry):
         uri: The URI of the container registry.
     """
 
-    uri: str
-
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
     FLAVOR: ClassVar[str] = ContainerRegistry.AWS
+
+    @validator("uri")
+    def validate_aws_uri(cls, uri: str) -> None:
+        example_message = "An example of a valid URI is: " \
+                          "`715803424592.dkr.ecr.us-east-1.amazonaws.com`"
+        base_error = "Property `uri` is invalid."
+
+        if uri.endswith("/"):
+            raise ValidationError(
+                f"{base_error}. `uri` cannot end with a `/`. {example_message}"
+            )
+
+        if "/" in uri:
+            raise ValidationError(
+                f"{base_error}. `uri` cannot contain a `/`. {example_message}"
+            )
