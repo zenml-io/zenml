@@ -15,7 +15,15 @@ from collections import defaultdict
 from typing import ClassVar, DefaultDict, Dict, Type, TypeVar
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.container_registries import BaseContainerRegistry
+from zenml.container_registries import (
+    AWSContainerRegistry,
+    AzureContainerRegistry,
+    BaseContainerRegistry,
+    DockerHubContainerRegistry,
+    GCPContainerRegistry,
+    GitHubContainerRegistry,
+    GitLabContainerRegistry,
+)
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
@@ -117,5 +125,11 @@ StackComponentClassRegistry.register_class(LocalOrchestrator)
 StackComponentClassRegistry.register_class(SQLiteMetadataStore)
 StackComponentClassRegistry.register_class(MySQLMetadataStore)
 StackComponentClassRegistry.register_class(LocalArtifactStore)
-StackComponentClassRegistry.register_class(BaseContainerRegistry)
 StackComponentClassRegistry.register_class(LocalSecretsManager)
+StackComponentClassRegistry.register_class(BaseContainerRegistry)
+StackComponentClassRegistry.register_class(AzureContainerRegistry)
+StackComponentClassRegistry.register_class(AWSContainerRegistry)
+StackComponentClassRegistry.register_class(GCPContainerRegistry)
+StackComponentClassRegistry.register_class(GitHubContainerRegistry)
+StackComponentClassRegistry.register_class(GitLabContainerRegistry)
+StackComponentClassRegistry.register_class(DockerHubContainerRegistry)
