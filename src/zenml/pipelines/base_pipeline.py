@@ -48,6 +48,7 @@ from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
+from zenml.steps.base_step import BaseStepMeta
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -189,6 +190,16 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"Unexpected keyword argument '{key}' for pipeline "
                     f"'{self.name}'. A step for this key was "
                     f"already passed as a positional argument."
+                )
+
+            if isinstance(step, BaseStepMeta):
+                raise PipelineInterfaceError(
+                    f"Wrong argument type (`{step_class}`) for argument "
+                    f"'{key}' of pipeline '{self.name}'. "
+                    f"A `BaseStep` subclass was provided instead of an instance. "
+                    f"This might have been caused by missing brackets when "
+                    f"creating a pipeline with `@step` decorated functions, "
+                    f"for which the correct syntax is `pipeline(step=step())`."
                 )
 
             if not isinstance(step, BaseStep):
