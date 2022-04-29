@@ -18,6 +18,7 @@ from click.testing import CliRunner
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.cli.stack import (
     describe_stack,
+    delete_stack,
     remove_stack_component,
     rename_stack,
     update_stack,
@@ -82,7 +83,8 @@ def test_updating_non_active_stack_succeeds(clean_repo) -> None:
     )
     assert result.exit_code == 0
     assert (
-        clean_repo.get_stack("arias_new_stack").orchestrator == new_orchestrator
+        clean_repo.get_stack("arias_new_stack").orchestrator
+        == new_orchestrator
     )
 
 
@@ -100,7 +102,8 @@ def test_adding_to_stack_succeeds(clean_repo) -> None:
     assert result.exit_code == 0
     assert clean_repo.get_stack("default").secrets_manager is not None
     assert (
-        clean_repo.get_stack("default").secrets_manager == local_secrets_manager
+        clean_repo.get_stack("default").secrets_manager
+        == local_secrets_manager
     )
 
 
@@ -158,7 +161,9 @@ def test_renaming_non_active_stack_succeeds(clean_repo) -> None:
     clean_repo.register_stack(new_stack)
 
     runner = CliRunner()
-    result = runner.invoke(rename_stack, ["arias_stack", "arias_renamed_stack"])
+    result = runner.invoke(
+        rename_stack, ["arias_stack", "arias_renamed_stack"]
+    )
     assert result.exit_code == 0
     assert clean_repo.get_stack("arias_renamed_stack") is not None
     assert (
@@ -203,3 +208,19 @@ def test_remove_non_core_component_from_stack_succeeds(clean_repo) -> None:
     )
     assert result.exit_code == 0
     assert clean_repo.active_stack.secrets_manager is None
+
+
+def test_deleting_stack_with_flag_succeeds(clean_repo) -> None:
+    """Test stack delete with flag succeeds."""
+    new_stack = Stack(
+        name="arias_new_stack",
+        orchestrator=clean_repo.active_stack.orchestrator,
+        metadata_store=clean_repo.active_stack.metadata_store,
+        artifact_store=clean_repo.active_stack.artifact_store,
+    )
+    clean_repo.register_stack(new_stack)
+    runner = CliRunner()
+    result = runner.invoke(delete_stack, ["arias_new_stack", "-y"])
+    assert result.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_repo.get_stack("arias_new_stack")
