@@ -43,7 +43,7 @@ GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH = os.path.join(
     tag=CliCategories.MANAGEMENT_TOOLS,
 )
 def service() -> None:
-    """ZenMl server."""
+    """ZenML server."""
 
 
 @service.command("explain", help="Explain the service")
