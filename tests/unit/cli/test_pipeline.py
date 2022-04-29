@@ -139,7 +139,7 @@ def test_pipeline_run_single_file(clean_repo, mocker, tmp_path) -> None:
     assert historic_pipeline.runs[-1].status == ExecutionStatus.COMPLETED
 
 
-def test_pipeline_run_multifile(clean_repo, mocker, tmp_path) -> None:
+def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the different files.
 
@@ -169,21 +169,19 @@ def test_pipeline_run_multifile(clean_repo, mocker, tmp_path) -> None:
     new_pipeline_definition = (
         define_sys_path_definition + "\n" + pipeline_definition
     )
-    main_python_filepath = clean_repo.root / "run.py"
-    main_python_file = main_python_filepath
+    main_python_file = clean_repo.root / "run.py"
     main_python_file.write_text(new_pipeline_definition)
 
     # Write custom object file
-    custom_obj_file_path = (
+    custom_obj_file = (
         clean_repo.root / CUSTOM_OBJ_FILE / f"{CUSTOM_OBJ_FILE}.py"
     )
-    custom_obj_file = custom_obj_file_path
     custom_obj_file.parent.mkdir()
     custom_obj_file.write_text(object_definition)
 
     # Make sure the custom materializer imports the custom object
     import_obj_path = os.path.splitext(
-        os.path.relpath(custom_obj_file_path, tmp_path.parent)
+        os.path.relpath(custom_obj_file, tmp_path.parent)
     )[0].replace("/", ".")
     new_materializer_definition = (
         f"from {import_obj_path} "
@@ -191,24 +189,22 @@ def test_pipeline_run_multifile(clean_repo, mocker, tmp_path) -> None:
     )
 
     # Write custom materializer file
-    materializer_file_path = (
+    materializer_file = (
         clean_repo.root / MATERIALIZER_FILE / f"{MATERIALIZER_FILE}.py"
     )
-    materializer_file = materializer_file_path
     materializer_file.parent.mkdir()
     materializer_file.write_text(new_materializer_definition)
 
     # Make sure the step imports the custom object
     import_obj_path = os.path.splitext(
-        os.path.relpath(custom_obj_file_path, tmp_path.parent)
+        os.path.relpath(custom_obj_file, tmp_path.parent)
     )[0].replace("/", ".")
     new_step_definition = (
         f"from {import_obj_path} "
         f"import {CUSTOM_OBJ_NAME} \n" + step_definition
     )
     # Write step file
-    step_file_path = clean_repo.root / STEP_FILE / f"{STEP_FILE}.py"
-    step_file = step_file_path
+    step_file = clean_repo.root / STEP_FILE / f"{STEP_FILE}.py"
     step_file.parent.mkdir()
     step_file.write_text(new_step_definition)
 
@@ -219,14 +215,14 @@ def test_pipeline_run_multifile(clean_repo, mocker, tmp_path) -> None:
             "step_1": {
                 "source": {
                     "name": STEP_NAME,
-                    "file": os.path.relpath(step_file_path, clean_repo.root),
+                    "file": os.path.relpath(step_file, clean_repo.root),
                 },
                 "parameters": {"some_option": 3},
                 "materializers": {
                     "output_1": {
                         "name": MATERIALIZER_NAME,
                         "file": os.path.relpath(
-                            materializer_file_path, clean_repo.root
+                            materializer_file, clean_repo.root
                         ),
                     }
                 },
@@ -245,3 +241,4 @@ def test_pipeline_run_multifile(clean_repo, mocker, tmp_path) -> None:
     assert len(historic_pipeline.runs) == 1
 
     assert historic_pipeline.runs[-1].status == ExecutionStatus.COMPLETED
+
