@@ -316,6 +316,73 @@ def generate_stack_component_update_command(
     return update_stack_component_command
 
 
+def generate_stack_component_remove_attribute_command(
+    component_type: StackComponentType,
+) -> Callable[[str, List[str]], None]:
+    """Generates an `remove_attribute` command for the specific stack component type."""
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name",
+        type=str,
+        required=True,
+    )
+    @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+    def remove_attribute_stack_component_command(
+        name: str, args: List[str]
+    ) -> None:
+        """Removes one or more attributes from a stack component."""
+        cli_utils.print_active_profile()
+        with console.status(f"Updating {display_name} '{name}'...\n"):
+            repo = Repository()
+            current_component = repo.get_stack_component(component_type, name)
+            if current_component is None:
+                cli_utils.error(f"No {display_name} found for name '{name}'.")
+
+            try:
+                parsed_args = cli_utils.parse_unknown_options(args)
+            except AssertionError as e:
+                cli_utils.error(str(e))
+                return
+            for prop in MANDATORY_COMPONENT_PROPERTIES:
+                if prop in parsed_args:
+                    cli_utils.error(
+                        f"Cannot update mandatory property '{prop}' of '{name}' {current_component.TYPE}. "
+                    )
+
+            from zenml.stack.stack_component_class_registry import (
+                StackComponentClassRegistry,
+            )
+
+            component_class = StackComponentClassRegistry.get_class(
+                component_type=component_type,
+                component_flavor=current_component.FLAVOR,
+            )
+            available_properties = _get_available_properties(component_class)
+            for prop in parsed_args.keys():
+                if (prop not in available_properties) and (
+                    len(available_properties) > 0
+                ):
+                    cli_utils.error(
+                        f"You cannot update the {display_name} `{current_component.name}` with property '{prop}'. You can only update the following properties: {available_properties}."
+                    )
+                elif prop not in available_properties:
+                    cli_utils.error(
+                        f"You cannot update the {display_name} `{current_component.name}` with property '{prop}' as this {display_name} has no optional properties that can be configured."
+                    )
+                else:
+                    continue
+
+            updated_component = current_component.copy(update=parsed_args)
+
+            repo.update_stack_component(
+                name, updated_component.TYPE, updated_component
+            )
+            cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
+
+    return remove_attribute_stack_component_command
+
+
 def generate_stack_component_rename_command(
     component_type: StackComponentType,
 ) -> Callable[[str, str], None]:
@@ -586,7 +653,9 @@ def register_single_stack_component_cli_commands(
     )(get_command)
 
     # zenml stack-component describe
-    describe_command = generate_stack_component_describe_command(component_type)
+    describe_command = generate_stack_component_describe_command(
+        component_type
+    )
     command_group.command(
         "describe",
         help=f"Show details about the (active) {singular_display_name}.",
@@ -599,7 +668,9 @@ def register_single_stack_component_cli_commands(
     )(list_command)
 
     # zenml stack-component register
-    register_command = generate_stack_component_register_command(component_type)
+    register_command = generate_stack_component_register_command(
+        component_type
+    )
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "register",
@@ -615,6 +686,17 @@ def register_single_stack_component_cli_commands(
         context_settings=context_settings,
         help=f"Update a registered {singular_display_name}.",
     )(update_command)
+
+    # zenml stack-component remove-attribute
+    remove_attribute_command = (
+        generate_stack_component_remove_attribute_command(component_type)
+    )
+    context_settings = {"ignore_unknown_options": True}
+    command_group.command(
+        "remove-attribute",
+        context_settings=context_settings,
+        help=f"Remove attributes from a registered {singular_display_name}.",
+    )(remove_attribute_command)
 
     # zenml stack-component rename
     rename_command = generate_stack_component_rename_command(component_type)
