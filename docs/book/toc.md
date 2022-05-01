@@ -1,6 +1,6 @@
 # Table of contents
 
-[ZenML Docs](index.md)
+* [ZenML Docs](index.md)
 
 ## Introduction
 
