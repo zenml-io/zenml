@@ -1,9 +1,8 @@
-# ZenML
 ---
 description: Example Landing Page
 ---
 
-# Landing Page
+# ZenML Docs
 
 **ZenML** ....
 
