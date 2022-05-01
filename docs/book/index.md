@@ -19,5 +19,5 @@ You already ran your first pipelines and want to know about integrations and pro
 {% endhint %}
 
 {% hint style="info" %}
-If you are someone that wants to learn by doing of watching the [support](broken-reference) section is just right for you. In it you will find links to code examples, notebooks and youtube videos.&#x20;
+If you are someone that wants to learn by doing or watching the [support](broken-reference) section is just right for you. In it you will find links to code examples, notebooks and youtube videos.&#x20;
 {% endhint %}
