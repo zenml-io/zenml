@@ -47,9 +47,9 @@ pipeline_x = repo.get_pipeline(pipeline_name=..., stack_key=...)
 Each pipeline can be executed many times. You can easily get a list of all runs like this
 
 ```python
-runs = pipeline_x.runs  # all runs of a pipeline chronlogically ordered
+runs = pipeline_x.runs  # all runs of a pipeline chronologically ordered
 
-# get the last run by index
+# get the last run by index, runs are ordered by execution time in ascending order
 run = runs[-1]
 
 # or get a specific run by name
@@ -78,6 +78,6 @@ output = step.outputs["output_name"]
 # if one output, use the `.output` property instead 
 output = step.output 
 
-# will get you the value from the original materializer used in the pipeline
+# will read the value into memory
 output.read()  
 ```

@@ -148,15 +148,12 @@ Best of all: We let you and your infra/ops team decide what the underlying tools
 
 ## Next Steps?
 
-Normally at this point in a quickstart, you'd like to learn more about what the product has to offer (if the docs
-have succeeded in making you feel so). There are a few places you can go from here.
+Normally at this point in a quickstart, you'd like to learn more about what the product has to offer. There are a few 
+places you can go from here.
 
 * If you are someone that loves to learn by doing. Check out our [ZenBytes](https://github.com/zenml-io/zenbytes), small
   tutorials in a Notebook environment.
 * If you are more of a bookworm, feel free to jump straight into our 
-[Developer Guide](../guides/basics/installation.md).
+[Developer Guide](../developer-guide/installation.md) to learn the concepts step-by-step.
 
-If you're not sure, pick any one of the above. They are the easiest way to learn how ZenML enables MLOps.
-
-However, for those of you who don't want to read guides, then feel free to get familiarized with
-the [Core Concepts](core-concepts.md). See you there!
+If you're not sure, pick any one of the above or use the table of contents on the left to find the right topic for you.

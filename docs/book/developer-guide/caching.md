@@ -55,13 +55,6 @@ your pipeline and its steps. ZenML offers a way to override all caching settings
 first_pipeline(step_1=..., step_2=...).run(enable_cache=False)
 ```
 
-### Invalidation of Cache
-
-Caching is invalidated whenever any changes in step **code** or step **configuration** is detected. ZenML can **not** 
-detect changes in upstream APIs or in the Filesystem. Make sure you disable caching for steps that rely on these sources 
-if your pipeline needs to have access to the most up-to date data. During development, you probably don't care as much 
-about the freshness of your data. In that case feel free to keep caching enabled and enjoy the faster runtimes.
-
 ### Summary in Code
 
 <details>

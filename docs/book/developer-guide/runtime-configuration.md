@@ -28,7 +28,7 @@ def my_second_step(config: SecondStepConfig, input_int: int, input_float: float
     return config.multiplier * input_int, config.multiplier * input_float
 ```
 
-The default value for the multiplier is set to 4. However, when the pipeline is instatiated you can
+The default value for the multiplier is set to 4. However, when the pipeline is instantiated you can
 override the default like this:
 
 ```python
@@ -123,6 +123,11 @@ In total the step functions can be supplied with 3 arguments here:
 
 * parameters - list of parameters for the StepConfig
 * materializers - dict of output_name and corresponding Materializer (Materializer needs to be in the run.py file)
+
+{% hint style="info" %}
+Materializers are responsible for reading and writing, you'll learn more about Materializers in a later 
+[section](materializer.md).
+{% endhint %}
 
 
 ```yaml

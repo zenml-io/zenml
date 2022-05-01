@@ -116,7 +116,7 @@ For more information, visit https://docs.zenml.io/guides/common-usecases/custom-
 ```
 
 The above basically means that ZenML does not know how to persist the object of type `MyObj` between steps (how could 
-it? We just created this!). Therefore, we can have to create our own materializer. TO do this you can simply extend the 
+it? We just created this!). Therefore, we can have to create our own materializer. To do this you can simply extend the 
 `BaseMaterializer` by sub-classing it.
 
 
