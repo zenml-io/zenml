@@ -125,29 +125,6 @@ orchestrator is especially important, as it defines **where** the actual pipelin
 `root` of any pipeline job, that controls how and where each individual step within a pipeline is executed. Therefore,
 the orchestrator can be used to great effect to scale jobs in production.
 
-## Step Configuration
-
-When we think about steps as functions, we know they receive input in the form of artifacts. We also know that
-they produce output (also in the form of artifacts, stored in the artifact store). But steps also take parameters.
-The parameters that you pass into the steps are also (helpfully!) stored in the metadata store. This helps freeze the
-iterations of your experimentation workflow in time, so you can return to them exactly as you ran them. Parameters can
-be passed in as a subclass of `BaseStepConfig` like so:
-
-```python
-from zenml.steps import BaseStepConfig
-
-
-class MyStepConfig(BaseStepConfig):
-    basic_param_1: int = 1
-    basic_param_2: str = 2
-
-
-@step
-def my_step(params: MyStepConfig):
-    # user params here
-    pass
-```
-
 ## Pipeline
 
 Pipelines are designed as simple functions. They are created by using decorators appropriate to the specific use case
@@ -304,6 +281,29 @@ While this is just a function with a decorator, it is not super useful. ZenML
 steps really get powerful when you put them together with data artifacts. Read
 about more of that
 [here](https://docs.zenml.io/v/docs/guides/functional-api/materialize-artifacts)!
+
+## Step Configuration
+
+When we think about steps as functions, we know they receive input in the form of artifacts. We also know that
+they produce output (also in the form of artifacts, stored in the artifact store). But steps also take parameters.
+The parameters that you pass into the steps are also (helpfully!) stored in the metadata store. This helps freeze the
+iterations of your experimentation workflow in time, so you can return to them exactly as you ran them. Parameters can
+be passed in as a subclass of `BaseStepConfig` like so:
+
+```python
+from zenml.steps import BaseStepConfig
+
+
+class MyStepConfig(BaseStepConfig):
+    basic_param_1: int = 1
+    basic_param_2: str = 2
+
+
+@step
+def my_step(params: MyStepConfig):
+    # user params here
+    pass
+```
 
 ## Step Operator
 
