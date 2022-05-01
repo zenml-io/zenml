@@ -1,5 +1,7 @@
 # Table of contents
 
+[ZenML Docs](index.md)
+
 ## Introduction
 
 * [ZenML](introduction/whats_zenml.md)
