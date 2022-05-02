@@ -6,14 +6,15 @@ description: ZenML provides functionality to store secrets locally and with AWS.
 
 Most projects involving either cloud infrastructure or of a certain complexity
 will involve secrets of some kind. You use secrets, for example, when connecting
-to AWS, which requires an `access_key_id` and a `secret_access_key` which it (usually)
-stores in your `~/.aws/credentials` file.
+to AWS, which requires an `access_key_id` and a `secret_access_key` which is
+usually stored in your `~/.aws/credentials` file.
 
 You might find you need to access those secrets from within your Kubernetes
 cluster as it runs individual steps, or you might just want a centralized
 location for the storage of secrets across your project. ZenML offers a basic
-local secrets manager and an integration with the managed [AWS Secrets
-Manager](https://aws.amazon.com/secrets-manager).
+local secrets manager and integrations with the managed [AWS Secrets
+Manager](https://aws.amazon.com/secrets-manager) and
+[GCP Secrets Manager](https://cloud.google.com/secret-manager).
 
 A ZenML Secret is a grouping of key-value pairs. These are accessed and
 administered via the ZenML Secret Manager (a stack component).
@@ -21,7 +22,8 @@ administered via the ZenML Secret Manager (a stack component).
 Secrets are distinguished by having different schemas. An AWS SecretSchema, for
 example, has key-value pairs for `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 as well as an optional `AWS_SESSION_TOKEN`. If you don't specify a schema at the
-point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a kind
+point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a
+kind
 of default schema where things that aren't attached to a grouping can be stored.
 
 ## Registering a secrets manager
@@ -83,12 +85,13 @@ your pipeline, as in the following example (taken from the corresponding
 Kubeflow example):
 
 ```python
-@pipeline(required_integrations=[TENSORFLOW], secrets=["aws"], enable_cache=True)
+@pipeline(required_integrations=[TENSORFLOW], secrets=["aws"],
+          enable_cache=True)
 def mnist_pipeline(
-    importer,
-    normalizer,
-    trainer,
-    evaluator,
+        importer,
+        normalizer,
+        trainer,
+        evaluator,
 ):
     # Link all the steps together
     X_train, X_test, y_train, y_test = importer()
@@ -97,16 +100,27 @@ def mnist_pipeline(
     evaluator(X_test=X_test_normed, y_test=y_test, model=model)
 ```
 
+
+{% tabs %}
+{% tab title="AWS Secrets Manager" %}
 ## Using the AWS Secrets Manager integration
 
-Amazon offers a managed secrets manager to store and use for AWS services. If
-your stack is primarily running on AWS, you can use our integration to interact
-with it. Using the [AWS Secrets Manager](https://aws.amazon.com/secrets-manager)
-is just as easy as using the local version. Make sure that the integration is
-installed first, and then register your secrets manager in the following way:
+Amazon offers a managed secrets manager to store and use secrets for AWS 
+services. If your stack is primarily running on AWS, you can use our integration 
+to interact with it. 
+Before getting started with the aws secret manager you'll need to make sure to
+have your aws credential set up locally and you have access to a service account
+with read/write permissions to the secrets manager. 
+[This](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html)
+guide can help you get started. 
+
+With this set up, using the 
+[AWS Secrets Manager](https://aws.amazon.com/secrets-manager) is just as easy as 
+using the local version. Make sure that the integration is installed first, and
+then register your secrets manager in the following way:
 
 ```shell
-zenml integration install s3
+zenml integration install aws
 zenml secrets-manager register AWS_SECRETS_MANAGER_NAME -t aws
 ```
 
@@ -120,9 +134,59 @@ of accessing the `aws` secret referenced above, you would get the value for the
 `aws_secret_access_key` key with the following code (within a step):
 
 ```python
+import os 
+
 os.environ.get('AWS_SECRET_ACCESS_KEY')
 ```
 
-Note that some of the secrets will get used by your stack implicitly. For
+Note that some secrets will get used by your stack implicitly. For
 example, in the case of when you are using an AWS S3 artifact store, the
 environment variables passed down will be used to confirm access.
+{% endtab %}
+
+{% tab title="GCP Secret Manager" %}
+Google offers a managed secret manager to store and use secrets for GCP 
+services. If your stack is primarily running on GCP, you can use our integration 
+to interact with it. 
+
+Before getting started with the aws secret manager you'll need to make sure to
+have your aws credential set up locally, and you have access to a service account
+with read/write permissions to the secrets manager. 
+[This](https://cloud.google.com/sdk/docs/install-sdk) guide can help you 
+get started. 
+
+With this set up, using the 
+[GCP Secret Manager](https://cloud.google.com/secret-manager) is just as easy as 
+using the local version. Make sure that the integration is installed first, and
+then register your secrets manager in the following way:
+
+```shell
+zenml integration install gcp_secrets_manager
+zenml secrets-manager register GCP_SECRETS_MANAGER_NAME -t gcp \ 
+    --project_id=<ID_OF_YOUR_PROJECT>
+```
+
+The Project ID refers to the gcp project of your secrets manager. 
+[This](https://support.google.com/googleapi/answer/7014113?hl=en) is how you
+can find the project ID of your project.
+
+If you are using the [ZenML Kubeflow
+integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) for
+your orchestrator, you can then access the keys and their corresponding values
+for all the secrets you imported in the pipeline definition (as mentioned
+above). The keys that you used when creating the secret will be capitalized when
+they are passed down into the images used by Kubeflow. For example, in the case
+of accessing the `aws` secret referenced above, you would get the value for the
+`aws_secret_access_key` key with the following code (within a step):
+
+```python
+import os 
+
+os.environ.get('AWS_SECRET_ACCESS_KEY')
+```
+
+Note that some secrets will get used by your stack implicitly. For
+example, in the case of when you are using an AWS S3 artifact store, the
+environment variables passed down will be used to confirm access.
+{% endtab %}
+{% endtabs %}
