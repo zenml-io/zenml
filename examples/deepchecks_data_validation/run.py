@@ -14,14 +14,16 @@
 import json
 
 import pandas as pd
+from deepchecks import Dataset
 from deepchecks.core import SuiteResult
+from deepchecks.tabular.suites import full_suite
 from rich import print
 from sklearn import datasets
 
 from zenml.integrations.constants import EVIDENTLY, SKLEARN
 from zenml.integrations.deepchecks.steps import (
-    DeepchecksProfileConfig,
-    DeepchecksProfileStep,
+    DeepchecksDataValidatorConfig,
+    DeepchecksDataValidatorStep,
 )
 from zenml.integrations.deepchecks.visualizers import DeepchecksVisualizer
 from zenml.logger import get_logger
@@ -52,8 +54,8 @@ def data_splitter(
     return input_df[100:], input_df[:100]
 
 
-drift_detector = DeepchecksProfileStep(
-    DeepchecksProfileConfig(
+data_validator = DeepchecksDataValidatorStep(
+    DeepchecksDataValidatorConfig(
         column_mapping=None,
         profile_sections=["datadrift"],
     )
@@ -61,52 +63,64 @@ drift_detector = DeepchecksProfileStep(
 
 
 @step
-def validate_data(result: SuiteResult) -> bool:
+def data_validator(
+    train_df: pd.DataFrame, test_df: pd.DataFrame
+) -> SuiteResult:
+    """Validate data using deepchecks"""
+    ds_train = Dataset(train_df)
+    ds_test = Dataset(test_df)
+    suite = full_suite()
+    return suite.run(train_dataset=ds_train, test_dataset=ds_test)
+
+
+@step
+def post_validation(result: SuiteResult) -> bool:
     """Analyze the Deepchecks drift report and return a true/false value
     indicating whether data drift was detected."""
+    print(result)
     return result.results[0]
 
 
 @pipeline(required_integrations=[EVIDENTLY, SKLEARN])
-def drift_detection_pipeline(
+def data_validation_pipeline(
     data_loader,
     data_splitter,
-    drift_detector,
     data_validator,
+    post_validation,
 ):
     """Links all the steps together in a pipeline"""
     data = data_loader()
     reference_dataset, comparison_dataset = data_splitter(data)
-    drift_report, _ = drift_detector(
+    validation_result = data_validator(
         reference_dataset=reference_dataset,
         comparison_dataset=comparison_dataset,
     )
-    data_validator(drift_report)
+    post_validation(validation_result)
 
 
 def visualize_statistics():
     repo = Repository()
     pipe = repo.get_pipelines()[-1]
-    evidently_outputs = pipe.runs[-1].get_step(name="drift_detector")
+    evidently_outputs = pipe.runs[-1].get_step(name="data_validator")
     DeepchecksVisualizer().visualize(evidently_outputs)
 
 
 if __name__ == "__main__":
-    pipeline = drift_detection_pipeline(
+    pipeline = data_validation_pipeline(
         data_loader=data_loader(),
         data_splitter=data_splitter(),
-        drift_detector=drift_detector,
-        data_validator=validate_data(),
+        data_validator=data_validator,
+        post_validation=post_validation(),
     )
     pipeline.run()
 
     repo = Repository()
-    pipeline = repo.get_pipeline(pipeline_name="drift_detection_pipeline")
+    pipeline = repo.get_pipeline(pipeline_name="data_validation_pipeline")
     last_run = pipeline.runs[-1]
     drift_analysis_step = last_run.get_step(name="data_validator")
     print(f"Data drift detected: {drift_analysis_step.output.read()}")
 
-    drift_detection_step = last_run.get_step(name="drift_detector")
+    drift_detection_step = last_run.get_step(name="data_validator")
     print(json.dumps(drift_detection_step.outputs["profile"].read(), indent=2))
 
     visualize_statistics()

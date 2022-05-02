@@ -13,6 +13,6 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.deepchecks.steps.deepchecks_profile import (
-    DeepchecksProfileConfig,
-    DeepchecksProfileStep,
+    DeepchecksDataValidatorConfig,
+    DeepchecksDataValidatorStep,
 )
