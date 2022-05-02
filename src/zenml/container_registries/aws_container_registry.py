@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 from typing import ClassVar
 
-from pydantic import ValidationError, validator
+from pydantic import validator
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
@@ -41,11 +41,11 @@ class AWSContainerRegistry(BaseContainerRegistry):
         base_error = "Property `uri` is invalid."
 
         if uri.endswith("/"):
-            raise ValidationError(
+            raise ValueError(
                 f"{base_error}. `uri` cannot end with a `/`. {example_message}"
             )
 
         if "/" in uri:
-            raise ValidationError(
+            raise ValueError(
                 f"{base_error}. `uri` cannot contain a `/`. {example_message}"
             )

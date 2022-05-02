@@ -21,7 +21,6 @@ from typing import ClassVar, List, Optional, Tuple
 from google.auth import credentials as auth_credentials
 from google.auth import default, load_credentials_from_file
 from google.cloud import aiplatform
-from pydantic import ValidationError
 from pydantic import validator as property_validator
 
 from zenml import __version__
@@ -113,7 +112,7 @@ class VertexStepOperator(BaseStepOperator):
             aiplatform.gapic.AcceleratorType.__members__.keys()
         )
         if accelerator_type and accelerator_type.upper() not in accepted_vals:
-            raise ValidationError(
+            raise ValueError(
                 f"Accelerator must be one of the following: {accepted_vals}"
             )
 
