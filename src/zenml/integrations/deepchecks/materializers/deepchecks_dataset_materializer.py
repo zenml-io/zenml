@@ -12,55 +12,42 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
-import tempfile
 from typing import Any, Type
 
 from deepchecks import Dataset
 
 from zenml.artifacts import DataArtifact
-from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.materializers.pandas_materializer import PandasMaterializer
 
 DEFAULT_FILENAME = "data.binary"
 
 
 class DeepchecksDatasetMaterializer(BaseMaterializer):
-    """Materializer to read data to and from lightgbm.Dataset"""
+    """Materializer to read data to and from Deepchecks dataset"""
 
     ASSOCIATED_TYPES = (Dataset,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> Dataset:
-        """Reads a lightgbm.Dataset binary file and loads it."""
+        """Reads pandas dataframes and creates deepchecks.Dataset from it."""
         super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
-        # Create a temporary folder
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+        # Outsource to pandas
+        pandas_materializer = PandasMaterializer(self.artifact)
+        df = pandas_materializer.handle_input(data_type)
 
-        # Copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
-        matrix = Dataset(temp_file, free_raw_data=False)
+        # Recreate from pandas dataframe
+        return Dataset(df)
 
-        # No clean up this time because matrix is lazy loaded
-        return matrix
-
-    def handle_return(self, matrix: Dataset) -> None:
-        """Creates a binary serialization for a lightgbm.Dataset object.
+    def handle_return(self, df: Dataset) -> None:
+        """Serializes pandas dataframe within a Dataset object.
 
         Args:
-            matrix: A lightgbm.Dataset object.
+            df: A deepchecks.Dataset object.
         """
-        super().handle_return(matrix)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        super().handle_return(df)
 
-        # Make a temporary phantom artifact
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
-        matrix.save_binary(temp_file)
-
-        # Copy it into artifact store
-        fileio.copy(temp_file, filepath)
-        fileio.rmtree(temp_dir)
+        # Outsource to pandas
+        pandas_materializer = PandasMaterializer(self.artifact)
+        pandas_materializer.handle_return(df.data)

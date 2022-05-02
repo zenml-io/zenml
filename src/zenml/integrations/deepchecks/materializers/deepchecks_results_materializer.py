@@ -11,12 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
 import os
 import tempfile
 from typing import Any, Type
 
-from deepchecks.core import CheckResult, SuiteResult
+from deepchecks.core import SuiteResult
 
 from zenml.artifacts import DataAnalysisArtifact
 from zenml.io import fileio
@@ -26,13 +25,13 @@ DEFAULT_FILENAME = "model.txt"
 
 
 class DeepchecksResultMaterializer(BaseMaterializer):
-    """Materializer to read data to and from lightgbm.Booster."""
+    """Materializer to read data to and from SuiteResult objects."""
 
-    ASSOCIATED_TYPES = (CheckResult,)
+    ASSOCIATED_TYPES = (SuiteResult,)
     ASSOCIATED_ARTIFACT_TYPES = (DataAnalysisArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> CheckResult:
-        """Reads a lightgbm Booster model from a serialized JSON file."""
+    def handle_input(self, data_type: Type[Any]) -> SuiteResult:
+        """Reads a deepchecks result from a serialized JSON file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
@@ -42,28 +41,28 @@ class DeepchecksResultMaterializer(BaseMaterializer):
 
         # Copy from artifact store to temporary file
         fileio.copy(filepath, temp_file)
-        booster = CheckResult(model_file=temp_file)
+        res = SuiteResult(model_file=temp_file)
 
         # Cleanup and return
         fileio.rmtree(temp_dir)
-        return booster
+        return res
 
     def handle_return(self, result: SuiteResult) -> None:
-        """Creates a JSON serialization for a lightgbm Booster model.
+        """Creates a JSON serialization for a SuiteResult.
 
         Args:
-            result: A lightgbm Booster model.
+            result: A deepchecks.SuiteResult.
         """
         super().handle_return(result)
 
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
-        result.to_json(False)
+        serialized_json = result.to_json(False)
 
         # Make a temporary phantom artifact
         with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=True
+            mode="w", suffix=".json", delete=True
         ) as f:
-            booster.save_model(f.name)
+            f.write(serialized_json)
             # Copy it into artifact store
             fileio.copy(f.name, filepath)
