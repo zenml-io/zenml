@@ -14,13 +14,14 @@
 import json
 
 import pandas as pd
+from deepchecks.core import SuiteResult
 from rich import print
 from sklearn import datasets
 
 from zenml.integrations.constants import EVIDENTLY, SKLEARN
 from zenml.integrations.deepchecks.steps import (
-    DeepchecksProfileStep,
     DeepchecksProfileConfig,
+    DeepchecksProfileStep,
 )
 from zenml.integrations.deepchecks.visualizers import DeepchecksVisualizer
 from zenml.logger import get_logger
@@ -60,12 +61,10 @@ drift_detector = DeepchecksProfileStep(
 
 
 @step
-def analyze_drift(
-    input: dict,
-) -> bool:
-    """Analyze the Evidently drift report and return a true/false value
+def validate_data(result: SuiteResult) -> bool:
+    """Analyze the Deepchecks drift report and return a true/false value
     indicating whether data drift was detected."""
-    return input["data_drift"]["data"]["metrics"]["dataset_drift"]
+    return result.results[0]
 
 
 @pipeline(required_integrations=[EVIDENTLY, SKLEARN])
@@ -73,7 +72,7 @@ def drift_detection_pipeline(
     data_loader,
     data_splitter,
     drift_detector,
-    drift_analyzer,
+    data_validator,
 ):
     """Links all the steps together in a pipeline"""
     data = data_loader()
@@ -82,7 +81,7 @@ def drift_detection_pipeline(
         reference_dataset=reference_dataset,
         comparison_dataset=comparison_dataset,
     )
-    drift_analyzer(drift_report)
+    data_validator(drift_report)
 
 
 def visualize_statistics():
@@ -97,14 +96,14 @@ if __name__ == "__main__":
         data_loader=data_loader(),
         data_splitter=data_splitter(),
         drift_detector=drift_detector,
-        drift_analyzer=analyze_drift(),
+        data_validator=validate_data(),
     )
     pipeline.run()
 
     repo = Repository()
     pipeline = repo.get_pipeline(pipeline_name="drift_detection_pipeline")
     last_run = pipeline.runs[-1]
-    drift_analysis_step = last_run.get_step(name="drift_analyzer")
+    drift_analysis_step = last_run.get_step(name="data_validator")
     print(f"Data drift detected: {drift_analysis_step.output.read()}")
 
     drift_detection_step = last_run.get_step(name="drift_detector")

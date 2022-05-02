@@ -16,7 +16,8 @@ import os
 import tempfile
 from typing import Any, Type
 
-from deepchecks.core import SuiteResult, CheckResult
+from deepchecks.core import CheckResult, SuiteResult
+
 from zenml.artifacts import DataAnalysisArtifact
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
