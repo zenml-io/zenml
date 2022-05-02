@@ -24,6 +24,7 @@ from zenml.cli.utils import (
     print_served_model_configuration,
     warning,
 )
+from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
@@ -265,6 +266,31 @@ def delete_model_service(
             served_models[0].uuid, timeout=timeout, force=force
         )
         declare(f"Model server {served_models[0]} was deleted.")
+        return
+
+    warning(f"No model with uuid: '{served_model_uuid}' could be found.")
+    return
+
+
+@served_models.command("logs")
+@click.argument("served_model_uuid", type=click.STRING)
+@click.pass_obj
+def get_model_service_logs(
+    model_deployer: "BaseModelDeployer",
+    served_model_uuid: str,
+) -> None:
+    """Display the logs for a model server."""
+
+    served_models = model_deployer.find_model_server(
+        service_uuid=uuid.UUID(served_model_uuid)
+    )
+    if served_models:
+        with console.pager():
+            console.print(
+                model_deployer.get_model_server_logs(
+                    served_models[0].uuid
+                )
+            )
         return
 
     warning(f"No model with uuid: '{served_model_uuid}' could be found.")

@@ -829,6 +829,61 @@ class SeldonClient:
                 f"with labels '{labels or ''}' and field '{fields or ''}'"
             ) from e
 
+    def get_deployment_logs(
+        self,
+        name: str,
+    ) -> str:
+        """Get the logs of a Seldon Core deployment resource.
+
+        Args:
+            name: the name of the Seldon Core deployment to get logs for.
+
+        Returns:
+            The logs of the deployment resource.
+
+        Raises:
+            SeldonClientError: if an unknown error occurs while fetching
+                the logs.
+        """
+        logger.debug(f"Retrieving logs for SeldonDeployment resource: {name}")
+        try:
+            response = self._core_api.list_namespaced_pod(
+                namespace=self._namespace,
+                label_selector=f"seldon-deployment-id={name}",
+            )
+            logger.debug("Kubernetes API response: %s", response)
+            pods = response.items
+            if not pods:
+                raise SeldonClientError(
+                    f"The Seldon Core deployment {name} is not currently "
+                    f"running: no Kubernetes pods associated with it were found"
+                )
+            pod = pods[0]
+            pod_name = pod.metadata.name
+            containers = [c.name for c in pod.spec.containers]
+            logger.debug(
+                f"Retrieving logs for pod: {pod_name} and container "
+                f"{containers[0]}"
+            )
+            response = self._core_api.read_namespaced_pod_log(
+                name=pod_name,
+                namespace=self._namespace,
+                container=containers[0],
+            )
+            logger.debug("Kubernetes API response: %s", response)
+            return response
+        except k8s_client.rest.ApiException as e:
+            logger.error(
+                "Exception when fetching logs for SeldonDeployment resource "
+                "%s: %s",
+                name,
+                str(e),
+            )
+            raise SeldonClientError(
+                f"Unexpected exception when fetching logs for SeldonDeployment "
+                f"resource: {name}"
+            ) from e
+
     def create_or_update_secret(
         self,
         name: str,

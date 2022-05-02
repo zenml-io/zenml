@@ -198,3 +198,14 @@ class BaseModelDeployer(StackComponent, ABC):
                 deprovisioning the service, without waiting for it to stop.
             force: if True, force the service to stop.
         """
+
+    @abstractmethod
+    def get_model_server_logs(
+        self,
+        uuid: UUID,
+    ) -> str:
+        """Abstract method to get the logs of a model server.
+
+        Args:
+            uuid: UUID of the model server to get the logs of.
+        """
