@@ -17,7 +17,7 @@ import webbrowser
 from abc import abstractmethod
 from typing import Any
 
-from deepchecks.core import SuiteResult
+from deepchecks.core.suite import SuiteResult
 
 from zenml.artifacts import DataAnalysisArtifact
 from zenml.environment import Environment
@@ -55,6 +55,9 @@ class DeepchecksVisualizer(BaseStepVisualizer):
             mode="w", delete=False, suffix=".html", encoding="utf-8"
         ) as f:
             result.save_as_html(f)
+            file_name = f.name
+
+        with open(file_name, "r") as f:
             html_ = f.read()
 
         if Environment.in_notebook():

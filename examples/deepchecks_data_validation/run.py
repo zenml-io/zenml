@@ -11,14 +11,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import pandas as pd
-from deepchecks.core import SuiteResult
+from deepchecks.core.suite import SuiteResult
 from deepchecks.tabular import Dataset
 from deepchecks.tabular.datasets.classification import iris
 from deepchecks.tabular.suites import full_suite
 from rich import print
+from sklearn.base import ClassifierMixin
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
 from zenml.integrations.constants import DEEPCHECKS, SKLEARN
+from zenml.integrations.deepchecks.materializers import (
+    DeepchecksResultMaterializer,
+)
 from zenml.integrations.deepchecks.visualizers import DeepchecksVisualizer
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
@@ -26,6 +31,8 @@ from zenml.repository import Repository
 from zenml.steps import Output, step
 
 logger = get_logger(__name__)
+
+LABEL_COL = "target"
 
 
 @step
@@ -42,34 +49,48 @@ def data_loader() -> Output(
 
 
 @step
+def trainer(df_train: pd.DataFrame) -> ClassifierMixin:
+    # Train Model
+    rf_clf = RandomForestClassifier(random_state=0)
+    rf_clf.fit(df_train.drop(LABEL_COL, axis=1), df_train[LABEL_COL])
+    return rf_clf
+
+
+@step
 def data_validator(
-    reference_dataset: pd.DataFrame, comparison_dataset: pd.DataFrame
+    reference_dataset: pd.DataFrame,
+    comparison_dataset: pd.DataFrame,
+    model: ClassifierMixin,
 ) -> SuiteResult:
     """Validate data using deepchecks"""
-    ds_train = Dataset(reference_dataset)
-    ds_test = Dataset(comparison_dataset)
+    ds_train = Dataset(reference_dataset, label=LABEL_COL, cat_features=[])
+    ds_test = Dataset(comparison_dataset, label=LABEL_COL, cat_features=[])
     suite = full_suite()
-    return suite.run(train_dataset=ds_train, test_dataset=ds_test)
+    return suite.run(train_dataset=ds_train, test_dataset=ds_test, model=model)
 
 
 @step
 def post_validation(result: SuiteResult) -> None:
     """Consumes the SuiteResult."""
     print(result)
-    result.save_as_html()
+    # Iterate over results, and check if checks passed or not
+    # result.save_as_html()
 
 
-@pipeline(required_integrations=[DEEPCHECKS, SKLEARN])
+@pipeline(enable_cache=False, required_integrations=[DEEPCHECKS, SKLEARN])
 def data_validation_pipeline(
     data_loader,
+    trainer,
     data_validator,
     post_validation,
 ):
     """Links all the steps together in a pipeline"""
-    reference_dataset, comparison_dataset = data_loader()
+    df_train, df_test = data_loader()
+    model = trainer(df_train)
     validation_result = data_validator(
-        reference_dataset=reference_dataset,
-        comparison_dataset=comparison_dataset,
+        reference_dataset=df_train,
+        comparison_dataset=df_test,
+        model=model,
     )
     post_validation(validation_result)
 
@@ -77,7 +98,10 @@ def data_validation_pipeline(
 if __name__ == "__main__":
     pipeline = data_validation_pipeline(
         data_loader=data_loader(),
-        data_validator=data_validator(),
+        trainer=trainer(),
+        data_validator=data_validator().with_return_materializers(
+            DeepchecksResultMaterializer
+        ),
         post_validation=post_validation(),
     )
     pipeline.run()

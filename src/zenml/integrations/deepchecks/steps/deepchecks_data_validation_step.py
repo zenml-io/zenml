@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import pandas as pd
-from deepchecks.core import SuiteResult
+from deepchecks.core.suite import SuiteResult
 from deepchecks.tabular import Dataset
 
 from zenml.artifacts import DataAnalysisArtifact
