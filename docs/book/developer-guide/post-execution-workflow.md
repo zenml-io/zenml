@@ -29,7 +29,8 @@ repo = Repository()
 
 #### Pipelines
 
-The repository contains a collection of all created pipelines with at least one run.
+The repository contains a collection of all created pipelines with at least one run sorted by the time of their first 
+run from oldest to newest.
 
 ```python
 # get all pipelines from all stacks
@@ -41,6 +42,22 @@ pipeline_x = pipelines[-1]
 # or get one pipeline by name and/or stack key
 pipeline_x = repo.get_pipeline(pipeline_name=..., stack_key=...)
 ```
+
+The pipeline name is the name of the decorated function (or the Pipeline class in case of the 
+[Class Based API](class-based-api.md)).
+
+```python
+from zenml.pipelines import pipeline
+
+@pipeline()
+def this_is_the_pipeline_name():
+    ...
+```
+
+{% hint style="info" %}
+Be careful when accessing pipelines by index. Even if you just ran a pipeline it might not be at index `-1`, due to the 
+fact that the pipelines are sorted by time of `first` run. As such it is recommended to access the pipeline by its name
+{% endhint %}
 
 #### Runs
 
@@ -66,6 +83,25 @@ step = steps[0]
 print(step.entrypoint_name)
 ```
 
+The steps are ordered by time of execution. Depending on the 
+[orchestrator](../introduction/core-concepts.md#orchestrator) steps can be run in parallel. As such accessing steps by 
+index can be unreliable across different runs. Instead, it makes sense to access steps by their name.
+
+```python
+run.get_step(name=...)
+```
+
+The step name is the name of the decorated function (or the Step class in case of the 
+[Class Based API](class-based-api.md)).
+
+```python
+from zenml.steps import step
+
+@step()
+def this_is_the_step_name():
+    ...
+```
+
 #### Outputs
 
 Most of your steps will probably create outputs. You'll be able to inspect these outputs like this:
@@ -80,4 +116,14 @@ output = step.output
 
 # will read the value into memory
 output.read()  
+```
+
+The names of the outputs can be found in the Output typing for your steps:
+
+```python
+from zenml.steps import step, Output
+
+@step
+def some_step() -> Output(output_name=int):
+    ...
 ```
