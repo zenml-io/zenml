@@ -73,7 +73,6 @@ class AWSSecretsManager(BaseSecretsManager):
             secret: the secret to register"""
         self._ensure_client_connected(self.region_name)
         secret_value = jsonify_secret_contents(secret)
-        print(secret_value)
 
         kwargs = {"Name": secret.name, "SecretString": secret_value}
         self.CLIENT.create_secret(**kwargs)

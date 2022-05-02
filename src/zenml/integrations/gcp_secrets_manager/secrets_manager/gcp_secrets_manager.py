@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import json
 from typing import Any, ClassVar, Dict, List
+import re
 
 from google.cloud import secretmanager
 
@@ -28,6 +29,34 @@ logger = get_logger(__name__)
 
 ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
+
+
+def add_group_name_to_keys(secret: BaseSecretSchema) -> Dict:
+    """This function adds the secret group name to the keys of each
+    secret key-value pair to allow using the same key across multiple
+    secrets.
+
+    Args:
+        secret: The ZenML Secret schema
+    """
+    new_dict = dict()
+    for k, v in secret.content.items():
+        new_dict[secret.name + '_' + k] = v
+
+    return new_dict
+
+
+def remove_group_name_from_key(key_name: str, group_name: str) -> str:
+    """This function serves to remove the secret group name from the secret
+    key.
+
+    Args:
+        key_name: Full name as it is within the gcp secrets manager
+        group_name: Group name (the ZenML Secret name)
+    Returns:
+        The cleaned key
+    """
+    return re.sub(f"{group_name}_", "", key_name)
 
 
 @register_stack_component_class
@@ -56,7 +85,12 @@ class GCPSecretsManager(BaseSecretsManager):
             secret: the secret to register"""
         self._ensure_client_connected()
 
-        for k, v in secret.content.items():
+        if secret.name in self.get_all_secret_keys():
+            raise KeyError(f"A Secret with the name {secret.name} already "
+                           f"exists.")
+
+        adjusted_content = add_group_name_to_keys(secret)
+        for k, v in adjusted_content.items():
             # Create the secret, this only creates an empty secret with the
             #  supplied name.
             gcp_secret = self.CLIENT.create_secret(
@@ -101,7 +135,6 @@ class GCPSecretsManager(BaseSecretsManager):
         for secret in self.CLIENT.list_secrets(request={"parent": parent}):
             if (ZENML_GROUP_KEY in secret.labels
                     and secret_name == secret.labels[ZENML_GROUP_KEY]):
-                secret_key = secret.name.split('/')[-1]
 
                 secret_version_name = secret.name + '/versions/latest'
 
@@ -109,6 +142,10 @@ class GCPSecretsManager(BaseSecretsManager):
                     request={"name": secret_version_name})
 
                 secret_value = response.payload.data.decode("UTF-8")
+
+                secret_key = remove_group_name_from_key(
+                    secret.name.split('/')[-1], secret_name)
+
                 secret_contents[secret_key] = secret_value
 
                 zenml_schema_name = secret.labels[ZENML_SCHEMA_NAME]
@@ -150,7 +187,9 @@ class GCPSecretsManager(BaseSecretsManager):
             secret: the secret to update"""
         self._ensure_client_connected()
 
-        for k, v in secret.content.items():
+        adjusted_content = add_group_name_to_keys(secret)
+
+        for k, v in adjusted_content.items():
             # Create the secret, this only creates an empty secret with the
             #  supplied name.
             parent = self.CLIENT.secret_path(self.project_id, k)
