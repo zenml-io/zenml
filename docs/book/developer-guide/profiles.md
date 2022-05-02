@@ -10,10 +10,13 @@ Stack Components, as well as the active Stack can be configured for a Profile
 independently of other Profiles and referenced in ZenML Repositories.
 
 Traditionally, Stack configurations were stored locally in the Repository root
-directory - i.e. the local .zen folder that is created by the `zenml init` command.
-The ZenML 0.7.0 release moves Stacks outside of Repository root folders, into the
+directory - i.e. the local .zen folder that is created by the `zenml init`
+command.
+The ZenML 0.7.0 release moves Stacks outside of Repository root folders, into
+the
 global configuration location (e.g. under `~/.config/zenml` on Unix,
-`~/Library/Application Support/zenml` on MacOS and `C:\Users\<user>\AppData\Local\zenml`
+`~/Library/Application Support/zenml` on MacOS
+and `C:\Users\<user>\AppData\Local\zenml`
 on Windows). The Profile concept was also introduced to replace the Repository
 as the component that manages and stores the Stack configurations. This allows
 ZenML users to configure and use the same Stacks across multiple Repositories
@@ -126,7 +129,6 @@ Running without an active repository root.
 To connect ZenML to an existing MySQL database, some additional configuration is
 required on the MySQL server:
 
-
 ```
 mysql -u root
 GRANT ALL PRIVILEGES ON *.* TO 'zenml'@'%' IDENTIFIED BY 'password';
@@ -136,7 +138,8 @@ CREATE DATABASE zenml;
 ```
 
 Then, on the client machine, some additional packages need to be installed
-(check [the SQLAlchemy documentation](https://docs.sqlalchemy.org/en/14/dialects/mysql.html)
+(
+check [the SQLAlchemy documentation](https://docs.sqlalchemy.org/en/14/dialects/mysql.html)
 for the various MySQL drivers that are supported and how to use them):
 
 ```
@@ -182,7 +185,7 @@ and shut down again using
 zenml service down
 ```
 
-For more details on how this service API looks, spin up the service and visit 
+For more details on how this service API looks, spin up the service and visit
 `http://$SERVICE_URL/docs` to see the OpenAPI specification.
 
 When you want to configure your ZenML project to access the data from this
@@ -292,7 +295,6 @@ To ensure a seamless transition from the traditional Repository root storage
 to Profiles, ZenML will automatically detect and migrate the Stacks from an
 already initialized Repository root to a newly created Profile. This happens
 the first time ZenML is launched from within a legacy initialized Repository:
-
 
 ```
 $ zenml profile list

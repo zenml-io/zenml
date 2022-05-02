@@ -1,6 +1,7 @@
 ---
 description: Guard against data drift with our Evidently integration.
 ---
+
 # Detect Data Drift and Monitor your Models
 
 Data drift is something you often want to guard against in your pipelines.
@@ -14,7 +15,9 @@ distribution of data.
 useful open-source library to painlessly check for data drift (among other
 features). At its core, Evidently's drift detection takes in a reference data
 set and compares it against another comparison dataset. These are both input in
-the form of a Pandas `DataFrame`, though CSV inputs are also possible. You can receive these results in the form of a standard dictionary object containing all the relevant information, or as a visualization. ZenML supports both outputs.
+the form of a Pandas `DataFrame`, though CSV inputs are also possible. You can
+receive these results in the form of a standard dictionary object containing all
+the relevant information, or as a visualization. ZenML supports both outputs.
 
 ZenML implements this functionality in the form of several standardized steps.
 You select which of the profile sections you want to use in your step by passing
@@ -56,12 +59,15 @@ the comparison to take place.
 This could be done at the point when you are defining your pipeline:
 
 ```python
+from zenml.integrations.constants import EVIDENTLY, SKLEARN
+from zenml.pipelines import pipeline
+
 @pipeline(required_integrations=[EVIDENTLY, SKLEARN])
 def drift_detection_pipeline(
-    data_loader,
-    data_splitter,
-    drift_detector,
-    drift_analyzer,
+        data_loader,
+        data_splitter,
+        drift_detector,
+        drift_analyzer,
 ):
     """Links all the steps together in a pipeline"""
     data = data_loader()
@@ -82,12 +88,15 @@ arguments to the `drift_detector` function as part of the pipeline.
 We even allow you to use the Evidently visualization tool easily to display data
 drift diagrams in your browser or within a Jupyter notebook:
 
-![Evidently drift visualization UI](assets/drift_visualization.png)
+![Evidently drift visualization UI](../assets/evidently/drift_visualization.png)
 
 Simple code like this would allow you to access the Evidently visualizer based
 on the completed pipeline run:
 
 ```python
+from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
+from zenml.repository import Repository
+
 repo = Repository()
 pipe = repo.get_pipelines()[-1]
 evidently_outputs = pipe.runs[-1].get_step(name="drift_detector")

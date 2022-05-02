@@ -22,7 +22,7 @@
   * [Class Based API](developer-guide/class-based-api.md)
 * [Stacks]()
 * [Repo & Config]()
-* [Profiles](advanced_guide/profiles.md)
+* [Profiles](developer-guide/profiles.md)
 
 ## Advanced Guide
 

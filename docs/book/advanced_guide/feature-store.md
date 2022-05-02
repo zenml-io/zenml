@@ -1,45 +1,68 @@
 ---
 description: ZenML integrates with Feast so you can access your batch and online data via a Feature Store
 ---
+
 # Feature Store
 
-Feature stores allow data teams to serve data via an offline store and an online low-latency store where data is kept in
-sync between the two. It also offers a centralized registry where features (and feature schemas) are stored for use
+Feature stores allow data teams to serve data via an offline store and an online
+low-latency store where data is kept in
+sync between the two. It also offers a centralized registry where features (and
+feature schemas) are stored for use
 within a team or wider organization.
 
-As a data scientist working on training your model, your requirements for how you access your batch / 'offline' data
-will almost certainly be different from how you access that data as part of a real-time or online inference setting.
-Feast solves the problem of developing [train-serve skew](https://ploomber.io/blog/train-serve-skew/) where those two
+As a data scientist working on training your model, your requirements for how
+you access your batch / 'offline' data
+will almost certainly be different from how you access that data as part of a
+real-time or online inference setting.
+Feast solves the problem of
+developing [train-serve skew](https://ploomber.io/blog/train-serve-skew/) where
+those two
 sources of data diverge from each other.
 
-Feature stores are a relatively recent addition to commonly-used machine learning stacks. [Feast](https://feast.dev/) is
-a leading open-source feature store, first developed by [Gojek](https://www.gojek.com/en-id/) in collaboration with
+Feature stores are a relatively recent addition to commonly-used machine
+learning stacks. [Feast](https://feast.dev/) is
+a leading open-source feature store, first developed
+by [Gojek](https://www.gojek.com/en-id/) in collaboration with
 Google.
 
 ## 🗺 Features Stores & ZenML
 
-There are two core functions that feature stores enable: access to data from an offline / batch store for training and
-access to online data at inference time. The ZenML Feast integration enables both of these behaviors.
+There are two core functions that feature stores enable: access to data from an
+offline / batch store for training and
+access to online data at inference time. The ZenML Feast integration enables
+both of these behaviors.
 
-ZenML assumes that users of the integration already have a feature store that they just need to connect with. The ZenML
-Feast integration currently supports your choice of offline data sources, and a [Redis](https://redis.com/) backend for
-your online feature serving. We encourage users to check out [Feast's documentation](https://docs.feast.dev/)
-and [guides](https://docs.feast.dev/how-to-guides/) on how to setup your offline and online data sources via the
-configuration `yaml` file.
+ZenML assumes that users of the integration already have a feature store that
+they just need to connect with. The ZenML
+Feast integration currently supports your choice of offline data sources, and
+a [Redis](https://redis.com/) backend for
+your online feature serving. We encourage users to check
+out [Feast's documentation](https://docs.feast.dev/)
+and [guides](https://docs.feast.dev/how-to-guides/) on how to set up your 
+offline and online data sources via the configuration `yaml` file.
 
-Online data retrieval is currently possible in a local setting, but we don't currently support using the online data
-serving in the context of a deployed model or as part of model deployment. We will update this documentation as we
+Online data retrieval is currently possible in a local setting, but we don't
+currently support using the online data
+serving in the context of a deployed model or as part of model deployment. We
+will update this documentation as we
 develop out this feature.
 
 # Get your offline / batch data from a Feature Store
 
-ZenML supports access to your feature store via a stack component that you can configure via the CLI tool. (
+ZenML supports access to your feature store via a stack component that you can
+configure via the CLI tool. (
 See [here](https://apidocs.zenml.io/latest/cli/) for details on how to do that.)
 
-Getting features from a registered and active feature store is possible by creating your own step that interfaces into
+Getting features from a registered and active feature store is possible by
+creating your own step that interfaces into
 the feature store:
 
 ```python
+from datetime import datetime
+from typing import Any, Dict, List, Union
+import pandas as pd
+
+from zenml.steps import BaseStepConfig, step, StepContext
 entity_dict = {…}  # defined in earlier code
 features = […]  # defined in earlier code
 
@@ -99,11 +122,15 @@ historical_features = get_historical_features(
 )
 ```
 
-Note that ZenML's use of Pydantic to serialize and deserialize inputs stored in the ZenML metadata means that we are
-limited to basic data types. Pydantic cannot handle Pandas `DataFrame`s, for example, or `datetime` values, so in the
+Note that ZenML's use of Pydantic to serialize and deserialize inputs stored in
+the ZenML metadata means that we are
+limited to basic data types. Pydantic cannot handle Pandas `DataFrame`s, for
+example, or `datetime` values, so in the
 above code you can see that we have to convert them at various points.
 
 # Get your online data from a Feature Store at inference time
 
-COMING SOON: While the ZenML integration has an interface to access online feature store data, it currently is not
-usable in production settings with deployed models. We will update the docs when we enable this functionality.
+COMING SOON: While the ZenML integration has an interface to access online
+feature store data, it currently is not
+usable in production settings with deployed models. We will update the docs when
+we enable this functionality.

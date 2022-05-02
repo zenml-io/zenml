@@ -6,12 +6,15 @@ description: An image speaks a thousand words.
 
 ## What is a visualizer?
 
-Sometimes it makes sense in the [post-execution workflow](post-execution-workflow.md) to actually visualize step 
+Sometimes it makes sense in
+the [post-execution workflow](../developer-guide/post-execution-workflow.md) to
+actually visualize step
 outputs. ZenML has a standard, extensible interface for all visualizers:
 
 ```python
 from abc import abstractmethod
 from typing import Any
+
 
 class BaseVisualizer:
     """Base class for all ZenML Visualizers."""
@@ -21,7 +24,8 @@ class BaseVisualizer:
         """Method to visualize objects."""
 ```
 
-The `object` can currently be a `StepView`, a `PipelineRunView` , or a `PipelineView`. (These are all different 
+The `object` can currently be a `StepView`, a `PipelineRunView` , or
+a `PipelineView`. (These are all different
 post-execution objects.)
 
 ## Examples of visualizations
@@ -60,6 +64,8 @@ It produces the following visualization:
 ### Distributions with [`whylogs`](https://github.com/whylabs/whylogs)
 
 ```python
+from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
+from zenml.repository import Repository
 repo = Repository()
 pipe = repo.get_pipelines()[-1]
 whylogs_outputs = pipe.runs[-1].get_step(name=step_name)
@@ -74,6 +80,7 @@ It produces the following visualization:
 
 ```python
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
+from zenml.repository import Repository
 
 repo = Repository()
 pipe = repo.get_pipelines()[-1]
