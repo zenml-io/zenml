@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
+import io
 from typing import Optional
 
 import click
+import yaml
 
+import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfiguration
@@ -687,15 +690,41 @@ def down_stack(force: bool = False) -> None:
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=True)
 def export_stack(stack_name: str, filename: str) -> None:
-    """"""
-    print(stack_name, filename)
-    pass
+    """Export a stack to YAML."""
+
+    # Get configuration of given stack
+    # TODO: code duplicate with describe()
+    repo = Repository()
+    stack_configurations = repo.stack_configurations
+    if len(stack_configurations) == 0:
+        cli_utils.warning("No stacks registered!")
+        return
+    try:
+        stack_configuration = stack_configurations[stack_name]
+    except KeyError:
+        cli_utils.error(f"Stack '{stack_name}' does not exist.")
+        return
+
+    # create a dict of all components in the specified stack
+    stack_data = {"name": stack_name}
+    for component_type, component_name in stack_configuration.items():
+        components = repo.get_stack_components(component_type)
+        for component in components:
+            if component.dict()["name"] == component_name:
+                component_dict = component.dict()
+                component_dict["type"] = component.TYPE
+                component_dict["flavor"] = component.FLAVOR
+                stack_data[str(component_type)] = component_dict
+
+    # write zenml version and stack dict to YAML
+    yaml_data = {"zenml_version": zenml.__version__, "stack": stack_data}
+    with io.open(filename, "w", encoding="utf8") as outfile:
+        yaml.dump(yaml_data, outfile)
 
 
 @stack.command("import")
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=True)
 def import_stack(stack_name: str, filename: str) -> None:
-    """"""
+    """Import a stack from YAML."""
     print(stack_name, filename)
-    pass
