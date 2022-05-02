@@ -681,3 +681,21 @@ def down_stack(force: bool = False) -> None:
             f"Suspending resources for active stack '{stack_.name}'."
         )
         stack_.suspend()
+
+
+@stack.command("export")
+@click.argument("stack_name", type=str, required=True)
+@click.argument("filename", type=str, required=True)
+def export_stack(stack_name: str, filename: str) -> None:
+    """"""
+    print(stack_name, filename)
+    pass
+
+
+@stack.command("import")
+@click.argument("stack_name", type=str, required=True)
+@click.argument("filename", type=str, required=True)
+def import_stack(stack_name: str, filename: str) -> None:
+    """"""
+    print(stack_name, filename)
+    pass
