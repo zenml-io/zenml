@@ -98,13 +98,15 @@ def register_secret(
 
     Args:
         secrets_manager: Stack component that implements the interface to the
-            underlying secrets engine
+        underlying secrets engine
         name: Name of the secret
         secret_schema_type: Type of the secret schema - make sure the schema of
-            choice is registered with the secret_schema_class_registry
+        choice is registered with the secret_schema_class_registry
         secret_key: Key of the secret key-value pair
         secret_value: Value of the secret Key-value pair
     """
+    # TODO [MEDIUM]: Formatting for `zenml secret register --help` currently
+    #  broken.
     # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
     #   additional option for the user on top of the interactive
     if not validate_kv_pairs(secret_key, secret_value):
@@ -332,7 +334,7 @@ def delete_all_secrets(
             secrets manager
     """
     confirmation_response = confirmation(
-        "This will delete all secrets and the `secrets.yaml` file. Are you sure you want to proceed?"
+        "This will delete all secrets. Are you sure you want to proceed?"
     )
     if not confirmation_response:
         console.print("Aborting secret set deletion...")

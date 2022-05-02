@@ -12,26 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The GCP integration submodule provides a way to run ZenML pipelines in a cloud
-environment. Specifically, it allows the use of cloud artifact stores, metadata
-stores, and an `io` module to handle file operations on Google Cloud Storage
-(GCS).
+The GCP integration submodule provides a way to access the gcp secrets manager
+from within you ZenML Pipeline runs.
 """
 
-from zenml.integrations.constants import GCP
+from zenml.integrations.constants import GCPSecretsManager
 from zenml.integrations.integration import Integration
 
 
-class GcpIntegration(Integration):
-    """Definition of Google Cloud Platform integration for ZenML."""
+class GcpSecretManagerIntegration(Integration):
+    """Definition of the Secrets Manager for the Google Cloud Platform
+    integration with ZenML."""
 
-    NAME = GCP
-    REQUIREMENTS = ["gcsfs"]
+    NAME = GCPSecretsManager
+    REQUIREMENTS = ["google-cloud-secret-manager"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.gcp import artifact_stores  # noqa
+        from zenml.integrations.gcp_secrets_manager import secrets_manager  # noqa
 
 
-GcpIntegration.check_installation()
+GcpSecretManagerIntegration.check_installation()
