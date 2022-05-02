@@ -11,7 +11,7 @@ Example input : `[["I love dogs"], ["I love cats"]]`
 
 If we set `n = 2`, the n-gram vectorizer will find the [bigrams](https://en.wikipedia.org/wiki/Bigram) `"I love"`, `"love dogs"`, and `"love cats"`
 
-Output : `[[1, 1, 0], [1, 0, 1]]`
+Output features : `[[1, 1, 0], [1, 0, 1]]`
 
 # 🖥 Run it locally
 
