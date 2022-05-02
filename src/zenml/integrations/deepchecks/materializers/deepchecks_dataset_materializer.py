@@ -14,7 +14,7 @@
 
 from typing import Any, Type
 
-from deepchecks import Dataset
+from deepchecks.tabular import Dataset
 
 from zenml.artifacts import DataArtifact
 from zenml.materializers.base_materializer import BaseMaterializer

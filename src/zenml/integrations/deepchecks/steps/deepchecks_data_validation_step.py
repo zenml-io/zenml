@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 
 import pandas as pd
-from deepchecks import Dataset
 from deepchecks.core import SuiteResult
+from deepchecks.tabular import Dataset
 
 from zenml.artifacts import DataAnalysisArtifact
 from zenml.steps.step_interfaces.base_drift_detection_step import (

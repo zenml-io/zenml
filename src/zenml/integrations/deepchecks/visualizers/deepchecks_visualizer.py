@@ -17,6 +17,8 @@ import webbrowser
 from abc import abstractmethod
 from typing import Any
 
+from deepchecks.core import SuiteResult
+
 from zenml.artifacts import DataAnalysisArtifact
 from zenml.environment import Environment
 from zenml.logger import get_logger
@@ -31,26 +33,30 @@ class DeepchecksVisualizer(BaseStepVisualizer):
 
     @abstractmethod
     def visualize(self, object: StepView, *args: Any, **kwargs: Any) -> None:
-        """Method to visualize components
+        """Method to visualize components.
 
         Args:
             object: StepView fetched from run.get_step().
         """
         for artifact_view in object.outputs.values():
             # filter out anything but data analysis artifacts
-            if (
-                artifact_view.type == DataAnalysisArtifact.__name__
-                and artifact_view.data_type == "builtins.str"
-            ):
+            if artifact_view.type == DataAnalysisArtifact.__name__:
                 artifact = artifact_view.read()
-                self.generate_facet(artifact)
+                self.generate_report(artifact)
 
-    def generate_facet(self, html_: str) -> None:
-        """Generate a Facet Overview
+    def generate_report(self, result: SuiteResult) -> None:
+        """Generate a Deepchecks Report.
 
         Args:
-            html_: HTML represented as a string.
+            result: A SuiteResult.
         """
+        print(result)
+        with tempfile.NamedTemporaryFile(
+            mode="w", delete=False, suffix=".html", encoding="utf-8"
+        ) as f:
+            result.save_as_html(f)
+            html_ = f.read()
+
         if Environment.in_notebook():
             from IPython.core.display import HTML, display
 
@@ -59,10 +65,6 @@ class DeepchecksVisualizer(BaseStepVisualizer):
             logger.warning(
                 "The magic functions are only usable in a Jupyter notebook."
             )
-            with tempfile.NamedTemporaryFile(
-                mode="w", delete=False, suffix=".html", encoding="utf-8"
-            ) as f:
-                f.write(html_)
-                url = f"file:///{f.name}"
-                logger.info("Opening %s in a new browser.." % f.name)
-                webbrowser.open(url, new=2)
+            url = f"file:///{f.name}"
+            logger.info("Opening %s in a new browser.." % f.name)
+            webbrowser.open(url, new=2)
