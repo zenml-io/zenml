@@ -10,8 +10,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-
 import pandas as pd
 from deepchecks.core import SuiteResult
 from deepchecks.tabular import Dataset
@@ -20,7 +18,7 @@ from deepchecks.tabular.suites import full_suite
 from rich import print
 from sklearn.model_selection import train_test_split
 
-from zenml.integrations.constants import EVIDENTLY, SKLEARN
+from zenml.integrations.constants import DEEPCHECKS, SKLEARN
 from zenml.integrations.deepchecks.visualizers import DeepchecksVisualizer
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
@@ -61,7 +59,7 @@ def post_validation(result: SuiteResult) -> None:
     result.save_as_html()
 
 
-@pipeline(required_integrations=[EVIDENTLY, SKLEARN])
+@pipeline(required_integrations=[DEEPCHECKS, SKLEARN])
 def data_validation_pipeline(
     data_loader,
     data_validator,
