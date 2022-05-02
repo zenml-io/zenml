@@ -16,9 +16,8 @@ import os
 import tempfile
 from typing import Any, Type
 
-import lightgbm as lgb
-
-from zenml.artifacts import ModelArtifact
+from deepchecks.core import SuiteResult, CheckResult
+from zenml.artifacts import DataAnalysisArtifact
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
@@ -28,10 +27,10 @@ DEFAULT_FILENAME = "model.txt"
 class DeepchecksResultMaterializer(BaseMaterializer):
     """Materializer to read data to and from lightgbm.Booster."""
 
-    ASSOCIATED_TYPES = (lgb.Booster,)
-    ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
+    ASSOCIATED_TYPES = (CheckResult,)
+    ASSOCIATED_ARTIFACT_TYPES = (DataAnalysisArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> lgb.Booster:
+    def handle_input(self, data_type: Type[Any]) -> CheckResult:
         """Reads a lightgbm Booster model from a serialized JSON file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
@@ -42,21 +41,23 @@ class DeepchecksResultMaterializer(BaseMaterializer):
 
         # Copy from artifact store to temporary file
         fileio.copy(filepath, temp_file)
-        booster = lgb.Booster(model_file=temp_file)
+        booster = CheckResult(model_file=temp_file)
 
         # Cleanup and return
         fileio.rmtree(temp_dir)
         return booster
 
-    def handle_return(self, booster: lgb.Booster) -> None:
+    def handle_return(self, result: SuiteResult) -> None:
         """Creates a JSON serialization for a lightgbm Booster model.
 
         Args:
-            booster: A lightgbm Booster model.
+            result: A lightgbm Booster model.
         """
-        super().handle_return(booster)
+        super().handle_return(result)
 
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+
+        result.to_json(False)
 
         # Make a temporary phantom artifact
         with tempfile.NamedTemporaryFile(

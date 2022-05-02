@@ -16,7 +16,7 @@ import os
 import tempfile
 from typing import Any, Type
 
-import lightgbm as lgb
+from deepchecks import Dataset
 
 from zenml.artifacts import DataArtifact
 from zenml.io import fileio
@@ -28,10 +28,10 @@ DEFAULT_FILENAME = "data.binary"
 class DeepchecksDatasetMaterializer(BaseMaterializer):
     """Materializer to read data to and from lightgbm.Dataset"""
 
-    ASSOCIATED_TYPES = (lgb.Dataset,)
+    ASSOCIATED_TYPES = (Dataset,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> lgb.Dataset:
+    def handle_input(self, data_type: Type[Any]) -> Dataset:
         """Reads a lightgbm.Dataset binary file and loads it."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
@@ -42,12 +42,12 @@ class DeepchecksDatasetMaterializer(BaseMaterializer):
 
         # Copy from artifact store to temporary file
         fileio.copy(filepath, temp_file)
-        matrix = lgb.Dataset(temp_file, free_raw_data=False)
+        matrix = Dataset(temp_file, free_raw_data=False)
 
         # No clean up this time because matrix is lazy loaded
         return matrix
 
-    def handle_return(self, matrix: lgb.Dataset) -> None:
+    def handle_return(self, matrix: Dataset) -> None:
         """Creates a binary serialization for a lightgbm.Dataset object.
 
         Args:
