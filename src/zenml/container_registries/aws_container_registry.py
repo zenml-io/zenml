@@ -34,8 +34,10 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
     @validator("uri")
     def validate_aws_uri(cls, uri: str) -> None:
-        example_message = "An example of a valid URI is: " \
-                          "`715803424592.dkr.ecr.us-east-1.amazonaws.com`"
+        example_message = (
+            "An example of a valid URI is: "
+            "`715803424592.dkr.ecr.us-east-1.amazonaws.com`"
+        )
         base_error = "Property `uri` is invalid."
 
         if uri.endswith("/"):
