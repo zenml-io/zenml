@@ -28,6 +28,9 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.repository import Repository
 from zenml.stack import Stack
+from zenml.stack.stack_component_class_registry import (
+    StackComponentClassRegistry,
+)
 
 
 # Stacks
@@ -123,6 +126,33 @@ def register_stack(
     experiment_tracker_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
+    _register_stack(
+        stack_name=stack_name,
+        metadata_store_name=metadata_store_name,
+        artifact_store_name=artifact_store_name,
+        orchestrator_name=orchestrator_name,
+        container_registry_name=container_registry_name,
+        secrets_manager_name=secrets_manager_name,
+        step_operator_name=step_operator_name,
+        feature_store_name=feature_store_name,
+        model_deployer_name=model_deployer_name,
+        experiment_tracker_name=experiment_tracker_name,
+    )
+
+
+def _register_stack(
+    stack_name: str,
+    metadata_store_name: str,
+    artifact_store_name: str,
+    orchestrator_name: str,
+    container_registry_name: Optional[str] = None,
+    secrets_manager_name: Optional[str] = None,
+    step_operator_name: Optional[str] = None,
+    feature_store_name: Optional[str] = None,
+    model_deployer_name: Optional[str] = None,
+    experiment_tracker_name: Optional[str] = None,
+) -> None:
+    """TODO: refactor"""
     cli_utils.print_active_profile()
 
     with console.status(f"Registering stack '{stack_name}'...\n"):
@@ -706,18 +736,25 @@ def export_stack(stack_name: str, filename: str) -> None:
         return
 
     # create a dict of all components in the specified stack
-    stack_data = {"name": stack_name}
+    component_data = {}
     for component_type, component_name in stack_configuration.items():
         components = repo.get_stack_components(component_type)
         for component in components:
             if component.dict()["name"] == component_name:
-                component_dict = component.dict()
-                component_dict["type"] = component.TYPE
+                component_dict = {
+                    key: value
+                    for key, value in component.dict().items()
+                    if key != "uuid" and value is not None
+                }
                 component_dict["flavor"] = component.FLAVOR
-                stack_data[str(component_type)] = component_dict
+                component_data[str(component_type)] = component_dict
 
     # write zenml version and stack dict to YAML
-    yaml_data = {"zenml_version": zenml.__version__, "stack": stack_data}
+    yaml_data = {
+        "zenml_version": zenml.__version__,
+        "stack_name": stack_name,
+        "components": component_data,
+    }
     with io.open(filename, "w", encoding="utf8") as outfile:
         yaml.dump(yaml_data, outfile)
 
@@ -727,4 +764,27 @@ def export_stack(stack_name: str, filename: str) -> None:
 @click.argument("filename", type=str, required=True)
 def import_stack(stack_name: str, filename: str) -> None:
     """Import a stack from YAML."""
-    print(stack_name, filename)
+    with open(filename, "r") as yaml_file:
+        data = yaml.safe_load(yaml_file)
+
+    # assert zenml version is the same
+    if data["zenml_version"] != zenml.__version__:
+        cli_utils.error(
+            f"Cannot import stacks from other ZenML versions. "
+            f"The stack was created using ZenML version {data['zenml_version']}, "
+            f"you have version {zenml.__version__} installed."
+        )
+        return
+
+    # register components and stack
+    component_names = {}
+    for component_type, component_config in data["components"].items():
+        component_names[component_type + "_name"] = component_config["name"]
+        # TODO: code duplicate from generate_stack_component_register_command.
+        component_class = StackComponentClassRegistry.get_class(
+            component_type=component_type,
+            component_flavor=component_config["flavor"],
+        )
+        component = component_class(**component_config)  # unused kwargs ignored
+        Repository().register_stack_component(component)
+    _register_stack(stack_name=stack_name, **component_names)
