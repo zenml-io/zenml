@@ -51,7 +51,7 @@ zenml analytics opt-out
 
 zenml_go_thank_you_message = Markdown(
     """
-🙏  Thank You!
+🙏  Thank you!
 """
 )
 
