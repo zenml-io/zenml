@@ -21,15 +21,13 @@ import click
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
+from zenml.cli.stack_components import _register_stack_component
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.repository import Repository
 from zenml.stack import Stack
-from zenml.stack.stack_component_class_registry import (
-    StackComponentClassRegistry,
-)
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 
@@ -768,12 +766,14 @@ def import_stack(
     # register components and stack
     component_names = {}
     for component_type, component_config in data["components"].items():
-        component_names[component_type + "_name"] = component_config["name"]
-        # TODO: code duplicate from generate_stack_component_register_command.
-        component_class = StackComponentClassRegistry.get_class(
+        component_name = component_config.pop("name")
+        component_flavor = component_config.pop("flavor")
+        _register_stack_component(
             component_type=component_type,
-            component_flavor=component_config["flavor"],
+            component_name=component_name,
+            component_flavor=component_flavor,
+            **component_config,
         )
-        component = component_class(**component_config)  # unused kwargs ignored
-        Repository().register_stack_component(component)
+        component_names[component_type + "_name"] = component_name
+
     ctx.invoke(register_stack, stack_name=stack_name, **component_names)
