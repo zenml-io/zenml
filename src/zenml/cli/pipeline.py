@@ -14,7 +14,7 @@
 """CLI to interact with pipelines."""
 import textwrap
 import types
-from typing import Any, Union
+from typing import Any, Dict, Union
 
 import click
 
@@ -31,7 +31,9 @@ from zenml.utils import source_utils, yaml_utils
 logger = get_logger(__name__)
 
 
-def _get_module(module: types.ModuleType, config_item: Union[str, dict]):
+def _get_module(
+    module: types.ModuleType, config_item: Union[str, Dict[str, str]]
+) -> Any:
     """Based on a config item from the config yaml the corresponding module
     attribute is loaded.
 
