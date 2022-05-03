@@ -27,12 +27,12 @@ Setting to `true` switches to developer mode:
 ZENML_DEBUG=false
 ```
 
-When `true`, This prevents a pipeline from executing:
+When `true`, this prevents a pipeline from executing:
 ```bash
 ZENML_PREVENT_PIPELINE_EXECUTION=false
 ```
 
-Set to `false` to disable the rich traceback:
+Set to `false` to disable the [`rich`](https://github.com/Textualize/rich) traceback:
 ```bash
 ZENML_ENABLE_RICH_TRACEBACK=true
 ```
