@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI to interact with pipelines."""
+import os.path
+import sys
 import textwrap
 import types
 from typing import Any, Dict, Union
@@ -61,8 +63,7 @@ def _load_class_from_module(
         correct_input = textwrap.dedent(f"""
         {SourceConfigurationKeys.NAME_}: {config_item}
         {SourceConfigurationKeys.FILE_}: optional/filepath.py
-        """
-        )
+        """)
 
         raise PipelineConfigurationError(
             "As of ZenML version 0.8.0 `str` entries are no longer supported "
@@ -143,6 +144,11 @@ def run_pipeline(python_file: str, config_path: str) -> None:
         python_file: Path to the python file that defines the pipeline.
         config_path: Path to configuration YAML file.
     """
+    # If the file was run with `python run.py, this would happen automatically,
+    #  In order to allow seamless switching between running directly and through
+    #  zenml, this is done at this point
+    sys.path.insert(0, os.path.abspath(os.path.dirname(python_file)))
+
     module = source_utils.import_python_file(python_file)
     config = yaml_utils.read_yaml(config_path)
     PipelineConfigurationKeys.key_check(config)
