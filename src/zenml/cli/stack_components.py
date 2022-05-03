@@ -253,9 +253,11 @@ def generate_stack_component_register_command(
             # flavor to give out a warning
             if flavor in zenml_flavors:
                 cli_utils.warning(
-                    f"There is a custom implementation for the flavor "
-                    f"'{flavor}' of a {component_type}, which is currently "
-                    f"overwriting the same flavor provided by ZenML."
+                    f"The flavor that you are currently using "
+                    f"'{flavor_wrapper.name}' is overwriting the a flavor with "
+                    f"the same which is provided by ZenML. This could lead "
+                    f"to an unexpected behavior and should be avoided if "
+                    f"possible."
                 )
 
         except KeyError:
@@ -285,10 +287,15 @@ def generate_stack_component_register_command(
                 )
             else:
                 cli_utils.error(
-                    f"The custom flavor '{flavor_wrapper.name}' can not be "
-                    f"used as it can not be imported in its current state. "
-                    f"Please make sure that the implementation is in a state "
-                    f"which can be imported as a module."
+                    f"The {component_type} that you are trying to register has "
+                    f"a custom flavor '{flavor_wrapper.name}'. In order to "
+                    f"register it, ZenML needs to be able to import the flavor "
+                    f"through its source which is defined as: "
+                    f"{flavor_wrapper.source}. Unfortunately, this is not "
+                    f"possible due to the current set of available modules/"
+                    f"working directory. Please make sure that this execution "
+                    f"is carried out in an environment where this source "
+                    f"is reachable as a module."
                 )
 
     return register_stack_component_command
@@ -407,10 +414,11 @@ def generate_stack_component_update_command(
                 # default flavor to give out a warning
                 if current_component.FLAVOR in zenml_flavors:
                     cli_utils.warning(
-                        f"There is a custom implementation for the flavor "
-                        f"'{current_component.FLAVOR}' of a {component_type}, "
-                        f"which is currently overwriting the same flavor "
-                        f"provided by ZenML."
+                        f"The flavor that you are currently using "
+                        f"'{flavor_wrapper.name}' is overwriting the a flavor with "
+                        f"the same which is provided by ZenML. This could lead "
+                        f"to an unexpected behavior and should be avoided if "
+                        f"possible."
                     )
 
             except KeyError:
@@ -436,10 +444,16 @@ def generate_stack_component_update_command(
                     )
                 else:
                     cli_utils.error(
-                        f"The custom flavor '{flavor_wrapper.name}' can not be "
-                        f"used as it can not be imported in its current state. "
-                        f"Please make sure that the implementation is in a "
-                        f"state which can be imported as a module."
+                        f"The {component_type} that you are trying to register "
+                        f"has a custom flavor '{flavor_wrapper.name}'. In "
+                        f"order to register it, ZenML needs to be able to "
+                        f"import the flavor through its source which is "
+                        f"defined as: {flavor_wrapper.source}. Unfortunately, "
+                        f"this is not possible due to the current set of "
+                        f"available modules/working directory. Please make "
+                        f"sure that this execution is carried out in an "
+                        f"environment where this source is reachable as a "
+                        f"module."
                     )
 
             available_properties = _get_available_properties(component_class)
