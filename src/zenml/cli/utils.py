@@ -22,7 +22,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    Type,
     Union,
 )
 
@@ -43,8 +42,8 @@ from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService
 from zenml.services.service_status import ServiceState
 from zenml.stack import StackComponent
-from zenml.utils.source_utils import load_source_path_class
 from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
+from zenml.zen_stores.models.flavor_wrapper import validate_flavor_source
 
 logger = get_logger(__name__)
 
@@ -465,31 +464,6 @@ def print_secrets(secrets: List[str]) -> None:
         rich_table.add_row(item)
 
     console.print(rich_table)
-
-
-def validate_flavor_source(
-    source: str, component_type: StackComponentType
-) -> Type[StackComponent]:
-    """Utility function to import a StackComponent class from a given source
-    and validate its type.
-
-    Args:
-        source: source path of the implementation
-        component_type: the type of the stack component
-    """
-    stack_component_class = load_source_path_class(source)
-    if not issubclass(stack_component_class, StackComponent):
-        raise TypeError(
-            f"The source '{source}' does not point to a subclass of the ZenML"
-            f"StackComponent."
-        )
-
-    if stack_component_class.TYPE != component_type:  # noqa
-        raise TypeError(
-            f"The source points to a {stack_component_class.TYPE}, not a "  # noqa
-            f"{component_type}."
-        )
-    return stack_component_class  # noqa
 
 
 def get_service_status_emoji(service: BaseService) -> str:

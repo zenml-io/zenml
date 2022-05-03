@@ -20,6 +20,32 @@ from zenml.stack.stack_component import StackComponent
 from zenml.utils.source_utils import load_source_path_class
 
 
+def validate_flavor_source(
+    source: str, component_type: StackComponentType
+) -> Type[StackComponent]:
+    """Utility function to import a StackComponent class from a given source
+    and validate its type.
+
+    Args:
+        source: source path of the implementation
+        component_type: the type of the stack component
+    """
+    stack_component_class = load_source_path_class(source)
+    if not issubclass(stack_component_class, StackComponent):
+        raise TypeError(
+            f"The source '{source}' does not point to a subclass of the ZenML"
+            f"StackComponent."
+        )
+
+    if stack_component_class.TYPE != component_type:  # noqa
+        raise TypeError(
+            f"The source points to a {stack_component_class.TYPE}, not a "  # noqa
+            f"{component_type}."
+        )
+
+    return stack_component_class  # noqa
+
+
 class FlavorWrapper(BaseModel):
     """Network serializable wrapper representing the custom implementation of
     a stack component flavor."""
@@ -28,6 +54,27 @@ class FlavorWrapper(BaseModel):
     integration: str = ""
     type: StackComponentType
     source: str
+
+    @property
+    def reachable(self) -> bool:
+        from zenml.integrations.registry import integration_registry
+
+        if self.integration:
+            if self.integration == "built-in":
+                return True
+            else:
+                return integration_registry.is_installed(self.integration)
+
+        else:
+            try:
+                validate_flavor_source(
+                    source=self.source, component_type=self.type
+                )
+                return True
+            except (AssertionError, ModuleNotFoundError, ImportError):
+                pass
+
+            return False
 
     @classmethod
     def from_flavor(cls, flavor: Type[StackComponent]) -> "FlavorWrapper":

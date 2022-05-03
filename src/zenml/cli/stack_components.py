@@ -27,6 +27,7 @@ from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
+from zenml.zen_stores.models.flavor_wrapper import validate_flavor_source
 
 
 def _get_required_properties(
@@ -107,7 +108,8 @@ def generate_stack_component_get_command(
             cli_utils.declare(f"Active {display_name}: '{component.name}'")
         else:
             cli_utils.warning(
-                f"No {display_name} set for active stack ('{active_stack.name}')."
+                f"No {display_name} set for active stack "
+                f"('{active_stack.name}')."
             )
 
     return get_stack_component_command
@@ -316,7 +318,7 @@ def generate_stack_component_flavor_register_command(
         cli_utils.print_active_profile()
 
         # Check whether the module exists and is the right type
-        component_class = cli_utils.validate_flavor_source(
+        component_class = validate_flavor_source(
             source=source, component_type=component_type
         )
 
@@ -392,7 +394,8 @@ def generate_stack_component_update_command(
             for prop in MANDATORY_COMPONENT_PROPERTIES:
                 if prop in parsed_args:
                     cli_utils.error(
-                        f"Cannot update mandatory property '{prop}' of '{name}' {current_component.TYPE}. "
+                        f"Cannot update mandatory property '{prop}' of "
+                        f"'{name}' {current_component.TYPE}. "
                     )
 
             from zenml.stack.registry import flavor_registry
@@ -415,10 +418,10 @@ def generate_stack_component_update_command(
                 if current_component.FLAVOR in zenml_flavors:
                     cli_utils.warning(
                         f"The flavor that you are currently using "
-                        f"'{flavor_wrapper.name}' is overwriting the a flavor with "
-                        f"the same which is provided by ZenML. This could lead "
-                        f"to an unexpected behavior and should be avoided if "
-                        f"possible."
+                        f"'{flavor_wrapper.name}' is overwriting the a flavor "
+                        f"with the same which is provided by ZenML. This "
+                        f"could lead to an unexpected behavior and should be "
+                        f"avoided if possible."
                     )
 
             except KeyError:
@@ -518,7 +521,10 @@ def generate_stack_component_rename_command(
             }
             if new_name in registered_components:
                 cli_utils.error(
-                    f"Unable to rename '{name}' {display_name} to '{new_name}': \nA component of type '{display_name}' with the name '{new_name}' already exists. \nPlease choose a different name."
+                    f"Unable to rename '{name}' {display_name} to "
+                    f"'{new_name}': \nA component of type '{display_name}' "
+                    f"with the name '{new_name}' already exists. \nPlease "
+                    f"choose a different name."
                 )
 
             renamed_component = current_component.copy(
@@ -636,8 +642,8 @@ def generate_stack_component_down_command(
                     cli_utils.error(
                         f"Provisioning local resources not implemented for "
                         f"{display_name} '{component.name}'. If you want to "
-                        f"deprovision all resources for this component, use the "
-                        f"`--force/-f` flag."
+                        f"deprovision all resources for this component, use "
+                        f"the `--force/-f` flag."
                     )
             else:
                 cli_utils.declare(
@@ -829,14 +835,16 @@ def register_single_stack_component_cli_commands(
     up_command = generate_stack_component_up_command(component_type)
     command_group.command(
         "up",
-        help=f"Provisions or resumes local resources for the {singular_display_name} if possible.",
+        help=f"Provisions or resumes local resources for the "
+        f"{singular_display_name} if possible.",
     )(up_command)
 
     # zenml stack-component down
     down_command = generate_stack_component_down_command(component_type)
     command_group.command(
         "down",
-        help=f"Suspends resources of the local {singular_display_name} deployment.",
+        help=f"Suspends resources of the local {singular_display_name} "
+        f"deployment.",
     )(down_command)
 
     # zenml stack-component logs
