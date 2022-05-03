@@ -154,43 +154,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
         combined_steps = {}
         step_classes: Dict[Type[BaseStep], str] = {}
 
-        for i, step in enumerate(steps):
+        def _verify_step(key: str, step: BaseStep) -> None:
+            """Verifies a single step of the pipeline."""
             step_class = type(step)
-            key = input_step_keys[i]
-
-            if not isinstance(step, BaseStep):
-                raise PipelineInterfaceError(
-                    f"Wrong argument type (`{step_class}`) for positional "
-                    f"argument {i} of pipeline '{self.name}'. Only "
-                    f"`@step` decorated functions or instances of `BaseStep` "
-                    f"subclasses can be used as arguments when creating "
-                    f"a pipeline."
-                )
-
-            if step_class in step_classes:
-                previous_key = step_classes[step_class]
-                raise PipelineInterfaceError(
-                    f"Found multiple step objects of the same class "
-                    f"(`{step_class}`) for arguments '{previous_key}' and "
-                    f"'{key}' in pipeline '{self.name}'. Only one step object "
-                    f"per class is allowed inside a ZenML pipeline."
-                )
-
-            step.pipeline_parameter_name = key
-            combined_steps[key] = step
-            step_classes[step_class] = key
-
-        for key, step in kw_steps.items():
-            step_class = type(step)
-
-            if key in combined_steps:
-                # a step for this key was already set by
-                # the positional input steps
-                raise PipelineInterfaceError(
-                    f"Unexpected keyword argument '{key}' for pipeline "
-                    f"'{self.name}'. A step for this key was "
-                    f"already passed as a positional argument."
-                )
 
             if isinstance(step, BaseStepMeta):
                 raise PipelineInterfaceError(
@@ -223,6 +189,23 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step.pipeline_parameter_name = key
             combined_steps[key] = step
             step_classes[step_class] = key
+
+        # verify args
+        for i, step in enumerate(steps):
+            key = input_step_keys[i]
+            _verify_step(key, step)
+
+        # verify kwargs
+        for key, step in kw_steps.items():
+            if key in combined_steps:
+                # a step for this key was already set by
+                # the positional input steps
+                raise PipelineInterfaceError(
+                    f"Unexpected keyword argument '{key}' for pipeline "
+                    f"'{self.name}'. A step for this key was "
+                    f"already passed as a positional argument."
+                )
+            _verify_step(key, step)
 
         # check if there are any missing or unexpected steps
         expected_steps = set(self.STEP_SPEC.keys())
