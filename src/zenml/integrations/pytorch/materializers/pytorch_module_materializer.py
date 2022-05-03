@@ -26,7 +26,7 @@ DEFAULT_FILENAME = "entire_model.pt"
 CHECKPOINT_FILENAME = "checkpoint.pt"
 
 
-class PyTorchMaterializer(BaseMaterializer):
+class PyTorchModuleMaterializer(BaseMaterializer):
     """Materializer to read/write Pytorch models. Inspired by the guide:
     https://pytorch.org/tutorials/beginner/saving_loading_models.html"""
 

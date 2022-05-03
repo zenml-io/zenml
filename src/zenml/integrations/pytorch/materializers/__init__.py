@@ -14,6 +14,6 @@
 from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (  # noqa
     PyTorchDataLoaderMaterializer,
 )
-from zenml.integrations.pytorch.materializers.pytorch_materializer import (  # noqa
-    PyTorchMaterializer,
+from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (  # noqa
+    PyTorchModuleMaterializer,
 )
