@@ -690,18 +690,27 @@ def down_stack(force: bool = False) -> None:
 
 
 @stack.command("export")
-@click.argument("stack_name", type=str, required=True)
-@click.argument("filename", type=str, required=True)
-def export_stack(stack_name: str, filename: str) -> None:
+@click.argument("filename", type=str, required=False)
+@click.argument("stack_name", type=str, required=False)
+def export_stack(filename: Optional[str], stack_name: Optional[str]) -> None:
     """Export a stack to YAML."""
 
     # Get configuration of given stack
-    # TODO: code duplicate with describe()
+    # TODO: code duplicate with describe_stack()
     repo = Repository()
+
+    active_stack_name = repo.active_stack_name
+    stack_name = stack_name or active_stack_name
+
+    if not stack_name:
+        cli_utils.warning("No stack is set as active!")
+        return
+
     stack_configurations = repo.stack_configurations
     if len(stack_configurations) == 0:
         cli_utils.warning("No stacks registered!")
         return
+
     try:
         stack_configuration = stack_configurations[stack_name]
     except KeyError:
@@ -728,15 +737,19 @@ def export_stack(stack_name: str, filename: str) -> None:
         "stack_name": stack_name,
         "components": component_data,
     }
+    if filename is None:
+        filename = stack_name + ".yaml"
     with io.open(filename, "w", encoding="utf8") as outfile:
         yaml.dump(yaml_data, outfile)
 
 
 @stack.command("import")
-@click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=True)
+@click.argument("stack_name", type=str, required=False)
 @click.pass_context
-def import_stack(ctx: click.Context, stack_name: str, filename: str) -> None:
+def import_stack(
+    ctx: click.Context, filename: str, stack_name: Optional[str]
+) -> None:
     """Import a stack from YAML."""
     with open(filename, "r") as yaml_file:
         data = yaml.safe_load(yaml_file)
@@ -749,6 +762,10 @@ def import_stack(ctx: click.Context, stack_name: str, filename: str) -> None:
             f"you have version {zenml.__version__} installed."
         )
         return
+
+    # read stack_name from export if not given
+    if stack_name is None:
+        stack_name = data["stack_name"]
 
     # register components and stack
     component_names = {}
