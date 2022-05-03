@@ -1,5 +1,5 @@
 ---
-description: Create Steps, Build a Pipeline and Run it
+description: Create Steps, Build a Pipeline and Run it.
 ---
 
 # Steps & Pipelines

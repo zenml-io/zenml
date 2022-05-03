@@ -43,14 +43,14 @@ def secret_loader(
 
 @pipeline(required_integrations=[AWS])
 def secret_loading_pipeline(
-    data_loader,
+    secret_loader,
 ):
     """Define single step pipeline."""
-    data_loader()
+    secret_loader()
 
 
 if __name__ == "__main__":
     pipeline = secret_loading_pipeline(
-        data_loader=secret_loader(),
+        secret_loader=secret_loader(),
     )
     pipeline.run()

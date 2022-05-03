@@ -14,7 +14,7 @@
 
 [OPTIONALLY SHOW INTERESTING GRAPHICS OF WHAT OUTPUT TO EXPECT]
 
-[IN CASE OF HIGH COMPLEXITY A ARCHITECTURE DIAGRAM]
+[IN CASE OF HIGH COMPLEXITY AN ARCHITECTURE DIAGRAM]
 
 # ☁️ Run in Colab [ONLY IF A NOTEBOOK IS SUPPLIED]
 
@@ -24,9 +24,10 @@ THE PATH TO THE NOTEBOOK HERE])
 
 # 🖥 Run it locally
 
-## ⏩ SuperQuick `EXAMPLE_NAME` run
+## ⏩ SuperQuick `[EXAMPLE_NAME]` run
+[ONLY ADD THIS SECTION IF A setup.sh FILE PRESENT FOR THE EXAMPLE]
 
-If you're really in a hurry, and you want just to see this example pipeline run,
+If you're really in a hurry and just want to see this example pipeline run
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
@@ -73,7 +74,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the [NAME OF THE INTEGRATION] integration can be found [here](TODO: Link to docs).
+Our docs regarding the [NAME OF THE INTEGRATION] integration can be found [here]([LINK TO THE DOCS]).
 
 If you want to learn more about [EXAMPLE_TYPE] in general or about how to build your own [TYPE OF THE INTEGRATION] in zenml
-check out our [docs](TODO: Link to docs)
+check out our [docs]([LINK TO THE DOCS])

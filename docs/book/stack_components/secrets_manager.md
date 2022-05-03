@@ -9,7 +9,7 @@ manager and an integration with the managed `AWS Secrets Manager`.
 
 ## CLI
 
-Check out the CLI commands concerning the artifact store
+Check out the CLI commands concerning the secrets manager
 [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--setting-up-a-secrets-manager).
 
 ## Implementations 

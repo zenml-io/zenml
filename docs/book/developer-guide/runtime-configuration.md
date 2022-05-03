@@ -1,5 +1,5 @@
 ---
-description: Configure Step and Pipeline Parameters for Each Run
+description: Configure Step and Pipeline Parameters for Each Run.
 ---
 
 # Runtime Configuration
@@ -74,7 +74,7 @@ first_pipeline(step_1=my_first_step(),
 ## Run from CLI
 
 In case you want to have control to configure and run your pipeline from outside your code. For this you can use the 
-ZenML commandline argument:
+ZenML command line argument:
 
 ```shell
 zenml pipeline run <NAME-OF-PYTHONFILE> -c <NAME-OF-CONFIG-YAML-FILE>
@@ -125,8 +125,8 @@ In total the step functions can be supplied with 3 arguments here:
 * materializers - dict of output_name and corresponding Materializer (Materializer needs to be in the run.py file)
 
 {% hint style="info" %}
-Materializers are responsible for reading and writing, you'll learn more about Materializers in a later 
-[section](materializer.md).
+Materializers are responsible for reading and writing. You can learn more about Materializers in the 
+[materializer section](materializer.md).
 {% endhint %}
 
 

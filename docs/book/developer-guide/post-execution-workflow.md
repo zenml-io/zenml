@@ -1,5 +1,5 @@
 ---
-description: Inspect a Finished Pipeline Run
+description: Inspect a Finished Pipeline Run.
 ---
 
 # Post Execution Workflow
@@ -84,15 +84,15 @@ print(step.entrypoint_name)
 ```
 
 The steps are ordered by time of execution. Depending on the 
-[orchestrator](../introduction/core-concepts.md#orchestrator) steps can be run in parallel. As such accessing steps by 
+[orchestrator](../introduction/core-concepts.md#orchestrator), steps can be run in parallel. As such, accessing steps by 
 index can be unreliable across different runs. Instead, it makes sense to access steps by their name.
 
 ```python
 run.get_step(name=...)
 ```
 
-The step name is the name of the decorated function (or the Step class in case of the 
-[Class Based API](class-based-api.md)).
+The step name is the name of the decorated function (or the `Step` class in case of the 
+[class-based API](class-based-api.md)).
 
 ```python
 from zenml.steps import step
@@ -118,7 +118,7 @@ output = step.output
 output.read()  
 ```
 
-The names of the outputs can be found in the Output typing for your steps:
+The names of the outputs can be found in the `Output` typing for your steps:
 
 ```python
 from zenml.steps import step, Output

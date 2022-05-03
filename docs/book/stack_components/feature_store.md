@@ -8,7 +8,7 @@ within a team or wider organization.
 
 ## CLI
 
-Check out the CLI commands concerning the artifact store
+Check out the CLI commands concerning the feature store
 [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--add-a-feature-store-to-your-stack).
 
 

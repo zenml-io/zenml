@@ -1,5 +1,5 @@
 ---
-description: ZenML pipelines are fully-aware of external, longer-lived services.
+description: ZenML pipelines are fully aware of external, longer-lived services.
 ---
 
 # Interact with external services

@@ -7,7 +7,7 @@ orchestrator can be used to great effect to scale jobs in production.
 
 ## CLI
 
-Check out the CLI commands concerning the artifact store
+Check out the CLI commands concerning the orchestrator
 [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--customizing-your-orchestrator).
 
 ## Implementations 
