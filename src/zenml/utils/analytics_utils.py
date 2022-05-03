@@ -50,7 +50,7 @@ class AnalyticsEvent(str, Enum):
     OPT_OUT_ANALYTICS = "Analytics opt-out"
 
     # Examples
-    RUN_ZENML_GO = "Zenml go"
+    RUN_ZENML_GO = "ZenML go"
     RUN_EXAMPLE = "Example run"
     PULL_EXAMPLE = "Example pull"
 

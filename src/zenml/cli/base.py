@@ -38,6 +38,8 @@ from zenml.utils.analytics_utils import identify_user
 # exists, we are on the latest Windows Terminal that supports emojis
 _SHOW_EMOJIS = not os.name == "nt" or os.environ.get("WT_SESSION")
 
+TUTORIAL_REPO = "https://github.com/zenml-io/zenbytes"
+
 
 @cli.command("init", help="Initialize a ZenML repository.")
 @click.option(
@@ -110,7 +112,7 @@ def go() -> None:
 
     if not os.path.isdir("zenml_tutorial"):
         Repo.clone_from(
-            "https://github.com/zenml-io/zenbytes", "zenml_tutorial"
+            TUTORIAL_REPO, "zenml_tutorial"
         )
 
     cwd = os.getcwd()
