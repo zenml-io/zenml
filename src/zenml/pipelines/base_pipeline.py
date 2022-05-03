@@ -162,9 +162,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 raise PipelineInterfaceError(
                     f"Wrong argument type (`{step_class}`) for argument "
                     f"'{key}' of pipeline '{self.name}'. "
-                    f"A `BaseStep` subclass was provided instead of an instance. "
-                    f"This might have been caused by missing brackets when "
-                    f"creating a pipeline with `@step` decorated functions, "
+                    f"A `BaseStep` subclass was provided instead of an "
+                    f"instance. "
+                    f"This might have been caused due to missing brackets of "
+                    f"your steps when creating a pipeline with `@step` "
+                    f"decorated functions, "
                     f"for which the correct syntax is `pipeline(step=step())`."
                 )
 
