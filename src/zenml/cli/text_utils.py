@@ -64,7 +64,7 @@ def zenml_go_notebook_tutorial_message(ipynb_files: List[str]) -> Markdown:
 ## 🧑‍🏫 Get started with ZenML
 
 The ZenML tutorial repository was cloned to your current working directory.
-Within the repository you can get started on one of these Notebooks:
+Within the repository you can get started on one of these notebooks:
 {''.join(ipynb_files)}
 Starting a jupyter notebook server now. Feel free to try your hand at our
 tutorial notebooks. If your browser does not open automatically click one of the
