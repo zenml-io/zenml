@@ -18,13 +18,13 @@
 
 # ☁️ Run in Colab [ONLY IF A NOTEBOOK IS SUPPLIED]
 
-If you have a google account, you can get started directly with google colab
+If you have a Google account, you can get started directly with Google Colab
 - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/main/examples/[INSERT
 THE PATH TO THE NOTEBOOK HERE])
 
 # 🖥 Run it locally
 
-## ⏩ SuperQuick `evidently` run
+## ⏩ SuperQuick `EXAMPLE_NAME` run
 
 If you're really in a hurry, and you want just to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
@@ -75,5 +75,5 @@ rm -rf zenml_examples
 
 Our docs regarding the [NAME OF THE INTEGRATION] integration can be found [here](TODO: Link to docs).
 
-If you want to learn more about visualizers in general or about how to build your own [TYPE OF THE INTEGRATION] in zenml
+If you want to learn more about [EXAMPLE_TYPE] in general or about how to build your own [TYPE OF THE INTEGRATION] in zenml
 check out our [docs](TODO: Link to docs)

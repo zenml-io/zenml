@@ -4,19 +4,20 @@
 
 - First touchpoint for the user with the integration
 - Location for copy-pasting integration specific code
-- Integration Test
-- Place for us to play around during development of addtl. features
+- Integration test
+- Place for us to play around during development of additional features
 
 ##  📝 Write the Example
 
 ![KISS](assets/KISS.png)
 
-In keeping with the goal of examples, remember to keep it simple. Avoid unnecessary dependencies, unnecessary 
-configuration parameters and unnecessary code complexity in general.
+Remember to keep it simple. That's what we're going for with these examples.
+Avoid unnecessary dependencies, unnecessary configuration parameters and
+unnecessary code complexity in general.
 
 ### 🖼 This is what a minimal example could look like
 
-This is example stays as simple as possible, while showing how to create a custom materializer. We have a minimal Object
+This way the example stays as simple as possible, while showing how to create a custom materializer. We have a minimal object
 to materialize, we have a minimal pipeline that shows a step that produces this object and a step that consumes the 
 object.
 
@@ -71,24 +72,24 @@ if __name__ == "__main__":
 
 ## 📰 Write the Readme
 
-[Here](template_README.md) is a template, make sure to replace everything in square brackets. Depending on your specific
-example feel free to add or remove sections where applicable.
+[Here](template_README.md) is a template. Make sure to replace everything in square brackets. Depending on your specific
+example feel free to add or remove sections where appropriate.
 
 ## (Optional) Create a requirements.txt
 
-In case your example has python requirements that are not ZenML integrations you can also add a requirements.txt 
+In case your example has Python requirements that are not ZenML integrations you can also add a `requirements.txt` 
 file with these packages.
 
 ## ⚙️ (Optional) Create setup.sh
 
-The setup.sh file is necessary to support example run cli command. Within the setup.sh file you'll need to define what 
+The `setup.sh` file is necessary to support the `example run cli` command. Within the `setup.sh` file you'll need to define what 
 ZenML integrations need to be installed. Find the template [here](template_setup.sh). In case your example needs more 
-user specific setup, like a tool specific account or system requirement, you **should not** create a setup.sh. In this
+user-specific setup, like a tool, specific account or system requirement, you **should not** create a setup.sh. In this
 case the `zenml example run <EXAMPLE NAME>` won't be supported.
 
 ### 🧪 Test ZenML Example CLI
 
-Our example cli commands serve as a super quick entrypoint for users. As such it is important to make sure your new 
+Our `example` CLI commands serve as a super quick entrypoint for users. As such it is important to make sure your new 
 example can be executed with the following command: 
 
 ```shell
@@ -99,7 +100,7 @@ zenml example run [EXAMPLE NAME]
 This will pull examples from the latest release, copy them to your current working directory and run it using the
 [run_example.sh](../run_example.sh).
 
-However, this only works with branches on the main zenml github repository. In order to validate your example, navigate
+However, this only works with branches on the main ZenML Github repository. In order to validate your example, navigate
 into the examples folder and run the following command:
 
 ```shell
