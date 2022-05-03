@@ -22,7 +22,7 @@ from zenml.integrations.constants import WANDB
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-WANDB_MODEL_TRACKER_FLAVOR = "wandb"
+WANDB_EXPERIMENT_TRACKER_FLAVOR = "wandb"
 
 
 class WandbIntegration(Integration):
@@ -36,7 +36,7 @@ class WandbIntegration(Integration):
         """Declare the stack component flavors for the MLflow integration"""
         return [
             FlavorWrapper(
-                name=WANDB_MODEL_TRACKER_FLAVOR,
+                name=WANDB_EXPERIMENT_TRACKER_FLAVOR,
                 source="zenml.integrations.wandb.experiment_trackers.WandbExperimentTracker",
                 type=StackComponentType.EXPERIMENT_TRACKER,
                 integration=cls.NAME,
