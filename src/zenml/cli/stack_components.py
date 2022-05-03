@@ -255,7 +255,9 @@ def generate_stack_component_register_command(
                 cli_utils.warning(
                     f"There is a custom implementation for the flavor "
                     f"'{flavor}' of a {component_type}, which is currently "
-                    f"overwriting the same flavor provided by ZenML."
+                    "overwriting the same flavor provided by ZenML."
+                    "This could lead to to unexpected behavior and "
+                    "should be avoided if possible."
                 )
 
         except KeyError:
