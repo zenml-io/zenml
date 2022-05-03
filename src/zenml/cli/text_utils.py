@@ -40,7 +40,7 @@ zenml_go_privacy_message = Markdown(
 As an open source project we rely on usage statistics to inform our decisions
 moving forward. The statistics do not contain any of your code, data or personal
 information. All we see on our end is metadata like operating system, stack
-flavors and triggered events like pipeline runs.
+flavors and that events like pipeline runs were triggered.
 
 If you wish to opt out, feel free to run the following command:
 ```bash
