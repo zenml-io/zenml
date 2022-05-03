@@ -34,6 +34,9 @@ def iter_rows(
     rows: Iterable[Tuple[str, ...]],
     col_count: int,
 ) -> Iterator[Tuple[str, ...]]:
+    """
+    Iterate over rows of a table.
+    """
     for row in rows:
         yield row + ("",) * (col_count - len(row))
 
@@ -62,9 +65,10 @@ class ZenFormatter(formatting.HelpFormatter):
         """Writes a definition list into the buffer.  This is how options
         and commands are usually formatted.
 
-        :param rows: a list of items as tuples for the terms and values.
-        :param col_max: the maximum width of the first column.
-        :param col_spacing: the number of spaces between the first and
+        Arguments:
+            rows: a list of items as tuples for the terms and values.
+            col_max: the maximum width of the first column.
+            col_spacing: the number of spaces between the first and
                             second column (and third).
 
         The default behavior is to format the rows in a definition list
