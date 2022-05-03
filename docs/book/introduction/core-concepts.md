@@ -15,16 +15,16 @@ its **[step configuration](#Step Configuration)** and writes output artifacts to
 
 Pipelines and steps are defined in code, but the underlying infrastructure on which they run is configured via 
 **[stacks](#stack)**. A stack is the configuration for all the infrastructure that one is using in the ML lifecycle. It 
-can consist of many components. For example; As teh lifecycle manager of the pipeline the 
+can consist of many components. For example, as the lifecycle manager of the pipeline the 
 **[orchestrator](#orchestrator)** is an important component of any stack.
 
-The **[metadata store](#metadata-store)** keeps track fo all teh metadata regarding a pipeline run. It enables you to
+The **[metadata store](#metadata-store)** keeps track of all the metadata regarding a pipeline run. It enables you to
 fetch steps and their output artifacts in a post-execution workflow via the **[Repository](#repository)**.
 
 ## Artifact
 
 Artifacts are the data that power your experimentation and model training. It is actually steps that produce
-artifacts, which are then stored in the artifact store. Input Artifacts are written in the signature of a step like so:
+artifacts, which are then stored in the artifact store. Input artifacts are written in the signature of a step like so:
 
 ```python
 import torch
@@ -48,7 +48,7 @@ An artifact store is a place where artifacts are stored. These artifacts may hav
 steps, or they may be the data first ingested into a pipeline via an ingestion step. An artifact store will store all
 intermediary pipeline step results, which in turn will be tracked in the metadata store.
 
-The most basic artifact store would be your local filesystem, but you can quickly switch this out for a cloud based 
+The most basic artifact store would be your local filesystem, but you can quickly switch this out for a cloud-based 
 artifact store.
 
 ## Container Registry
@@ -68,14 +68,14 @@ images and makes them accessible behind a local port. You could also use a remot
 Since production scenarios often look complex, **ZenML** is built with integrations in mind.
 An integration is a third-party tool or platform that implements a ZenML abstraction. It can be part of a stack.
 A tool can implement many abstractions and therefore an integration can have different
-entrypoints for the user. We have a consistently updated integrations page which shows all
+entrypoints for the user. We have a consistently [updated integrations page](../stack_components/integrations.md) which shows all
 current integrations supported by the ZenML core team [here](../stack_components/integrations.md).
 However, as ZenML is a framework users are encouraged to use these as a guideline and implement
 their own integrations by extending the various ZenML abstractions.
 
 ## Materializers
 
-A materializer defines how Artifacts are persisted between steps. It is used to serialize/deserialize a ZenML artifact 
+A materializer defines how artifacts are persisted between steps. It is used to serialize/deserialize a ZenML artifact 
 into/from a specific format. They are most often used to handle the input or output of ZenML steps, and can be extended 
 by building on the `BaseMaterializer` class. We care about this because steps are not just isolated pieces of work;
 they are linked together and the outputs of one step might well be the inputs of the next.
@@ -221,9 +221,9 @@ Manager](https://aws.amazon.com/secrets-manager).
 
 ## Service
 
-A service is a longer-lived entity that extends the capabilities of ZenML beyond the run of a pipeline. E.g. A service
-could
-be a prediction service that loads models for inference in a production setting.
+A service is a longer-lived entity that extends the capabilities of ZenML beyond
+the run of a pipeline. For example, a service could be a prediction service that
+loads models for inference in a production setting.
 
 ## Stack
 
@@ -356,4 +356,5 @@ workflow!
   should not change to maintain the benefits of caching and consistency across **pipeline** runs.
 
 This page is changing rapidly and therefore we need help to maintain it. If you see a concept here that is outdated,
-please reach out to us directly on our [Slack](https://zenml.io/slack-invite) in the #general channel!
+please reach out to us directly on our [Slack](https://zenml.io/slack-invite) in
+the `#general` channel!
