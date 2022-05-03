@@ -28,10 +28,7 @@ class WandbIntegration(Integration):
     @staticmethod
     def activate() -> None:
         """Activate the Wandb integration."""
-        from zenml.integrations.wandb.wandb_environment import WandbEnvironment
-
-        # Create and activate the global Wandb environment
-        WandbEnvironment().activate()
+        from zenml.integrations.wandb import experiment_trackers  # noqa
 
 
 WandbIntegration.check_installation()

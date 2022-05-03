@@ -124,7 +124,7 @@ def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
 
 @cli.group()
 def pipeline() -> None:
-    """Pipeline group"""
+    """Run pipelines."""
 
 
 @pipeline.command("run", help="Run a pipeline with the given configuration.")

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.7.2"
+version = "0.7.3"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -229,6 +229,8 @@ module = [
     "google.*",
     "neuralprophet.*",
     "wandb.*",
+    "lightgbm.*",
+    "scipy.*",
 ]
 ignore_missing_imports = true
 

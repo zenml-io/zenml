@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os
 
 import numpy as np
 import tensorflow as tf
@@ -22,14 +21,6 @@ from zenml.integrations.constants import TENSORFLOW, WANDB
 from zenml.integrations.wandb.wandb_step_decorator import enable_wandb
 from zenml.pipelines import pipeline
 from zenml.steps import BaseStepConfig, Output, step
-
-WANDB_PROJECT_NAME = os.getenv("WANDB_PROJECT_NAME")
-WANDB_ENTITY = os.getenv("WANDB_ENTITY")
-WANDB_API_KEY = os.getenv("WANDB_API_KEY")
-if WANDB_PROJECT_NAME is None:
-    raise AssertionError("Set the env variable WANDB_PROJECT_NAME please!")
-if WANDB_API_KEY is None:
-    raise AssertionError("Set the env variable WANDB_API_KEY please!")
 
 
 class TrainerConfig(BaseStepConfig):
@@ -62,7 +53,7 @@ def normalizer(
 
 
 # Define the step and enable wandb - order of decorators is important here
-@enable_wandb(project_name=WANDB_PROJECT_NAME, entity=WANDB_ENTITY)
+@enable_wandb
 @step
 def tf_trainer(
     config: TrainerConfig,
@@ -105,7 +96,7 @@ def tf_trainer(
 
 
 # Define the step and enable wandb - order of decorators is important here
-@enable_wandb(project_name=WANDB_PROJECT_NAME, entity=WANDB_ENTITY)
+@enable_wandb
 @step
 def tf_evaluator(
     x_test: np.ndarray,
