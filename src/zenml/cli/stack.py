@@ -13,11 +13,9 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
-import io
 from typing import Optional
 
 import click
-import yaml
 
 import zenml
 from zenml.cli import utils as cli_utils
@@ -31,6 +29,7 @@ from zenml.stack import Stack
 from zenml.stack.stack_component_class_registry import (
     StackComponentClassRegistry,
 )
+from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 
 # Stacks
@@ -739,8 +738,7 @@ def export_stack(filename: Optional[str], stack_name: Optional[str]) -> None:
     }
     if filename is None:
         filename = stack_name + ".yaml"
-    with io.open(filename, "w", encoding="utf8") as outfile:
-        yaml.dump(yaml_data, outfile)
+    write_yaml(filename, yaml_data)
 
 
 @stack.command("import")
@@ -751,8 +749,7 @@ def import_stack(
     ctx: click.Context, filename: str, stack_name: Optional[str]
 ) -> None:
     """Import a stack from YAML."""
-    with open(filename, "r") as yaml_file:
-        data = yaml.safe_load(yaml_file)
+    data = read_yaml(filename)
 
     # assert zenml version is the same
     if data["zenml_version"] != zenml.__version__:
