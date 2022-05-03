@@ -20,7 +20,7 @@ from zenml.enums import ContainerRegistry, StackComponentType
 
 
 class GitHubContainerRegistry(BaseContainerRegistry):
-    """Class for ECR Container Registry.
+    """Class for Github Container Registry.
 
     Attributes:
         uri: The URI of the container registry.

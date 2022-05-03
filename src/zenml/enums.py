@@ -76,7 +76,7 @@ class StoreType(StrEnum):
 
 
 class ContainerRegistry(StrEnum):
-    """Types of container registries."""
+    """Flavors of container registries."""
 
     DEFAULT = "default"
     GITHUB = "github"
