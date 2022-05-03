@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ def importer_mnist() -> Output(
     )
     batch_size = 64
 
-    # Create data loaders.
+    # Create dataloaders.
     train_dataloader = DataLoader(training_data, batch_size=batch_size)
     test_dataloader = DataLoader(test_data, batch_size=batch_size)
 
@@ -130,7 +130,7 @@ def fashion_mnist_pipeline(
     trainer,
     evaluator,
 ):
-    """Link all the steps artifacts together"""
+    """Link all the steps and artifacts together"""
     train_dataloader, test_dataloader = importer()
     model = trainer(train_dataloader)
     evaluator(test_dataloader=test_dataloader, model=model)

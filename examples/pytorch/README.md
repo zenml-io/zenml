@@ -1,10 +1,10 @@
 # 🔦 Using PyTorch with ZenML
 
-This example demonstrate how we can use ZenML and Torch to build, train, & test ML models.
+This example demonstrate how we can use ZenML and PyTorch to build, train, and test ML models.
 
-[PyTorch](https://pytorch.org/) is an open source machine learning framework that accelerates the path from research prototyping to production deployment.
+[PyTorch](https://pytorch.org/) is an open-source machine learning framework that accelerates the path from research prototyping to production deployment.
 
-With the ZenML pytorch integration, you can pass `torch.nn.Module` and `torch.utils.data.DataLoader` objects through steps as first class citizens. ZenML will automatically make sure 
+With the ZenML PyTorch integration, you can pass `torch.nn.Module` and `torch.utils.data.DataLoader` objects through steps as first class citizens. ZenML will automatically make sure 
 to track and version these objects.
 
 # 🖥 Run it locally
