@@ -134,7 +134,7 @@ def _prompt_email(gc: GlobalConfiguration) -> None:
     )
     if email:
         if len(email) > 0 and email.count("@") != 1:
-            warning("That doesn't look like an email, skipping ...")
+            warning("That doesn't look like an email. Skipping ...")
         else:
 
             console.print(zenml_go_thank_you_message, width=80)
