@@ -19,7 +19,7 @@ import click
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import GroupExt, cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.console import console
 from zenml.constants import MANDATORY_COMPONENT_PROPERTIES
 from zenml.enums import CliCategories, StackComponentType
@@ -575,7 +575,7 @@ def register_single_stack_component_cli_commands(
 
     @parent_group.group(
         command_name,
-        cls=GroupExt,
+        cls=TagGroup,
         help=f"Commands to interact with {plural_display_name}.",
         tag=CliCategories.STACK_COMPONENTS,
     )

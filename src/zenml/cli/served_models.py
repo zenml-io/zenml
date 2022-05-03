@@ -16,7 +16,7 @@ from typing import Optional
 
 import click
 
-from zenml.cli.cli import GroupExt, cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     declare,
     error,
@@ -30,7 +30,7 @@ from zenml.repository import Repository
 
 
 @cli.group(
-    cls=GroupExt,
+    cls=TagGroup,
     tag=CliCategories.MODEL_DEPLOYMENT,
 )
 @click.pass_context

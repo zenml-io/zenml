@@ -57,10 +57,19 @@ class ZenFormatter(formatting.HelpFormatter):
         col_max: int = 30,
         col_spacing: int = 2,
     ) -> None:
-        """
-        Writes a definition list into the buffer.
-        This is how options are formatted in the help output.
-        The rows are expected to be a sequence of (tag, value, description)
+        """Writes a definition list into the buffer.  This is how options
+        and commands are usually formatted.
+
+        :param rows: a list of items as tuples for the terms and values.
+        :param col_max: the maximum width of the first column.
+        :param col_spacing: the number of spaces between the first and
+                            second column (and third).
+
+        The default behavior is to format the rows in a definition list
+        with rows of 2 columns following the format ``(term, value)``.
+        But for new CLI commands, we want to format the rows in a definition
+        list with rows of 3 columns following the format the format
+                            ``(term, value, description)``.
         """
         rows = list(rows)
         widths = measure_table(rows)

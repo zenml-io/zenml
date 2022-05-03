@@ -18,7 +18,7 @@ import click
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import GroupExt, cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import (
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 # Analytics
-@cli.group(cls=GroupExt, tag=CliCategories.MANAGEMENT_TOOLS)
+@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def analytics() -> None:
     """Analytics for opt-in and opt-out."""
 
@@ -68,7 +68,7 @@ def opt_out() -> None:
 
 
 # Logging
-@cli.group(cls=GroupExt, tag=CliCategories.MANAGEMENT_TOOLS)
+@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def logging() -> None:
     """Configuration of logging for ZenML pipelines."""
 
@@ -92,7 +92,7 @@ def set_logging_verbosity(verbosity: str) -> None:
 
 
 # Profiles
-@cli.group(cls=GroupExt, tag=CliCategories.IDENTITY_AND_SECURITY)
+@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 def profile() -> None:
     """Configuration of ZenML profiles."""
 

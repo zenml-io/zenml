@@ -18,7 +18,7 @@ from typing import Optional
 import click
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import GroupExt, cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
@@ -29,7 +29,7 @@ from zenml.stack import Stack
 
 # Stacks
 @cli.group(
-    cls=GroupExt,
+    cls=TagGroup,
     tag=CliCategories.MANAGEMENT_TOOLS,
 )
 def stack() -> None:

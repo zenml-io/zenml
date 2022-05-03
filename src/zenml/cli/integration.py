@@ -17,7 +17,7 @@ from typing import Optional, Tuple
 import click
 from rich.progress import track
 
-from zenml.cli.cli import GroupExt, cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
     declare,
@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 
 
 @cli.group(
-    cls=GroupExt,
+    cls=TagGroup,
     tag=CliCategories.INTEGRATIONS,
     help="Interact with the requirements of external integrations.",
 )

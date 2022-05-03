@@ -26,7 +26,7 @@ from rich.text import Text
 
 import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
-from zenml.cli.cli import GroupExt, cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import confirmation, declare, error, print_table, warning
 from zenml.console import console
 from zenml.constants import GIT_REPO_URL
@@ -454,7 +454,7 @@ def check_for_version_mismatch(
             )
 
 
-@cli.group(cls=GroupExt, help="Access all ZenML examples.")
+@cli.group(cls=TagGroup, help="Access all ZenML examples.")
 def example() -> None:
     """Examples group"""
 

@@ -24,7 +24,7 @@ from zenml.enums import CliCategories
 from zenml.logger import set_root_verbosity
 
 
-class GroupExt(click.Group):
+class TagGroup(click.Group):
     """
     Override the default click Group to add a tag.
     The tag is used to group commands and groups of
@@ -40,8 +40,8 @@ class GroupExt(click.Group):
         ] = None,
         **kwargs: Dict[str, Any],
     ) -> None:
-        super(GroupExt, self).__init__(name, commands, **kwargs)
-        self.tag = tag if tag else CliCategories.OTHER_COMMANDS
+        super(TagGroup, self).__init__(name, commands, **kwargs)
+        self.tag = tag or CliCategories.OTHER_COMMANDS
 
 
 class ZenContext(click.Context):
@@ -77,30 +77,26 @@ class ZenMLCLI(click.Group):
         groups of commands with a tag. In order to call the new custom format
         method, the command must be added to the ZenMLCLI class.
         """
-        commands: List[Tuple[CliCategories, str, Union[Command, GroupExt]]] = []
+        commands: List[Tuple[CliCategories, str, Union[Command, TagGroup]]] = []
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
             # What is this, the tool lied about a command.  Ignore it
             if cmd is None:
                 continue
-            if cmd.hidden:
+            if cmd is None or cmd.hidden:
                 continue
-            if isinstance(cmd, GroupExt):
-                commands.append(
-                    (
-                        cmd.tag,
-                        subcommand,
-                        cmd,
-                    )
+            category = (
+                cmd.tag
+                if isinstance(cmd, TagGroup)
+                else CliCategories.OTHER_COMMANDS
+            )
+            commands.append(
+                (
+                    category,
+                    subcommand,
+                    cmd,
                 )
-            else:
-                commands.append(
-                    (
-                        CliCategories.OTHER_COMMANDS,
-                        subcommand,
-                        cmd,
-                    )
-                )
+            )
 
         if len(commands):
             ordered_categories = list(CliCategories.__members__.values())
