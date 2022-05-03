@@ -231,6 +231,7 @@ module = [
     "wandb.*",
     "lightgbm.*",
     "scipy.*",
+    "deepchecks.*",
 ]
 ignore_missing_imports = true
 

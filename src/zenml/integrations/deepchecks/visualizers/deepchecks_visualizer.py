@@ -57,8 +57,8 @@ class DeepchecksVisualizer(BaseStepVisualizer):
             result.save_as_html(f)
             file_name = f.name
 
-        with open(file_name, "r") as f:
-            html_ = f.read()
+        with open(file_name, "r") as same_f:
+            html_ = same_f.read()
 
         if Environment.in_notebook():
             from IPython.core.display import HTML, display
