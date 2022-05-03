@@ -16,7 +16,7 @@ import base64
 import json
 import re
 import time
-from typing import Dict, List, Optional
+from typing import Dict, Generator, List, Optional
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -832,14 +832,18 @@ class SeldonClient:
     def get_deployment_logs(
         self,
         name: str,
-    ) -> str:
+        follow: bool = False,
+        tail: Optional[int] = None,
+    ) -> Generator[str, bool, None]:
         """Get the logs of a Seldon Core deployment resource.
 
         Args:
             name: the name of the Seldon Core deployment to get logs for.
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
 
         Returns:
-            The logs of the deployment resource.
+            A generator that can be acccessed to get the service logs.
 
         Raises:
             SeldonClientError: if an unknown error occurs while fetching
@@ -869,9 +873,10 @@ class SeldonClient:
                 name=pod_name,
                 namespace=self._namespace,
                 container=containers[0],
+                follow=follow,
+                tail_lines=tail,
+                _preload_content=False,
             )
-            logger.debug("Kubernetes API response: %s", response)
-            return response
         except k8s_client.rest.ApiException as e:
             logger.error(
                 "Exception when fetching logs for SeldonDeployment resource "
@@ -883,6 +888,17 @@ class SeldonClient:
                 f"Unexpected exception when fetching logs for SeldonDeployment "
                 f"resource: {name}"
             ) from e
+
+        try:
+            while True:
+                line = response.readline().decode("utf-8").rstrip("\n")
+                if not line:
+                    return
+                stop = yield line
+                if stop:
+                    return
+        finally:
+            response.release_conn()
 
     def create_or_update_secret(
         self,

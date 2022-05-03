@@ -462,22 +462,3 @@ class SeldonModelDeployer(BaseModelDeployer):
         # secret used to store the authentication information for the Seldon
         # Core model server storage initializer
         self._delete_kubernetes_secret()
-
-    def get_model_server_logs(
-        self,
-        uuid: UUID,
-    ) -> str:
-        """Get the logs of a Seldon Core model deployment.
-
-        Args:
-            uuid: UUID of the model server to get the logs of.
-        """
-        services = self.find_model_server(service_uuid=uuid)
-        if len(services) == 0:
-            raise RuntimeError(
-                f"No Seldon Core model server found with UUID {uuid}"
-            )
-        service = cast(SeldonDeploymentService, services[0])
-        return self.seldon_client.get_deployment_logs(
-            service.seldon_deployment_name
-        )

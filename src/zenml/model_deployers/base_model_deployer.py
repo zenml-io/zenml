@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from abc import ABC, abstractmethod
-from typing import ClassVar, Dict, List, Optional
+from typing import ClassVar, Dict, Generator, List, Optional
 from uuid import UUID
 
 from zenml.enums import StackComponentType
@@ -199,13 +199,20 @@ class BaseModelDeployer(StackComponent, ABC):
             force: if True, force the service to stop.
         """
 
-    @abstractmethod
     def get_model_server_logs(
         self,
         uuid: UUID,
-    ) -> str:
-        """Abstract method to get the logs of a model server.
+        follow: bool = False,
+        tail: Optional[int] = None,
+    ) -> Generator[str, bool, None]:
+        """Get the logs of a model server.
 
         Args:
             uuid: UUID of the model server to get the logs of.
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
         """
+        services = self.find_model_server(service_uuid=uuid)
+        if len(services) == 0:
+            raise RuntimeError(f"No model server found with UUID {uuid}")
+        return services[0].get_logs(follow=follow, tail=tail)
