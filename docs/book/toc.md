@@ -21,7 +21,7 @@
   * [Fetching Historic Runs](developer-guide/fetching-historic-runs.md)
   * [Class Based API](developer-guide/class-based-api.md)
 * [Stacks]()
-* [Repo & Config]()
+* [Repo & Config](developer-guide/repo-and-config.md)
 * [Profiles](developer-guide/profiles.md)
 
 ## Advanced Guide

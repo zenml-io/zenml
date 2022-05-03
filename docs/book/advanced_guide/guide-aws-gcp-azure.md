@@ -48,7 +48,7 @@ step operators [guide](step-operators.md) for that!
   ```
 * [Install](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/)
   Kubeflow Pipelines onto your cluster.
-  {% endtab %}
+{% endtab %}
 
 {% tab title="Azure" %}
 
