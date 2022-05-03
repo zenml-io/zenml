@@ -1,41 +1,60 @@
 # 🗂 Get your data from a Feature Store
 
-Feature stores allow data teams to serve data via an offline store and an online low-latency store where data is kept in
-sync between the two. It also offers a centralized registry where features (and feature schemas) are stored for use
+Feature stores allow data teams to serve data via an offline store and an online
+low-latency store where data is kept in
+sync between the two. It also offers a centralized registry where features (and
+feature schemas) are stored for use
 within a team or wider organization.
 
-As a data scientist working on training your model, your requirements for how you access your batch / 'offline' data
-will almost certainly be different from how you access that data as part of a real-time or online inference setting.
-Feast solves the problem of developing [train-serve skew](https://ploomber.io/blog/train-serve-skew/) where those two
+As a data scientist working on training your model, your requirements for how
+you access your batch / 'offline' data
+will almost certainly be different from how you access that data as part of a
+real-time or online inference setting.
+Feast solves the problem of
+developing [train-serve skew](https://ploomber.io/blog/train-serve-skew/) where
+those two
 sources of data diverge from each other.
 
-Feature stores are a relatively recent addition to commonly-used machine learning stacks. [Feast](https://feast.dev/) is
-a leading open-source feature store, first developed by [Gojek](https://www.gojek.com/en-id/) in collaboration with
+Feature stores are a relatively recent addition to commonly-used machine
+learning stacks. [Feast](https://feast.dev/) is
+a leading open-source feature store, first developed
+by [Gojek](https://www.gojek.com/en-id/) in collaboration with
 Google.
 
-This example runs locally, using a (local) [Redis](https://redis.com/) server to simulate the online part of the store.
+This example runs locally, using a (local) [Redis](https://redis.com/) server to
+simulate the online part of the store.
 
 ## 🗺 Features Stores & ZenML
 
-There are two core functions that feature stores enable: access to data from an offline / batch store for training and
-access to online data at inference time. The ZenML Feast integration enables both of these behaviors.
+There are two core functions that feature stores enable: access to data from an
+offline / batch store for training and
+access to online data at inference time. The ZenML Feast integration enables
+both of these behaviors.
 
-This example showcases a local implementation where the whole setup runs on a single machine, but we assume that users
-of the ZenML Feast integration will have set up their own feature store already. We encourage users to check
-out [Feast's documentation](https://docs.feast.dev/) and [guides](https://docs.feast.dev/how-to-guides/) on how to setup
+This example showcases a local implementation where the whole setup runs on a
+single machine, but we assume that users
+of the ZenML Feast integration will have set up their own feature store already.
+We encourage users to check
+out [Feast's documentation](https://docs.feast.dev/)
+and [guides](https://docs.feast.dev/how-to-guides/) on how to setup
 your offline and online data sources via the configuration `yaml` file.
 
-This example currently shows the offline data retrieval part of what Feast enables. (Online data retrieval is currently
-possible in a local / simple setting, but we don't currently support using the online data serving in the context of a
+This example currently shows the offline data retrieval part of what Feast
+enables. (Online data retrieval is currently
+possible in a local / simple setting, but we don't currently support using the
+online data serving in the context of a
 deployed model or as part of model deployment.)
 
 ## 🧰 How the example is implemented
 
-This example has two simple steps, showing how you can access historical (batch / offline) data from a local file
+This example has two simple steps, showing how you can access historical (batch
+/ offline) data from a local file
 source.
 
 # 🖥 Run it locally
+
 ## 👣 Step-by-Step
+
 ### 📄 Prerequisites
 
 In order to run this example, you need to install and initialize ZenML:
@@ -124,10 +143,12 @@ In order to clean up, delete the remaining ZenML references.
 rm -rf zenml_examples
 ```
 
-If you ran the Redis server as a daemon process, you'll want to find the process ID (using `ps aux | grep redis-server`)
+If you ran the Redis server as a daemon process, you'll want to find the process
+ID (using `ps aux | grep redis-server`)
 and you can `kill` the process from the terminal.
 
 # 📜 Learn more
 
-Our docs regarding the Feast feature store integration can be found [here](https://docs.zenml.io/features/feature-store)
+Our docs regarding the Feast feature store integration can be
+found [here](https://docs.zenml.io/features/feature-store)
 .

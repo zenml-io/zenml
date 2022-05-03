@@ -60,7 +60,7 @@
 * [Secret Manager](stack_components/secrets_manager.md)
 * [Model Deployer](stack_components/model_deployer.md)
 * [Experiment Tracker](stack_components/experiment_tracker.md)
-* [Feature Store]
+* [Feature Store](stack_components/feature-store.md)
 
 ## Support
 
