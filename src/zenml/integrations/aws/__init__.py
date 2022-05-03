@@ -32,7 +32,7 @@ class AWSIntegration(Integration):
     REQUIREMENTS = ["boto3==1.21.21"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the AWS integration."""
         return [
             FlavorWrapper(

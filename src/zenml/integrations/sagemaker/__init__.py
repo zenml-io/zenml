@@ -34,7 +34,7 @@ class SagemakerIntegration(Integration):
     REQUIREMENTS = ["sagemaker==2.82.2"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the Sagemaker integration."""
         return [
             FlavorWrapper(

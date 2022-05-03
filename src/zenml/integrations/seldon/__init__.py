@@ -40,7 +40,7 @@ class SeldonIntegration(Integration):
         from zenml.integrations.seldon import services  # noqa
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the Seldon Core."""
         return [
             FlavorWrapper(

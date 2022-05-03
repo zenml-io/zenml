@@ -34,7 +34,7 @@ class KubeflowIntegration(Integration):
     REQUIREMENTS = ["kfp==1.8.9"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the Kubeflow integration."""
         return [
             FlavorWrapper(

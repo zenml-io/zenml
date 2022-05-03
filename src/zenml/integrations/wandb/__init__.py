@@ -32,7 +32,7 @@ class WandbIntegration(Integration):
     REQUIREMENTS = ["wandb>=0.12.12", "Pillow>=9.1.0"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the MLflow integration"""
         return [
             FlavorWrapper(

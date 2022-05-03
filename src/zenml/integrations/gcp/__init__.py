@@ -32,7 +32,7 @@ class GcpIntegration(Integration):
     REQUIREMENTS = ["gcsfs"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the GCP integration."""
         return [
             FlavorWrapper(

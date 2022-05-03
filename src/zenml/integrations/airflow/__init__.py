@@ -33,7 +33,7 @@ class AirflowIntegration(Integration):
     REQUIREMENTS = ["apache-airflow==2.2.0"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the Airflow integration."""
         return [
             FlavorWrapper(

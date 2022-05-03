@@ -87,5 +87,5 @@ class Integration(metaclass=IntegrationMeta):
         """Abstract method to activate the integration."""
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Abstract method to declare new stack component flavors."""

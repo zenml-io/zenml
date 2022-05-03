@@ -33,7 +33,7 @@ class VertexIntegration(Integration):
     REQUIREMENTS = ["google-cloud-aiplatform>=1.11.0"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the Vertex integration."""
         return [
             FlavorWrapper(

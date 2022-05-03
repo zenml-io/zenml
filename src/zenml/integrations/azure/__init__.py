@@ -33,7 +33,7 @@ class AzureIntegration(Integration):
     REQUIREMENTS = ["adlfs==2021.10.0"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declares the flavors for the integration."""
         return [
             FlavorWrapper(

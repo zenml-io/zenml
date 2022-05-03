@@ -70,7 +70,7 @@ class FlavorRegistry:
         from zenml.integrations.registry import integration_registry
 
         for integration in integration_registry.integrations.values():
-            integrated_flavors = integration.declare()
+            integrated_flavors = integration.flavors()
             if integrated_flavors:
                 for flavor in integrated_flavors:
                     self._register_flavor(flavor)

@@ -42,7 +42,7 @@ class MlflowIntegration(Integration):
         from zenml.integrations.mlflow import services  # noqa
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the MLflow integration"""
         return [
             FlavorWrapper(

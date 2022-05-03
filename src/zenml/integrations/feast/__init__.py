@@ -33,7 +33,7 @@ class FeastIntegration(Integration):
     REQUIREMENTS = ["feast[redis]>=0.19.4", "redis-server"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the Feast integration."""
         return [
             FlavorWrapper(

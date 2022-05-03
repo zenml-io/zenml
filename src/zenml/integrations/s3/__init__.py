@@ -32,7 +32,7 @@ class S3Integration(Integration):
     REQUIREMENTS = ["s3fs==2022.3.0"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the s3 integration."""
         return [
             FlavorWrapper(

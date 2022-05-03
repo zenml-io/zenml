@@ -31,7 +31,7 @@ class AzureMLIntegration(Integration):
     REQUIREMENTS = ["azureml-core==1.39.0.post1"]
 
     @classmethod
-    def declare(cls) -> List[FlavorWrapper]:
+    def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the AzureML integration."""
         return [
             FlavorWrapper(
