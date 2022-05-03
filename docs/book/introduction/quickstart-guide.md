@@ -1,5 +1,5 @@
 ---
-description: A simple example to get started with ZenML
+description: A simple example to get started with ZenML.
 ---
 
 # Quickstart
@@ -45,7 +45,9 @@ ZenML repository.
 ## Run your first pipeline
 
 In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is
-decorated with `@step`. The pipeline in turn is decorated with the `@pipeline` decorator.
+decorated with `@step`. The pipeline in turn is decorated with the `@pipeline`
+decorator. (If you're not very familiar with Python decorators, check out [this
+useful introduction](http://devopspy.com/python/python-decorators-dummies/).)
 
 {% hint style="success" %}
 Note that type hints are used for inputs and outputs of each step. The routing of step outputs
@@ -129,7 +131,7 @@ If you had a hiccup or you have some suggestions/questions regarding our framewo
 ## Wait, how is this useful?
 
 The code above looks like it is yet another standard pipeline framework, but there is a lot more going on under the hood
-that is mighty helpful:
+that is super helpful:
 
 - All data is versioned and tracked as it flows through the steps.
 - All parameters and return values are tracked by a central metadata store that you can later query.
@@ -139,20 +141,20 @@ With just a little more work, one can:
 
 - Run this pipeline [in production on the cloud](../guides/Use%20Cases/guide-aws-gcp-azure.md) with a production
   ready orchestrator like Kubeflow.
-- Access importan metadata like [statistics, schemas and drifts](../guides/basics/visualizers.md) which is inferred from
+- Access important metadata like [statistics, schemas and drifts](../guides/basics/visualizers.md) which is inferred from
 the model and data which flows through these steps.
 - Easily [Deploy Models](../advanced_guide/continuous-training-and-deployment.md) that are trained within a ZenML 
 pipeline and even set up continuous training loops including automatic deployments.
 
-Best of all: We let you and your infra/ops team decide what the underlying tools are to achieve all this.
+Best of all: We let you and your infrastructure / ops team decide what the underlying tools are to achieve all this.
 
 ## Next Steps?
 
 Normally at this point in a quickstart, you'd like to learn more about what the product has to offer. There are a few 
 places you can go from here.
 
-* If you are someone that loves to learn by doing. Check out our [ZenBytes](https://github.com/zenml-io/zenbytes), small
-  tutorials in a Notebook environment.
+* If you are someone that loves to learn by doing. Check out our [ZenBytes](https://github.com/zenml-io/zenbytes): small
+  tutorials in a notebook environment.
 * If you are more of a bookworm, feel free to jump straight into our 
 [Developer Guide](../developer-guide/installation.md) to learn the concepts step-by-step.
 
