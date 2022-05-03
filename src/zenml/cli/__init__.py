@@ -298,7 +298,46 @@ To delete a container registry (and all of its contents), use the `delete`
 command:
 
 ```bash
-zenml container-registry delete
+zenml container-registry delete REGISTRY_NAME
+```
+
+Customizing your Experiment Tracker
+-----------------------------------
+
+Experiment trackers let you track your ML experiments by logging the parameters
+and allowing you to compare between different runs. If you want to use an
+experiment tracker in one of your stacks, you need to first register it:
+
+```bash
+zenml experiment-tracker register EXPERIMENT_TRACKER_NAME \
+    --flavor=EXPERIMENT_TRACKER_TYPE [--EXPERIMENT_TRACKER_OPTIONS]
+```
+
+If you want the name of the current experiment tracker, use the `get` command:
+
+```bash
+zenml experiment-tracker get
+```
+
+To list all experiment trackers available and registered for use, use the
+`list` command:
+
+```bash
+zenml experiment-tracker list
+```
+
+For details about a particular experiment tracker, use the `describe` command.
+By default, (without a specific experiment tracker name passed in) it will
+describe the active or currently-used experiment tracker:
+
+```bash
+zenml experiment-tracker describe [EXPERIMENT_TRACKER_NAME]
+```
+
+To delete an experiment tracker, use the `delete` command:
+
+```bash
+zenml experiment-tracker delete EXPERIMENT_TRACKER_NAME
 ```
 
 Customizing your Step Operator

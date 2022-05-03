@@ -3,9 +3,19 @@
 set -Eeo pipefail
 
 setup_stack () {
-  zenml model-deployer register mlflow --type=mlflow
-  zenml stack register local_with_mlflow -m default -a default -o default -d mlflow
-  zenml stack set local_with_mlflow
+  zenml model-deployer register mlflow_deployer --type=mlflow || \
+    msg "${WARNING}Reusing preexisting model deployer ${NOFORMAT}mlflow_deployer"
+  zenml experiment-tracker register mlflow_tracker  --type=mlflow || \
+    msg "${WARNING}Reusing preexisting experiment tracker ${NOFORMAT}mlflow_tracker"
+  zenml stack register local_mlflow_stack \
+      -m default \
+      -a default \
+      -o default \
+      -d mlflow_deployer \
+      -e mlflow_tracker || \
+    msg "${WARNING}Reusing preexisting stack ${NOFORMAT}local_mlflow_stack"
+
+  zenml stack set local_mlflow_stack
 }
 
 pre_run () {

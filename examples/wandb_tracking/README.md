@@ -7,14 +7,13 @@ metrics and output files.
 ## 🗺 Overview
 This example showcases how easily Weights & Biases (`wandb`) tracking can be integrated into a ZenML pipeline.
 
-We'll be using the
-[MNIST](http://yann.lecun.com/exdb/mnist/) dataset and
+We'll be using the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset and
 will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
 We will run two experiments with different parameters (epochs and learning rate)
 and log these experiments into a wandb backend. 
 
 In the example script, the [Keras WandbCallback](https://docs.wandb.ai/ref/python/integrations/keras/wandbcallback) is
-used within the training step to directly hook into the TensorFlow training.
+used within the training step to directly hook into the TensorFlow training.  
 It will log out all relevant parameters, metrics and output files. Additionally,
 we explicitly log the test accuracy within the evaluation step.
 
@@ -25,6 +24,11 @@ as the pipeline run name. This establishes a lineage between pipelines in ZenML 
 # 🖥 Run it locally
 
 ### 📄 Prerequisites 
+
+### Set up a free Weights & Biases account
+To get this example running, you need to set up a Weights & Biases account. You can do this for free [here](https://wandb.ai/login?signup=true).
+
+### Pre-requisites
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -42,26 +46,31 @@ cd zenml_examples/wandb_tracking
 zenml init
 ```
 
-### 🔧 Set up Weights&Biases
-To get this example running, you need to set up a [Weights & Biases](https://wandb.ai) account. 
-You can do this for free [here](https://wandb.ai/login?signup=true).
+### 🥞 Create the stack with the wandb experiment tracker component
 
-After signing up, you will be given a username (what Weights & Biases calls an `entity`), and you can go ahead and 
-create your first project.
+In order to use an experiment tracking tool like Weights & Biases, you need to create a new `StackCoomponent`,  and 
+subsequently a new `Stack` with the type `wandb`. The wandb experiment tracker stack component has the following options:
 
-Note, that in case you have a shared Weights & Biases account, the `entity` can also be your organization or 
-team's name.
+- `api_key`: Non-optional API key token of your wandb account.
+- `project_name`: The name of the project where you're sending the new run. If the project is not specified, the run is put in an "Uncategorized" project.
+- `entity`: An entity is a username or team name where you're sending runs. This entity must exist before you can send runs there, so make sure to create your account or team in the UI before starting to log runs. If you don't specify an entity, the run will be sent to your default entity, which is usually your username. 
 
-
-### ⚙️ Set up Environment Variables
-There are three environment variables that are required (as of this release) to run this example.
-Please note that in the upcoming releases, we will migrate the integration towards a stack component, so 
-this usage will be deprecated. 
+Note that project_name and entity are optional in the below command:
 
 ```shell
-export WANDB_PROJECT_NAME=PROJECT_NAME # name of wandb project
-export WANDB_ENTITY=ENTITY_NAME  # username or team name
-export WANDB_API_KEY=YOUR_WANDB_ENTITY_KEY  # find this in your wandb dashboard
+zenml experiment-tracker register wandb_tracker --type=wandb \
+    --api_key=<WANDB_API_KEY> \
+    --entity=<WANDB_ENTITY> \
+    --project_name=<WANDB_PROJECT_NAME>
+
+zenml stack register wandb_stack \
+    -m default \
+    -a default \
+    -o default \
+    -e wandb_tracker
+    
+# Activate the newly created stack
+zenml stack set wandb_stack
 ```
 
 ### ▶ Run the project
@@ -74,12 +83,46 @@ python run.py
 ### 🔮 See results
 The results should be available at the URL: https://wandb.ai/{ENTITY_NAME}/{PROJECT_NAME}/runs/
 
-You should see the following visualizations:
+Every step should yield an additional wandb run in the UI. The naming convention of each run is `{pipeline_run_name}_{step_name}` (e.g. `wandb_example_pipeline-25_Apr_22-20_06_33_535737_tf_evaluator`)
+
+Each run in wandb will be tagged with two things: `pipeline_name` and `pipeline_run_name`, which the user can use to group together and filter. 
+
+For example, here are the runs 'raw' and ungrouped:
+
+![Chart Results](assets/wandb_runs_ungrouped.png)
+
+Here is the view where we filter for all runs within just the pipeline we ran:
+
+![Chart Results](assets/wandb_grouped.png)
+
+For each run, you should see the following visualizations:
 
 ![Table Results](assets/wandb_table_results.png)
 
 ![Chart Results](assets/wandb_charts_results.png)
 
+### Using `wandb.Settings`
+
+ZenML allows you to override the [wandb.Settings](https://github.com/wandb/client/blob/master/wandb/sdk/wandb_settings.py#L353) 
+class in the `enable_wandb` decorator to allow for even further control of the wandb integration. One feature that is super useful 
+is to enable `magic=True`, like so:
+
+```python
+import wandb
+
+
+@enable_wandb(wandb.Settings(magic=True))
+@step
+def my_step(
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        model: tf.keras.Model,
+) -> float:
+    """Everything in this step is autologged"""
+    ...
+```
+
+Doing the above auto-magically logs all the data, metrics, and results within the step, no further action required!
 
 ### 🧽 Clean up
 In order to clean up, delete the remaining ZenML references:

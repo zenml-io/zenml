@@ -11,31 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import re
+from abc import ABC
 from typing import ClassVar
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
 
-class BaseContainerRegistry(StackComponent):
-    """Base class for all ZenML container registries.
+class BaseExperimentTracker(StackComponent, ABC):
+    """Base class for all ZenML experiment trackers."""
 
-    Attributes:
-        uri: The URI of the container registry.
-    """
-
-    uri: str
-
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = "default"
-
-    @property
-    def is_local(self) -> bool:
-        """Returns whether the container registry is local or not.
-
-        Returns:
-            True if the container registry is local, False otherwise.
-        """
-        return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.uri))
+    # Class configuration
+    TYPE: ClassVar[StackComponentType] = StackComponentType.EXPERIMENT_TRACKER
+    FLAVOR: ClassVar[str]

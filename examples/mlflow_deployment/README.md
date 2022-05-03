@@ -194,14 +194,21 @@ zenml init
 ```
 ### 🥞 Setting up the ZenML Stack
 
-The example can only be executed with a ZenML stack that has an MLflow model
-deployer as a component. Configuring a new stack with a MLflow model deployer
+The example can only be executed with a ZenML stack that has MLflow model
+deployer and MLflow experiment tracker components. Configuring a new stack 
 could look like this:
 
-```shell
-zenml model-deployer register mlflow --type=mlflow
-zenml stack register local_with_mlflow -m default -a default -o default -d mlflow
-zenml stack set local_with_mlflow
+```
+zenml integration install mlflow
+zenml model-deployer register mlflow_deployer --type=mlflow
+zenml experiment-tracker register mlflow_tracker --type=mlflow
+zenml stack register local_mlflow_stack \
+  -m default \
+  -a default \
+  -o default \
+  -d mlflow_deployer \
+  -e mlflow_tracker
+zenml stack set local_mlflow_stack
 ```
 
 ### ▶️ Run the Code
@@ -233,7 +240,7 @@ python run.py --config predict
 
 The `zenml served-models list` CLI command can be run to list the active model servers:
 
-```shell
+```
 $ zenml served-models list
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━┓
 ┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         │ MODEL_NAME ┃
@@ -245,7 +252,7 @@ $ zenml served-models list
 To get more information about a specific model server, such as the prediction URL,
 the `zenml served-models describe <uuid>` CLI command can be run:
 
-```shell
+```
 $ zenml served-models describe 87980237-843f-414f-bf06-931f4da69e56
         Properties of Served Model 87980237-843f-414f-bf06-931f4da69e56        
 ┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -267,7 +274,7 @@ $ zenml served-models describe 87980237-843f-414f-bf06-931f4da69e56
 ┠────────────────────────┼────────────────────────────────────────────────────┨
 ┃ SERVICE_PATH           │ /home/stefan/.config/zenml/local_stores/3b114be0-… ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
-┃ STATUS                 │ ✅                                                  ┃
+┃ STATUS                 │ ✅                                                 ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
 ┃ STATUS_MESSAGE         │ service daemon is not running                      ┃
 ┠────────────────────────┼────────────────────────────────────────────────────┨
@@ -310,7 +317,6 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the mlflow deployment integration can be found [here](TODO: Link to docs).
-
-If you want to learn more about deployment in zenml in general or about how to build your own deployer steps in zenml
-check out our [docs](TODO: Link to docs)
+If you want to learn more about deployment in zenml in general or about how to 
+build your own deployer steps in zenml check out our 
+[docs](docs.zenml.io/stack-components/model_deployer).

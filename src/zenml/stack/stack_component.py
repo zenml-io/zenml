@@ -124,6 +124,12 @@ class StackComponent(BaseModel, ABC):
     def cleanup_pipeline_run(self) -> None:
         """Cleans up resources after the pipeline run is finished."""
 
+    def prepare_step_run(self) -> None:
+        """Prepares running a step."""
+
+    def cleanup_step_run(self) -> None:
+        """Cleans up resources after the step run is finished."""
+
     @property
     def validator(self) -> Optional["StackValidator"]:
         """The optional validator of the stack component.
@@ -144,6 +150,11 @@ class StackComponent(BaseModel, ABC):
     def is_running(self) -> bool:
         """If the component is running locally."""
         return True
+
+    @property
+    def is_suspended(self) -> bool:
+        """If the component is suspended."""
+        return not self.is_running
 
     def provision(self) -> None:
         """Provisions resources to run the component locally."""
