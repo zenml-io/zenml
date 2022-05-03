@@ -32,3 +32,7 @@ install them.
 ```bash
 zenml example run mlflow-tracking
 ```
+
+Learn more about all of the ways you can interact with the examples and use them
+over on [our blogpost about this feature
+here](https://blog.zenml.io/examples-cli/).

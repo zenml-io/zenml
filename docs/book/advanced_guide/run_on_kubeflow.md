@@ -1,5 +1,5 @@
 ---
-description: Deploy pipelines to production
+description: Deploy pipelines to production.
 ---
 
 # Deploy to Local Kubeflow Pipelines
