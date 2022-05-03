@@ -719,16 +719,16 @@ def export_stack(filename: Optional[str], stack_name: Optional[str]) -> None:
     # create a dict of all components in the specified stack
     component_data = {}
     for component_type, component_name in stack_configuration.items():
-        components = repo.get_stack_components(component_type)
-        for component in components:
-            if component.dict()["name"] == component_name:
-                component_dict = {
-                    key: value
-                    for key, value in component.dict().items()
-                    if key != "uuid" and value is not None
-                }
-                component_dict["flavor"] = component.FLAVOR
-                component_data[str(component_type)] = component_dict
+        component = repo.get_stack_component(
+            component_type, name=component_name
+        )
+        component_dict = {
+            key: value
+            for key, value in component.dict().items()
+            if key != "uuid" and value is not None
+        }
+        component_dict["flavor"] = component.FLAVOR
+        component_data[str(component_type)] = component_dict
 
     # write zenml version and stack dict to YAML
     yaml_data = {
