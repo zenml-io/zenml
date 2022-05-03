@@ -10,13 +10,13 @@ The pipeline performs a very simple operation. The subtraction of a random integ
 ![Dag](assets/DAG.png)
 
 Note that this tutorial installs and deploys Airflow locally on your machine,
-but in a production you might be already have a deployed Airflow instance. 
+but in a production setting you might be already have a deployed Airflow instance. 
 
 # 🖥 Run it locally
 
 ## ⏩ SuperQuick `airflow_local` run
 
-If you're really in a hurry, and you want just to see this example pipeline run,
+If you're really in a hurry and just want to see this example pipeline run
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 

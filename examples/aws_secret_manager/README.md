@@ -4,8 +4,7 @@ ZenML Secret is a grouping of key-value pairs. These are accessed and administer
 
 ## 🗺 Overview
 The example pipeline is simple as can be. In our one and only step we access the stacks active secret manager and
-query for an example called `example_secret`. We then access the contents of this secret and query the secret with the
-unique key: `example_secret_key`. 
+query for a secret called `example_secret`. We then access the value for the unique key: `example_secret_key` of this secret.
 
 Similarly, you would be able to pass access keys, password, credentials and so on into your pipeline steps to do with as
 you please.
