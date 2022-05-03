@@ -159,8 +159,6 @@ def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
     MATERIALIZER_FILE = "materializer_file"
     CUSTOM_OBJ_FILE = "custom_obj_file"
 
-    CliRunner()
-
     os.chdir(str(tmp_path))
     Repository.initialize()
     clean_repo.activate_root()

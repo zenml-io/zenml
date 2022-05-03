@@ -31,8 +31,8 @@ from zenml.utils import source_utils, yaml_utils
 logger = get_logger(__name__)
 
 
-def _get_module(
-    module: types.ModuleType, config_item: Union[str, Dict[str, str]]
+def _load_class_from_module(
+    module: types.ModuleType, config_item: Dict[str, str]
 ) -> Any:
     """Based on a config item from the config yaml the corresponding module
     attribute is loaded.
@@ -41,11 +41,9 @@ def _get_module(
         module: Base module to use for import if only a function/class name is
                 supplied
         config_item: Config item loaded from the config yaml
-                        - If it is a string it is the name of a function/class
-                          in the module (e.g `step_name`)
-                        - If it is a dict, it will have a relative filepath and
-                          a function/class name (e.g {`file`: `steps/steps.py`,
-                          `name`: `step_name`}
+                        - it will have a function/class name and
+                        optionally a relative filepath
+                        (e.g {`file`: `steps/steps.py`, `name`: `step_name`}
 
     Returns:
          imported function/class
@@ -60,32 +58,44 @@ def _get_module(
         implemented_class = _get_module_attribute(module, implementation_name)
         return implemented_class
     elif isinstance(config_item, str):
-        correct_input = textwrap.dedent(
-            f"""
+        correct_input = textwrap.dedent(f"""
         {SourceConfigurationKeys.NAME_}: {config_item}
         {SourceConfigurationKeys.FILE_}: optional/filepath.py
         """
         )
 
         raise PipelineConfigurationError(
-            f"As of ZenML version 0.8.0 `str` entries are no longer supported "
-            f"to define steps or materializers. Instead you will now need to "
-            f"pass a dictionary. This dictionary **has to** contain a "
+            "As of ZenML version 0.8.0 `str` entries are no longer supported "
+            "to define steps or materializers. Instead you will now need to "
+            "pass a dictionary. This dictionary **has to** contain a "
             f"`{SourceConfigurationKeys.NAME_}` which refers to the function/"
-            f"class name. If this entity is defined outside the main module,"
-            f"you will need to additionally supply a "
+            "class name. If this entity is defined outside the main module,"
+            "you will need to additionally supply a "
             f"{SourceConfigurationKeys.FILE_} with the relative forward-slash-"
-            f"separated path to the file. \n"
+            "separated path to the file. \n"
             f"You tried to pass in `{config_item}` - however you should have "
-            f"specified the name (and file) like this:"
+            "specified the name (and file) like this:"
             f" {correct_input}"
         )
     else:
+        correct_input = textwrap.dedent(f"""
+        {SourceConfigurationKeys.NAME_}: ClassName
+        {SourceConfigurationKeys.FILE_}: optional/filepath.py
+        """
+        )
         raise PipelineConfigurationError(
-            f"Only `str` and `dict` values are allowed for "
-            f"'step_source' attribute of a step configuration. You "
+            "Only `dict` values are allowed for "
+            "'step_source' attribute of a step configuration. You "
             f"tried to pass in `{config_item}` (type: "
-            f"`{type(config_item).__name__}`)."
+            f"`{type(config_item).__name__}`). \n"
+            "You will now need to pass a dictionary. This dictionary "
+            f"**has to** contain a `{SourceConfigurationKeys.NAME_}` which "
+            "refers to the function/class name. If this entity is defined "
+            "outside the main module, you will need to additionally supply a "
+            f"{SourceConfigurationKeys.FILE_} with the relative forward-slash-"
+            "separated path to the file. \n"
+            "A correct configuration would look a bit like this:"
+            f"{correct_input}"
         )
 
 
@@ -146,7 +156,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     ].items():
         StepConfigurationKeys.key_check(step_config)
         source = step_config[StepConfigurationKeys.SOURCE_]
-        step_class = _get_module(module, source)
+        step_class = _load_class_from_module(module, source)
 
         step_instance = step_class()
         materializers_config = step_config.get(
@@ -156,10 +166,10 @@ def run_pipeline(python_file: str, config_path: str) -> None:
             # We need to differentiate whether it's a single materializer
             # or a dictionary mapping output names to materializers
             if isinstance(materializers_config, str):
-                materializers = _get_module(module, materializers_config)
+                materializers = _load_class_from_module(module, materializers_config)
             elif isinstance(materializers_config, dict):
                 materializers = {
-                    output_name: _get_module(module, source)
+                    output_name: _load_class_from_module(module, source)
                     for output_name, source in materializers_config.items()
                 }
             else:

@@ -161,14 +161,20 @@ def test_import_python_file(clean_repo, mocker, tmp_path):
 
     main_python_file = clean_repo.root / f"{MAIN_MODULE}.py"
     main_python_file.write_text(
-        f"from {SOME_MODULE}.{SOME_MODULE} import {SOME_FUNC}"
+        "import sys\n"
+        "import os\n"
+        "sys.path.append(os.path.dirname(os.path.dirname(__file__)))\n"
+        f"from {SOME_MODULE}.{SOME_MODULE} import {SOME_FUNC}\n"
     )
 
     other_python_file = clean_repo.root / SOME_MODULE / f"{SOME_MODULE}.py"
     other_python_file.parent.mkdir()
     other_python_file.write_text(
-        f"def {SOME_FUNC}(): return 1 \n" f"def {OTHER_FUNC}(): return 2"
+        f"def {SOME_FUNC}(): return 1 \n" f"def {OTHER_FUNC}(): return 2\n"
     )
+
+    assert main_python_file.exists()
+    assert other_python_file.exists()
 
     mocker.patch.object(sys, "path", [])
 
