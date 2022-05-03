@@ -4,7 +4,8 @@ description: Use these tools out-of-the-box with ZenML.
 
 # Integrations
 
-**ZenML** integrates with many different third-party tools as implementations for many different ZenML abstractions.
+**ZenML** integrates with many different third-party tools as implementations
+for many different ZenML abstractions.
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with powerful integrations on multiple
@@ -14,12 +15,17 @@ and ZenML aims to bring it all together under one roof.
 
 For example, we currently support [Airflow](https://airflow.apache.org/) and
 [Kubeflow](https://www.kubeflow.org/) as third-party orchestrators for your ML
-pipeline code. Experiment trackers like [MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) and 
-[Weights & Biases](https://wandb.ai/site) can easily be added to your ZenML pipeline. And you can seamlessly 
-transition from a local [MLflow deployment](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html) to
+pipeline code. Experiment trackers
+like [MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html) and
+[Weights & Biases](https://wandb.ai/site) can easily be added to your ZenML
+pipeline. And you can seamlessly
+transition from a
+local [MLflow deployment](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html)
+to
 a deployed model on Kubernetes using [Seldon Core](https://www.seldon.io/).
 
-All of this allows you to write your code now and add the right tool for the job as soon as the need arises. 
+All of this allows you to write your code now and add the right tool for the job
+as soon as the need arises.
 
 ![ZenML is the glue](../assets/zenml-is-the-glue.jpeg)
 
