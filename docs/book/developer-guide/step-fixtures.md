@@ -1,5 +1,5 @@
 ---
-description: Use Step Fixtures to Access the Stack from within a Step
+description: Use Step Fixtures to Access the Stack from within a Step.
 ---
 
 
@@ -14,10 +14,10 @@ on [Step Configuration](#step-configuration)
 * A `StepContext` object: This object gives access to the artifact store, metadata store, materializers, and special 
 integration-specific libraries.
 
-These special parameters are comparable to [pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html), hence the 
-name `Step Fixtures`.
+These special parameters are comparable to [Pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html), hence the 
+name 'Step fixtures'.
 
-`Step fixtures` are simple to use: Simply pass a parameter in with the right type hint as follows:
+`Step fixtures` are simple to use. Simply pass a parameter in with the right type hint as follows:
 
 ### Using fixtures in the Functional API
 
@@ -111,4 +111,5 @@ def my_step(
 
 For more information, check the [API reference](https://apidocs.zenml.io/latest/api_docs/steps/)
 
-The next [section](#fetching-historic-runs) will directly address one important use for the Step Context.
+The next [section](#fetching-historic-runs) will directly address one important
+use for the Step Context.

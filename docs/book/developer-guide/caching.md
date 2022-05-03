@@ -1,5 +1,5 @@
 ---
-description: Discover the Power of Caching with ZenML
+description: Discover the power of caching with ZenML.
 ---
 
 # Caching
@@ -33,7 +33,7 @@ def first_pipeline(....):
 ### Control Caching on a Step Level
 
 Caching can also be explicitly turned off at a step level. You might want to turn off caching for steps that take 
-external input (like fetching data from an API/ File IO).
+external input (like fetching data from an API or File IO).
 
 ```python
 @step(enable_cache=False)

@@ -4,9 +4,10 @@ description: Control how Data is persisted between Steps
 
 # Materializers
 
-As described above a ZenML pipeline is built in a data centric way. The outputs and inputs
-of steps define how steps are connected and the order in which they are executed. Each step should be considered as 
-its very own process that reads and writes its inputs and outputs from and to the artifact store. This is where 
+A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
+define how steps are connected and the order in which they are executed. Each
+step should be considered as its very own process that reads and writes its
+inputs and outputs from and to the artifact store. This is where
 **materializers** come into play.
 
 ### What is a materializer?
@@ -149,7 +150,7 @@ class MyMaterializer(BaseMaterializer):
 Pro-tip: Use the ZenML `fileio` handler to ensure your materialization logic works across artifact stores (local and 
 remote like S3 buckets).
 
-Now ZenML can use this materializer to handle outputs and inputs of your customs object. Edit the pipeline as follows, 
+Now ZenML can use this materializer to handle outputs and inputs of your customs object. Edit the pipeline as follows 
 to see this in action:
 
 ```python

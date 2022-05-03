@@ -80,4 +80,4 @@ behavior.
 
 ### What's in store for the standard artifacts in the feature?
 
-This section is WIP.
+🚧 This section is WIP.
