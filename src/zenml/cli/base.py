@@ -100,7 +100,7 @@ def clean(yes: bool = False) -> None:
 
 @cli.command("go")
 def go() -> None:
-    """Quickly explore zenml with this walk through."""
+    """Quickly explore ZenML with this walkthrough."""
     console.print(zenml_go_welcome_message, width=80)
 
     from zenml.config.global_config import GlobalConfiguration
@@ -137,7 +137,7 @@ def go() -> None:
 
 
 def _prompt_email(gc: GlobalConfiguration) -> None:
-    """Ask the user to give his email address"""
+    """Ask the user to give their email address"""
 
     console.print(zenml_go_email_prompt, width=80)
 
@@ -146,7 +146,7 @@ def _prompt_email(gc: GlobalConfiguration) -> None:
     )
     if email:
         if len(email) > 0 and email.count("@") != 1:
-            warning("That doesn't look like an email, skipping ...")
+            warning("That doesn't look like an email. Skipping ...")
         else:
 
             console.print(zenml_go_thank_you_message, width=80)

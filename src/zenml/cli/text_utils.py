@@ -24,10 +24,10 @@ zenml_go_welcome_message = Markdown(
 zenml_go_email_prompt = Markdown(
     """
 Here at ZenML we are working hard to produce the best
-possible MLOps framework. In order to solve real world problems
-we want to ask you, the user for feedback and ideas. If
-you are interested in helping us shape the MLOps world
-please leave your email below (leave blank to skip). We will
+possible MLOps framework. In order to solve real-world problems
+we want to ask you, the user, for feedback and ideas. If
+you are interested in helping us shape the world of MLOps 
+please leave your email below (or leave blank to skip). We will
 only use this for the purpose of reaching out to you for a
 user interview and to better understand usage.
 """
@@ -37,10 +37,10 @@ zenml_go_privacy_message = Markdown(
     """
 ## 🔒 Privacy Policy at ZenML!
 
-As an open source project we rely on usage statistics to inform our decisions
-moving forward. The statistics do not contain any of your code, data or personal
+As an open-source project we rely on usage statistics to inform our decisions
+about what features to build. The statistics do not contain any of your code, data or personal
 information. All we see on our end is metadata like operating system, stack
-flavors and triggered events like pipeline runs.
+flavors and that events like pipeline runs were triggered.
 
 If you wish to opt out, feel free to run the following command:
 ```bash
@@ -51,7 +51,7 @@ zenml analytics opt-out
 
 zenml_go_thank_you_message = Markdown(
     """
-🙏  Thank You!
+🙏  Thank you!
 """
 )
 
@@ -63,10 +63,10 @@ def zenml_go_notebook_tutorial_message(ipynb_files: List[str]) -> Markdown:
         f"""
 ## 🧑‍🏫 Get started with ZenML
 
-The zenml tutorials repository was cloned to your current working directory.
-Within the repository you can get started on one of these Notebooks:
+The ZenML tutorial repository was cloned to your current working directory.
+Within the repository you can get started on one of these notebooks:
 {''.join(ipynb_files)}
-Starting a jupyter notebook server now. Feel free to try your hand at our
+Starting a Jupyter notebook server now. Feel free to try your hand at our
 tutorial notebooks. If your browser does not open automatically click one of the
 links below.
 
