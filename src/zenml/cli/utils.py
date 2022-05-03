@@ -478,7 +478,17 @@ def validate_flavor_source(
         component_type: the type of the stack component
     """
     stack_component_class = load_source_path_class(source)
-    assert stack_component_class.TYPE == component_type  # noqa
+    if not issubclass(stack_component_class, StackComponent):
+        raise TypeError(
+            f"The source '{source}' does not point to a subclass of the ZenML"
+            f"StackComponent."
+        )
+
+    if stack_component_class.TYPE != component_type:  # noqa
+        raise TypeError(
+            f"The source points to a {stack_component_class.TYPE}, not a "  # noqa
+            f"{component_type}."
+        )
     return stack_component_class  # noqa
 
 
