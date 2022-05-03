@@ -126,33 +126,6 @@ def register_stack(
     experiment_tracker_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
-    _register_stack(
-        stack_name=stack_name,
-        metadata_store_name=metadata_store_name,
-        artifact_store_name=artifact_store_name,
-        orchestrator_name=orchestrator_name,
-        container_registry_name=container_registry_name,
-        secrets_manager_name=secrets_manager_name,
-        step_operator_name=step_operator_name,
-        feature_store_name=feature_store_name,
-        model_deployer_name=model_deployer_name,
-        experiment_tracker_name=experiment_tracker_name,
-    )
-
-
-def _register_stack(
-    stack_name: str,
-    metadata_store_name: str,
-    artifact_store_name: str,
-    orchestrator_name: str,
-    container_registry_name: Optional[str] = None,
-    secrets_manager_name: Optional[str] = None,
-    step_operator_name: Optional[str] = None,
-    feature_store_name: Optional[str] = None,
-    model_deployer_name: Optional[str] = None,
-    experiment_tracker_name: Optional[str] = None,
-) -> None:
-    """TODO: refactor"""
     cli_utils.print_active_profile()
 
     with console.status(f"Registering stack '{stack_name}'...\n"):
@@ -607,7 +580,7 @@ def delete_stack(stack_name: str, yes: bool = False) -> None:
     )
 
     if not confirmation:
-        cli_utils.declare("Stack deletion cancelled.")
+        cli_utils.declare("Stack deletion canceled.")
 
     with console.status(f"Deleting stack '{stack_name}'...\n"):
         cfg = GlobalConfiguration()
@@ -762,7 +735,8 @@ def export_stack(stack_name: str, filename: str) -> None:
 @stack.command("import")
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=True)
-def import_stack(stack_name: str, filename: str) -> None:
+@click.pass_context
+def import_stack(ctx: click.Context, stack_name: str, filename: str) -> None:
     """Import a stack from YAML."""
     with open(filename, "r") as yaml_file:
         data = yaml.safe_load(yaml_file)
@@ -787,4 +761,4 @@ def import_stack(stack_name: str, filename: str) -> None:
         )
         component = component_class(**component_config)  # unused kwargs ignored
         Repository().register_stack_component(component)
-    _register_stack(stack_name=stack_name, **component_names)
+    ctx.invoke(register_stack, stack_name=stack_name, **component_names)
