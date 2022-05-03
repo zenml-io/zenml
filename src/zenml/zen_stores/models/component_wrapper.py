@@ -65,7 +65,7 @@ class ComponentWrapper(BaseModel):
 
         try:
             # Try to find if there are any custom flavor implementations
-            flavor_wrapper = Repository(
+            flavor_wrapper = Repository(  # type: ignore[call-arg]
                 skip_repository_check=True
             ).zen_store.get_flavor_by_name_and_type(
                 flavor_name=self.flavor,
