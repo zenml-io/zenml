@@ -9,7 +9,7 @@ deeply built-in tracking enables some powerful features - e.g. reproducibility.
 
 ## CLI
 
-Check out the CLI commands concerning the artifact store
+Check out the CLI commands concerning the metadata store
 [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--customizing-your-metadata-store)
 .
 
