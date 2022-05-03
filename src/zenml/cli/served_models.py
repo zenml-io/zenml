@@ -298,7 +298,7 @@ def get_model_service_logs(
     model_deployer: "BaseModelDeployer",
     served_model_uuid: str,
     follow: bool,
-    tail: int,
+    tail: Optional[int],
     raw: bool,
 ) -> None:
     """Display the logs for a model server."""
