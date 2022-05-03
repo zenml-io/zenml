@@ -25,7 +25,7 @@ zenml_go_email_prompt = Markdown(
     """
 Here at ZenML we are working hard to produce the best
 possible MLOps framework. In order to solve real-world problems
-we want to ask you, the user for feedback and ideas. If
+we want to ask you, the user, for feedback and ideas. If
 you are interested in helping us shape the MLOps world
 please leave your email below (leave blank to skip). We will
 only use this for the purpose of reaching out to you for a
