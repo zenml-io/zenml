@@ -99,7 +99,7 @@ def clean(yes: bool = False) -> None:
 
 @cli.command("go")
 def go() -> None:
-    """Quickly explore zenml with this walk through."""
+    """Quickly explore ZenML with this walkthrough."""
     console.print(zenml_go_welcome_message, width=80)
 
     from zenml.config.global_config import GlobalConfiguration
