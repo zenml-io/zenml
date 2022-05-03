@@ -114,6 +114,7 @@ if __name__ == "__main__":
     validation_step = last_run.get_step(name="validator")
     results = validation_step.outputs["results"].read()
     datadoc_path = validation_step.outputs["data_doc"].read()
-    console.print(results)
-
-    GreatExpectationsVisualizer().visualize(datadoc_path)
+    if not results["success"]:
+        console.print("Data failed to pass the Expectations Suite. \n")
+        console.print(results)
+        GreatExpectationsVisualizer().visualize(datadoc_path)
