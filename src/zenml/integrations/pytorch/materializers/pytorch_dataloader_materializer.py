@@ -36,7 +36,7 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
         """Reads and returns a PyTorch dataloader.
 
         Returns:
-            A loaded pytorch dataloader.
+            A loaded PyTorch dataloader.
         """
         super().handle_input(data_type)
         with fileio.open(
