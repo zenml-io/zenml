@@ -21,7 +21,7 @@ Read more about Why ZenML exists [here](why-zenml.md).
 
 ![Before and after ZenML](../assets/sam-side-by-side-full-text.png)
 
-ZenML is created for data science / machine learning teams that are not only engaged in training models, but also in 
+ZenML is created for data science and machine learning teams that are not only engaged in training models, but also in 
 putting them out in production. Production can mean many things, but examples could be:
 
 * If you are using a model to generate analysis periodically for any business process.
@@ -51,11 +51,11 @@ early stages of your project, you get the following benefits:
 * Painless **deployment and configuration** of infrastructure
 * **Scale up** your stack transparently and logically to suit your training and deployment needs
 
-## What is so special about ZenML?
+## What's special about ZenML?
 
 While there are other workflow orchestration tools, ZenML is built because we envisioned the following:
 
-* We wanted a tool that is **flexible**: Simple Python functions can be converted into a workflow step.
+* We wanted a tool that is **flexible**: Simple Python functions can be converted into workflow steps.
 * We wanted a tool that is **simple:** You can run it locally and with a few commands can get it running on the 
 cloud with minimum changes.
 * We wanted to create a **machine learning specific** workflow tool: With ML, workflows need to focus not just 
@@ -86,7 +86,7 @@ Going from model-centric to data-centric AI has been a theme of the last years, 
 (see video below). ZenML is built with data-centric pipelines in mind. Concretely, this means:
 
 * It allows defining data flow pipelines, rather than task dependencies. (Read this 
-[awesome post](https://rillabs.org/posts/workflows-dataflow-not-task-deps) by RIL Labs to see why that matters.)
+[awesome post](https://web.archive.org/web/20211209192245/https://rillabs.org/posts/workflows-dataflow-not-task-deps) by RIL Labs to see why that matters.)
 * It allows developers to explore data artifacts natively in interactive environments.
 * It exposes first class data comparison mechanisms and tracks relevant metadata automatically.
 
@@ -112,4 +112,5 @@ of the most commonly used parts an ML stack: checkout our supported integrations
 
 An additional important benefit of the stack is the infrastructure and tooling agnostic code that is achieved. With
 ZenML you can write your code once and simply go from local to remote stack with just a few CLI commands. You can also 
-almost seamlessly switch between tool or cloud providers with minimal changes in the code. 
+almost seamlessly switch between tool or cloud providers with minimal changes in
+the code. 
