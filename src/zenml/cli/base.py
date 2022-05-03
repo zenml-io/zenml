@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Optional
 
 import click
-from git import Repo  # type: ignore
 
 from zenml.cli.cli import cli
 from zenml.cli.text_utils import (
@@ -30,10 +29,12 @@ from zenml.cli.text_utils import (
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.exceptions import InitializationException
+from zenml.exceptions import InitializationException, GitNotFoundError
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import identify_user
+from zenml.logger import get_logger
 
+logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
 # exists, we are on the latest Windows Terminal that supports emojis
 _SHOW_EMOJIS = not os.name == "nt" or os.environ.get("WT_SESSION")
@@ -111,6 +112,17 @@ def go() -> None:
     console.print(zenml_go_privacy_message, width=80)
 
     if not os.path.isdir("zenml_tutorial"):
+        try:
+            from git.repo.base import Repo
+        except ImportError as e:
+            logger.error(
+                "At this point we would want to clone our tutorial repo onto "
+                "your machine to let you dive right into our code. However, "
+                "this machine has no installation of Git. Feel free to install "
+                "git and rerun this command. Alternatively you can also "
+                f"download the repo manually here: {TUTORIAL_REPO}."
+            )
+            raise GitNotFoundError(e)
         Repo.clone_from(TUTORIAL_REPO, "zenml_tutorial")
 
     cwd = os.getcwd()
