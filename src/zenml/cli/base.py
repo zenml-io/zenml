@@ -125,7 +125,7 @@ def go() -> None:
 
 
 def _prompt_email(gc: GlobalConfiguration) -> None:
-    """Ask the user to give his email address"""
+    """Ask the user to give their email address"""
 
     console.print(zenml_go_email_prompt, width=80)
 
