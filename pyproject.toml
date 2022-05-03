@@ -230,6 +230,7 @@ module = [
     "neuralprophet.*",
     "wandb.*",
     "lightgbm.*",
+    "scipy.*",
 ]
 ignore_missing_imports = true
 
