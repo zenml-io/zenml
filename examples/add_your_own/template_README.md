@@ -26,7 +26,7 @@ THE PATH TO THE NOTEBOOK HERE])
 
 ## ⏩ SuperQuick `EXAMPLE_NAME` run
 
-If you're really in a hurry, and you want just to see this example pipeline run,
+If you're really in a hurry and just want to see this example pipeline run
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 

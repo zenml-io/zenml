@@ -4,7 +4,7 @@ A big welcome and thank you for considering contributing to ZenML! It’s people
 in our community.
 
 Reading and following these guidelines will help us make the contribution process easy and effective for everyone
-involved. It also communicates that you agree to respect the time of the developers managing and developing these open
+involved. It also communicates that you agree to respect the developers' time management and develop these open
 source projects. In return, we will reciprocate that respect by addressing your issue, assessing changes, and helping
 you finalize your pull requests.
 
@@ -18,25 +18,25 @@ you finalize your pull requests.
 
 ## 🧑‍⚖️ Code of Conduct
 
-We take our open source community seriously and hold ourselves and other contributors to high standards of
-communication. By participating and contributing to this project, you agree to uphold
+We take our open source community seriously and hold ourselves and other contributors to high communication standards.
+By participating and contributing to this project, you agree to uphold
 our [Code of Conduct](https://github.com/zenml-io/zenml/blob/master/CODE-OF-CONDUCT.md).
 
 ## 🛫 Getting Started
 
 Contributions are made to this repo via Issues and Pull Requests (PRs). A few general guidelines that cover both:
 
-- To report security vulnerabilities, please contact [support@zenml.io](mailto:support@zenml.io), which is monitored by
+- To report security vulnerabilities, please get in touch with [support@zenml.io](mailto:support@zenml.io), monitored by
   our security team.
 - Search for existing Issues and PRs before creating your own.
-- We work hard to makes sure issues are handled in a timely manner but, depending on the impact, it could take a while
-  to investigate the root cause. A friendly ping in the comment thread to the submitter or a contributor can help draw
+- We work hard to make sure issues are handled on time, but it could take a while to investigate the root cause depending on the impact.
+
+A friendly ping in the comment thread to the submitter or a contributor can help draw
   attention if your issue is blocking.
 
 The best way to start is to check
 the [`good-first-issue` label](https://github.com/zenml-io/zenml/labels/good%20first%20issue) on the issue board. These
-issues are created by the core team as important smaller tasks that you can work on in order to get deeper into ZenML
-internals.
+The core team creates these issues as necessary smaller tasks that you can work on to get deeper into ZenML internals.
 
 ### ⁉️ Issues
 
@@ -44,7 +44,7 @@ Issues should be used to report problems with the library, request a new feature
 a PR is created. When you create a new Issue, a template will be loaded that will guide you through collecting and
 providing the information we need to investigate.
 
-If you find an Issue that addresses the problem you're having, please add your own reproduction information to the
+If you find an Issue that addresses your problem, please add your own reproduction information to the
 existing issue rather than creating a new one. Adding
 a [reaction](https://github.blog/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/) can also help be
 indicating to our maintainers that a particular problem is affecting more than just the reporter.
