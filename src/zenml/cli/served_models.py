@@ -33,7 +33,7 @@ from zenml.repository import Repository
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
     """List and manage served models that are deployed using the active model
-    deployer in the stack.
+    deployer.
     """
     ctx.obj = Repository().active_stack.components.get(
         StackComponentType.MODEL_DEPLOYER, None

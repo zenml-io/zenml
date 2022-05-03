@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 # Analytics
 @cli.group()
 def analytics() -> None:
-    """Analytics for opt-in and opt-out"""
+    """Analytics for opt-in and opt-out."""
 
 
 @analytics.command("get")

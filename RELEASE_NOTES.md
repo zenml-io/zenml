@@ -1,6 +1,59 @@
 # 0.7.3
 
-## What's Changed
+## 📊 Experiment Tracking Components
+
+[PR #530](https://github.com/zenml-io/zenml/pull/530) adds a new stack component to ZenMLs ever-growing list:  `experiment_trackers` allows users to configure your experiment tracking tools with ZenML. Examples of experiment tracking tools are [Weights&Biases](https://wandb.ai), [mlflow](https://mlflow.org), [Neptune](https://neptune.ai), amongst others.
+
+Existing users might be confused, as ZenML has had MLflow and wandb support for a while now without such a component. However, this component allows uses more control over the configuration of MLflow and wandb with the new `MLFlowExperimentTracker` and 
+ `WandbExperimentTracker` components. This allows these tools to work in more scenarios than the currently limiting local use-cases.
+
+## 🔎 XGBoost and LightGBM support
+
+[XGBoost](https://xgboost.readthedocs.io/en/stable/) and [LightGBM](https://lightgbm.readthedocs.io/) are one of the most widely used boosting algorithm libraries out there. This release adds materializers for native objects for each library.
+
+Check out [both examples here](https://github.com/zenml-io/zenml/tree/main/examples) and PR's [#544](https://github.com/zenml-io/zenml/pull/544) and [#538](https://github.com/zenml-io/zenml/pull/538) for more details.
+
+## 📂 Parameterized S3FS support to enable non-AWS S3 storage (minio, ceph)
+
+A big complaint of the [S3 Artifact Store](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/s3/artifact_stores/s3_artifact_store.py) integration was that it was hard to parameterize it in a way that it supports non-AWS S3 storage like [minio](https://min.io/) and [ceph](https://docs.ceph.com/en/latest/radosgw/s3/). The latest release 
+ made this super simple! When you want to register an S3ArtifactStore from the CLI, you can now pass in  `client_kwargs`, `config_kwargs` or `s3_additional_kwargs` as a JSON string. For example:
+
+```shell
+zenml artifact-store register my_s3_store --type=s3 --path=s3://my_bucket \
+    --client_kwargs='{"endpoint_url": "http://my-s3-endpoint"}'
+```
+
+See PR [#532](https://github.com/zenml-io/zenml/pull/532) for more details.
+
+## 🧱 New CLI commands to update stack components
+
+We added functionality to allow users to update stacks that already exist. This shows the basic workflow:
+
+```shell
+zenml orchestrator register local_orchestrator2 -t local
+zenml stack update default -o local_orchestrator2
+zenml stack describe default
+zenml container-registry register local_registry --type=default --uri=localhost:5000
+zenml container-registry update local --uri='somethingelse.com'
+zenml container-registry rename local local2
+zenml container-registry describe local2
+zenml stack rename default new_default
+zenml stack update new_default -c local2
+zenml stack describe new_default
+zenml stack remove-component -c
+```
+More details are in the [CLI docs](https://apidocs.zenml.io/0.7.3/cli/). 
+Users can add new stack components to a pre-existing stack, or they can modify 
+already-present stack components. They can also rename their stack and individual stack components.
+
+## 🐛 Seldon Core authentication through ZenML secrets
+
+The Seldon Core Model Deployer stack component was updated in this release to allow the configuration of ZenML secrets with credentials that authenticate Seldon to access the Artifact Store. The Seldon Core integration provides 3 different secret schemas for the 3 flavors of Artifact Store: AWS, GCP, and Azure, but custom secrets can be used as well. For more information on how to use this feature please refer to our [Seldon Core deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment).
+
+Lastly, we had numerous other changes such as ensuring the PyTorch materializer works across all artifact stores 
+and the Kubeflow Metadata Store can be easily queried locally.
+
+## Detailed Changelog
 * Fix caching & `mypy` errors by @strickvl in https://github.com/zenml-io/zenml/pull/524
 * Switch unit test from local_daemon to multiprocessing by @jwwwb in https://github.com/zenml-io/zenml/pull/508
 * Change Pytorch materializer to support remote storage by @safoinme in https://github.com/zenml-io/zenml/pull/525
@@ -26,6 +79,7 @@
 * @fa9r made their first contribution in https://github.com/zenml-io/zenml/pull/539
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.7.2...0.7.3
+**Blog Post**: https://blog.zenml.io/zero-seven-two-three-release/
 
 # 0.7.2
 
@@ -59,7 +113,7 @@ in our [Continuous Training and Deployment documentation section](https://docs.z
 * Create base deployer and refactor MLflow deployer implementation by @wjayesh in https://github.com/zenml-io/zenml/pull/489
 * Add nlp example by @Ankur3107 in https://github.com/zenml-io/zenml/pull/467
 * Fix typos by @strickvl in https://github.com/zenml-io/zenml/pull/515
-* Bugfix/hypothesis given doesnt work with fixture by @jwwwb in https://github.com/zenml-io/zenml/pull/513
+* Bugfix/hypothesis given does not work with fixture by @jwwwb in https://github.com/zenml-io/zenml/pull/513
 * Bug: fix long Kubernetes labels in Seldon deployments by @stefannica in https://github.com/zenml-io/zenml/pull/514
 * Change prediction_uri to prediction_url in MLflow deployer by @stefannica in https://github.com/zenml-io/zenml/pull/516
 * Simplify HuggingFace Integration by @AlexejPenner in https://github.com/zenml-io/zenml/pull/517
@@ -138,7 +192,7 @@ Beyond this, some smaller bugfixes and documentation changes combine to make Zen
 
 With ZenML 0.6.3, you can now run your ZenML steps on Sagemaker and AzureML! It's normal to have certain steps that require specific hardware on which to run model training, for example, and this latest release gives you the power to switch out hardware for individual steps to support this.
 
-We added a new Tensorboard visualisation that you can make use of when using our Kubeflow Pipelines integration. We handle the background processes needed to spin up this interactive web interface that you can use to visualise your model's performance over time.
+We added a new Tensorboard visualization that you can make use of when using our Kubeflow Pipelines integration. We handle the background processes needed to spin up this interactive web interface that you can use to visualize your model's performance over time.
 
 Behind the scenes we gave our integration testing suite a massive upgrade, fixed a number of smaller bugs and made documentation updates. For a detailed look at what's changed, give [our full release notes](https://github.com/zenml-io/zenml/releases/tag/0.6.3) a glance.
 
@@ -217,7 +271,7 @@ Smaller changes that you'll notice include much-awaited updates and fixes, inclu
 
 For a detailed look at what's changed, see below.
 
-## Whats changed
+## What's changed
 
 * Add MVP for scheduling by @htahir1 in https://github.com/zenml-io/zenml/pull/354
 * Add S3 artifact store and filesystem by @schustmi in https://github.com/zenml-io/zenml/pull/359

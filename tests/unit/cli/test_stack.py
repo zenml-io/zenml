@@ -17,6 +17,7 @@ from click.testing import CliRunner
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.cli.stack import (
+    delete_stack,
     describe_stack,
     remove_stack_component,
     rename_stack,
@@ -203,3 +204,19 @@ def test_remove_non_core_component_from_stack_succeeds(clean_repo) -> None:
     )
     assert result.exit_code == 0
     assert clean_repo.active_stack.secrets_manager is None
+
+
+def test_deleting_stack_with_flag_succeeds(clean_repo) -> None:
+    """Test stack delete with flag succeeds."""
+    new_stack = Stack(
+        name="arias_new_stack",
+        orchestrator=clean_repo.active_stack.orchestrator,
+        metadata_store=clean_repo.active_stack.metadata_store,
+        artifact_store=clean_repo.active_stack.artifact_store,
+    )
+    clean_repo.register_stack(new_stack)
+    runner = CliRunner()
+    result = runner.invoke(delete_stack, ["arias_new_stack", "-y"])
+    assert result.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_repo.get_stack("arias_new_stack")
