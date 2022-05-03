@@ -29,8 +29,19 @@ def validate_flavor_source(
     Args:
         source: source path of the implementation
         component_type: the type of the stack component
+
+    Raises:
+        ValueError: If ZenML can not find the given module path
+        TypeError: If the given module path does not point to a subclass of a
+            StackComponent which has the right component type.
     """
-    stack_component_class = load_source_path_class(source)
+    try:
+        stack_component_class = load_source_path_class(source)
+    except (ValueError, AttributeError, ImportError):
+        raise ValueError(
+            "ZenML can not the source of the given module."
+        )
+
     if not issubclass(stack_component_class, StackComponent):
         raise TypeError(
             f"The source '{source}' does not point to a subclass of the ZenML"
