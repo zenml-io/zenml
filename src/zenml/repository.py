@@ -307,6 +307,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             profile: configuration profile to set as active.
+            new_profile: a boolean which indicates if the given profile
+                configuration belongs to a brand-new profile
         """
         self._profile = profile
         self.zen_store: BaseZenStore = self.create_store(
