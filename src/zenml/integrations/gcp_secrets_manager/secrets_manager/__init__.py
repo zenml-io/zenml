@@ -18,7 +18,8 @@ secrets manager and use the secrets within during runtime.
 
 ...
 """
-from zenml.integrations.gcp_secrets_manager.secrets_manager\
-    .gcp_secrets_manager import GCPSecretsManager
+from zenml.integrations.gcp_secrets_manager.secrets_manager.gcp_secrets_manager import (
+    GCPSecretsManager,
+)
 
 __all__ = ["GCPSecretsManager"]

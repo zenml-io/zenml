@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
-from typing import Any, ClassVar, Dict, List
 import re
+from typing import Any, ClassVar, Dict, List
 
 from google.cloud import secretmanager
 
@@ -41,7 +40,7 @@ def add_group_name_to_keys(secret: BaseSecretSchema) -> Dict:
     """
     new_dict = dict()
     for k, v in secret.content.items():
-        new_dict[secret.name + '_' + k] = v
+        new_dict[secret.name + "_" + k] = v
 
     return new_dict
 
@@ -86,8 +85,9 @@ class GCPSecretsManager(BaseSecretsManager):
         self._ensure_client_connected()
 
         if secret.name in self.get_all_secret_keys():
-            raise KeyError(f"A Secret with the name {secret.name} already "
-                           f"exists.")
+            raise KeyError(
+                f"A Secret with the name {secret.name} already " f"exists."
+            )
 
         adjusted_content = add_group_name_to_keys(secret)
         for k, v in adjusted_content.items():
@@ -97,23 +97,29 @@ class GCPSecretsManager(BaseSecretsManager):
                 request={
                     "parent": self.parent_name,
                     "secret_id": k,
-                    "secret": {"replication": {"automatic": {}},
-                               "labels": [(ZENML_GROUP_KEY, secret.name),
-                                          (ZENML_SCHEMA_NAME, secret.TYPE)]}
+                    "secret": {
+                        "replication": {"automatic": {}},
+                        "labels": [
+                            (ZENML_GROUP_KEY, secret.name),
+                            (ZENML_SCHEMA_NAME, secret.TYPE),
+                        ],
+                    },
                 }
             )
 
             logger.debug("Created empty secret: %s", gcp_secret.name)
 
             self.CLIENT.add_secret_version(
-                request={"parent": gcp_secret.name,
-                         "payload": {"data": "{}".format(v).encode()}}
+                request={
+                    "parent": gcp_secret.name,
+                    "payload": {"data": "{}".format(v).encode()},
+                }
             )
 
             logger.debug("Added value to secret.")
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
-        """Gets a secret.
+        """Get a secret by its name.
 
         Args:
             secret_name: the name of the secret to get
@@ -133,18 +139,22 @@ class GCPSecretsManager(BaseSecretsManager):
 
         # List all secrets.
         for secret in self.CLIENT.list_secrets(request={"parent": parent}):
-            if (ZENML_GROUP_KEY in secret.labels
-                    and secret_name == secret.labels[ZENML_GROUP_KEY]):
+            if (
+                ZENML_GROUP_KEY in secret.labels
+                and secret_name == secret.labels[ZENML_GROUP_KEY]
+            ):
 
-                secret_version_name = secret.name + '/versions/latest'
+                secret_version_name = secret.name + "/versions/latest"
 
                 response = self.CLIENT.access_secret_version(
-                    request={"name": secret_version_name})
+                    request={"name": secret_version_name}
+                )
 
                 secret_value = response.payload.data.decode("UTF-8")
 
                 secret_key = remove_group_name_from_key(
-                    secret.name.split('/')[-1], secret_name)
+                    secret.name.split("/")[-1], secret_name
+                )
 
                 secret_contents[secret_key] = secret_value
 
@@ -181,7 +191,8 @@ class GCPSecretsManager(BaseSecretsManager):
         return list(set_of_secrets)
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
-        """Update an existing secret.
+        """Update an existing secret by creating new versions of the existing
+        secrets.
 
         Args:
             secret: the secret to update"""
@@ -195,9 +206,8 @@ class GCPSecretsManager(BaseSecretsManager):
             parent = self.CLIENT.secret_path(self.project_id, k)
             payload = {"data": "{}".format(v).encode()}
 
-            gcp_secret_version = self.CLIENT.add_secret_version(
-                request={"parent": parent,
-                         "payload": payload}
+            self.CLIENT.add_secret_version(
+                request={"parent": parent, "payload": payload}
             )
 
     def delete_secret(self, secret_name: str) -> None:
@@ -216,8 +226,10 @@ class GCPSecretsManager(BaseSecretsManager):
         # Go through all gcp secrets and delete the ones with the secret_name
         #  as label.
         for secret in self.CLIENT.list_secrets(request={"parent": parent}):
-            if (ZENML_GROUP_KEY in secret.labels
-                    and secret_name == secret.labels[ZENML_GROUP_KEY]):
+            if (
+                ZENML_GROUP_KEY in secret.labels
+                and secret_name == secret.labels[ZENML_GROUP_KEY]
+            ):
                 self.CLIENT.delete_secret(request={"name": secret.name})
 
     def delete_all_secrets(self, force: bool = False) -> None:
@@ -231,12 +243,13 @@ class GCPSecretsManager(BaseSecretsManager):
 
         # List all secrets.
         for secret in self.CLIENT.list_secrets(request={"parent": parent}):
-            if (ZENML_GROUP_KEY in secret.labels
-                    or ZENML_SCHEMA_NAME in secret.labels):
-                logger.info("Deleted key-value pair {`%s`, `***`} from secret "
-                            "`%s`",
-                            secret.name.split('/')[-1],
-                            secret.labels[ZENML_GROUP_KEY])
+            if (
+                ZENML_GROUP_KEY in secret.labels
+                or ZENML_SCHEMA_NAME in secret.labels
+            ):
+                logger.info(
+                    "Deleted key-value pair {`%s`, `***`} from secret " "`%s`",
+                    secret.name.split("/")[-1],
+                    secret.labels[ZENML_GROUP_KEY],
+                )
                 self.CLIENT.delete_secret(request={"name": secret.name})
-
-

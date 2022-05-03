@@ -30,7 +30,9 @@ class GcpSecretManagerIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        from zenml.integrations.gcp_secrets_manager import secrets_manager  # noqa
+        from zenml.integrations.gcp_secrets_manager import (  # noqa
+            secrets_manager,
+        )
 
 
 GcpSecretManagerIntegration.check_installation()
