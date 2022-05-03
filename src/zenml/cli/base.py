@@ -111,9 +111,7 @@ def go() -> None:
     console.print(zenml_go_privacy_message, width=80)
 
     if not os.path.isdir("zenml_tutorial"):
-        Repo.clone_from(
-            TUTORIAL_REPO, "zenml_tutorial"
-        )
+        Repo.clone_from(TUTORIAL_REPO, "zenml_tutorial")
 
     cwd = os.getcwd()
     zenml_tutorial_path = os.path.join(cwd, "zenml_tutorial")
