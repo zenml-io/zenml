@@ -175,6 +175,12 @@ examples = [
             step_count=4,
         ),
     ),
+    ExampleIntegrationTestConfiguration(
+        name="pytorch",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="fashion_mnist_pipeline", step_count=3
+        ),
+    ),
 ]
 
 
