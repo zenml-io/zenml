@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
+import json
 from typing import Optional
 
 import click
@@ -724,7 +725,7 @@ def export_stack(filename: Optional[str], stack_name: Optional[str]) -> None:
         )
         component_dict = {
             key: value
-            for key, value in component.dict().items()
+            for key, value in json.loads(component.json()).items()
             if key != "uuid" and value is not None
         }
         component_dict["flavor"] = component.FLAVOR
