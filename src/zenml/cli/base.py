@@ -111,7 +111,9 @@ def go() -> None:
 
     console.print(zenml_go_privacy_message, width=80)
 
-    if not os.path.isdir("zenml_tutorial"):
+    zenml_tutorial_path = os.path.join(os.getcwd(), "zenml_tutorial")
+
+    if not os.path.isdir(zenml_tutorial_path):
         try:
             from git.repo.base import Repo
         except ImportError as e:
@@ -123,10 +125,7 @@ def go() -> None:
                 f"download the repo manually here: {TUTORIAL_REPO}."
             )
             raise GitNotFoundError(e)
-        Repo.clone_from(TUTORIAL_REPO, "zenml_tutorial")
-
-    cwd = os.getcwd()
-    zenml_tutorial_path = os.path.join(cwd, "zenml_tutorial")
+        Repo.clone_from(TUTORIAL_REPO, zenml_tutorial_path)
 
     ipynb_files = [
         fi for fi in os.listdir(zenml_tutorial_path) if fi.endswith(".ipynb")
