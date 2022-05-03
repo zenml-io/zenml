@@ -24,7 +24,6 @@ from zenml.steps import Output, step
 
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"Using {device} device")
 
 # Define model
 class NeuralNetwork(nn.Module):
@@ -50,7 +49,7 @@ def importer_mnist() -> Output(
     train_dataloader=DataLoader,
     test_dataloader=DataLoader,
 ):
-    """Download the Fashion MNIST data store it as an artifact"""
+    """Download the Fashion MNIST dataset."""
     # Download training data from open datasets.
     training_data = datasets.FashionMNIST(
         root="data",
@@ -77,6 +76,7 @@ def importer_mnist() -> Output(
 
 @step
 def trainer(train_dataloader: DataLoader) -> nn.Module:
+    """Trains on the train dataloader"""
     model = NeuralNetwork().to(device)
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
@@ -102,6 +102,7 @@ def trainer(train_dataloader: DataLoader) -> nn.Module:
 
 @step
 def evaluator(test_dataloader: DataLoader, model: nn.Module) -> float:
+    """Evaluates on the model."""
     loss_fn = nn.CrossEntropyLoss()
 
     size = len(test_dataloader.dataset)
@@ -129,7 +130,7 @@ def fashion_mnist_pipeline(
     trainer,
     evaluator,
 ):
-    # Link all the steps artifacts together
+    """Link all the steps artifacts together"""
     train_dataloader, test_dataloader = importer()
     model = trainer(train_dataloader)
     evaluator(test_dataloader=test_dataloader, model=model)

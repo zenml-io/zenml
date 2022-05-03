@@ -4,6 +4,8 @@ This example demonstrate how we can use ZenML and Torch to build, train, & test 
 
 [PyTorch](https://pytorch.org/) is an open source machine learning framework that accelerates the path from research prototyping to production deployment.
 
+With the ZenML pytorch integration, you can pass `torch.nn.Module` and `torch.utils.data.DataLoader` objects through steps as first class citizens. ZenML will automatically make sure 
+to track and version these objects.
 
 # 🖥 Run it locally
 
@@ -26,53 +28,14 @@ zenml init
 
 ### ▶️ Run the Code
 
-Now we're ready. Execute one of the below lines to run the code:
+Now we're ready. Execute the pipeline:
 
 ```shell
 # sequence-classification
 python run.py
 ```
 
-
-
-### 🧪 Test pipeline
-
-```python
-from zenml.repository import Repository
-from transformers import pipeline
-
-# 1. Load sequence-classification and inference
-repo = Repository()
-p = repo.get_pipeline(pipeline_name="seq_classifier_train_eval_pipeline")
-runs = p.runs
-print(f"Pipeline `seq_classifier_train_eval_pipeline` has {len(runs)} run(s)")
-latest_run = runs[-1]
-trainer_step = latest_run.get_step('trainer')
-load_tokenizer_step = latest_run.get_step("load_tokenizer")
-
-# load model and pipeline
-model = trainer_step.output.read()
-tokenizer = load_tokenizer_step.output.read()
-sentiment_classifier = pipeline("text-classification", model=model, tokenizer=tokenizer)
-
-print(sentiment_classifier("MLOps movie by Zenml-io was awesome."))
-
-# 2. Load token-classification and inference
-repo = Repository()
-p = repo.get_pipeline(pipeline_name="token_classifier_train_eval_pipeline")
-runs = p.runs
-print(f"Pipeline `token_classifier_train_eval_pipeline` has {len(runs)} run(s)")
-latest_run = runs[-1]
-trainer_step = latest_run.get_step('trainer')
-load_tokenizer_step = latest_run.get_step("load_tokenizer")
-
-# load model and pipeline
-model = trainer_step.output.read()
-tokenizer = load_tokenizer_step.output.read()
-token_classifier = pipeline("token-classification", model=model, tokenizer=tokenizer)
-
-print(token_classifier("Zenml-io is based out of Munich, Germany"))
-```
+This will train a PyTorch model on the Fashion MNIST dataset.
 
 ### 🧽 Clean up
 
