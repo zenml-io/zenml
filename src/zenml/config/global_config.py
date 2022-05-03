@@ -219,13 +219,12 @@ class GlobalConfiguration(
             config_version = VersionInfo.parse(self.version)
             if self.version > curr_version:
                 raise RuntimeError(
-                    "The ZenML global configuration version (%s) is higher "
-                    "than the version of ZenML currently being used (%s). "
+                    "The ZenML global configuration version ({}) is higher "
+                    "than the version of ZenML currently being used ({}). "
                     "Please update ZenML to at least match the global "
-                    "configuration version to avoid loss of information.",
-                    config_version,
-                    curr_version,
-                )
+                    "configuration version to avoid loss of "
+                    "information.".format(config_version, curr_version)
+                    )
             if config_version == curr_version:
                 return
 
