@@ -21,7 +21,10 @@ import click
 import zenml
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
-from zenml.cli.stack_components import _register_stack_component
+from zenml.cli.stack_components import (
+    _component_display_name,
+    _register_stack_component,
+)
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import StackComponentType
@@ -738,6 +741,7 @@ def export_stack(filename: Optional[str], stack_name: Optional[str]) -> None:
     if filename is None:
         filename = stack_name + ".yaml"
     write_yaml(filename, yaml_data)
+    cli_utils.declare(f"Exported stack '{stack_name}' to file '{filename}'.")
 
 
 @stack.command("import")
@@ -763,17 +767,46 @@ def import_stack(
     if stack_name is None:
         stack_name = data["stack_name"]
 
-    # register components and stack
+    # ask user for new stack_name if current one already exists
+    repo = Repository()
+    registered_stacks = {stack_.name for stack_ in repo.stacks}
+    while stack_name in registered_stacks:
+        stack_name = click.prompt(
+            f"Stack `{stack_name}` already exists. "
+            f"Please choose a different name.",
+            type=str,
+        )
+
+    # register stack components
     component_names = {}
     for component_type, component_config in data["components"].items():
-        component_name = component_config.pop("name")
+        component_type = StackComponentType(component_type)
         component_flavor = component_config.pop("flavor")
+
+        # ask user for new component name if current one already exists
+        component_name = component_config.pop("name")
+        registered_components = {
+            component.name
+            for component in repo.get_stack_components(component_type)
+        }
+        while component_name in registered_components:
+            display_name = _component_display_name(component_type)
+            component_name = click.prompt(
+                f"A component of type '{display_name}' with the name "
+                f"'{component_name}' already exists. "
+                f"Please choose a different name.",
+                type=str,
+            )
+
+        # register component
         _register_stack_component(
             component_type=component_type,
             component_name=component_name,
             component_flavor=component_flavor,
             **component_config,
         )
+
+        # save component for stack registration
         component_names[component_type + "_name"] = component_name
 
     ctx.invoke(register_stack, stack_name=stack_name, **component_names)
