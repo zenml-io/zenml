@@ -12,13 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The DeepChecks integration provides a way to monitor your models in production.
-It includes a way to detect data drift and different kinds of model performance
-issues.
+The DeepChecks integration provides a way to validate your data in your pipelines.
+It includes a way to detect data anomalies and define checks to ensure quality of
+data.
 
-The results of deepchecks calculations can either be exported as an interactive
-dashboard (visualized as an html file or in your Jupyter notebook), or as a JSON
-file.
+The integration includes custom materializers to store deepchecks SuiteResults and
+a visualizer to visualize the results in an easy way on a notebook and in your
+browser.
 """
 
 from zenml.integrations.constants import DEEPCHECKS
@@ -36,7 +36,6 @@ class DeepchecksIntegration(Integration):
     def activate() -> None:
         """Activate the Deepchecks integration."""
         from zenml.integrations.deepchecks import materializers  # noqa
-        from zenml.integrations.deepchecks import steps  # noqa
         from zenml.integrations.deepchecks import visualizers  # noqa
 
 
