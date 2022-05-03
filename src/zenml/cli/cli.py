@@ -45,6 +45,9 @@ class TagGroup(click.Group):
 
 
 class ZenContext(click.Context):
+    """
+    Override the default click Context to add the new Formatter.
+    """
     formatter_class = ZenFormatter
 
 

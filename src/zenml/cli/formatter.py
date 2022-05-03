@@ -19,8 +19,10 @@ from click._compat import term_len
 
 
 def measure_table(rows: Iterable[Tuple[str, ...]]) -> Tuple[int, ...]:
+    """
+    Measure the width of each column in a table.
+    """
     widths: Dict[int, int] = {}
-
     for row in rows:
         for idx, col in enumerate(row):
             widths[idx] = max(widths.get(idx, 0), term_len(col))
