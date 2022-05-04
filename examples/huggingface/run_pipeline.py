@@ -37,7 +37,7 @@ from classify_token import TokenClassificationConfig
     help="Batch Size for training",
 )
 @click.option(
-    "--full-set",
+    "--full_set",
     is_flag=True,
     help="By default only a very small subset of the datasets is used in order "
     "to have a quick end-to-end run. By running with the full datasets "
@@ -85,7 +85,12 @@ from classify_token import TokenClassificationConfig
     "conll2003",
 )
 def main(
-    nlp_task: str, pretrained_model: str, batch_size: int, epochs: int, **kwargs
+    nlp_task: str,
+    pretrained_model: str,
+    batch_size: int,
+    epochs: int,
+    full_set: bool,
+    **kwargs
 ):
     if nlp_task == "token-classification":
         # Run Pipeline
@@ -93,6 +98,7 @@ def main(
             pretrained_model=pretrained_model,
             epochs=epochs,
             batch_size=batch_size,
+            dummy_run=not full_set,
             **kwargs,
         )
         pipeline = classify_token.token_classifier_train_eval_pipeline(
@@ -114,6 +120,7 @@ def main(
             pretrained_model=pretrained_model,
             epochs=epochs,
             batch_size=batch_size,
+            dummy_run=not full_set,
             **kwargs,
         )
         pipeline = classify_sequence.seq_classifier_train_eval_pipeline(

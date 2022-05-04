@@ -103,6 +103,16 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 # 🖥 Run it locally
 
+## ⏩ SuperQuick `huggingface` run
+
+If you're really in a hurry and just want to see this example pipeline run
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run huggingface
+```
+
 ### 📄 Prerequisites
 
 ```shell
@@ -134,7 +144,7 @@ python run_pipeline.py --nlp_task=token-classification --pretrained_model=distil
 ```
 
 By default, these will run on a very small subset of their datasets in order to quickly see the complete pipeline in 
-action. If you want to train on the full datasets, just pass `--full-set` as a flag. 
+action. If you want to train on the full datasets, just pass `--full_set` as a flag. 
 
 ### 🧪 Test pipeline
 

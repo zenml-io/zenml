@@ -16,7 +16,8 @@
 
 [IN CASE OF HIGH COMPLEXITY AN ARCHITECTURE DIAGRAM]
 
-# ☁️ Run in Colab [ONLY IF A NOTEBOOK IS SUPPLIED]
+# ☁️ Run in Colab 
+[ONLY WRITE THIS IF A NOTEBOOK IS SUPPLIED]
 
 If you have a Google account, you can get started directly with Google Colab
 - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/main/examples/[INSERT
