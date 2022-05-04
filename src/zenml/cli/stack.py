@@ -686,9 +686,9 @@ def down_stack(force: bool = False) -> None:
 
 
 @stack.command("export")
+@click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=False)
-@click.argument("stack_name", type=str, required=False)
-def export_stack(filename: Optional[str], stack_name: Optional[str]) -> None:
+def export_stack(stack_name: str, filename: Optional[str]) -> None:
     """Export a stack to YAML."""
 
     # Get configuration of given stack
@@ -698,13 +698,6 @@ def export_stack(filename: Optional[str], stack_name: Optional[str]) -> None:
     stack_configurations = repo.stack_configurations
     if len(stack_configurations) == 0:
         cli_utils.error("No stacks registered.")
-
-    active_stack_name = repo.active_stack_name
-    stack_name = stack_name or active_stack_name
-    if not stack_name:
-        cli_utils.error(
-            "Argument 'stack_name' was not provided and no stack is set as active."
-        )
 
     try:
         stack_configuration = stack_configurations[stack_name]
@@ -738,14 +731,26 @@ def export_stack(filename: Optional[str], stack_name: Optional[str]) -> None:
 
 
 @stack.command("import")
-@click.argument("filename", type=str, required=True)
-@click.argument("stack_name", type=str, required=False)
+@click.argument("stack_name", type=str, required=True)
+@click.argument("filename", type=str, required=False)
 @click.pass_context
 def import_stack(
-    ctx: click.Context, filename: str, stack_name: Optional[str]
+    ctx: click.Context, stack_name: str, filename: Optional[str]
 ) -> None:
     """Import a stack from YAML."""
-    data = read_yaml(filename)
+
+    # handle 'zenml stack import file.yaml' calls
+    if stack_name.endswith(".yaml") and filename is None:
+        filename = stack_name
+        data = read_yaml(filename)
+        stack_name = data["stack_name"]  # read stack_name from export
+
+    # standard 'zenml stack import stack_name [file.yaml]' calls
+    else:
+        # if filename is not given, assume default export name "<stack_name>.yaml"
+        if filename is None:
+            filename = stack_name + ".yaml"
+        data = read_yaml(filename)
 
     # assert zenml version is the same
     if data["zenml_version"] != zenml.__version__:
@@ -754,10 +759,6 @@ def import_stack(
             f"The stack was created using ZenML version {data['zenml_version']}, "
             f"you have version {zenml.__version__} installed."
         )
-
-    # read stack_name from export if not given
-    if stack_name is None:
-        stack_name = data["stack_name"]
 
     # ask user for new stack_name if current one already exists
     repo = Repository()

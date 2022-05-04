@@ -231,7 +231,7 @@ def test_deleting_stack_with_flag_succeeds(clean_repo) -> None:
 def test_stack_export(clean_repo) -> None:
     """Test exporting default stack succeeds."""
     runner = CliRunner()
-    result = runner.invoke(export_stack, ["default.yaml", "default"])
+    result = runner.invoke(export_stack, ["default", "default.yaml"])
     assert result.exit_code == 0
     assert os.path.exists("default.yaml")
 
@@ -259,7 +259,7 @@ def test_stack_export_delete_import(clean_repo) -> None:
 
     # export stack
     runner = CliRunner()
-    export_import_args = ["arias_new_stack.yaml", "arias_new_stack"]
+    export_import_args = ["arias_new_stack", "arias_new_stack.yaml"]
     result = runner.invoke(export_stack, export_import_args)
     assert result.exit_code == 0
     assert os.path.exists("arias_new_stack.yaml")
