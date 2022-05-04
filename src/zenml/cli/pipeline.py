@@ -144,7 +144,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
         python_file: Path to the python file that defines the pipeline.
         config_path: Path to configuration YAML file.
     """
-    # If the file was run with `python run.py, this would happen automatically,
+    # If the file was run with `python run.py, this would happen automatically.
     #  In order to allow seamless switching between running directly and through
     #  zenml, this is done at this point
     sys.path.insert(0, os.path.abspath(os.path.dirname(python_file)))

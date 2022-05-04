@@ -76,7 +76,6 @@ def test_pipeline_run_single_file(clean_repo: Repository,
 
     os.chdir(files_dir)
     clean_repo.activate_root()
-    # breakpoint()
     # Run Pipeline
     runner.invoke(pipeline, ["run", "run.py", "-c", "config.yaml"])
 
