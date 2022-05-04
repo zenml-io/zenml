@@ -61,6 +61,15 @@ to get started.
 * flavor - aws
 * region_name - default us-east-1
 
+The following flags are mandatory to create a GCP Secret Manager stack component:
+* `--flavor aws`: This tells zenml to use the AWS Secrets Manager Integration 
+* `--region_name==YOUR_PROJECT_REGION`: This is necessary to access the AWS project in the correct region. 
+
+This means you'll be able to register an AWS Secrets Manager with a command like this:
+
+`zenml secrets-manager register SECRETS_MANAGER_NAME --flavor aws --region_name==YOUR_PROJECT_REGION`
+
+
 {% endtab %}
 
 {% tab title="GCP Secret Manager" %}
@@ -74,7 +83,7 @@ WIP
 The following flags are mandatory to create a GCP Secret Manager stack component:
 * `--flavor gcp_secret_manager`: This tells zenml to use the GCP Secret Manager Integration 
 * `--project_id==YOUR_PROJECT_ID`: This is necessary to access the correct GCP project. The project_id of your GCP project space that contains the
-Secret. You can find it like [this](https://support.google.com/googleapi/answer/7014113?hl=en).
+Secret Manager. You can find it like [this](https://support.google.com/googleapi/answer/7014113?hl=en).
 
 This means you'll be able to register a GCP Secret Manager with a command like this:
 
