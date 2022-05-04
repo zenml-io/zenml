@@ -508,8 +508,7 @@ def list_stacks() -> None:
     repo = Repository()
 
     if len(repo.stack_configurations) == 0:
-        cli_utils.warning("No stacks registered!")
-        return
+        cli_utils.error("No stacks registered!")
 
     active_stack_name = repo.active_stack_name
 
@@ -544,23 +543,21 @@ def describe_stack(stack_name: Optional[str]) -> None:
 
     repo = Repository()
 
-    active_stack_name = repo.active_stack_name
-    stack_name = stack_name or active_stack_name
-
-    if not stack_name:
-        cli_utils.warning("No stack is set as active!")
-        return
-
     stack_configurations = repo.stack_configurations
     if len(stack_configurations) == 0:
-        cli_utils.warning("No stacks registered!")
-        return
+        cli_utils.error("No stacks registered.")
+
+    active_stack_name = repo.active_stack_name
+    stack_name = stack_name or active_stack_name
+    if not stack_name:
+        cli_utils.error(
+            "Argument 'stack_name' was not provided and no stack is set as active."
+        )
 
     try:
         stack_configuration = stack_configurations[stack_name]
     except KeyError:
         cli_utils.error(f"Stack '{stack_name}' does not exist.")
-        return
 
     cli_utils.print_stack_configuration(
         stack_configuration,
@@ -593,7 +590,6 @@ def delete_stack(stack_name: str, yes: bool = False) -> None:
                 f"active. Please choose a different active global stack first "
                 f"by running 'zenml stack set --global STACK'."
             )
-            return
 
         if repo.active_stack_name == stack_name:
             cli_utils.error(
@@ -601,7 +597,6 @@ def delete_stack(stack_name: str, yes: bool = False) -> None:
                 f"active. Please choose a different active stack first by "
                 f"running 'zenml stack set STACK'."
             )
-            return
 
     Repository().deregister_stack(stack_name)
     cli_utils.declare(f"Deleted stack '{stack_name}'.")
@@ -700,23 +695,21 @@ def export_stack(filename: Optional[str], stack_name: Optional[str]) -> None:
     # TODO: code duplicate with describe_stack()
     repo = Repository()
 
-    active_stack_name = repo.active_stack_name
-    stack_name = stack_name or active_stack_name
-
-    if not stack_name:
-        cli_utils.warning("No stack is set as active!")
-        return
-
     stack_configurations = repo.stack_configurations
     if len(stack_configurations) == 0:
-        cli_utils.warning("No stacks registered!")
-        return
+        cli_utils.error("No stacks registered.")
+
+    active_stack_name = repo.active_stack_name
+    stack_name = stack_name or active_stack_name
+    if not stack_name:
+        cli_utils.error(
+            "Argument 'stack_name' was not provided and no stack is set as active."
+        )
 
     try:
         stack_configuration = stack_configurations[stack_name]
     except KeyError:
         cli_utils.error(f"Stack '{stack_name}' does not exist.")
-        return
 
     # create a dict of all components in the specified stack
     component_data = {}
@@ -761,7 +754,6 @@ def import_stack(
             f"The stack was created using ZenML version {data['zenml_version']}, "
             f"you have version {zenml.__version__} installed."
         )
-        return
 
     # read stack_name from export if not given
     if stack_name is None:
