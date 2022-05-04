@@ -39,7 +39,7 @@ def validate_flavor_source(
         stack_component_class = load_source_path_class(source)
     except (ValueError, AttributeError, ImportError):
         raise ValueError(
-            f"ZenML can not import the source {source} of the given module."
+            f"ZenML can not import the source '{source}' of the given module."
         )
 
     if not issubclass(stack_component_class, StackComponent):
