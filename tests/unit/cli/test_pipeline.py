@@ -74,13 +74,6 @@ def {STEP_NAME}(config: StepConfig) -> Output(output_1={CUSTOM_OBJ_NAME},
     return {CUSTOM_OBJ_NAME}("Custom-Object"), config.some_option
 """
 
-define_sys_path_definition = """
-import sys
-import os
-
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-"""
-
 pipeline_definition = f"""
 from zenml.pipelines import pipeline
 
@@ -163,13 +156,9 @@ def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
     Repository.initialize()
     clean_repo.activate_root()
 
-    # Write pipeline definition, add file to sys path to make sure the other
-    #  modules will be able to import from one another
-    new_pipeline_definition = (
-        define_sys_path_definition + "\n" + pipeline_definition
-    )
+    # Write pipeline definition
     main_file = clean_repo.root / "run.py"
-    main_file.write_text(new_pipeline_definition)
+    main_file.write_text(pipeline_definition)
 
     # Write custom object file
     custom_obj_file = (
@@ -180,7 +169,7 @@ def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
 
     # Make sure the custom materializer imports the custom object
     import_obj_path = os.path.splitext(
-        os.path.relpath(custom_obj_file, tmp_path.parent)
+        os.path.relpath(custom_obj_file, tmp_path)
     )[0].replace("/", ".")
     new_materializer_definition = (
         f"from {import_obj_path} "
@@ -196,7 +185,7 @@ def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
 
     # Make sure the step imports the custom object
     import_obj_path = os.path.splitext(
-        os.path.relpath(custom_obj_file, tmp_path.parent)
+        os.path.relpath(custom_obj_file, tmp_path)
     )[0].replace("/", ".")
     new_step_definition = (
         f"from {import_obj_path} "
