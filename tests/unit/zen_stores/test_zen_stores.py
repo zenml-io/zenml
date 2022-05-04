@@ -427,13 +427,14 @@ def test_flavor_management(fresh_zen_store):
             component_type=StackComponentType.ARTIFACT_STORE,
         )
 
+    # Check whether the registration of new flavors is working as intended
     fresh_zen_store.create_flavor(
         name="test",
         source="test_artifact_store.TestArtifactStore",
         stack_component_type=StackComponentType.ARTIFACT_STORE,
     )
 
-    # Check whether the registration of new flavors is working
+    # Duplicated registration should fail with an EntityExistsError
     with pytest.raises(EntityExistsError):
         fresh_zen_store.create_flavor(
             name="test",
@@ -441,11 +442,13 @@ def test_flavor_management(fresh_zen_store):
             stack_component_type=StackComponentType.ARTIFACT_STORE,
         )
 
+    # Ensure that the get_flavors_by_type is working as intended
     new_artifact_store_flavors = fresh_zen_store.get_flavors_by_type(
         StackComponentType.ARTIFACT_STORE
     )
     assert new_artifact_store_flavors
 
+    # Ensure that the newly registered flavor can be accessed.
     new_artifact_store_flavor = fresh_zen_store.get_flavor_by_name_and_type(
         flavor_name="test",
         component_type=StackComponentType.ARTIFACT_STORE,
