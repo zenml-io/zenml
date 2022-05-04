@@ -25,6 +25,7 @@ from zenml.steps import Output, step
 # Get cpu or gpu device for training.
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
+
 # Define model
 class NeuralNetwork(nn.Module):
     def __init__(self):

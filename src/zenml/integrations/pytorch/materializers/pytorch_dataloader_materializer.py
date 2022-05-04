@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import Any, Type
+from typing import Any, Type, cast
 
 import torch
-from torch.utils.data.dataloader import DataLoader  # type: ignore[attr-defined]
+from torch.utils.data.dataloader import DataLoader
 
 from zenml.artifacts import DataArtifact
 from zenml.io import fileio
@@ -32,7 +32,7 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (DataLoader,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> DataLoader:
+    def handle_input(self, data_type: Type[Any]) -> DataLoader[Any]:
         """Reads and returns a PyTorch dataloader.
 
         Returns:
@@ -42,9 +42,9 @@ class PyTorchDataLoaderMaterializer(BaseMaterializer):
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
         ) as f:
-            return torch.load(f)  # type: ignore[no-untyped-call]  # noqa
+            return cast(DataLoader[Any], torch.load(f))  # type: ignore[no-untyped-call]  # noqa
 
-    def handle_return(self, dataloader: DataLoader) -> None:
+    def handle_return(self, dataloader: DataLoader[Any]) -> None:
         """Writes a PyTorch dataloader.
 
         Args:
