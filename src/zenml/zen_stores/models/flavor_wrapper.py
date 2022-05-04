@@ -68,6 +68,8 @@ class FlavorWrapper(BaseModel):
 
     @property
     def reachable(self) -> bool:
+        """Property to which indicates whether ZenML can import the module
+        within the source."""
         from zenml.integrations.registry import integration_registry
 
         if self.integration:
@@ -102,4 +104,26 @@ class FlavorWrapper(BaseModel):
 
     def to_flavor(self) -> Type[StackComponent]:
         """Imports and returns the class of the flavor."""
-        return load_source_path_class(source=self.source)  # noqa
+        try:
+            return load_source_path_class(source=self.source)  # noqa
+        except (ModuleNotFoundError, ImportError, NotImplementedError):
+            if self.integration:
+                raise ImportError(
+                    f"The {self.type} flavor '{self.name}' is "
+                    f"a part of ZenML's '{self.integration}' "
+                    f"integration, which is currently not installed on your "
+                    f"system. You can install it by executing: 'zenml "
+                    f"integration install {self.integration}'."
+                )
+            else:
+                raise ImportError(
+                    f"The {self.type} that you are trying to register has "
+                    f"a custom flavor '{self.name}'. In order to "
+                    f"register it, ZenML needs to be able to import the flavor "
+                    f"through its source which is defined as: "
+                    f"{self.source}. Unfortunately, this is not "
+                    f"possible due to the current set of available modules/"
+                    f"working directory. Please make sure that this execution "
+                    f"is carried out in an environment where this source "
+                    f"is reachable as a module."
+                )

@@ -57,40 +57,11 @@ class ComponentWrapper(BaseModel):
         """Converts the ComponentWrapper into an actual instance of a Stack
         Component."""
         from zenml.repository import Repository
-        from zenml.stack.flavor_registry import flavor_registry
 
-        zenml_flavors = flavor_registry.get_flavors_by_type(
-            component_type=self.type
+        flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
+            name=self.flavor, component_type=self.type
         )
 
-        try:
-            # Try to find if there are any custom flavor implementations
-            flavor_wrapper = Repository(  # type: ignore[call-arg]
-                skip_repository_check=True
-            ).zen_store.get_flavor_by_name_and_type(
-                flavor_name=self.flavor,
-                component_type=self.type,
-            )
-
-            # If there is one, check whether the same flavor exists as a default
-            # flavor to give out a warning
-            if self.flavor in zenml_flavors:
-                logger.warning(
-                    f"There is a custom implementation for the flavor "
-                    f"'{self.flavor}' of a {self.type}, which is currently "
-                    f"overwriting the same flavor provided by ZenML."
-                )
-
-        except KeyError:
-            if self.flavor in zenml_flavors:
-                flavor_wrapper = zenml_flavors[self.flavor]
-            else:
-                raise KeyError(
-                    f"There is no flavor '{self.flavor}' for the type "
-                    f"{self.type}"
-                )
-
-        flavor_class = flavor_wrapper.to_flavor()
         config = yaml.safe_load(base64.b64decode(self.config).decode())
 
-        return flavor_class.parse_obj(config)
+        return flavor.parse_obj(config)

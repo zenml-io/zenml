@@ -238,67 +238,14 @@ def generate_stack_component_register_command(
                 cli_utils.error(str(e))
                 return
 
-        from zenml.stack.flavor_registry import flavor_registry
-
-        zenml_flavors = flavor_registry.get_flavors_by_type(
-            component_type=component_type
+        repo = Repository()
+        flavor_class = repo.get_flavor(
+            name=flavor, component_type=component_type
         )
+        component = flavor_class(name=name, **parsed_args)
 
-        try:
-            # Try to find if there are any custom flavor implementations
-            flavor_wrapper = Repository().zen_store.get_flavor_by_name_and_type(
-                flavor_name=flavor,
-                component_type=component_type,
-            )
-
-            # If there is one, check whether the same flavor exists as a default
-            # flavor to give out a warning
-            if flavor in zenml_flavors:
-                cli_utils.warning(
-                    f"The flavor that you are currently using "
-                    f"'{flavor_wrapper.name}' is overwriting the a flavor with "
-                    f"the same which is provided by ZenML. This could lead "
-                    f"to an unexpected behavior and should be avoided if "
-                    f"possible."
-                )
-
-        except KeyError:
-            if flavor in zenml_flavors:
-                flavor_wrapper = zenml_flavors[flavor]
-            else:
-                raise KeyError(
-                    f"There is no flavor '{flavor}' for the type "
-                    f"{component_type}"
-                )
-
-        try:
-            component = flavor_wrapper.to_flavor()(name=name, **parsed_args)
-            Repository().register_stack_component(component)
-            cli_utils.declare(
-                f"Successfully registered {display_name} `{name}`."
-            )
-
-        except (ModuleNotFoundError, ImportError, NotImplementedError):
-            if flavor_wrapper.integration:
-                cli_utils.error(
-                    f"The {component_type} flavor '{flavor_wrapper.name}' is "
-                    f"a part of ZenML's '{flavor_wrapper.integration}' "
-                    f"integration, which is currently not installed on your "
-                    f"system. You can install it by executing: 'zenml "
-                    f"integration install {flavor_wrapper.integration}'."
-                )
-            else:
-                cli_utils.error(
-                    f"The {component_type} that you are trying to register has "
-                    f"a custom flavor '{flavor_wrapper.name}'. In order to "
-                    f"register it, ZenML needs to be able to import the flavor "
-                    f"through its source which is defined as: "
-                    f"{flavor_wrapper.source}. Unfortunately, this is not "
-                    f"possible due to the current set of available modules/"
-                    f"working directory. Please make sure that this execution "
-                    f"is carried out in an environment where this source "
-                    f"is reachable as a module."
-                )
+        Repository().register_stack_component(component)
+        cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 
     return register_stack_component_command
 
@@ -398,66 +345,10 @@ def generate_stack_component_update_command(
                         f"'{name}' {current_component.TYPE}. "
                     )
 
-            from zenml.stack.flavor_registry import flavor_registry
-
-            zenml_flavors = flavor_registry.get_flavors_by_type(
-                component_type=component_type
+            component_class = repo.get_flavor(
+                name=current_component.FLAVOR,
+                component_type=component_type,
             )
-
-            try:
-                # Try to find if there are any custom flavor implementations
-                flavor_wrapper = (
-                    Repository().zen_store.get_flavor_by_name_and_type(
-                        flavor_name=current_component.FLAVOR,
-                        component_type=component_type,
-                    )
-                )
-
-                # If there is one, check whether the same flavor exists as a
-                # default flavor to give out a warning
-                if current_component.FLAVOR in zenml_flavors:
-                    cli_utils.warning(
-                        f"The flavor that you are currently using "
-                        f"'{flavor_wrapper.name}' is overwriting the a flavor "
-                        f"with the same which is provided by ZenML. This "
-                        f"could lead to an unexpected behavior and should be "
-                        f"avoided if possible."
-                    )
-
-            except KeyError:
-                if current_component.FLAVOR in zenml_flavors:
-                    flavor_wrapper = zenml_flavors[current_component.FLAVOR]
-                else:
-                    raise KeyError(
-                        f"There is no flavor '{current_component.FLAVOR}' for "
-                        f"the type {component_type}"
-                    )
-
-            try:
-                component_class = flavor_wrapper.to_flavor()
-
-            except (ModuleNotFoundError, ImportError, NotImplementedError):
-                if flavor_wrapper.integration:
-                    cli_utils.error(
-                        f"The {component_type} flavor '{flavor_wrapper.name}' "
-                        f"is a part of ZenML's '{flavor_wrapper.integration}' "
-                        f"integration, which is currently not installed on "
-                        f"your system. You can install it by executing: 'zenml "
-                        f"integration install {flavor_wrapper.integration}'."
-                    )
-                else:
-                    cli_utils.error(
-                        f"The {component_type} that you are trying to register "
-                        f"has a custom flavor '{flavor_wrapper.name}'. In "
-                        f"order to register it, ZenML needs to be able to "
-                        f"import the flavor through its source which is "
-                        f"defined as: {flavor_wrapper.source}. Unfortunately, "
-                        f"this is not possible due to the current set of "
-                        f"available modules/working directory. Please make "
-                        f"sure that this execution is carried out in an "
-                        f"environment where this source is reachable as a "
-                        f"module."
-                    )
 
             available_properties = _get_available_properties(component_class)
             for prop in parsed_args.keys():

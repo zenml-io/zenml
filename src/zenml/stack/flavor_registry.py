@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from collections import defaultdict
-from typing import DefaultDict, Dict, List
+from typing import DefaultDict, Dict
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -93,57 +93,11 @@ class FlavorRegistry:
             f"Registered flavor for '{flavor.name}' and type '{flavor.type}'.",
         )
 
-    def get_flavor(
-        self,
-        component_type: StackComponentType,
-        name: str,
-    ) -> FlavorWrapper:
-        """Returns the flavor wrapper for the given type and name.
-
-        Args:
-            component_type: The type of the component class to return.
-            name: The flavor of the component class to return.
-        Raises:
-            KeyError: If no component class is registered for the given type
-                and flavor.
-        """
-
-        available_flavors = self._flavors[component_type]
-        try:
-            return available_flavors[name]
-        except KeyError:
-            raise KeyError(
-                f"No flavor with the name {name} found for type "
-                f"{component_type}. Registered flavors for this "
-                f"type: {set(available_flavors)}. If your stack "
-                f"component class is part of a ZenML integration, make "
-                f"sure the corresponding integration is installed by "
-                f"running `zenml integration install INTEGRATION_NAME`."
-            ) from None
-
     def get_flavors_by_type(
         self, component_type: StackComponentType
     ) -> Dict[str, FlavorWrapper]:
         """Return the list of flavors with given type."""
         return self._flavors[component_type]
-
-    def get_flavors_by_type_and_name(
-        self, name: str, component_type: StackComponentType
-    ) -> FlavorWrapper:
-        """Returns the flavor with the given name and type."""
-        try:
-            return self._flavors[component_type][name]
-        except KeyError:
-            raise KeyError(
-                f"There is no default or integrated flavor '{name}' for the "
-                f"type '{component_type}' within the registry."
-            )
-
-    def list_flavors(self) -> List[FlavorWrapper]:
-        """Returns a list of all FlavorWrappers."""
-        return [
-            self._flavors[t][f] for t in self._flavors for f in self._flavors[t]
-        ]
 
 
 # Create the instance of the registry

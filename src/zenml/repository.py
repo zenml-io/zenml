@@ -1105,3 +1105,54 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         if enable_warnings:
             logger.warning(warning_message)
         return None
+
+    def get_flavor(
+        self, name: str, component_type: StackComponentType
+    ) -> Type[StackComponent]:
+        """Fetches a registered flavor.
+
+        Args:
+            component_type: The type of the component to fetch.
+            name: The name of the flavor to fetch.
+
+        Raises:
+            KeyError: If no flavor exists for the given type and name.
+        """
+        logger.debug(
+            "Fetching the flavor of type '%s' with name '%s'.",
+            component_type.value,
+            name,
+        )
+
+        from zenml.stack.flavor_registry import flavor_registry
+
+        zenml_flavors = flavor_registry.get_flavors_by_type(
+            component_type=component_type
+        )
+
+        try:
+            # Try to find if there are any custom flavor implementations
+            flavor_wrapper = self.zen_store.get_flavor_by_name_and_type(
+                flavor_name=name,
+                component_type=component_type,
+            )
+
+            # If there is one, check whether the same flavor exists as a default
+            # flavor to give out a warning
+            if name in zenml_flavors:
+                logger.warning(
+                    f"There is a custom implementation for the flavor "
+                    f"'{name}' of a {component_type}, which is currently "
+                    f"overwriting the same flavor provided by ZenML."
+                )
+
+        except KeyError:
+            if name in zenml_flavors:
+                flavor_wrapper = zenml_flavors[name]
+            else:
+                raise KeyError(
+                    f"There is no flavor '{name}' for the type "
+                    f"{component_type}"
+                )
+
+        return flavor_wrapper.to_flavor()
