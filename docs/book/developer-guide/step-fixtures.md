@@ -6,12 +6,12 @@ description: Use Step Fixtures to Access the Stack from within a Step.
 # Step Fixtures
 
 In general, when defining steps, you usually can only supply inputs that have been output by previous steps.
-However, there are some special exceptions. 
+However, there are some exceptions. 
 
 * An object which is a subclass of `BaseStepConfig`: This object is used to pass run-time parameters to a pipeline run. 
 It can be used to send parameters to a step that are not artifacts. You learned about this one already in the chapter
 on [Step Configuration](#step-configuration)
-* A `StepContext` object: This object gives access to the artifact store, metadata store, materializers, and special 
+* A `StepContext` object: This object gives access to the active stack, materializers, and special 
 integration-specific libraries.
 
 These special parameters are comparable to [Pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html), hence the 
@@ -80,7 +80,7 @@ pipeline = my_pipeline(
 
 ### Using the `StepContext`
 
-Unlike `BaseStepConfig`, we can pass in the `StepContext` directly to a step without explicitly passing it at run-time.
+Unlike `BaseStepConfig`, we can use the `StepContext` simply by adding it to our step function signature and ZenML will take care of passing the right thing when executing your step.
 
 The `StepContext` provides additional context inside a step function. It can be used to access artifacts directly from 
 within the step.

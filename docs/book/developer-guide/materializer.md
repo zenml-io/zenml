@@ -73,7 +73,7 @@ workflow.
 
 ### Extending the `BaseMaterializer`
 
-Let's say you a custom object called `MyObject` that flows between two steps in a pipeline:
+Let's say you have a custom class called `MyObject` that flows between two steps in a pipeline:
 
 ```python
 import logging
@@ -117,7 +117,7 @@ For more information, visit https://docs.zenml.io/guides/common-usecases/custom-
 ```
 
 The above basically means that ZenML does not know how to persist the object of type `MyObj` between steps (how could 
-it? We just created this!). Therefore, we can have to create our own materializer. To do this you can simply extend the 
+it? We just created this!). Therefore, we have to create our own materializer. To do this you can simply extend the 
 `BaseMaterializer` by sub-classing it.
 
 
@@ -147,7 +147,7 @@ class MyMaterializer(BaseMaterializer):
             f.write(my_obj.name)
 ```
 
-Pro-tip: Use the ZenML `fileio` handler to ensure your materialization logic works across artifact stores (local and 
+Pro-tip: Use the ZenML `fileio` module to ensure your materialization logic works across artifact stores (local and 
 remote like S3 buckets).
 
 Now ZenML can use this materializer to handle outputs and inputs of your customs object. Edit the pipeline as follows 
@@ -218,7 +218,6 @@ class MyMaterializer(BaseMaterializer):
         with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
                          'w') as f:
             f.write(my_obj.name)
-print
 @step
 def my_first_step() -> MyObj:
     """Step that returns an object of type MyObj"""
