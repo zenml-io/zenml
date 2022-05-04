@@ -85,8 +85,6 @@ class ZenMLCLI(click.Group):
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
             # What is this, the tool lied about a command.  Ignore it
-            if cmd is None:
-                continue
             if cmd is None or cmd.hidden:
                 continue
             category = (
