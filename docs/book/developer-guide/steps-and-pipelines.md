@@ -57,7 +57,7 @@ def first_pipeline(
 
 ### Instantiate and run your Pipeline
 
-With your pipeline recipe in hand you can now specify which particular steps implement the pipeline. And with that, you
+With your pipeline recipe in hand you can now specify which concrete step implementations are used. And with that, you
 are ready to run:
 
 ```python

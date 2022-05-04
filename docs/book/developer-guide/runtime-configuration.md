@@ -4,7 +4,7 @@ description: Configure Step and Pipeline Parameters for Each Run.
 
 # Runtime Configuration
 
-A ZenML pipeline clearly separated business logic from parameter configuration. Business logic is what defines 
+A ZenML pipeline clearly separates business logic from parameter configuration. Business logic is what defines 
 a step and the pipeline. Step and pipeline configurations are used to dynamically set parameters at runtime. 
 
 ## Step configuration

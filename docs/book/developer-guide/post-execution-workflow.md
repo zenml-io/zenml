@@ -19,7 +19,7 @@ repository -> pipelines -> runs -> steps -> outputs
 
 #### Repository
 
-The highest level `repository` object is where to start from.
+The highest level `Repository` object is where to start from.
 
 ```python
 from zenml.repository import Repository
@@ -97,7 +97,7 @@ The step name is the name of the decorated function (or the `Step` class in case
 ```python
 from zenml.steps import step
 
-@step()
+@step
 def this_is_the_step_name():
     ...
 ```
