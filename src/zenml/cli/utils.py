@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import base64
 import datetime
 import subprocess
 import sys
@@ -26,6 +27,7 @@ from typing import (
 )
 
 import click
+import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
@@ -190,9 +192,14 @@ def print_stack_component_list(
         is_active = component.name == active_component_name
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
+            "NAME": component.name,
+            "FLAVOR": component.flavor,
+            "UUID": component.uuid,
             **{
                 key.upper(): str(value)
-                for key, value in component.dict().items()
+                for key, value in yaml.safe_load(
+                    base64.b64decode(component.config).decode()
+                ).items()
             },
         }
         configurations.append(component_config)
@@ -246,10 +253,12 @@ def print_flavor_list(
             try:
                 validate_flavor_source(f.source, component_type=component_type)
                 reachable = True
-            except (AssertionError,
-                    ModuleNotFoundError,
-                    ImportError,
-                    ValueError):
+            except (
+                AssertionError,
+                ModuleNotFoundError,
+                ImportError,
+                ValueError,
+            ):
                 pass
 
         flavor_table.append(
@@ -272,6 +281,7 @@ def print_flavor_list(
         "environment where ZenML can import the flavor through its source "
         "path (also shown in the list)."
     )
+
 
 def print_stack_component_configuration(
     component: StackComponent, display_name: str, active_status: bool
