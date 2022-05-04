@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,10 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+from pathlib import Path
 import os
+import shutil
 import subprocess
+from unittest import skip
 
+from pytest import fixture
 from click.testing import CliRunner
 
 from zenml.cli.pipeline import pipeline
@@ -27,101 +30,53 @@ STEP_NAME = "some_step"
 MATERIALIZER_NAME = "SomeMaterializer"
 CUSTOM_OBJ_NAME = "SomeObj"
 
-object_definition = f"""
-class {CUSTOM_OBJ_NAME}:
-    def __init__(self, name: str):
-        self.name = name
-"""
 
-materializer_definition = f"""
-import os
-from typing import Type
+@fixture
+def files_dir(request, tmp_path: Path) -> Path:
+    """Fixture that will search for a folder with the same name as the test
+    file and move it into the temp path of the test.
 
-from zenml.artifacts import DataArtifact
-from zenml.io import fileio
-from zenml.materializers.base_materializer import BaseMaterializer
+    |dir
+    |--test_functionality
+    |--|--test_specific_method
+    |--test_functionality.py#test_specific_method
 
+    In this case if the `test_specific_method()` function inside the
+    `test_functionality.py` has this fixture, the
+    `test_functionality/test_specific_method` file is copied into the tmp_path.
+    The path is passed into the test_specific_method(datadir: str) as string.
 
-class {MATERIALIZER_NAME}(BaseMaterializer):
-    ASSOCIATED_TYPES = ({CUSTOM_OBJ_NAME},)
-    ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
+    TO use this, ensure the filename (minus '.py') corresponds to the outer
+    directory name. And the inner directory corresponds to the test methods
+    name.
 
-    def handle_input(self, data_type: Type[{CUSTOM_OBJ_NAME}]
-                    ) -> {CUSTOM_OBJ_NAME}:
-        super().handle_input(data_type)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
-                         'r') as f:
-            name = f.read()
-        return {CUSTOM_OBJ_NAME}(name=name)
+    Returns:
+        tmp_path at which to find the files.
+    """
+    filename = Path(request.module.__file__)
+    test_dir = filename.with_suffix('')
 
-    def handle_return(self, my_obj: {CUSTOM_OBJ_NAME}) -> None:
-        super().handle_return(my_obj)
-        with fileio.open(os.path.join(self.artifact.uri, 'data.txt'),
-                         'w') as f:
-            f.write(my_obj.name)
-"""
+    test_name = request.function.__name__
 
-step_definition = f"""
-from zenml.steps import step, Output, BaseStepConfig
+    tmp_path = tmp_path / test_name
 
+    if os.path.isdir(test_dir):
+        test_function_dir = test_dir / test_name
+        if os.path.isdir(test_function_dir):
+            shutil.copytree(test_function_dir, tmp_path)
 
-class StepConfig(BaseStepConfig):
-    some_option: int = 4
-
-@step
-def {STEP_NAME}(config: StepConfig) -> Output(output_1={CUSTOM_OBJ_NAME},
-                                              output_2=int):
-    return {CUSTOM_OBJ_NAME}("Custom-Object"), config.some_option
-"""
-
-pipeline_definition = f"""
-from zenml.pipelines import pipeline
-
-@pipeline(enable_cache=False)
-def {PIPELINE_NAME}(
-        step_1,
-):
-    step_1()
-"""
+    return tmp_path
 
 
-def test_pipeline_run_single_file(clean_repo, tmp_path) -> None:
+def test_pipeline_run_single_file(clean_repo: Repository,
+                                  files_dir: str) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the same file."""
     runner = CliRunner()
 
-    os.chdir(str(tmp_path))
-    Repository.initialize()
+    os.chdir(files_dir)
     clean_repo.activate_root()
-
-    # Create run.py file with steps, custom object, custom materializer and
-    #  pipeline definition
-    main_python_file = clean_repo.root / "run.py"
-    main_python_file.write_text(
-        "\n".join(
-            [
-                object_definition,
-                materializer_definition,
-                step_definition,
-                pipeline_definition,
-            ]
-        )
-    )
-
-    # Create run config
-    run_config = {
-        "name": PIPELINE_NAME,
-        "steps": {
-            "step_1": {
-                "source": {"name": STEP_NAME},
-                "parameters": {"some_option": 3},
-                "materializers": {"output_1": {"name": MATERIALIZER_NAME}},
-            }
-        },
-    }
-    config_path = str(clean_repo.root / "config.yaml")
-    yaml_utils.write_yaml(config_path, run_config)
-
+    # breakpoint()
     # Run Pipeline
     runner.invoke(pipeline, ["run", "run.py", "-c", "config.yaml"])
 
@@ -133,7 +88,8 @@ def test_pipeline_run_single_file(clean_repo, tmp_path) -> None:
     assert historic_pipeline.runs[-1].status == ExecutionStatus.COMPLETED
 
 
-def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
+def test_pipeline_run_multifile(clean_repo: Repository,
+                                  files_dir: str) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the different files.
 
@@ -147,78 +103,8 @@ def test_pipeline_run_multifile(clean_repo, tmp_path) -> None:
     |config.yaml
     |run.py
     """ ""
-
-    STEP_FILE = "step_file"
-    MATERIALIZER_FILE = "materializer_file"
-    CUSTOM_OBJ_FILE = "custom_obj_file"
-
-    os.chdir(str(tmp_path))
-    Repository.initialize()
+    os.chdir(files_dir)
     clean_repo.activate_root()
-
-    # Write pipeline definition
-    main_file = clean_repo.root / "run.py"
-    main_file.write_text(pipeline_definition)
-
-    # Write custom object file
-    custom_obj_file = (
-        clean_repo.root / CUSTOM_OBJ_FILE / f"{CUSTOM_OBJ_FILE}.py"
-    )
-    custom_obj_file.parent.mkdir()
-    custom_obj_file.write_text(object_definition)
-
-    # Make sure the custom materializer imports the custom object
-    import_obj_path = os.path.splitext(
-        os.path.relpath(custom_obj_file, tmp_path)
-    )[0].replace("/", ".")
-    new_materializer_definition = (
-        f"from {import_obj_path} "
-        f"import {CUSTOM_OBJ_NAME} \n" + materializer_definition
-    )
-
-    # Write custom materializer file
-    materializer_file = (
-        clean_repo.root / MATERIALIZER_FILE / f"{MATERIALIZER_FILE}.py"
-    )
-    materializer_file.parent.mkdir()
-    materializer_file.write_text(new_materializer_definition)
-
-    # Make sure the step imports the custom object
-    import_obj_path = os.path.splitext(
-        os.path.relpath(custom_obj_file, tmp_path)
-    )[0].replace("/", ".")
-    new_step_definition = (
-        f"from {import_obj_path} "
-        f"import {CUSTOM_OBJ_NAME} \n" + step_definition
-    )
-    # Write step file
-    step_file = clean_repo.root / STEP_FILE / f"{STEP_FILE}.py"
-    step_file.parent.mkdir()
-    step_file.write_text(new_step_definition)
-
-    # Write run configuration
-    run_config = {
-        "name": PIPELINE_NAME,
-        "steps": {
-            "step_1": {
-                "source": {
-                    "name": STEP_NAME,
-                    "file": os.path.relpath(step_file, clean_repo.root),
-                },
-                "parameters": {"some_option": 3},
-                "materializers": {
-                    "output_1": {
-                        "name": MATERIALIZER_NAME,
-                        "file": os.path.relpath(
-                            materializer_file, clean_repo.root
-                        ),
-                    }
-                },
-            }
-        },
-    }
-    config_path = str(clean_repo.root / "config.yaml")
-    yaml_utils.write_yaml(config_path, run_config)
 
     # Run Pipeline using subprocess as runner.invoke seems to have issues with
     #  pytest https://github.com/pallets/click/issues/824,
