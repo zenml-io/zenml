@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 
 
 class FlavorRegistry:
-    """Registry for stack component flavor.
+    """Registry for stack component flavors.
 
     The flavors defined by ZenML must be registered here.
     """
