@@ -47,9 +47,7 @@ def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 @click.pass_context
 def secret(ctx: click.Context) -> None:
-    """List and manage Secrets of key-value pairs."""
-    # TODO [ENG-724]: Ensure the stack actually contains an active secrets
-    #  manager
+    """List and manage your secrets."""
     ctx.obj = Repository().active_stack.components.get(
         StackComponentType.SECRETS_MANAGER, None
     )
@@ -202,7 +200,6 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
     """
     with console.status("Getting secret names..."):
         secret_names = secrets_manager.get_all_secret_keys()
-        # TODO: [HIGH] implement as a table?
         print_secrets(secret_names)
 
 
