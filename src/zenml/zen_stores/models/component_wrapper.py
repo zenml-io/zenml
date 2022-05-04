@@ -57,7 +57,7 @@ class ComponentWrapper(BaseModel):
         """Converts the ComponentWrapper into an actual instance of a Stack
         Component."""
         from zenml.repository import Repository
-        from zenml.stack.registry import flavor_registry
+        from zenml.stack.flavor_registry import flavor_registry
 
         zenml_flavors = flavor_registry.get_flavors_by_type(
             component_type=self.type

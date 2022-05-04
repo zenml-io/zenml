@@ -238,7 +238,7 @@ def generate_stack_component_register_command(
                 cli_utils.error(str(e))
                 return
 
-        from zenml.stack.registry import flavor_registry
+        from zenml.stack.flavor_registry import flavor_registry
 
         zenml_flavors = flavor_registry.get_flavors_by_type(
             component_type=component_type
@@ -344,7 +344,7 @@ def generate_stack_component_flavor_list_command(
         """Adds a flavor for a stack component type"""
         cli_utils.print_active_profile()
 
-        from zenml.stack.registry import flavor_registry
+        from zenml.stack.flavor_registry import flavor_registry
 
         # List all the flavors of the component type
         zenml_flavors = [
@@ -398,7 +398,7 @@ def generate_stack_component_update_command(
                         f"'{name}' {current_component.TYPE}. "
                     )
 
-            from zenml.stack.registry import flavor_registry
+            from zenml.stack.flavor_registry import flavor_registry
 
             zenml_flavors = flavor_registry.get_flavors_by_type(
                 component_type=component_type
