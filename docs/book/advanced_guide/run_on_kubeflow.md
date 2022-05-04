@@ -203,7 +203,7 @@ Once you're done experimenting, you can delete the local Kubeflow cluster and
 all associated resources by calling:
 
 ```bash
-zenml stack down
+zenml stack down -f
 ```
 
 ### Run the same pipeline on Kubeflow Pipelines deployed to the cloud
