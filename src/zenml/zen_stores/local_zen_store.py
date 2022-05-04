@@ -927,7 +927,6 @@ class LocalZenStore(BaseZenStore):
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-        integration: str = "",
     ) -> FlavorWrapper:
         """Creates a new flavor.
 
@@ -935,7 +934,6 @@ class LocalZenStore(BaseZenStore):
             source: the source path to the implemented flavor.
             name: the name of the flavor.
             stack_component_type: the corresponding StackComponentType.
-            integration: the name of the integration.
 
         Returns:
              The newly created flavor.
@@ -959,7 +957,6 @@ class LocalZenStore(BaseZenStore):
             name=name,
             source=source,
             type=stack_component_type,
-            integration=integration,
         )
 
         self.__store.stack_component_flavors.append(flavor)

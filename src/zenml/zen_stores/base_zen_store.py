@@ -612,7 +612,6 @@ class BaseZenStore(ABC):
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-        integration: str = "",
     ) -> FlavorWrapper:
         """Creates a new flavor.
 
@@ -620,7 +619,6 @@ class BaseZenStore(ABC):
             source: the source path to the implemented flavor.
             name: the name of the flavor.
             stack_component_type: the corresponding StackComponentType.
-            integration: the name of the integration.
 
         Returns:
              The newly created flavor.

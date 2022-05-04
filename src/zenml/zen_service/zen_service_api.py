@@ -596,7 +596,6 @@ async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
         return zen_store.create_flavor(
             name=flavor.name,
             source=flavor.source,
-            integration=flavor.integration,
             stack_component_type=flavor.type,
         )
     except EntityExistsError as error:

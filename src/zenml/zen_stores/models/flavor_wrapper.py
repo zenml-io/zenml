@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Type
+from typing import Optional, Type
 
 from pydantic import BaseModel
 
@@ -62,9 +62,9 @@ class FlavorWrapper(BaseModel):
     a stack component flavor."""
 
     name: str
-    integration: str = ""
     type: StackComponentType
     source: str
+    integration: Optional[str]
 
     @property
     def reachable(self) -> bool:

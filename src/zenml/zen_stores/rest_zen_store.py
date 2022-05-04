@@ -881,7 +881,6 @@ class RestZenStore(BaseZenStore):
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-        integration: str = "",
     ) -> FlavorWrapper:
         """Creates a new flavor.
 
@@ -889,7 +888,6 @@ class RestZenStore(BaseZenStore):
             source: the source path to the implemented flavor.
             name: the name of the flavor.
             stack_component_type: the corresponding StackComponentType.
-            integration: the name of the integration.
 
         Returns:
              The newly created flavor.
@@ -902,7 +900,6 @@ class RestZenStore(BaseZenStore):
             name=name,
             source=source,
             type=stack_component_type,
-            integration=integration,
         )
         return FlavorWrapper.parse_obj(self.post(FLAVORS, body=flavor))
 

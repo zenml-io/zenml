@@ -71,7 +71,7 @@ class ZenFlavor(SQLModel, table=True):
     type: StackComponentType = Field(primary_key=True)
     name: str = Field(primary_key=True)
     source: str
-    integration: str
+    integration: Optional[str]
 
 
 class ZenStackDefinition(SQLModel, table=True):
@@ -1227,7 +1227,6 @@ class SqlZenStore(BaseZenStore):
         source: str,
         name: str,
         stack_component_type: StackComponentType,
-        integration: str = "",
     ) -> FlavorWrapper:
         """Creates a new flavor.
 
@@ -1260,7 +1259,6 @@ class SqlZenStore(BaseZenStore):
                 name=name,
                 source=source,
                 type=stack_component_type,
-                integration=integration,
             )
             flavor_wrapper = FlavorWrapper(**sql_flavor.dict())
             session.add(sql_flavor)
