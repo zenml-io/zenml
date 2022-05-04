@@ -115,11 +115,28 @@ In order to map this concept onto the GCP Secret Manager, ZenML uses labels and
 prepended group_keys.
 The example from above will show up in the GCP UI like this:
 
-[TODO]([GET_Screenshot])
+![GCP UI](../assets/stack_components/secret_manager/GCP_SM.png)
 
 Note: 'login_secret_username' and 'login_secret_password' represent the two
 key-value pairs associated
 with the 'login_secret'.
+
+When running:
+
+```bash
+zenml secret get login_secret
+```
+
+We get:
+
+```
+┏━━━━━━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃ SECRET_NAME  │ SECRET_KEY │ SECRET_VALUE ┃
+┠──────────────┼────────────┼──────────────┨
+┃ login_secret │ password   │ somepwd      ┃
+┃ login_secret │ username   │ aria         ┃
+┗━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+```
 
 {% endtab %}
 {% endtabs %}
