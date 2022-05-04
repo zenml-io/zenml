@@ -246,7 +246,10 @@ def print_flavor_list(
             try:
                 validate_flavor_source(f.source, component_type=component_type)
                 reachable = True
-            except (AssertionError, ModuleNotFoundError, ImportError):
+            except (AssertionError,
+                    ModuleNotFoundError,
+                    ImportError,
+                    ValueError):
                 pass
 
         flavor_table.append(
@@ -254,12 +257,21 @@ def print_flavor_list(
                 "FLAVOR": f.name,
                 "INTEGRATION": f.integration,
                 "READY-TO-USE": ":white_check_mark:" if reachable else "",
-                "SOURCE": f.source if reachable else "",
+                "SOURCE": f.source,
             }
         )
 
     print_table(flavor_table)
-
+    warning(
+        "The flag 'READY-TO-USE' indicates whether you can directly "
+        "create/use/manage a stack component with that specific flavor. "
+        "You can bring a flavor to a state where it is 'READY-TO-USE' in two "
+        "different ways. If the flavor belongs to a ZenML integration, "
+        "you can use `zenml integration install <name-of-the-integration>` and "
+        "if it doesn't, you can make sure that you are using ZenML in an "
+        "environment where ZenML can import the flavor through its source "
+        "path (also shown in the list)."
+    )
 
 def print_stack_component_configuration(
     component: StackComponent, display_name: str, active_status: bool
