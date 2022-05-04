@@ -22,7 +22,7 @@ from zenml.integrations.constants import GCP
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-GCP_ARTIFACT_STORE_FLAVOR = "gcs"
+GCP_ARTIFACT_STORE_FLAVOR = "gcp"
 
 
 class GcpIntegration(Integration):
