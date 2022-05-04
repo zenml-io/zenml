@@ -140,7 +140,7 @@ def mlflow_model_deployer_step(
                 f"An MLflow model with name `{config.model_name}` was not "
                 f"logged in the current pipeline run and no running MLflow "
                 f"model server was found. Please ensure that your pipeline "
-                f"includes an `mlflow_enable` decorated step that trains a "
+                f"includes an `@enable_mlflow` decorated step that trains a "
                 f"model and logs it to MLflow. This could also happen if "
                 f"the current pipeline run did not log an MLflow model  "
                 f"because the training step was cached."
