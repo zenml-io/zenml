@@ -486,14 +486,14 @@ def test_update_stack_with_new_component(fresh_zen_store):
         == 2
     )
     assert new_orchestrator in [
-        component.to_component()
-        for component in fresh_zen_store.get_stack_components(
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack_components(
             StackComponentType.ORCHESTRATOR
         )
     ]
     assert new_orchestrator in [
-        component.to_component()
-        for component in fresh_zen_store.get_stack("default").components
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack("default").components
     ]
 
 
@@ -531,14 +531,14 @@ def test_update_stack_when_component_not_part_of_stack(
         == 1
     )
     assert local_secrets_manager in [
-        component.to_component()
-        for component in fresh_zen_store.get_stack_components(
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack_components(
             StackComponentType.SECRETS_MANAGER
         )
     ]
     assert local_secrets_manager in [
-        component.to_component()
-        for component in fresh_zen_store.get_stack("default").components
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack("default").components
     ]
 
 
