@@ -948,6 +948,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self.zen_store.register_stack_component(
             StackComponentWrapper.from_component(component)
         )
+        if component.post_registration_message:
+            logger.info(component.post_registration_message)
+
         analytics_metadata = {
             "type": component.TYPE.value,
             "flavor": component.FLAVOR,

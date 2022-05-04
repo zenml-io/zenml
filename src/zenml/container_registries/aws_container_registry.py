@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import ClassVar
+import re
+from typing import ClassVar, List, Optional
 
 from pydantic import validator
 
@@ -19,6 +20,9 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
 from zenml.enums import ContainerRegistry, StackComponentType
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AWSContainerRegistry(BaseContainerRegistry):
@@ -33,19 +37,71 @@ class AWSContainerRegistry(BaseContainerRegistry):
     FLAVOR: ClassVar[str] = ContainerRegistry.AWS
 
     @validator("uri")
-    def validate_aws_uri(cls, uri: str) -> None:
-        example_message = (
-            "An example of a valid URI is: "
-            "`715803424592.dkr.ecr.us-east-1.amazonaws.com`"
-        )
-        base_error = "Property `uri` is invalid."
-
-        if uri.endswith("/"):
-            raise ValueError(
-                f"{base_error}. `uri` cannot end with a `/`. {example_message}"
-            )
+    def validate_aws_uri(cls, uri: str) -> str:
+        """Validates that the URI is in the correct format."""
+        uri = uri.rstrip("/")
 
         if "/" in uri:
             raise ValueError(
-                f"{base_error}. `uri` cannot contain a `/`. {example_message}"
+                f"Property `uri` can not contain a `/`. An example of a valid "
+                f"URI is: `715803424592.dkr.ecr.us-east-1.amazonaws.com`"
             )
+
+        return uri
+
+    def prepare_image_push(self, image_name: str) -> None:
+        """Logs a warning message if trying to push an image for which no
+        repository exists.
+
+        Args:
+            image_name: Name of the docker image that will be pushed.
+
+        Raises:
+            ValueError: If the docker image name is invalid.
+        """
+        if not image_name.startswith(self.uri):
+            # image is getting pushed somewhere else entirely
+            return
+
+        import boto3
+        from botocore.exceptions import ClientError
+
+        response = boto3.client("ecr").describe_repositories()
+        try:
+            repo_uris: List[str] = [
+                repository["repositoryUri"]
+                for repository in response["repositories"]
+            ]
+        except (KeyError, ClientError) as e:
+            # invalid boto response, let's hope for the best and just push
+            logger.debug("Error while trying to fetch ECR repositories: %s", e)
+            return
+
+        repo_exists = any(image_name.startswith(uri) for uri in repo_uris)
+        if not repo_exists:
+            match = re.search(f"{self.uri}/(.*):.*", image_name)
+            if not match:
+                raise ValueError(f"Invalid docker image name '{image_name}'.")
+
+            repo_name = match.group(1)
+            logger.warning(
+                "Amazon ECR requires you to create a repository before you can "
+                f"push an image to it. ZenML is trying to push the image "
+                f"{image_name} but could only detect the following "
+                f"repositories: {repo_uris}. We will try to push anyway, but "
+                f"in case it fails you need to create a repository named "
+                f"`{repo_name}`."
+            )
+
+    @property
+    def post_registration_message(self) -> Optional[str]:
+        """Optional message that will be printed after the stack component is
+        registered."""
+        return (
+            "Amazon ECR requires you to create a repository before you can "
+            "push an image to it. If you want to for example run a pipeline "
+            "using our Kubeflow orchestrator, ZenML will automatically build a "
+            f"docker image called `{self.uri}/zenml-kubeflow:<PIPELINE_NAME>` "
+            f"and try to push it. This will fail unless you create the "
+            f"repository `zenml-kubeflow` inside your amazon registry."
+        )
