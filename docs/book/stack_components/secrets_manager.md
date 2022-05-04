@@ -80,8 +80,19 @@ WIP
 
 ### Good to Know
 
-* labels used fro grouping
-* group name will be prepended
+The Google Secret Manager considers a single key-value pair to be a secret. Within ZenML and other
+Integrations like the AWS Secret Manager a Secret is a collection of key-value pairs.
+An example for this would be a secret that contains username and password:
+
+login_secret = {'username': 'aria', 'password': 'somepwd'}
+
+In order to map this concept onto the GCP Secret Manager, ZenML uses labels and prepended group_keys.
+The example from above will show up in the GCP UI like this:
+
+[TODO]([GET_Screenshot])
+
+Note: 'login_secret_username' and 'login_secret_password' represent the two key-value pairs associated
+with the 'login_secret'.
 
 {% endtab %}
 {% endtabs %}
