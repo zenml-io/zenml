@@ -130,6 +130,7 @@ examples = [
         validation_function=generate_basic_validation_function(
             pipeline_name="xgboost_pipeline", step_count=3
         ),
+        skip_on_windows=True,
     ),
 ]
 
