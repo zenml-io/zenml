@@ -224,7 +224,7 @@ class GlobalConfiguration(
                     "Please update ZenML to at least match the global "
                     "configuration version to avoid loss of "
                     "information.".format(config_version, curr_version)
-                    )
+                )
             if config_version == curr_version:
                 return
 
