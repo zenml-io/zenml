@@ -46,7 +46,7 @@ have unrestricted access to these.
 The Integration of the [AWS Secrets Manager](Southernlights#1942) gives you a
 direct interface to your Secrets stored on AWS.
 
-### Prerequisites
+## Prerequisites
 
 In order to use the secret manager you will need to have an AWS organization 
 with a secrets manager. Additionally, you will need to have at least read access
@@ -56,27 +56,29 @@ You will have to set up the CLI SDK on your local machine. We recommend this
 [guide](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html)
 to get started.
 
-### Setting up the Stack Component
+## Setting up the Stack Component
 
 * flavor - aws
 * region_name - default us-east-1
-
-### Good to Know
-
-WIP
 
 {% endtab %}
 
 {% tab title="GCP Secret Manager" %}
 
-### Prerequisites
+## Prerequisites
 
 WIP
 
-### Setting up the Stack Component
+## Setting up the Stack Component
 
-* flavor - aws
-* project_id - 
+The following flags are mandatory to create a GCP Secret Manager stack component:
+* `--flavor gcp_secret_manager`: This tells zenml to use the GCP Secret Manager Integration 
+* `--project_id==YOUR_PROJECT_ID`: This is necessary to access the correct GCP project. The project_id of your GCP project space that contains the
+Secret. You can find it like [this](https://support.google.com/googleapi/answer/7014113?hl=en).
+
+This means you'll be able to register a GCP Secret Manager with a command like this:
+
+`zenml secrets-manager register SECRETS_MANAGER_NAME --flavor gcp_secret_manager --project_id==YOUR_PROJECT_ID`
 
 ### Good to Know
 
@@ -86,7 +88,7 @@ An example for this would be a secret that contains username and password:
 
 login_secret = {'username': 'aria', 'password': 'somepwd'}
 
-In order to map this concept onto the GCP Secret Manager, ZenML uses labels and prepended group_keys.
+In order to map this concept onto the GCP iSecret Manager, ZenML uses labels and prepended group_keys.
 The example from above will show up in the GCP UI like this:
 
 [TODO]([GET_Screenshot])
