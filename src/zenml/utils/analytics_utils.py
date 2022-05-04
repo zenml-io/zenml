@@ -94,6 +94,8 @@ def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
     Args:
         metadata: Dict of metadata to attach to the user.
     """
+    # TODO [MEDIUM]: The identify_user function shares a lot of setup with
+    #  track_event() - this duplicated code could be given its own function
     try:
         import analytics
 
