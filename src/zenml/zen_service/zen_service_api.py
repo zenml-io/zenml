@@ -591,7 +591,7 @@ async def flavors() -> List[FlavorWrapper]:
     responses={409: error_response},
 )
 async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
-    """Creates a user."""
+    """Creates a flavor."""
     try:
         return zen_store.create_flavor(
             name=flavor.name,
