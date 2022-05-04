@@ -55,7 +55,11 @@ def remove_group_name_from_key(key_name: str, group_name: str) -> str:
     Returns:
         The cleaned key
     """
-    return re.sub(f"{group_name}_", "", key_name)
+    if key_name.startswith(group_name + '_'):
+        return key_name[len(group_name + '_'):]
+    else:
+        raise RuntimeError(f"Key-name `{key_name}` does not have the prefix "
+                           f"`{group_name}`. Key could not be extracted.")
 
 
 @register_stack_component_class
