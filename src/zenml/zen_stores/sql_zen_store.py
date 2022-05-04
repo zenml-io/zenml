@@ -1262,10 +1262,10 @@ class SqlZenStore(BaseZenStore):
                 type=stack_component_type,
                 integration=integration,
             )
-            wrapper_flavor = FlavorWrapper(**sql_flavor.dict())
+            flavor_wrapper = FlavorWrapper(**sql_flavor.dict())
             session.add(sql_flavor)
             session.commit()
-        return wrapper_flavor
+        return flavor_wrapper
 
     def get_flavors_by_type(
         self, component_type: StackComponentType
