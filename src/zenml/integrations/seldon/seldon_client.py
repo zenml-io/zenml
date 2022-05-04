@@ -864,15 +864,30 @@ class SeldonClient:
                 )
             pod = pods[0]
             pod_name = pod.metadata.name
+
             containers = [c.name for c in pod.spec.containers]
-            logger.debug(
-                f"Retrieving logs for pod: {pod_name} and container "
-                f"{containers[0]}"
+            init_containers = [c.name for c in pod.spec.init_containers]
+            container_statuses = {
+                c.name: c.started or c.restart_count
+                for c in pod.status.container_statuses
+            }
+
+            container = "default"
+            if container not in containers:
+                container = containers[0]
+            # some containers might not be running yet and have no logs to show,
+            # so we need to filter them out
+            if not container_statuses[container]:
+                container = init_containers[0]
+
+            logger.info(
+                f"Retrieving logs for pod: `{pod_name}` and container "
+                f"`{container}` in namespace `{self._namespace}`"
             )
             response = self._core_api.read_namespaced_pod_log(
                 name=pod_name,
                 namespace=self._namespace,
-                container=containers[0],
+                container=container,
                 follow=follow,
                 tail_lines=tail,
                 _preload_content=False,
