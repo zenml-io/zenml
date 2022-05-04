@@ -89,7 +89,7 @@ def get_environment() -> str:
 
 
 def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
-    """Attach metadate to user directly
+    """Attach metadata to user directly
 
     Args:
         metadata: Dict of metadata to attach to the user.

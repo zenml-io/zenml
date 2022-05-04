@@ -405,7 +405,7 @@ class GitExamplesHandler(object):
             else:
                 raise KeyError(
                     f"Example {example_name} does not exist! "
-                    f"Available examples: {[k for k in example_dict.keys()]}"
+                    f"Available examples: {list(example_dict)}"
                 )
         else:
             return self.examples
