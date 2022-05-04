@@ -67,7 +67,7 @@ class BaseZenStore(ABC):
             if self.is_empty:
                 logger.info("Registering default stack...")
                 self.register_default_stack()
-        self.create_default_user()
+            self.create_default_user()
 
         return self
 
