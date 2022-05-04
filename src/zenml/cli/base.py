@@ -67,22 +67,45 @@ def init(path: Optional[Path]) -> None:
     )
 
 
-@cli.command("clean")
-@click.option("--yes", "-y", is_flag=True, default=False)
-def clean(yes: bool = False) -> None:
-    """Delete all ZenML metadata and artifacts.
+def _delete_local_artifact_metadata() -> None:
+    """Delete local metadata and artifact stores from the active stack."""
+    with console.status(
+        "Deleting local artifact and metadata stores from active stack.\n"
+    ):
+        # TODO: [LOW] implement this
+        return
+
+
+@cli.command("clean", hidden=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Don't ask for confirmation.",
+)
+@click.option(
+    "--local",
+    "-l",
+    is_flag=True,
+    default=False,
+    help="Delete local metadata and artifact stores from the active stack.",
+)
+def clean(yes: bool = False, local: bool = False) -> None:
+    """Delete all ZenML metadata, artifacts, profiles and stacks.
 
     This is a destructive operation, primarily intended for use in development.
 
     Args:
       yes: bool:  (Default value = False)
     """
+    if local:
+        _delete_local_artifact_metadata()
+        return
+
     if not yes:
         confirm = confirmation(
-            "DANGER: This will completely delete all artifacts and metadata ever created \n"
-            "in this ZenML repository. Note: Pipelines and stack components running \n"
-            "non-locally will still exist. Please delete them manually.\n"
-            "Are you sure you want to proceed?"
+            "DANGER: This will completely delete all artifacts, metadata, stacks and profiles ever created during the use of ZenML. Pipelines and stack components running non-locally will still exist. Please delete them manually. Are you sure you want to proceed?"
         )
 
     if yes or confirm:
@@ -90,7 +113,9 @@ def clean(yes: bool = False) -> None:
         global_zen_config = Path(get_global_config_directory())
         if fileio.exists(str(local_zen_repo_config)):
             fileio.rmtree(str(local_zen_repo_config))
-            declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
+            declare(
+                f"Deleted local ZenML config from {local_zen_repo_config}."
+            )
         if fileio.exists(str(global_zen_config)):
             config_yaml_path = global_zen_config / CONFIG_FILE_NAME
             config_yaml_data = yaml_utils.read_yaml(str(config_yaml_path))
