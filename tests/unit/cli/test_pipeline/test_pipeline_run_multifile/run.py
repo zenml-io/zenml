@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 from zenml.pipelines import pipeline
 
+
 @pipeline(enable_cache=False)
 def some_pipe(
-        step_1,
+    step_1,
 ):
     step_1()

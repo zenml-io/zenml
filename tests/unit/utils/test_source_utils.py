@@ -16,6 +16,7 @@ import inspect
 import os
 import sys
 from contextlib import ExitStack as does_not_raise
+from pathlib import Path
 from typing import Callable
 
 import pytest
@@ -81,25 +82,22 @@ def test_loading_class_by_path_prepends_repo_path(clean_repo, mocker, tmp_path):
         source_utils.load_source_path_class("python_file.test")
 
 
-def test_import_python_file_for_first_time(clean_repo, mocker, tmp_path):
+def test_import_python_file_for_first_time(clean_repo, mocker, files_dir: Path):
     """Test that importing a python file as module works and allows for
     importing of module attributes even with module popped from sys path"""
 
     SOME_MODULE = "some_module"
+    SOME_MODULE_FILENAME = SOME_MODULE + ".py"
     SOME_FUNC = "some_func"
 
-    os.chdir(str(tmp_path))
+    os.chdir(str(files_dir))
 
     Repository.initialize()
     clean_repo.activate_root()
 
-    python_file = clean_repo.root / SOME_MODULE / f"{SOME_MODULE}.py"
-    python_file.parent.mkdir()
-    python_file.write_text(f"def {SOME_FUNC}(): return 1")
-
     mocker.patch.object(sys, "path", [])
 
-    module = source_utils.import_python_file(python_file)
+    module = source_utils.import_python_file(SOME_MODULE_FILENAME)
 
     # Assert that attr could be fetched from module
     assert isinstance(getattr(module, SOME_FUNC), Callable)
@@ -111,32 +109,29 @@ def test_import_python_file_for_first_time(clean_repo, mocker, tmp_path):
     assert len(sys.path) == 0
 
 
-def test_import_python_file_when_already_loaded(clean_repo, mocker, tmp_path):
+def test_import_python_file_when_already_loaded(
+    clean_repo, mocker, files_dir: Path
+):
     """Test that importing a python file as module works even if it is
     already on sys path and allows for importing of module attributes"""
 
     SOME_MODULE = "some_module"
+    SOME_MODULE_FILENAME = SOME_MODULE + ".py"
     SOME_FUNC = "some_func"
 
-    os.chdir(str(tmp_path))
-
-    Repository.initialize()
+    os.chdir(str(files_dir))
     clean_repo.activate_root()
-
-    python_file = clean_repo.root / SOME_MODULE / f"{SOME_MODULE}.py"
-    python_file.parent.mkdir()
-    python_file.write_text(f"def {SOME_FUNC}(): return 1")
 
     mocker.patch.object(sys, "path", [])
 
-    source_utils.import_python_file(str(python_file))
+    source_utils.import_python_file(str(SOME_MODULE_FILENAME))
 
     # Assert that module has been loaded into sys.module
     assert SOME_MODULE in sys.modules
 
     # Load module again, to cover alternative behaviour of the
     #  import_python_file, where the module is loaded already
-    module = source_utils.import_python_file(str(python_file))
+    module = source_utils.import_python_file(str(SOME_MODULE_FILENAME))
 
     # Assert that attr could be fetched from the module returned by the func
     assert isinstance(getattr(module, SOME_FUNC), Callable)
@@ -145,36 +140,24 @@ def test_import_python_file_when_already_loaded(clean_repo, mocker, tmp_path):
     assert len(sys.path) == 0
 
 
-def test_import_python_file(clean_repo, mocker, tmp_path):
+def test_import_python_file(clean_repo, mocker, files_dir: Path):
     """Test that importing a python file as module works even if it is
     already imported within the another previously loaded module"""
 
     MAIN_MODULE = "main_module"
+    MAIN_MODULE_FILENAME = MAIN_MODULE + ".py"
     SOME_MODULE = "some_module"
-    SOME_FUNC = "some_func"
+    SOME_MODULE_FILENAME = SOME_MODULE + ".py"
     OTHER_FUNC = "other_func"
 
-    os.chdir(str(tmp_path))
-
-    Repository.initialize()
+    os.chdir(str(files_dir))
     clean_repo.activate_root()
 
-    main_python_file = clean_repo.root / f"{MAIN_MODULE}.py"
-    main_python_file.write_text(
-        "import sys\n"
-        "import os\n"
-        "sys.path.append(os.path.dirname(os.path.dirname(__file__)))\n"
-        f"from {SOME_MODULE}.{SOME_MODULE} import {SOME_FUNC}\n"
-    )
-
-    other_python_file = clean_repo.root / SOME_MODULE / f"{SOME_MODULE}.py"
-    other_python_file.parent.mkdir()
-    other_python_file.write_text(
-        f"def {SOME_FUNC}(): return 1 \n" f"def {OTHER_FUNC}(): return 2\n"
-    )
+    main_python_file = files_dir / MAIN_MODULE_FILENAME
+    some_python_file = files_dir / SOME_MODULE_FILENAME
 
     assert main_python_file.exists()
-    assert other_python_file.exists()
+    assert some_python_file.exists()
 
     mocker.patch.object(sys, "path", [])
 
@@ -183,7 +166,7 @@ def test_import_python_file(clean_repo, mocker, tmp_path):
     # Assert that module has been loaded into sys.module
     assert MAIN_MODULE in sys.modules
 
-    module = source_utils.import_python_file(str(other_python_file))
+    module = source_utils.import_python_file(str(some_python_file))
 
     # Assert that attr could be fetched from the module returned by the func
     assert isinstance(getattr(module, OTHER_FUNC), Callable)

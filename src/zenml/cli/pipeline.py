@@ -16,7 +16,7 @@ import os.path
 import sys
 import textwrap
 import types
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
 import click
 
@@ -60,10 +60,12 @@ def _load_class_from_module(
         implemented_class = _get_module_attribute(module, implementation_name)
         return implemented_class
     elif isinstance(config_item, str):
-        correct_input = textwrap.dedent(f"""
+        correct_input = textwrap.dedent(
+            f"""
         {SourceConfigurationKeys.NAME_}: {config_item}
         {SourceConfigurationKeys.FILE_}: optional/filepath.py
-        """)
+        """
+        )
 
         raise PipelineConfigurationError(
             "As of ZenML version 0.8.0 `str` entries are no longer supported "
@@ -79,7 +81,8 @@ def _load_class_from_module(
             f" {correct_input}"
         )
     else:
-        correct_input = textwrap.dedent(f"""
+        correct_input = textwrap.dedent(
+            f"""
         {SourceConfigurationKeys.NAME_}: ClassName
         {SourceConfigurationKeys.FILE_}: optional/filepath.py
         """
@@ -147,6 +150,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     # If the file was run with `python run.py, this would happen automatically.
     #  In order to allow seamless switching between running directly and through
     #  zenml, this is done at this point
+
     sys.path.insert(0, os.path.abspath(os.path.dirname(python_file)))
 
     module = source_utils.import_python_file(python_file)
@@ -172,7 +176,9 @@ def run_pipeline(python_file: str, config_path: str) -> None:
             # We need to differentiate whether it's a single materializer
             # or a dictionary mapping output names to materializers
             if isinstance(materializers_config, str):
-                materializers = _load_class_from_module(module, materializers_config)
+                materializers = _load_class_from_module(
+                    module, materializers_config
+                )
             elif isinstance(materializers_config, dict):
                 materializers = {
                     output_name: _load_class_from_module(module, source)

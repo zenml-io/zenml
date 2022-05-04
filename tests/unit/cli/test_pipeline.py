@@ -11,19 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from pathlib import Path
 import os
-import shutil
 import subprocess
-from unittest import skip
 
-from pytest import fixture
 from click.testing import CliRunner
 
 from zenml.cli.pipeline import pipeline
 from zenml.enums import ExecutionStatus
 from zenml.repository import Repository
-from zenml.utils import yaml_utils
 
 PIPELINE_NAME = "some_pipe"
 STEP_NAME = "some_step"
@@ -31,51 +26,16 @@ MATERIALIZER_NAME = "SomeMaterializer"
 CUSTOM_OBJ_NAME = "SomeObj"
 
 
-@fixture
-def files_dir(request, tmp_path: Path) -> Path:
-    """Fixture that will search for a folder with the same name as the test
-    file and move it into the temp path of the test.
-
-    |dir
-    |--test_functionality
-    |--|--test_specific_method
-    |--test_functionality.py#test_specific_method
-
-    In this case if the `test_specific_method()` function inside the
-    `test_functionality.py` has this fixture, the
-    `test_functionality/test_specific_method` file is copied into the tmp_path.
-    The path is passed into the test_specific_method(datadir: str) as string.
-
-    TO use this, ensure the filename (minus '.py') corresponds to the outer
-    directory name. And the inner directory corresponds to the test methods
-    name.
-
-    Returns:
-        tmp_path at which to find the files.
-    """
-    filename = Path(request.module.__file__)
-    test_dir = filename.with_suffix('')
-
-    test_name = request.function.__name__
-
-    tmp_path = tmp_path / test_name
-
-    if os.path.isdir(test_dir):
-        test_function_dir = test_dir / test_name
-        if os.path.isdir(test_function_dir):
-            shutil.copytree(test_function_dir, tmp_path)
-
-    return tmp_path
-
-
-def test_pipeline_run_single_file(clean_repo: Repository,
-                                  files_dir: str) -> None:
+def test_pipeline_run_single_file(
+    clean_repo: Repository, files_dir: str
+) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the same file."""
     runner = CliRunner()
 
     os.chdir(files_dir)
     clean_repo.activate_root()
+
     # Run Pipeline
     runner.invoke(pipeline, ["run", "run.py", "-c", "config.yaml"])
 
@@ -87,8 +47,7 @@ def test_pipeline_run_single_file(clean_repo: Repository,
     assert historic_pipeline.runs[-1].status == ExecutionStatus.COMPLETED
 
 
-def test_pipeline_run_multifile(clean_repo: Repository,
-                                  files_dir: str) -> None:
+def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the different files.
 

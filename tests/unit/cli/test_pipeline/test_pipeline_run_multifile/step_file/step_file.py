@@ -11,14 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.steps import step, Output, BaseStepConfig
-
 from custom_obj_file.custom_obj_file import SomeObj
+
+from zenml.steps import BaseStepConfig, Output, step
+
 
 class StepConfig(BaseStepConfig):
     some_option: int = 4
 
+
 @step
-def some_step(config: StepConfig) -> Output(output_1=SomeObj,
-                                              output_2=int):
+def some_step(config: StepConfig) -> Output(output_1=SomeObj, output_2=int):
     return SomeObj("Custom-Object"), config.some_option
