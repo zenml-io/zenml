@@ -27,6 +27,7 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Define model
 class NeuralNetwork(nn.Module):
+
     def __init__(self):
         super(NeuralNetwork, self).__init__()
         self.flatten = nn.Flatten()
