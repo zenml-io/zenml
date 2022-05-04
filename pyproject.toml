@@ -28,13 +28,13 @@ classifiers = [
     "Typing :: Typed",
 ]
 exclude = [
+    "examples",
     "*.tests",
     "*.tests.*",
     "tests.*",
     "tests",
     "docs",
     "legacy",
-    "examples"
 ]
 include = [
     "src/zenml",
