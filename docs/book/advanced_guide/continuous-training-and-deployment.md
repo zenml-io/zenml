@@ -10,12 +10,12 @@ the [MLOps maturity model](https://docs.microsoft.com/en-us/azure/architecture/e
 the terms Continuous Training and Continuous Deployment (CT/CD) get more
 relevant.
 
-- Continuous Training refers to the paradigm where a team deploy training
+- Continuous Training refers to the paradigm where a team deploys training
   pipelines that run automatically to train
   models on
   new (fresh) data. (e.g. Every two weeks, take the latest data from an API, and
   train a new model on it.)
-- Continuous Deployment refers to the paradigm where a newly trained models are
+- Continuous Deployment refers to the paradigm where newly trained models are
   automatically deployed to a prediction
   service/server, when a criterion in production is fulfilled (e.g. if a trained
   model has a certain accuracy, or
@@ -67,7 +67,7 @@ through
 the `Model Deployer` abstraction. The concrete implementation of this
 abstraction
 deals with functionality concerning the life-cycle management and tracking of
-external model deployment servers (e.g. processes, containers, Kubernetes "
+external model deployment servers (e.g. processes, containers, Kubernetes
 deployments etc.), which are represented in ZenML using another
 abstraction: `Services`.
 

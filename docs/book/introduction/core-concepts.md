@@ -10,7 +10,7 @@ description: A good place to start before diving further into the docs.
 
 On a high level, data passes through a **[pipeline](#pipeline)** via **[steps](#step)** as an **[artifact](#artifact)**
 and is persisted in an **[artifact store](#artifact-store)**. Every step reads its predecessor's output artifacts, and
-its **[step configuration](#Step Configuration)** and writes output artifacts to the artifact store. 
+its **[step configuration](#step-configuration)** and writes output artifacts to the artifact store. 
 **[Materializers](#materializers)** define how this reading and writing is performed.
 
 Pipelines and steps are defined in code, but the underlying infrastructure on which they run is configured via 
@@ -19,7 +19,7 @@ can consist of many components. For example, as the lifecycle manager of the pip
 **[orchestrator](#orchestrator)** is an important component of any stack.
 
 The **[metadata store](#metadata-store)** keeps track of all the metadata regarding a pipeline run. It enables you to
-fetch steps and their output artifacts in a post-execution workflow via the **[Repository](#repository)**.
+fetch steps and their output artifacts in a post-execution workflow via the **[repository](#repository)**.
 
 ## Artifact
 

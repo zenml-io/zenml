@@ -8,7 +8,7 @@ Our goal here is to help you to get the first practical experience with ZenML an
 some basic functionalities of ZenML. We'll create a training pipeline for the [MNIST](http://yann.lecun.com/exdb/mnist/)
 dataset.
 
-If you want to run this notebook in an interactive environment, feel free to run it in a
+If you want to run this example in an interactive environment, feel free to run it in a
 [Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb)
 or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) directly.
 
@@ -143,7 +143,7 @@ With just a little more work, one can:
   ready orchestrator like Kubeflow.
 - Access important metadata like [statistics, schemas and drifts](../guides/basics/visualizers.md) which is inferred from
 the model and data which flows through these steps.
-- Easily [Deploy Models](../advanced_guide/continuous-training-and-deployment.md) that are trained within a ZenML 
+- Easily [deploy models](../advanced_guide/continuous-training-and-deployment.md) that are trained within a ZenML 
 pipeline and even set up continuous training loops including automatic deployments.
 
 Best of all: We let you and your infrastructure / ops team decide what the underlying tools are to achieve all this.

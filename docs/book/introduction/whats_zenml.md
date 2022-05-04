@@ -39,7 +39,7 @@ and beyond.
 
 ## Why should I use ZenML?
 
-ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their 
+ZenML pipelines are designed to be written early on in the development lifecycle. Data scientists can explore their 
 pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. You can 
 read more about why we started building ZenML [on our blog](https://blog.zenml.io/why-zenml/). By using ZenML in the 
 early stages of your project, you get the following benefits:

@@ -7,7 +7,7 @@ description: Execute individual steps in specialized environments.
 The step operator defers the execution of individual steps in a pipeline to
 specialized runtime environments that are
 optimized for Machine Learning workloads. This is helpful when there is a
-requirement for specialized cloud backends ✨
+requirement for specialized cloud backends
 for different steps. One example could be using powerful GPU instances for
 training jobs or distributed compute for
 ingestion streams.
@@ -201,8 +201,8 @@ zenml step-operator register vertex \
 {% endtab %}
 {% endtabs %}
 
-A concrete example of using these step operators can be found in
-the [GitHub repository](https://github.com/zenml-io/zenml/tree/main/examples)
+A concrete example of using these step operators can be found 
+[here](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training)
 
 ## Building your own StepOperator
 
