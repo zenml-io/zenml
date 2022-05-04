@@ -77,7 +77,7 @@ Step `my_second_step` has finished in 0.067s.
 Pipeline run `first_pipeline-20_Apr_22-16_07_14_577771` has finished in 0.128s.
 ```
 
-You'll learn how to inspect the finished run within the chapter on [Post Execution Workflow](#post-execution-workflow).
+You'll learn how to inspect the finished run within the chapter on our [Post Execution Workflow](#post-execution-workflow).
 
 ### Summary in Code
 

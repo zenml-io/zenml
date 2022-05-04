@@ -67,7 +67,7 @@ through
 the `Model Deployer` abstraction. The concrete implementation of this
 abstraction
 deals with functionality concerning the life-cycle management and tracking of
-external model deployment servers (e.g. processes, containers, Kubernetes "
+external model deployment servers (e.g. processes, containers, Kubernetes
 deployments etc.), which are represented in ZenML using another
 abstraction: `Services`.
 
