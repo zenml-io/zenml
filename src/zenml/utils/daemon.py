@@ -167,10 +167,19 @@ else:
 
         # check if PID file exists
         if pid_file and os.path.exists(pid_file):
-            raise FileExistsError(
-                f"The PID file '{pid_file}' already exists, either the daemon "
-                f"process is already running or something went wrong."
+            pid = get_daemon_pid_if_running(pid_file)
+            if pid:
+                raise FileExistsError(
+                    f"The PID file '{pid_file}' already exists and a daemon "
+                    f"process with the same PID '{pid}' is already running."
+                    f"Please remove the PID file or kill the daemon process "
+                    f"before starting a new daemon."
+                )
+            logger.warning(
+                f"Removing left over PID file '{pid_file}' from a previous "
+                f"daemon process that didn't shut down correctly."
             )
+            os.remove(pid_file)
 
         # first fork
         try:
