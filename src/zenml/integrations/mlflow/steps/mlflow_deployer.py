@@ -142,8 +142,8 @@ def mlflow_model_deployer_step(
                 f"model server was found. Please ensure that your pipeline "
                 f"includes an `mlflow_enable` decorated step that trains a "
                 f"model and logs it to MLflow. This could also happen if "
-                f"re-training a model in the current pipeline run was skipped "
-                f"due to caching."
+                f"the current pipeline run did not log an MLflow model  "
+                f"because the training step was cached."
             )
             # return an inactive service just because we have to return
             # something

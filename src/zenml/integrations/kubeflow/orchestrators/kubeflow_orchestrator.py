@@ -137,15 +137,15 @@ class KubeflowOrchestrator(BaseOrchestrator):
             RuntimeError: if the Kubernetes configuration cannot be loaded
         """
         try:
-            contexts = k8s_config.list_kube_config_contexts()
+            contexts, active_context = k8s_config.list_kube_config_contexts()
         except k8s_config.config_exception.ConfigException as e:
             raise RuntimeError(
                 "Could not load the Kubernetes configuration"
             ) from e
 
-        context_names = [c["name"] for c in contexts[0]]
-        current_context = contexts[1]["name"]
-        return context_names, current_context
+        context_names = [c["name"] for c in contexts]
+        active_context_name = active_context["name"]
+        return context_names, active_context_name
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -472,8 +472,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
         except urllib3.exceptions.HTTPError as error:
             logger.warning(
                 f"Failed to upload Kubeflow pipeline: %s. "
-                f"Please make sure your kube config is configured and the "
-                f"{self.kubernetes_context} kubernetes context is set "
+                f"Please make sure your kubernetes config is present and the "
+                f"{self.kubernetes_context} kubernetes context is configured "
                 f"correctly.",
                 error,
             )
@@ -683,7 +683,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         if self.skip_cluster_provisioning:
             return
 
-        if self.is_daemon_running:
+        if not self.skip_ui_daemon_provisioning and self.is_daemon_running:
             local_deployment_utils.stop_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path
             )
@@ -730,7 +730,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 kubernetes_context=kubernetes_context
             )
 
-        if not self.skip_ui_daemon_provisioning and not self.is_daemon_running:
+        if not self.is_daemon_running:
             local_deployment_utils.start_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path,
                 log_file_path=self.log_file,
