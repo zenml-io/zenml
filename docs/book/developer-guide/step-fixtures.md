@@ -64,7 +64,7 @@ def my_step(
 ```
 
 If all properties in `MyConfig` have default values, then that is already enough. If they don't all have default values, 
-then one must pass the config in during pipeline run time. You can also override default values here and therefore 
+then one must pass the config during pipeline run time. You can also override default values here and therefore 
 dynamically parameterize your pipeline runs.
 
 ```python
