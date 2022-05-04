@@ -14,7 +14,7 @@
 """CLI for manipulating ZenML local and global config file."""
 
 import json
-from typing import Optional
+from typing import Dict, Optional
 
 import click
 
@@ -685,6 +685,21 @@ def down_stack(force: bool = False) -> None:
         stack_.suspend()
 
 
+def _get_component_as_dict(
+    component_type: StackComponentType, component_name: str
+) -> Dict[str, str]:
+    """Return a dict represention of a component's key config values"""
+    repo = Repository()
+    component = repo.get_stack_component(component_type, name=component_name)
+    component_dict = {
+        key: value
+        for key, value in json.loads(component.json()).items()
+        if key != "uuid" and value is not None
+    }
+    component_dict["flavor"] = component.FLAVOR
+    return component_dict
+
+
 @stack.command("export")
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=False)
@@ -707,15 +722,7 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
     # create a dict of all components in the specified stack
     component_data = {}
     for component_type, component_name in stack_configuration.items():
-        component = repo.get_stack_component(
-            component_type, name=component_name
-        )
-        component_dict = {
-            key: value
-            for key, value in json.loads(component.json()).items()
-            if key != "uuid" and value is not None
-        }
-        component_dict["flavor"] = component.FLAVOR
+        component_dict = _get_component_as_dict(component_type, component_name)
         component_data[str(component_type)] = component_dict
 
     # write zenml version and stack dict to YAML
@@ -728,6 +735,56 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
         filename = stack_name + ".yaml"
     write_yaml(filename, yaml_data)
     cli_utils.declare(f"Exported stack '{stack_name}' to file '{filename}'.")
+
+
+def _import_stack_component(
+    component_type: StackComponentType, component_config: Dict[str, str]
+) -> str:
+    """import a single stack component with given type/config"""
+    component_type = StackComponentType(component_type)
+    component_name = component_config.pop("name")
+    component_flavor = component_config.pop("flavor")
+
+    # make sure component can be registered, otherwise ask for new name
+    while True:
+        # check if component already exists
+        try:
+            other_component = _get_component_as_dict(
+                component_type, component_name
+            )
+
+        # component didn't exist yet, so we create it.
+        except KeyError:
+            break
+
+        # check whether other component has exactly same config as export
+        other_is_same = True
+        for key, value in component_config.items():
+            if key not in other_component or other_component[key] != value:
+                other_is_same = False
+                break
+
+        # component already exists and is correctly configured -> done
+        if other_is_same:
+            return component_name
+
+        # component already exists but with different config -> rename
+        display_name = _component_display_name(component_type)
+        component_name = click.prompt(
+            f"A component of type '{display_name}' with the name "
+            f"'{component_name}' already exists, "
+            f"but is configured differently. "
+            f"Please choose a different name.",
+            type=str,
+        )
+
+    _register_stack_component(
+        component_type=component_type,
+        component_name=component_name,
+        component_flavor=component_flavor,
+        **component_config,
+    )
+    return component_name
 
 
 @stack.command("import")
@@ -770,36 +827,14 @@ def import_stack(
             type=str,
         )
 
-    # register stack components
+    # import stack components
     component_names = {}
     for component_type, component_config in data["components"].items():
-        component_type = StackComponentType(component_type)
-        component_flavor = component_config.pop("flavor")
-
-        # ask user for new component name if current one already exists
-        component_name = component_config.pop("name")
-        registered_components = {
-            component.name
-            for component in repo.get_stack_components(component_type)
-        }
-        while component_name in registered_components:
-            display_name = _component_display_name(component_type)
-            component_name = click.prompt(
-                f"A component of type '{display_name}' with the name "
-                f"'{component_name}' already exists. "
-                f"Please choose a different name.",
-                type=str,
-            )
-
-        # register component
-        _register_stack_component(
+        component_name = _import_stack_component(
             component_type=component_type,
-            component_name=component_name,
-            component_flavor=component_flavor,
-            **component_config,
+            component_config=component_config,
         )
-
-        # save component for stack registration
         component_names[component_type + "_name"] = component_name
 
+    # register new stack
     ctx.invoke(register_stack, stack_name=stack_name, **component_names)

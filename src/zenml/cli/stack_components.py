@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import time
 from importlib import import_module
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, List, Optional, Type
 
 import click
 from rich.markdown import Markdown
@@ -207,7 +207,7 @@ def _register_stack_component(
     component_type: StackComponentType,
     component_name: str,
     component_flavor: str,
-    **kwargs: Dict[str, Any],
+    **kwargs: Any,
 ) -> None:
     """Register a stack component."""
     from zenml.stack.stack_component_class_registry import (
