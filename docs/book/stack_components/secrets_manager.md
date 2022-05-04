@@ -58,12 +58,12 @@ to get started.
 
 ## Setting up the Stack Component
 
-* flavor - aws
-* region_name - default us-east-1
-
-The following flags are mandatory to create a GCP Secret Manager stack component:
+The following flag is mandatory to create a GCP Secret Manager stack component:
 * `--flavor aws`: This tells zenml to use the AWS Secrets Manager Integration 
-* `--region_name==YOUR_PROJECT_REGION`: This is necessary to access the AWS project in the correct region. 
+
+Additionally, you should supply the following flag:
+* `--region_name==YOUR_PROJECT_REGION`: This is necessary to access the AWS project in the correct region.
+This defaults to `us-east-1`.
 
 This means you'll be able to register an AWS Secrets Manager with a command like this:
 
@@ -97,7 +97,7 @@ An example for this would be a secret that contains username and password:
 
 login_secret = {'username': 'aria', 'password': 'somepwd'}
 
-In order to map this concept onto the GCP iSecret Manager, ZenML uses labels and prepended group_keys.
+In order to map this concept onto the GCP Secret Manager, ZenML uses labels and prepended group_keys.
 The example from above will show up in the GCP UI like this:
 
 [TODO]([GET_Screenshot])
