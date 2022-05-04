@@ -21,12 +21,11 @@ from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.constants import CONFIG_FILE_NAME, REPOSITORY_DIRECTORY_NAME
+from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.exceptions import InitializationException
 from zenml.io import fileio
 from zenml.io.utils import get_global_config_directory
 from zenml.repository import Repository
-from zenml.utils import yaml_utils
 
 
 @cli.command("init", help="Initialize a ZenML repository.")
@@ -102,7 +101,8 @@ def clean(yes: bool = False, local: bool = False) -> None:
     This is a destructive operation, primarily intended for use in development.
 
     Args:
-      yes: bool:  (Default value = False)
+      yes (flag; default value = False): If you don't want a confirmation prompt.
+      local (flag; default value = False): If you want to delete local metadata and artifact stores from the active stack.
     """
     if local:
         _delete_local_artifact_metadata()
@@ -110,7 +110,10 @@ def clean(yes: bool = False, local: bool = False) -> None:
 
     if not yes:
         confirm = confirmation(
-            "DANGER: This will completely delete all artifacts, metadata, stacks and profiles ever created during the use of ZenML. Pipelines and stack components running non-locally will still exist. Please delete them manually. Are you sure you want to proceed?"
+            "DANGER: This will completely delete all artifacts, metadata, stacks and profiles \n"
+            "ever created during the use of ZenML. Pipelines and stack components running non-\n"
+            "locally will still exist. Please delete those manually. \n\n"
+            "Are you sure you want to proceed?"
         )
 
     if yes or confirm:
@@ -120,18 +123,10 @@ def clean(yes: bool = False, local: bool = False) -> None:
             fileio.rmtree(str(local_zen_repo_config))
             declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
 
-        # delete the `zen_examples` if they were pulled
-        global_zen_config = Path(get_global_config_directory())
-        zenml_examples_dir = global_zen_config / "zen_examples"
-        if fileio.exists(str(zenml_examples_dir)):
-            fileio.rmtree(str(zenml_examples_dir))
-            declare(f"Deleted ZenML examples from {zenml_examples_dir}.")
-
         # delete the profiles (and stacks)
+        global_zen_config = Path(get_global_config_directory())
         if fileio.exists(str(global_zen_config)):
-            config_yaml_path = global_zen_config / CONFIG_FILE_NAME
-            config_yaml_data = yaml_utils.read_yaml(str(config_yaml_path))
-            old_user_id = config_yaml_data["user_id"]
+            gc = GlobalConfiguration()
             for dir_name in fileio.listdir(str(global_zen_config)):
                 if fileio.isdir(str(global_zen_config / str(dir_name))):
                     warning(
@@ -139,14 +134,13 @@ def clean(yes: bool = False, local: bool = False) -> None:
                     )
             fileio.rmtree(str(global_zen_config))
             declare(f"Deleted global ZenML config from {global_zen_config}.")
-
-        Repository.initialize(root=Path.cwd())
-        if old_user_id:
-            new_config_yaml_data = yaml_utils.read_yaml(str(config_yaml_path))
-            new_config_yaml_data["user_id"] = old_user_id
-            yaml_utils.write_yaml(str(config_yaml_path), new_config_yaml_data)
-
-        declare(f"Reinitialized ZenML global config at {Path.cwd()}.")
+            fresh_gc = GlobalConfiguration(
+                user_id=gc.user_id,
+                analytics_opt_in=gc.analytics_opt_in,
+                version=gc.version,
+            )
+            fresh_gc._add_and_activate_default_profile()
+            declare(f"Reinitialized ZenML global config at {Path.cwd()}.")
 
     else:
         declare("Aborting clean.")
