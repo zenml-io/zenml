@@ -106,12 +106,8 @@ examples = [
             pipeline_name="mnist_pipeline", step_count=4
         ),
     ),
-    ExampleIntegrationTestConfiguration(
-        name="lightgbm",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="lgbm_pipeline", step_count=3
-        ),
-    ),  # TODO [HIGH]: Create Integration tests for MLFlow Deployment
+    # TODO [HIGH]: Create Integration tests for lightgbm
+    # TODO [HIGH]: Create Integration tests for MLFlow Deployment
     ExampleIntegrationTestConfiguration(
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
