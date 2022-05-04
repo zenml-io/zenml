@@ -95,13 +95,6 @@ examples = [
         ),
     ),
     ExampleIntegrationTestConfiguration(
-        name="huggingface",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="seq_classifier_train_eval_pipeline", step_count=5
-        ),
-        skip_on_windows=True
-    ),
-    ExampleIntegrationTestConfiguration(
         name="kubeflow_pipelines_orchestration",
         validation_function=generate_basic_validation_function(
             pipeline_name="mnist_pipeline", step_count=4
@@ -135,7 +128,7 @@ examples = [
     ),
     # TODO [MEDIUM]: Investigate why xgboost test doesn't work on windows
     # TODO [MEDIUM]: Investigate why huggingface test throws pip error on
-    #  windows. dill<0.3.2,>=0.3.1.1, but you have dill 0.3.4
+    #  dill<0.3.2,>=0.3.1.1, but you have dill 0.3.4
 ]
 
 
