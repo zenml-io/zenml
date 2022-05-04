@@ -73,6 +73,11 @@ def _delete_local_artifact_metadata() -> None:
         "Deleting local artifact and metadata stores from active stack.\n"
     ):
         # TODO: [LOW] implement this
+        # check that an active stack exists
+        # check that the metadata store is local
+        # check that the artifact store is local
+        # get the path for them both
+        # delete everything inside that path
         return
 
 
@@ -109,11 +114,20 @@ def clean(yes: bool = False, local: bool = False) -> None:
         )
 
     if yes or confirm:
+        # delete the .zen folder
         local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
-        global_zen_config = Path(get_global_config_directory())
         if fileio.exists(str(local_zen_repo_config)):
             fileio.rmtree(str(local_zen_repo_config))
             declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
+
+        # delete the `zen_examples` if they were pulled
+        global_zen_config = Path(get_global_config_directory())
+        zenml_examples_dir = global_zen_config / "zen_examples"
+        if fileio.exists(str(zenml_examples_dir)):
+            fileio.rmtree(str(zenml_examples_dir))
+            declare(f"Deleted ZenML examples from {zenml_examples_dir}.")
+
+        # delete the profiles (and stacks)
         if fileio.exists(str(global_zen_config)):
             config_yaml_path = global_zen_config / CONFIG_FILE_NAME
             config_yaml_data = yaml_utils.read_yaml(str(config_yaml_path))
