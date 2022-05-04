@@ -29,10 +29,10 @@ from zenml.cli.text_utils import (
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.exceptions import InitializationException, GitNotFoundError
+from zenml.exceptions import GitNotFoundError, InitializationException
+from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import identify_user
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it

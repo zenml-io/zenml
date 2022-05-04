@@ -26,7 +26,7 @@ zenml_go_email_prompt = Markdown(
 Here at ZenML we are working hard to produce the best
 possible MLOps framework. In order to solve real-world problems
 we want to ask you, the user, for feedback and ideas. If
-you are interested in helping us shape the world of MLOps 
+you are interested in helping us shape the world of MLOps
 please leave your email below (or leave blank to skip). We will
 only use this for the purpose of reaching out to you for a
 user interview and to better understand usage.
@@ -38,9 +38,10 @@ zenml_go_privacy_message = Markdown(
 ## 🔒 Privacy Policy at ZenML!
 
 As an open-source project we rely on usage statistics to inform our decisions
-about what features to build. The statistics do not contain any of your code, data or personal
-information. All we see on our end is metadata like operating system, stack component
-flavors and that events like pipeline runs were triggered.
+about what features to build. The statistics do not contain any of your code,
+data or personal information. All we see on our end is metadata like operating
+system, stack component flavors and that events like pipeline runs were
+triggered.
 
 If you wish to opt out, feel free to run the following command:
 ```bash
