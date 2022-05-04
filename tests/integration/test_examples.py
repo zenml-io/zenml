@@ -132,6 +132,7 @@ examples = [
         ),
         skip_on_windows=True,
     ),
+    # TODO [MEDIUM]: Investigate why xgboost test doesn't work on windows
 ]
 
 
