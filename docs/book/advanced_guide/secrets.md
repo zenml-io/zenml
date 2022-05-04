@@ -26,9 +26,9 @@ of default schema where things that aren't attached to a grouping can be stored.
 
 ## Registering a secrets manager
 
-The local secrets manager currently exists in a YAML- and filesystem-based
-flavor. (An SQLite-powered flavor is coming soon!) If you want to use the AWS
-Secrets Manager as a non-local flavor that is also possible with ZenML.
+For early development purposes ZenML provides a local secrets manager which uses
+a YAML file to store base64 encoded secret. If you want to instead use the AWS 
+or GCP Secrets Manager as a non-local flavor that is also possible with ZenML.
 
 To register a local secrets manager, use the CLI interface:
 
@@ -112,7 +112,7 @@ is just as easy as using the local version. Make sure that the integration is
 installed first, and then register your secrets manager in the following way:
 
 ```shell
-zenml integration install s3
+zenml integration install aws
 zenml secrets-manager register AWS_SECRETS_MANAGER_NAME -t aws
 ```
 

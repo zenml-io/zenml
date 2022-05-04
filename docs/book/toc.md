@@ -30,7 +30,7 @@
   * [Use `zenml example run`](advanced_guide/zenml-example-cli.md)
   * [Bypassing materialization](advanced_guide/skip-materialization.md)
 * Integrations
-  * [Integrations with Popular Tools](stack_components/integrations.md)
+  * [Integrations with Popular Tools](advanced_guide/integrations.md)
   * [Visualize your Data](advanced_guide/explore_data.md)
   * [Load your Data from Feature Stores](advanced_guide/feature-store.md)
   * [Perform Drift Detection](advanced_guide/drift_detection.md)

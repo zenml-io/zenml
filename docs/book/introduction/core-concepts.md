@@ -68,8 +68,8 @@ images and makes them accessible behind a local port. You could also use a remot
 Since production scenarios often look complex, **ZenML** is built with integrations in mind.
 An integration is a third-party tool or platform that implements a ZenML abstraction. It can be part of a stack.
 A tool can implement many abstractions and therefore an integration can have different
-entrypoints for the user. We have a consistently [updated integrations page](../stack_components/integrations.md) which shows all
-current integrations supported by the ZenML core team [here](../stack_components/integrations.md).
+entrypoints for the user. We have a consistently [updated integrations page](../advanced_guide/integrations.md) which shows all
+current integrations supported by the ZenML core team [here](../advanced_guide/integrations.md).
 However, as ZenML is a framework users are encouraged to use these as a guideline and implement
 their own integrations by extending the various ZenML abstractions.
 

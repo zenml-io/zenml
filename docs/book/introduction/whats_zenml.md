@@ -13,10 +13,6 @@ training, all the way to the evaluation of results and even serving. There are m
 common ML development tasks. ZenML is not here to replace the great tools that solve these individual problems. 
 Rather, it **integrates natively with popular ML tooling** and gives standard abstraction to write your workflows.
 
-{% hint style="success" %}
-Read more about Why ZenML exists [here](why-zenml.md).
-{% endhint %}
-
 ## Who is ZenML for?
 
 ![Before and after ZenML](../assets/sam-side-by-side-full-text.png)

@@ -35,15 +35,12 @@ def my_step(my_service: MyService) -> ...:
 
 You can see full examples of using services here:
 
-* Visualizing training with tensorboard with
-  the [Kubeflow tensorboard example](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow)
-  .
-* Continuous training and continuous deployment setting with
-  the [MLflow deployment example](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment)
-  .
-* Continuous training and continuous deployment setting with
-  the [Seldon deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment)
-  .
+* Visualizing training with tensorboard with the
+[Kubeflow tensorboard example](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow).
+* Continuous training and continuous deployment setting with 
+the [MLflow deployment example](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_deployment).
+* Continuous training and continuous deployment setting with 
+the [Seldon deployment example](https://github.com/zenml-io/zenml/tree/main/examples/seldon_deployment).
 
 ## Example services
 

@@ -116,52 +116,52 @@ There are three major roles that a Model Deployer plays in a ZenML Stack:
    to deploy ad-hoc models. The following code is an example of using the
    Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step:
 
-```python
-from zenml.artifacts import ModelArtifact
-from zenml.environment import Environment
-from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
-from zenml.integrations.seldon.services.seldon_deployment import (
-  SeldonDeploymentConfig,
-  SeldonDeploymentService,
-)
-from zenml.steps import (
-  STEP_ENVIRONMENT_NAME,
-  StepContext,
-  step,
-)
-
-@step(enable_cache=True)
-def seldon_model_deployer_step(
-  context: StepContext,
-  model: ModelArtifact,
-) -> SeldonDeploymentService:
-  model_deployer = SeldonModelDeployer.get_active_model_deployer()
-
-  # get pipeline name, step name and run id
-  step_env = Environment()[STEP_ENVIRONMENT_NAME]
-
-  service_config=SeldonDeploymentConfig(
-      model_uri=model.uri,
-      model_name="my-model",
-      replicas=1,
-      implementation="TENSORFLOW_SERVER",
-      secret_name="seldon-secret",
-      pipeline_name = step_env.pipeline_name,
-      pipeline_run_id = step_env.pipeline_run_id,
-      pipeline_step_name = step_env.step_name,
-  )
-
-  service = model_deployer.deploy_model(
-      service_config, replace=True, timeout=300
-  )
-
-  print(
-      f"Seldon deployment service started and reachable at:\n"
-      f"    {service.prediction_url}\n"
-  )
-
-  return service
-```
+    ```python
+    from zenml.artifacts import ModelArtifact
+    from zenml.environment import Environment
+    from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
+    from zenml.integrations.seldon.services.seldon_deployment import (
+      SeldonDeploymentConfig,
+      SeldonDeploymentService,
+    )
+    from zenml.steps import (
+      STEP_ENVIRONMENT_NAME,
+      StepContext,
+      step,
+    )
+    
+    @step(enable_cache=True)
+    def seldon_model_deployer_step(
+      context: StepContext,
+      model: ModelArtifact,
+    ) -> SeldonDeploymentService:
+      model_deployer = SeldonModelDeployer.get_active_model_deployer()
+    
+      # get pipeline name, step name and run id
+      step_env = Environment()[STEP_ENVIRONMENT_NAME]
+    
+      service_config=SeldonDeploymentConfig(
+          model_uri=model.uri,
+          model_name="my-model",
+          replicas=1,
+          implementation="TENSORFLOW_SERVER",
+          secret_name="seldon-secret",
+          pipeline_name = step_env.pipeline_name,
+          pipeline_run_id = step_env.pipeline_run_id,
+          pipeline_step_name = step_env.step_name,
+      )
+    
+      service = model_deployer.deploy_model(
+          service_config, replace=True, timeout=300
+      )
+    
+      print(
+          f"Seldon deployment service started and reachable at:\n"
+          f"    {service.prediction_url}\n"
+      )
+    
+      return service
+    ```
 
 3. the Model Deployer acts as a registry for all Services that represent remote
    model servers. External model deployment servers can be listed and filtered
@@ -175,41 +175,41 @@ def seldon_model_deployer_step(
    status of a model server, the prediction URI that it exposes, or to stop or
    delete a model server:
 
-```python
-from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
-
-model_deployer = SeldonModelDeployer.get_active_model_deployer()
-services = model_deployer.find_model_server(
-    pipeline_name="continuous-deployment-pipeline",
-    pipeline_step_name="seldon_model_deployer_step",
-    model_name="my-model",
-)
-if services:
-    if services[0].is_running:
-        print(
-            f"Seldon deployment service started and reachable at:\n"
-            f"    {services[0].prediction_url}\n"
-        )
-    elif services[0].is_failed:
-        print(
-            f"Seldon deployment service is in a failure state. "
-            f"The last error message was: {services[0].status.last_error}"
-        )
-    else:
-        print(f"Seldon deployment service is not running")
-
-        # start the service
-        services[0].start(timeout=100)
-
-    # delete the service
-    model_deployer.delete_service(services[0].uuid, timeout=100, force=False)
-```
+    ```python
+    from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
+    
+    model_deployer = SeldonModelDeployer.get_active_model_deployer()
+    services = model_deployer.find_model_server(
+        pipeline_name="continuous-deployment-pipeline",
+        pipeline_step_name="seldon_model_deployer_step",
+        model_name="my-model",
+    )
+    if services:
+        if services[0].is_running:
+            print(
+                f"Seldon deployment service started and reachable at:\n"
+                f"    {services[0].prediction_url}\n"
+            )
+        elif services[0].is_failed:
+            print(
+                f"Seldon deployment service is in a failure state. "
+                f"The last error message was: {services[0].status.last_error}"
+            )
+        else:
+            print(f"Seldon deployment service is not running")
+    
+            # start the service
+            services[0].start(timeout=100)
+    
+        # delete the service
+        model_deployer.delete_service(services[0].uuid, timeout=100, force=False)
+    ```
 
 When a Model Deployer is part of the active ZenML Stack, it is also possible to
 interact with it from the CLI to list, start, stop or delete the model servers
 that is manages:
 
-```bash
+```
 $ zenml served-models list
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         ┃

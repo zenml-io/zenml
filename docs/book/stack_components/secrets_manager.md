@@ -13,7 +13,7 @@ cluster as it runs individual steps. You might also just want a centralized
 location for the storage of secrets across your ZenML project. ZenML gives you
 all this with the Secret Manager stack component.
 
-## CLI
+# CLI
 
 Check out the CLI commands concerning the secrets manager
 [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--setting-up-a-secrets-manager)
@@ -23,10 +23,9 @@ Once you have the stack component set up in your active stack, you'll be able to
 interact with it using the `secrets` CLI group. You'll find the corresponding
 CLI docs [here](https://apidocs.zenml.io/latest/cli/#zenml.cli--using-secrets)
 
-## Implementations
+# Implementations
 
-{% tabs %}
-{% tab title="Local Secrets Manager " %}
+## Local Secrets Manager
 
 The local secrets manager is mainly built for the purpose of quickly getting
 started with secrets outside any production setting. When using this secret
@@ -38,14 +37,13 @@ The secrets will be saved base64 encoded without any encryption.
 This offers **no** security benefits. Anyone with access to your machine will
 have unrestricted access to these.
 {% endhint %}
-{% endtab %}
 
-{% tab title="AWS Secrets Manager" %}
+## AWS Secrets Manager
 
 The Integration of the [AWS Secrets Manager](Southernlights#1942) gives you a
 direct interface to your Secrets stored on AWS.
 
-## Prerequisites
+### Prerequisites
 
 In order to use the secret manager you will need to have an AWS organization
 with a secrets manager. Additionally, you will need to have at least read access
@@ -55,7 +53,7 @@ You will have to set up the CLI SDK on your local machine. We recommend this
 [guide](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/setup-credentials.html)
 to get started.
 
-## Setting up the Stack Component
+### Setting up the Stack Component
 
 The following flag is mandatory to create a GCP Secret Manager stack component:
 
@@ -72,11 +70,9 @@ this:
 
 `zenml secrets-manager register SECRETS_MANAGER_NAME --flavor aws --region_name==YOUR_PROJECT_REGION`
 
-{% endtab %}
+## GCP Secret Manager
 
-{% tab title="GCP Secret Manager" %}
-
-## Prerequisites
+### Prerequisites
 
 To get going with gcp make sure to have gcloud set up locally with a user or 
 ideally a service account with permissions to access the secret manager. 
@@ -84,7 +80,7 @@ ideally a service account with permissions to access the secret manager.
 started. Once everything is set up on your machine, make sure to enable the 
 secrets manager API within your gcp project.
 
-## Setting up the Stack Component
+### Setting up the Stack Component
 
 The following flags are mandatory to create a GCP Secret Manager stack
 component:
@@ -101,7 +97,7 @@ this:
 
 `zenml secrets-manager register SECRETS_MANAGER_NAME --flavor gcp_secret_manager --project_id==YOUR_PROJECT_ID`
 
-## Good to Know
+### Good to Know
 
 The Google Secret Manager considers a single key-value pair to be a secret.
 Within ZenML and other
@@ -137,9 +133,6 @@ We get:
 ┃ login_secret │ username   │ aria         ┃
 ┗━━━━━━━━━━━━━━┷━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
-
-{% endtab %}
-{% endtabs %}
 
 ## Build Your Own
 
