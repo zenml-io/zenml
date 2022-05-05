@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The DeepChecks integration provides a way to validate your data in your pipelines.
+The Deepchecks integration provides a way to validate your data in your pipelines.
 It includes a way to detect data anomalies and define checks to ensure quality of
 data.
 
-The integration includes custom materializers to store deepchecks SuiteResults and
+The integration includes custom materializers to store deepchecks `SuiteResults` and
 a visualizer to visualize the results in an easy way on a notebook and in your
 browser.
 """

@@ -1,5 +1,5 @@
 # 🏎 Validate your data
-Data validation  is something you often want to guard against in your pipelines.
+Data validation is something you often want to include in your pipelines.
 Machine learning pipelines are built on top of data inputs, so it is worth
 checking the data to ensure it looks the way you want it to look.
 
@@ -8,7 +8,7 @@ This example uses [`deepchecks`](https://github.com/deepchecks/deepchecks), a
 useful open-source library to painlessly do data validation. At its core, `deepchecks` 
 data validation library takes in a reference data set and compares it against another comparison dataset. 
 These are both input in the form of a `pandas` dataframe. You can receive these results in the form of a 
-`SuiteResult` object, that can be visualized in a notebook or on the browser as a HTML webpage.
+`SuiteResult` object that can in turn be visualized in a notebook or in the browser as a HTML webpage.
 
 
 ## 🧰 How the example is implemented
@@ -30,7 +30,7 @@ report in your browser or within a Jupyter notebook:
 ![Deepchecks drift visualization UI](assets/drift_visualization.png)
 
 # ☁️ Run in Colab
-If you have a google account, you can get started directly with google colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/deepchecks_drift_detection/deepchecks.ipynb)
+If you have a Google account, you can get started directly with Colab - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zenml-io/zenml/blob/feature/ENG-634-beautify-examples/examples/deepchecks_drift_detection/deepchecks.ipynb)
 
 # 🖥 Run it locally
 
@@ -82,5 +82,5 @@ rm -rf zenml_examples
 
 Our docs regarding the deepchecks integration can be found [here](TODO: Link to docs).
 
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
+If you want to learn more about visualizers in general or about how to build your own visualizers in ZenML
 check out our [docs](TODO: Link to docs)
