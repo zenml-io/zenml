@@ -1,4 +1,4 @@
-# ZenML continuous model deployment with Seldon Core
+# 🚀 ZenML continuous model deployment with Seldon Core
 
 [Seldon Core](https://github.com/SeldonIO/seldon-core) is a production grade
 open source model serving platform. It packs a wide range of features built
@@ -19,7 +19,7 @@ a ZenML MLOps stack that features Seldon Core as a model deployer component
 makes for a seamless transition from running experiments locally to deploying
 models in production.
 
-## Overview
+## 🗺 Overview
 
 The example uses the
 [Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset to
@@ -39,8 +39,9 @@ The example consists of two individual pipelines:
   by the continuous deployment pipeline to get online predictions based on live
   data
 
-You can control which pipeline to run by passing the `--deploy` and/or the
-`--predict` flag to the `run.py` launcher.
+You can control which pipeline to run by passing the `--config deploy` or the 
+`--config predict` option to the `run.py` launcher. The default is 
+`--config deploy_and_predict` which does both.
 
 In the deployment pipeline, ZenML's Seldon Core integration is used to serve
 the trained model directly from the Artifact Store where it is automatically
@@ -63,9 +64,9 @@ The inference pipeline simulates loading data from a dynamic external source,
 then uses that data to perform online predictions using the running Seldon
 Core prediction server.
 
-## Running the example
+# 🖥 Run it locally
 
-### Pre-requisites
+### 📄 Prerequisites 
 
 For the ZenML Seldon Core deployer to work, three basic things are required:
 
@@ -180,7 +181,7 @@ You should see something like this as the prediction response:
 {"data":{"names":["t:0","t:1","t:2"],"ndarray":[[0.0006985194531162835,0.00366803903943666,0.995633441507447]]},"meta":{"requestPath":{"classifier":"seldonio/sklearnserver:1.13.1"}}}
 ```
 
-### Setting up the ZenML Stack
+### 🥞 Setting up the ZenML Stack
 
 Before you run the example, a ZenML Stack needs to be set up with all the proper
 components. Two different examples of stacks featuring AWS infrastructure
@@ -229,7 +230,7 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -
 
 Configuring the stack can be done like this:
 
-```
+```shell
 zenml integration install s3 seldon
 zenml model-deployer register seldon_eks --type=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
@@ -291,7 +292,7 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway \
 
 Configuring the stack can be done like this:
 
-```
+```shell
 zenml integration install s3 aws kubeflow seldon
 
 zenml artifact-store register aws --type=s3 --path=s3://mybucket
@@ -438,18 +439,20 @@ INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/c
 ┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-### Run the project
+### 🏃️Run the code
 To run the continuous deployment pipeline:
 
 ```shell
-python run.py --deploy
+python run.py --config deploy
 ```
 
 Example output when run with the local orchestrator stack:
 
+```shell
+examples/seldon_deployment$ python run.py --config deploy --min-accuracy 0.80 --model-flavor sklearn
 ```
-zenml/seldon_deployment$ python run.py --deploy --min-accuracy 0.80 --model-flavor sklearn
 
+```shell
 2022-04-06 15:40:28.903233: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
 2022-04-06 15:40:28.903253: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
 Creating run for pipeline: `continuous_deployment_pipeline`
@@ -490,7 +493,7 @@ Re-running the example with different hyperparameter values will re-train
 the model and update the deployment server to serve the new model:
 
 ```shell
-python run.py --deploy --epochs=10 --lr=0.1
+python run.py --config deploy --epochs=10 --lr=0.1
 ```
 
 If the input hyperparameter argument values are not changed, the pipeline
@@ -503,13 +506,16 @@ The inference pipeline will use the currently running Seldon Core deployment
 server to perform an online prediction. To run the inference pipeline:
 
 ```shell
-python run.py --predict
+python run.py --config predict
 ```
 
 Example output when run with the local orchestrator stack:
 
+```shell
+examples/seldon_deployment$ python run.py --config predict --model-flavor sklearn
 ```
-zenml/seldon_deployment$ python run.py --predict --model-flavor sklearn
+
+```shell
 2022-04-06 15:48:02.346731: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
 2022-04-06 15:48:02.346762: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
 Creating run for pipeline: `inference_pipeline`
@@ -543,7 +549,7 @@ training and the Seldon Core model server implementation, the `--model-flavor`
 command line argument can be used:
 
 ```
-python run.py --deploy --predict --model-flavor sklearn --penalty=l2
+python run.py --model-flavor sklearn --penalty=l2
 ```
 
 The `zenml served-models list` CLI command can be run to list the active model servers:
@@ -605,7 +611,7 @@ CLI command:
 $ zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
-### Clean up
+### 🧽 Clean up
 
 To stop any prediction servers running in the background, use the `zenml model-server list`
 and `zenml model-server delete <uuid>` CLI commands.:
@@ -619,3 +625,10 @@ Then delete the remaining ZenML references.
 ```shell
 rm -rf zenml_examples
 ```
+
+# 📜 Learn more
+
+Our docs regarding the seldon deployment integration can be found [here](TODO: Link to docs).
+
+If you want to learn more about deployment in zenml in general or about how to build your own deployer steps in zenml
+check out our [docs](TODO: Link to docs)
