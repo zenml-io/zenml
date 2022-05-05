@@ -67,7 +67,7 @@ class ZenMLCLI(click.Group):
         """
         formatter = ctx.make_formatter()
         self.format_help(ctx, formatter)
-        # TODO [LOW]: Find solution for support console.pager and color support in print
+        # TODO [ENG-862]: Find solution for support console.pager and color support in print
         rich.print(formatter.getvalue().rstrip("\n"))
         return ""
 
