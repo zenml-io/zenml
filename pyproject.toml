@@ -28,8 +28,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 exclude = [
-    "*.tests",
     "*.tests.*",
+    "*.tests",
     "tests.*",
     "tests",
     "docs",
