@@ -137,7 +137,8 @@ class GCPSecretsManager(BaseSecretsManager):
         zenml_schema_name = None
 
         # List all secrets.
-        for secret in self.CLIENT.list_secrets(request={"parent": self.parent}):
+        for secret in self.CLIENT.list_secrets(request={"parent":
+                                                            self.parent_name}):
             if (
                 ZENML_GROUP_KEY in secret.labels
                 and secret_name == secret.labels[ZENML_GROUP_KEY]
@@ -179,7 +180,8 @@ class GCPSecretsManager(BaseSecretsManager):
         set_of_secrets = set()
 
         # List all secrets.
-        for secret in self.CLIENT.list_secrets(request={"parent": self.parent}):
+        for secret in self.CLIENT.list_secrets(request={"parent":
+                                                            self.parent_name}):
             if ZENML_GROUP_KEY in secret.labels:
                 group_key = secret.labels[ZENML_GROUP_KEY]
                 set_of_secrets.add(group_key)
@@ -218,7 +220,8 @@ class GCPSecretsManager(BaseSecretsManager):
 
         # Go through all gcp secrets and delete the ones with the secret_name
         #  as label.
-        for secret in self.CLIENT.list_secrets(request={"parent": self.parent}):
+        for secret in self.CLIENT.list_secrets(request={"parent":
+                                                            self.parent_name}):
             if (
                 ZENML_GROUP_KEY in secret.labels
                 and secret_name == secret.labels[ZENML_GROUP_KEY]
@@ -233,7 +236,8 @@ class GCPSecretsManager(BaseSecretsManager):
         self._ensure_client_connected()
 
         # List all secrets.
-        for secret in self.CLIENT.list_secrets(request={"parent": self.parent}):
+        for secret in self.CLIENT.list_secrets(request={"parent":
+                                                            self.parent_name}):
             if (
                 ZENML_GROUP_KEY in secret.labels
                 or ZENML_SCHEMA_NAME in secret.labels
