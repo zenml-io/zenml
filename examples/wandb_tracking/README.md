@@ -1,13 +1,11 @@
-# Integrating Weights & Biases tracking into your pipeline
+# 🏋️ Integrating Weights & Biases tracking into your pipeline
 
 [Weights&Biases](https://wandb.ai/site/experiment-tracking) is a popular
 tool that tracks and visualizes experiment runs with their many parameters,
 metrics and output files.
 
-## Overview
-
-This example builds on the [quickstart](../quickstart) but showcases how easily
-Weights & Biases (`wandb`) tracking can be integrated into a ZenML pipeline.
+## 🗺 Overview
+This example showcases how easily Weights & Biases (`wandb`) tracking can be integrated into a ZenML pipeline.
 
 We'll be using the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset and
 will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
@@ -15,15 +13,17 @@ We will run two experiments with different parameters (epochs and learning rate)
 and log these experiments into a wandb backend. 
 
 In the example script, the [Keras WandbCallback](https://docs.wandb.ai/ref/python/integrations/keras/wandbcallback) is
-used within the training step to directly hook into the TensorFlow training and  
-it will log out all relevant parameters, metrics and output files. Additionally,
+used within the training step to directly hook into the TensorFlow training.  
+It will log out all relevant parameters, metrics and output files. Additionally,
 we explicitly log the test accuracy within the evaluation step.
 
 Note that despite `wandb `being used in different steps within a pipeline, ZenML handles initializing `wandb` 
 and ensures the experiment name is the same as the pipeline name, and the experiment run is the same name 
 as the pipeline run name. This establishes a lineage between pipelines in ZenML and experiments in `wandb`.
 
-## Run it locally
+# 🖥 Run it locally
+
+### 📄 Prerequisites 
 
 ### Set up a free Weights & Biases account
 To get this example running, you need to set up a Weights & Biases account. You can do this for free [here](https://wandb.ai/login?signup=true).
@@ -46,7 +46,7 @@ cd zenml_examples/wandb_tracking
 zenml init
 ```
 
-### Create the stack with the wandb experiment tracker component
+### 🥞 Create the stack with the wandb experiment tracker component
 
 In order to use an experiment tracking tool like Weights & Biases, you need to create a new `StackCoomponent`,  and 
 subsequently a new `Stack` with the type `wandb`. The wandb experiment tracker stack component has the following options:
@@ -73,14 +73,14 @@ zenml stack register wandb_stack \
 zenml stack set wandb_stack
 ```
 
-### Run the project
+### ▶ Run the project
 Now we're ready. Execute:
 
 ```shell
 python run.py
 ```
 
-### See results
+### 🔮 See results
 The results should be available at the URL: https://wandb.ai/{ENTITY_NAME}/{PROJECT_NAME}/runs/
 
 Every step should yield an additional wandb run in the UI. The naming convention of each run is `{pipeline_run_name}_{step_name}` (e.g. `wandb_example_pipeline-25_Apr_22-20_06_33_535737_tf_evaluator`)
@@ -100,7 +100,6 @@ For each run, you should see the following visualizations:
 ![Table Results](assets/wandb_table_results.png)
 
 ![Chart Results](assets/wandb_charts_results.png)
-
 
 ### Using `wandb.Settings`
 
@@ -125,9 +124,16 @@ def my_step(
 
 Doing the above auto-magically logs all the data, metrics, and results within the step, no further action required!
 
-### Clean up
+### 🧽 Clean up
 In order to clean up, delete the remaining ZenML references:
 
 ```shell
 rm -rf zenml_examples
 ```
+
+# 📜 Learn more
+
+Our docs regarding the wandb integration can be found [here](TODO: Link to docs).
+
+If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
+check out our [docs](TODO: Link to docs)

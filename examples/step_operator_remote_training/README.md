@@ -1,10 +1,10 @@
-# Train models on remote environments
+# 🧮 Train models on remote environments
 
 This example shows how you can use the `StepOperator` class to run your training jobs on remote backends.
 
 The step operator defers the execution of individual steps in a pipeline to specialized runtime environments that are optimized for Machine Learning workloads.
 
-## Overview
+## 🗺 Overview
 Here we train a simple sklearn classifier on the MNIST dataset using one of three step operators:
 
 - AWS Sagemaker
@@ -13,7 +13,9 @@ Here we train a simple sklearn classifier on the MNIST dataset using one of thre
 
 Currently, step operators only work with a local orchestrator but support for cloud orchestrators is on the way soon!
 
-## Installation
+# 🖥 Run it locally
+## 👣 Step-by-Step
+### 📄 Prerequisites 
 In order to run this example, you need to install and initialize ZenML and the necessary integrations:
 
 ```shell
@@ -31,8 +33,6 @@ cd zenml_examples/step_operator_remote_training
 zenml init
 ```
 
-## Pre-requisites 
-
 Each type of step operator has their own pre-requisites. 
 
 Before running this example, you must set up the individual cloud providers in a certain way. The complete guide can be found in the [docs](https://docs.zenml.io/features/step-operators).
@@ -40,7 +40,7 @@ Before running this example, you must set up the individual cloud providers in a
 Please jump to the section of 
 the step operator you would like to run on:
 
-### Sagemaker
+### 🌿 Sagemaker
 Sagemaker offers specialized compute instances to run your training jobs and has a beautiful UI to track and manage your models and logs. You can now use ZenML to submit individual steps to be run on compute instances managed by Amazon Sagemaker. 
 
 The stack will consist of:
@@ -82,7 +82,7 @@ zenml stack register sagemaker_stack \
 zenml stack set sagemaker_stack
 ```
 
-### Microsoft AzureML
+### 🪟 Microsoft AzureML
 
 [AzureML](https://azure.microsoft.com/en-us/services/machine-learning/) 
 offers specialized compute instances to run your training jobs and 
@@ -123,7 +123,7 @@ zenml stack register azureml_stack \
 zenml stack set azureml_stack
 ```
 
-### GCP Vertex AI
+### 📐 GCP Vertex AI
 
 [Vertex AI](https://cloud.google.com/vertex-ai) offers specialized compute to run 
 [custom training jobs](https://cloud.google.com/vertex-ai/docs/training/custom-training) 
@@ -170,17 +170,23 @@ zenml stack register vertex_training_stack \
 zenml stack set vertex_training_stack
 ```
 
-### Run the project
+### ▶️ Run the Code
 Now we're ready. Execute:
 
 ```shell
 python run.py --step_operator <STEP_OPERATOR_TYPE>  # can be sagemaker, vertex, azureml
 ```
 
-
-### Clean up
-In order to clean up, delete the remaining zenml references.
+### 🧽 Clean up
+In order to clean up, delete the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
 ```
+
+# 📜 Learn more
+
+Our docs regarding the step_operator integrations can be found [here](TODO: Link to docs).
+
+If you want to learn more about step_operators in general or about how to build your own step_operator in zenml
+check out our [docs](TODO: Link to docs)

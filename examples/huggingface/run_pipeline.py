@@ -12,18 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import classify_sequence
+import classify_token
 import click
-import sequence_classification
-import token_classification
-from sequence_classification import SequenceClassificationConfig
-from token_classification import TokenClassificationConfig
+from classify_sequence import SequenceClassificationConfig
+from classify_token import TokenClassificationConfig
 
 
 @click.command()
 @click.option(
     "--nlp_task",
+    type=click.Choice(["token-classification", "sequence-classification"]),
     default="sequence-classification",
-    help="Name NLP task i.e. token-classificaion, sequence-classification",
+    help="Name NLP task i.e. token-classification, sequence-classification",
 )
 @click.option(
     "--pretrained_model",
@@ -34,6 +35,13 @@ from token_classification import TokenClassificationConfig
     "--batch_size",
     default=8,
     help="Batch Size for training",
+)
+@click.option(
+    "--full_set",
+    is_flag=True,
+    help="By default only a very small subset of the datasets is used in order "
+    "to have a quick end-to-end run. By running with the full datasets "
+    "the runtime increases significantly.",
 )
 @click.option(
     "--epochs",
@@ -77,7 +85,12 @@ from token_classification import TokenClassificationConfig
     "conll2003",
 )
 def main(
-    nlp_task: str, pretrained_model: str, batch_size: int, epochs: int, **kwargs
+    nlp_task: str,
+    pretrained_model: str,
+    batch_size: int,
+    epochs: int,
+    full_set: bool,
+    **kwargs
 ):
     if nlp_task == "token-classification":
         # Run Pipeline
@@ -85,22 +98,19 @@ def main(
             pretrained_model=pretrained_model,
             epochs=epochs,
             batch_size=batch_size,
+            dummy_run=not full_set,
             **kwargs,
         )
-        pipeline = token_classification.token_classifier_train_eval_pipeline(
-            importer=token_classification.data_importer(
+        pipeline = classify_token.token_classifier_train_eval_pipeline(
+            importer=classify_token.data_importer(token_classification_config),
+            load_tokenizer=classify_token.load_tokenizer(
                 token_classification_config
             ),
-            load_tokenizer=token_classification.load_tokenizer(
+            tokenization=classify_token.tokenization(
                 token_classification_config
             ),
-            tokenization=token_classification.tokenization(
-                token_classification_config
-            ),
-            trainer=token_classification.trainer(token_classification_config),
-            evaluator=token_classification.evaluator(
-                token_classification_config
-            ),
+            trainer=classify_token.trainer(token_classification_config),
+            evaluator=classify_token.evaluator(token_classification_config),
         )
         pipeline.run()
 
@@ -110,22 +120,21 @@ def main(
             pretrained_model=pretrained_model,
             epochs=epochs,
             batch_size=batch_size,
+            dummy_run=not full_set,
             **kwargs,
         )
-        pipeline = sequence_classification.seq_classifier_train_eval_pipeline(
-            importer=sequence_classification.data_importer(
+        pipeline = classify_sequence.seq_classifier_train_eval_pipeline(
+            importer=classify_sequence.data_importer(
                 sequence_classification_config
             ),
-            load_tokenizer=sequence_classification.load_tokenizer(
+            load_tokenizer=classify_sequence.load_tokenizer(
                 sequence_classification_config
             ),
-            tokenization=sequence_classification.tokenization(
+            tokenization=classify_sequence.tokenization(
                 sequence_classification_config
             ),
-            trainer=sequence_classification.trainer(
-                sequence_classification_config
-            ),
-            evaluator=sequence_classification.evaluator(
+            trainer=classify_sequence.trainer(sequence_classification_config),
+            evaluator=classify_sequence.evaluator(
                 sequence_classification_config
             ),
         )
