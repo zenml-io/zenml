@@ -45,21 +45,22 @@ def add_group_name_to_keys(secret: BaseSecretSchema) -> Dict:
     return new_dict
 
 
-def remove_group_name_from_key(key_name: str, group_name: str) -> str:
+def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
     """This function serves to remove the secret group name from the secret
     key.
 
     Args:
-        key_name: Full name as it is within the gcp secrets manager
+        combined_key_name: Full name as it is within the gcp secrets manager
         group_name: Group name (the ZenML Secret name)
     Returns:
         The cleaned key
     """
-    if key_name.startswith(group_name + '_'):
-        return key_name[len(group_name + '_'):]
+    if combined_key_name.startswith(group_name + '_'):
+        return combined_key_name[len(group_name + '_'):]
     else:
-        raise RuntimeError(f"Key-name `{key_name}` does not have the prefix "
-                           f"`{group_name}`. Key could not be extracted.")
+        raise RuntimeError(f"Key-name `{combined_key_name}` does not have the "
+                           f"prefix `{group_name}`. Key could not be "
+                           f"extracted.")
 
 
 @register_stack_component_class
