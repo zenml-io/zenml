@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
 
+from importlib import import_module
 from typing import Optional
 
 import click
+from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
@@ -684,3 +686,13 @@ def down_stack(force: bool = False) -> None:
             f"Suspending resources for active stack '{stack_.name}'."
         )
         stack_.suspend()
+
+
+@stack.command("explain", help="Explain the concept of the Stack")
+def explain_service() -> None:
+    """Explain the concept of the Stack."""
+    component_module = import_module("zenml.stack")
+
+    if component_module.__doc__ is not None:
+        md = Markdown(component_module.__doc__)
+        console.print(md)
