@@ -22,9 +22,10 @@ import click
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
+from zenml.enums import CliCategories
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.services import ServiceRegistry, ServiceState
@@ -37,7 +38,10 @@ GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH = os.path.join(
 )
 
 
-@cli.group()
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.MANAGEMENT_TOOLS,
+)
 def service() -> None:
     """ZenML server."""
 

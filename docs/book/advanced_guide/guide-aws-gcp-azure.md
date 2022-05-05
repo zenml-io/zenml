@@ -217,10 +217,10 @@ new stack with these components that you have just created.
 2. Register the stack components
 
     ```powershell
-    zenml container-registry register cloud_registry --type=default --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
-    zenml orchestrator register cloud_orchestrator --type=kubeflow --custom_docker_base_image_name=YOUR_IMAGE
-    zenml metadata-store register kubeflow_metadata_store --type=kubeflow
-    zenml artifact-store register cloud_artifact_store --type=<s3/gcp/azure> --path=$PATH_TO_YOUR_BUCKET
+    zenml container-registry register cloud_registry --flavor=default --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
+    zenml orchestrator register cloud_orchestrator --flavor=kubeflow --custom_docker_base_image_name=YOUR_IMAGE
+    zenml metadata-store register kubeflow_metadata_store --flavor=kubeflow
+    zenml artifact-store register cloud_artifact_store --flavor=<s3/gcp/azure> --path=$PATH_TO_YOUR_BUCKET
 
     # Register the cloud stack
     zenml stack register cloud_kubeflow_stack -m kubeflow_metadata_store -a cloud_artifact_store -o cloud_orchestrator -c cloud_registry

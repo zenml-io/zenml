@@ -117,8 +117,8 @@ in Kubeflow Pipelines.
 
 ```bash
 # Make sure to create the local registry on port 5000 for it to work 
-zenml container-registry register local_registry --type=default --uri=localhost:5000 
-zenml orchestrator register kubeflow_orchestrator --type=kubeflow
+zenml container-registry register local_registry --flavor=default --uri=localhost:5000 
+zenml orchestrator register kubeflow_orchestrator --flavor=kubeflow
 zenml stack register local_kubeflow_stack \
     -m default \
     -a default \
@@ -225,8 +225,8 @@ zenml integration install gcp
 
 # Create the stack and its components
 zenml container-registry register gcp_registry --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
-zenml metadata-store register kubeflow_metadata_store --type=kubeflow
-zenml artifact-store register gcp_artifact_store --type=gcp --path=$PATH_TO_YOUR_GCP_BUCKET
+zenml metadata-store register kubeflow_metadata_store --flavor=kubeflow
+zenml artifact-store register gcp_artifact_store --flavor=gcp --path=$PATH_TO_YOUR_GCP_BUCKET
 zenml stack register gcp_kubeflow_stack \
     -m kubeflow_metadata_store \
     -a gcp_artifact_store \

@@ -18,17 +18,20 @@ from typing import Optional
 import click
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.enums import StackComponentType
+from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.repository import Repository
 from zenml.stack import Stack
 
 
 # Stacks
-@cli.group()
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.MANAGEMENT_TOOLS,
+)
 def stack() -> None:
     """Stacks to define various environments."""
 
@@ -475,14 +478,16 @@ def rename_stack(
             current_stack = repo.get_stack(current_stack_name)
         except KeyError:
             cli_utils.error(
-                f"Stack `{current_stack_name}` cannot be renamed as it does not exist.",
+                f"Stack `{current_stack_name}` cannot be renamed as it does "
+                f"not exist.",
             )
         stack_components = current_stack.components
 
         registered_stacks = {stack.name for stack in repo.stacks}
         if new_stack_name in registered_stacks:
             cli_utils.error(
-                f"Stack `{new_stack_name}` already exists. Please choose a different name.",
+                f"Stack `{new_stack_name}` already exists. Please choose a "
+                f"different name.",
             )
         new_stack_ = Stack.from_components(
             name=new_stack_name, components=stack_components

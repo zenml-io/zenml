@@ -17,7 +17,7 @@
 
 import click
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error
 from zenml.enums import StackComponentType
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
@@ -25,7 +25,7 @@ from zenml.repository import Repository
 
 
 # Features
-@cli.group()
+@cli.group(cls=TagGroup)
 @click.pass_context
 def feature(ctx: click.Context) -> None:
     """Features as obtained from a feature store."""

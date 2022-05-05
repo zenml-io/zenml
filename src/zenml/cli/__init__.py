@@ -195,7 +195,7 @@ machine. If you wish to register a new metadata store, do so with the
 ``register`` command:
 
 ```bash
-zenml metadata-store register METADATA_STORE_NAME --type METADATA_STORE_TYPE [--OPTIONS]
+zenml metadata-store register METADATA_STORE_NAME --flavor=METADATA_STORE_TYPE [--OPTIONS]
 ```
 If you wish to list the metadata stores that have already been
 registered within your ZenML project / repository, type:
@@ -219,7 +219,7 @@ artifact store with everything kept on your local machine. If you wish
 to register a new artifact store, do so with the ``register`` command:
 
 ```bash
-zenml artifact-store register ARTIFACT_STORE_NAME --type ARTIFACT_STORE_TYPE [--OPTIONS]
+zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_TYPE [--OPTIONS]
 ```
 If you wish to list the artifact stores that have already been
 registered within your ZenML project / repository, type:
@@ -246,7 +246,7 @@ If you wish to register a new orchestrator, do so with the ``register``
 command:
 
 ```bash
-zenml orchestrator register ORCHESTRATOR_NAME --type ORCHESTRATOR_TYPE [--ORCHESTRATOR_OPTIONS]
+zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_TYPE [--ORCHESTRATOR_OPTIONS]
 ```
 If you wish to list the orchestrators that have already been registered
 within your ZenML project / repository, type:
@@ -270,7 +270,7 @@ will not register a container registry. If you wish to register a new container
 registry, do so with the `register` command:
 
 ```bash
-zenml container-registry register REGISTRY_NAME --type REGISTRY_TYPE [--REGISTRY_OPTIONS]
+zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_TYPE [--REGISTRY_OPTIONS]
 ```
 
 If you want the name of the current container registry, use the `get` command:
@@ -389,7 +389,7 @@ ZenML offers a way to securely store secrets associated with your project. To
 set up a local file-based secrets manager, use the following CLI command:
 
 ```bash
-zenml secrets-manager register SECRETS_MANAGER_NAME -t local
+zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=local
 ```
 
 This can then be used as part of your Stack (see below).
@@ -463,7 +463,7 @@ Add a Feature Store to your Stack
 ZenML supports connecting to a Redis-backed Feast feature store as a stack
 component integration. To set up a feature store, use the following CLI command:
 
-```shell zenml feature-store register FEATURE_STORE_NAME -t feast
+```shell zenml feature-store register FEATURE_STORE_NAME --flavor=feast
 --feast_repo=REPO_PATH --online_host HOST_NAME --online_port ONLINE_PORT_NUMBER
 ```
 
@@ -510,7 +510,8 @@ zenml served-models start <UUID>
 zenml served-models stop <UUID>
 ```
 
-If you want to completely remove a served model you can also irreversibly delete it using:
+If you want to completely remove a served model you can also irreversibly delete
+ it using:
 ```bash
 zenml served-models delete <UUID>
 

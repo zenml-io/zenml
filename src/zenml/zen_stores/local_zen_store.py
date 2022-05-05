@@ -26,10 +26,11 @@ from zenml.logger import get_logger
 from zenml.utils import yaml_utils
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
+    ComponentWrapper,
+    FlavorWrapper,
     Project,
     Role,
     RoleAssignment,
-    StackComponentWrapper,
     Team,
     User,
     ZenStoreModel,
@@ -37,7 +38,7 @@ from zenml.zen_stores.models import (
 
 logger = get_logger(__name__)
 
-E = TypeVar("E", bound=Union[User, Team, Project, Role])
+E = TypeVar("E", bound=Union[User, Team, Project, Role, FlavorWrapper])
 
 
 @overload
@@ -210,7 +211,7 @@ class LocalZenStore(BaseZenStore):
 
     def register_stack_component(
         self,
-        component: StackComponentWrapper,
+        component: ComponentWrapper,
     ) -> None:
         """Register a stack component.
 
@@ -254,7 +255,7 @@ class LocalZenStore(BaseZenStore):
         self,
         name: str,
         component_type: StackComponentType,
-        component: StackComponentWrapper,
+        component: ComponentWrapper,
     ) -> Dict[str, str]:
         """Update a stack component.
 
@@ -908,6 +909,101 @@ class LocalZenStore(BaseZenStore):
         )
         return self._get_role_assignments(
             team_id=team.id, project_id=project_id
+        )
+
+    # Handling stack component flavors
+
+    @property
+    def flavors(self) -> List[FlavorWrapper]:
+        """All registered flavors.
+
+        Returns:
+            A list of all registered flavors.
+        """
+        return self.__store.stack_component_flavors
+
+    def create_flavor(
+        self,
+        source: str,
+        name: str,
+        stack_component_type: StackComponentType,
+    ) -> FlavorWrapper:
+        """Creates a new flavor.
+
+        Args:
+            source: the source path to the implemented flavor.
+            name: the name of the flavor.
+            stack_component_type: the corresponding StackComponentType.
+
+        Returns:
+             The newly created flavor.
+
+        Raises:
+            EntityExistsError: If a flavor with the given name and type
+                already exists.
+        """
+
+        if _get_unique_entity(
+            name,
+            collection=self.get_flavors_by_type(stack_component_type),
+            ensure_exists=False,
+        ):
+            raise EntityExistsError(
+                f"The flavor '{name}' for the stack component type "
+                f"'{stack_component_type.plural}' already exists."
+            )
+
+        flavor = FlavorWrapper(
+            name=name,
+            source=source,
+            type=stack_component_type,
+        )
+
+        self.__store.stack_component_flavors.append(flavor)
+        self._write_store()
+
+        return flavor
+
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorWrapper]:
+        """Fetch all flavor defined for a specific stack component type.
+
+        Args:
+            component_type: The type of the stack component.
+
+        Returns:
+            List of all the flavors for the given stack component type.
+        """
+        return [
+            f
+            for f in self.__store.stack_component_flavors
+            if f.type == component_type
+        ]
+
+    def get_flavor_by_name_and_type(
+        self,
+        flavor_name: str,
+        component_type: StackComponentType,
+    ) -> FlavorWrapper:
+        """Fetch a flavor by a given name and type.
+
+        Args:
+            flavor_name: The name of the flavor.
+            component_type: Optional, the type of the component.
+
+        Returns:
+            Flavor instance if it exists
+
+        Raises:
+            KeyError: If no flavor exists with the given name and type
+                or there are more than one instances
+        """
+        matches = self.get_flavors_by_type(component_type)
+        return _get_unique_entity(
+            entity_name=flavor_name,
+            collection=matches,
+            ensure_exists=True,
         )
 
     # Implementation-specific internal methods:

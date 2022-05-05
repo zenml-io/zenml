@@ -53,13 +53,15 @@ class PyTorchMaterializer(BaseMaterializer):
         """
         super().handle_return(model)
 
-        # Save entire model to artifact directory, This is the default behavior for loading model in development phase (training, evaluation)
+        # Save entire model to artifact directory, This is the default behavior
+        # for loading model in development phase (training, evaluation)
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
         ) as f:
             torch.save(model, f)
 
-        # Save model checkpoint to artifact directory, This is the default behavior for loading model in production phase (inference)
+        # Save model checkpoint to artifact directory, This is the default
+        # behavior for loading model in production phase (inference)
         if isinstance(model, Module):
             with fileio.open(
                 os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "wb"
