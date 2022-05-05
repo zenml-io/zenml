@@ -1,60 +1,82 @@
 # Table of contents
 
-- [ZenML 101](index.md)
-- [Installation & Setup](introduction/installation.md)
-- [Quickstart](introduction/quickstart-guide.md)
-- [Core Concepts](introduction/core-concepts.md)
-- [Why ZenML?](introduction/why-zenml.md)
+* [ZenML Docs](index.md)
 
-## Guides
+## Introduction
 
-- [Functional API](guides/functional-api/functional-api.md)
-  - [Create a step](guides/functional-api/create-a-step.md)
-  - [Preprocess data](guides/functional-api/normalize-data.md)
-  - [Train & evaluate](guides/functional-api/train-and-evaluate.md)
-  - [Caching](guides/functional-api/caching.md)
-  - [Materialize artifacts](guides/functional-api/materialize-artifacts)
-  - [Import dynamic data](guides/functional-api/import-dynamic-data.md)
-  - [Deploy to production](guides/functional-api/deploy-to-production.md)
-- [Class-based API](guides/class-based-api/class-based-api.md)
-  - [Create a step](guides/class-based-api/create-a-step.md)
-  - [Preprocess data](guides/class-based-api/split-and-preprocess.md)
-  - [Train & evaluate](guides/class-based-api/train-and-evaluate.md)
-  - [Caching](guides/class-based-api/caching.md)
-  - [Materialize artifacts](guides/class-based-api/materialize-artifacts.md)
-- [User Guide](guides/common-usecases/index.md)
-  - [Fetch pipelines and artifacts after running them](guides/common-usecases/post-execution-workflow.md)
-  - [Naming a pipeline run](guides/common-usecases/naming-a-pipeline-run.md)
-  - [Use `zenml example run`](guides/common-usecases/zenml-example-cli.md)
-  - [Creating a custom `materializer`](guides/common-usecases/custom-materializer.md)
-  - [Bypassing materialization](guides/common-usecases/skip-materialization.md)
-  - [Fetching historic runs using `StepContext`](guides/common-usecases/historic-runs.md)
-  - [Developing and using `visualizers`](guides/common-usecases/visualizers.md)
-  - [Get your data from a Feature Store](guides/common-usecases/feature-store.md)
-  - [System environmental variables](guides/common-usecases/system-env.md)
+* [ZenML](introduction/whats_zenml.md)
+* [Quickstart](introduction/quickstart-guide.md)
+* [Core Concepts](introduction/core-concepts.md)
 
-## Features
+## Developer Guide
 
-* [Integrations](features/integrations.md)
-* [Run Your Pipelines in the Cloud](features/guide-aws-gcp-azure.md)
-* [Pipeline Configuration](features/pipeline-configuration.md)
-* [Caching](features/caching.md)
-* [Run steps in specialized environments](features/step-operators.md)
-* [Convenient Step Fixtures](features/step-fixtures.md)
-* [Continuous Training and Deployment](features/continuous-training-and-deployment.md)
-* [Managing External Services](features/services.md)
-* [Managing Secrets](features/secrets.md)
-* [Standardized Artifacts](features/artifacts.md)
-* [Profiles and Stack Management](features/profiles.md)
+* Getting Started
+  * [Installation](developer-guide/installation.md)
+  * [Steps & Pipelines](developer-guide/steps-and-pipelines.md)
+  * [Runtime Configuration](developer-guide/runtime-configuration.md)
+  * [Post Execution Workflow](developer-guide/post-execution-workflow.md)
+  * [Materializer](developer-guide/materializer.md)
+  * [Caching](developer-guide/caching.md)
+  * [Step Fixture](developer-guide/step-fixtures.md)
+  * [Fetching Historic Runs](developer-guide/fetching-historic-runs.md)
+  * [Class Based API](developer-guide/class-based-api.md)
+* [Stacks]()
+* [Repo & Config](developer-guide/repo-and-config.md)
+* [Profiles](developer-guide/profiles.md)
+
+## Advanced Guide
+
+* Advanced ZenML
+  * [Use `zenml example run`](advanced_guide/zenml-example-cli.md)
+  * [Bypassing materialization](advanced_guide/skip-materialization.md)
+* Integrations
+  * [Integrations with Popular Tools](advanced_guide/integrations.md)
+  * [Visualize your Data](advanced_guide/explore_data.md)
+  * [Load your Data from Feature Stores](advanced_guide/feature-store.md)
+  * [Perform Drift Detection](advanced_guide/drift_detection.md)
+  * [Track your Experiments](advanced_guide/experiment_tracking.md)
+  * [Run your Pipeline on Kubeflow](advanced_guide/run_on_kubeflow.md)
+  * [Manage your Secrets](advanced_guide/secrets.md)
+* Cloud
+  * [Manage External Services](advanced_guide/services.md)
+  * [Execute Pipelines in the Cloud](advanced_guide/guide-aws-gcp-azure.md)
+  * [Continuous Training and Deployment](advanced_guide/continuous-training-and-deployment.md)
+  * [Run Steps on Specialized Hardware](advanced_guide/step-operators.md)
+
+
+## Collaborate
+
+* [ZenML Service]()
+  * [Deploy Locally]()
+  * [Deploy on Cloud]()
+
+## Stack Components
+
+* [Artifact Store](stack_components/artifact_store.md)
+* [Metadata Store](stack_components/metadata_store.md)
+* [Orchestrator](stack_components/orchestrator.md)
+* [Container Registry](stack_components/container_registry.md)
+* [Step Operator](stack_components/step_operator.md)
+* [Secret Manager](stack_components/secrets_manager.md)
+* [Model Deployer](stack_components/model_deployer.md)
+* [Experiment Tracker](stack_components/experiment_tracker.md)
+* [Feature Store](stack_components/feature-store.md)
 
 ## Support
 
-- [Roadmap](support/roadmap.md)
-- [Usage Analytics](support/usage-analytics.md)
-- [Contact](support/contact.md)
+- [Integration Examples](https://github.com/zenml-io/zenml/tree/main/examples)
+- [Tutorial Notebooks](https://github.com/zenml-io/zenbytes)
+- [ZenML in Practice](https://github.com/zenml-io/zenfiles)
+- [Learn more on Youtube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk_bMw)
+- [Join our Slack](https://zenml.io/slack-invite/)
 
 ## Reference
 
+* [Roadmap](reference/roadmap.md)
 - [Glossary](reference/glossary.md)
+- [FAQ]()
+- [System Environmental Variables](reference/system-env.md)
 - [CLI Reference](https://apidocs.zenml.io/latest/cli/)
 - [API Reference](https://apidocs.zenml.io/latest/)
+- [Usage Analytics](reference/usage-analytics.md)
+- [Contact](reference/contact.md)
