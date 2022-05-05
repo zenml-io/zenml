@@ -17,8 +17,9 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import time
 from abc import abstractmethod
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Generator, List, Optional, Tuple
 
 import psutil
 from pydantic import Field
@@ -365,6 +366,45 @@ class LocalDaemonService(BaseService):
 
     def deprovision(self, force: bool = False) -> None:
         self._stop_daemon(force)
+
+    def get_logs(
+        self, follow: bool = False, tail: Optional[int] = None
+    ) -> Generator[str, bool, None]:
+        """Retrieve the service logs.
+
+        Args:
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that can be acccessed to get the service logs.
+        """
+        if not self.status.log_file or not os.path.exists(self.status.log_file):
+            return
+
+        with open(self.status.log_file, "r") as f:
+            if tail:
+                # TODO[LOW]: implement a more efficient tailing mechanism that
+                #   doesn't read the entire file
+                lines = f.readlines()[-tail:]
+                for line in lines:
+                    yield line.rstrip("\n")
+                if not follow:
+                    return
+            line = ""
+            while True:
+                partial_line = f.readline()
+                if partial_line:
+                    line += partial_line
+                    if line.endswith("\n"):
+                        stop = yield line.rstrip("\n")
+                        if stop:
+                            break
+                        line = ""
+                elif follow:
+                    time.sleep(1)
+                else:
+                    break
 
     @abstractmethod
     def run(self) -> None:
