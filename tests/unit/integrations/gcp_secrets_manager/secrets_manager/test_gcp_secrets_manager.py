@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from zenml.integrations.gcp_secrets_manager.secrets_manager \
     .gcp_secrets_manager import (
     remove_group_name_from_key,
-    add_group_name_to_keys
+    prepend_group_name_to_keys
 )
 from zenml.secret import ArbitrarySecretSchema
 
@@ -72,7 +72,6 @@ class ZenMLSecret(BaseModel):
     zenml_secret_name: str
     zenml_secret_keys: List[str]
     expected_combined_keys: Dict[str, str]
-    potential_error: Optional[Type[Exception]]
 
 
 ZENML_SECRET = [
@@ -83,22 +82,21 @@ ZENML_SECRET = [
                 zenml_secret_keys=['key1', 'key2'],
                 expected_combined_keys={'secret_key1': '',
                                         'secret_key2': ''}),
+    ZenMLSecret(zenml_secret_name='secret',
+                zenml_secret_keys=[],
+                expected_combined_keys={}),
 ]
 
 
 @pytest.mark.parametrize("parametrized_input", ZENML_SECRET)
-def test_add_group_name_to_keys(parametrized_input: ZenMLSecret):
+def test_prepend_group_name_to_keys(parametrized_input: ZenMLSecret):
     secret_schema = ArbitrarySecretSchema(
         name=parametrized_input.zenml_secret_name)
 
     for k in parametrized_input.zenml_secret_keys:
         secret_schema.arbitrary_kv_pairs[k] = ''
 
-    if not parametrized_input.potential_error:
-        actual_result_key = add_group_name_to_keys(secret_schema)
-        assert actual_result_key == parametrized_input.expected_combined_keys
-    else:
-        with pytest.raises(parametrized_input.potential_error):
-            add_group_name_to_keys(secret_schema)
+    actual_result_key = prepend_group_name_to_keys(secret_schema)
+    assert actual_result_key == parametrized_input.expected_combined_keys
 
 

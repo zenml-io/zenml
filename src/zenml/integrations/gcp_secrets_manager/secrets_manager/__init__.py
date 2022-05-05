@@ -15,8 +15,6 @@
 ## Secrets Manager
 The GCP Secrets Manager allows your pipeline to directly access the GCP
 secrets manager and use the secrets within during runtime.
-
-...
 """
 from zenml.integrations.gcp_secrets_manager.secrets_manager.gcp_secrets_manager import (
     GCPSecretsManager,

@@ -25,8 +25,9 @@ you please.
 
 In order to run this example, you need to install and initialize ZenML. Within 
 this example You'll be able to choose between using the
-[AWS Secrets Manager](https://aws.amazon.com/secrets-manager/) and the 
-[GCP Secret Manager](https://cloud.google.com/secret-manager):
+local yaml based secrets manager, 
+the [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/) 
+and the [GCP Secret Manager](https://cloud.google.com/secret-manager).:
 
 ```shell
 # install CLI

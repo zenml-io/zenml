@@ -16,7 +16,7 @@ The GCP integration submodule provides a way to access the gcp secrets manager
 from within you ZenML Pipeline runs.
 """
 
-from zenml.integrations.constants import GCPSecretsManager
+from zenml.integrations.constants import GCP_SECRETS_MANAGER
 from zenml.integrations.integration import Integration
 
 
@@ -24,7 +24,7 @@ class GcpSecretManagerIntegration(Integration):
     """Definition of the Secrets Manager for the Google Cloud Platform
     integration with ZenML."""
 
-    NAME = GCPSecretsManager
+    NAME = GCP_SECRETS_MANAGER
     REQUIREMENTS = ["google-cloud-secret-manager"]
 
     @classmethod

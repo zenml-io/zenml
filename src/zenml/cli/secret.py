@@ -98,10 +98,11 @@ def register_secret(
 
     Args:
         secrets_manager: Stack component that implements the interface to the
-        underlying secrets engine
+                         underlying secrets engine
         name: Name of the secret
         secret_schema_type: Type of the secret schema - make sure the schema of
-        choice is registered with the secret_schema_class_registry
+                            choice is registered with the
+                            secret_schema_class_registry
         secret_key: Key of the secret key-value pair
         secret_value: Value of the secret Key-value pair
     """

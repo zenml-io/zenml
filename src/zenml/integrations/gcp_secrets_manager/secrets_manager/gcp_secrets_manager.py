@@ -30,7 +30,7 @@ ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
 
 
-def add_group_name_to_keys(secret: BaseSecretSchema) -> Dict:
+def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict:
     """This function adds the secret group name to the keys of each
     secret key-value pair to allow using the same key across multiple
     secrets.
@@ -80,6 +80,7 @@ class GCPSecretsManager(BaseSecretsManager):
 
     @property
     def parent_name(self):
+        """Construct the GCP parent path to the secret manager"""
         return f"projects/{self.project_id}"
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
@@ -90,11 +91,11 @@ class GCPSecretsManager(BaseSecretsManager):
         self._ensure_client_connected()
 
         if secret.name in self.get_all_secret_keys():
-            raise KeyError(
+            raise (
                 f"A Secret with the name {secret.name} already " f"exists."
             )
 
-        adjusted_content = add_group_name_to_keys(secret)
+        adjusted_content = prepend_group_name_to_keys(secret)
         for k, v in adjusted_content.items():
             # Create the secret, this only creates an empty secret with the
             #  supplied name.
@@ -117,7 +118,7 @@ class GCPSecretsManager(BaseSecretsManager):
             self.CLIENT.add_secret_version(
                 request={
                     "parent": gcp_secret.name,
-                    "payload": {"data": "{}".format(v).encode()},
+                    "payload": {"data": str(v).encode()},
                 }
             )
 
@@ -136,14 +137,11 @@ class GCPSecretsManager(BaseSecretsManager):
             RuntimeError: if the secret does not exist"""
         self._ensure_client_connected()
 
-        # Build the resource name of the parent project.
-        parent = f"projects/{self.project_id}"
-
         secret_contents = {}
         zenml_schema_name = None
 
         # List all secrets.
-        for secret in self.CLIENT.list_secrets(request={"parent": parent}):
+        for secret in self.CLIENT.list_secrets(request={"parent": self.parent}):
             if (
                 ZENML_GROUP_KEY in secret.labels
                 and secret_name == secret.labels[ZENML_GROUP_KEY]
@@ -182,13 +180,10 @@ class GCPSecretsManager(BaseSecretsManager):
             A list of all secret keys."""
         self._ensure_client_connected()
 
-        # Build the resource name of the parent project.
-        parent = f"projects/{self.project_id}"
-
         set_of_secrets = set()
 
         # List all secrets.
-        for secret in self.CLIENT.list_secrets(request={"parent": parent}):
+        for secret in self.CLIENT.list_secrets(request={"parent": self.parent}):
             if ZENML_GROUP_KEY in secret.labels:
                 group_key = secret.labels[ZENML_GROUP_KEY]
                 set_of_secrets.add(group_key)
@@ -203,16 +198,16 @@ class GCPSecretsManager(BaseSecretsManager):
             secret: the secret to update"""
         self._ensure_client_connected()
 
-        adjusted_content = add_group_name_to_keys(secret)
+        adjusted_content = prepend_group_name_to_keys(secret)
 
         for k, v in adjusted_content.items():
             # Create the secret, this only creates an empty secret with the
             #  supplied name.
-            parent = self.CLIENT.secret_path(self.project_id, k)
-            payload = {"data": "{}".format(v).encode()}
+            version_parent = self.CLIENT.secret_path(self.project_id, k)
+            payload = {"data": str(v).encode()}
 
             self.CLIENT.add_secret_version(
-                request={"parent": parent, "payload": payload}
+                request={"parent": version_parent, "payload": payload}
             )
 
     def delete_secret(self, secret_name: str) -> None:
@@ -225,12 +220,9 @@ class GCPSecretsManager(BaseSecretsManager):
             secret_name: the name of the secret to delete"""
         self._ensure_client_connected()
 
-        # Build the resource name of the parent project.
-        parent = f"projects/{self.project_id}"
-
         # Go through all gcp secrets and delete the ones with the secret_name
         #  as label.
-        for secret in self.CLIENT.list_secrets(request={"parent": parent}):
+        for secret in self.CLIENT.list_secrets(request={"parent": self.parent}):
             if (
                 ZENML_GROUP_KEY in secret.labels
                 and secret_name == secret.labels[ZENML_GROUP_KEY]
@@ -244,10 +236,8 @@ class GCPSecretsManager(BaseSecretsManager):
             force: whether to force delete all secrets"""
         self._ensure_client_connected()
 
-        parent = f"projects/{self.project_id}"
-
         # List all secrets.
-        for secret in self.CLIENT.list_secrets(request={"parent": parent}):
+        for secret in self.CLIENT.list_secrets(request={"parent": self.parent}):
             if (
                 ZENML_GROUP_KEY in secret.labels
                 or ZENML_SCHEMA_NAME in secret.labels
