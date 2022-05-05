@@ -92,7 +92,7 @@ class SagemakerStepOperator(BaseStepOperator):
             requirements=set(requirements),
             base_image=self.base_image,
         )
-        docker_utils.push_docker_image(image_name)
+        container_registry.push_image(image_name)
         return docker_utils.get_image_digest(image_name) or image_name
 
     def launch(

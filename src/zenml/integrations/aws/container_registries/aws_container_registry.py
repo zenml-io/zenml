@@ -62,10 +62,6 @@ class AWSContainerRegistry(BaseContainerRegistry):
         Raises:
             ValueError: If the docker image name is invalid.
         """
-        if not image_name.startswith(self.uri):
-            # image is getting pushed somewhere else entirely
-            return
-
         response = boto3.client("ecr").describe_repositories()
         try:
             repo_uris: List[str] = [

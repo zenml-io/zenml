@@ -16,6 +16,7 @@ from typing import ClassVar
 
 from zenml.enums import ContainerRegistryFlavor, StackComponentType
 from zenml.stack import StackComponent
+from zenml.utils import docker_utils
 
 
 class BaseContainerRegistry(StackComponent):
@@ -39,3 +40,30 @@ class BaseContainerRegistry(StackComponent):
             True if the container registry is local, False otherwise.
         """
         return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.uri))
+
+    def prepare_image_push(self, image_name: str) -> None:
+        """Method that subclasses can overwrite to do any necessary checks or
+        preparations before an image gets pushed.
+
+        Args:
+            image_name: Name of the docker image that will be pushed.
+        """
+
+    def push_image(self, image_name: str) -> None:
+        """Pushes a docker image.
+
+        Args:
+            image_name: Name of the docker image that will be pushed.
+
+        Raises:
+            ValueError: If the image name is not associated with this
+                container registry.
+        """
+        if not image_name.startswith(self.uri):
+            raise ValueError(
+                f"Docker image `{image_name}` does not belong to container "
+                f"registry `{self.uri}`."
+            )
+
+        self.prepare_image_push(image_name)
+        docker_utils.push_docker_image(image_name)
