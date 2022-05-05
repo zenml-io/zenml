@@ -20,11 +20,11 @@ step operators [guide](step-operators.md) for that!
 
 * Have an existing
   AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html)
-  set up.
+  set up. 
+* Make sure you have the `aws` cli set up
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl`
   and [configure](https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-connection/)
-  it to talk to your EKS cluster using the following command. Make sure you have
-  the `aws` cli set up first.
+  it to talk to your EKS cluster using the following command. 
 
   ```powershell
   aws eks --region REGION update-kubeconfig --name CLUSTER_NAME
@@ -38,10 +38,10 @@ step operators [guide](step-operators.md) for that!
 * Have an existing
   GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart)
   set up.
+* Make sure you have the Google Cloud CLI set up first.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl`
   and [configure](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl)
-  it to talk to your GKE cluster using the following command. Make sure you have
-  the Google Cloud CLI set up first.
+  it to talk to your GKE cluster using the following command. 
 
   ```powershell
   gcloud container clusters get-credentials CLUSTER_NAME
@@ -55,9 +55,9 @@ step operators [guide](step-operators.md) for that!
 * Have an
   existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation)
   set up.
+* Make sure you have the `az` cli set up first.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and
-  it to talk to your AKS cluster using the following command. Make sure you have
-  the `az` cli set up first.
+  it to talk to your AKS cluster using the following command. 
 
   ```powershell
   az aks get-credentials --resource-group RESOURCE_GROUP --name CLUSTER_NAME
