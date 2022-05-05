@@ -100,8 +100,8 @@ examples = [
             pipeline_name="mnist_pipeline", step_count=4
         ),
     ),
-    # TODO [HIGH]: Create Integration tests for lightgbm
-    # TODO [HIGH]: Create Integration tests for MLFlow Deployment
+    # TODO [ENG-858]: Create Integration tests for lightgbm
+    # TODO [ENG-859]: Create Integration tests for MLFlow Deployment
     ExampleIntegrationTestConfiguration(
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
@@ -126,8 +126,8 @@ examples = [
         ),
         skip_on_windows=True,
     ),
-    # TODO [MEDIUM]: Investigate why xgboost test doesn't work on windows
-    # TODO [MEDIUM]: Investigate why huggingface test throws pip error on
+    # TODO [ENG-860]: Investigate why xgboost test doesn't work on windows
+    # TODO [ENG-861]: Investigate why huggingface test throws pip error on
     #  dill<0.3.2,>=0.3.1.1, but you have dill 0.3.4
 ]
 
