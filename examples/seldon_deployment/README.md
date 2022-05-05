@@ -232,12 +232,12 @@ Configuring the stack can be done like this:
 
 ```shell
 zenml integration install s3 seldon
-zenml model-deployer register seldon_eks --type=seldon \
+zenml model-deployer register seldon_eks --flavor=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
   --base_url=http://$INGRESS_HOST \
   --secret=s3-store
-zenml artifact-store register aws --type s3 --path s3://mybucket
-zenml secrets-manager register local -t local
+zenml artifact-store register aws --flavor=s3 --path s3://mybucket
+zenml secrets-manager register local --flavor=local
 zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks -x local
 zenml stack set local_with_aws_storage
 ```
@@ -295,15 +295,15 @@ Configuring the stack can be done like this:
 ```shell
 zenml integration install s3 aws kubeflow seldon
 
-zenml artifact-store register aws --type=s3 --path=s3://mybucket
-zenml model-deployer register seldon_aws --type=seldon \
+zenml artifact-store register aws --flavor=s3 --path=s3://mybucket
+zenml model-deployer register seldon_aws --flavor=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=kubeflow \
   --base_url=http://$INGRESS_HOST \
   --secret=s3-store
-zenml container-registry register aws --type=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
-zenml metadata-store register aws --type=kubeflow
-zenml orchestrator register aws --type=kubeflow --kubernetes_context=zenml-eks --synchronous=True
-zenml secrets-manager register aws -t aws
+zenml container-registry register aws --flavor=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
+zenml metadata-store register aws --flavor=kubeflow
+zenml orchestrator register aws --flavor=kubeflow --kubernetes_context=zenml-eks --synchronous=True
+zenml secrets-manager register aws --flavor=aws
 zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws -x aws
 zenml stack set aws
 ```

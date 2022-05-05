@@ -15,8 +15,15 @@
 The mlflow integrations currently enables you to use mlflow tracking as a
 convenient way to visualize your experiment runs within the mlflow ui
 """
+from typing import List
+
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import MLFLOW
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
+
+MLFLOW_MODEL_DEPLOYER_FLAVOR = "mlflow"
+MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR = "mlflow"
 
 
 class MlflowIntegration(Integration):
@@ -29,12 +36,28 @@ class MlflowIntegration(Integration):
         "mlserver-mlflow>=0.5.3",
     ]
 
-    @staticmethod
-    def activate() -> None:
+    @classmethod
+    def activate(cls) -> None:
         """Activate the MLflow integration."""
-        from zenml.integrations.mlflow import experiment_trackers  # noqa
-        from zenml.integrations.mlflow import model_deployers  # noqa
         from zenml.integrations.mlflow import services  # noqa
+
+    @classmethod
+    def flavors(cls) -> List[FlavorWrapper]:
+        """Declare the stack component flavors for the MLflow integration"""
+        return [
+            FlavorWrapper(
+                name=MLFLOW_MODEL_DEPLOYER_FLAVOR,
+                source="zenml.integrations.mlflow.model_deployers.MLFlowModelDeployer",
+                type=StackComponentType.MODEL_DEPLOYER,
+                integration=cls.NAME,
+            ),
+            FlavorWrapper(
+                name=MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR,
+                source="zenml.integrations.mlflow.experiment_trackers.MLFlowExperimentTracker",
+                type=StackComponentType.EXPERIMENT_TRACKER,
+                integration=cls.NAME,
+            ),
+        ]
 
 
 MlflowIntegration.check_installation()

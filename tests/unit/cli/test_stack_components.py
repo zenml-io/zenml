@@ -52,7 +52,7 @@ def test_valid_stack_component_update_succeeds(clean_repo) -> None:
         register_container_registry_command,
         [
             "new_container_registry",
-            "-t",
+            "--flavor",
             "default",
             "--uri=some_random_uri.com",
         ],
@@ -95,7 +95,7 @@ def test_updating_stack_component_name_or_uuid_fails(clean_repo) -> None:
         register_container_registry_command,
         [
             "new_container_registry",
-            "-t",
+            "--flavor",
             "default",
             "--uri=some_random_uri.com",
         ],
@@ -145,7 +145,7 @@ def test_updating_stack_component_with_unconfigured_property_fails(
         register_container_registry_command,
         [
             "new_container_registry",
-            "-t",
+            "--flavor",
             "default",
             "--uri=some_random_uri.com",
         ],
@@ -183,7 +183,7 @@ def test_renaming_stack_component_to_preexisting_name_fails(
         register_orchestrator_command,
         [
             "new_orchestrator",
-            "-t",
+            "--flavor",
             "local",
         ],
     )
@@ -241,7 +241,7 @@ def test_renaming_non_core_component_succeeds(clean_repo) -> None:
         register_container_registry_command,
         [
             "some_container_registry",
-            "-t",
+            "--flavor",
             "default",
             "--uri=some_random_uri.com",
         ],

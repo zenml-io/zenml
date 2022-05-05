@@ -200,8 +200,8 @@ could look like this:
 
 ```
 zenml integration install mlflow
-zenml model-deployer register mlflow_deployer --type=mlflow
-zenml experiment-tracker register mlflow_tracker --type=mlflow
+zenml model-deployer register mlflow_deployer --flavor=mlflow
+zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml stack register local_mlflow_stack \
   -m default \
   -a default \

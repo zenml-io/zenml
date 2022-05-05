@@ -19,7 +19,7 @@ An operator can be registered as follows:
 
 ```bash
 zenml step-operator register OPERATOR_NAME \
-    --type=OPERATOR_TYPE
+    --flavor=OPERATOR_TYPE
     ...
 ```
 
@@ -77,7 +77,7 @@ API docs (https://apidocs.zenml.io/).
 
 ```bash
 zenml step-operator register azureml \
-    --type=azureml \
+    --flavor=azureml \
     --subscription_id=<AZURE_SUBSCRIPTION_ID> \
     --resource_group=<AZURE_RESOURCE_GROUP> \
     --workspace_name=<AZURE_WORKSPACE_NAME> \
@@ -132,7 +132,7 @@ docs (https://apidocs.zenml.io/).
 
 ```bash
 zenml step-operator register sagemaker \
-    --type=sagemaker
+    --flavor=sagemaker
     --role=<SAGEMAKER_ROLE> \
     --instance_type=<SAGEMAKER_INSTANCE_TYPE>
     --base_image=<CUSTOM_BASE_IMAGE>
@@ -184,7 +184,7 @@ the API docs (https://apidocs.zenml.io/).
 
 ```bash
 zenml step-operator register vertex \
-    --type=vertex \
+    --flavor=vertex \
     --project=zenml-core \
     --service_account_path=... \
     --region=europe-west1 \

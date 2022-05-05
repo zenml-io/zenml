@@ -16,8 +16,14 @@ The Vertex integration submodule provides a way to run ZenML pipelines in a
 Vertex AI environment.
 """
 
+from typing import List
+
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import VERTEX
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
+
+VERTEX_STEP_OPERATOR_FLAVOR = "vertex"
 
 
 class VertexIntegration(Integration):
@@ -27,9 +33,16 @@ class VertexIntegration(Integration):
     REQUIREMENTS = ["google-cloud-aiplatform>=1.11.0"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        from zenml.integrations.vertex import step_operators  # noqa
+    def flavors(cls) -> List[FlavorWrapper]:
+        """Declare the stack component flavors for the Vertex integration."""
+        return [
+            FlavorWrapper(
+                name=VERTEX_STEP_OPERATOR_FLAVOR,
+                source="zenml.integrations.vertex.step_operators.VertexStepOperator",
+                type=StackComponentType.STEP_OPERATOR,
+                integration=cls.NAME,
+            )
+        ]
 
 
 VertexIntegration.check_installation()

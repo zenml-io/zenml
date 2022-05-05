@@ -139,6 +139,7 @@ USERS = "/users"
 TEAMS = "/teams"
 PROJECTS = "/projects"
 ROLES = "/roles"
+FLAVORS = "/flavors"
 ROLE_ASSIGNMENTS = "/role_assignments"
 
 # mandatory stack component properties
