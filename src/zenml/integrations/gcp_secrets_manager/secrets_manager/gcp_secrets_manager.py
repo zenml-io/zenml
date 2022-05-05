@@ -38,11 +38,7 @@ def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict:
     Args:
         secret: The ZenML Secret schema
     """
-    new_dict = dict()
-    for k, v in secret.content.items():
-        new_dict[secret.name + "_" + k] = v
-
-    return new_dict
+    return {f"{secret.name}_{k}": v for k, v in secret.content.items()}
 
 
 def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
@@ -65,7 +61,7 @@ def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
 
 @register_stack_component_class
 class GCPSecretsManager(BaseSecretsManager):
-    """Class to interact with the AWS secrets manager."""
+    """Class to interact with the GCP secrets manager."""
 
     project_id: str
 
@@ -91,8 +87,8 @@ class GCPSecretsManager(BaseSecretsManager):
         self._ensure_client_connected()
 
         if secret.name in self.get_all_secret_keys():
-            raise (
-                f"A Secret with the name {secret.name} already " f"exists."
+            raise KeyError(
+                f"A Secret with the name {secret.name} already exists."
             )
 
         adjusted_content = prepend_group_name_to_keys(secret)

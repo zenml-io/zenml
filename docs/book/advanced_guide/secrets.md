@@ -165,7 +165,7 @@ zenml secrets-manager register GCP_SECRETS_MANAGER_NAME -t gcp \
     --project_id=<ID_OF_YOUR_PROJECT>
 ```
 
-The Project ID refers to the gcp project of your secrets manager. 
+The Project ID refers to the GCP project of your secrets manager. 
 [This](https://support.google.com/googleapi/answer/7014113?hl=en) is how you
 can find the project ID of your project.
 
