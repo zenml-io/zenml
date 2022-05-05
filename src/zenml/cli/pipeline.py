@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """CLI to interact with pipelines."""
 import os.path
-import sys
 import textwrap
 import types
 from typing import Any, Dict
@@ -150,54 +149,57 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     # If the file was run with `python run.py, this would happen automatically.
     #  In order to allow seamless switching between running directly and through
     #  zenml, this is done at this point
+    with source_utils.prepend_python_path(
+        os.path.abspath(os.path.dirname(python_file))
+    ):
 
-    sys.path.insert(0, os.path.abspath(os.path.dirname(python_file)))
+        module = source_utils.import_python_file(python_file)
+        config = yaml_utils.read_yaml(config_path)
+        PipelineConfigurationKeys.key_check(config)
 
-    module = source_utils.import_python_file(python_file)
-    config = yaml_utils.read_yaml(config_path)
-    PipelineConfigurationKeys.key_check(config)
+        pipeline_name = config[PipelineConfigurationKeys.NAME]
+        pipeline_class = _get_module_attribute(module, pipeline_name)
 
-    pipeline_name = config[PipelineConfigurationKeys.NAME]
-    pipeline_class = _get_module_attribute(module, pipeline_name)
+        steps = {}
+        for step_name, step_config in config[
+            PipelineConfigurationKeys.STEPS
+        ].items():
+            StepConfigurationKeys.key_check(step_config)
+            source = step_config[StepConfigurationKeys.SOURCE_]
+            step_class = _load_class_from_module(module, source)
 
-    steps = {}
-    for step_name, step_config in config[
-        PipelineConfigurationKeys.STEPS
-    ].items():
-        StepConfigurationKeys.key_check(step_config)
-        source = step_config[StepConfigurationKeys.SOURCE_]
-        step_class = _load_class_from_module(module, source)
-
-        step_instance = step_class()
-        materializers_config = step_config.get(
-            StepConfigurationKeys.MATERIALIZERS_, None
-        )
-        if materializers_config:
-            # We need to differentiate whether it's a single materializer
-            # or a dictionary mapping output names to materializers
-            if isinstance(materializers_config, str):
-                materializers = _load_class_from_module(
-                    module, materializers_config
-                )
-            elif isinstance(materializers_config, dict):
-                materializers = {
-                    output_name: _load_class_from_module(module, source)
-                    for output_name, source in materializers_config.items()
-                }
-            else:
-                raise PipelineConfigurationError(
-                    f"Only `str` and `dict` values are allowed for "
-                    f"'materializers' attribute of a step configuration. You "
-                    f"tried to pass in `{materializers_config}` (type: "
-                    f"`{type(materializers_config).__name__}`)."
-                )
-            step_instance = step_instance.with_return_materializers(
-                materializers
+            step_instance = step_class()
+            materializers_config = step_config.get(
+                StepConfigurationKeys.MATERIALIZERS_, None
             )
+            if materializers_config:
+                # We need to differentiate whether it's a single materializer
+                # or a dictionary mapping output names to materializers
+                if isinstance(materializers_config, str):
+                    materializers = _load_class_from_module(
+                        module, materializers_config
+                    )
+                elif isinstance(materializers_config, dict):
+                    materializers = {
+                        output_name: _load_class_from_module(module, source)
+                        for output_name, source in materializers_config.items()
+                    }
+                else:
+                    raise PipelineConfigurationError(
+                        f"Only `str` and `dict` values are allowed for "
+                        f"'materializers' attribute of a step configuration. You "
+                        f"tried to pass in `{materializers_config}` (type: "
+                        f"`{type(materializers_config).__name__}`)."
+                    )
+                step_instance = step_instance.with_return_materializers(
+                    materializers
+                )
 
-        steps[step_name] = step_instance
-    pipeline_instance = pipeline_class(**steps).with_config(
-        config_path, overwrite_step_parameters=True
-    )
-    logger.debug("Finished setting up pipeline '%s' from CLI", pipeline_name)
-    pipeline_instance.run()
+            steps[step_name] = step_instance
+        pipeline_instance = pipeline_class(**steps).with_config(
+            config_path, overwrite_step_parameters=True
+        )
+        logger.debug(
+            "Finished setting up pipeline '%s' from CLI", pipeline_name
+        )
+        pipeline_instance.run()
