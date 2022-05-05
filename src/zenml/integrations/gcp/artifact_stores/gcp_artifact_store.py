@@ -29,22 +29,19 @@ from typing import (
 import gcsfs
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.io.utils import convert_to_str
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 
 PathType = Union[bytes, str]
 
 
-@register_stack_component_class
 class GCPArtifactStore(BaseArtifactStore):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
     _filesystem: Optional[gcsfs.GCSFileSystem] = None
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "gcp"
+    FLAVOR: ClassVar[str] = GCP_ARTIFACT_STORE_FLAVOR
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"gs://"}
 
     @property

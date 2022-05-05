@@ -20,7 +20,6 @@ from pydantic import BaseModel, Field, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
-from zenml.integrations.utils import get_requirements_for_module
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -64,6 +63,8 @@ class StackComponent(BaseModel, ABC):
     @property
     def requirements(self) -> Set[str]:
         """Set of PyPI requirements for the component."""
+        from zenml.integrations.utils import get_requirements_for_module
+
         return set(get_requirements_for_module(self.__module__))
 
     @property

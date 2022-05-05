@@ -25,6 +25,7 @@ from pydantic import validator as property_validator
 
 from zenml import __version__
 from zenml.enums import StackComponentType
+from zenml.integrations.vertex import VERTEX_STEP_OPERATOR_FLAVOR
 from zenml.integrations.vertex.constants import (
     CONNECTION_ERROR_RETRY_LIMIT,
     POLLING_INTERVAL_IN_SECONDS,
@@ -35,9 +36,6 @@ from zenml.integrations.vertex.constants import (
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path
@@ -45,7 +43,6 @@ from zenml.utils.source_utils import get_source_root_path
 logger = get_logger(__name__)
 
 
-@register_stack_component_class
 class VertexStepOperator(BaseStepOperator):
     """Step operator to run a step on Vertex AI.
 
@@ -83,7 +80,7 @@ class VertexStepOperator(BaseStepOperator):
     service_account_path: Optional[str] = None
 
     # Class configuration
-    FLAVOR: ClassVar[str] = "vertex"
+    FLAVOR: ClassVar[str] = VERTEX_STEP_OPERATOR_FLAVOR
 
     @property
     def validator(self) -> Optional[StackValidator]:
