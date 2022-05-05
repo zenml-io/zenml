@@ -22,8 +22,8 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.console import console
 from zenml.constants import MANDATORY_COMPONENT_PROPERTIES
-from zenml.exceptions import EntityExistsError
 from zenml.enums import CliCategories, StackComponentType
+from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
