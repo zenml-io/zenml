@@ -12,16 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import re
-import boto3
-from botocore.exceptions import ClientError
 from typing import ClassVar, List, Optional
 
+import boto3
+from botocore.exceptions import ClientError
 from pydantic import validator
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
-from zenml.enums import ContainerRegistry, StackComponentType
+from zenml.enums import StackComponentType
+from zenml.integrations.aws import AWS_CONTAINER_REGISTRY_FLAVOR
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -36,7 +37,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistry.AWS
+    FLAVOR: ClassVar[str] = AWS_CONTAINER_REGISTRY_FLAVOR
 
     @validator("uri")
     def validate_aws_uri(cls, uri: str) -> str:

@@ -13,5 +13,5 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.aws.container_registries.aws_container_registry import (  # noqa
-    AWSContainerRegistry
+    AWSContainerRegistry,
 )

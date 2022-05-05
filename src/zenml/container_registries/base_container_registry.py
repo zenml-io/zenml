@@ -14,7 +14,7 @@
 import re
 from typing import ClassVar
 
-from zenml.enums import ContainerRegistry, StackComponentType
+from zenml.enums import ContainerRegistryFlavor, StackComponentType
 from zenml.stack import StackComponent
 
 
@@ -29,7 +29,7 @@ class BaseContainerRegistry(StackComponent):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistry.DEFAULT
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.DEFAULT
 
     @property
     def is_local(self) -> bool:

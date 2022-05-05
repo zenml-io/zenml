@@ -16,7 +16,7 @@ from typing import ClassVar
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
-from zenml.enums import ContainerRegistry, StackComponentType
+from zenml.enums import ContainerRegistryFlavor, StackComponentType
 
 
 class GitHubContainerRegistry(BaseContainerRegistry):
@@ -30,4 +30,4 @@ class GitHubContainerRegistry(BaseContainerRegistry):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistry.GITHUB
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITHUB

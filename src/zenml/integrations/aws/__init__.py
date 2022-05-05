@@ -52,7 +52,7 @@ class AWSIntegration(Integration):
                 source="zenml.integrations.aws.container_registries.AWSSecretsManager",
                 type=StackComponentType.CONTAINER_REGISTRY,
                 integration=cls.NAME,
-            )
+            ),
         ]
 
 
