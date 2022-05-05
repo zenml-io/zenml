@@ -433,9 +433,8 @@ industry for pipeline-style workflows. As a data science team, it perhaps isn't
 natural to think of your work from
 within this 'pipeline' abstraction, but we think you'll see the benefits if you
 try it out with some examples.
-Check out our [Get Started](../guides/functional-api) guide to see an example of
-what ZenML will add to your current
-workflow!
+Check out our [Developer Guide](../developer-guide) to see how ZenML can improve
+your current workflow!
 
 
 This page is changing rapidly, therefore we need help to maintain it. If you
