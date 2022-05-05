@@ -29,11 +29,11 @@ classifiers = [
 ]
 exclude = [
     "examples",
+    "docs",
     "*.tests",
     "*.tests.*",
     "tests.*",
     "tests",
-    "docs",
     "legacy",
 ]
 include = [
@@ -72,7 +72,7 @@ markupsafe = "1.1.1"
 pytest = "^6.2.4"
 mypy = "^0.931"
 flake8 = "^3.9.2"
-black = "^21.7b0"
+black = "^22.3.0"
 interrogate = "^1.4.0"
 coverage = { extras = ["toml"], version = "^5.5" }
 isort = "^5.9.3"
