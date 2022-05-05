@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import re
+import boto3
+from botocore.exceptions import ClientError
 from typing import ClassVar, List, Optional
 
 from pydantic import validator
@@ -43,8 +45,8 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
         if "/" in uri:
             raise ValueError(
-                f"Property `uri` can not contain a `/`. An example of a valid "
-                f"URI is: `715803424592.dkr.ecr.us-east-1.amazonaws.com`"
+                "Property `uri` can not contain a `/`. An example of a valid "
+                "URI is: `715803424592.dkr.ecr.us-east-1.amazonaws.com`"
             )
 
         return uri
@@ -62,9 +64,6 @@ class AWSContainerRegistry(BaseContainerRegistry):
         if not image_name.startswith(self.uri):
             # image is getting pushed somewhere else entirely
             return
-
-        import boto3
-        from botocore.exceptions import ClientError
 
         response = boto3.client("ecr").describe_repositories()
         try:

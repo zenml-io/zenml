@@ -16,7 +16,6 @@ from typing import ClassVar, DefaultDict, Dict, Type, TypeVar
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.container_registries import (
-    AWSContainerRegistry,
     AzureContainerRegistry,
     BaseContainerRegistry,
     DockerHubContainerRegistry,
@@ -128,7 +127,6 @@ StackComponentClassRegistry.register_class(LocalArtifactStore)
 StackComponentClassRegistry.register_class(LocalSecretsManager)
 StackComponentClassRegistry.register_class(BaseContainerRegistry)
 StackComponentClassRegistry.register_class(AzureContainerRegistry)
-StackComponentClassRegistry.register_class(AWSContainerRegistry)
 StackComponentClassRegistry.register_class(GCPContainerRegistry)
 StackComponentClassRegistry.register_class(GitHubContainerRegistry)
 StackComponentClassRegistry.register_class(GitLabContainerRegistry)

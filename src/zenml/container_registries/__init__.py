@@ -26,9 +26,6 @@ you create that bundle up your pipeline code. You could also use a remote
 container registry like the Elastic Container Registry at AWS in a more
 production setting.
 """
-from zenml.container_registries.aws_container_registry import (
-    AWSContainerRegistry,
-)
 from zenml.container_registries.azure_container_registry import (
     AzureContainerRegistry,
 )
@@ -50,7 +47,6 @@ from zenml.container_registries.gitlab_container_registry import (
 
 __all__ = [
     "BaseContainerRegistry",
-    "AWSContainerRegistry",
     "AzureContainerRegistry",
     "DockerHubContainerRegistry",
     "GCPContainerRegistry",

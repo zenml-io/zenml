@@ -30,6 +30,7 @@ class AWSIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.aws import secret_schemas  # noqa
         from zenml.integrations.aws import secrets_managers  # noqa
+        from zenml.integrations.aws import container_registries  # noqa
 
 
 AWSIntegration.check_installation()
