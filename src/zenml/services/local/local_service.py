@@ -384,7 +384,7 @@ class LocalDaemonService(BaseService):
 
         with open(self.status.log_file, "r") as f:
             if tail:
-                # TODO[LOW]: implement a more efficient tailing mechanism that
+                # TODO[ENG-864]: implement a more efficient tailing mechanism that
                 #   doesn't read the entire file
                 lines = f.readlines()[-tail:]
                 for line in lines:
