@@ -437,16 +437,8 @@ Check out our [Get Started](../guides/functional-api) guide to see an example of
 what ZenML will add to your current
 workflow!
 
-## Important considerations
 
-- **Artifact stores** and **metadata stores** can be configured per **
-  repository** as well as per **pipeline**.
-  However, only **pipelines** with the same **artifact store** and **metadata
-  store** are comparable, and therefore
-  should not change to maintain the benefits of caching and consistency
-  across **pipeline** runs.
-
-This page is changing rapidly and therefore we need help to maintain it. If you
+This page is changing rapidly, therefore we need help to maintain it. If you
 see a concept here that is outdated,
 please reach out to us directly on our [Slack](https://zenml.io/slack-invite) in
 the `#general` channel!
