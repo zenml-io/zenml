@@ -17,11 +17,12 @@ from typing import Any
 
 import click
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
+from zenml.enums import CliCategories
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
 from zenml.utils import source_utils, yaml_utils
@@ -52,7 +53,7 @@ def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
         ) from None
 
 
-@cli.group()
+@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def pipeline() -> None:
     """Run pipelines."""
 

@@ -16,7 +16,7 @@ from typing import Optional
 
 import click
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     declare,
     error,
@@ -24,15 +24,18 @@ from zenml.cli.utils import (
     print_served_model_configuration,
     warning,
 )
-from zenml.enums import StackComponentType
+from zenml.enums import CliCategories, StackComponentType
 from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
 
 
-@cli.group()
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.MODEL_DEPLOYMENT,
+)
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
-    """List and manage served models that are deployed using the active model
+    """List and manage served models with the active model
     deployer.
     """
     ctx.obj = Repository().active_stack.components.get(

@@ -73,3 +73,17 @@ class StoreType(StrEnum):
     LOCAL = "local"
     SQL = "sql"
     REST = "rest"
+
+
+class CliCategories(StrEnum):
+    """All possible categories for CLI commands.
+    Note: The order of the categories is important. The same
+    order is used to sort the commands in the CLI help output.
+    """
+
+    STACK_COMPONENTS = "Stack Components"
+    MODEL_DEPLOYMENT = "Model Deployment"
+    INTEGRATIONS = "Integrations"
+    MANAGEMENT_TOOLS = "Management Tools"
+    IDENTITY_AND_SECURITY = "Identity and Security"
+    OTHER_COMMANDS = "Other Commands"
