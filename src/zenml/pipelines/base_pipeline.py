@@ -343,8 +343,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
         dag_filepath = utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename
-            # type: ignore[union-attr] # noqa
+            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
         )
         runtime_configuration = RuntimeConfiguration(
             run_name=run_name,
@@ -460,7 +459,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         "parameter within a config file that is added to the "
                         "pipeline instance using the `.with_config()` method. "
                         "Make sure each parameter is only defined **once**. \n"
-                        "While it is not recommended you can overwrite the "
+                        "While it is not recommended, you can overwrite the "
                         "step configuration using the configuration file: \n"
                         "`.with_config('config.yaml', "
                         "overwrite_step_parameters=True)".format(
