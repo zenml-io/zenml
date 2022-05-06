@@ -17,7 +17,7 @@ from typing import Optional
 
 import click
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
     error,
@@ -26,7 +26,7 @@ from zenml.cli.utils import (
     warning,
 )
 from zenml.console import console
-from zenml.enums import StackComponentType
+from zenml.enums import CliCategories, StackComponentType
 from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -44,12 +44,10 @@ def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
 
 
 # Secrets
-@cli.group()
+@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 @click.pass_context
 def secret(ctx: click.Context) -> None:
-    """Secrets for storing key-value pairs for use in authentication."""
-    # TODO [ENG-724]: Ensure the stack actually contains an active secrets
-    #  manager
+    """List and manage your secrets."""
     ctx.obj = Repository().active_stack.components.get(
         StackComponentType.SECRETS_MANAGER, None
     )
@@ -202,7 +200,6 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
     """
     with console.status("Getting secret names..."):
         secret_names = secrets_manager.get_all_secret_keys()
-        # TODO: [HIGH] implement as a table?
         print_secrets(secret_names)
 
 

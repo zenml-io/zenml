@@ -26,7 +26,7 @@ from rich.text import Text
 
 import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import confirmation, declare, error, print_table, warning
 from zenml.console import console
 from zenml.constants import GIT_REPO_URL
@@ -37,6 +37,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
+EXCLUDED_EXAMPLE_DIRS = ["add_your_own"]
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 EXAMPLES_RUN_SCRIPT = "run_example.sh"
 SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
@@ -94,9 +95,30 @@ class LocalExample:
         return None
 
     @property
+    def needs_manual_user_setup(self) -> bool:
+        """Checks if a setup.sh file exist in the example dir, signifying the
+        possibility to run the example without any user input. Examples with no
+        setup.sh file need the user to setup infrastructure and/or connect
+        to tools/service providers
+
+        Returns:
+            True if no setup.sh file in self.path, False else
+        """
+        return not zenml.io.fileio.exists(
+            os.path.join(str(self.path), "setup.sh")
+        )
+
+    @property
     def executable_python_example(self) -> str:
         """Return the Python file for the example"""
-        if self.has_single_python_file:
+
+        if self.needs_manual_user_setup:
+            raise NotImplementedError(
+                "This example currently does not support being run from the "
+                "CLI as user specific setup is required. Consult the README.md "
+                "of the example to find out more."
+            )
+        elif self.has_single_python_file:
             return self.python_files_in_dir[0]
         elif self.run_dot_py_file:
             return self.run_dot_py_file
@@ -372,14 +394,18 @@ class GitExamplesHandler(object):
         Args:
           example_name: Name of an example.
         """
-        example_dict = {e.name: e for e in self.examples}
+        example_dict = {
+            e.name: e
+            for e in self.examples
+            if e.name not in EXCLUDED_EXAMPLE_DIRS
+        }
         if example_name:
             if example_name in example_dict.keys():
                 return [example_dict[example_name]]
             else:
                 raise KeyError(
                     f"Example {example_name} does not exist! "
-                    f"Available examples: {[example_dict.keys()]}"
+                    f"Available examples: {list(example_dict)}"
                 )
         else:
             return self.examples
@@ -454,9 +480,9 @@ def check_for_version_mismatch(
             )
 
 
-@cli.group(help="Access all ZenML examples.")
+@cli.group(cls=TagGroup)
 def example() -> None:
-    """Examples group"""
+    """Access all ZenML examples."""
 
 
 @example.command(help="List the available examples.")
@@ -665,8 +691,8 @@ def run(
 
     if sys.platform == "win32":
         logger.info(
-            "If you are running examples on Windows, make sure that you have an "
-            "associated application with executing .sh files. If you don't "
+            "If you are running examples on Windows, make sure that you have "
+            "an associated application with executing .sh files. If you don't "
             "have any and you see a pop-up during 'zenml example run', we "
             "suggest to use the Git BASH: https://gitforwindows.org/"
         )

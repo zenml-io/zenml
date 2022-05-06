@@ -14,7 +14,7 @@
 
 import time
 from abc import abstractmethod
-from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
+from typing import Any, ClassVar, Dict, Generator, Optional, Tuple, Type, cast
 from uuid import UUID, uuid4
 
 from pydantic import Field
@@ -172,6 +172,23 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             providing additional information about that state (e.g. a
             description of the error if one is encountered while checking the
             service status).
+        """
+
+    @abstractmethod
+    def get_logs(
+        self, follow: bool = False, tail: Optional[int] = None
+    ) -> Generator[str, bool, None]:
+        """Retrieve the service logs.
+
+        This method should be overridden by subclasses that implement
+        concrete service tracking functionality.
+
+        Args:
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that can be acccessed to get the service logs.
         """
 
     def update_status(self) -> None:

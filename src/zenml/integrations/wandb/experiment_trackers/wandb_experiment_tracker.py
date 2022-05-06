@@ -20,11 +20,8 @@ import wandb
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
-from zenml.integrations.constants import WANDB
+from zenml.integrations.wandb import WANDB_EXPERIMENT_TRACKER_FLAVOR
 from zenml.logger import get_logger
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 
 logger = get_logger(__name__)
 
@@ -32,7 +29,6 @@ logger = get_logger(__name__)
 WANDB_API_KEY = "WANDB_API_KEY"
 
 
-@register_stack_component_class
 class WandbExperimentTracker(BaseExperimentTracker):
     """Stores wandb configuration options.
 
@@ -60,7 +56,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
     project_name: Optional[str] = None
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = WANDB
+    FLAVOR: ClassVar[str] = WANDB_EXPERIMENT_TRACKER_FLAVOR
 
     def prepare_step_run(self) -> None:
         """Sets the wandb api key."""
