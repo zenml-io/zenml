@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict
 from pydantic import root_validator
 
 import zenml.io.utils
+from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
     AirflowDagRunner,
     AirflowPipelineConfig,
@@ -28,9 +29,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 from zenml.utils import daemon
 
 logger = get_logger(__name__)
@@ -44,14 +42,13 @@ AIRFLOW_ROOT_DIR = "airflow_root"
 DAG_FILEPATH_OPTION_KEY = "dag_filepath"
 
 
-@register_stack_component_class
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     airflow_home: str = ""
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "airflow"
+    FLAVOR: ClassVar[str] = AIRFLOW_ORCHESTRATOR_FLAVOR
 
     def __init__(self, **values: Any):
         """Sets environment variables to configure airflow."""

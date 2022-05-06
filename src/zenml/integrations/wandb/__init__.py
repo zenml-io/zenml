@@ -15,8 +15,14 @@
 The wandb integrations currently enables you to use wandb tracking as a
 convenient way to visualize your experiment runs within the wandb ui
 """
+from typing import List
+
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import WANDB
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
+
+WANDB_EXPERIMENT_TRACKER_FLAVOR = "wandb"
 
 
 class WandbIntegration(Integration):
@@ -25,10 +31,17 @@ class WandbIntegration(Integration):
     NAME = WANDB
     REQUIREMENTS = ["wandb>=0.12.12", "Pillow>=9.1.0"]
 
-    @staticmethod
-    def activate() -> None:
-        """Activate the Wandb integration."""
-        from zenml.integrations.wandb import experiment_trackers  # noqa
+    @classmethod
+    def flavors(cls) -> List[FlavorWrapper]:
+        """Declare the stack component flavors for the MLflow integration"""
+        return [
+            FlavorWrapper(
+                name=WANDB_EXPERIMENT_TRACKER_FLAVOR,
+                source="zenml.integrations.wandb.experiment_trackers.WandbExperimentTracker",
+                type=StackComponentType.EXPERIMENT_TRACKER,
+                integration=cls.NAME,
+            )
+        ]
 
 
 WandbIntegration.check_installation()

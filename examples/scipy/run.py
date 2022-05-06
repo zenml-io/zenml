@@ -79,7 +79,7 @@ def predictor(
     return model.predict(X)
 
 
-@pipeline(enable_cache=False, required_integrations=[SKLEARN])
+@pipeline(required_integrations=[SKLEARN])
 def pipe(importer, vectorizer, trainer, predictor):
     X_train, X_test, y_train, y_test = importer()
     vec_transformer, X_train_vec, X_test_vec = vectorizer(X_train, X_test)
@@ -88,6 +88,5 @@ def pipe(importer, vectorizer, trainer, predictor):
 
 
 if __name__ == "__main__":
-
     run = pipe(importer(), vectorizer(), trainer(), predictor())
     run.run()
