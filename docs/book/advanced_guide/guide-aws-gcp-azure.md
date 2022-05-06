@@ -21,7 +21,7 @@ step operators [guide](step-operators.md) for that!
 * Have an existing
   AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html)
   set up.
-* Make sure you have the `aws` cli set up
+* Make sure you have the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) set up.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl`
   and [configure](https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-connection/)
   it to talk to your EKS cluster using the following command:
