@@ -122,7 +122,7 @@ if __name__ == "__main__":
     # Run the pipeline
     p = boston_housing_pipeline(
         importer=importer(),
-        trainer=trainer().with_return_materializers(KerasMaterializer),
+        trainer=trainer(),
         evaluator=evaluator(),
     )
     p.run()

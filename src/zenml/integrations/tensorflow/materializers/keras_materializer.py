@@ -31,7 +31,7 @@ class KerasMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> keras.Model:
-        """Reads and returns a Keras model after copying it to tempory file.
+        """Reads and returns a Keras model after copying it to temporary file.
 
         Returns:
             A tf.keras.Model model.
