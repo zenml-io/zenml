@@ -37,10 +37,10 @@ from zenml.constants import (
     SHOULD_PREVENT_PIPELINE_EXECUTION,
 )
 from zenml.exceptions import (
+    DuplicatedConfigurationError,
     PipelineConfigurationError,
     PipelineInterfaceError,
     StackValidationError,
-    DuplicatedConfigurationError
 )
 from zenml.integrations.registry import integration_registry
 from zenml.io import fileio, utils
@@ -70,7 +70,7 @@ class BasePipelineMeta(type):
     """Pipeline Metaclass responsible for validating the pipeline definition."""
 
     def __new__(
-            mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BasePipelineMeta":
         """Saves argument names for later verification purposes"""
         cls = cast(Type["BasePipeline"], super().__new__(mcs, name, bases, dct))
@@ -291,9 +291,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         for step in self.steps.values():
             if (
-                    step.custom_step_operator
-                    and step.custom_step_operator not in
-                    available_step_operators
+                step.custom_step_operator
+                and step.custom_step_operator not in available_step_operators
             ):
                 raise StackValidationError(
                     f"Step '{step.name}' requires custom step operator "
@@ -309,11 +308,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step._has_been_called = False
 
     def run(
-            self,
-            *,
-            run_name: Optional[str] = None,
-            schedule: Optional[Schedule] = None,
-            **additional_parameters: Any,
+        self,
+        *,
+        run_name: Optional[str] = None,
+        schedule: Optional[Schedule] = None,
+        **additional_parameters: Any,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -377,7 +376,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
     def with_config(
-            self: T, config_file: str, overwrite_step_parameters: bool = False
+        self: T, config_file: str, overwrite_step_parameters: bool = False
     ) -> T:
         """Configures this pipeline using a yaml file.
 
@@ -405,7 +404,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self
 
     def _read_config_steps(
-            self, steps: Dict[str, Dict[str, Any]], overwrite: bool = False
+        self, steps: Dict[str, Dict[str, Any]], overwrite: bool = False
     ) -> None:
         """Reads and sets step parameters from a config file.
 
@@ -464,8 +463,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         "While it is not recommended you can overwrite the "
                         "step configuration using the configuration file: \n"
                         "`.with_config('config.yaml', "
-                        "overwrite_step_parameters=True)".format(parameter,
-                                                                 step_name,
-                                                                 previous_value,
-                                                                 value)
+                        "overwrite_step_parameters=True)".format(
+                            parameter, step_name, previous_value, value
+                        )
                     )
