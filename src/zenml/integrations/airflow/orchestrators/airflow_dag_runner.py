@@ -145,14 +145,6 @@ class AirflowDagRunner:
             self._replace_runtime_params(component)
 
         pb2_pipeline: Pb2Pipeline = compiler.Compiler().compile(tfx_pipeline)
-
-        # Substitute the runtime parameter to be a concrete run_id
-        # runtime_parameter_utils.substitute_runtime_parameter(
-        #     pb2_pipeline,
-        #     {
-        #         "pipeline-run-id": runtime_configuration.run_name,
-        #     },
-        # )
         deployment_config = runner_utils.extract_local_deployment_config(
             pb2_pipeline
         )
