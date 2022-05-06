@@ -219,3 +219,7 @@ class ProvisioningError(ZenMLBaseException):
 class GitNotFoundError(ImportError):
     """Raised when ZenML CLI is used to interact with examples on a machine
     with no git installation"""
+
+
+class DuplicatedConfigurationError(ZenMLBaseException):
+    """Raised when a configuration parameter is set twice"""

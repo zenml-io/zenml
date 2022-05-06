@@ -172,12 +172,15 @@ def list_profiles_command() -> None:
     profile_dicts = []
     for profile_name, profile in profiles.items():
         is_active = profile_name == repo.active_profile_name
+        active_stack = profile.active_stack
+        if is_active:
+            active_stack = repo.active_stack_name
         profile_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "PROFILE NAME": profile_name,
             "STORE TYPE": profile.store_type.value,
             "URL": profile.store_url,
-            "ACTIVE STACK": repo.active_stack_name,
+            "ACTIVE STACK": active_stack,
         }
         profile_dicts.append(profile_config)
 
