@@ -566,6 +566,23 @@ To see which stack is currently set as the default active stack, type:
 zenml stack get
 ```
 
+If you wish to transfer one of your stacks to another profile or even another
+machine, you can do so by exporting the stack configuration and then importing
+it again.
+
+To export a stack to YAML, run the following command:
+
+```bash
+zenml stack export STACK_NAME FILENAME.yaml
+```
+
+This will create a FILENAME.yaml containing the config of your stack and all
+of it's components, which you can then import again like this:
+
+```bash
+zenml stack import STACK_NAME FILENAME.yaml
+```
+
 If you wish to update a stack that you have already registered, first make sure
 you have registered whatever components you want to use, then use the following
 command:
