@@ -577,7 +577,7 @@ zenml stack export STACK_NAME FILENAME.yaml
 ```
 
 This will create a FILENAME.yaml containing the config of your stack and all
-of it's components, which you can then import again like this:
+of its components, which you can then import again like this:
 
 ```bash
 zenml stack import STACK_NAME FILENAME.yaml
