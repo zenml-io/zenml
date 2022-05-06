@@ -20,7 +20,7 @@ import airflow
 from airflow.operators import python
 from google.protobuf import message
 from tfx.orchestration import metadata
-from tfx.orchestration.portable import launcher
+from tfx.orchestration.portable import launcher, runtime_parameter_utils
 from tfx.proto.orchestration import pipeline_pb2
 
 from zenml.orchestrators.utils import execute_step
@@ -28,34 +28,44 @@ from zenml.repository import Repository
 
 
 def _airflow_component_launcher(
+    pb2_pipeline: pipeline_pb2.Pipeline,
     pipeline_node: pipeline_pb2.PipelineNode,
     mlmd_connection: metadata.Metadata,
-    pipeline_info: pipeline_pb2.PipelineInfo,
-    pipeline_runtime_spec: pipeline_pb2.PipelineRuntimeSpec,
     executor_spec: Optional[message.Message] = None,
     custom_driver_spec: Optional[message.Message] = None,
     custom_executor_operators: Optional[
         Dict[Any, Type[launcher.ExecutorOperator]]
     ] = None,
+    **kwargs: Any,
 ) -> None:
     """Helper function to launch TFX component execution.
 
     Args:
+        pb2_pipeline: Protobuf pipeline definition.
         pipeline_node: The specification of the node to launch.
         mlmd_connection: ML metadata connection info.
-        pipeline_info: The information of the pipeline that this node runs in.
-        pipeline_runtime_spec: The runtime information of the pipeline that this
-            node runs in.
         executor_spec: Specification for the executor of the node.
         custom_driver_spec: Specification for custom driver.
         custom_executor_operators: Map of executable specs to executor
             operators.
     """
+    # get the run name from the airflow task instance
+    run_name = kwargs["ti"].get_dagrun().run_id
+
+    # Replace pipeline run id in both the pipeline and node proto files
+    for proto in [pb2_pipeline, pipeline_node]:
+        runtime_parameter_utils.substitute_runtime_parameter(
+            proto,
+            {
+                "pipeline-run-id": run_name,
+            },
+        )
+
     component_launcher = launcher.Launcher(
         pipeline_node=pipeline_node,
         mlmd_connection=metadata.Metadata(mlmd_connection),
-        pipeline_info=pipeline_info,
-        pipeline_runtime_spec=pipeline_runtime_spec,
+        pipeline_info=pb2_pipeline.pipeline_info,
+        pipeline_runtime_spec=pb2_pipeline.runtime_spec,
         executor_spec=executor_spec,
         custom_driver_spec=custom_driver_spec,
         custom_executor_operators=custom_executor_operators,
@@ -75,10 +85,9 @@ class AirflowComponent(python.PythonOperator):
         self,
         *,
         parent_dag: airflow.DAG,
+        pb2_pipeline: pipeline_pb2.Pipeline,
         pipeline_node: pipeline_pb2.PipelineNode,
         mlmd_connection: metadata.Metadata,
-        pipeline_info: pipeline_pb2.PipelineInfo,
-        pipeline_runtime_spec: pipeline_pb2.PipelineRuntimeSpec,
         executor_spec: Optional[message.Message] = None,
         custom_driver_spec: Optional[message.Message] = None,
         custom_executor_operators: Optional[
@@ -89,12 +98,9 @@ class AirflowComponent(python.PythonOperator):
 
         Args:
             parent_dag: The airflow DAG that this component is contained in.
+            pb2_pipeline: Protobuf pipeline definition.
             pipeline_node: The specification of the node to launch.
             mlmd_connection: ML metadata connection info.
-            pipeline_info: The information of the pipeline that this node
-                runs in.
-            pipeline_runtime_spec: The runtime information of the pipeline
-                that this node runs in.
             executor_spec: Specification for the executor of the node.
             custom_driver_spec: Specification for custom driver.
             custom_executor_operators: Map of executable specs to executor
@@ -102,10 +108,9 @@ class AirflowComponent(python.PythonOperator):
         """
         launcher_callable = functools.partial(
             _airflow_component_launcher,
+            pb2_pipeline=pb2_pipeline,
             pipeline_node=pipeline_node,
             mlmd_connection=mlmd_connection,
-            pipeline_info=pipeline_info,
-            pipeline_runtime_spec=pipeline_runtime_spec,
             executor_spec=executor_spec,
             custom_driver_spec=custom_driver_spec,
             custom_executor_operators=custom_executor_operators,
