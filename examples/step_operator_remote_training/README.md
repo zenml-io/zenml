@@ -55,12 +55,12 @@ To configure resources for the step operators, please follow [this guide](https:
 
 ```bash
 zenml artifact-store register s3-store \
-    --type=s3
+    --flavor=s3
     --path=<S3_BUCKET_PATH>
 
 # create the sagemaker step operator
 zenml step-operator register sagemaker \
-    --type=sagemaker
+    --flavor=sagemaker
     --role=<SAGEMAKER_ROLE> \
     --instance_type=<SAGEMAKER_INSTANCE_TYPE>
     --base_image=<CUSTOM_BASE_IMAGE>
@@ -68,7 +68,7 @@ zenml step-operator register sagemaker \
     --experiment_name=<SAGEMAKER_EXPERIMENT_NAME>
 
 # register the container registry
-zenml container-registry register ecr_registry --type=default --uri=<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+zenml container-registry register ecr_registry --flavor=default --uri=<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 
 # register the sagemaker stack
 zenml stack register sagemaker_stack \
@@ -103,11 +103,11 @@ To configure resources for the step operators, please follow [this guide](https:
 
 ```bash
 zenml artifact-store register azure_store \
-    --type=azure \
+    --flavor=azure \
     --path=<AZURE_BLOB_CONTAINER_PATH>
 
 zenml step-operator register azureml \
-    --type=azureml \
+    --flavor=azureml \
     --subscription_id=<AZURE_SUBSCRIPTION_ID> \
     --resource_group=<AZURE_RESOURCE_GROUP> \
     --workspace_name=<AZURE_WORKSPACE_NAME> \
@@ -143,12 +143,12 @@ To configure resources for the step operators, please follow [this guide](https:
 
 ```bash
 zenml artifact-store register gcp-store \
-    --type=gcp
+    --flavor=gcp
     --path=<GCS_BUCKET_PATH>
 
 # create the vertex step operator
 zenml step-operator register vertex \
-    --type=vertex \
+    --flavor=vertex \
     --project=zenml-core \
     --region=eu-west1 \
     --machine_type=n1-standard-4 \
@@ -156,7 +156,7 @@ zenml step-operator register vertex \
     --accelerator_type=...
 
 # register the container registry
-zenml container-registry register gcr_registry --type=default --uri=gcr.io/<PROJECT-ID>/<IMAGE>
+zenml container-registry register gcr_registry --flavor=default --uri=gcr.io/<PROJECT-ID>/<IMAGE>
 
 # register the sagemaker stack
 zenml stack register vertex_training_stack \

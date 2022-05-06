@@ -46,6 +46,10 @@ def run(
         from zenml.logger import get_logger
         from zenml.services import LocalDaemonService, ServiceRegistry
 
+        # TODO[ENG-863]: We need to remove this import and handle registration
+        #  of the ZenService more gracefully.
+        from zenml.zen_service.zen_service import ZenService  # noqa
+
         logger = get_logger(__name__)
 
         logger.info(

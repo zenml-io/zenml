@@ -3,7 +3,7 @@
 set -Eeo pipefail
 
 setup_stack () {
-  zenml orchestrator register airflow_orchestrator --type=airflow || \
+  zenml orchestrator register airflow_orchestrator --flavor=airflow || \
     msg "${WARNING}Reusing preexisting orchestrator ${NOFORMAT}airflow_orchestrator"
   zenml stack register local_airflow_stack \
       -m default \

@@ -102,7 +102,7 @@ part of your current working stack:
 
 ```shell
 # register the feature store stack component
-zenml feature-store register feast_store -t feast --feast_repo="./feast_feature_repo"
+zenml feature-store register feast_store --flavor=feast --feast_repo="./feast_feature_repo"
 
 # register the sagemaker stack
 zenml stack register fs_stack -m default -o default -a default -f feast_store

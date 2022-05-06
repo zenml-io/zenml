@@ -68,7 +68,7 @@ Additionally, you should supply the following flag:
 This means you'll be able to register an AWS Secrets Manager with a command like
 this:
 
-`zenml secrets-manager register SECRETS_MANAGER_NAME --flavor aws --region_name==YOUR_PROJECT_REGION`
+`zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=aws --region_name==YOUR_PROJECT_REGION`
 
 ## GCP Secret Manager
 

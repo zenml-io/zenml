@@ -22,6 +22,7 @@ from ml_metadata.proto import metadata_store_pb2
 
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.constants import KUBEFLOW
+from zenml.integrations.kubeflow import KUBEFLOW_METADATA_STORE_FLAVOR
 from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (
     KubeflowOrchestrator,
 )
@@ -31,9 +32,6 @@ from zenml.metadata_stores import BaseMetadataStore
 from zenml.repository import Repository
 from zenml.stack import StackValidator
 from zenml.stack.stack import Stack
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 from zenml.utils import networking_utils
 
 logger = get_logger(__name__)
@@ -55,7 +53,6 @@ DEFAULT_KFP_METADATA_GRPC_PORT = 8081
 DEFAULT_KFP_METADATA_DAEMON_TIMEOUT = 60
 
 
-@register_stack_component_class
 class KubeflowMetadataStore(BaseMetadataStore):
     """Kubeflow GRPC backend for ZenML metadata store."""
 
@@ -64,7 +61,7 @@ class KubeflowMetadataStore(BaseMetadataStore):
     port: int = DEFAULT_KFP_METADATA_GRPC_PORT
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = KUBEFLOW
+    FLAVOR: ClassVar[str] = KUBEFLOW_METADATA_STORE_FLAVOR
 
     @property
     def validator(self) -> Optional[StackValidator]:
