@@ -23,7 +23,7 @@ from types import ModuleType
 # around it and registers it to the filesystem registry (and if `tfx` is not
 # installed, it does nothing).
 #
-# The problem is if Tensorflow is indeed installed, it takes a quite a long time
+# The problem is that if Tensorflow is indeed installed, it takes a quite a long time
 # to set it up and there is no point in the code where we are utilizing the
 # generated filesystem. That's why it is now blocked by a mock module,
 # before tfx.fileio gets imported.
