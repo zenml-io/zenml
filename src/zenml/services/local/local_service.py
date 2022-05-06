@@ -207,6 +207,20 @@ class LocalDaemonService(BaseService):
     # TODO [ENG-705]: allow multiple endpoints per service
     endpoint: Optional[LocalDaemonServiceEndpoint] = None
 
+    def get_service_status_message(self) -> str:
+        """Get a message providing information about the current operational
+        state of the service."""
+        msg = super().get_service_status_message()
+        pid = self.status.pid
+        if pid:
+            msg += f"  Daemon PID: `{self.status.pid}`\n"
+        if self.status.log_file:
+            msg += (
+                f"For more information on the service status, please see the "
+                f"following log file: {self.status.log_file}\n"
+            )
+        return msg
+
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the the current operational state of the daemon process.
 
@@ -328,7 +342,7 @@ class LocalDaemonService(BaseService):
             )
         else:
             logger.error(
-                "Daemon process for service '%s' failed to start",
+                "Daemon process for service '%s' failed to start.",
                 self,
             )
 
