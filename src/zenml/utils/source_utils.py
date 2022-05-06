@@ -480,7 +480,7 @@ def validate_flavor_source(
         component_type: the type of the stack component
 
     Raises:
-        ValueError: If ZenML can not find the given module path
+        ValueError: If ZenML cannot find the given module path
         TypeError: If the given module path does not point to a subclass of a
             StackComponent which has the right component type.
     """
