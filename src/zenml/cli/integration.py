@@ -17,7 +17,7 @@ from typing import Optional, Tuple
 import click
 from rich.progress import track
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
     declare,
@@ -30,6 +30,7 @@ from zenml.cli.utils import (
     warning,
 )
 from zenml.console import console
+from zenml.enums import CliCategories
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -37,9 +38,12 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 logger = get_logger(__name__)
 
 
-@cli.group(help="Interact with the requirements of external integrations.")
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.INTEGRATIONS,
+)
 def integration() -> None:
-    """Integrations group"""
+    """Interact with the requirements of external integrations."""
 
 
 @integration.command(name="list", help="List the available integrations.")

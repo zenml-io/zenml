@@ -54,8 +54,8 @@ class PyTorchModuleMaterializer(BaseMaterializer):
         """
         super().handle_return(model)
 
-        # Save entire model to artifact directory,
-        # This is the default behavior for loading model in development phase (training, evaluation)
+        # Save entire model to artifact directory, This is the default behavior
+        # for loading model in development phase (training, evaluation)
         with fileio.open(
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
         ) as f:

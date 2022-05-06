@@ -24,7 +24,6 @@ from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.repository import Repository
 
 from .example_validations import (
-    caching_example_validation,
     drift_detection_example_validation,
     generate_basic_validation_function,
     mlflow_tracking_example_validation,
@@ -80,101 +79,57 @@ class ExampleIntegrationTestConfiguration(NamedTuple):
 
 examples = [
     ExampleIntegrationTestConfiguration(
-        name="quickstart",
+        name="airflow_orchestration",
         validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline", step_count=3
+            pipeline_name="airflow_example_pipeline", step_count=3
         ),
     ),
     ExampleIntegrationTestConfiguration(
-        name="not_so_quickstart",
+        name="evidently_drift_detection",
+        validation_function=drift_detection_example_validation,
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="facets_visualize_statistics",
         validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline", step_count=4, run_count=3
+            pipeline_name="boston_housing_pipeline", step_count=3
         ),
     ),
     ExampleIntegrationTestConfiguration(
-        name="caching", validation_function=caching_example_validation
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="custom_materializer",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="pipe", step_count=2
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="fetch_historical_runs",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline", step_count=3
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="kubeflow",
+        name="kubeflow_pipelines_orchestration",
         validation_function=generate_basic_validation_function(
             pipeline_name="mnist_pipeline", step_count=4
         ),
     ),
-    ExampleIntegrationTestConfiguration(
-        name="drift_detection",
-        validation_function=drift_detection_example_validation,
-    ),
+    # TODO [ENG-858]: Create Integration tests for lightgbm
+    # TODO [ENG-859]: Create Integration tests for MLFlow Deployment
     ExampleIntegrationTestConfiguration(
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
         setup_function=mlflow_tracking_setup,
         skip_on_windows=True,
     ),
+    ExampleIntegrationTestConfiguration(
+        name="neural_prophet",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="neural_prophet_pipeline", step_count=3
+        ),
+    ),
     # TODO [ENG-708]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(
-        name="whylogs", validation_function=whylogs_example_validation
+        name="whylogs_data_profiling",
+        validation_function=whylogs_example_validation,
     ),
     ExampleIntegrationTestConfiguration(
-        name="statistics",
+        name="xgboost",
         validation_function=generate_basic_validation_function(
-            pipeline_name="boston_housing_pipeline",
-            step_count=3,
+            pipeline_name="xgboost_pipeline", step_count=3
         ),
+        skip_on_windows=True,
     ),
-    ExampleIntegrationTestConfiguration(
-        name="lineage",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="boston_housing_pipeline",
-            step_count=4,
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="dag_visualizer",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="boston_housing_pipeline",
-            step_count=3,
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="standard_interfaces",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="TrainingPipeline",
-            step_count=6,
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="airflow_local",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline",
-            step_count=4,
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="class_based_api",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="TrainingPipeline",
-            step_count=6,
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="functional_api",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline",
-            step_count=4,
-        ),
-    ),
+    # TODO [ENG-860]: Investigate why xgboost test doesn't work on windows
+    # TODO [ENG-861]: Investigate why huggingface test throws pip error on
+    #  dill<0.3.2,>=0.3.1.1, but you have dill 0.3.4
+
     ExampleIntegrationTestConfiguration(
         name="pytorch",
         validation_function=generate_basic_validation_function(

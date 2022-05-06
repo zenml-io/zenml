@@ -26,7 +26,7 @@ import zenml.io.utils
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
-from zenml.integrations.constants import KUBEFLOW
+from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
     KubeflowDagRunner,
@@ -40,9 +40,6 @@ from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 from zenml.utils import networking_utils
 from zenml.utils.source_utils import get_source_root_path
 
@@ -55,7 +52,6 @@ logger = get_logger(__name__)
 DEFAULT_KFP_UI_PORT = 8080
 
 
-@register_stack_component_class
 class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow.
 
@@ -83,7 +79,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
     synchronous = False
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = KUBEFLOW
+    FLAVOR: ClassVar[str] = KUBEFLOW_ORCHESTRATOR_FLAVOR
 
     @staticmethod
     def _get_k3d_cluster_name(uuid: UUID) -> str:
@@ -140,9 +136,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
             if not self.is_local:
 
                 # if the orchestrator is not running in a local k3d cluster,
-                # we cannot have any other local components in our stack, because
-                # we cannot mount the local path into the container. This
-                # may result in problems when running the pipeline, because
+                # we cannot have any other local components in our stack,
+                # because we cannot mount the local path into the container.
+                # This may result in problems when running the pipeline, because
                 # the local components will not be available inside the
                 # Kubeflow containers.
 
@@ -702,7 +698,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
             raise ProvisioningError(
                 "Unable to provision local Kubeflow Pipelines deployment: "
                 f"You passed in the following secrets: { ', '.join(secrets) }, "
-                "however, no secrets manager is registered for the current stack."
+                "however, no secrets manager is registered for the current "
+                "stack."
             )
         else:
             # No secrets provided by the user.

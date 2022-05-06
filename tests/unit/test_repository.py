@@ -316,22 +316,13 @@ def test_registering_a_stack_registers_unregistered_components(clean_repo):
         artifact_store=registered_stack.artifact_store,
     )
 
-    registered_orchestrators = clean_repo.get_stack_components(
-        StackComponentType.ORCHESTRATOR
-    )
-
     with does_not_raise():
         clean_repo.register_stack(new_stack)
 
-    updated_registered_orchestrators = clean_repo.get_stack_components(
-        StackComponentType.ORCHESTRATOR
-    )
-
-    assert (
-        len(updated_registered_orchestrators)
-        == len(registered_orchestrators) + 1
-    )
-    assert any(c == new_orchestrator for c in updated_registered_orchestrators)
+        clean_repo.get_stack_component(
+            component_type=StackComponentType.ORCHESTRATOR,
+            name="new_orchestrator_name",
+        )
 
     # if one of the components has a name that is already registered, but it's
     # not the exact registered component then the stack registration should fail
@@ -382,24 +373,6 @@ def test_getting_a_nonexisting_stack_component(clean_repo):
             component_type=StackComponentType.ORCHESTRATOR,
             name="definitely_not_a_registered_orchestrator",
         )
-
-
-def test_getting_all_stack_components_of_a_type(clean_repo):
-    """Tests that getting all components of a certain type includes newly
-    registered components."""
-    components = clean_repo.get_stack_components(
-        StackComponentType.ORCHESTRATOR
-    )
-
-    new_orchestrator = LocalOrchestrator(name="new_orchestrator")
-    clean_repo.register_stack_component(new_orchestrator)
-
-    new_components = clean_repo.get_stack_components(
-        StackComponentType.ORCHESTRATOR
-    )
-
-    assert len(new_components) == len(components) + 1
-    assert any(c == new_orchestrator for c in new_components)
 
 
 def test_registering_a_stack_component_with_existing_name(clean_repo):

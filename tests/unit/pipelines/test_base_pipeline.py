@@ -165,6 +165,24 @@ def test_initialize_pipeline_with_wrong_kwarg_type(
         unconnected_two_step_pipeline(step_1=1, step_2=empty_step())
 
 
+def test_initialize_pipeline_with_missing_arg_step_brackets(
+    unconnected_two_step_pipeline, generate_empty_steps
+):
+    """Test that pipeline initialization fails with missing arg brackets."""
+    with pytest.raises(PipelineInterfaceError):
+        empty_step_1, empty_step_2 = generate_empty_steps(2)
+        unconnected_two_step_pipeline(empty_step_1, empty_step_2)
+
+
+def test_initialize_pipeline_with_missing_kwarg_step_brackets(
+    unconnected_two_step_pipeline, generate_empty_steps
+):
+    """Test that pipeline initialization fails with missing kwarg brackets."""
+    with pytest.raises(PipelineInterfaceError):
+        empty_step_1, empty_step_2 = generate_empty_steps(2)
+        unconnected_two_step_pipeline(step_1=empty_step_1, step_2=empty_step_2)
+
+
 def test_setting_step_parameter_with_config_object():
     """Test whether step parameters can be set using a config object."""
     config_value = 0
