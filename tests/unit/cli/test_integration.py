@@ -100,7 +100,7 @@ def test_integration_install_specific_integration(
         return_value=False,
     )
 
-    result = runner.invoke(integration, ["install", "-f", integration_name])
+    result = runner.invoke(integration, ["install", "-y", integration_name])
     assert result.exit_code == 0
     mock_install_package.assert_called()
 
@@ -120,7 +120,7 @@ def test_integration_install_multiple_integrations(mocker: MockFixture) -> None:
         return_value=False,
     )
 
-    result = runner.invoke(integration, ["install", "-f", *INTEGRATIONS])
+    result = runner.invoke(integration, ["install", "-y", *INTEGRATIONS])
     assert result.exit_code == 0
     mock_install_package.assert_called()
 
@@ -140,7 +140,7 @@ def test_integration_install_all(mocker: MockFixture) -> None:
         return_value=False,
     )
 
-    result = runner.invoke(integration, ["install", "-f"])
+    result = runner.invoke(integration, ["install", "-y"])
     assert result.exit_code == 0
     mock_install_package.assert_called()
 
@@ -180,7 +180,7 @@ def test_integration_uninstall_specific_integration(
         return_value=True,
     )
 
-    result = runner.invoke(integration, ["uninstall", "-f", integration_name])
+    result = runner.invoke(integration, ["uninstall", "-y", integration_name])
     assert result.exit_code == 0
     mock_uninstall_package.assert_called()
 
@@ -200,6 +200,6 @@ def test_integration_uninstall_all(mocker: MockFixture) -> None:
         return_value=True,
     )
 
-    result = runner.invoke(integration, ["uninstall", "-f"])
+    result = runner.invoke(integration, ["uninstall", "-y"])
     assert result.exit_code == 0
     mock_uninstall_package.assert_called()
