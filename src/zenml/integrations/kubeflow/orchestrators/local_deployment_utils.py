@@ -18,11 +18,21 @@ K3S_IMAGE_NAME = "rancher/k3s:v1.23.5-k3s1"
 logger = get_logger(__name__)
 
 
-def check_prerequisites() -> bool:
+def check_prerequisites(
+    skip_k3d: bool = False, skip_kubectl: bool = False
+) -> bool:
     """Checks whether all prerequisites for a local kubeflow pipelines
-    deployment are installed."""
-    k3d_installed = shutil.which("k3d") is not None
-    kubectl_installed = shutil.which("kubectl") is not None
+    deployment are installed.
+
+    Args:
+        skip_k3d: Whether to skip the check for the k3d command.
+        skip_kubectl: Whether to skip the check for the kubectl command.
+
+    Returns:
+        Whether all prerequisites are installed.
+    """
+    k3d_installed = skip_k3d or shutil.which("k3d") is not None
+    kubectl_installed = skip_kubectl or shutil.which("kubectl") is not None
     logger.debug(
         "Local kubeflow deployment prerequisites: K3D - %s, Kubectl - %s",
         k3d_installed,

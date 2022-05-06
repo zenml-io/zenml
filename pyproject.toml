@@ -29,12 +29,13 @@ classifiers = [
 ]
 exclude = [
     "docs",
-    "examples",
-    "legacy",
-    "tests.*",
-    "tests",
-    "*.tests.*",
     "*.tests",
+    "*.tests",
+    "*.tests.*",
+    "tests.*",
+    "legacy",
+    "tests",
+    "examples"
 ]
 include = [
     "src/zenml",
