@@ -18,9 +18,6 @@ from zenml.integrations.constants import FACETS, TENSORFLOW
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )
-from zenml.integrations.tensorflow.materializers.keras_materializer import (
-    KerasMaterializer,
-)
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import Output, step
