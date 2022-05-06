@@ -14,7 +14,7 @@
 
 <OPTIONALLY SHOW INTERESTING GRAPHICS OF WHAT OUTPUT TO EXPECT>
 
-<IN CASE OF HIGH COMPLEXITY AN ARCHITECTURE DIAGRAM>
+<IN CASE OF HIGH COMPLEXITY: AN ARCHITECTURE DIAGRAM>
 
 # ☁️ Run in Colab
 
@@ -29,7 +29,7 @@ If you have a Google account, you can get started directly with Google Colab
 
 ## ⏩ SuperQuick `<EXAMPLE_NAME>` run
 
-<ONLY ADD THIS SECTION IF A setup.sh FILE PRESENT FOR THE EXAMPLE>
+<ONLY ADD THIS SECTION IF A setup.sh FILE IS INCLUDED IN THE EXAMPLE>
 
 If you're really in a hurry and just want to see this example pipeline run
 without wanting to fiddle around with all the individual installation and
@@ -50,7 +50,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install <NAME OF THE INTEGRATIONS>
+zenml integration install <NAMES OF THE INTEGRATIONS>
 
 # pull example
 zenml example pull <NAME OF THE EXAMPLE>
