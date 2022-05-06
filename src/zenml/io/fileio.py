@@ -15,7 +15,7 @@ import sys
 from types import ModuleType
 
 # IMPORTANT: Our io module uses the `fileio` module of `tfx` and the `fileio`
-# module of tfx imports tries to import the `tensorflow_gfile` module.
+# module of `tfx` tries to import the `tensorflow_gfile` module.
 #
 # At a first glance, this seems like an unused import in the `tfx` codebase,
 # however, in reality, when someone imports this module, the module
