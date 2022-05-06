@@ -126,11 +126,11 @@ command, as follows:
 ```bash
 zenml example pull quickstart
 ```
-If you would like to force-redownload the examples, use the ``--force``
-or ``-f`` flag as in this example:
+If you would like to force-redownload the examples, use the ``--yes``
+or ``-y`` flag as in this example:
 
 ```bash
-zenml example pull --force
+zenml example pull --yes
 ```
 This will redownload all the examples afresh, using the same version of
 ZenML as you currently have installed. If for some reason you want to
@@ -138,7 +138,7 @@ download examples corresponding to a previous release of ZenML, use the
 ``--version`` or ``-v`` flag to specify, as in the following example:
 
 ```bash
-zenml example pull --force --version 0.3.8
+zenml example pull --yes --version 0.3.8
 ```
 If you wish to run the example, allowing the ZenML CLI to do the work of setting
 up whatever dependencies are required, use the ``run`` subcommand:

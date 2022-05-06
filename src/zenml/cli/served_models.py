@@ -202,7 +202,9 @@ def start_model_service(
     "become inactive (default: 300s).",
 )
 @click.option(
-    "--force",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the model server to stop. This will bypass any graceful "
     "shutdown processes and try to force the model server to stop immediately, "
@@ -243,7 +245,9 @@ def stop_model_service(
     "waiting for it to release all allocated resources.",
 )
 @click.option(
-    "--force",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the model server to stop and delete. This will bypass any "
     "graceful shutdown processes and try to force the model server to stop and "

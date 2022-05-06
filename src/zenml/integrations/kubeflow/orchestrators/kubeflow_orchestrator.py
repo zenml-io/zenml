@@ -543,7 +543,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             logger.info(
                 "Found already existing local Kubeflow Pipelines deployment. "
                 "If there are any issues with the existing deployment, please "
-                "run 'zenml stack down --force' to delete it."
+                "run 'zenml stack down --yes' to delete it."
             )
             return
 

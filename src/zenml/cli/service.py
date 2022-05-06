@@ -94,7 +94,7 @@ def up_server(port: int, profile: Optional[str]) -> None:
                     case the specified port is in use or if the service was
                     already running on port {zen_service.endpoint.status.port}.
                     In case you want to change to port={port} shut down the
-                    service with `zenml service down -f` and restart it with
+                    service with `zenml service down -y` and restart it with
                     a free port of your choice.
                     """
                 )
@@ -134,8 +134,9 @@ def status_server() -> None:
 
 @service.command("down")
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Deprovisions local resources instead of suspending them.",
 )

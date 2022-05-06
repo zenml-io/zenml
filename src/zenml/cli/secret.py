@@ -308,8 +308,8 @@ def delete_secret_set(
 
 @secret.command("cleanup")
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
     "force",
     is_flag=True,
     help="Force the deletion of all secrets",

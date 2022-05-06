@@ -95,8 +95,9 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     help="List of integrations to ignore explicitly.",
 )
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the installation of the required packages. This will skip the "
     "confirmation step and reinstall existing packages as well",
@@ -163,8 +164,9 @@ def install(
 )
 @click.argument("integrations", nargs=-1, required=False)
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the uninstallation of the required packages. This will skip "
     "the confirmation step",

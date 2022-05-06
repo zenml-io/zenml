@@ -506,8 +506,9 @@ def generate_stack_component_down_command(
 
     @click.argument("name", type=str, required=False)
     @click.option(
-        "--force",
-        "-f",
+        "--yes",
+        "-y",
+        "force",
         is_flag=True,
         help="Deprovisions local resources instead of suspending them.",
     )
@@ -534,7 +535,7 @@ def generate_stack_component_down_command(
                         f"Provisioning local resources not implemented for "
                         f"{display_name} '{component.name}'. If you want to "
                         f"deprovision all resources for this component, use "
-                        f"the `--force/-f` flag."
+                        f"the `--yes/-y` flag."
                     )
             else:
                 cli_utils.declare(

@@ -665,8 +665,9 @@ def up_stack() -> None:
 
 @stack.command("down")
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Deprovisions local resources instead of suspending them.",
 )

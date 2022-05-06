@@ -158,7 +158,7 @@ class LocalExample:
             call = (
                 example_runner
                 + ["--executable", self.executable_python_example]
-                + ["-f"] * force
+                + ["-y"] * force
                 + ["--no-stack-setup"] * prevent_stack_setup
             )
             try:
@@ -562,8 +562,9 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
 @pass_git_examples_handler
 @click.argument("example_name", required=False, default=None)
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the redownload of the examples folder to the ZenML config "
     "folder.",
@@ -600,7 +601,7 @@ def pull(
     branch: Optional[str],
 ) -> None:
     """Pull examples straight into your current working directory.
-    Add the flag --force or -f to redownload all the examples afresh.
+    Add the flag --yes or -y to redownload all the examples afresh.
     Use the flag --version or -v and the version number to specify
     which version of ZenML you wish to use for the examples."""
     branch = branch.strip() if branch else f"release/{version}"
@@ -652,8 +653,9 @@ def pull(
     help="Relative path at which you want to install the example(s)",
 )
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the run of the example. This deletes the .zen folder from the "
     "example folder and force installs all necessary integration "
