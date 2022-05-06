@@ -21,7 +21,6 @@ from typing import Optional
 import click
 from rich.markdown import Markdown
 
-from zenml.cli import cli_utils
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
