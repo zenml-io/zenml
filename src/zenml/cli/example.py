@@ -570,6 +570,14 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     "folder.",
 )
 @click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the redownload of the examples folder to the ZenML config "
+    "folder.",
+)
+@click.option(
     "--version",
     "-v",
     type=click.STRING,
@@ -596,6 +604,7 @@ def pull(
     git_examples_handler: GitExamplesHandler,
     example_name: str,
     force: bool,
+    old_force: bool,
     version: str,
     path: str,
     branch: Optional[str],
@@ -604,6 +613,12 @@ def pull(
     Add the flag --yes or -y to redownload all the examples afresh.
     Use the flag --version or -v and the version number to specify
     which version of ZenML you wish to use for the examples."""
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
+
     branch = branch.strip() if branch else f"release/{version}"
     git_examples_handler.pull(branch=branch, force=force)
 
@@ -662,6 +677,15 @@ def pull(
     "requirements.",
 )
 @click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the run of the example. This deletes the .zen folder from the "
+    "example folder and force installs all necessary integration "
+    "requirements.",
+)
+@click.option(
     "--shell-executable",
     "-x",
     type=click.Path(exists=True),
@@ -679,12 +703,18 @@ def run(
     example_name: str,
     path: str,
     force: bool,
+    old_force: bool,
     shell_executable: Optional[str],
 ) -> None:
     """Run the example at the specified relative path.
     `zenml example pull EXAMPLE_NAME` has to be called with the same relative
     path before the run command.
     """
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     check_for_version_mismatch(git_examples_handler)
 
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh
