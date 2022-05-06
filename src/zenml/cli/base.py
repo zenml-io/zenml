@@ -153,10 +153,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
       local (flag; default value = False): If you want to delete local metadata and artifact stores from the active stack.
     """
     if local:
-        if yes:
-            _delete_local_artifact_metadata(True)
-        else:
-            _delete_local_artifact_metadata()
+        _delete_local_artifact_metadata(force_delete=yes)
         return
 
     if not yes:
