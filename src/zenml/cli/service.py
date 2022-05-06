@@ -75,7 +75,7 @@ def up_server(port: int, profile: Optional[str]) -> None:
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:
             zen_service = ServiceRegistry().load_service_from_json(f.read())
-    except (JSONDecodeError, FileNotFoundError, ModuleNotFoundError):
+    except (JSONDecodeError, FileNotFoundError, ModuleNotFoundError, TypeError):
         zen_service = ZenService(service_config)
 
     cli_utils.declare(
