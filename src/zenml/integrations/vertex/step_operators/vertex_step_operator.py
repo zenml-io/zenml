@@ -109,7 +109,7 @@ class VertexStepOperator(BaseStepOperator):
             aiplatform.gapic.AcceleratorType.__members__.keys()
         )
         if accelerator_type and accelerator_type.upper() not in accepted_vals:
-            raise RuntimeError(
+            raise ValueError(
                 f"Accelerator must be one of the following: {accepted_vals}"
             )
 
@@ -146,7 +146,7 @@ class VertexStepOperator(BaseStepOperator):
             requirements=set(requirements),
             base_image=self.base_image,
         )
-        docker_utils.push_docker_image(image_name)
+        container_registry.push_image(image_name)
         return docker_utils.get_image_digest(image_name) or image_name
 
     def launch(
