@@ -26,7 +26,7 @@ from types import ModuleType
 # The problem is that if Tensorflow is indeed installed, it takes a quite a long time
 # to set it up and there is no point in the code where we are utilizing the
 # generated filesystem. That's why it is now blocked by a mock module,
-# before tfx.fileio gets imported.
+# before `tfx.fileio` gets imported.
 
 sys.modules["tfx.dsl.io.plugins.tensorflow_gfile"] = ModuleType(
     "Ups, Aria walked over my keyboard."
