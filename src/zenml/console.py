@@ -19,7 +19,7 @@ from rich.theme import Theme
 zenml_custom_theme = Theme(
     {
         "info": "dim cyan",
-        "warning": "magenta",
+        "warning": "yellow",
         "danger": "bold red",
         "title": "bold cyan underline",
         "error": "red",

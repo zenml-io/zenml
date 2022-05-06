@@ -20,6 +20,7 @@ from uuid import UUID
 import kfp
 import urllib3
 from kfp_server_api.exceptions import ApiException
+from kubernetes import config as k8s_config
 from pydantic import root_validator
 
 import zenml.io.utils
@@ -71,12 +72,21 @@ class KubeflowOrchestrator(BaseOrchestrator):
             current-context`.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on KFP.
+        skip_local_validations: If `True`, the local validations will be
+            skipped.
+        skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
+            be skipped.
+        skip_ui_daemon_provisioning: If `True`, provisioning the KFP UI daemon
+            will be skipped.
     """
 
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
     kubernetes_context: Optional[str] = None
-    synchronous = False
+    synchronous: bool = False
+    skip_local_validations: bool = False
+    skip_cluster_provisioning: bool = False
+    skip_ui_daemon_provisioning: bool = False
 
     # Class Configuration
     FLAVOR: ClassVar[str] = KUBEFLOW_ORCHESTRATOR_FLAVOR
@@ -110,15 +120,32 @@ class KubeflowOrchestrator(BaseOrchestrator):
         Returns:
             Values passed to the Pydantic constructor
         """
-        if values.get("kubernetes_context"):
-            return values
-        # not likely, due to Pydantic validation, but mypy complains
-        assert "uuid" in values
+        if not values.get("kubernetes_context"):
+            # not likely, due to Pydantic validation, but mypy complains
+            assert "uuid" in values
+            values["kubernetes_context"] = cls._get_k3d_kubernetes_context(
+                values["uuid"]
+            )
 
-        values["kubernetes_context"] = cls._get_k3d_kubernetes_context(
-            values["uuid"]
-        )
         return values
+
+    def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
+        """Get the list of configured Kubernetes contexts and the active
+        context.
+
+        Raises:
+            RuntimeError: if the Kubernetes configuration cannot be loaded
+        """
+        try:
+            contexts, active_context = k8s_config.list_kube_config_contexts()
+        except k8s_config.config_exception.ConfigException as e:
+            raise RuntimeError(
+                "Could not load the Kubernetes configuration"
+            ) from e
+
+        context_names = [c["name"] for c in contexts]
+        active_context_name = active_context["name"]
+        return context_names, active_context_name
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -133,7 +160,47 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            if not self.is_local:
+            contexts, active_context = self.get_kubernetes_contexts()
+
+            if self.kubernetes_context not in contexts:
+                if not self.is_local:
+                    return False, (
+                        f"Could not find a Kubernetes context named "
+                        f"'{self.kubernetes_context}' in the local Kubernetes "
+                        f"configuration. Please make sure that the Kubernetes "
+                        f"cluster is running and that the kubeconfig file is "
+                        f"configured correctly. To list all configured "
+                        f"contexts, run:\n\n"
+                        f"  `kubectl config get-contexts`\n"
+                    )
+            elif self.kubernetes_context != active_context:
+                logger.warning(
+                    f"The Kubernetes context '{self.kubernetes_context}' "
+                    f"configured for the Kubeflow orchestrator is not the "
+                    f"same as the active context in the local Kubernetes "
+                    f"configuration. If this is not deliberate, you should "
+                    f"update the orchestrator's `kubernetes_context` field by "
+                    f"running:\n\n"
+                    f"  `zenml orchestrator update {self.name} "
+                    f"--kubernetes_context={active_context}`\n"
+                    f"To list all configured contexts, run:\n\n"
+                    f"  `kubectl config get-contexts`\n"
+                    f"To set the active context to be the same as the one "
+                    f"configured in the Kubeflow orchestrator and silence "
+                    f"this warning, run:\n\n"
+                    f"  `kubectl config use-context "
+                    f"{self.kubernetes_context}`\n"
+                )
+
+            silence_local_validations_msg = (
+                f"To silence this warning, set the "
+                f"`skip_local_validations` attribute to True in the "
+                f"orchestrator configuration by running:\n\n"
+                f"  'zenml orchestrator update {self.name} "
+                f"--skip_local_validations=True'\n"
+            )
+
+            if not self.skip_local_validations and not self.is_local:
 
                 # if the orchestrator is not running in a local k3d cluster,
                 # we cannot have any other local components in our stack,
@@ -150,38 +217,57 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     if not local_path:
                         continue
                     return False, (
-                        f"The Kubeflow orchestrator is not running in a local "
-                        f"k3d cluster. The '{stack_comp.name}' "
+                        f"The Kubeflow orchestrator is configured to run "
+                        f"pipelines in a remote Kubernetes cluster designated "
+                        f"by the '{self.kubernetes_context}' configuration "
+                        f"context, but the '{stack_comp.name}' "
                         f"{stack_comp.TYPE.value} is a local stack component "
                         f"and will not be available in the Kubeflow pipeline "
-                        f"step. Please ensure that you always use non-local "
+                        f"step.\nPlease ensure that you always use non-local "
                         f"stack components with a remote Kubeflow orchestrator, "
                         f"otherwise you may run into pipeline execution "
-                        f"problems."
+                        f"problems. You should use a flavor of "
+                        f"{stack_comp.TYPE.value} other than "
+                        f"'{stack_comp.FLAVOR}'.\n"
+                        + silence_local_validations_msg
                     )
 
                 # if the orchestrator is remote, the container registry must
                 # also be remote.
                 if container_registry.is_local:
                     return False, (
-                        f"The Kubeflow orchestrator is not running in a local "
-                        f"k3d cluster but the {container_registry.name} "
+                        f"The Kubeflow orchestrator is configured to run "
+                        f"pipelines in a remote Kubernetes cluster designated "
+                        f"by the '{self.kubernetes_context}' configuration "
+                        f"context, but the '{container_registry.name}' "
                         f"container registry URI '{container_registry.uri}' "
                         f"points to a local container registry. Please ensure "
                         f"that you always use non-local stack components with "
                         f"a remote Kubeflow orchestrator, otherwise you will "
-                        f"run into problems."
+                        f"run into problems. You should use a flavor of "
+                        f"container registry other than "
+                        f"'{container_registry.FLAVOR}'.\n"
+                        + silence_local_validations_msg
                     )
-            else:
+
+            if not self.skip_local_validations and self.is_local:
+
                 # if the orchestrator is local, the container registry must
                 # also be local.
                 if not container_registry.is_local:
                     return False, (
-                        f"The container registry URI '{container_registry.uri}' "
-                        f"doesn't match the expected format 'localhost:$PORT'. "
+                        f"The Kubeflow orchestrator is configured to run "
+                        f"pipelines in a local k3d Kubernetes cluster "
+                        f"designated by the '{self.kubernetes_context}' "
+                        f"configuration context, but the container registry "
+                        f"URI '{container_registry.uri}' doesn't match the "
+                        f"expected format 'localhost:$PORT'. "
                         f"The local Kubeflow orchestrator only works with a "
                         f"local container registry because it cannot "
-                        f"authenticate to external container registries."
+                        f"currently authenticate to external container "
+                        f"registries. You should use a flavor of container "
+                        f"registry other than '{container_registry.FLAVOR}'.\n"
+                        + silence_local_validations_msg
                     )
 
             return True, ""
@@ -238,30 +324,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
         a container registry if configured.
         """
         from zenml.utils.docker_utils import build_docker_image
-
-        # if the orchestrator is not running in a local k3d cluster,
-        # we cannot mount the local path into the container. This
-        # may result in problems when running the pipeline, because
-        # the local components will not be available inside the
-        # Kubeflow containers.
-        if self.kubernetes_context:
-            # go through all stack components and identify those that advertise
-            # a local path where they persist information that they need to be
-            # available when running pipelines.
-            for stack_comp in stack.components.values():
-                local_path = stack_comp.local_path
-                if not local_path:
-                    continue
-                logger.warning(
-                    "The Kubeflow orchestrator is not running in a local k3d "
-                    "cluster. The '%s' %s is a local stack component and will "
-                    "not be available in the Kubeflow pipeline step. Please "
-                    "ensure that you never combine non-local stack components "
-                    "with a remote orchestrator, otherwise you may run into "
-                    "pipeline execution problems.",
-                    stack_comp.name,
-                    stack_comp.TYPE.value,
-                )
 
         image_name = self.get_docker_image_name(pipeline.name)
 
@@ -406,9 +468,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     )
         except urllib3.exceptions.HTTPError as error:
             logger.warning(
-                "Failed to upload Kubeflow pipeline: %s. "
-                "Please make sure your kube config is configured and the "
-                "current context is set correctly.",
+                f"Failed to upload Kubeflow pipeline: %s. "
+                f"Please make sure your kubernetes config is present and the "
+                f"{self.kubernetes_context} kubernetes context is configured "
+                f"correctly.",
                 error,
             )
 
@@ -470,7 +533,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
     @property
     def is_provisioned(self) -> bool:
         """Returns if a local k3d cluster for this orchestrator exists."""
-        if not local_deployment_utils.check_prerequisites():
+        if not local_deployment_utils.check_prerequisites(
+            skip_k3d=self.skip_cluster_provisioning or not self.is_local,
+            skip_kubectl=self.skip_cluster_provisioning
+            and self.skip_ui_daemon_provisioning,
+        ):
             # if any prerequisites are missing there is certainly no
             # local deployment running
             return False
@@ -493,8 +560,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
         orchestrator are both stopped."""
         return (
             self.is_provisioned
-            and not self.is_cluster_running
-            and not self.is_daemon_running
+            and (self.skip_cluster_provisioning or not self.is_cluster_running)
+            and (self.skip_ui_daemon_provisioning or not self.is_daemon_running)
         )
 
     @property
@@ -504,7 +571,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         For remote (i.e. not managed by ZenML) Kubeflow Pipelines installations,
         this always returns True.
         """
-        if not self.is_local:
+        if self.skip_cluster_provisioning or not self.is_local:
             return True
         return local_deployment_utils.k3d_cluster_exists(
             cluster_name=self._k3d_cluster_name
@@ -517,7 +584,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         For remote (i.e. not managed by ZenML) Kubeflow Pipelines installations,
         this always returns True.
         """
-        if not self.is_local:
+        if self.skip_cluster_provisioning or not self.is_local:
             return True
         return local_deployment_utils.k3d_cluster_running(
             cluster_name=self._k3d_cluster_name
@@ -527,6 +594,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
     def is_daemon_running(self) -> bool:
         """Returns if the local Kubeflow UI daemon for this orchestrator is
         running."""
+        if self.skip_ui_daemon_provisioning:
+            return True
+
         if sys.platform != "win32":
             from zenml.utils.daemon import check_if_daemon_is_running
 
@@ -536,6 +606,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def provision(self) -> None:
         """Provisions a local Kubeflow Pipelines deployment."""
+        if self.skip_cluster_provisioning:
+            return
+
         if self.is_running:
             logger.info(
                 "Found already existing local Kubeflow Pipelines deployment. "
@@ -604,7 +677,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def deprovision(self) -> None:
         """Deprovisions a local Kubeflow Pipelines deployment."""
-        if self.is_daemon_running:
+        if self.skip_cluster_provisioning:
+            return
+
+        if not self.skip_ui_daemon_provisioning and self.is_daemon_running:
             local_deployment_utils.stop_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path
             )
@@ -637,7 +713,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
         # will never happen, but mypy doesn't know that
         assert kubernetes_context is not None
 
-        if self.is_local and not self.is_cluster_running:
+        if (
+            not self.skip_cluster_provisioning
+            and self.is_local
+            and not self.is_cluster_running
+        ):
             # don't resume any resources if using a remote KFP installation
             local_deployment_utils.start_k3d_cluster(
                 cluster_name=self._k3d_cluster_name
@@ -661,12 +741,16 @@ class KubeflowOrchestrator(BaseOrchestrator):
             logger.info("Local kubeflow pipelines deployment not provisioned.")
             return
 
-        if self.is_daemon_running:
+        if not self.skip_ui_daemon_provisioning and self.is_daemon_running:
             local_deployment_utils.stop_kfp_ui_daemon(
                 pid_file_path=self._pid_file_path
             )
 
-        if self.is_local and self.is_cluster_running:
+        if (
+            not self.skip_cluster_provisioning
+            and self.is_local
+            and self.is_cluster_running
+        ):
             # don't suspend any resources if using a remote KFP installation
             local_deployment_utils.stop_k3d_cluster(
                 cluster_name=self._k3d_cluster_name
