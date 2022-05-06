@@ -37,6 +37,7 @@ from zenml.constants import (
     SHOULD_PREVENT_PIPELINE_EXECUTION,
 )
 from zenml.exceptions import (
+    DuplicatedConfigurationError,
     PipelineConfigurationError,
     PipelineInterfaceError,
     StackValidationError,
@@ -342,7 +343,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
         dag_filepath = utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
+            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
         )
         runtime_configuration = RuntimeConfiguration(
             run_name=run_name,
@@ -381,7 +382,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             config_file: Path to a yaml file which contains configuration
                 options for running this pipeline. See
-                https://docs.zenml.io/features/pipeline-configuration#setting-step-parameters-using-a-config-file
+                https://docs.zenml.io/features/pipeline-configuration#setting
+                -step-parameters-using-a-config-file
                 for details regarding the specification of this file.
             overwrite_step_parameters: If set to `True`, values from the
                 configuration file will overwrite configuration parameters
@@ -449,11 +451,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         step_name,
                     )
                 if previous_value and not overwrite:
-                    logger.warning(
-                        "Parameter '%s' from configuration yaml will NOT be "
-                        "set as a configuration object was given when "
-                        "creating the step. Set `overwrite_step_parameters="
-                        "True` when setting the configuration yaml to always "
-                        "use the options specified in the yaml file.",
-                        parameter,
+                    raise DuplicatedConfigurationError(
+                        "The value for parameter '{}' is set twice for step "
+                        "'{}' ({} vs. {}). This can happen when you "
+                        "instantiate your step with a step configuration that "
+                        "sets the parameter, while also setting the same "
+                        "parameter within a config file that is added to the "
+                        "pipeline instance using the `.with_config()` method. "
+                        "Make sure each parameter is only defined **once**. \n"
+                        "While it is not recommended, you can overwrite the "
+                        "step configuration using the configuration file: \n"
+                        "`.with_config('config.yaml', "
+                        "overwrite_step_parameters=True)".format(
+                            parameter, step_name, previous_value, value
+                        )
                     )
