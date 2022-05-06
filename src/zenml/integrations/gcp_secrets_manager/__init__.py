@@ -22,7 +22,7 @@ from zenml.integrations.constants import GCP_SECRETS_MANAGER
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-GCP_SECRETS_MANAGER_FLAVOR = "gcp_secret_manager"
+GCP_SECRETS_MANAGER_FLAVOR = "gcp_secrets_manager"
 
 
 class GcpSecretManagerIntegration(Integration):
@@ -33,20 +33,13 @@ class GcpSecretManagerIntegration(Integration):
     REQUIREMENTS = ["google-cloud-secret-manager"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        from zenml.integrations.gcp_secrets_manager import (  # noqa
-            secrets_manager,
-        )
-
-    @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the GCP integration."""
         return [
             FlavorWrapper(
                 name=GCP_SECRETS_MANAGER_FLAVOR,
-                source="zenml.integrations.gcp.artifact_stores"
-                ".GCSArtifactStore",
+                source="zenml.integrations.gcp_secrets_manager.secrets_manager."
+                "GCPSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             )

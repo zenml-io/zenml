@@ -239,6 +239,7 @@ def generate_stack_component_register_command(
                 return
 
         repo = Repository()
+
         flavor_class = repo.get_flavor(
             name=flavor, component_type=component_type
         )

@@ -16,13 +16,11 @@ from typing import Any, ClassVar, Dict, List
 from google.cloud import secretmanager
 
 from zenml.exceptions import SecretExistsError
+from zenml.integrations.gcp_secrets_manager import GCP_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 
 logger = get_logger(__name__)
 
@@ -30,7 +28,7 @@ ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
 
 
-def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict:
+def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict[str, str]:
     """This function adds the secret group name to the keys of each
     secret key-value pair to allow using the same key across multiple
     secrets.
@@ -61,7 +59,6 @@ def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
         )
 
 
-@register_stack_component_class
 class GCPSecretsManager(BaseSecretsManager):
     """Class to interact with the GCP secrets manager.
 
@@ -74,7 +71,7 @@ class GCPSecretsManager(BaseSecretsManager):
     project_id: str
 
     # Class configuration
-    FLAVOR: ClassVar[str] = "gcp_secrets_manager"
+    FLAVOR: ClassVar[str] = GCP_SECRETS_MANAGER_FLAVOR
     CLIENT: ClassVar[Any] = None
 
     @classmethod
@@ -83,7 +80,7 @@ class GCPSecretsManager(BaseSecretsManager):
             cls.CLIENT = secretmanager.SecretManagerServiceClient()
 
     @property
-    def parent_name(self):
+    def parent_name(self) -> str:
         """Construct the GCP parent path to the secret manager"""
         return f"projects/{self.project_id}"
 
@@ -142,7 +139,7 @@ class GCPSecretsManager(BaseSecretsManager):
         self._ensure_client_connected()
 
         secret_contents = {}
-        zenml_schema_name = None
+        zenml_schema_name = ""
 
         # List all secrets.
         for secret in self.CLIENT.list_secrets(

@@ -58,7 +58,7 @@ def secret(ctx: click.Context) -> None:
         )
 
 
-@secret.command("register")
+@secret.command("register", help="Register a secret with the given name as key")
 @click.argument("name", type=click.STRING)
 @click.option(
     "--schema",
@@ -171,7 +171,7 @@ def register_secret(
         secrets_manager.register_secret(secret=secret)
 
 
-@secret.command("get")
+@secret.command("get", help="Get a secret by its name.")
 @click.argument("name", type=click.STRING)
 @click.pass_obj
 def get_secret(
@@ -193,7 +193,7 @@ def get_secret(
         error(f"Secret Set with name:`{name}` does not exist.")
 
 
-@secret.command("list")
+@secret.command("list", help="List all secrets tracked by your secret manager")
 @click.pass_obj
 def list_secret(secrets_manager: "BaseSecretsManager") -> None:
     """Get a list of all the keys to secrets sets in the store.
@@ -206,7 +206,7 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
         print_secrets(secret_names)
 
 
-@secret.command("update")
+@secret.command("update", help="Update a secret with new values.")
 @click.argument("name", type=click.STRING)
 @click.option(
     "--key",
@@ -249,7 +249,8 @@ def update_secret(
 
     if not validate_kv_pairs(secret_key, secret_value):
         error(
-            "To directly pass in a key-value pair for updating, you must pass in values for both."
+            "To directly pass in a key-value pair for updating, you must pass "
+            "in values for both."
         )
 
     updated_contents = {"name": name}
@@ -280,7 +281,7 @@ def update_secret(
             error(f"Secret Set with name:`{name}` already exists.")
 
 
-@secret.command("delete")
+@secret.command("delete", help="Delete a secret,")
 @click.argument("name", type=click.STRING)
 @click.pass_obj
 def delete_secret_set(
@@ -309,7 +310,9 @@ def delete_secret_set(
                 error(f"Secret with name:`{name}` already did not exist.")
 
 
-@secret.command("cleanup")
+@secret.command(
+    "cleanup", help="Delete all secrets from the secret-manager", hidden=True
+)
 @click.option(
     "--force",
     "-f",
