@@ -15,9 +15,14 @@
 The GCP integration submodule provides a way to access the gcp secrets manager
 from within you ZenML Pipeline runs.
 """
+from typing import List
 
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import GCP_SECRETS_MANAGER
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
+
+GCP_SECRETS_MANAGER_FLAVOR = "gcp_secret_manager"
 
 
 class GcpSecretManagerIntegration(Integration):
@@ -33,6 +38,19 @@ class GcpSecretManagerIntegration(Integration):
         from zenml.integrations.gcp_secrets_manager import (  # noqa
             secrets_manager,
         )
+
+    @classmethod
+    def flavors(cls) -> List[FlavorWrapper]:
+        """Declare the stack component flavors for the GCP integration."""
+        return [
+            FlavorWrapper(
+                name=GCP_SECRETS_MANAGER_FLAVOR,
+                source="zenml.integrations.gcp.artifact_stores"
+                       ".GCSArtifactStore",
+                type=StackComponentType.SECRETS_MANAGER,
+                integration=cls.NAME,
+            )
+        ]
 
 
 GcpSecretManagerIntegration.check_installation()

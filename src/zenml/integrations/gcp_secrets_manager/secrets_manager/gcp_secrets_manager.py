@@ -16,6 +16,7 @@ from typing import Any, ClassVar, Dict, List
 
 from google.cloud import secretmanager
 
+from zenml.exceptions import SecretExistsError
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -61,7 +62,13 @@ def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
 
 @register_stack_component_class
 class GCPSecretsManager(BaseSecretsManager):
-    """Class to interact with the GCP secrets manager."""
+    """Class to interact with the GCP secrets manager.
+
+    Attributes:
+        project_id:  This is necessary to access the correct GCP project.
+                     The project_id of your GCP project space that contains
+                     the Secret Manager.
+    """
 
     project_id: str
 
@@ -87,7 +94,7 @@ class GCPSecretsManager(BaseSecretsManager):
         self._ensure_client_connected()
 
         if secret.name in self.get_all_secret_keys():
-            raise KeyError(
+            raise SecretExistsError(
                 f"A Secret with the name {secret.name} already exists."
             )
 
