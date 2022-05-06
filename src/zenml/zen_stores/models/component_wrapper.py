@@ -20,22 +20,29 @@ import yaml
 from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
+from zenml.logger import get_logger
 from zenml.stack import StackComponent
 
+logger = get_logger(__name__)
 
-class StackComponentWrapper(BaseModel):
+
+class ComponentWrapper(BaseModel):
     """Serializable Configuration of a StackComponent"""
 
     type: StackComponentType
-    flavor: str  # due to subclassing, can't properly use enum type here
+    flavor: str
     name: str
     uuid: UUID
     config: bytes  # b64 encoded yaml config
 
     @classmethod
-    def from_component(
-        cls, component: StackComponent
-    ) -> "StackComponentWrapper":
+    def from_component(cls, component: StackComponent) -> "ComponentWrapper":
+        """Creates a ComponentWrapper from an actual instance of a Stack
+        Component.
+
+        Args:
+            component: the instance of a StackComponent
+        """
         return cls(
             type=component.TYPE,
             flavor=component.FLAVOR,
@@ -45,3 +52,16 @@ class StackComponentWrapper(BaseModel):
                 yaml.dump(json.loads(component.json())).encode()
             ),
         )
+
+    def to_component(self) -> StackComponent:
+        """Converts the ComponentWrapper into an actual instance of a Stack
+        Component."""
+        from zenml.repository import Repository
+
+        flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]
+            name=self.flavor, component_type=self.type
+        )
+
+        config = yaml.safe_load(base64.b64decode(self.config).decode())
+
+        return flavor.parse_obj(config)

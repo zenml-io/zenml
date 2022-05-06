@@ -147,7 +147,7 @@ def mlflow_step_entrypoint() -> Callable[[F], F]:
 
             active_run = experiment_tracker.active_run
             if not active_run:
-                raise RuntimeError("No active mlflow run configued.")
+                raise RuntimeError("No active mlflow run configured.")
 
             with active_run:
                 return func(*args, **kwargs)

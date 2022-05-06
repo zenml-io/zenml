@@ -32,15 +32,12 @@ import s3fs
 from pydantic import validator
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
 from zenml.io.utils import convert_to_str
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 
 PathType = Union[bytes, str]
 
 
-@register_stack_component_class
 class S3ArtifactStore(BaseArtifactStore):
     """Artifact Store for S3 based artifacts.
 
@@ -67,7 +64,7 @@ class S3ArtifactStore(BaseArtifactStore):
     _filesystem: Optional[s3fs.S3FileSystem] = None
 
     # Class variables
-    FLAVOR: ClassVar[str] = "s3"
+    FLAVOR: ClassVar[str] = S3_ARTIFACT_STORE_FLAVOR
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
 
     @validator(

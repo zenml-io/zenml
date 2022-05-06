@@ -24,10 +24,11 @@ from zenml.logger import get_logger
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.zen_stores.models import (
+    ComponentWrapper,
+    FlavorWrapper,
     Project,
     Role,
     RoleAssignment,
-    StackComponentWrapper,
     StackWrapper,
     Team,
     User,
@@ -63,10 +64,9 @@ class BaseZenStore(ABC):
             The initialized concrete store instance.
         """
         if not skip_default_registrations:
-            logger.info("Registering default stack and user...")
             if self.is_empty:
+                logger.info("Registering default stack...")
                 self.register_default_stack()
-
             self.create_default_user()
 
         return self
@@ -152,7 +152,7 @@ class BaseZenStore(ABC):
     @abstractmethod
     def register_stack_component(
         self,
-        component: StackComponentWrapper,
+        component: ComponentWrapper,
     ) -> None:
         """Register a stack component.
 
@@ -169,7 +169,7 @@ class BaseZenStore(ABC):
         self,
         name: str,
         component_type: StackComponentType,
-        component: StackComponentWrapper,
+        component: ComponentWrapper,
     ) -> Dict[str, str]:
         """Update a stack component.
 
@@ -596,8 +596,72 @@ class BaseZenStore(ABC):
             KeyError: If no team or project with the given names exists.
         """
 
-    # Common code (user facing):
+    # Stack component flavors
+    @property
+    @abstractmethod
+    def flavors(self) -> List[FlavorWrapper]:
+        """All registered flavors.
 
+        Returns:
+            A list of all registered flavors.
+        """
+
+    @abstractmethod
+    def create_flavor(
+        self,
+        source: str,
+        name: str,
+        stack_component_type: StackComponentType,
+    ) -> FlavorWrapper:
+        """Creates a new flavor.
+
+        Args:
+            source: the source path to the implemented flavor.
+            name: the name of the flavor.
+            stack_component_type: the corresponding StackComponentType.
+
+        Returns:
+             The newly created flavor.
+
+        Raises:
+            EntityExistsError: If a flavor with the given name and type
+                already exists.
+        """
+
+    @abstractmethod
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorWrapper]:
+        """Fetch all flavor defined for a specific stack component type.
+
+        Args:
+            component_type: The type of the stack component.
+
+        Returns:
+            List of all the flavors for the given stack component type.
+        """
+
+    @abstractmethod
+    def get_flavor_by_name_and_type(
+        self,
+        flavor_name: str,
+        component_type: StackComponentType,
+    ) -> FlavorWrapper:
+        """Fetch a flavor by a given name and type.
+
+        Args:
+            flavor_name: The name of the flavor.
+            component_type: Optional, the type of the component.
+
+        Returns:
+            Flavor instance if it exists
+
+        Raises:
+            KeyError: If no flavor exists with the given name and type
+                or there are more than one instances
+        """
+
+    # Common code (user facing):
     @property
     def stacks(self) -> List[StackWrapper]:
         """All stacks registered in this zen store."""
@@ -649,7 +713,7 @@ class BaseZenStore(ABC):
             )
 
         def __check_component(
-            component: StackComponentWrapper,
+            component: ComponentWrapper,
         ) -> Tuple[StackComponentType, str]:
             """Try to register a stack component, if it doesn't exist.
 
@@ -719,7 +783,7 @@ class BaseZenStore(ABC):
             pass
 
         def __check_component(
-            component: StackComponentWrapper,
+            component: ComponentWrapper,
         ) -> Tuple[StackComponentType, str]:
             try:
                 _ = self.get_stack_component(
@@ -743,7 +807,7 @@ class BaseZenStore(ABC):
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
-    ) -> StackComponentWrapper:
+    ) -> ComponentWrapper:
         """Get a registered stack component.
 
         Raises:
@@ -753,7 +817,7 @@ class BaseZenStore(ABC):
             component_type, name=name
         )
         uuid = yaml.safe_load(base64.b64decode(config).decode())["uuid"]
-        return StackComponentWrapper(
+        return ComponentWrapper(
             type=component_type,
             flavor=flavor,
             name=name,
@@ -763,7 +827,7 @@ class BaseZenStore(ABC):
 
     def get_stack_components(
         self, component_type: StackComponentType
-    ) -> List[StackComponentWrapper]:
+    ) -> List[ComponentWrapper]:
         """Fetches all registered stack components of the given type.
 
         Args:

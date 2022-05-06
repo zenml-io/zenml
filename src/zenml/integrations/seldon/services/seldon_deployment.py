@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 from uuid import UUID
 
 import numpy as np
@@ -310,6 +310,26 @@ class SeldonDeploymentService(BaseService):
             client.delete_deployment(name=name, force=force)
         except SeldonDeploymentNotFoundError:
             pass
+
+    def get_logs(
+        self,
+        follow: bool = False,
+        tail: Optional[int] = None,
+    ) -> Generator[str, bool, None]:
+        """Get the logs of a Seldon Core model deployment.
+
+        Args:
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that can be acccessed to get the service logs.
+        """
+        return self._get_client().get_deployment_logs(
+            self.seldon_deployment_name,
+            follow=follow,
+            tail=tail,
+        )
 
     @property
     def prediction_url(self) -> Optional[str]:

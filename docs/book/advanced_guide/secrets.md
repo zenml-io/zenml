@@ -33,7 +33,7 @@ or GCP Secrets Manager as a non-local flavor that is also possible with ZenML.
 To register a local secrets manager, use the CLI interface:
 
 ```shell
-zenml secrets-manager register SECRETS_MANAGER_NAME -t local
+zenml secrets-manager register SECRETS_MANAGER_NAME --flavor=local
 ```
 
 You will then need to add the secrets manager to a new stack that you register,
@@ -113,7 +113,7 @@ installed first, and then register your secrets manager in the following way:
 
 ```shell
 zenml integration install aws
-zenml secrets-manager register AWS_SECRETS_MANAGER_NAME -t aws
+zenml secrets-manager register AWS_SECRETS_MANAGER_NAME --flavor=aws
 ```
 
 If you are using the [ZenML Kubeflow
