@@ -46,7 +46,7 @@ class GcpSecretManagerIntegration(Integration):
             FlavorWrapper(
                 name=GCP_SECRETS_MANAGER_FLAVOR,
                 source="zenml.integrations.gcp.artifact_stores"
-                       ".GCSArtifactStore",
+                ".GCSArtifactStore",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             )

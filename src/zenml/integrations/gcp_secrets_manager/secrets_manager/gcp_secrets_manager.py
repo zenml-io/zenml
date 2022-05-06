@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import re
 from typing import Any, ClassVar, Dict, List
 
 from google.cloud import secretmanager
@@ -52,12 +51,14 @@ def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
     Returns:
         The cleaned key
     """
-    if combined_key_name.startswith(group_name + '_'):
-        return combined_key_name[len(group_name + '_'):]
+    if combined_key_name.startswith(group_name + "_"):
+        return combined_key_name[len(group_name + "_") :]
     else:
-        raise RuntimeError(f"Key-name `{combined_key_name}` does not have the "
-                           f"prefix `{group_name}`. Key could not be "
-                           f"extracted.")
+        raise RuntimeError(
+            f"Key-name `{combined_key_name}` does not have the "
+            f"prefix `{group_name}`. Key could not be "
+            f"extracted."
+        )
 
 
 @register_stack_component_class
@@ -144,8 +145,9 @@ class GCPSecretsManager(BaseSecretsManager):
         zenml_schema_name = None
 
         # List all secrets.
-        for secret in self.CLIENT.list_secrets(request={"parent":
-                                                            self.parent_name}):
+        for secret in self.CLIENT.list_secrets(
+            request={"parent": self.parent_name}
+        ):
             if (
                 ZENML_GROUP_KEY in secret.labels
                 and secret_name == secret.labels[ZENML_GROUP_KEY]
@@ -187,8 +189,9 @@ class GCPSecretsManager(BaseSecretsManager):
         set_of_secrets = set()
 
         # List all secrets.
-        for secret in self.CLIENT.list_secrets(request={"parent":
-                                                            self.parent_name}):
+        for secret in self.CLIENT.list_secrets(
+            request={"parent": self.parent_name}
+        ):
             if ZENML_GROUP_KEY in secret.labels:
                 group_key = secret.labels[ZENML_GROUP_KEY]
                 set_of_secrets.add(group_key)
@@ -227,8 +230,9 @@ class GCPSecretsManager(BaseSecretsManager):
 
         # Go through all gcp secrets and delete the ones with the secret_name
         #  as label.
-        for secret in self.CLIENT.list_secrets(request={"parent":
-                                                            self.parent_name}):
+        for secret in self.CLIENT.list_secrets(
+            request={"parent": self.parent_name}
+        ):
             if (
                 ZENML_GROUP_KEY in secret.labels
                 and secret_name == secret.labels[ZENML_GROUP_KEY]
@@ -243,8 +247,9 @@ class GCPSecretsManager(BaseSecretsManager):
         self._ensure_client_connected()
 
         # List all secrets.
-        for secret in self.CLIENT.list_secrets(request={"parent":
-                                                            self.parent_name}):
+        for secret in self.CLIENT.list_secrets(
+            request={"parent": self.parent_name}
+        ):
             if (
                 ZENML_GROUP_KEY in secret.labels
                 or ZENML_SCHEMA_NAME in secret.labels
