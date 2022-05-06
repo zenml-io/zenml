@@ -10,6 +10,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
 import pandas as pd
 from deepchecks.core.suite import SuiteResult
 from deepchecks.tabular import Dataset
@@ -21,9 +22,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
 from zenml.integrations.constants import DEEPCHECKS, SKLEARN
-from zenml.integrations.deepchecks.materializers import (
-    DeepchecksResultMaterializer,
-)
 from zenml.integrations.deepchecks.visualizers import DeepchecksVisualizer
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
@@ -73,8 +71,6 @@ def data_validator(
 def post_validation(result: SuiteResult) -> None:
     """Consumes the SuiteResult."""
     print(result)
-    # Iterate over results, and check if checks passed or not
-    # result.save_as_html()
 
 
 @pipeline(enable_cache=False, required_integrations=[DEEPCHECKS, SKLEARN])
@@ -99,9 +95,7 @@ if __name__ == "__main__":
     pipeline = data_validation_pipeline(
         data_loader=data_loader(),
         trainer=trainer(),
-        data_validator=data_validator().with_return_materializers(
-            DeepchecksResultMaterializer
-        ),
+        data_validator=data_validator(),
         post_validation=post_validation(),
     )
     pipeline.run()
