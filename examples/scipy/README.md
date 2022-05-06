@@ -1,15 +1,20 @@
 # [⚗️ SciPy](https://scipy.org/) sparse matrices in ZenML
 
-An elementary data structure widely used in `sklearn` to store sparse data more efficiently.
-
+An elementary data structure widely used in `sklearn` to store sparse data more
+efficiently.
 
 ## 🧰 How the example is implemented
 
-We train a simple linear model to classify sentences based on emotion using the [Emotions dataset for NLP](https://www.kaggle.com/datasets/praveengovi/emotions-dataset-for-nlp). The text is represented as a sparse [n-gram](https://en.wikipedia.org/wiki/N-gram) feature vector.
+We train a simple linear model to classify sentences based on emotion using
+the [Emotions dataset for NLP](https://www.kaggle.com/datasets/praveengovi/emotions-dataset-for-nlp)
+. The text is represented as a
+sparse [n-gram](https://en.wikipedia.org/wiki/N-gram) feature vector.
 
 Example input : `[["I love dogs"], ["I love cats"]]`
 
-If we set `n = 2`, the n-gram vectorizer will find the [bigrams](https://en.wikipedia.org/wiki/Bigram) `"I love"`, `"love dogs"`, and `"love cats"`
+If we set `n = 2`, the n-gram vectorizer will find
+the [bigrams](https://en.wikipedia.org/wiki/Bigram) `"I love"`, `"love dogs"`,
+and `"love cats"`
 
 Output features : `[[1, 1, 0], [1, 0, 1]]`
 
@@ -17,7 +22,7 @@ Output features : `[[1, 1, 0], [1, 0, 1]]`
 
 ## ⏩ SuperQuick `scipy` run
 
-If you're really in a hurry, and you want just to see this example pipeline run,
+If you're really in a hurry and just want to see this example pipeline run,
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
