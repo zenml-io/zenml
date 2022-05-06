@@ -59,27 +59,6 @@ def _load_class_from_module(
         implementation_name = config_item[SourceConfigurationKeys.NAME_]
         implemented_class = _get_module_attribute(module, implementation_name)
         return implemented_class
-    elif isinstance(config_item, str):
-        correct_input = textwrap.dedent(
-            f"""
-        {SourceConfigurationKeys.NAME_}: {config_item}
-        {SourceConfigurationKeys.FILE_}: optional/filepath.py
-        """
-        )
-
-        raise PipelineConfigurationError(
-            "As of ZenML version 0.8.0 `str` entries are no longer supported "
-            "to define steps or materializers. Instead you will now need to "
-            "pass a dictionary. This dictionary **has to** contain a "
-            f"`{SourceConfigurationKeys.NAME_}` which refers to the function/"
-            "class name. If this entity is defined outside the main module,"
-            "you will need to additionally supply a "
-            f"{SourceConfigurationKeys.FILE_} with the relative forward-slash-"
-            "separated path to the file. \n"
-            f"You tried to pass in `{config_item}` - however you should have "
-            "specified the name (and file) like this:"
-            f" {correct_input}"
-        )
     else:
         correct_input = textwrap.dedent(
             f"""
@@ -177,8 +156,32 @@ def run_pipeline(python_file: str, config_path: str) -> None:
                 # We need to differentiate whether it's a single materializer
                 # or a dictionary mapping output names to materializers
                 if isinstance(materializers_config, str):
-                    materializers = _load_class_from_module(
-                        module, materializers_config
+                    correct_input = textwrap.dedent(
+                        f"""
+                    {SourceConfigurationKeys.NAME_}: {materializers_config}
+                    {SourceConfigurationKeys.FILE_}: optional/filepath.py
+                    """
+                    )
+
+                    raise PipelineConfigurationError(
+                        "As of ZenML version 0.8.0 `str` entries are no "
+                        "longer supported "
+                        "to define steps or materializers. Instead you will "
+                        "now need to "
+                        "pass a dictionary. This dictionary **has to** "
+                        "contain a "
+                        f"`{SourceConfigurationKeys.NAME_}` which refers to "
+                        f"the function/"
+                        "class name. If this entity is defined outside the "
+                        "main module,"
+                        "you will need to additionally supply a "
+                        f"{SourceConfigurationKeys.FILE_} with the relative "
+                        f"forward-slash-"
+                        "separated path to the file. \n"
+                        f"You tried to pass in `{materializers_config}` "
+                        f"- however you should have specified the name "
+                        f"(and file) like this: \n "
+                        f"{correct_input}"
                     )
                 elif isinstance(materializers_config, dict):
                     materializers = {
