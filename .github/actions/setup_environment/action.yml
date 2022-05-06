@@ -1,5 +1,9 @@
 name: "Setup Matrix and Poetry"
 description: "Install Poetry, loads cached venv if applicable, and performs miscellaneous other operations"
+inputs:
+  cache_version:
+    description: 'Value gets appended to the cache key and will therefore invalidate the cache if it changes'
+    required: true
 
 runs:
   using: "composite"
@@ -39,8 +43,10 @@ runs:
           .venv
           poetry.lock
         # Cache the complete venv dir for a given os, python version,
-        # pyproject.toml, and the current calendar week
-        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}
+        # pyproject.toml, the current calendar week and the cache version.
+        # Providing a different value for the cache version enables manual
+        # invalidation of the cache in case it is in some erroneous state.
+        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}-${{ inputs.cache_version }}
 
     - name: Install Project
       shell: bash
