@@ -150,7 +150,6 @@ def generate_stack_component_describe_command(
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        singular_display_name = _component_display_name(component_type)
         repo = Repository()
         component = _get_stack_component(component_type, component_name=name)
         if component is None:
