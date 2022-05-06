@@ -33,9 +33,14 @@ def test_kubeflow_orchestrator_attributes():
     assert orchestrator.FLAVOR == "kubeflow"
 
 
-def test_kubeflow_orchestrator_stack_validation():
+def test_kubeflow_orchestrator_stack_validation(mocker):
     """Tests that the kubeflow orchestrator validates that it's stack has a
     container registry."""
+    mocker.patch(
+        "zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator.get_kubernetes_contexts",
+        return_value=([], ""),
+    )
+
     orchestrator = KubeflowOrchestrator(name="")
     metadata_store = SQLiteMetadataStore(name="", uri="./metadata.db")
     artifact_store = LocalArtifactStore(name="", path=".")

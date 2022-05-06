@@ -55,7 +55,7 @@ class SeldonDeployerStepConfig(BaseStepConfig):
     timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT
 
 
-@step(enable_cache=True)
+@step(enable_cache=False)
 def seldon_model_deployer_step(
     deploy_decision: bool,
     config: SeldonDeployerStepConfig,
@@ -143,38 +143,36 @@ def seldon_model_deployer_step(
         service_config.model_uri = served_model_uri
         return service_config
 
-    if not deploy_decision:
+    # fetch existing services with same pipeline name, step name and
+    # model name
+    existing_services = model_deployer.find_model_server(
+        pipeline_name=pipeline_name,
+        pipeline_step_name=step_name,
+        model_name=config.service_config.model_name,
+    )
+
+    # even when the deploy decision is negative, if an existing model server
+    # is not running for this pipeline/step, we still have to serve the
+    # current model, to ensure that a model server is available at all times
+    if not deploy_decision and existing_services:
         logger.info(
             f"Skipping model deployment because the model quality does not "
-            f"meet the criteria. Loading last service deployed by step "
+            f"meet the criteria. Reusing last model server deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
             f"'{config.service_config.model_name}'..."
         )
-
-        # fetch existing services with same pipeline name, step name and
-        # model name
-        existing_services = model_deployer.find_model_server(
-            pipeline_name=pipeline_name,
-            pipeline_step_name=step_name,
-            model_name=config.service_config.model_name,
-        )
-
-        if existing_services:
-            service = cast(SeldonDeploymentService, existing_services[0])
-        else:
-            # if a previous service was not found, but we also don't need to
-            # create a new one in this iteration because the deployment
-            # decision didn't come through, we simply return a
-            # placeholder service
-            service_config = prepare_service_config(model.uri)
-            service = SeldonDeploymentService(config=service_config)
+        service = cast(SeldonDeploymentService, existing_services[0])
+        # even when the deploy decision is negative, we still need to start
+        # the previous model server if it is no longer running, to ensure that
+        # a model server is available at all times
+        if not service.is_running:
+            service.start(timeout=config.timeout)
         return service
-
-    service_config = prepare_service_config(model.uri)
 
     # invoke the Seldon Core model deployer to create a new service
     # or update an existing one that was previously deployed for the same
     # model
+    service_config = prepare_service_config(model.uri)
     service = cast(
         SeldonDeploymentService,
         model_deployer.deploy_model(
