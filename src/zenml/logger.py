@@ -165,15 +165,24 @@ def init_logging() -> None:
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     set_root_verbosity()
 
-    # Mute apache_beam
-    muted_logger_names = [
+    # supress logger info messages
+    supressed_logger_names = [
+        "urllib3",
+        "azure.core.pipeline.policies.http_logging_policy",
+        "grpc",
+    ]
+    for logger_name in supressed_logger_names:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+    # disable logger messages
+    disabled_logger_names = [
         "apache_beam",
         "rdbms_metadata_access_object",
         "apache_beam.io.gcp.bigquery",
         "backoff",
         "segment",
     ]
-    for logger_name in muted_logger_names:
+    for logger_name in disabled_logger_names:
         logging.getLogger(logger_name).setLevel(logging.WARNING)
         logging.getLogger(logger_name).disabled = True
 
