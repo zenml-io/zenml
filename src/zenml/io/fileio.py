@@ -20,7 +20,7 @@ from types import ModuleType
 # At a first glance, this seems like an unused import in the `tfx` codebase,
 # however, in reality, when someone imports this module, the module
 # checks whether `tensorflow` is installed and if it is, it creates a filesystem
-# around it and registers it to the filesystem registry (and if tf is not
+# around it and registers it to the filesystem registry (and if `tfx` is not
 # installed, it does nothing).
 #
 # The problem is if Tensorflow is indeed installed, it takes a quite a long time
