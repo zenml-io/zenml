@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import time
 from importlib import import_module
-from typing import Callable, List, Optional, Sequence, Type
+from typing import Any, Callable, List, Optional, Sequence, Type
 
 import click
 from rich.markdown import Markdown
@@ -204,6 +204,21 @@ def generate_stack_component_list_command(
     return list_stack_components_command
 
 
+def _register_stack_component(
+    component_type: StackComponentType,
+    component_name: str,
+    component_flavor: str,
+    **kwargs: Any,
+) -> None:
+    """Register a stack component."""
+    repo = Repository()
+    flavor_class = repo.get_flavor(
+        name=component_flavor, component_type=component_type
+    )
+    component = flavor_class(name=component_name, **kwargs)
+    Repository().register_stack_component(component)
+
+
 def generate_stack_component_register_command(
     component_type: StackComponentType,
 ) -> Callable[[str, str, List[str]], None]:
@@ -235,14 +250,12 @@ def generate_stack_component_register_command(
             except AssertionError as e:
                 cli_utils.error(str(e))
                 return
-
-        repo = Repository()
-        flavor_class = repo.get_flavor(
-            name=flavor, component_type=component_type
-        )
-        component = flavor_class(name=name, **parsed_args)
-
-        Repository().register_stack_component(component)
+            _register_stack_component(
+                component_type=component_type,
+                component_name=name,
+                component_flavor=flavor,
+                **parsed_args,
+            )
         cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 
     return register_stack_component_command
