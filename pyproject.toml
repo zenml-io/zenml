@@ -32,6 +32,7 @@ exclude = [
     "*.tests",
     "*.tests.*",
     "tests.*",
+    "tests",
     "legacy",
     "tests",
     "examples"
