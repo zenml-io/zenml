@@ -24,6 +24,9 @@ A stack is made up of multiple components. Some examples are:
 - An Orchestrator
 - A Step Operator (Optional)
 - A Container Registry (Optional)
+- A Secrets Manager (Optional)
+- A Model Deployer (Optional)
+- A Feature Store (Optional)
 """
 
 from zenml.stack.stack import Stack

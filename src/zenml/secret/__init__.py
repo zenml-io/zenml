@@ -21,6 +21,12 @@ as well as an optional `AWS_SESSION_TOKEN`. If you don't specify a schema at the
 point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a
 kind of default schema where things that aren't attached to a grouping can be
 stored.
+
+Availabe schemas are:
+- arbitrary
+- seldon_s3
+- seldon_az
+- seldon_gs
 """
 from zenml.secret.arbitrary_secret_schema import (
     ARBITRARY_SECRET_SCHEMA_TYPE,

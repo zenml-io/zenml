@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 
 import getpass
+from importlib import import_module
 from typing import Optional
 
 import click
+from rich.markdown import Markdown
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
@@ -337,3 +339,13 @@ def delete_all_secrets(
         with console.status("Deleting all secrets ..."):
             secrets_manager.delete_all_secrets(force=force)
             console.print("Deleted all secrets.")
+
+
+@secret.command("explain", help="Explain ZenML secrets.")
+def explain_service() -> None:
+    """Explain the concept of the secrets in ZenML."""
+    component_module = import_module("zenml.secret")
+
+    if component_module.__doc__ is not None:
+        md = Markdown(component_module.__doc__)
+        console.print(md)
