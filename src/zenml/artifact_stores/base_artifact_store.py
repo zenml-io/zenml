@@ -57,6 +57,9 @@ def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
     handling."""
 
     def inner_function(*args: Any, **kwargs: Any) -> Any:
+        """Inner function for the decorator. It attempts to run the function
+        wrapped by the decorator and catches the FileNotFoundError if it is
+        thrown. In that case, the tfx.NotFoundError is raised instead."""
         try:
             return _func(*args, **kwargs)
         except FileNotFoundError as e:

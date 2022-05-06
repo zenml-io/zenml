@@ -27,10 +27,11 @@ from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
+    ComponentWrapper,
+    FlavorWrapper,
     Project,
     Role,
     RoleAssignment,
-    StackComponentWrapper,
     Team,
     User,
 )
@@ -64,6 +65,13 @@ class ZenStackComponent(SQLModel, table=True):
     name: str = Field(primary_key=True)
     component_flavor: str
     configuration: bytes  # e.g. base64 encoded json string
+
+
+class ZenFlavor(SQLModel, table=True):
+    type: StackComponentType = Field(primary_key=True)
+    name: str = Field(primary_key=True)
+    source: str
+    integration: Optional[str]
 
 
 class ZenStackDefinition(SQLModel, table=True):
@@ -273,7 +281,7 @@ class SqlZenStore(BaseZenStore):
 
     def register_stack_component(
         self,
-        component: StackComponentWrapper,
+        component: ComponentWrapper,
     ) -> None:
         """Register a stack component.
 
@@ -309,7 +317,7 @@ class SqlZenStore(BaseZenStore):
         self,
         name: str,
         component_type: StackComponentType,
-        component: StackComponentWrapper,
+        component: ComponentWrapper,
     ) -> Dict[str, str]:
         """Update a stack component.
 
@@ -330,9 +338,9 @@ class SqlZenStore(BaseZenStore):
 
             if not updated_component:
                 raise KeyError(
-                    f"Unable to update stack component (type: {component.type}) "
-                    f"with name '{component.name}': No existing stack component "
-                    f"found with this name."
+                    f"Unable to update stack component (type: "
+                    f"{component.type}) with name '{component.name}': No "
+                    f"existing stack component found with this name."
                 )
 
             new_name_component = session.exec(
@@ -1198,6 +1206,124 @@ class SqlZenStore(BaseZenStore):
                 RoleAssignment(**assignment.dict())
                 for assignment in session.exec(statement).all()
             ]
+
+    # Handling stack component flavors
+
+    @property
+    def flavors(self) -> List[FlavorWrapper]:
+        """All registered flavors.
+
+        Returns:
+            A list of all registered flavors.
+        """
+        with Session(self.engine) as session:
+            return [
+                FlavorWrapper(**flavor.dict())
+                for flavor in session.exec(select(ZenFlavor)).all()
+            ]
+
+    def create_flavor(
+        self,
+        source: str,
+        name: str,
+        stack_component_type: StackComponentType,
+    ) -> FlavorWrapper:
+        """Creates a new flavor.
+
+        Args:
+            source: the source path to the implemented flavor.
+            name: the name of the flavor.
+            stack_component_type: the corresponding StackComponentType.
+            integration: the name of the integration.
+
+        Returns:
+             The newly created flavor.
+
+        Raises:
+            EntityExistsError: If a flavor with the given name and type
+                already exists.
+        """
+        with Session(self.engine) as session:
+            existing_flavor = session.exec(
+                select(ZenFlavor).where(
+                    ZenFlavor.name == name,
+                    ZenFlavor.type == stack_component_type,
+                )
+            ).first()
+            if existing_flavor:
+                raise EntityExistsError(
+                    f"A {stack_component_type} with '{name}' flavor already "
+                    f"exists."
+                )
+            sql_flavor = ZenFlavor(
+                name=name,
+                source=source,
+                type=stack_component_type,
+            )
+            flavor_wrapper = FlavorWrapper(**sql_flavor.dict())
+            session.add(sql_flavor)
+            session.commit()
+        return flavor_wrapper
+
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorWrapper]:
+        """Fetch all flavor defined for a specific stack component type.
+
+        Args:
+            component_type: The type of the stack component.
+
+        Returns:
+            List of all the flavors for the given stack component type.
+        """
+        with Session(self.engine) as session:
+            flavors = session.exec(
+                select(ZenFlavor).where(ZenFlavor.type == component_type)
+            ).all()
+        return [
+            FlavorWrapper(
+                name=f.name,
+                source=f.source,
+                type=f.type,
+                integration=f.integration,
+            )
+            for f in flavors
+        ]
+
+    def get_flavor_by_name_and_type(
+        self,
+        flavor_name: str,
+        component_type: StackComponentType,
+    ) -> FlavorWrapper:
+        """Fetch a flavor by a given name and type.
+
+        Args:
+            flavor_name: The name of the flavor.
+            component_type: Optional, the type of the component.
+
+        Returns:
+            Flavor instance if it exists
+
+        Raises:
+            KeyError: If no flavor exists with the given name and type
+                or there are more than one instances
+        """
+        with Session(self.engine) as session:
+            try:
+                flavor = session.exec(
+                    select(ZenFlavor).where(
+                        ZenFlavor.name == flavor_name,
+                        ZenFlavor.type == component_type,
+                    )
+                ).one()
+                return FlavorWrapper(
+                    name=flavor.name,
+                    source=flavor.source,
+                    type=flavor.type,
+                    integration=flavor.integration,
+                )
+            except NoResultFound as error:
+                raise KeyError from error
 
     # Implementation-specific internal methods:
 

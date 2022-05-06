@@ -49,7 +49,7 @@ zenml init
 ### 🥞 Create a new Airflow Stack
 
 ```bash
-zenml orchestrator register airflow_orchestrator --type airflow
+zenml orchestrator register airflow_orchestrator --flavor=airflow
 zenml stack register airflow_stack \
     -m default \
     -a default \

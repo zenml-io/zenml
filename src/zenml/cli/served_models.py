@@ -16,7 +16,7 @@ from typing import Optional
 
 import click
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     declare,
     error,
@@ -24,15 +24,19 @@ from zenml.cli.utils import (
     print_served_model_configuration,
     warning,
 )
-from zenml.enums import StackComponentType
+from zenml.console import console
+from zenml.enums import CliCategories, StackComponentType
 from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
 
 
-@cli.group()
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.MODEL_DEPLOYMENT,
+)
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
-    """List and manage served models that are deployed using the active model
+    """List and manage served models with the active model
     deployer.
     """
     ctx.obj = Repository().active_stack.components.get(
@@ -266,3 +270,51 @@ def delete_model_service(
 
     warning(f"No model with uuid: '{served_model_uuid}' could be found.")
     return
+
+
+@served_models.command("logs")
+@click.argument("served_model_uuid", type=click.STRING)
+@click.option(
+    "--follow",
+    "-f",
+    is_flag=True,
+    help="Continue to output new log data as it becomes available.",
+)
+@click.option(
+    "--tail",
+    "-t",
+    type=click.INT,
+    default=None,
+    help="Only show the last NUM lines of log output.",
+)
+@click.option(
+    "--raw",
+    "-r",
+    is_flag=True,
+    help="Show raw log contents (don't pretty-print logs).",
+)
+@click.pass_obj
+def get_model_service_logs(
+    model_deployer: "BaseModelDeployer",
+    served_model_uuid: str,
+    follow: bool,
+    tail: Optional[int],
+    raw: bool,
+) -> None:
+    """Display the logs for a model server."""
+
+    served_models = model_deployer.find_model_server(
+        service_uuid=uuid.UUID(served_model_uuid)
+    )
+    if not served_models:
+        warning(f"No model with uuid: '{served_model_uuid}' could be found.")
+        return
+
+    for line in model_deployer.get_model_server_logs(
+        served_models[0].uuid, follow=follow, tail=tail
+    ):
+        # don't pretty-print log lines that are already pretty-printed
+        if raw or line.startswith("\x1b["):
+            print(line)
+        else:
+            console.print(line)

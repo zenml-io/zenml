@@ -16,9 +16,14 @@ The Azure integration submodule provides a way to run ZenML pipelines in a cloud
 environment. Specifically, it allows the use of cloud artifact stores,
 and an `io` module to handle file operations on Azure Blob Storage.
 """
+from typing import List
 
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import AZURE
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
+
+AZURE_ARTIFACT_STORE_FLAVOR = "azure"
 
 
 class AzureIntegration(Integration):
@@ -28,9 +33,16 @@ class AzureIntegration(Integration):
     REQUIREMENTS = ["adlfs==2021.10.0"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        from zenml.integrations.azure import artifact_stores  # noqa
+    def flavors(cls) -> List[FlavorWrapper]:
+        """Declares the flavors for the integration."""
+        return [
+            FlavorWrapper(
+                name=AZURE_ARTIFACT_STORE_FLAVOR,
+                source="zenml.integrations.azure.artifact_stores.AzureArtifactStore",
+                type=StackComponentType.ARTIFACT_STORE,
+                integration=cls.NAME,
+            )
+        ]
 
 
 AzureIntegration.check_installation()
