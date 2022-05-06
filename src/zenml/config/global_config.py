@@ -219,14 +219,25 @@ class GlobalConfiguration(
         else:
             config_version = VersionInfo.parse(self.version)
             if self.version > curr_version:
-                raise RuntimeError(
+                logger.error(
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
-                    "Please update ZenML to at least match the global "
-                    "configuration version to avoid loss of information.",
+                    "This may happen if you recently downgraded ZenML to an "
+                    "earlier version, or if you have already used a more recent "
+                    "ZenML version on the same machine."
+                    "It is highly recommended that you update ZenML to at least "
+                    "match the global configuration version, otherwise you may "
+                    "run into unexpected issues such as model schema "
+                    "validation failures or even loss of information. As an "
+                    "alternative, if you run into incompatibility issues but "
+                    "do not want to update ZenML, you can use the `zenml clean` "
+                    "command to wipe your global configuration, profiles and "
+                    "stacks and restore ZenML to a clean and valid state.",
                     config_version,
                     curr_version,
                 )
+                return
+
             if config_version == curr_version:
                 return
 

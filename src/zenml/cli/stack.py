@@ -202,7 +202,7 @@ def register_stack(
 
 
 @stack.command("update", context_settings=dict(ignore_unknown_options=True))
-@click.argument("stack_name", type=str, required=True)
+@click.argument("stack_name", type=str, required=False)
 @click.option(
     "-m",
     "--metadata-store",
@@ -276,7 +276,7 @@ def register_stack(
     required=False,
 )
 def update_stack(
-    stack_name: str,
+    stack_name: Optional[str],
     metadata_store_name: Optional[str] = None,
     artifact_store_name: Optional[str] = None,
     orchestrator_name: Optional[str] = None,
@@ -288,6 +288,13 @@ def update_stack(
     experiment_tracker_name: Optional[str] = None,
 ) -> None:
     """Update a stack."""
+    cli_utils.print_active_profile()
+
+    repo = Repository()
+
+    active_stack_name = repo.active_stack_name
+    stack_name = stack_name or active_stack_name
+
     with console.status(f"Updating stack `{stack_name}`...\n"):
         repo = Repository()
         try:
@@ -377,7 +384,7 @@ def update_stack(
 @stack.command(
     "remove-component", context_settings=dict(ignore_unknown_options=True)
 )
-@click.argument("stack_name", type=str, required=True)
+@click.argument("stack_name", type=str, required=False)
 @click.option(
     "-c",
     "--container_registry",
@@ -427,7 +434,7 @@ def update_stack(
     required=False,
 )
 def remove_stack_component(
-    stack_name: str,
+    stack_name: Optional[str],
     container_registry_flag: Optional[bool] = False,
     step_operator_flag: Optional[bool] = False,
     secrets_manager_flag: Optional[bool] = False,
@@ -436,6 +443,14 @@ def remove_stack_component(
     experiment_tracker_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack."""
+
+    cli_utils.print_active_profile()
+
+    repo = Repository()
+
+    active_stack_name = repo.active_stack_name
+    stack_name = stack_name or active_stack_name
+
     with console.status(f"Updating stack `{stack_name}`...\n"):
         repo = Repository()
         try:

@@ -37,8 +37,8 @@ class CustomFormatter(logging.Formatter):
     grey: str = "\x1b[38;21m"
     pink: str = "\x1b[35m"
     green: str = "\x1b[32m"
-    yellow: str = "\x1b[33;21m"
-    red: str = "\x1b[31;21m"
+    yellow: str = "\x1b[33m"
+    red: str = "\x1b[31m"
     bold_red: str = "\x1b[31;1m"
     purple: str = "\x1b[1;35m"
     reset: str = "\x1b[0m"
@@ -68,7 +68,7 @@ class CustomFormatter(logging.Formatter):
             A string formatted according to specifications.
         """
         log_fmt = (
-            self.COLORS[LoggingLevels[ZENML_LOGGING_VERBOSITY]]
+            self.COLORS[LoggingLevels(record.levelno)]
             + self.format_template
             + self.reset
         )
@@ -78,12 +78,10 @@ class CustomFormatter(logging.Formatter):
         for quoted in quoted_groups:
             formatted_message = formatted_message.replace(
                 "`" + quoted + "`",
-                "`"
-                + self.reset
+                self.reset
                 + self.yellow
                 + quoted
-                + "`"
-                + self.COLORS.get(LoggingLevels[ZENML_LOGGING_VERBOSITY]),
+                + self.COLORS.get(LoggingLevels(record.levelno)),
             )
         return formatted_message
 
