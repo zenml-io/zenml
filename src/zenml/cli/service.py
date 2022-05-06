@@ -21,6 +21,7 @@ from typing import Optional
 import click
 from rich.markdown import Markdown
 
+from zenml.cli import cli_utils
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
@@ -140,8 +141,20 @@ def status_server() -> None:
     is_flag=True,
     help="Deprovisions local resources instead of suspending them.",
 )
-def down_service(force: bool = False) -> None:
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Deprovisions local resources instead of suspending them.",
+)
+def down_service(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the local zen service."""
+    if old_force:
+        force = old_force
+        cli_utils.warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
 
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:

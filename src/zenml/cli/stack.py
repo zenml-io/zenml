@@ -589,8 +589,16 @@ def describe_stack(stack_name: Optional[str]) -> None:
 @stack.command("delete")
 @click.argument("stack_name", type=str)
 @click.option("--yes", "-y", is_flag=True, required=False)
-def delete_stack(stack_name: str, yes: bool = False) -> None:
+@click.option("--force", "-f", "old_force", is_flag=True, required=False)
+def delete_stack(
+    stack_name: str, yes: bool = False, old_force: bool = False
+) -> None:
     """Delete a stack."""
+    if old_force:
+        yes = old_force
+        cli_utils.warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     cli_utils.print_active_profile()
     confirmation = yes or cli_utils.confirmation(
         f"This will delete stack '{stack_name}' from your repository. \n"
@@ -688,8 +696,20 @@ def up_stack() -> None:
     is_flag=True,
     help="Deprovisions local resources instead of suspending them.",
 )
-def down_stack(force: bool = False) -> None:
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Deprovisions local resources instead of suspending them.",
+)
+def down_stack(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the active stack deployment."""
+    if old_force:
+        force = old_force
+        cli_utils.warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     cli_utils.print_active_profile()
 
     stack_ = Repository().active_stack

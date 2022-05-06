@@ -539,10 +539,22 @@ def generate_stack_component_down_command(
         is_flag=True,
         help="Deprovisions local resources instead of suspending them.",
     )
+    @click.option(
+        "--force",
+        "-f",
+        "old_force",
+        is_flag=True,
+        help="DEPRECATED: Deprovisions local resources instead of suspending them.",
+    )
     def down_stack_component_command(
-        name: Optional[str] = None, force: bool = False
+        name: Optional[str] = None, force: bool = False, old_force: bool = False
     ) -> None:
         """Stops/Tears down the local deployment of a stack component."""
+        if old_force:
+            force = old_force
+            cli_utils.warning(
+                "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+            )
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
