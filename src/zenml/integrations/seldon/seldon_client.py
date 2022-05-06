@@ -16,7 +16,7 @@ import base64
 import json
 import re
 import time
-from typing import Dict, List, Optional
+from typing import Dict, Generator, List, Optional
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -828,6 +828,92 @@ class SeldonClient:
                 f"Unexpected exception when searching SeldonDeployment "
                 f"with labels '{labels or ''}' and field '{fields or ''}'"
             ) from e
+
+    def get_deployment_logs(
+        self,
+        name: str,
+        follow: bool = False,
+        tail: Optional[int] = None,
+    ) -> Generator[str, bool, None]:
+        """Get the logs of a Seldon Core deployment resource.
+
+        Args:
+            name: the name of the Seldon Core deployment to get logs for.
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that can be acccessed to get the service logs.
+
+        Raises:
+            SeldonClientError: if an unknown error occurs while fetching
+                the logs.
+        """
+        logger.debug(f"Retrieving logs for SeldonDeployment resource: {name}")
+        try:
+            response = self._core_api.list_namespaced_pod(
+                namespace=self._namespace,
+                label_selector=f"seldon-deployment-id={name}",
+            )
+            logger.debug("Kubernetes API response: %s", response)
+            pods = response.items
+            if not pods:
+                raise SeldonClientError(
+                    f"The Seldon Core deployment {name} is not currently "
+                    f"running: no Kubernetes pods associated with it were found"
+                )
+            pod = pods[0]
+            pod_name = pod.metadata.name
+
+            containers = [c.name for c in pod.spec.containers]
+            init_containers = [c.name for c in pod.spec.init_containers]
+            container_statuses = {
+                c.name: c.started or c.restart_count
+                for c in pod.status.container_statuses
+            }
+
+            container = "default"
+            if container not in containers:
+                container = containers[0]
+            # some containers might not be running yet and have no logs to show,
+            # so we need to filter them out
+            if not container_statuses[container]:
+                container = init_containers[0]
+
+            logger.info(
+                f"Retrieving logs for pod: `{pod_name}` and container "
+                f"`{container}` in namespace `{self._namespace}`"
+            )
+            response = self._core_api.read_namespaced_pod_log(
+                name=pod_name,
+                namespace=self._namespace,
+                container=container,
+                follow=follow,
+                tail_lines=tail,
+                _preload_content=False,
+            )
+        except k8s_client.rest.ApiException as e:
+            logger.error(
+                "Exception when fetching logs for SeldonDeployment resource "
+                "%s: %s",
+                name,
+                str(e),
+            )
+            raise SeldonClientError(
+                f"Unexpected exception when fetching logs for SeldonDeployment "
+                f"resource: {name}"
+            ) from e
+
+        try:
+            while True:
+                line = response.readline().decode("utf-8").rstrip("\n")
+                if not line:
+                    return
+                stop = yield line
+                if stop:
+                    return
+        finally:
+            response.release_conn()
 
     def create_or_update_secret(
         self,
