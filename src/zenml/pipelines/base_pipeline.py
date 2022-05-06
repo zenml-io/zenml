@@ -40,6 +40,7 @@ from zenml.exceptions import (
     PipelineConfigurationError,
     PipelineInterfaceError,
     StackValidationError,
+    DuplicatedConfigurationError
 )
 from zenml.integrations.registry import integration_registry
 from zenml.io import fileio, utils
@@ -69,7 +70,7 @@ class BasePipelineMeta(type):
     """Pipeline Metaclass responsible for validating the pipeline definition."""
 
     def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+            mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BasePipelineMeta":
         """Saves argument names for later verification purposes"""
         cls = cast(Type["BasePipeline"], super().__new__(mcs, name, bases, dct))
@@ -290,8 +291,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         for step in self.steps.values():
             if (
-                step.custom_step_operator
-                and step.custom_step_operator not in available_step_operators
+                    step.custom_step_operator
+                    and step.custom_step_operator not in
+                    available_step_operators
             ):
                 raise StackValidationError(
                     f"Step '{step.name}' requires custom step operator "
@@ -307,11 +309,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step._has_been_called = False
 
     def run(
-        self,
-        *,
-        run_name: Optional[str] = None,
-        schedule: Optional[Schedule] = None,
-        **additional_parameters: Any,
+            self,
+            *,
+            run_name: Optional[str] = None,
+            schedule: Optional[Schedule] = None,
+            **additional_parameters: Any,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -342,7 +344,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
         dag_filepath = utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
+            inspect.currentframe().f_back.f_code.co_filename
+            # type: ignore[union-attr] # noqa
         )
         runtime_configuration = RuntimeConfiguration(
             run_name=run_name,
@@ -374,14 +377,15 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
     def with_config(
-        self: T, config_file: str, overwrite_step_parameters: bool = False
+            self: T, config_file: str, overwrite_step_parameters: bool = False
     ) -> T:
         """Configures this pipeline using a yaml file.
 
         Args:
             config_file: Path to a yaml file which contains configuration
                 options for running this pipeline. See
-                https://docs.zenml.io/features/pipeline-configuration#setting-step-parameters-using-a-config-file
+                https://docs.zenml.io/features/pipeline-configuration#setting
+                -step-parameters-using-a-config-file
                 for details regarding the specification of this file.
             overwrite_step_parameters: If set to `True`, values from the
                 configuration file will overwrite configuration parameters
@@ -401,7 +405,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self
 
     def _read_config_steps(
-        self, steps: Dict[str, Dict[str, Any]], overwrite: bool = False
+            self, steps: Dict[str, Dict[str, Any]], overwrite: bool = False
     ) -> None:
         """Reads and sets step parameters from a config file.
 
@@ -449,11 +453,19 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         step_name,
                     )
                 if previous_value and not overwrite:
-                    logger.warning(
-                        "Parameter '%s' from configuration yaml will NOT be "
-                        "set as a configuration object was given when "
-                        "creating the step. Set `overwrite_step_parameters="
-                        "True` when setting the configuration yaml to always "
-                        "use the options specified in the yaml file.",
-                        parameter,
+                    raise DuplicatedConfigurationError(
+                        "The value for parameter '{}' is set twice for step "
+                        "'{}' ({} vs. {}). This can happen when you "
+                        "instantiate your step with a step configuration that "
+                        "sets the parameter, while also setting the same "
+                        "parameter within a config file that is added to the "
+                        "pipeline instance using the `.with_config()` method. "
+                        "Make sure each parameter is only defined **once**. \n"
+                        "While it is not recommended you can overwrite the "
+                        "step configuration using the configuration file: \n"
+                        "`.with_config('config.yaml', "
+                        "overwrite_step_parameters=True)".format(parameter,
+                                                                 step_name,
+                                                                 previous_value,
+                                                                 value)
                     )
