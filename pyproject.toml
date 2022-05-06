@@ -30,9 +30,9 @@ classifiers = [
 exclude = [
     "docs",
     "*.tests",
-    "*.tests",
     "*.tests.*",
     "tests.*",
+    "tests",
     "legacy",
     "tests",
     "examples"
@@ -233,6 +233,8 @@ module = [
     "lightgbm.*",
     "scipy.*",
     "deepchecks.*",
+    "boto3.*",
+    "botocore.*",
 ]
 ignore_missing_imports = true
 

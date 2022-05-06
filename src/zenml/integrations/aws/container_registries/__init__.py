@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,17 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
-from rich.console import Console
-from rich.theme import Theme
-
-zenml_custom_theme = Theme(
-    {
-        "info": "dim cyan",
-        "warning": "yellow",
-        "danger": "bold red",
-        "title": "bold cyan underline",
-        "error": "red",
-    }
+from zenml.integrations.aws.container_registries.aws_container_registry import (  # noqa
+    AWSContainerRegistry,
 )
-console = Console(theme=zenml_custom_theme, markup=True)

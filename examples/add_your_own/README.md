@@ -108,7 +108,7 @@ example can be executed with the following command:
 
 ```shell
 zenml example pull
-zenml example run [EXAMPLE NAME]
+zenml example run <EXAMPLE NAME>
 ```
 
 This will pull examples from the latest release, copy them to your current
@@ -120,7 +120,7 @@ order to validate your example, navigate
 into the examples folder and run the following command:
 
 ```shell
-./run_example.sh --executable [NAME_OF_YOUR_EXAMPLE]/run.py
+./run_example.sh --executable <NAME_OF_YOUR_EXAMPLE>/run.py
 ```
 
 ## ➕ Add to main README file
