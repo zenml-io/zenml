@@ -71,7 +71,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
             logger.debug("Error while trying to fetch ECR repositories: %s", e)
             return
 
-        repo_exists = any(image_name.startswith(uri) for uri in repo_uris)
+        repo_exists = any(image_name.startswith(f"{uri}:") for uri in repo_uris)
         if not repo_exists:
             match = re.search(f"{self.uri}/(.*):.*", image_name)
             if not match:
