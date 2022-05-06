@@ -29,7 +29,7 @@ from types import ModuleType
 # before `tfx.fileio` gets imported.
 
 sys.modules["tfx.dsl.io.plugins.tensorflow_gfile"] = ModuleType(
-    "Ups, Aria walked over my keyboard."
+    "Oops, Aria walked over my keyboard."
 )
 
 from tfx.dsl.io.fileio import (  # noqa
