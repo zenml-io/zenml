@@ -49,7 +49,7 @@ class AWSIntegration(Integration):
             ),
             FlavorWrapper(
                 name=AWS_CONTAINER_REGISTRY_FLAVOR,
-                source="zenml.integrations.aws.container_registries.AWSSecretsManager",
+                source="zenml.integrations.aws.container_registries.AWSContainerRegistry",
                 type=StackComponentType.CONTAINER_REGISTRY,
                 integration=cls.NAME,
             ),

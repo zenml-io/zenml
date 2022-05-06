@@ -42,8 +42,6 @@ class AWSContainerRegistry(BaseContainerRegistry):
     @validator("uri")
     def validate_aws_uri(cls, uri: str) -> str:
         """Validates that the URI is in the correct format."""
-        uri = uri.rstrip("/")
-
         if "/" in uri:
             raise ValueError(
                 "Property `uri` can not contain a `/`. An example of a valid "

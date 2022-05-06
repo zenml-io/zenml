@@ -14,6 +14,8 @@
 import re
 from typing import ClassVar
 
+from pydantic import validator
+
 from zenml.enums import ContainerRegistryFlavor, StackComponentType
 from zenml.stack import StackComponent
 from zenml.utils import docker_utils
@@ -31,6 +33,11 @@ class BaseContainerRegistry(StackComponent):
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
     FLAVOR: ClassVar[str] = ContainerRegistryFlavor.DEFAULT
+
+    @validator("uri")
+    def strip_trailing_slash(cls, uri: str) -> str:
+        """Removes trailing slashes from the URI."""
+        return uri.rstrip("/")
 
     @property
     def is_local(self) -> bool:
