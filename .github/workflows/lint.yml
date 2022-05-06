@@ -34,7 +34,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
-          zenml integration install -f --ignore-integration feast
+          zenml integration install -y --ignore-integration feast
           pip install click~=8.0.3
 
       - name: Lint
