@@ -39,7 +39,9 @@ runs:
           .venv
           poetry.lock
         # Cache the complete venv dir for a given os, python version,
-        # pyproject.toml, and the current calendar week
+        # pyproject.toml, the current calendar week and the value of a github
+        # secret. Modifying this secret value enables manual invalidation of the
+        # cache in case it is in some erroneous state
         key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}-${{ secrets.GH_ACTIONS_CACHE_KEY }}
 
     - name: Install Project
