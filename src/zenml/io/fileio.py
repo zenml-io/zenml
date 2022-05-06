@@ -11,6 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import sys
+from types import ModuleType
+
+# IMPORTANT: Our io module is using the `fileio` module of tfx and the fileio
+# module of tfx imports tries to import the `tensorflow_gfile` module.
+#
+# At a first glance, this seems like an unused import in the `tfx` codebase,
+# however, in reality, when someone imports this module, the module
+# checks whether `tensorflow` is installed and if it is, it creates a filesystem
+# around it and registers it to the filesystem registry (and if tf is not
+# installed, it does nothing).
+#
+# The problem is if Tensorflow is indeed installed, it takes a quite a long time
+# to set it up and there is no point in the code where we are utilizing the
+# generated filesystem. That's why it is now blocked by a mock module,
+# before tfx.fileio gets imported.
+
+sys.modules["tfx.dsl.io.plugins.tensorflow_gfile"] = ModuleType(
+    "Ups, Aria walked over my keyboard."
+)
+
 from tfx.dsl.io.fileio import (  # noqa
     copy,
     exists,

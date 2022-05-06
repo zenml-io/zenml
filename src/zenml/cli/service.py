@@ -28,8 +28,6 @@ from zenml.console import console
 from zenml.enums import CliCategories
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
-from zenml.services import ServiceRegistry, ServiceState
-from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
 
 logger = get_logger(__name__)
 SERVICE_CONFIG_FILENAME = "ZenService.json"
@@ -61,6 +59,9 @@ def explain_service() -> None:
 @click.option("--profile", type=str, default=None)
 def up_server(port: int, profile: Optional[str]) -> None:
     """Provisions resources for the zen service."""
+    from zenml.services import ServiceRegistry
+    from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
+
     if profile is not None:
         profile_configuration = GlobalConfiguration().get_profile(profile)
         if profile_configuration is None:
@@ -113,6 +114,8 @@ def up_server(port: int, profile: Optional[str]) -> None:
 @service.command("status")
 def status_server() -> None:
     """Get the status of the zen service."""
+    from zenml.services import ServiceRegistry, ServiceState
+
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:
             zervice = ServiceRegistry().load_service_from_json(f.read())
@@ -141,6 +144,7 @@ def status_server() -> None:
 )
 def down_service(force: bool = False) -> None:
     """Suspends resources of the local zen service."""
+    from zenml.services import ServiceRegistry
 
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:

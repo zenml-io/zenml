@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import click
 
@@ -25,8 +25,10 @@ from zenml.cli.utils import (
     warning,
 )
 from zenml.enums import CliCategories, StackComponentType
-from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
+
+if TYPE_CHECKING:
+    from zenml.model_deployers import BaseModelDeployer
 
 
 @cli.group(

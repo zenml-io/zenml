@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import getpass
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import click
 
@@ -29,8 +29,9 @@ from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
-from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+
+if TYPE_CHECKING:
+    from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 
 
 def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
@@ -103,6 +104,10 @@ def register_secret(
         secret_key: Key of the secret key-value pair
         secret_value: Value of the secret Key-value pair
     """
+    from zenml.secret.secret_schema_class_registry import (
+        SecretSchemaClassRegistry,
+    )
+
     # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
     #   additional option for the user on top of the interactive
     if not validate_kv_pairs(secret_key, secret_value):
@@ -246,7 +251,8 @@ def update_secret(
 
     if not validate_kv_pairs(secret_key, secret_value):
         error(
-            "To directly pass in a key-value pair for updating, you must pass in values for both."
+            "To directly pass in a key-value pair for updating, you must pass "
+            "in values for both."
         )
 
     updated_contents = {"name": name}
@@ -329,7 +335,8 @@ def delete_all_secrets(
             secrets manager
     """
     confirmation_response = confirmation(
-        "This will delete all secrets and the `secrets.yaml` file. Are you sure you want to proceed?"
+        "This will delete all secrets and the `secrets.yaml` file. Are you "
+        "sure you want to proceed?"
     )
     if not confirmation_response:
         console.print("Aborting secret set deletion...")

@@ -33,24 +33,21 @@ from pydantic import BaseModel
 from rich import box, table
 from rich.text import Text
 
-from zenml.config.profile_config import ProfileConfiguration
 from zenml.console import console
 from zenml.constants import IS_DEBUG_ENV
-from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.model_deployers import BaseModelDeployer
-from zenml.repository import Repository
-from zenml.secret import BaseSecretSchema
-from zenml.services import BaseService
-from zenml.services.service_status import ServiceState
-from zenml.stack import StackComponent
-from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
-from zenml.zen_stores.models.flavor_wrapper import validate_flavor_source
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
+    from zenml.config.profile_config import ProfileConfiguration
+    from zenml.enums import StackComponentType
     from zenml.integrations.integration import IntegrationMeta
+    from zenml.model_deployers import BaseModelDeployer
+    from zenml.secret import BaseSecretSchema
+    from zenml.services import BaseService
+    from zenml.stack import StackComponent
+    from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
 
 
 def title(text: str) -> None:
@@ -174,7 +171,7 @@ def format_integration_list(
 
 
 def print_stack_component_list(
-    components: List[ComponentWrapper],
+    components: List["ComponentWrapper"],
     active_component_name: Optional[str] = None,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
@@ -207,7 +204,7 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    config: Dict[StackComponentType, str], active: bool, stack_name: str
+    config: Dict["StackComponentType", str], active: bool, stack_name: str
 ) -> None:
     """Prints the configuration options of a stack."""
     stack_caption = f"'{stack_name}' stack"
@@ -233,11 +230,12 @@ def print_stack_configuration(
 
 
 def print_flavor_list(
-    flavors: List[FlavorWrapper],
-    component_type: StackComponentType,
+    flavors: List["FlavorWrapper"],
+    component_type: "StackComponentType",
 ) -> None:
     """Prints the list of flavors."""
     from zenml.integrations.registry import integration_registry
+    from zenml.utils.source_utils import validate_flavor_source
 
     flavor_table = []
     for f in flavors:
@@ -284,7 +282,7 @@ def print_flavor_list(
 
 
 def print_stack_component_configuration(
-    component: StackComponent, display_name: str, active_status: bool
+    component: "StackComponent", active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component."""
     title = f"{component.TYPE.value.upper()} Component Configuration"
@@ -311,6 +309,8 @@ def print_stack_component_configuration(
 
 def print_active_profile() -> None:
     """Print active profile."""
+    from zenml.repository import Repository
+
     repo = Repository()
     scope = "local" if repo.root else "global"
     declare(
@@ -320,12 +320,14 @@ def print_active_profile() -> None:
 
 def print_active_stack() -> None:
     """Print active stack."""
+    from zenml.repository import Repository
+
     repo = Repository()
     declare(f"Running with active stack: '{repo.active_stack_name}'")
 
 
 def print_profile(
-    profile: ProfileConfiguration,
+    profile: "ProfileConfiguration",
     active: bool,
 ) -> None:
     """Prints the configuration options of a profile.
@@ -441,7 +443,7 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: BaseSecretSchema, hide_secret: bool = True
+    secret: "BaseSecretSchema", hide_secret: bool = True
 ) -> None:
     """Given a secret set print all key value pairs associated with the secret
 
@@ -488,7 +490,7 @@ def print_secrets(secrets: List[str]) -> None:
     console.print(rich_table)
 
 
-def get_service_status_emoji(service: BaseService) -> str:
+def get_service_status_emoji(service: "BaseService") -> str:
     """Get the rich emoji representing the operational status of a Service.
 
     Args:
@@ -497,6 +499,8 @@ def get_service_status_emoji(service: BaseService) -> str:
     Returns:
         String representing the emoji.
     """
+    from zenml.services.service_status import ServiceState
+
     if service.status.state == ServiceState.ACTIVE:
         return ":white_check_mark:"
     if service.status.state == ServiceState.INACTIVE:
@@ -507,7 +511,7 @@ def get_service_status_emoji(service: BaseService) -> str:
 
 
 def pretty_print_model_deployer(
-    model_services: List[BaseService], model_deployer: BaseModelDeployer
+    model_services: List["BaseService"], model_deployer: "BaseModelDeployer"
 ) -> None:
     """Given a list of served_models print all key value pairs associated with
     the secret
@@ -534,7 +538,7 @@ def pretty_print_model_deployer(
 
 
 def print_served_model_configuration(
-    model_service: BaseService, model_deployer: BaseModelDeployer
+    model_service: "BaseService", model_deployer: "BaseModelDeployer"
 ) -> None:
     """Prints the configuration of a model_service.
 

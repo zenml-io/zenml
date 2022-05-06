@@ -27,7 +27,7 @@ from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
-from zenml.zen_stores.models.flavor_wrapper import validate_flavor_source
+from zenml.utils.source_utils import validate_flavor_source
 
 
 def _get_required_properties(
@@ -167,9 +167,7 @@ def generate_stack_component_describe_command(
             # there is no component of this type in the active stack
             is_active = False
 
-        cli_utils.print_stack_component_configuration(
-            component, singular_display_name, is_active
-        )
+        cli_utils.print_stack_component_configuration(component, is_active)
 
     return describe_stack_component_command
 

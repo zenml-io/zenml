@@ -31,7 +31,6 @@ from zenml.cli.utils import (
 )
 from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -49,6 +48,8 @@ def integration() -> None:
 @integration.command(name="list", help="List the available integrations.")
 def list_integrations() -> None:
     """List all available integrations with their installation status."""
+    from zenml.integrations.registry import integration_registry
+
     formatted_table = format_integration_list(
         list(integration_registry.integrations.items())
     )
@@ -65,6 +66,8 @@ def list_integrations() -> None:
 @click.argument("integration_name", required=False, default=None)
 def get_requirements(integration_name: Optional[str] = None) -> None:
     """List all requirements for the chosen integration."""
+    from zenml.integrations.registry import integration_registry
+
     try:
         requirements = integration_registry.select_integration_requirements(
             integration_name
@@ -109,6 +112,8 @@ def install(
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
+    from zenml.integrations.registry import integration_registry
+
     if not integrations:
         # no integrations specified, use all registered integrations
         integrations = set(integration_registry.integrations.keys())
@@ -173,6 +178,8 @@ def uninstall(integrations: Tuple[str], force: bool = False) -> None:
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
+    from zenml.integrations.registry import integration_registry
+
     if not integrations:
         # no integrations specified, use all registered integrations
         integrations = tuple(integration_registry.integrations.keys())
