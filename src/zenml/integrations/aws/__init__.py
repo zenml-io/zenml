@@ -23,6 +23,7 @@ from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
 AWS_SECRET_MANAGER_FLAVOR = "aws"
+AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
 
 
 class AWSIntegration(Integration):
@@ -45,7 +46,13 @@ class AWSIntegration(Integration):
                 source="zenml.integrations.aws.secrets_managers.AWSSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
-            )
+            ),
+            FlavorWrapper(
+                name=AWS_CONTAINER_REGISTRY_FLAVOR,
+                source="zenml.integrations.aws.container_registries.AWSContainerRegistry",
+                type=StackComponentType.CONTAINER_REGISTRY,
+                integration=cls.NAME,
+            ),
         ]
 
 
