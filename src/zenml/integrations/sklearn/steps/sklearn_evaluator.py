@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import pandas as pd
-import tensorflow as tf
+from sklearn.base import BaseEstimator
 from sklearn.metrics import classification_report
 
 from zenml.steps.step_interfaces.base_evaluator_step import (
@@ -35,7 +35,7 @@ class SklearnEvaluator(BaseEvaluatorStep):
     def entrypoint(  # type: ignore[override]
         self,
         dataset: pd.DataFrame,
-        model: tf.keras.Model,
+        model: BaseEstimator,
         config: SklearnEvaluatorConfig,
     ) -> dict:  # type: ignore[type-arg]
         """Method which is responsible for the computation of the evaluation
