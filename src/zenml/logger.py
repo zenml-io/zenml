@@ -168,6 +168,7 @@ def init_logging() -> None:
         "urllib3",
         "azure.core.pipeline.policies.http_logging_policy",
         "grpc",
+        "requests",
     ]
     for logger_name in supressed_logger_names:
         logging.getLogger(logger_name).setLevel(logging.WARNING)
