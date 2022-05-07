@@ -69,3 +69,5 @@ class KerasMaterializer(BaseMaterializer):
         ) as f:
             model.save(f.name)
             fileio.copy(f.name, filepath)
+        f.close()
+        fileio.remove(f.name)
