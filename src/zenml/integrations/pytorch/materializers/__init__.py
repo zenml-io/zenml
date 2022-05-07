@@ -11,6 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.pytorch.materializers.pytorch_materializer import (  # noqa
-    PyTorchMaterializer,
+from zenml.integrations.pytorch.materializers.pytorch_dataloader_materializer import (  # noqa
+    PyTorchDataLoaderMaterializer,
+)
+from zenml.integrations.pytorch.materializers.pytorch_module_materializer import (  # noqa
+    PyTorchModuleMaterializer,
 )
