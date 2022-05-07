@@ -65,7 +65,7 @@ class KerasMaterializer(BaseMaterializer):
 
         # Create a temporary file to store the model
         with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".hdf5", delete=True
+            mode="w", suffix=".hdf5", delete=False
         ) as f:
             model.save(f.name)
             fileio.copy(f.name, filepath)
