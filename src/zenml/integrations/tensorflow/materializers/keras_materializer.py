@@ -69,5 +69,7 @@ class KerasMaterializer(BaseMaterializer):
         ) as f:
             model.save(f.name)
             fileio.copy(f.name, filepath)
+
+        # Close and remove the temporary file
         f.close()
         fileio.remove(f.name)

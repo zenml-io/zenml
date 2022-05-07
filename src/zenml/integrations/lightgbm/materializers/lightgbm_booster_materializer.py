@@ -65,3 +65,7 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
             booster.save_model(f.name)
             # Copy it into artifact store
             fileio.copy(f.name, filepath)
+
+        # Close and remove the temporary file
+        f.close()
+        fileio.remove(f.name)
