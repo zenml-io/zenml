@@ -169,6 +169,8 @@ def init_logging() -> None:
         "azure.core.pipeline.policies.http_logging_policy",
         "grpc",
         "requests",
+        "kfp",
+        "tensorflow",
     ]
     for logger_name in supressed_logger_names:
         logging.getLogger(logger_name).setLevel(logging.WARNING)
