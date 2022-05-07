@@ -35,7 +35,7 @@ def get_installed_integrations() -> List[Dict[str, str]]:
 
     list_of_dicts = []
     for name, integration_impl in integration_registry.integrations.items():
-        is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
+        is_installed = integration_impl.check_installation()
         if is_installed:
             list_of_dicts.append(
                 {
@@ -61,7 +61,7 @@ def get_environment() -> str:
         return "native"
 
 
-def get_system_details():
+def get_system_details() -> Dict[str, str]:
     info = {
         "ZenML version": __version__,
         "Install Path": Path(__file__).resolve().parent,
