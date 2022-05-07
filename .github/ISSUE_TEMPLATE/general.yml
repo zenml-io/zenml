@@ -18,7 +18,7 @@ If applicable, please enter the output of `python -c "import zenml.environment; 
 ```
 ...
 ```
-<!-- or if you're using ZenML prior to v0.8.0, manually include: OS, python version, ZenML version and installed integrations. -->
+<!-- or if you're using ZenML prior to v0.8.0, manually include: OS, python version, ZenML version, and installed integrations. -->
 
 
 <!-- Where possible please include a self-contained code snippet describing your bug: -->
