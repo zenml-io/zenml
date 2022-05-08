@@ -39,7 +39,14 @@ class FlavorRegistry:
     def register_default_flavors(self) -> None:
         """Registers the default built-in flavors."""
         from zenml.artifact_stores import LocalArtifactStore
-        from zenml.container_registries import BaseContainerRegistry
+        from zenml.container_registries import (
+            AzureContainerRegistry,
+            BaseContainerRegistry,
+            DockerHubContainerRegistry,
+            GCPContainerRegistry,
+            GitHubContainerRegistry,
+            GitLabContainerRegistry,
+        )
         from zenml.metadata_stores import (
             MySQLMetadataStore,
             SQLiteMetadataStore,
@@ -53,6 +60,11 @@ class FlavorRegistry:
             MySQLMetadataStore,
             LocalArtifactStore,
             BaseContainerRegistry,
+            AzureContainerRegistry,
+            DockerHubContainerRegistry,
+            GCPContainerRegistry,
+            GitHubContainerRegistry,
+            GitLabContainerRegistry,
             LocalSecretsManager,
         ]
         for flavor in default_flavors:
