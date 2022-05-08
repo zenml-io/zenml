@@ -31,13 +31,15 @@ def test_pipeline_run_single_file(
 ) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the same file."""
-    runner = CliRunner()
-
     os.chdir(files_dir)
     clean_repo.activate_root()
 
-    # Run Pipeline
-    runner.invoke(pipeline, ["run", "run.py", "-c", "config.yaml"])
+    # Run Pipeline using subprocess as runner.invoke seems to have issues with
+    #  pytest https://github.com/pallets/click/issues/824,
+    #  https://github.com/pytest-dev/pytest/issues/3344
+    subprocess.check_call(
+        ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"]
+    )
 
     # Assert that the pipeline ran successfully
     historic_pipeline = Repository().get_pipeline(pipeline_name=PIPELINE_NAME)
@@ -60,7 +62,7 @@ def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     |   |--step_file.py
     |config.yaml
     |run.py
-    """ ""
+    """
     os.chdir(files_dir)
     clean_repo.activate_root()
 
