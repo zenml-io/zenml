@@ -270,7 +270,7 @@ class ExamplesRepo:
                 branch_name.startswith("release/")
                 and branch.commit == self.repo.head.commit
             ):
-                return branch_name[len("release/"):]
+                return branch_name[len("release/") :]
 
         return None
 
