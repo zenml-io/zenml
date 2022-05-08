@@ -29,21 +29,16 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def get_installed_integrations() -> List[Dict[str, str]]:
+def get_installed_integrations() -> List[str]:
     """Returns list of installed integrations."""
     from zenml.integrations.registry import integration_registry
 
-    list_of_dicts = []
+    list_of_installed = []
     for name, integration_impl in integration_registry.integrations.items():
         is_installed = integration_impl.check_installation()
         if is_installed:
-            list_of_dicts.append(
-                {
-                    "INSTALLED": "True",
-                    "INTEGRATION": name,
-                }
-            )
-    return list_of_dicts
+            list_of_installed.append(name)
+    return list_of_installed
 
 
 def get_environment() -> str:
@@ -71,7 +66,7 @@ def get_system_details() -> Dict[str, str]:
         "Integrations": get_installed_integrations(),
     }
     return "\n".join(
-        "{:>30} {}".format(k + ":", str(v).replace("\n", " "))
+        "{:>10} {}".format(k + ":", str(v).replace("\n", " "))
         for k, v in info.items()
     )
 
