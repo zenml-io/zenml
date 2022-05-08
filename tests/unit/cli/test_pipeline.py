@@ -14,9 +14,6 @@
 import os
 import subprocess
 
-from click.testing import CliRunner
-
-from zenml.cli.pipeline import pipeline
 from zenml.enums import ExecutionStatus
 from zenml.repository import Repository
 
