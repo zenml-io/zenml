@@ -132,6 +132,12 @@ class StackComponent(BaseModel, ABC):
         """Cleans up resources after the step run is finished."""
 
     @property
+    def post_registration_message(self) -> Optional[str]:
+        """Optional message that will be printed after the stack component is
+        registered."""
+        return None
+
+    @property
     def validator(self) -> Optional["StackValidator"]:
         """The optional validator of the stack component.
 
