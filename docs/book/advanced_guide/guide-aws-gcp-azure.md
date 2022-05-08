@@ -21,10 +21,10 @@ step operators [guide](step-operators.md) for that!
 * Have an existing
   AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html)
   set up.
+* Make sure you have the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) set up.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl`
   and [configure](https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-connection/)
-  it to talk to your EKS cluster using the following command. Make sure you have
-  the `aws` cli set up first.
+  it to talk to your EKS cluster using the following command:
 
   ```powershell
   aws eks --region REGION update-kubeconfig --name CLUSTER_NAME
@@ -38,26 +38,26 @@ step operators [guide](step-operators.md) for that!
 * Have an existing
   GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart)
   set up.
+* Make sure you have the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) set up first.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl`
   and [configure](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl)
-  it to talk to your GKE cluster using the following command. Make sure you have
-  the Google Cloud CLI set up first.
+  it to talk to your GKE cluster using the following command:
 
   ```powershell
   gcloud container clusters get-credentials CLUSTER_NAME
   ```
 * [Install](https://www.kubeflow.org/docs/distributions/gke/deploy/overview/)
   Kubeflow Pipelines onto your cluster.
-{% endtab %}
+  {% endtab %}
 
 {% tab title="Azure" %}
 
 * Have an
   existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation)
   set up.
+* Make sure you have the [`az` CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) set up first.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and
-  it to talk to your AKS cluster using the following command. Make sure you have
-  the `az` cli set up first.
+  it to talk to your AKS cluster using the following command:
 
   ```powershell
   az aks get-credentials --resource-group RESOURCE_GROUP --name CLUSTER_NAME
@@ -66,16 +66,19 @@ step operators [guide](step-operators.md) for that!
   Kubeflow Pipelines onto your cluster.
 
 > Since Kubernetes v1.19, AKS has shifted
-> to [`containerd`](https://docs.microsoft.com/en-us/azure/aks/cluster-configuration#container-runtime-configuration)
+>
+to [`containerd`](https://docs.microsoft.com/en-us/azure/aks/cluster-configuration#container-runtime-configuration)
 > . However, the workflow controller installed with the Kubeflow installation
 > has `Docker` set as the default runtime. In order to make your pipelines work,
 > you have to change the value to one of the options
-> listed [here](https://argoproj.github.io/argo-workflows/workflow-executors/#workflow-executors)
+>
+listed [here](https://argoproj.github.io/argo-workflows/workflow-executors/#workflow-executors)
 > , preferably `k8sapi`.&#x20;
 >
 > This change has to be made by editing the `containerRuntimeExecutor` property
 > of the `ConfigMap` corresponding to the workflow controller. Run the following
-> commands to first know what config map to change and then to edit it to reflect
+> commands to first know what config map to change and then to edit it to
+> reflect
 > your new value.
 >
 > ```
@@ -92,9 +95,9 @@ the number of nodes in your cluster.
 {% endhint %}
 
 {% hint style="warning" %}
-If you are doing a manual install of the Kubeflow Pipelines, make sure that the
-service name for the ML pipeline is exactly `ml-pipeline` . This will ensure
-that ZenML can talk to your Kubeflow deployment.
+If you're installing Kubeflow Pipelines manually, make sure the Kubernetes 
+service is called exactly `ml-pipeline`. This is a requirement for ZenML to 
+connect to your Kubeflow Pipelines deployment.
 {% endhint %}
 
 ### Container Registry
@@ -207,14 +210,14 @@ new stack with these components that you have just created.
 1. Install the cloud provider and the `kubeflow` plugin
 
     ```powershell
-    zenml integration install <aws/gcp/azure>
+    zenml integration install <aws s3/gcp/azure>
     zenml integration install kubeflow
     ```
 
 2. Register the stack components
 
     ```powershell
-    zenml container-registry register cloud_registry --flavor=default --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
+    zenml container-registry register cloud_registry --flavor=<aws/gcp/azure> --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
     zenml orchestrator register cloud_orchestrator --flavor=kubeflow --custom_docker_base_image_name=YOUR_IMAGE
     zenml metadata-store register kubeflow_metadata_store --flavor=kubeflow
     zenml artifact-store register cloud_artifact_store --flavor=<s3/gcp/azure> --path=$PATH_TO_YOUR_BUCKET
