@@ -701,7 +701,7 @@ def up_stack() -> None:
     "-f",
     "old_force",
     is_flag=True,
-    help="DEPRECATED: Deprovisions local resources instead of suspending them.",
+    help="DEPRECATED: Deprovisions local resources instead of suspending them. Use `-y/--yes` instead.",
 )
 def down_stack(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the active stack deployment."""
@@ -849,7 +849,8 @@ def import_stack(
         if filename is None:
             filename = stack_name + ".yaml"
         data = read_yaml(filename)
-        cli_utils.declare(f"Using '{filename}' to import '{stack_name}' stack.")
+        cli_utils.declare(
+            f"Using '{filename}' to import '{stack_name}' stack.")
 
     # assert zenml version is the same
     if data["zenml_version"] != zenml.__version__:

@@ -544,7 +544,7 @@ def generate_stack_component_down_command(
         "-f",
         "old_force",
         is_flag=True,
-        help="DEPRECATED: Deprovisions local resources instead of suspending them.",
+        help="DEPRECATED: Deprovisions local resources instead of suspending them. Use `-y/--yes` instead.",
     )
     def down_stack_component_command(
         name: Optional[str] = None, force: bool = False, old_force: bool = False
@@ -703,7 +703,8 @@ def register_single_stack_component_cli_commands(
     )(get_command)
 
     # zenml stack-component describe
-    describe_command = generate_stack_component_describe_command(component_type)
+    describe_command = generate_stack_component_describe_command(
+        component_type)
     command_group.command(
         "describe",
         help=f"Show details about the (active) {singular_display_name}.",
@@ -716,7 +717,8 @@ def register_single_stack_component_cli_commands(
     )(list_command)
 
     # zenml stack-component register
-    register_command = generate_stack_component_register_command(component_type)
+    register_command = generate_stack_component_register_command(
+        component_type)
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "register",

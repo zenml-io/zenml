@@ -108,7 +108,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     "old_force",
     is_flag=True,
     help="DEPRECATED: Force the installation of the required packages. This will skip the "
-    "confirmation step and reinstall existing packages as well",
+    "confirmation step and reinstall existing packages as well. Use `-y/--yes` instead.",
 )
 def install(
     integrations: Tuple[str],
@@ -191,7 +191,7 @@ def install(
     "old_force",
     is_flag=True,
     help="DEPRECATED: Force the uninstallation of the required packages. This will skip "
-    "the confirmation step",
+    "the confirmation step. Use `-y/--yes` instead.",
 )
 def uninstall(
     integrations: Tuple[str], force: bool = False, old_force: bool = False

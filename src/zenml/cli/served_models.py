@@ -217,7 +217,7 @@ def start_model_service(
     is_flag=True,
     help="DEPRECATED: Force the model server to stop. This will bypass any graceful "
     "shutdown processes and try to force the model server to stop immediately, "
-    "if possible.",
+    "if possible. Use `-y/--yes` instead.",
 )
 @click.pass_obj
 def stop_model_service(
@@ -274,7 +274,7 @@ def stop_model_service(
     is_flag=True,
     help="DEPRECATED: Force the model server to stop and delete. This will bypass any "
     "graceful shutdown processes and try to force the model server to stop and "
-    "delete immediately, if possible.",
+    "delete immediately, if possible. Use `-y/--yes` instead.",
 )
 @click.pass_obj
 def delete_model_service(

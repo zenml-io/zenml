@@ -145,7 +145,7 @@ def status_server() -> None:
     "-f",
     "old_force",
     is_flag=True,
-    help="DEPRECATED: Deprovisions local resources instead of suspending them.",
+    help="DEPRECATED: Deprovisions local resources instead of suspending them. Use `-y/--yes` instead.",
 )
 def down_service(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the local zen service."""

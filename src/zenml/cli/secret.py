@@ -320,7 +320,7 @@ def delete_secret_set(
     "-f",
     "old_force",
     is_flag=True,
-    help="DEPRECATED: Force the deletion of all secrets",
+    help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` instead.",
     type=click.BOOL,
 )
 @click.pass_obj

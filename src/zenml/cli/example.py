@@ -270,7 +270,7 @@ class ExamplesRepo:
                 branch_name.startswith("release/")
                 and branch.commit == self.repo.head.commit
             ):
-                return branch_name[len("release/") :]
+                return branch_name[len("release/"):]
 
         return None
 
@@ -574,7 +574,7 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     "-f",
     "old_force",
     is_flag=True,
-    help="DEPRECATED: Force the redownload of the examples folder to the ZenML config "
+    help="DEPRECATED: Force the redownload of the examples folder to the ZenML config. Use `-y/--yes` instead."
     "folder.",
 )
 @click.option(
@@ -683,7 +683,7 @@ def pull(
     is_flag=True,
     help="DEPRECATED: Force the run of the example. This deletes the .zen folder from the "
     "example folder and force installs all necessary integration "
-    "requirements.",
+    "requirements. Use `-y/--yes` instead.",
 )
 @click.option(
     "--shell-executable",
