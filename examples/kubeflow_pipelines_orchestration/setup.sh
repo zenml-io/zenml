@@ -24,7 +24,7 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install kubeflow tensorflow -f
+  zenml integration install kubeflow tensorflow -y
 }
 
 post_run () {
