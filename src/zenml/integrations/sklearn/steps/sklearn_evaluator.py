@@ -42,7 +42,7 @@ class SklearnEvaluator(BaseEvaluatorStep):
 
         Args:
             dataset: a pandas Dataframe which represents the test dataset
-            model: a trained tensorflow Keras model
+            model: a trained sklearn model
             config: the configuration for the step
         Returns:
             a dictionary which has the evaluation report
