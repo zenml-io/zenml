@@ -31,6 +31,7 @@ import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
+from rich.style import Style
 from rich.text import Text
 
 from zenml.config.profile_config import ProfileConfiguration
@@ -53,13 +54,15 @@ if TYPE_CHECKING:
     from zenml.integrations.integration import IntegrationMeta
 
 
-def title(text: str) -> None:
+def title(
+    text: str, custom_style: Optional[Union[str, Style]] = "title"
+) -> None:
     """Echo a title formatted string on the CLI.
 
     Args:
       text: Input text string.
     """
-    console.print(text.upper(), style="title")
+    console.print(text.upper(), style=custom_style)
 
 
 def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
@@ -77,13 +80,15 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
     return click.confirm(click.style(text, fg="yellow"), *args, **kwargs)
 
 
-def declare(text: Union[str, Text]) -> None:
+def declare(
+    text: Union[str, Text], custom_style: Optional[Union[str, Style]] = "info"
+) -> None:
     """Echo a declaration on the CLI.
 
     Args:
       text: Input text string.
     """
-    console.print(text, style="info")
+    console.print(text, style=custom_style)
 
 
 def error(text: str) -> None:
@@ -99,13 +104,15 @@ def error(text: str) -> None:
     # console.print(text, style="error")
 
 
-def warning(text: str) -> None:
+def warning(
+    text: str, custom_style: Optional[Union[str, Style]] = "warning"
+) -> None:
     """Echo a warning string on the CLI.
 
     Args:
       text: Input text string.
     """
-    console.print(text, style="warning")
+    console.print(text, style=custom_style)
 
 
 def pretty_print(obj: Any) -> None:
@@ -163,12 +170,14 @@ def format_integration_list(
     can then be printed in a table style using cli_utils.print_table."""
     list_of_dicts = []
     for name, integration_impl in integrations:
-        is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
+        # type: ignore[attr-defined]
+        is_installed = integration_impl.check_installation()
         list_of_dicts.append(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else "",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
+                # type: ignore[attr-defined]
+                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
             }
         )
     return list_of_dicts
