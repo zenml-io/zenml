@@ -72,7 +72,7 @@ class AWSSecretsManager(BaseSecretsManager):
         secret_value = jsonify_secret_contents(secret)
 
         kwargs = {"Name": secret.name, "SecretString": secret_value}
-        # TODO [LOW]: Catch error if secret name already exists and use
+        # TODO [ENG-872]: Catch error if secret name already exists and use
         #  SecretExistsError instead.
         self.CLIENT.create_secret(**kwargs)
 

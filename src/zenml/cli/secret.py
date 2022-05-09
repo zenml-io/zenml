@@ -104,7 +104,7 @@ def register_secret(
         secret_key: Key of the secret key-value pair
         secret_value: Value of the secret Key-value pair
     """
-    # TODO [MEDIUM]: Formatting for `zenml secret register --help` currently
+    # TODO [ENG-871]: Formatting for `zenml secret register --help` currently
     #  broken.
     # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
     #   additional option for the user on top of the interactive
