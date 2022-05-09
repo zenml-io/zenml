@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The GCP integration submodule provides a way to access the gcp secrets manager
+The GCP secrets manager integration submodule provides a way to access the gcp secrets manager
 from within you ZenML Pipeline runs.
 """
 from typing import List
