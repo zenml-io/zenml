@@ -1,10 +1,6 @@
 # Table of contents
 
-* [ZenML Docs](index.md)
-
-## Introduction
-
-* [ZenML](introduction/whats_zenml.md)
+* [Introduction](index.md)
 * [Quickstart](introduction/quickstart-guide.md)
 * [Core Concepts](introduction/core-concepts.md)
 
