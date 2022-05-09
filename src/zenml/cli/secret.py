@@ -308,16 +308,24 @@ def delete_secret_set(
 
 @secret.command("cleanup")
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
     "force",
     is_flag=True,
     help="Force the deletion of all secrets",
     type=click.BOOL,
 )
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` instead.",
+    type=click.BOOL,
+)
 @click.pass_obj
 def delete_all_secrets(
-    secrets_manager: "BaseSecretsManager", force: bool
+    secrets_manager: "BaseSecretsManager", force: bool, old_force: bool
 ) -> None:
     """Delete all secrets.
 
@@ -328,6 +336,11 @@ def delete_all_secrets(
             This might have differing implications depending on the underlying
             secrets manager
     """
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     confirmation_response = confirmation(
         "This will delete all secrets and the `secrets.yaml` file. Are you sure you want to proceed?"
     )

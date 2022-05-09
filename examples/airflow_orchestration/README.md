@@ -99,13 +99,13 @@ In order to clean up, tear down the Airflow stack and delete the remaining ZenML
 references.
 
 ```shell
-zenml stack down --force
+zenml stack down --yes
 rm -rf zenml_examples
 ```
 
 # 📜 Learn more
 
-Our docs regarding the airflow orchestrator integration can be found [here](TODO: Link to docs).
+Our docs regarding the Airflow orchestrator integration can be found [here](TODO: Link to docs).
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in zenml
 check out our [docs](TODO: Link to docs)

@@ -12,7 +12,7 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install <INSERT ALL REQUIRED ZENML INTEGRATIONS> -f
+  zenml integration install <INSERT ALL REQUIRED ZENML INTEGRATIONS> -y
 }
 
 # Optional- not all examples need to clean up daemons
