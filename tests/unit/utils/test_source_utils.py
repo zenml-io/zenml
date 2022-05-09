@@ -108,6 +108,9 @@ def test_import_python_file_for_first_time(clean_repo, mocker, files_dir: Path):
     # Assert that sys path is unaffected
     assert len(sys.path) == 0
 
+    # Cleanup modules for future tests
+    del sys.modules[SOME_MODULE]
+
 
 def test_import_python_file_when_already_loaded(
     clean_repo, mocker, files_dir: Path
@@ -138,6 +141,9 @@ def test_import_python_file_when_already_loaded(
 
     # Assert that sys path is unaffected
     assert len(sys.path) == 0
+
+    # Cleanup modules for future tests
+    del sys.modules[SOME_MODULE]
 
 
 def test_import_python_file(clean_repo, mocker, files_dir: Path):
@@ -173,3 +179,7 @@ def test_import_python_file(clean_repo, mocker, files_dir: Path):
 
     # Assert that sys path is unaffected
     assert len(sys.path) == 0
+
+    # Cleanup modules for future tests
+    del sys.modules[MAIN_MODULE]
+    del sys.modules[SOME_MODULE]
