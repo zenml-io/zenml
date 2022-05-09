@@ -21,5 +21,5 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install airflow -f
+  zenml integration install airflow -y
 }

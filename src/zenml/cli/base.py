@@ -82,12 +82,18 @@ def init(path: Optional[Path]) -> None:
 
 @cli.command("clean")
 @click.option("--yes", "-y", type=click.BOOL, default=False)
-def clean(yes: bool = False) -> None:
+@click.option("--force", "-f", type=click.BOOL, default=False)
+def clean(yes: bool = False, force: bool = False) -> None:
     """Clean everything in repository.
 
     Args:
       yes: bool:  (Default value = False)
     """
+    if force:
+        yes = force
+        warning(
+            "The `--force` option will soon be deprecated. Please use `--yes` instead."
+        )
     if not yes:
         _ = confirmation(
             "This will completely delete all pipelines, their associated "
