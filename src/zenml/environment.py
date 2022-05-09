@@ -44,7 +44,8 @@ def get_environment() -> str:
         return "native"
 
 
-def get_system_details() -> Dict[str, str]:
+def get_system_details() -> str:
+    """Returns OS, python and ZenML information."""
     from zenml.integrations.registry import integration_registry
 
     info = {
