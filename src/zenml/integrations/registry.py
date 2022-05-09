@@ -108,5 +108,14 @@ class IntegrationRegistry(object):
                 f"{self.list_integration_names}"
             )
 
+    def get_installed_integrations(self) -> List[str]:
+        """Returns list of installed integrations."""
+        list_of_installed = []
+        for name, integration_impl in integration_registry.integrations.items():
+            is_installed = integration_impl.check_installation()
+            if is_installed:
+                list_of_installed.append(name)
+        return list_of_installed
+
 
 integration_registry = IntegrationRegistry()

@@ -15,7 +15,7 @@ import os
 import platform
 from importlib.util import find_spec
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
 import distro
 
@@ -27,18 +27,6 @@ if TYPE_CHECKING:
     from zenml.steps import StepEnvironment
 
 logger = get_logger(__name__)
-
-
-def get_installed_integrations() -> List[str]:
-    """Returns list of installed integrations."""
-    from zenml.integrations.registry import integration_registry
-
-    list_of_installed = []
-    for name, integration_impl in integration_registry.integrations.items():
-        is_installed = integration_impl.check_installation()
-        if is_installed:
-            list_of_installed.append(name)
-    return list_of_installed
 
 
 def get_environment() -> str:
