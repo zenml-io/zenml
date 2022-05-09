@@ -33,6 +33,7 @@ exclude = [
     "*.tests",
     "*.tests.*",
     "tests.*",
+    "tests",
     "legacy",
     "tests",
     "examples"
@@ -232,6 +233,8 @@ module = [
     "wandb.*",
     "lightgbm.*",
     "scipy.*",
+    "boto3.*",
+    "botocore.*",
 ]
 ignore_missing_imports = true
 

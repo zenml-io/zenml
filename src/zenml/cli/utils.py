@@ -119,7 +119,7 @@ def pretty_print(obj: Any) -> None:
     console.print(obj)
 
 
-def print_table(obj: List[Dict[str, Any]]) -> None:
+def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     """Prints the list of dicts in a table format. The input object should be a
     List of Dicts. Each item in that list represent a line in the Table. Each
     dict should have the same keys. The keys of the dict will be used as
@@ -127,9 +127,10 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
 
     Args:
       obj: A List containing dictionaries.
+      columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
-    column_names = [key.upper() for key in column_keys]
+    column_names = [columns.get(key, key.upper()) for key in column_keys]
     rich_table = table.Table(*column_names, box=box.HEAVY_EDGE)
 
     for dict_ in obj:
@@ -530,7 +531,9 @@ def pretty_print_model_deployer(
             }
         )
 
-    print_table(model_service_dicts)
+    print_table(
+        model_service_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
 
 
 def print_served_model_configuration(

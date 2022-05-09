@@ -75,6 +75,17 @@ class StoreType(StrEnum):
     REST = "rest"
 
 
+class ContainerRegistryFlavor(StrEnum):
+    """Flavors of container registries."""
+
+    DEFAULT = "default"
+    GITHUB = "github"
+    DOCKERHUB = "dockerhub"
+    GCP = "gcp"
+    AZURE = "azure"
+    GITLAB = "gitlab"
+
+
 class CliCategories(StrEnum):
     """All possible categories for CLI commands.
     Note: The order of the categories is important. The same

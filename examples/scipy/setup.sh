@@ -7,5 +7,5 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install sklearn -f
+  zenml integration install sklearn -y
 }

@@ -83,8 +83,8 @@ def init(path: Optional[Path]) -> None:
     )
 
 
-def _delete_local_artifact_metadata(force_delete: bool = False) -> None:
-    """Delete local metadata and artifact stores from the active stack.
+def _delete_local_files(force_delete: bool = False) -> None:
+    """Delete local files corresponding to the active stack.
 
     Args:
       force_delete: Whether to force delete the metadata and artifact stores."""
@@ -141,7 +141,7 @@ def _delete_local_artifact_metadata(force_delete: bool = False) -> None:
     "-l",
     is_flag=True,
     default=False,
-    help="Delete local metadata and artifact stores from the active stack.",
+    help="Delete local files relating to the active stack.",
 )
 def clean(yes: bool = False, local: bool = False) -> None:
     """Delete all ZenML metadata, artifacts, profiles and stacks.
@@ -153,7 +153,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
       local (flag; default value = False): If you want to delete local metadata and artifact stores from the active stack.
     """
     if local:
-        _delete_local_artifact_metadata(force_delete=yes)
+        _delete_local_files(force_delete=yes)
         return
 
     if not yes:
@@ -169,7 +169,8 @@ def clean(yes: bool = False, local: bool = False) -> None:
         local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
         if fileio.exists(str(local_zen_repo_config)):
             fileio.rmtree(str(local_zen_repo_config))
-            declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
+            declare(
+                f"Deleted local ZenML config from {local_zen_repo_config}.")
 
         # delete the profiles (and stacks)
         global_zen_config = Path(get_global_config_directory())

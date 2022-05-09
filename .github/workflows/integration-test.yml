@@ -46,6 +46,8 @@ jobs:
 
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
 
       - name: Install Linux System Dependencies
         if: runner.os=='Linux'
