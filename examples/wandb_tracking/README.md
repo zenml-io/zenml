@@ -36,7 +36,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow wandb -f
+zenml integration install tensorflow wandb -y
 
 # pull example
 zenml example pull wandb_tracking

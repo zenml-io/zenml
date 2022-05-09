@@ -30,7 +30,7 @@ We are building a [sklearn model](https://scikit-learn.org/stable/) in this exam
 integration:
 
 ```shell
-zenml integration install sklearn -f
+zenml integration install sklearn -y
 ```
 
 {% hint style="success" %}

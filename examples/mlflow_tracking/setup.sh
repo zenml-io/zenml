@@ -21,6 +21,6 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install tensorflow -f
-  zenml integration install mlflow -f
+  zenml integration install tensorflow -y
+  zenml integration install mlflow -y
 }

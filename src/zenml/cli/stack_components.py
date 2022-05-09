@@ -533,15 +533,28 @@ def generate_stack_component_down_command(
 
     @click.argument("name", type=str, required=False)
     @click.option(
-        "--force",
-        "-f",
+        "--yes",
+        "-y",
+        "force",
         is_flag=True,
         help="Deprovisions local resources instead of suspending them.",
     )
+    @click.option(
+        "--force",
+        "-f",
+        "old_force",
+        is_flag=True,
+        help="DEPRECATED: Deprovisions local resources instead of suspending them. Use `-y/--yes` instead.",
+    )
     def down_stack_component_command(
-        name: Optional[str] = None, force: bool = False
+        name: Optional[str] = None, force: bool = False, old_force: bool = False
     ) -> None:
         """Stops/Tears down the local deployment of a stack component."""
+        if old_force:
+            force = old_force
+            cli_utils.warning(
+                "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+            )
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
@@ -564,7 +577,7 @@ def generate_stack_component_down_command(
                         f"Provisioning local resources not implemented for "
                         f"{display_name} '{component.name}'. If you want to "
                         f"deprovision all resources for this component, use "
-                        f"the `--force/-f` flag."
+                        f"the `--yes/-y` flag."
                     )
             else:
                 cli_utils.declare(

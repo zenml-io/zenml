@@ -12,39 +12,38 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The GCP integration submodule provides a way to run ZenML pipelines in a cloud
-environment. Specifically, it allows the use of cloud artifact stores, metadata
-stores, and an `io` module to handle file operations on Google Cloud Storage
-(GCS).
+The GCP secrets manager integration submodule provides a way to access the gcp secrets manager
+from within you ZenML Pipeline runs.
 """
-
 from typing import List
 
 from zenml.enums import StackComponentType
-from zenml.integrations.constants import GCP
+from zenml.integrations.constants import GCP_SECRETS_MANAGER
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-GCP_ARTIFACT_STORE_FLAVOR = "gcp"
+GCP_SECRETS_MANAGER_FLAVOR = "gcp_secrets_manager"
 
 
-class GcpIntegration(Integration):
-    """Definition of Google Cloud Platform integration for ZenML."""
+class GcpSecretManagerIntegration(Integration):
+    """Definition of the Secrets Manager for the Google Cloud Platform
+    integration with ZenML."""
 
-    NAME = GCP
-    REQUIREMENTS = ["gcsfs"]
+    NAME = GCP_SECRETS_MANAGER
+    REQUIREMENTS = ["google-cloud-secret-manager"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the GCP integration."""
         return [
             FlavorWrapper(
-                name=GCP_ARTIFACT_STORE_FLAVOR,
-                source="zenml.integrations.gcp.artifact_stores.GCSArtifactStore",
-                type=StackComponentType.ARTIFACT_STORE,
+                name=GCP_SECRETS_MANAGER_FLAVOR,
+                source="zenml.integrations.gcp_secrets_manager.secrets_manager."
+                "GCPSecretsManager",
+                type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             )
         ]
 
 
-GcpIntegration.check_installation()
+GcpSecretManagerIntegration.check_installation()
