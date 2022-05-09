@@ -169,8 +169,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
         local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
         if fileio.exists(str(local_zen_repo_config)):
             fileio.rmtree(str(local_zen_repo_config))
-            declare(
-                f"Deleted local ZenML config from {local_zen_repo_config}.")
+            declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
 
         # delete the profiles (and stacks)
         global_zen_config = Path(get_global_config_directory())
