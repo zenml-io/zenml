@@ -10,7 +10,7 @@ labels: general
 * [ ] I have searched (google, github) for similar issues and couldn't find anything
 * [ ] I have read and followed [the docs](https://docs.zenml.io/) and still think this is a bug
 
-<!-- Sorry this is a pain to full out, but it really helps maintainers make ZenML better! -->
+<!-- Sorry this is a pain to fill out, but it really helps maintainers make ZenML better! -->
 
 ## General
 
@@ -21,7 +21,7 @@ If applicable, please enter the output of `python -c "import zenml.environment; 
 <!-- or if you're using ZenML prior to v0.8.0, manually include: OS, python version, ZenML version, and installed integrations. -->
 
 
-<!-- Where possible please include a self-contained code snippet describing your bug: -->
+<!-- Where possible please include a self-contained code snippet that exemplifies your bug: -->
 
 ```py
 import zenml

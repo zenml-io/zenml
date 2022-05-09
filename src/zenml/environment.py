@@ -59,9 +59,9 @@ def get_environment() -> str:
 def get_system_details() -> Dict[str, str]:
     info = {
         "ZenML version": __version__,
-        "Install Path": Path(__file__).resolve().parent,
-        "Python Version": Environment.python_version(),
-        "Platform Information": Environment.get_system_info(),
+        "Install path": Path(__file__).resolve().parent,
+        "Python version": Environment.python_version(),
+        "Platform information": Environment.get_system_info(),
         "Environment": get_environment(),
         "Integrations": get_installed_integrations(),
     }
