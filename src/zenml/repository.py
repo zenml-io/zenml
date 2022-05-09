@@ -45,8 +45,8 @@ from zenml.zen_stores import (
     SqlZenStore,
 )
 from zenml.zen_stores.models import (
-    Project,
     ComponentWrapper,
+    Project,
     StackWrapper,
     User,
     ZenStoreModel,
