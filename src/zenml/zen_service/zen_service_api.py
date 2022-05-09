@@ -24,6 +24,7 @@ from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
     ENV_ZENML_PROFILE_CONFIGURATION,
     ENV_ZENML_PROFILE_NAME,
+    FLAVORS,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
@@ -44,10 +45,11 @@ from zenml.exceptions import (
 from zenml.repository import Repository
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
+    ComponentWrapper,
+    FlavorWrapper,
     Project,
     Role,
     RoleAssignment,
-    StackComponentWrapper,
     StackWrapper,
     Team,
     User,
@@ -59,7 +61,7 @@ profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
 # Hopefully profile configuration was passed as env variable:
 if profile_configuration_json:
     profile = ProfileConfiguration.parse_raw(profile_configuration_json)
-# Otherwise check if profile name was passed as env variable:
+# Otherwise, check if profile name was passed as env variable:
 elif profile_name:
     profile = (
         GlobalConfiguration().get_profile(profile_name)
@@ -68,7 +70,6 @@ elif profile_name:
 # Fallback to what Repository thinks is the active profile
 else:
     profile = Repository().active_profile
-
 
 if profile.store_type == StoreType.REST:
     raise ValueError(
@@ -177,7 +178,7 @@ async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
 
 @authed.post(STACK_COMPONENTS, responses={409: error_response})
 async def register_stack_component(
-    component: StackComponentWrapper,
+    component: ComponentWrapper,
 ) -> None:
     """Registers a stack component."""
     try:
@@ -248,7 +249,7 @@ async def update_stack(stack: StackWrapper, name: str) -> Dict[str, str]:
 async def update_stack_component(
     name: str,
     component_type: StackComponentType,
-    component: StackComponentWrapper,
+    component: ComponentWrapper,
 ) -> Dict[str, str]:
     """Updates a stack component."""
     try:
@@ -259,12 +260,12 @@ async def update_stack_component(
 
 @authed.get(
     STACK_COMPONENTS + "/{component_type}/{name}",
-    response_model=StackComponentWrapper,
+    response_model=ComponentWrapper,
     responses={404: error_response},
 )
 async def get_stack_component(
     component_type: StackComponentType, name: str
-) -> StackComponentWrapper:
+) -> ComponentWrapper:
     """Returns the requested stack component."""
     try:
         return zen_store.get_stack_component(component_type, name=name)
@@ -274,11 +275,11 @@ async def get_stack_component(
 
 @authed.get(
     STACK_COMPONENTS + "/{component_type}",
-    response_model=List[StackComponentWrapper],
+    response_model=List[ComponentWrapper],
 )
 async def get_stack_components(
     component_type: StackComponentType,
-) -> List[StackComponentWrapper]:
+) -> List[ComponentWrapper]:
     """Returns all stack components for the requested type."""
     return zen_store.get_stack_components(component_type)
 
@@ -577,6 +578,52 @@ async def revoke_role(data: Dict[str, Any]) -> None:
             entity_name=entity_name,
             project_name=project_name,
             is_user=is_user,
+        )
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.get(FLAVORS, response_model=List[FlavorWrapper])
+async def flavors() -> List[FlavorWrapper]:
+    return zen_store.flavors
+
+
+@authed.post(
+    FLAVORS,
+    response_model=FlavorWrapper,
+    responses={409: error_response},
+)
+async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
+    """Creates a flavor."""
+    try:
+        return zen_store.create_flavor(
+            name=flavor.name,
+            source=flavor.source,
+            stack_component_type=flavor.type,
+        )
+    except EntityExistsError as error:
+        raise conflict(error) from error
+
+
+@authed.get(FLAVORS + "/{component_type}", responses={404: error_response})
+async def get_flavor_by_type(
+    component_type: StackComponentType,
+) -> List[FlavorWrapper]:
+    try:
+        return zen_store.get_flavors_by_type(component_type=component_type)
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.get(
+    FLAVORS + "/{component_type}/{name}", responses={404: error_response}
+)
+async def get_flavor_by_type_and_name(
+    component_type: StackComponentType, name: str
+) -> FlavorWrapper:
+    try:
+        return zen_store.get_flavor_by_name_and_type(
+            component_type=component_type, flavor_name=name
         )
     except KeyError as error:
         raise not_found(error) from error

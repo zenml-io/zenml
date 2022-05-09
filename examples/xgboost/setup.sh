@@ -7,5 +7,5 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install xgboost -f
+  zenml integration install xgboost -y
 }

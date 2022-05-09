@@ -28,11 +28,13 @@ jobs:
 
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
 
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install kubeflow s3 gcp azure -f
+          zenml integration install kubeflow s3 gcp azure -y
 
       - name: Test
         run: |

@@ -80,7 +80,7 @@ def test_initializing_a_stack_from_components():
 def test_initializing_a_stack_with_missing_components():
     """Tests that initializing a stack with missing components fails."""
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components={})
+        Stack.from_components(name="", components={}).validate()
 
 
 def test_initializing_a_stack_with_wrong_components():
@@ -95,14 +95,7 @@ def test_initializing_a_stack_with_wrong_components():
     }
 
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components=components)
-
-
-def test_stack_validates_when_initialized(mocker):
-    """Tests that a stack is validated when it's initialized."""
-    mocker.patch.object(Stack, "validate")
-    Stack.default_local_stack()
-    Stack.validate.assert_called_once()
+        Stack.from_components(name="", components=components).validate()
 
 
 def test_stack_returns_all_its_components():
@@ -398,7 +391,7 @@ def test_stack_forwards_suspending_to_all_running_components(
     """Tests that stack suspending calls `component.suspend()` on any
     component that is running."""
     for component in stack_with_mock_components.components.values():
-        component.is_running = True
+        component.is_suspended = False
 
     stack_with_mock_components.suspend()
 
@@ -406,7 +399,7 @@ def test_stack_forwards_suspending_to_all_running_components(
         component.suspend.assert_called_once()
 
     _, any_component = stack_with_mock_components.components.popitem()
-    any_component.is_running = False
+    any_component.is_suspended = True
 
     stack_with_mock_components.suspend()
 

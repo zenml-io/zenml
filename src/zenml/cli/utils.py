@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import base64
 import datetime
 import subprocess
 import sys
@@ -29,6 +30,7 @@ from typing import (
 )
 
 import click
+import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
@@ -45,6 +47,8 @@ from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService
 from zenml.services.service_status import ServiceState
 from zenml.stack import StackComponent
+from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
+from zenml.zen_stores.models.flavor_wrapper import validate_flavor_source
 
 logger = get_logger(__name__)
 
@@ -118,7 +122,7 @@ def pretty_print(obj: Any) -> None:
     console.print(obj)
 
 
-def print_table(obj: List[Dict[str, Any]]) -> None:
+def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     """Prints the list of dicts in a table format. The input object should be a
     List of Dicts. Each item in that list represent a line in the Table. Each
     dict should have the same keys. The keys of the dict will be used as
@@ -126,9 +130,10 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
 
     Args:
       obj: A List containing dictionaries.
+      columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
-    column_names = [key.upper() for key in column_keys]
+    column_names = [columns.get(key, key.upper()) for key in column_keys]
     rich_table = table.Table(*column_names, box=box.HEAVY_EDGE)
 
     for dict_ in obj:
@@ -201,7 +206,7 @@ def format_integration_list(
 
 
 def print_stack_component_list(
-    components: List[StackComponent],
+    components: List[ComponentWrapper],
     active_component_name: Optional[str] = None,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
@@ -219,9 +224,14 @@ def print_stack_component_list(
         is_active = component.name == active_component_name
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
+            "NAME": component.name,
+            "FLAVOR": component.flavor,
+            "UUID": component.uuid,
             **{
                 key.upper(): str(value)
-                for key, value in component.dict().items()
+                for key, value in yaml.safe_load(
+                    base64.b64decode(component.config).decode()
+                ).items()
             },
         }
         configurations.append(component_config)
@@ -248,9 +258,61 @@ def print_stack_configuration(
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
-        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
     ]
     console.print(rich_table)
+
+
+def print_flavor_list(
+    flavors: List[FlavorWrapper],
+    component_type: StackComponentType,
+) -> None:
+    """Prints the list of flavors."""
+    from zenml.integrations.registry import integration_registry
+
+    flavor_table = []
+    for f in flavors:
+        reachable = False
+
+        if f.integration:
+            if f.integration == "built-in":
+                reachable = True
+            else:
+                reachable = integration_registry.is_installed(f.integration)
+
+        else:
+            try:
+                validate_flavor_source(f.source, component_type=component_type)
+                reachable = True
+            except (
+                AssertionError,
+                ModuleNotFoundError,
+                ImportError,
+                ValueError,
+            ):
+                pass
+
+        flavor_table.append(
+            {
+                "FLAVOR": f.name,
+                "INTEGRATION": f.integration,
+                "READY-TO-USE": ":white_check_mark:" if reachable else "",
+                "SOURCE": f.source,
+            }
+        )
+
+    print_table(flavor_table)
+    warning(
+        "The flag 'READY-TO-USE' indicates whether you can directly "
+        "create/use/manage a stack component with that specific flavor. "
+        "You can bring a flavor to a state where it is 'READY-TO-USE' in two "
+        "different ways. If the flavor belongs to a ZenML integration, "
+        "you can use `zenml integration install <name-of-the-integration>` and "
+        "if it doesn't, you can make sure that you are using ZenML in an "
+        "environment where ZenML can import the flavor through its source "
+        "path (also shown in the list)."
+    )
 
 
 def print_stack_component_configuration(
@@ -273,7 +335,8 @@ def print_stack_component_configuration(
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
-        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
     ]
     console.print(rich_table)
 
@@ -302,7 +365,6 @@ def print_profile(
     Args:
         profile: Profile to print.
         active: Whether the profile is active.
-        name: Name of the profile.
     """
     profile_title = f"'{profile.name}' Profile Configuration"
     if active:
@@ -321,7 +383,8 @@ def print_profile(
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
-        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
     ]
     console.print(rich_table)
 
@@ -383,12 +446,7 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
 
 def install_packages(packages: List[str]) -> None:
     """Installs pypi packages into the current environment with pip"""
-    command = [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-    ] + packages
+    command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
         command += [
@@ -504,7 +562,9 @@ def pretty_print_model_deployer(
             }
         )
 
-    print_table(model_service_dicts)
+    print_table(
+        model_service_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
 
 
 def print_served_model_configuration(

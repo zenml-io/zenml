@@ -14,15 +14,18 @@
 import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
+import wandb
+
 from zenml.environment import Environment
-from zenml.integrations.wandb.wandb_environment import WandbStepEnvironment
+from zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker import (
+    WandbExperimentTracker,
+)
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps.utils import STEP_INNER_FUNC_NAME
 
 logger = get_logger(__name__)
-
-WAND_DEFAULT_PROJECT_NAME = "zenml_default_project"
 
 
 # step entrypoint type
@@ -42,21 +45,14 @@ def enable_wandb(
 
 @overload
 def enable_wandb(
-    *,
-    project_name: Optional[str] = None,
-    experiment_name: Optional[str] = None,
-    entity: Optional[str] = None,
+    *, settings: Optional[wandb.Settings] = None
 ) -> Callable[[S], S]:
     """Type annotations for wandb step decorator in case of arguments."""
     ...
 
 
 def enable_wandb(
-    _step: Optional[S] = None,
-    *,
-    project_name: Optional[str] = None,
-    experiment_name: Optional[str] = None,
-    entity: Optional[str] = None,
+    _step: Optional[S] = None, *, settings: Optional[wandb.Settings] = None
 ) -> Union[S, Callable[[S], S]]:
     """Decorator to enable wandb for a step function.
 
@@ -117,9 +113,7 @@ def enable_wandb(
                 {
                     STEP_INNER_FUNC_NAME: staticmethod(
                         wandb_step_entrypoint(
-                            project_name or WAND_DEFAULT_PROJECT_NAME,
-                            experiment_name,
-                            entity,
+                            settings=settings,
                         )(source_fn)
                     ),
                     "__module__": _step.__module__,
@@ -134,9 +128,7 @@ def enable_wandb(
 
 
 def wandb_step_entrypoint(
-    project_name: str,
-    experiment_name: Optional[str] = None,
-    entity: Optional[str] = None,
+    settings: Optional[wandb.Settings] = None,
 ) -> Callable[[F], F]:
     """Decorator for a step entrypoint to enable wandb.
 
@@ -165,17 +157,31 @@ def wandb_step_entrypoint(
                 func.__name__,
             )
             step_env = Environment().step_environment
-            experiment = experiment_name or step_env.pipeline_name
-            step_wandb_env = WandbStepEnvironment(
-                project_name=project_name,
-                experiment_name=experiment,
-                run_name=step_env.pipeline_run_id,
-                entity=entity,
-            )
-            with step_wandb_env:
+            run_name = f"{step_env.pipeline_run_id}_{step_env.step_name}"
+            tags = (step_env.pipeline_name, step_env.pipeline_run_id)
 
-                # should never happen, but just in case
-                assert step_wandb_env.wandb_run is not None
+            experiment_tracker = Repository(  # type: ignore[call-arg]
+                skip_repository_check=True
+            ).active_stack.experiment_tracker
+
+            if not isinstance(experiment_tracker, WandbExperimentTracker):
+                raise ValueError(
+                    "The active stack needs to have a wandb experiment tracker "
+                    "component registered to be able to track experiments "
+                    "using wandb. You can create a new stack with a wandb "
+                    "experiment tracker component or update your existing "
+                    "stack to add this component, e.g.:\n\n"
+                    "  'zenml experiment-tracker register wandb_tracker "
+                    "--type=wandb --entity=<WANDB_ENTITY> --project_name="
+                    "<WANDB_PROJECT_NAME> --api_key=<WANDB_API_KEY>'\n"
+                    "  'zenml stack register stack-name -e wandb_tracker ...'\n"
+                )
+
+            with experiment_tracker.activate_wandb_run(
+                run_name=run_name,
+                tags=tags,
+                settings=settings,
+            ):
                 return func(*args, **kwargs)
 
         return cast(F, wrapper)

@@ -12,22 +12,19 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import ClassVar, List, Optional
+from typing import ClassVar, List, Optional, Tuple
 
 import sagemaker
 
 from zenml.enums import StackComponentType
+from zenml.integrations.sagemaker import SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path
 
 
-@register_stack_component_class
 class SagemakerStepOperator(BaseStepOperator):
     """Step operator to run a step on Sagemaker.
 
@@ -56,14 +53,17 @@ class SagemakerStepOperator(BaseStepOperator):
     experiment_name: Optional[str] = None
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "sagemaker"
+    FLAVOR: ClassVar[str] = SAGEMAKER_STEP_OPERATOR_FLAVOR
 
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry."""
 
-        def _ensure_local_orchestrator(stack: Stack) -> bool:
-            return stack.orchestrator.FLAVOR == "local"
+        def _ensure_local_orchestrator(stack: Stack) -> Tuple[bool, str]:
+            return (
+                stack.orchestrator.FLAVOR == "local",
+                "Local orchestrator is required",
+            )
 
         return StackValidator(
             required_components={StackComponentType.CONTAINER_REGISTRY},
@@ -92,7 +92,7 @@ class SagemakerStepOperator(BaseStepOperator):
             requirements=set(requirements),
             base_image=self.base_image,
         )
-        docker_utils.push_docker_image(image_name)
+        container_registry.push_image(image_name)
         return docker_utils.get_image_digest(image_name) or image_name
 
     def launch(

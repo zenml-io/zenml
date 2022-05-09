@@ -37,6 +37,7 @@ from zenml.constants import (
     SHOULD_PREVENT_PIPELINE_EXECUTION,
 )
 from zenml.exceptions import (
+    DuplicatedConfigurationError,
     PipelineConfigurationError,
     PipelineInterfaceError,
     StackValidationError,
@@ -48,6 +49,7 @@ from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
+from zenml.steps.base_step import BaseStepMeta
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -153,42 +155,20 @@ class BasePipeline(metaclass=BasePipelineMeta):
         combined_steps = {}
         step_classes: Dict[Type[BaseStep], str] = {}
 
-        for i, step in enumerate(steps):
-            step_class = type(step)
-            key = input_step_keys[i]
-
-            if not isinstance(step, BaseStep):
-                raise PipelineInterfaceError(
-                    f"Wrong argument type (`{step_class}`) for positional "
-                    f"argument {i} of pipeline '{self.name}'. Only "
-                    f"`@step` decorated functions or instances of `BaseStep` "
-                    f"subclasses can be used as arguments when creating "
-                    f"a pipeline."
-                )
-
-            if step_class in step_classes:
-                previous_key = step_classes[step_class]
-                raise PipelineInterfaceError(
-                    f"Found multiple step objects of the same class "
-                    f"(`{step_class}`) for arguments '{previous_key}' and "
-                    f"'{key}' in pipeline '{self.name}'. Only one step object "
-                    f"per class is allowed inside a ZenML pipeline."
-                )
-
-            step.pipeline_parameter_name = key
-            combined_steps[key] = step
-            step_classes[step_class] = key
-
-        for key, step in kw_steps.items():
+        def _verify_step(key: str, step: BaseStep) -> None:
+            """Verifies a single step of the pipeline."""
             step_class = type(step)
 
-            if key in combined_steps:
-                # a step for this key was already set by
-                # the positional input steps
+            if isinstance(step, BaseStepMeta):
                 raise PipelineInterfaceError(
-                    f"Unexpected keyword argument '{key}' for pipeline "
-                    f"'{self.name}'. A step for this key was "
-                    f"already passed as a positional argument."
+                    f"Wrong argument type (`{step_class}`) for argument "
+                    f"'{key}' of pipeline '{self.name}'. "
+                    f"A `BaseStep` subclass was provided instead of an "
+                    f"instance. "
+                    f"This might have been caused due to missing brackets of "
+                    f"your steps when creating a pipeline with `@step` "
+                    f"decorated functions, "
+                    f"for which the correct syntax is `pipeline(step=step())`."
                 )
 
             if not isinstance(step, BaseStep):
@@ -212,6 +192,23 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step.pipeline_parameter_name = key
             combined_steps[key] = step
             step_classes[step_class] = key
+
+        # verify args
+        for i, step in enumerate(steps):
+            key = input_step_keys[i]
+            _verify_step(key, step)
+
+        # verify kwargs
+        for key, step in kw_steps.items():
+            if key in combined_steps:
+                # a step for this key was already set by
+                # the positional input steps
+                raise PipelineInterfaceError(
+                    f"Unexpected keyword argument '{key}' for pipeline "
+                    f"'{self.name}'. A step for this key was "
+                    f"already passed as a positional argument."
+                )
+            _verify_step(key, step)
 
         # check if there are any missing or unexpected steps
         expected_steps = set(self.STEP_SPEC.keys())
@@ -346,7 +343,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
         dag_filepath = utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
+            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
         )
         runtime_configuration = RuntimeConfiguration(
             run_name=run_name,
@@ -385,7 +382,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             config_file: Path to a yaml file which contains configuration
                 options for running this pipeline. See
-                https://docs.zenml.io/features/pipeline-configuration#setting-step-parameters-using-a-config-file
+                https://docs.zenml.io/features/pipeline-configuration#setting
+                -step-parameters-using-a-config-file
                 for details regarding the specification of this file.
             overwrite_step_parameters: If set to `True`, values from the
                 configuration file will overwrite configuration parameters
@@ -453,11 +451,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         step_name,
                     )
                 if previous_value and not overwrite:
-                    logger.warning(
-                        "Parameter '%s' from configuration yaml will NOT be "
-                        "set as a configuration object was given when "
-                        "creating the step. Set `overwrite_step_parameters="
-                        "True` when setting the configuration yaml to always "
-                        "use the options specified in the yaml file.",
-                        parameter,
+                    raise DuplicatedConfigurationError(
+                        "The value for parameter '{}' is set twice for step "
+                        "'{}' ({} vs. {}). This can happen when you "
+                        "instantiate your step with a step configuration that "
+                        "sets the parameter, while also setting the same "
+                        "parameter within a config file that is added to the "
+                        "pipeline instance using the `.with_config()` method. "
+                        "Make sure each parameter is only defined **once**. \n"
+                        "While it is not recommended, you can overwrite the "
+                        "step configuration using the configuration file: \n"
+                        "`.with_config('config.yaml', "
+                        "overwrite_step_parameters=True)".format(
+                            parameter, step_name, previous_value, value
+                        )
                     )

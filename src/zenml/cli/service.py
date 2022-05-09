@@ -22,9 +22,10 @@ import click
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
+from zenml.enums import CliCategories
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.services import ServiceRegistry, ServiceState
@@ -37,9 +38,12 @@ GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH = os.path.join(
 )
 
 
-@cli.group()
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.MANAGEMENT_TOOLS,
+)
 def service() -> None:
-    """ZenMl server."""
+    """ZenML server."""
 
 
 @service.command("explain", help="Explain the service")
@@ -70,7 +74,7 @@ def up_server(port: int, profile: Optional[str]) -> None:
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:
             zen_service = ServiceRegistry().load_service_from_json(f.read())
-    except (JSONDecodeError, FileNotFoundError, ModuleNotFoundError):
+    except (JSONDecodeError, FileNotFoundError, ModuleNotFoundError, TypeError):
         zen_service = ZenService(service_config)
 
     cli_utils.declare(
@@ -90,7 +94,7 @@ def up_server(port: int, profile: Optional[str]) -> None:
                     case the specified port is in use or if the service was
                     already running on port {zen_service.endpoint.status.port}.
                     In case you want to change to port={port} shut down the
-                    service with `zenml service down -f` and restart it with
+                    service with `zenml service down -y` and restart it with
                     a free port of your choice.
                     """
                 )
@@ -130,13 +134,26 @@ def status_server() -> None:
 
 @service.command("down")
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Deprovisions local resources instead of suspending them.",
 )
-def down_service(force: bool = False) -> None:
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Deprovisions local resources instead of suspending them. Use `-y/--yes` instead.",
+)
+def down_service(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the local zen service."""
+    if old_force:
+        force = old_force
+        cli_utils.warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
 
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:

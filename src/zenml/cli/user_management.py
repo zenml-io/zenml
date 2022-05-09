@@ -18,12 +18,13 @@ from uuid import UUID
 import click
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
+from zenml.enums import CliCategories
 from zenml.exceptions import EntityExistsError
 from zenml.repository import Repository
 
 
-@cli.group()
+@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 def user() -> None:
     """Commands for user management."""
 
@@ -85,7 +86,7 @@ def delete_user(user_name: str) -> None:
         cli_utils.warning(f"No user found for name '{user_name}'.")
 
 
-@cli.group()
+@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 def team() -> None:
     """Commands for team management."""
 
@@ -175,7 +176,7 @@ def remove_users(team_name: str, user_names: Tuple[str]) -> None:
             )
 
 
-@cli.group()
+@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def project() -> None:
     """Commands for project management."""
 
@@ -344,7 +345,7 @@ def delete_project(project_name: Optional[str] = None) -> None:
         cli_utils.warning(f"No project found for name '{name}'.")
 
 
-@cli.group()
+@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 def role() -> None:
     """Commands for role management."""
 

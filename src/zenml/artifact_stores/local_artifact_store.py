@@ -158,6 +158,8 @@ class LocalArtifactStore(BaseArtifactStore):
 
     @validator("path")
     def ensure_path_local(cls, path: str) -> str:
+        """Pydantic validator which ensures that the given path is a local
+        path"""
         remote_prefixes = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
         if any(path.startswith(prefix) for prefix in remote_prefixes):
             raise ArtifactStoreInterfaceError(

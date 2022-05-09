@@ -20,7 +20,6 @@ from pydantic import BaseModel, Field, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
-from zenml.integrations.utils import get_requirements_for_module
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -64,6 +63,8 @@ class StackComponent(BaseModel, ABC):
     @property
     def requirements(self) -> Set[str]:
         """Set of PyPI requirements for the component."""
+        from zenml.integrations.utils import get_requirements_for_module
+
         return set(get_requirements_for_module(self.__module__))
 
     @property
@@ -124,6 +125,18 @@ class StackComponent(BaseModel, ABC):
     def cleanup_pipeline_run(self) -> None:
         """Cleans up resources after the pipeline run is finished."""
 
+    def prepare_step_run(self) -> None:
+        """Prepares running a step."""
+
+    def cleanup_step_run(self) -> None:
+        """Cleans up resources after the step run is finished."""
+
+    @property
+    def post_registration_message(self) -> Optional[str]:
+        """Optional message that will be printed after the stack component is
+        registered."""
+        return None
+
     @property
     def validator(self) -> Optional["StackValidator"]:
         """The optional validator of the stack component.
@@ -144,6 +157,11 @@ class StackComponent(BaseModel, ABC):
     def is_running(self) -> bool:
         """If the component is running locally."""
         return True
+
+    @property
+    def is_suspended(self) -> bool:
+        """If the component is suspended."""
+        return not self.is_running
 
     def provision(self) -> None:
         """Provisions resources to run the component locally."""

@@ -25,6 +25,7 @@ from pydantic import validator as property_validator
 
 from zenml import __version__
 from zenml.enums import StackComponentType
+from zenml.integrations.vertex import VERTEX_STEP_OPERATOR_FLAVOR
 from zenml.integrations.vertex.constants import (
     CONNECTION_ERROR_RETRY_LIMIT,
     POLLING_INTERVAL_IN_SECONDS,
@@ -35,9 +36,6 @@ from zenml.integrations.vertex.constants import (
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path
@@ -45,7 +43,6 @@ from zenml.utils.source_utils import get_source_root_path
 logger = get_logger(__name__)
 
 
-@register_stack_component_class
 class VertexStepOperator(BaseStepOperator):
     """Step operator to run a step on Vertex AI.
 
@@ -83,17 +80,22 @@ class VertexStepOperator(BaseStepOperator):
     service_account_path: Optional[str] = None
 
     # Class configuration
-    FLAVOR: ClassVar[str] = "vertex"
+    FLAVOR: ClassVar[str] = VERTEX_STEP_OPERATOR_FLAVOR
 
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validates that the stack contains a container registry."""
 
-        def _ensure_local_orchestrator(stack: Stack) -> bool:
+        def _ensure_local_orchestrator(stack: Stack) -> Tuple[bool, str]:
             # For now this only works on local orchestrator and GCP artifact
             #  store
-            return (stack.orchestrator.FLAVOR == "local") and (
-                stack.artifact_store.FLAVOR == "gcp"
+            return (
+                (
+                    stack.orchestrator.FLAVOR == "local"
+                    and stack.artifact_store.FLAVOR == "gcp"
+                ),
+                "Only local orchestrator and GCP artifact store are currently "
+                "supported",
             )
 
         return StackValidator(
@@ -107,7 +109,7 @@ class VertexStepOperator(BaseStepOperator):
             aiplatform.gapic.AcceleratorType.__members__.keys()
         )
         if accelerator_type and accelerator_type.upper() not in accepted_vals:
-            raise RuntimeError(
+            raise ValueError(
                 f"Accelerator must be one of the following: {accepted_vals}"
             )
 
@@ -144,7 +146,7 @@ class VertexStepOperator(BaseStepOperator):
             requirements=set(requirements),
             base_image=self.base_image,
         )
-        docker_utils.push_docker_image(image_name)
+        container_registry.push_image(image_name)
         return docker_utils.get_image_digest(image_name) or image_name
 
     def launch(

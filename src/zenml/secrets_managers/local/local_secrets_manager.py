@@ -16,6 +16,8 @@ import uuid
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List
 
+from pydantic import root_validator
+
 from zenml.cli.utils import error
 from zenml.constants import LOCAL_SECRETS_FILENAME, LOCAL_STORES_DIRECTORY_NAME
 from zenml.io.fileio import remove
@@ -33,36 +35,42 @@ from zenml.utils.secrets_manager_utils import decode_secret_dict, encode_secret
 logger = get_logger(__name__)
 
 
-def get_secret_store_path(uuid: uuid.UUID) -> str:
-    """Get the path to the secret store.
-
-    Args:
-        uuid: The UUID of the secret store.
-
-    Returns:
-        The path to the secret store."""
-    return os.path.join(
-        get_global_config_directory(),
-        LOCAL_STORES_DIRECTORY_NAME,
-        str(uuid),
-        LOCAL_SECRETS_FILENAME,
-    )
-
-
 class LocalSecretsManager(BaseSecretsManager):
     """Class for ZenML local file-based secret manager."""
 
-    secrets_file: str
+    secrets_file: str = ""
 
     # Class configuration
     FLAVOR: ClassVar[str] = "local"
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        if "secrets_file" not in kwargs:
-            temp_uuid = uuid.uuid4()
-            kwargs["secrets_file"] = get_secret_store_path(temp_uuid)
-            kwargs["uuid"] = temp_uuid
-        super().__init__(*args, **kwargs)
+    @root_validator
+    def set_secrets_file(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Sets the secrets_file attribute value according to the component
+        UUID."""
+        if values.get("secrets_file"):
+            return values
+
+        # not likely to happen, due to Pydantic validation, but mypy complains
+        assert "uuid" in values
+
+        values["secrets_file"] = cls.get_secret_store_path(values["uuid"])
+        return values
+
+    @staticmethod
+    def get_secret_store_path(uuid: uuid.UUID) -> str:
+        """Get the path to the secret store.
+
+        Args:
+            uuid: The UUID of the secret store.
+
+        Returns:
+            The path to the secret store."""
+        return os.path.join(
+            get_global_config_directory(),
+            LOCAL_STORES_DIRECTORY_NAME,
+            str(uuid),
+            LOCAL_SECRETS_FILENAME,
+        )
 
     @property
     def local_path(self) -> str:
@@ -197,6 +205,6 @@ class LocalSecretsManager(BaseSecretsManager):
         if not force:
             raise ValueError(
                 "This operation will delete all secrets. "
-                "To confirm, please pass `--force`."
+                "To confirm, please pass `--yes`."
             )
         remove(self.secrets_file)

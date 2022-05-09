@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict
 from pydantic import root_validator
 
 import zenml.io.utils
+from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
     AirflowDagRunner,
     AirflowPipelineConfig,
@@ -27,11 +28,8 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.repository import Repository
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 from zenml.utils import daemon
+from zenml.utils.source_utils import get_source_root_path
 
 logger = get_logger(__name__)
 
@@ -44,14 +42,13 @@ AIRFLOW_ROOT_DIR = "airflow_root"
 DAG_FILEPATH_OPTION_KEY = "dag_filepath"
 
 
-@register_stack_component_class
 class AirflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Airflow."""
 
     airflow_home: str = ""
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "airflow"
+    FLAVOR: ClassVar[str] = AIRFLOW_ORCHESTRATOR_FLAVOR
 
     def __init__(self, **values: Any):
         """Sets environment variables to configure airflow."""
@@ -237,7 +234,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                 command.run,
                 pid_file=self.pid_file,
                 log_file=self.log_file,
-                working_directory=str(Repository().root),
+                working_directory=get_source_root_path(),
             )
             while not self.is_running:
                 # Wait until the daemon started all the relevant airflow

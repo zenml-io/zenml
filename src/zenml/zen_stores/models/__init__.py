@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.zen_stores.models.stack_component_wrapper import (
-    StackComponentWrapper,
-)
+from zenml.zen_stores.models.component_wrapper import ComponentWrapper
+from zenml.zen_stores.models.flavor_wrapper import FlavorWrapper
 from zenml.zen_stores.models.stack_wrapper import StackWrapper
 from zenml.zen_stores.models.user_management_models import (
     Project,
@@ -26,7 +25,7 @@ from zenml.zen_stores.models.user_management_models import (
 from zenml.zen_stores.models.zen_store_model import ZenStoreModel
 
 __all__ = [
-    "StackComponentWrapper",
+    "ComponentWrapper",
     "ZenStoreModel",
     "StackWrapper",
     "User",
@@ -35,4 +34,5 @@ __all__ = [
     "Role",
     "RoleAssignment",
     "get_active_user_id",
+    "FlavorWrapper",
 ]

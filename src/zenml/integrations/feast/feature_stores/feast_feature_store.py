@@ -20,19 +20,16 @@ from feast import FeatureStore  # type: ignore[import]
 from feast.registry import Registry  # type: ignore[import]
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
+from zenml.integrations.feast import FEAST_FEATURE_STORE_FLAVOR
 from zenml.logger import get_logger
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 
 logger = get_logger(__name__)
 
 
-@register_stack_component_class
 class FeastFeatureStore(BaseFeatureStore):
     """Class to interact with the Feast feature store."""
 
-    FLAVOR: ClassVar[str] = "feast"
+    FLAVOR: ClassVar[str] = FEAST_FEATURE_STORE_FLAVOR
 
     online_host: str = "localhost"
     online_port: int = 6379

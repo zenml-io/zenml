@@ -17,7 +17,7 @@ from typing import Optional, Tuple
 import click
 from rich.progress import track
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
     declare,
@@ -30,6 +30,7 @@ from zenml.cli.utils import (
     warning,
 )
 from zenml.console import console
+from zenml.enums import CliCategories
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
@@ -37,9 +38,12 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 logger = get_logger(__name__)
 
 
-@cli.group(help="Interact with the requirements of external integrations.")
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.INTEGRATIONS,
+)
 def integration() -> None:
-    """Integrations group"""
+    """Interact with the requirements of external integrations."""
 
 
 @integration.command(name="list", help="List the available integrations.")
@@ -91,20 +95,35 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     help="List of integrations to ignore explicitly.",
 )
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the installation of the required packages. This will skip the "
     "confirmation step and reinstall existing packages as well",
+)
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the installation of the required packages. This will skip the "
+    "confirmation step and reinstall existing packages as well. Use `-y/--yes` instead.",
 )
 def install(
     integrations: Tuple[str],
     ignore_integration: Tuple[str],
     force: bool = False,
+    old_force: bool = False,
 ) -> None:
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     if not integrations:
         # no integrations specified, use all registered integrations
         integrations = set(integration_registry.integrations.keys())
@@ -159,16 +178,32 @@ def install(
 )
 @click.argument("integrations", nargs=-1, required=False)
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the uninstallation of the required packages. This will skip "
     "the confirmation step",
 )
-def uninstall(integrations: Tuple[str], force: bool = False) -> None:
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the uninstallation of the required packages. This will skip "
+    "the confirmation step. Use `-y/--yes` instead.",
+)
+def uninstall(
+    integrations: Tuple[str], force: bool = False, old_force: bool = False
+) -> None:
     """Installs the required packages for a given integration. If no integration
     is specified all required packages for all integrations are installed
     using pip"""
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     if not integrations:
         # no integrations specified, use all registered integrations
         integrations = tuple(integration_registry.integrations.keys())

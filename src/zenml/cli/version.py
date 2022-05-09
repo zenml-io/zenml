@@ -76,6 +76,6 @@ ascii_arts = [
 
 @cli.command()
 def version() -> None:
-    """Version of ZenML"""
+    """Version of ZenML."""
     declare(random.choice(ascii_arts))
     click.echo(click.style(f"version: {__version__}", bold=True))

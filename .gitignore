@@ -176,3 +176,4 @@ zenml_examples/
 
 # wandb
 **wandb/
+!src/zenml/integrations/wandb

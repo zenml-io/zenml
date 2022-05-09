@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import base64
 import os
 import platform
 import shutil
@@ -22,7 +21,6 @@ from multiprocessing import Process
 import pytest
 import requests
 import uvicorn
-import yaml
 
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
@@ -47,10 +45,6 @@ from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
 )
 from zenml.stack import Stack
-from zenml.stack.stack_component import StackComponent
-from zenml.stack.stack_component_class_registry import (
-    StackComponentClassRegistry,
-)
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_stores import (
     BaseZenStore,
@@ -58,7 +52,7 @@ from zenml.zen_stores import (
     RestZenStore,
     SqlZenStore,
 )
-from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
+from zenml.zen_stores.models import ComponentWrapper, StackWrapper
 
 logger = get_logger(__name__)
 
@@ -66,17 +60,6 @@ test_rest = (
     platform.system() != "Windows" and "ZENML_SKIP_TEST_REST" not in os.environ
 )
 store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * test_rest
-
-
-def get_component_from_wrapper(
-    wrapper: StackComponentWrapper,
-) -> StackComponent:
-    """Instantiate a StackComponent from the Configuration."""
-    component_class = StackComponentClassRegistry.get_class(
-        component_type=wrapper.type, component_flavor=wrapper.flavor
-    )
-    component_config = yaml.safe_load(base64.b64decode(wrapper.config).decode())
-    return component_class.parse_obj(component_config)
 
 
 @pytest.fixture(params=store_types)
@@ -224,7 +207,7 @@ def test_register_deregister_components(fresh_zen_store):
     # can't add another orchestrator of same name
     with pytest.raises(StackComponentExistsError):
         zen_store.register_stack_component(
-            StackComponentWrapper.from_component(
+            ComponentWrapper.from_component(
                 LocalOrchestrator(
                     name="default",
                 )
@@ -233,7 +216,7 @@ def test_register_deregister_components(fresh_zen_store):
 
     # but can add one if it has a different name
     zen_store.register_stack_component(
-        StackComponentWrapper.from_component(
+        ComponentWrapper.from_component(
             LocalOrchestrator(
                 name="local_orchestrator_part_2_the_remix",
             )
@@ -446,6 +429,44 @@ def test_role_management(fresh_zen_store):
     )
 
 
+def test_flavor_management(fresh_zen_store):
+    """Test the management of stack component flavors"""
+    # Check for non-existing flavors
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_flavor_by_name_and_type(
+            flavor_name="non_existing_flavor",
+            component_type=StackComponentType.ARTIFACT_STORE,
+        )
+
+    # Check whether the registration of new flavors is working as intended
+    fresh_zen_store.create_flavor(
+        name="test",
+        source="test_artifact_store.TestArtifactStore",
+        stack_component_type=StackComponentType.ARTIFACT_STORE,
+    )
+
+    # Duplicated registration should fail with an EntityExistsError
+    with pytest.raises(EntityExistsError):
+        fresh_zen_store.create_flavor(
+            name="test",
+            source="test_artifact_store.TestArtifactStore",
+            stack_component_type=StackComponentType.ARTIFACT_STORE,
+        )
+
+    # Ensure that the get_flavors_by_type is working as intended
+    new_artifact_store_flavors = fresh_zen_store.get_flavors_by_type(
+        StackComponentType.ARTIFACT_STORE
+    )
+    assert new_artifact_store_flavors
+
+    # Ensure that the newly registered flavor can be accessed.
+    new_artifact_store_flavor = fresh_zen_store.get_flavor_by_name_and_type(
+        flavor_name="test",
+        component_type=StackComponentType.ARTIFACT_STORE,
+    )
+    assert new_artifact_store_flavor
+
+
 def test_update_stack_with_new_component(fresh_zen_store):
     """Test updating a stack with a new component"""
     new_orchestrator = LocalOrchestrator(name="new_orchestrator")
@@ -453,16 +474,12 @@ def test_update_stack_with_new_component(fresh_zen_store):
     updated_stack = Stack(
         name="default",
         orchestrator=new_orchestrator,
-        metadata_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.METADATA_STORE, "default"
-            )
-        ),
-        artifact_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.ARTIFACT_STORE, "default"
-            )
-        ),
+        metadata_store=fresh_zen_store.get_stack_component(
+            StackComponentType.METADATA_STORE, "default"
+        ).to_component(),
+        artifact_store=fresh_zen_store.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, "default"
+        ).to_component(),
     )
     try:
         fresh_zen_store.update_stack(
@@ -480,14 +497,14 @@ def test_update_stack_with_new_component(fresh_zen_store):
         == 2
     )
     assert new_orchestrator in [
-        get_component_from_wrapper(component)
-        for component in fresh_zen_store.get_stack_components(
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack_components(
             StackComponentType.ORCHESTRATOR
         )
     ]
     assert new_orchestrator in [
-        get_component_from_wrapper(component)
-        for component in fresh_zen_store.get_stack("default").components
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack("default").components
     ]
 
 
@@ -499,21 +516,15 @@ def test_update_stack_when_component_not_part_of_stack(
 
     updated_stack = Stack(
         name="default",
-        orchestrator=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.ORCHESTRATOR, "default"
-            )
-        ),
-        metadata_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.METADATA_STORE, "default"
-            )
-        ),
-        artifact_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.ARTIFACT_STORE, "default"
-            )
-        ),
+        orchestrator=fresh_zen_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, "default"
+        ).to_component(),
+        metadata_store=fresh_zen_store.get_stack_component(
+            StackComponentType.METADATA_STORE, "default"
+        ).to_component(),
+        artifact_store=fresh_zen_store.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, "default"
+        ).to_component(),
         secrets_manager=local_secrets_manager,
     )
 
@@ -531,14 +542,14 @@ def test_update_stack_when_component_not_part_of_stack(
         == 1
     )
     assert local_secrets_manager in [
-        get_component_from_wrapper(component)
-        for component in fresh_zen_store.get_stack_components(
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack_components(
             StackComponentType.SECRETS_MANAGER
         )
     ]
     assert local_secrets_manager in [
-        get_component_from_wrapper(component)
-        for component in fresh_zen_store.get_stack("default").components
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack("default").components
     ]
 
 
@@ -548,21 +559,15 @@ def test_update_non_existent_stack_raises_error(
     """Test updating a non-existent stack raises an error."""
     stack = Stack(
         name="aria_is_a_cat_not_a_stack",
-        orchestrator=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.ORCHESTRATOR, "default"
-            )
-        ),
-        metadata_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.METADATA_STORE, "default"
-            )
-        ),
-        artifact_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.ARTIFACT_STORE, "default"
-            )
-        ),
+        orchestrator=fresh_zen_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, "default"
+        ).to_component(),
+        metadata_store=fresh_zen_store.get_stack_component(
+            StackComponentType.METADATA_STORE, "default"
+        ).to_component(),
+        artifact_store=fresh_zen_store.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, "default"
+        ).to_component(),
     )
 
     with pytest.raises(KeyError):
@@ -581,7 +586,7 @@ def test_update_non_existent_stack_component_raises_error(
         fresh_zen_store.update_stack_component(
             local_secrets_manager.name,
             StackComponentType.SECRETS_MANAGER,
-            StackComponentWrapper.from_component(local_secrets_manager),
+            ComponentWrapper.from_component(local_secrets_manager),
         )
 
 
@@ -589,12 +594,12 @@ def test_update_real_component_succeeds(
     fresh_zen_store,
 ):
     """Test updating a real component succeeds."""
-    kubeflow_orchestrator = StackComponentWrapper.from_component(
+    kubeflow_orchestrator = ComponentWrapper.from_component(
         KubeflowOrchestrator(name="arias_orchestrator")
     )
     fresh_zen_store.register_stack_component(kubeflow_orchestrator)
 
-    updated_kubeflow_orchestrator = StackComponentWrapper.from_component(
+    updated_kubeflow_orchestrator = ComponentWrapper.from_component(
         KubeflowOrchestrator(
             name="arias_orchestrator",
             custom_docker_base_image_name="aria/arias_base_image",
@@ -606,11 +611,10 @@ def test_update_real_component_succeeds(
         updated_kubeflow_orchestrator,
     )
 
-    orchestrator_component = get_component_from_wrapper(
-        fresh_zen_store.get_stack_component(
-            StackComponentType.ORCHESTRATOR, "arias_orchestrator"
-        )
-    )
+    orchestrator_component = fresh_zen_store.get_stack_component(
+        StackComponentType.ORCHESTRATOR, "arias_orchestrator"
+    ).to_component()
+
     assert (
         orchestrator_component.custom_docker_base_image_name
         == "aria/arias_base_image"
@@ -625,7 +629,7 @@ def test_rename_nonexistent_stack_component_fails(
         fresh_zen_store.update_stack_component(
             "not_a_secrets_manager",
             StackComponentType.SECRETS_MANAGER,
-            StackComponentWrapper.from_component(
+            ComponentWrapper.from_component(
                 LocalSecretsManager(name="local_secrets_manager")
             ),
         )
@@ -637,7 +641,7 @@ def test_rename_core_stack_component_succeeds(
     """Test renaming a core stack component succeeds."""
     old_name = "default"
     new_name = "arias_orchestrator"
-    renamed_orchestrator = StackComponentWrapper.from_component(
+    renamed_orchestrator = ComponentWrapper.from_component(
         LocalOrchestrator(name=new_name)
     )
     fresh_zen_store.update_stack_component(
@@ -665,12 +669,12 @@ def test_rename_non_core_stack_component_succeeds(
     old_name = "original_kubeflow"
     new_name = "arias_kubeflow"
 
-    kubeflow_orchestrator = StackComponentWrapper.from_component(
+    kubeflow_orchestrator = ComponentWrapper.from_component(
         KubeflowOrchestrator(name=old_name)
     )
     fresh_zen_store.register_stack_component(kubeflow_orchestrator)
 
-    renamed_kubeflow_orchestrator = StackComponentWrapper.from_component(
+    renamed_kubeflow_orchestrator = ComponentWrapper.from_component(
         KubeflowOrchestrator(name=new_name)
     )
     fresh_zen_store.update_stack_component(
@@ -684,11 +688,9 @@ def test_rename_non_core_stack_component_succeeds(
             StackComponentType.ORCHESTRATOR, old_name
         )
 
-    stack_orchestrator = get_component_from_wrapper(
-        fresh_zen_store.get_stack_component(
-            StackComponentType.ORCHESTRATOR, new_name
-        )
-    )
+    stack_orchestrator = fresh_zen_store.get_stack_component(
+        StackComponentType.ORCHESTRATOR, new_name
+    ).to_component()
 
     assert stack_orchestrator is not None
     assert stack_orchestrator.name == new_name

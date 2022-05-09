@@ -26,7 +26,7 @@ from rich.text import Text
 
 import zenml.io.utils
 from zenml import __version__ as zenml_version_installed
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import confirmation, declare, error, print_table, warning
 from zenml.console import console
 from zenml.constants import GIT_REPO_URL
@@ -37,6 +37,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
 
+EXCLUDED_EXAMPLE_DIRS = ["add_your_own"]
 EXAMPLES_GITHUB_REPO = "zenml_examples"
 EXAMPLES_RUN_SCRIPT = "run_example.sh"
 SHELL_EXECUTABLE = "SHELL_EXECUTABLE"
@@ -94,9 +95,30 @@ class LocalExample:
         return None
 
     @property
+    def needs_manual_user_setup(self) -> bool:
+        """Checks if a setup.sh file exist in the example dir, signifying the
+        possibility to run the example without any user input. Examples with no
+        setup.sh file need the user to setup infrastructure and/or connect
+        to tools/service providers
+
+        Returns:
+            True if no setup.sh file in self.path, False else
+        """
+        return not zenml.io.fileio.exists(
+            os.path.join(str(self.path), "setup.sh")
+        )
+
+    @property
     def executable_python_example(self) -> str:
         """Return the Python file for the example"""
-        if self.has_single_python_file:
+
+        if self.needs_manual_user_setup:
+            raise NotImplementedError(
+                "This example currently does not support being run from the "
+                "CLI as user specific setup is required. Consult the README.md "
+                "of the example to find out more."
+            )
+        elif self.has_single_python_file:
             return self.python_files_in_dir[0]
         elif self.run_dot_py_file:
             return self.run_dot_py_file
@@ -136,7 +158,7 @@ class LocalExample:
             call = (
                 example_runner
                 + ["--executable", self.executable_python_example]
-                + ["-f"] * force
+                + ["-y"] * force
                 + ["--no-stack-setup"] * prevent_stack_setup
             )
             try:
@@ -372,14 +394,18 @@ class GitExamplesHandler(object):
         Args:
           example_name: Name of an example.
         """
-        example_dict = {e.name: e for e in self.examples}
+        example_dict = {
+            e.name: e
+            for e in self.examples
+            if e.name not in EXCLUDED_EXAMPLE_DIRS
+        }
         if example_name:
             if example_name in example_dict.keys():
                 return [example_dict[example_name]]
             else:
                 raise KeyError(
                     f"Example {example_name} does not exist! "
-                    f"Available examples: {[example_dict.keys()]}"
+                    f"Available examples: {list(example_dict)}"
                 )
         else:
             return self.examples
@@ -454,9 +480,9 @@ def check_for_version_mismatch(
             )
 
 
-@cli.group(help="Access all ZenML examples.")
+@cli.group(cls=TagGroup)
 def example() -> None:
-    """Examples group"""
+    """Access all ZenML examples."""
 
 
 @example.command(help="List the available examples.")
@@ -536,10 +562,19 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
 @pass_git_examples_handler
 @click.argument("example_name", required=False, default=None)
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the redownload of the examples folder to the ZenML config "
+    "folder.",
+)
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the redownload of the examples folder to the ZenML config. Use `-y/--yes` instead."
     "folder.",
 )
 @click.option(
@@ -569,14 +604,21 @@ def pull(
     git_examples_handler: GitExamplesHandler,
     example_name: str,
     force: bool,
+    old_force: bool,
     version: str,
     path: str,
     branch: Optional[str],
 ) -> None:
     """Pull examples straight into your current working directory.
-    Add the flag --force or -f to redownload all the examples afresh.
+    Add the flag --yes or -y to redownload all the examples afresh.
     Use the flag --version or -v and the version number to specify
     which version of ZenML you wish to use for the examples."""
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
+
     branch = branch.strip() if branch else f"release/{version}"
     git_examples_handler.pull(branch=branch, force=force)
 
@@ -626,12 +668,22 @@ def pull(
     help="Relative path at which you want to install the example(s)",
 )
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the run of the example. This deletes the .zen folder from the "
     "example folder and force installs all necessary integration "
     "requirements.",
+)
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the run of the example. This deletes the .zen folder from the "
+    "example folder and force installs all necessary integration "
+    "requirements. Use `-y/--yes` instead.",
 )
 @click.option(
     "--shell-executable",
@@ -651,12 +703,18 @@ def run(
     example_name: str,
     path: str,
     force: bool,
+    old_force: bool,
     shell_executable: Optional[str],
 ) -> None:
     """Run the example at the specified relative path.
     `zenml example pull EXAMPLE_NAME` has to be called with the same relative
     path before the run command.
     """
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     check_for_version_mismatch(git_examples_handler)
 
     # TODO [ENG-272]: - create a post_run function inside individual setup.sh
@@ -665,8 +723,8 @@ def run(
 
     if sys.platform == "win32":
         logger.info(
-            "If you are running examples on Windows, make sure that you have an "
-            "associated application with executing .sh files. If you don't "
+            "If you are running examples on Windows, make sure that you have "
+            "an associated application with executing .sh files. If you don't "
             "have any and you see a pop-up during 'zenml example run', we "
             "suggest to use the Git BASH: https://gitforwindows.org/"
         )
