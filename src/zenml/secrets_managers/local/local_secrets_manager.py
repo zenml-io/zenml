@@ -205,6 +205,6 @@ class LocalSecretsManager(BaseSecretsManager):
         if not force:
             raise ValueError(
                 "This operation will delete all secrets. "
-                "To confirm, please pass `--force`."
+                "To confirm, please pass `--yes`."
             )
         remove(self.secrets_file)

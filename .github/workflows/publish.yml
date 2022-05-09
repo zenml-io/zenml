@@ -40,7 +40,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m poetry install
-          python -m poetry run zenml integration install -f --ignore-integration feast
+          python -m poetry run zenml integration install -y --ignore-integration feast
           python -m poetry run pip install click~=8.0.3
 
       # This should be unnecessary, but good to run it.
