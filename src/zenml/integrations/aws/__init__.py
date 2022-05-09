@@ -43,7 +43,8 @@ class AWSIntegration(Integration):
         return [
             FlavorWrapper(
                 name=AWS_SECRET_MANAGER_FLAVOR,
-                source="zenml.integrations.aws.secrets_managers.AWSSecretsManager",
+                source="zenml.integrations.aws.secrets_managers"
+                ".AWSSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),
