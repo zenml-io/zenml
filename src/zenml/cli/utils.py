@@ -131,10 +131,19 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
-    rich_table = table.Table(*column_names, box=box.HEAVY_EDGE)
+    rich_table = table.Table(box=box.HEAVY_EDGE)
+    for col_name in column_names:
+        rich_table.add_column(str(col_name), overflow="fold")
 
     for dict_ in obj:
-        values = [dict_.get(key) for key in column_keys]
+        values = []
+        for key in column_keys:
+            if key is None:
+                values.append(None)
+            else:
+                value = dict_.get(key)
+                # append the value as a link so it's accessible in the console
+                values.append(f"[link={value}]{value}[/link]")
         rich_table.add_row(*values)
 
     if len(rich_table.columns) > 1:
@@ -220,10 +229,11 @@ def print_stack_configuration(
         caption=stack_caption,
         show_lines=True,
     )
-    rich_table.add_column("COMPONENT_TYPE")
-    rich_table.add_column("COMPONENT_NAME")
+    rich_table.add_column("COMPONENT_TYPE", overflow="fold")
+    rich_table.add_column("COMPONENT_NAME", overflow="fold")
     for component_type, name in config.items():
-        rich_table.add_row(component_type.value, name)
+        link_name = f"[link={name}]{name}[/link]"
+        rich_table.add_row(component_type.value, link_name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -297,16 +307,18 @@ def print_stack_component_configuration(
         show_lines=True,
     )
     rich_table.add_column("COMPONENT_PROPERTY")
-    rich_table.add_column("VALUE")
+    rich_table.add_column("VALUE", overflow="fold")
     items = component.dict().items()
     for item in items:
-        rich_table.add_row(*[str(elem) for elem in item])
+        elements = []
+        for idx, elem in enumerate(item):
+            if idx == 0:
+                elements.append(f"{elem.upper()}")
+            else:
+                link_elem = f"[link={elem}]{elem}[/link]"
+                elements.append(link_elem)
+        rich_table.add_row(*elements)
 
-    # capitalize entries in first column
-    rich_table.columns[0]._cells = [
-        component.upper()  # type: ignore[union-attr]
-        for component in rich_table.columns[0]._cells
-    ]
     console.print(rich_table)
 
 
@@ -345,16 +357,18 @@ def print_profile(
         show_lines=True,
     )
     rich_table.add_column("PROPERTY")
-    rich_table.add_column("VALUE")
+    rich_table.add_column("VALUE", overflow="fold")
     items = profile.dict().items()
     for item in items:
-        rich_table.add_row(*[str(elem) for elem in item])
+        elements = []
+        for idx, elem in enumerate(item):
+            if idx == 0:
+                elements.append(f"{elem.upper()}")
+            else:
+                link_elem = f"[link='{elem}']{elem}[/link]"
+                elements.append(link_elem)
+        rich_table.add_row(*elements)
 
-    # capitalize entries in first column
-    rich_table.columns[0]._cells = [
-        component.upper()  # type: ignore[union-attr]
-        for component in rich_table.columns[0]._cells
-    ]
     console.print(rich_table)
 
 
@@ -481,10 +495,10 @@ def print_secrets(secrets: List[str]) -> None:
         title="Secrets",
         show_lines=True,
     )
-    rich_table.add_column("SECRET_NAME")
+    rich_table.add_column("SECRET_NAME", overflow="fold")
     secrets.sort()
     for item in secrets:
-        rich_table.add_row(item)
+        rich_table.add_row(f"[link='{item}']{item}[/link]")
 
     console.print(rich_table)
 
