@@ -31,6 +31,7 @@ import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
+from rich.style import Style
 from rich.text import Text
 
 from zenml.config.profile_config import ProfileConfiguration
@@ -99,13 +100,16 @@ def error(text: str) -> None:
     # console.print(text, style="error")
 
 
-def warning(text: str) -> None:
+def warning(
+    text: str, custom_style: Optional[Union[str, Style]] = "warning"
+) -> None:
     """Echo a warning string on the CLI.
 
     Args:
       text: Input text string.
+      custom_style: Optional custom style to be used.
     """
-    console.print(text, style="warning")
+    console.print(text, style=custom_style)
 
 
 def pretty_print(obj: Any) -> None:
