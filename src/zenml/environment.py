@@ -45,13 +45,15 @@ def get_environment() -> str:
 
 
 def get_system_details() -> Dict[str, str]:
+    from zenml.integrations.registry import integration_registry
+
     info = {
         "ZenML version": __version__,
         "Install path": Path(__file__).resolve().parent,
         "Python version": Environment.python_version(),
         "Platform information": Environment.get_system_info(),
         "Environment": get_environment(),
-        "Integrations": get_installed_integrations(),
+        "Integrations": integration_registry.get_installed_integrations(),
     }
     return "\n".join(
         "{:>10} {}".format(k + ":", str(v).replace("\n", " "))
