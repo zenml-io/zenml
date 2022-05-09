@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import json
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Optional, List
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, List, Dict
 
 from tfx.dsl.compiler.compiler import Compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -22,7 +22,7 @@ from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.pipeline import Pipeline as TfxPipeline
 from tfx.orchestration.portable import launcher, runtime_parameter_utils
-from zenml.orchestrators.utils import execute_step
+from zenml.orchestrators.utils import execute_step, get_step_for_node
 from tfx.proto.orchestration import executable_spec_pb2
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline, \
     PipelineNode
@@ -53,10 +53,10 @@ class BaseOrchestrator(StackComponent, ABC):
     _runtime_configuration: "RuntimeConfiguration" = None
     _tfx_pipeline: "TfxPipeline" = None
     _pb2_pipeline: "Pb2Pipeline" = None
+    _stepname_to_node: Dict = {}
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
-
 
     def run_pipeline(
             self,
@@ -71,23 +71,28 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack on which the pipeline is run.
             runtime_configuration: Runtime configuration of the pipeline run.
         """
-        self.set_class_attributes()
+        self.set_class_attributes(pipeline, stack, runtime_configuration)
 
-        sorted_steps = [step for step in self._pipeline.steps]
+        sorted_steps = []
+        for node in self._pb2_pipeline.nodes:
+            pipeline_node: PipelineNode = node.pipeline_node
+            sorted_steps.append(get_step_for_node(
+                pipeline_node,
+                steps=list(self._pipeline.steps.values())
+            ))
 
         self.something_something_step(sorted_steps)
 
         self.clean_class_attributes()
 
     @abstractmethod
-    def something_something_step(self, sorted_list_of_steps: List["BaseStep"]):
-        """"""
-        # Run each component. Note that the pipeline.components list is in
-        # topological order.
-        for step in sorted_list_of_steps:
-            self.setup_and_execute_step(step)
+    def something_something_step(self,
+                                 sorted_list_of_steps: List[BaseStep]
+                                 ) -> None:
+        """BLAH BLAH BLAH"""
 
-    def setup_and_execute_step(self, step: "BaseStep", run_name: Optional[str]):
+    def setup_and_execute_step(self, step: "BaseStep",
+                               run_name: Optional[str] = None):
 
         run_name = run_name or self._runtime_configuration.run_name
 
@@ -119,7 +124,7 @@ class BaseOrchestrator(StackComponent, ABC):
                 step.executor_operator
         }
 
-        pipeline_node = self._pb2_pipeline.nodes
+        pipeline_node = self._stepname_to_node[step.name]
 
         component_launcher = launcher.Launcher(
             pipeline_node=pipeline_node,
@@ -154,6 +159,12 @@ class BaseOrchestrator(StackComponent, ABC):
         for node in self._pb2_pipeline.nodes:
             pipeline_node: PipelineNode = node.pipeline_node
 
+            step = get_step_for_node(
+                pipeline_node,
+                steps=list(self._pipeline.steps.values())
+            )
+            self._stepname_to_node[step.name] = pipeline_node
+
             # Add pipeline requirements as a context
             requirements = " ".join(sorted(self._pipeline.requirements))
             context_utils.add_context_to_node(
@@ -181,5 +192,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
         # self._pb2_pipeline
 
+        # ...
+        pass
+
+    def clean_class_attributes(self):
         # ...
         pass
