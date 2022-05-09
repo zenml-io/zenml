@@ -39,14 +39,18 @@ def served_models(ctx: click.Context) -> None:
     """List and manage served models with the active model
     deployer.
     """
-    ctx.obj = Repository().active_stack.components.get(
-        StackComponentType.MODEL_DEPLOYER, None
+    repo = Repository()
+    active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+    model_deployer_wrapper = active_stack.get_component(
+        StackComponentType.MODEL_DEPLOYER
     )
-    if ctx.obj is None:
+    if model_deployer_wrapper is None:
         error(
             "No active model deployer found. Please add a model_deployer to "
             "your stack."
         )
+        return
+    ctx.obj = model_deployer_wrapper.to_component()
 
 
 @served_models.command("list")
