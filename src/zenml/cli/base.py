@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from rich.style import Style
 
 from zenml.cli.cli import cli
 from zenml.cli.text_utils import (
@@ -32,7 +33,7 @@ from zenml.console import console
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
-from zenml.io.utils import get_global_config_directory, is_remote
+from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import identify_user
@@ -87,12 +88,10 @@ def _delete_local_files(force_delete: bool = False) -> None:
     """Delete local files corresponding to the active stack.
 
     Args:
-      force_delete: Whether to force delete the metadata and artifact stores."""
+      force_delete: Whether to force delete the files."""
     if not force_delete:
         confirm = confirmation(
-            "DANGER: This will completely delete anything inside the folders for the following stack components: \n"
-            "- local metadata store \n"
-            "- local artifact store. \n\n"
+            "DANGER: This will completely delete metadata, artifacts and so on associated with all active stack components. \n\n"
             "Are you sure you want to proceed?"
         )
         if not confirm:
@@ -101,31 +100,19 @@ def _delete_local_files(force_delete: bool = False) -> None:
 
     repo = Repository()
     if repo.active_stack:
-        metadata_store_path = (
-            Path(repo.active_stack.metadata_store.local_path)
-            if repo.active_stack.metadata_store.local_path
-            else None
-        )
-        artifact_store_path = Path(repo.active_stack.artifact_store.path)
-        if (
-            metadata_store_path
-            and not is_remote(str(metadata_store_path))
-            and not is_remote(str(artifact_store_path))
-        ):
-            # delete all files inside those directories
-            for path in metadata_store_path.iterdir():
-                if fileio.isdir(str(path)):
-                    fileio.rmtree(str(path))
-                else:
-                    fileio.remove(str(path))
-            for path in artifact_store_path.iterdir():
-                if fileio.isdir(str(path)):
-                    fileio.rmtree(str(path))
-                else:
-                    fileio.remove(str(path))
-    declare(
-        "Deleted all files from within the local active metadata and artifact store."
-    )
+        stack_components = repo.active_stack.components
+        for _, component in stack_components.items():
+            local_path = component.local_path
+            if local_path:
+                for path in Path(local_path).iterdir():
+                    if fileio.isdir(str(path)):
+                        fileio.rmtree(str(path))
+                    else:
+                        fileio.remove(str(path))
+                    warning(
+                        f"Deleted `{path}`", Style(color="blue", italic=True)
+                    )
+    declare("Deleted all files relating to the local active stack.")
 
 
 @cli.command("clean", hidden=True)
@@ -150,7 +137,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
 
     Args:
       yes (flag; default value = False): If you don't want a confirmation prompt.
-      local (flag; default value = False): If you want to delete local metadata and artifact stores from the active stack.
+      local (flag; default value = False): If you want to delete local files associated with the active stack.
     """
     if local:
         _delete_local_files(force_delete=yes)
