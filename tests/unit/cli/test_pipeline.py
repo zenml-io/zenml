@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import subprocess
+import sys
 
 from zenml.enums import ExecutionStatus
 from zenml.repository import Repository
@@ -28,6 +29,8 @@ def test_pipeline_run_single_file(
 ) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the same file."""
+    clean_sys_modules = sys.modules
+
     os.chdir(files_dir)
     clean_repo.activate_root()
 
@@ -45,6 +48,11 @@ def test_pipeline_run_single_file(
 
     assert historic_pipeline.runs[-1].status == ExecutionStatus.COMPLETED
 
+    # Clean up sys modules that were imported in the course of this test
+    for mod in sys.modules:
+        if mod not in clean_sys_modules:
+            del sys.modules[mod]
+
 
 def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
@@ -60,6 +68,8 @@ def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     |config.yaml
     |run.py
     """
+    clean_sys_modules = sys.modules
+
     os.chdir(files_dir)
     clean_repo.activate_root()
 
@@ -76,3 +86,8 @@ def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     assert len(historic_pipeline.runs) == 1
 
     assert historic_pipeline.runs[-1].status == ExecutionStatus.COMPLETED
+
+    # Clean up sys modules that were imported in the course of this test
+    for mod in sys.modules:
+        if mod not in clean_sys_modules:
+            del sys.modules[mod]
