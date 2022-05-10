@@ -13,24 +13,18 @@
 #  permissions and limitations under the License.
 
 import datetime
+import functools
 import os
 import time
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
 
-import typing
 from pydantic import root_validator
-from airflow.operators import python as airflow_python
 
 import zenml.io.utils
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
-from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
-    AirflowDagRunner,
-    AirflowPipelineConfig,
-)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.utils import daemon
 from zenml.utils.source_utils import get_source_root_path
@@ -151,10 +145,10 @@ class AirflowOrchestrator(BaseOrchestrator):
         return {DAG_FILEPATH_OPTION_KEY: None}
 
     def prepare_pipeline_deployment(
-            self,
-            pipeline: "BasePipeline",
-            stack: "Stack",
-            runtime_configuration: "RuntimeConfiguration",
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> None:
         """Checks whether airflow is running and copies the DAG file to the
         airflow DAGs directory.
@@ -263,10 +257,11 @@ class AirflowOrchestrator(BaseOrchestrator):
         logger.info("Airflow spun down.")
 
     def something_something_step(
-            self, sorted_list_of_steps: List[BaseStep]
+        self, sorted_list_of_steps: List[BaseStep]
     ) -> Any:
 
         import airflow
+        from airflow.operators import python as airflow_python
 
         if self._runtime_configuration.schedule:
             airflow_config = {
@@ -288,33 +283,27 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         airflow_dag = airflow.DAG(
             dag_id=self._pipeline.name,
-            **(
-                typing.cast(
-                    AirflowPipelineConfig, airflow_config
-                ).airflow_dag_config
-            ),
             is_paused_upon_creation=False,
             catchup=catchup,
+            **airflow_config,
         )
 
         component_impl_map = {}
-
         for step in sorted_list_of_steps:
 
-            def step_callable(**kwargs):
+            def _step_callable(step: "BaseStep", **kwargs):
                 run_name = kwargs["ti"].get_dagrun().run_id
                 self.setup_and_execute_step(step=step, run_name=run_name)
 
             airflow_operator = airflow_python.PythonOperator(
+                dag=airflow_dag,
                 task_id=step.name,
                 provide_context=True,
-                python_callable=step_callable,
-                dag=airflow_dag)
+                python_callable=functools.partial(_step_callable, step=step),
+            )
 
             component_impl_map[step.name] = airflow_operator
             for upstream_node in self.get_upstream_steps(step):
-                airflow_operator.set_upstream(
-                    component_impl_map[upstream_node]
-                )
+                airflow_operator.set_upstream(component_impl_map[upstream_node])
 
         return airflow_dag

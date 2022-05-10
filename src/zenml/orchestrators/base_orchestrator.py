@@ -97,7 +97,6 @@ class BaseOrchestrator(StackComponent, ABC):
     def setup_and_execute_step(
         self, step: "BaseStep", run_name: Optional[str] = None
     ):
-
         run_name = run_name or self._runtime_configuration.run_name
 
         # Substitute the runtime parameter to be a concrete run_id
@@ -126,7 +125,6 @@ class BaseOrchestrator(StackComponent, ABC):
         }
 
         pipeline_node = self._stepname_to_node[step.name]
-
         component_launcher = launcher.Launcher(
             pipeline_node=pipeline_node,
             mlmd_connection=metadata_connection,
@@ -193,12 +191,10 @@ class BaseOrchestrator(StackComponent, ABC):
         node = self._stepname_to_node[step.name]
 
         upstream_steps = []
-        for upstream_node in node.pipeline_node.upstream_nodes:
-            upstream_steps.append(upstream_node.node_info.id)
+        for upstream_node in node.upstream_nodes:
+            upstream_steps.append(upstream_node)
 
         return upstream_steps
-
-
 
     def prepare_entrypoint(self) -> None:
         # ...
