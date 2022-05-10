@@ -27,11 +27,3 @@ class AWSSecretSchema(BaseSecretSchema):
     aws_access_key_id: str
     aws_secret_access_key: str
     aws_session_token: Optional[str]
-
-    class Config:
-        """Pydantic configuration class."""
-
-        # validate attribute assignments
-        validate_assignment = True
-        # report extra attributes as validation failures
-        extra = "forbid"

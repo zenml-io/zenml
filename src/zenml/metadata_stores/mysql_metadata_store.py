@@ -67,9 +67,9 @@ class MySQLMetadataStore(BaseMetadataStore):
                 config.user = self.user
             else:
                 raise RuntimeError(
-                    f"Your metadata store does not have a username. Please "
-                    f"provide it either by defining it upon registration or "
-                    f"through a MySQL secret."
+                    "Your metadata store does not have a username. Please "
+                    "provide it either by defining it upon registration or "
+                    "through a MySQL secret."
                 )
 
         # Set the password

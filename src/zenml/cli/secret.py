@@ -197,10 +197,9 @@ def register_secret(
                     )
                 else:
                     warning(
-                        f"Key {k} already in this secret. Please restart this"
-                        f" process or use "
-                        f"'zenml secret update {name} --{secret_schema_type}'"
-                        f" to update this key after the secret is registered. "
+                        f"Key {k} already in this secret. Please restart this "
+                        f"process or use 'zenml secret update {name} --{k}=...' "
+                        f"to update this key after the secret is registered. "
                         f"Skipping ..."
                     )
 
@@ -238,7 +237,6 @@ def get_secret(
     name: str,
 ) -> None:
     """Get a secret, given its name."""
-    # with console.status(f"Getting secret `{name}`..."):
     try:
         secret = secrets_manager.get_secret(secret_name=name)
         pretty_print_secret(secret, hide_secret=False)

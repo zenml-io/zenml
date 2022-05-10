@@ -53,3 +53,11 @@ class BaseSecretSchema(BaseModel, ABC):
             for schema_key in cls.__fields__.keys()
             if schema_key not in ignored_keys
         ]
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # report extra attributes as validation failures
+        extra = "forbid"
