@@ -88,11 +88,7 @@ def declare(
         bold: Optional boolean to bold the text.
         italic: Optional boolean to italicize the text.
     """
-    style = Style(color="cyan", dim=True)
-    if bold:
-        style.bold = True
-    if italic:
-        style.italic = True
+    style = Style(color="cyan", dim=True, bold=bold, italic=italic)
 
     console.print(text, style=style)
 
