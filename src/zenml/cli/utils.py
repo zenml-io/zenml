@@ -114,7 +114,7 @@ def warning(text: str, bold: bool = False, italic: bool = False) -> None:
         bold: Optional boolean to bold the text.
         italic: Optional boolean to italicize the text.
     """
-    style = Style(color="yellow")
+    style = Style(color="yellow", dim=True, bold=bold, italic=italic)
     if bold:
         style.bold = True
     if italic:
