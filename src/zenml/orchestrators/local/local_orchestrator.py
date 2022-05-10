@@ -28,15 +28,15 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, ClassVar, List
+from typing import TYPE_CHECKING, Any, ClassVar, List, Dict
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.steps import BaseStep
+from zenml.pipelines import Schedule
 
 if TYPE_CHECKING:
     pass
-
 
 logger = get_logger(__name__)
 
@@ -44,12 +44,31 @@ logger = get_logger(__name__)
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally."""
 
-    # Class Configuration
+    def provision(self) -> None:
+        pass
+
+    def deprovision(self) -> None:
+        pass
+
+    def resume(self) -> None:
+        pass
+
+    def suspend(self) -> None:
+        pass
+
     FLAVOR: ClassVar[str] = "local"
 
-    def something_something_step(
-        self, sorted_list_of_steps: List[BaseStep]
+    def prepare_steps(
+        self,
+        sorted_list_of_steps: List[BaseStep],
+        schedule: Schedule
     ) -> Any:
+        if schedule:
+            logger.warning(
+                "Local Orchestrator currently does not support the"
+                "use of schedules. The `schedule` will be ignored "
+                "and the pipeline will be run immediately."
+            )
 
         for step in sorted_list_of_steps:
             self.setup_and_execute_step(step)

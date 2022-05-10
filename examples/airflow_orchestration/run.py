@@ -58,12 +58,15 @@ aep = airflow_example_pipeline(
 # Run the new pipeline
 DAG = aep.run()
 
-# In case you want to run this on a schedule uncomment the following line:
+# # In case you want to run this on a schedule uncomment the following line:
+# from datetime import datetime, timedelta
+# from zenml.pipelines import Schedule
+#
 # DAG = aep.run(
 #     schedule=Schedule(
-#         start_time=datetime.now(),
-#         end_time=datetime.now() + timedelta(minutes=9),
-#         interval_second=180,
+#         start_time=datetime.now() - timedelta(hours=1),
+#         end_time=datetime.now() + timedelta(minutes=19),
+#         interval_second=timedelta(seconds=120),
 #         catchup=False,
 #     )
 # )

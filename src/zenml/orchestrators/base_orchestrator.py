@@ -36,9 +36,10 @@ from zenml.orchestrators.utils import (
 from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.steps import BaseStep
+from zenml.pipelines import Schedule
 
 if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline
+    from zenml.pipelines import BasePipeline, Schedule
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
 
@@ -73,6 +74,7 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         self.set_class_attributes(pipeline, stack, runtime_configuration)
 
+        # Create a list of sorted steps
         sorted_steps = []
         for node in self._pb2_pipeline.nodes:
             pipeline_node: PipelineNode = node.pipeline_node
@@ -82,15 +84,19 @@ class BaseOrchestrator(StackComponent, ABC):
                 )
             )
 
-        something_something = self.something_something_step(sorted_steps)
+        prepared_steps = self.prepare_steps(
+            sorted_list_of_steps=sorted_steps,
+            schedule=self._runtime_configuration.schedule)
 
         self.clean_class_attributes()
 
-        return something_something
+        return prepared_steps
 
     @abstractmethod
-    def something_something_step(
-        self, sorted_list_of_steps: List[BaseStep]
+    def prepare_steps(
+        self,
+        sorted_list_of_steps: List[BaseStep],
+        schedule: Schedule
     ) -> Any:
         """BLAH BLAH BLAH"""
 
@@ -187,7 +193,16 @@ class BaseOrchestrator(StackComponent, ABC):
                 pipeline_node, self._runtime_configuration
             )
 
-    def get_upstream_steps(self, step: "BaseStep"):
+    def get_upstream_steps(self, step: "BaseStep") -> List[str]:
+        """Given a step use the associated pb2 node to find the names of all
+        upstream nodes.
+
+        Args:
+            step: Instance of a Pipeline Step
+
+        Returns:
+            List of step names from direct upstream steps
+        """
         node = self._stepname_to_node[step.name]
 
         upstream_steps = []

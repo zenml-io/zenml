@@ -16,7 +16,7 @@ import datetime
 import functools
 import os
 import time
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
 from pydantic import root_validator
 
@@ -26,6 +26,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.steps import BaseStep
+from zenml.pipelines import Schedule
 from zenml.utils import daemon
 from zenml.utils.source_utils import get_source_root_path
 
@@ -256,54 +257,77 @@ class AirflowOrchestrator(BaseOrchestrator):
         fileio.rmtree(self.airflow_home)
         logger.info("Airflow spun down.")
 
-    def something_something_step(
-        self, sorted_list_of_steps: List[BaseStep]
+    @staticmethod
+    def _translate_schedule(schedule: Optional[Schedule]) -> Dict[str, Any]:
+        """Convert ZenML schedule into airflow schedule which uses slightly
+        different naming and needs some default entries for execution without a
+        schedule.
+
+        Args:
+            schedule: Containing the interval, start and end date and
+                a boolean flag that defines if past runs shopuld be caught up
+                on
+        Returns:
+            Airflow configuration dict.
+        """
+        if schedule:
+            return {
+                "schedule_interval": schedule.interval_second,
+                "start_date": schedule.start_time,
+                "end_date": schedule.end_time or None,
+                "catchup": schedule.catchup or False
+            }
+        return {
+            "schedule_interval": "@once",
+            "start_date": datetime.datetime.now() - datetime.timedelta(7),
+            "catchup": False
+        }
+
+    def prepare_steps(
+        self,
+        sorted_list_of_steps: List[BaseStep],
+        schedule: Schedule
     ) -> Any:
 
         import airflow
         from airflow.operators import python as airflow_python
 
-        if self._runtime_configuration.schedule:
-            airflow_config = {
-                "schedule_interval": datetime.timedelta(
-                    seconds=self._runtime_configuration.schedule.interval_second
-                ),
-                "start_date": self._runtime_configuration.schedule.start_time,
-                "end_date": self._runtime_configuration.schedule.end_time,
-            }
-            catchup = self._runtime_configuration.schedule.catchup
-
-        else:
-            airflow_config = {
-                "schedule_interval": "@once",
-                # Scheduled in the past to make sure it runs immediately
-                "start_date": datetime.datetime.now() - datetime.timedelta(7),
-            }
-            catchup = False
-
+        # Instantiate and configure airflow Dag with name and schedule
         airflow_dag = airflow.DAG(
             dag_id=self._pipeline.name,
             is_paused_upon_creation=False,
-            catchup=catchup,
-            **airflow_config,
+            **self._translate_schedule(schedule),
         )
 
+        # Dictionary mapping step name to airflow_operator. This will be needed
+        #  to link steps together with the operators of their upstream nodes
         component_impl_map = {}
+
         for step in sorted_list_of_steps:
 
-            def _step_callable(step: "BaseStep", **kwargs):
+            # Create callable that will be used by airflow to execute within the
+            #  orchestrated environment
+            def _step_callable(step_instance: "BaseStep", **kwargs):
                 run_name = kwargs["ti"].get_dagrun().run_id
-                self.setup_and_execute_step(step=step, run_name=run_name)
+                self.setup_and_execute_step(step=step_instance,
+                                            run_name=run_name)
 
-            airflow_operator = airflow_python.PythonOperator(
+            # Create airflow step operator that contains the step callable
+            airflow_step_operator = airflow_python.PythonOperator(
                 dag=airflow_dag,
                 task_id=step.name,
                 provide_context=True,
-                python_callable=functools.partial(_step_callable, step=step),
+                python_callable=functools.partial(_step_callable,
+                                                  step_instance=step),
             )
 
-            component_impl_map[step.name] = airflow_operator
+            # Give the airflow step operator the information which operators
+            #  are directly upstream from it
+            component_impl_map[step.name] = airflow_step_operator
             for upstream_node in self.get_upstream_steps(step):
-                airflow_operator.set_upstream(component_impl_map[upstream_node])
+                airflow_step_operator.set_upstream(
+                    component_impl_map[upstream_node]
+                )
 
+        # Return the finished airflow directed acyclic graph
         return airflow_dag
