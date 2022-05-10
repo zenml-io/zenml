@@ -193,7 +193,7 @@ def register_secret(
                 k = click.prompt("Please enter a secret-key")
                 if k not in secret_contents:
                     secret_contents[k] = getpass.getpass(
-                        f"Please enter the secret_value " f"for the key [{k}]:"
+                        f"Please enter the secret_value for the key [{k}]:"
                     )
                 else:
                     warning(
@@ -252,7 +252,7 @@ def get_secret(
 @secret.command("list")
 @click.pass_obj
 def list_secret(secrets_manager: "BaseSecretsManager") -> None:
-    """ "List all secrets tracked by your Secrets Manager."""
+    """List all secrets tracked by your Secrets Manager."""
     with console.status("Getting secret names..."):
         secret_names = secrets_manager.get_all_secret_keys()
         print_secrets(secret_names)
@@ -441,7 +441,7 @@ def delete_all_secrets(
 ) -> None:
     """Delete all secrets tracked by your Secrets Manager.
 
-    Use the --force flag to specify if force should be applied when deleting all
+    Use the --yes flag to specify if force should be applied when deleting all
     secrets. This might have differing implications depending on the underlying
     secrets manager
     """

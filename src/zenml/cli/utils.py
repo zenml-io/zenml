@@ -420,7 +420,6 @@ def _expand_argument_value_from_file(name: str, value: str) -> str:
     logger.info(
         f"Expanding argument value `{name}` to contents of file `{filename}`."
     )
-    print(filename)
     if not os.path.isfile(filename):
         raise ValueError(
             f"Could not load argument '{name}' value: file "

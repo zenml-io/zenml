@@ -119,7 +119,7 @@ class MySQLMetadataStore(BaseMetadataStore):
             try:
                 secret = secret_manager.get_secret(self.secret)
 
-                if isinstance(secret, MYSQLSecretSchema):
+                if not isinstance(secret, MYSQLSecretSchema):
                     raise RuntimeError(
                         f"If you are using a secret with a MySQL Metadata "
                         f"Store, please make sure to use the schema: "
