@@ -28,11 +28,11 @@ from typing import (
     cast,
 )
 
+from zenml import constants
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
 )
-from zenml import constants
 from zenml.exceptions import (
     DuplicatedConfigurationError,
     PipelineConfigurationError,

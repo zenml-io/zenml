@@ -15,9 +15,11 @@
 import datetime
 import os
 import time
-from typing import TYPE_CHECKING, Any, ClassVar, Dict
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List
 
+import typing
 from pydantic import root_validator
+from airflow.operators import python as airflow_python
 
 import zenml.io.utils
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
@@ -28,6 +30,8 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.repository import Repository
+from zenml.steps import BaseStep
 from zenml.utils import daemon
 from zenml.utils.source_utils import get_source_root_path
 
@@ -147,10 +151,10 @@ class AirflowOrchestrator(BaseOrchestrator):
         return {DAG_FILEPATH_OPTION_KEY: None}
 
     def prepare_pipeline_deployment(
-        self,
-        pipeline: "BasePipeline",
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
+            self,
+            pipeline: "BasePipeline",
+            stack: "Stack",
+            runtime_configuration: "RuntimeConfiguration",
     ) -> None:
         """Checks whether airflow is running and copies the DAG file to the
         airflow DAGs directory.
@@ -258,36 +262,59 @@ class AirflowOrchestrator(BaseOrchestrator):
         fileio.rmtree(self.airflow_home)
         logger.info("Airflow spun down.")
 
-    def run_pipeline(
-        self,
-        pipeline: "BasePipeline",
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
+    def something_something_step(
+            self, sorted_list_of_steps: List[BaseStep]
     ) -> Any:
-        """Schedules a pipeline to be run on Airflow.
 
-        Returns:
-            An Airflow DAG object that corresponds to the ZenML pipeline.
-        """
-        if runtime_configuration.schedule:
+        import airflow
+
+        if self._runtime_configuration.schedule:
             airflow_config = {
                 "schedule_interval": datetime.timedelta(
-                    seconds=runtime_configuration.schedule.interval_second
+                    seconds=self._runtime_configuration.schedule.interval_second
                 ),
-                "start_date": runtime_configuration.schedule.start_time,
-                "end_date": runtime_configuration.schedule.end_time,
+                "start_date": self._runtime_configuration.schedule.start_time,
+                "end_date": self._runtime_configuration.schedule.end_time,
             }
+            catchup = self._runtime_configuration.schedule.catchup
+
         else:
             airflow_config = {
                 "schedule_interval": "@once",
                 # Scheduled in the past to make sure it runs immediately
                 "start_date": datetime.datetime.now() - datetime.timedelta(7),
             }
+            catchup = False
 
-        runner = AirflowDagRunner(AirflowPipelineConfig(airflow_config))
-
-        return runner.run(
-            pipeline=pipeline,
-            stack=stack,
-            runtime_configuration=runtime_configuration,
+        airflow_dag = airflow.DAG(
+            dag_id=self._pipeline.name,
+            **(
+                typing.cast(
+                    AirflowPipelineConfig, airflow_config
+                ).airflow_dag_config
+            ),
+            is_paused_upon_creation=False,
+            catchup=catchup,
         )
+
+        component_impl_map = {}
+
+        for step in sorted_list_of_steps:
+
+            def step_callable(**kwargs):
+                run_name = kwargs["ti"].get_dagrun().run_id
+                self.setup_and_execute_step(step=step, run_name=run_name)
+
+            airflow_operator = airflow_python.PythonOperator(
+                task_id=step.name,
+                provide_context=True,
+                python_callable=step_callable,
+                dag=airflow_dag)
+
+            component_impl_map[step.name] = airflow_operator
+            for upstream_node in self.get_upstream_steps(step):
+                airflow_operator.set_upstream(
+                    component_impl_map[upstream_node]
+                )
+
+        return airflow_dag
