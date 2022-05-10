@@ -20,7 +20,9 @@ from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
 from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.pipeline import Pipeline as TfxPipeline
-from tfx.orchestration.portable import launcher, runtime_parameter_utils
+from tfx.orchestration.portable import (
+    data_types, launcher, runtime_parameter_utils
+)
 from tfx.proto.orchestration import executable_spec_pb2
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
@@ -54,7 +56,6 @@ class BaseOrchestrator(StackComponent, ABC):
     _runtime_configuration: Optional["RuntimeConfiguration"] = None
     _tfx_pipeline: Optional["TfxPipeline"] = None
     _pb2_pipeline: Optional["Pb2Pipeline"] = None
-    _stepname_to_node: Optional[Dict[str, PipelineNode]] = dict()
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
@@ -101,18 +102,24 @@ class BaseOrchestrator(StackComponent, ABC):
         """BLAH BLAH BLAH"""
 
     def setup_and_execute_step(
-        self, step: "BaseStep", run_name: Optional[str] = None
-    ):
-        run_name = run_name or self._runtime_configuration.run_name
+        self,
+        step: "BaseStep",
+        run_name: str,
+        pb2_pipeline: Optional[Pb2Pipeline] = None
+    ) -> Optional[data_types.ExecutionInfo]:
+
+        pb2_pipeline = pb2_pipeline or self._pb2_pipeline
+
+        assert pb2_pipeline
 
         # Substitute the runtime parameter to be a concrete run_id
         runtime_parameter_utils.substitute_runtime_parameter(
-            self._pb2_pipeline,
+            pb2_pipeline,
             {PIPELINE_RUN_ID_PARAMETER_NAME: run_name},
         )
 
         deployment_config = runner_utils.extract_local_deployment_config(
-            self._pb2_pipeline
+            pb2_pipeline
         )
         executor_spec = runner_utils.extract_executor_spec(
             deployment_config, step.name
@@ -130,20 +137,40 @@ class BaseOrchestrator(StackComponent, ABC):
             executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator
         }
 
-        pipeline_node = self._stepname_to_node[step.name]
+        pipeline_node = self._get_node_with_step_name(step_name=step.name,
+                                                      pb2_pipeline=pb2_pipeline)
+
         component_launcher = launcher.Launcher(
             pipeline_node=pipeline_node,
             mlmd_connection=metadata_connection,
-            pipeline_info=self._pb2_pipeline.pipeline_info,
-            pipeline_runtime_spec=self._pb2_pipeline.runtime_spec,
+            pipeline_info=pb2_pipeline.pipeline_info,
+            pipeline_runtime_spec=pb2_pipeline.runtime_spec,
             executor_spec=executor_spec,
             custom_driver_spec=custom_driver_spec,
             custom_executor_operators=custom_executor_operators,
         )
 
         repo.active_stack.prepare_step_run()
-        execute_step(component_launcher)
+        execution_info = execute_step(component_launcher)
         repo.active_stack.prepare_step_run()
+
+        return execution_info
+
+    @staticmethod
+    def _get_node_with_step_name(
+        step_name: str,
+        pb2_pipeline: Pb2Pipeline
+    ) -> PipelineNode:
+        for node in pb2_pipeline.nodes:
+            if (
+                    node.WhichOneof("node") == "pipeline_node"
+                    and node.pipeline_node.node_info.id == step_name
+            ):
+
+                return node.pipeline_node
+
+        raise KeyError(f"Step {step_name} not found in Pipeline "
+                       f"{pb2_pipeline.pipeline_info.id}")
 
     def set_class_attributes(
         self,
@@ -169,7 +196,6 @@ class BaseOrchestrator(StackComponent, ABC):
             step = get_step_for_node(
                 pipeline_node, steps=list(self._pipeline.steps.values())
             )
-            self._stepname_to_node[step.name] = pipeline_node
 
             # Add pipeline requirements as a context
             requirements = " ".join(sorted(self._pipeline.requirements))

@@ -94,6 +94,7 @@ class KubeflowComponent:
         pod_labels_to_attach: Dict[str, str],
         main_module: str,
         step_module: str,
+        original_step_module: str,
         step_function_name: str,
         runtime_parameters: List[data_types.RuntimeParameter],
     ):

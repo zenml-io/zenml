@@ -39,8 +39,10 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.pipelines import Schedule
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
+from zenml.steps import BaseStep
 from zenml.utils import networking_utils
 from zenml.utils.source_utils import get_source_root_path
 
@@ -344,6 +346,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         assert stack.container_registry  # should never happen due to validation
         stack.container_registry.push_image(image_name)
+
+    def prepare_steps(
+        self,
+        sorted_list_of_steps: List[BaseStep],
+        schedule: Schedule
+    ) -> Any:
+        pass
 
     def run_pipeline(
         self,

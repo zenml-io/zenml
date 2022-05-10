@@ -351,15 +351,17 @@ class KubeflowDagRunner:
 
             main_module = get_module_source_from_module(sys.modules["__main__"])
 
-            step_module = component.component_type.split(".")[:-1]
-            if step_module[0] == "__main__":
+            original_step_module, _ = component.component_type.rsplit(".", 1)
+
+            if original_step_module == "__main__":
                 step_module = main_module
             else:
-                step_module = ".".join(step_module)
+                step_module = original_step_module
 
             kfp_component = KubeflowComponent(
                 main_module=main_module,
                 step_module=step_module,
+                original_step_module=original_step_module,
                 step_function_name=component.id,
                 component=component,
                 depends_on=depends_on,

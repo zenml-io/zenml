@@ -32,7 +32,10 @@ from tfx.orchestration.portable import (
     launcher,
     runtime_parameter_utils,
 )
-from tfx.proto.orchestration import executable_spec_pb2, pipeline_pb2
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline, \
+    OutputSpec, RuntimeParameter
+from tfx.proto.orchestration.pipeline_pb2 import PipelineNode, InputSpec
+from tfx.proto.orchestration import executable_spec_pb2
 from tfx.types import artifact, channel, standard_artifacts
 from tfx.types.channel import Property
 
@@ -142,15 +145,15 @@ def _render_artifact_as_mdstr(single_artifact: artifact.Artifact) -> str:
             producer_component=_sanitize_underscore(
                 single_artifact.producer_component
             )
-            or "None",
+                               or "None",
         )
     )
 
 
 def _dump_ui_metadata(
-    node: pipeline_pb2.PipelineNode,
-    execution_info: data_types.ExecutionInfo,
-    ui_metadata_path: str = "/tmp/mlpipeline-ui-metadata.json",
+        node: PipelineNode,
+        execution_info: data_types.ExecutionInfo,
+        ui_metadata_path: str = "/tmp/mlpipeline-ui-metadata.json",
 ) -> None:
     """Dump KFP UI metadata json file for visualization purpose.
 
@@ -174,8 +177,8 @@ def _dump_ui_metadata(
     )
 
     def _dump_input_populated_artifacts(
-        node_inputs: MutableMapping[str, pipeline_pb2.InputSpec],
-        name_to_artifacts: Dict[str, List[artifact.Artifact]],
+            node_inputs: MutableMapping[str, InputSpec],
+            name_to_artifacts: Dict[str, List[artifact.Artifact]],
     ) -> List[str]:
         """Dump artifacts markdown string for inputs.
 
@@ -209,14 +212,15 @@ def _dump_ui_metadata(
         return rendered_list
 
     def _dump_output_populated_artifacts(
-        node_outputs: MutableMapping[str, pipeline_pb2.OutputSpec],
-        name_to_artifacts: Dict[str, List[artifact.Artifact]],
+            node_outputs: MutableMapping[str, OutputSpec],
+            name_to_artifacts: Dict[str, List[artifact.Artifact]],
     ) -> List[str]:
         """Dump artifacts markdown string for outputs.
 
         Args:
           node_outputs: maps from output name to output sepc proto.
-          name_to_artifacts: maps from output key to list of populated artifacts.
+          name_to_artifacts: maps from output key to list of populated
+          artifacts.
 
         Returns:
           A list of dumped markdown string, each of which represents a channel.
@@ -277,9 +281,9 @@ def _dump_ui_metadata(
     # Add Tensorboard view for ModelRun outputs.
     for name, spec in node.outputs.outputs.items():
         if (
-            spec.artifact_spec.type.name
-            == standard_artifacts.ModelRun.TYPE_NAME
-            or spec.artifact_spec.type.name == ModelArtifact.TYPE_NAME
+                spec.artifact_spec.type.name
+                == standard_artifacts.ModelRun.TYPE_NAME
+                or spec.artifact_spec.type.name == ModelArtifact.TYPE_NAME
         ):
             output_model = execution_info.output_dict[name][0]
             source = output_model.uri
@@ -303,69 +307,10 @@ def _dump_ui_metadata(
         json.dump(metadata_dict, f)
 
 
-def _get_pipeline_node(
-    pipeline: pipeline_pb2.Pipeline, node_id: str
-) -> pipeline_pb2.PipelineNode:
-    """Gets node of a certain node_id from a pipeline."""
-    result: Optional[pipeline_pb2.PipelineNode] = None
-    for node in pipeline.nodes:
-        if (
-            node.WhichOneof("node") == "pipeline_node"
-            and node.pipeline_node.node_info.id == node_id
-        ):
-            result = node.pipeline_node
-    if not result:
-        logging.error("pipeline ir = %s\n", pipeline)
-        raise RuntimeError(
-            f"Cannot find node with id {node_id} in pipeline ir."
-        )
-
-    return result
-
-
-def _parse_runtime_parameter_str(param: str) -> Tuple[str, Property]:
-    """Parses runtime parameter string in command line argument."""
-    # Runtime parameter format: "{name}=(INT|DOUBLE|STRING):{value}"
-    name, value_and_type = param.split("=", 1)
-    value_type, value = value_and_type.split(":", 1)
-    if value_type == pipeline_pb2.RuntimeParameter.Type.Name(
-        pipeline_pb2.RuntimeParameter.INT
-    ):
-        return name, int(value)
-    elif value_type == pipeline_pb2.RuntimeParameter.Type.Name(
-        pipeline_pb2.RuntimeParameter.DOUBLE
-    ):
-        return name, float(value)
-    return name, value
-
-
-def _resolve_runtime_parameters(
-    tfx_ir: pipeline_pb2.Pipeline,
-    run_name: str,
-    parameters: Optional[List[str]],
-) -> None:
-    """Resolve runtime parameters in the pipeline proto inplace."""
-    if parameters is None:
-        parameters = []
-
-    parameter_bindings: Dict[str, Property] = {
-        # Substitute the runtime parameter to be a concrete run_id
-        constants.PIPELINE_RUN_ID_PARAMETER_NAME: run_name,
-    }
-    # Argo will fill runtime parameter values in the parameters.
-    for param in parameters:
-        name, value = _parse_runtime_parameter_str(param)
-        parameter_bindings[name] = value
-
-    runtime_parameter_utils.substitute_runtime_parameter(
-        tfx_ir, parameter_bindings
-    )
-
-
 def _create_executor_class(
-    step: BaseStep,
-    executor_class_target_module_name: str,
-    input_artifact_type_mapping: Dict[str, str],
+        step: BaseStep,
+        executor_class_target_module_name: str,
+        input_artifact_type_mapping: Dict[str, str],
 ) -> None:
     """Creates an executor class for a given step and adds it to the target
     module.
@@ -412,19 +357,12 @@ def _create_executor_class(
 def _parse_command_line_arguments() -> argparse.Namespace:
     """Parses the command line input arguments."""
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--metadata_ui_path",
-        type=str,
-        required=False,
-        default="/tmp/mlpipeline-ui-metadata.json",
-    )
+    parser.add_argument("--metadata_ui_path", type=str, required=True)
     parser.add_argument("--tfx_ir", type=str, required=True)
     parser.add_argument("--node_id", type=str, required=True)
-    # There might be multiple runtime parameters.
-    # `args.runtime_parameter` should become List[str] by using "append".
-    parser.add_argument("--runtime_parameter", type=str, action="append")
     parser.add_argument("--main_module", type=str, required=True)
     parser.add_argument("--step_module", type=str, required=True)
+    parser.add_argument("--original_step_module", type=str, required=True)
     parser.add_argument("--step_function_name", type=str, required=True)
     parser.add_argument("--input_artifact_types", type=str, required=True)
 
@@ -447,35 +385,9 @@ def main() -> None:
 
     args = _parse_command_line_arguments()
 
-    tfx_pipeline = pipeline_pb2.Pipeline()
-    json_format.Parse(args.tfx_ir, tfx_pipeline)
-
-    run_name = _get_run_name()
-    _resolve_runtime_parameters(tfx_pipeline, run_name, args.runtime_parameter)
-
-    node_id = args.node_id
-    pipeline_node = _get_pipeline_node(tfx_pipeline, node_id)
-
-    deployment_config = runner_utils.extract_local_deployment_config(
-        tfx_pipeline
-    )
-    executor_spec = runner_utils.extract_executor_spec(
-        deployment_config, node_id
-    )
-    custom_driver_spec = runner_utils.extract_custom_driver_spec(
-        deployment_config, node_id
-    )
-
     # make sure all integrations are activated so all materializers etc. are
     # available
     integration_registry.activate_integrations()
-
-    repo = Repository()
-    metadata_store = repo.active_stack.metadata_store
-    metadata_connection = metadata.Metadata(
-        metadata_store.get_tfx_metadata_config()
-    )
-
     # import the user main module to register all the materializers
     importlib.import_module(args.main_module)
     zenml.constants.USER_MAIN_MODULE = args.main_module
@@ -484,39 +396,32 @@ def main() -> None:
     step_class = getattr(step_module, args.step_function_name)
     step_instance = cast(BaseStep, step_class())
 
-    if hasattr(executor_spec, "class_path"):
-        executor_module_parts = getattr(executor_spec, "class_path").split(".")
-        executor_class_target_module_name = ".".join(executor_module_parts[:-1])
-        _create_executor_class(
-            step=step_instance,
-            executor_class_target_module_name=executor_class_target_module_name,
-            input_artifact_type_mapping=json.loads(args.input_artifact_types),
-        )
-    else:
-        raise RuntimeError(
-            f"No class path found inside executor spec: {executor_spec}."
-        )
-
-    custom_executor_operators = {
-        executable_spec_pb2.PythonClassExecutableSpec: step_instance.executor_operator
-    }
-
-    component_launcher = launcher.Launcher(
-        pipeline_node=pipeline_node,
-        mlmd_connection=metadata_connection,
-        pipeline_info=tfx_pipeline.pipeline_info,
-        pipeline_runtime_spec=tfx_pipeline.runtime_spec,
-        executor_spec=executor_spec,
-        custom_driver_spec=custom_driver_spec,
-        custom_executor_operators=custom_executor_operators,
+    # When executing a step,
+    _create_executor_class(
+        step=step_instance,
+        executor_class_target_module_name=args.original_executor_module,
+        input_artifact_type_mapping=json.loads(args.input_artifact_types),
     )
 
-    repo.active_stack.prepare_step_run()
-    execution_info = execute_step(component_launcher)
-    repo.active_stack.cleanup_step_run()
+    pipeline_pb2 = Pb2Pipeline()
+    json_format.Parse(args.tfx_ir, pipeline_pb2)
+
+    orchestrator = Repository().active_stack.orchestrator
+
+    execution_info = orchestrator.setup_and_execute_step(
+        step=step_instance,
+        run_name=_get_run_name()
+    )
 
     if execution_info:
-        _dump_ui_metadata(pipeline_node, execution_info, args.metadata_ui_path)
+        pipeline_node = orchestrator._get_node_with_step_name(
+            step_name=step_instance.name,
+            pb2_pipeline=pipeline_pb2
+        )
+        _dump_ui_metadata(
+            pipeline_node,
+            execution_info,
+            args.metadata_ui_path)
 
 
 if __name__ == "__main__":
