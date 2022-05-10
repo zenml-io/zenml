@@ -44,37 +44,41 @@ class MySQLMetadataStore(BaseMetadataStore):
     ]:
         """Return tfx metadata config for mysql metadata store."""
 
-        mysql_secret = self._obtain_mysql_secret()
+        secret = self._obtain_mysql_secret()
 
-        mysql_config = MySQLDatabaseConfig(
+        config = MySQLDatabaseConfig(
             host=self.host,
             port=self.port,
             database=self.database,
-            user=mysql_secret.username,
-            password=mysql_secret.password,
+            user=secret.user,
         )
 
-        if any(key in mysql_secret for key in SSL_KEYS):
-            if not all(key in mysql_secret for key in SSL_KEYS):
+        if secret.password:
+            config.password = secret.password
+
+        if any(getattr(secret, key) is not None for key in SSL_KEYS):
+            if not all(getattr(secret, key) is not None for key in SSL_KEYS):
                 raise RuntimeError(
                     f"Missing ssl keys in secret: "
-                    f"{[key for key in SSL_KEYS if key not in mysql_secret]}"
+                    f"{[key for key in SSL_KEYS if key not in secret]}"
                 )
 
+            ssl_options = {}
             for key in SSL_KEYS:
-                content = mysql_secret[key]
-                target_path = os.path.join(BASE_PATH, f"{key}.pem")
-                with open(target_path) as f:
+                content = getattr(secret, key)
+                filepath = os.path.join(BASE_PATH, f"{key}.pem")
+                ssl_options[key] = filepath
+                with open(filepath, 'w') as f:
                     f.write(content)
 
             ssl_options = MySQLDatabaseConfig.SSLOptions(
-                cert=mysql_secret.cert,
-                ca=mysql_secret.ca,
-                key=mysql_secret.key,
+                cert=ssl_options["ssl_cert"],
+                ca=ssl_options["ssl_ca"],
+                key=ssl_options["ssl_key"],
             )
-            mysql_config.ssl_options.CopyFrom(ssl_options)
+            config.ssl_options.CopyFrom(ssl_options)
 
-        return metadata_store_pb2.ConnectionConfig(mysql=mysql_config)
+        return metadata_store_pb2.ConnectionConfig(mysql=config)
 
     def _obtain_mysql_secret(self) -> Any:
         secret_manager = Repository().active_stack.secrets_manager
