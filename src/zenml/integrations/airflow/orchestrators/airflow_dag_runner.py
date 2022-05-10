@@ -24,7 +24,6 @@ from tfx.dsl.components.base import base_component, base_node
 from tfx.orchestration.config import pipeline_config
 from tfx.orchestration.data_types import RuntimeParameter
 from tfx.orchestration.local import runner_utils
-from tfx.orchestration.portable import runtime_parameter_utils
 from tfx.proto.orchestration import executable_spec_pb2
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
@@ -146,21 +145,12 @@ class AirflowDagRunner:
             self._replace_runtime_params(component)
 
         pb2_pipeline: Pb2Pipeline = compiler.Compiler().compile(tfx_pipeline)
-
-        # Substitute the runtime parameter to be a concrete run_id
-        runtime_parameter_utils.substitute_runtime_parameter(
-            pb2_pipeline,
-            {
-                "pipeline-run-id": runtime_configuration.run_name,
-            },
-        )
         deployment_config = runner_utils.extract_local_deployment_config(
             pb2_pipeline
         )
         connection_config = (
             Repository().active_stack.metadata_store.get_tfx_metadata_config()
         )
-
         component_impl_map = {}
 
         for node in pb2_pipeline.nodes:
@@ -204,10 +194,9 @@ class AirflowDagRunner:
 
             current_airflow_component = airflow_component.AirflowComponent(
                 parent_dag=airflow_dag,
+                pb2_pipeline=pb2_pipeline,
                 pipeline_node=pipeline_node,
                 mlmd_connection=connection_config,
-                pipeline_info=pb2_pipeline.pipeline_info,
-                pipeline_runtime_spec=pb2_pipeline.runtime_spec,
                 executor_spec=executor_spec,
                 custom_driver_spec=custom_driver_spec,
                 custom_executor_operators=custom_executor_operators,

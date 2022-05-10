@@ -28,8 +28,8 @@ from zenml.integrations.airflow.orchestrators.airflow_dag_runner import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.repository import Repository
 from zenml.utils import daemon
+from zenml.utils.source_utils import get_source_root_path
 
 logger = get_logger(__name__)
 
@@ -234,7 +234,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                 command.run,
                 pid_file=self.pid_file,
                 log_file=self.log_file,
-                working_directory=str(Repository().root),
+                working_directory=get_source_root_path(),
             )
             while not self.is_running:
                 # Wait until the daemon started all the relevant airflow

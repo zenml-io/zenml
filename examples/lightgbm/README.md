@@ -36,7 +36,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install lightgbm -f
+zenml integration install lightgbm -y
 
 # pull example
 zenml example pull lightgbm
