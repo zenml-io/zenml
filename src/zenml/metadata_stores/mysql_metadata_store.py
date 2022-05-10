@@ -42,7 +42,7 @@ class MySQLMetadataStore(BaseMetadataStore):
         metadata_store_pb2.ConnectionConfig,
         metadata_store_pb2.MetadataStoreClientConfig,
     ]:
-        """Return tfx metadata config for mysql metadata store."""
+        """Return tfx metadata config for MySQL metadata store."""
         config = MySQLDatabaseConfig(
             host=self.host,
             port=self.port,
@@ -106,7 +106,7 @@ class MySQLMetadataStore(BaseMetadataStore):
         return metadata_store_pb2.ConnectionConfig(mysql=config)
 
     def _get_mysql_secret(self) -> Any:
-        """Method which returns a MySQL"""
+        """Method which returns a MySQL secret from the secrets manager."""
         if self.secret:
             active_stack = Repository().active_stack
             secret_manager = active_stack.secrets_manager
