@@ -44,5 +44,5 @@ ZENML_CONFIG_PATH
 
 Setting to `false` disables integrations logs supression:
 ```bash
-ZENML_DEBUG=false
+ZENML_SUPPRESS_LOGS=false
 ```
