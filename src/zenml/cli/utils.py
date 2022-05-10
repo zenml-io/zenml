@@ -420,6 +420,7 @@ def _expand_argument_value_from_file(name: str, value: str) -> str:
     logger.info(
         f"Expanding argument value `{name}` to contents of file `{filename}`."
     )
+    print(filename)
     if not os.path.isfile(filename):
         raise ValueError(
             f"Could not load argument '{name}' value: file "
@@ -450,7 +451,7 @@ def parse_unknown_options(
     Args:
         args: A list of strings from the CLI.
         expand_args: Whether to expand argument values into the contents of the
-            files they may pointing at using the special `@` character.
+            files they may be pointing at using the special `@` character.
 
     Returns:
         Dict of parsed args.
