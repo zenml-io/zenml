@@ -109,7 +109,7 @@ def _get_stack_component(
             )
     elif active_component:
         cli_utils.declare(
-            f"No component name given, using `{active_component.name}` "
+            f"No component name given; using `{active_component.name}` "
             f"from active stack."
         )
         return active_component, True
