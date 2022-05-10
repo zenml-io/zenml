@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from typing import ClassVar, Optional
+
 from zenml.secret.base_secret import BaseSecretSchema
 
 MYSQL_METADATA_STORE_SCHEMA_TYPE = "mysql"
@@ -20,8 +21,9 @@ MYSQL_METADATA_STORE_SCHEMA_TYPE = "mysql"
 class MYSQLSecretSchema(BaseSecretSchema):
     TYPE: ClassVar[str] = MYSQL_METADATA_STORE_SCHEMA_TYPE
 
-    user: str
+    user: Optional[str]
     password: Optional[str]
     ssl_ca: Optional[str]
     ssl_cert: Optional[str]
     ssl_key: Optional[str]
+    ssl_verify_server_cert: Optional[bool] = False

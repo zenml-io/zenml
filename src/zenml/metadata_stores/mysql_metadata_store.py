@@ -11,27 +11,27 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import ClassVar, Union, Any
+import os
+from typing import Any, ClassVar, Optional, Union
 
 from ml_metadata.proto import metadata_store_pb2
 from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig
 
 from zenml.metadata_stores import BaseMetadataStore
+from zenml.metadata_stores.mysql_secret_schema import MYSQLSecretSchema
 from zenml.repository import Repository
-import os
-
-SSL_KEYS = ['ssl_key', 'ssl_ca', 'ssl_cert']
-BASE_PATH = os.getcwd()
 
 
 class MySQLMetadataStore(BaseMetadataStore):
     """MySQL backend for ZenML metadata store."""
 
+    user: Optional[str]
+    password: Optional[str]
     host: str
     port: int
     database: str
 
-    secret: str
+    secret: Optional[str]
 
     # Class Configuration
     FLAVOR: ClassVar[str] = "mysql"
@@ -43,55 +43,92 @@ class MySQLMetadataStore(BaseMetadataStore):
         metadata_store_pb2.MetadataStoreClientConfig,
     ]:
         """Return tfx metadata config for mysql metadata store."""
-
-        secret = self._obtain_mysql_secret()
-
         config = MySQLDatabaseConfig(
             host=self.host,
             port=self.port,
             database=self.database,
-            user=secret.user,
         )
 
-        if secret.password:
-            config.password = secret.password
+        secret = self._get_mysql_secret()
 
-        if any(getattr(secret, key) is not None for key in SSL_KEYS):
-            if not all(getattr(secret, key) is not None for key in SSL_KEYS):
+        # Set the user
+        if self.user:
+            if secret and secret.user:
                 raise RuntimeError(
-                    f"Missing ssl keys in secret: "
-                    f"{[key for key in SSL_KEYS if key not in secret]}"
+                    f"Both the metadata store {self.name} and the secret "
+                    f"{self.secret} within your secrets manager define "
+                    f"a username `{self.user}` and `{secret.user}`. Please "
+                    f"make sure that you only use one."
+                )
+            else:
+                config.user = self.user
+        else:
+            if secret and secret.user:
+                config.user = self.user
+            else:
+                raise RuntimeError(
+                    f"Your metadata store does not have a username. Please "
+                    f"provide it either by defining it upon registration or "
+                    f"through a MySQL secret."
                 )
 
+        # Set the password
+        if self.password:
+            if secret and secret.password:
+                raise RuntimeError(
+                    f"Both the metadata store {self.name} and the secret "
+                    f"{self.secret} within your secrets manager define "
+                    f"a password. Please make sure that you only use one."
+                )
+            else:
+                config.password = self.password
+        else:
+            if secret and secret.user:
+                config.password = self.password
+
+        # Set the SSL configuration if there is one
+        if secret:
             ssl_options = {}
-            for key in SSL_KEYS:
+            # Handle the files
+            for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
                 content = getattr(secret, key)
-                filepath = os.path.join(BASE_PATH, f"{key}.pem")
-                ssl_options[key] = filepath
-                with open(filepath, 'w') as f:
+                filepath = os.path.join(os.getcwd(), f"{key}.pem")
+                ssl_options[key.lstrip("ssl_")] = filepath
+                with open(filepath, "w") as f:
                     f.write(content)
 
-            ssl_options = MySQLDatabaseConfig.SSLOptions(
-                cert=ssl_options["ssl_cert"],
-                ca=ssl_options["ssl_ca"],
-                key=ssl_options["ssl_key"],
-            )
+            # Handle additional params
+            ssl_options["verify_server_cert"] = secret.ssl_verify_server_cert
+
+            ssl_options = MySQLDatabaseConfig.SSLOptions(**ssl_options)
             config.ssl_options.CopyFrom(ssl_options)
 
         return metadata_store_pb2.ConnectionConfig(mysql=config)
 
-    def _obtain_mysql_secret(self) -> Any:
-        secret_manager = Repository().active_stack.secrets_manager
+    def _get_mysql_secret(self) -> Any:
+        """Method which returns a MySQL"""
+        if self.secret:
+            active_stack = Repository().active_stack
+            secret_manager = active_stack.secrets_manager
+            if secret_manager is None:
+                raise RuntimeError(
+                    f"The metadata store `{self.name}` that you are using "
+                    f"requires a secret. However, your stack "
+                    f"`{active_stack.name}` does not have a secrets manager."
+                )
+            try:
+                secret = secret_manager.get_secret(self.secret)
 
-        if not secret_manager:
-            raise RuntimeError("You dont have the secret manager")  # TODO
-
-        try:
-            mysql_secret = secret_manager.get_secret(self.secret)
-        except KeyError:
-            raise RuntimeError("You dont have the right key")
-
-        # if isinstance(mysql_secret, MySQLSchema):
-        #     raise RuntimeError("You dont have the right secret schema.")
-
-        return mysql_secret
+                if isinstance(secret, MYSQLSecretSchema):
+                    raise RuntimeError(
+                        f"If you are using a secret with a MySQL Metadata "
+                        f"Store, please make sure to use the schema: "
+                        f"{MYSQLSecretSchema.TYPE}"
+                    )
+            except KeyError:
+                raise RuntimeError(
+                    f"The secret `{self.secret}` used for your MySQL metadata "
+                    f"store `{self.name}` does not exist in your secrets "
+                    f"manager `{secret_manager.name}`."
+                )
+        return None
