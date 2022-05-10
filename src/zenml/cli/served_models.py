@@ -41,7 +41,7 @@ def served_models(ctx: click.Context) -> None:
     """
     repo = Repository()
     active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-    model_deployer_wrapper = active_stack.get_component(
+    model_deployer_wrapper = active_stack.get_component_wrapper(
         StackComponentType.MODEL_DEPLOYER
     )
     if model_deployer_wrapper is None:

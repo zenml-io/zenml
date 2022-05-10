@@ -50,7 +50,7 @@ def secret(ctx: click.Context) -> None:
     """List and manage your secrets."""
     repo = Repository()
     active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-    secrets_manager_wrapper = active_stack.get_component(
+    secrets_manager_wrapper = active_stack.get_component_wrapper(
         StackComponentType.SECRETS_MANAGER
     )
     if secrets_manager_wrapper is None:

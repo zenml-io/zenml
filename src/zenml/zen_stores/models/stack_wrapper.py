@@ -53,7 +53,7 @@ class StackWrapper(BaseModel):
             name=self.name, components=stack_components
         )
 
-    def get_component(
+    def get_component_wrapper(
         self, component_type: StackComponentType
     ) -> Optional[ComponentWrapper]:
         """Returns the component of the given type."""

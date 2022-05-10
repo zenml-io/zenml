@@ -31,7 +31,7 @@ def feature(ctx: click.Context) -> None:
     """Features as obtained from a feature store."""
     repo = Repository()
     active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-    feature_store_wrapper = active_stack.get_component(
+    feature_store_wrapper = active_stack.get_component_wrapper(
         StackComponentType.FEATURE_STORE
     )
     if feature_store_wrapper is None:

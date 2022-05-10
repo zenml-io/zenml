@@ -62,7 +62,7 @@ def _component_display_name(
     return name.replace("_", " ")
 
 
-def _get_stack_component(
+def _get_stack_component_wrapper(
     component_type: StackComponentType,
     component_name: Optional[str] = None,
 ) -> Tuple[Optional[ComponentWrapper], bool]:
@@ -90,7 +90,7 @@ def _get_stack_component(
         return None, False
 
     active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
-    active_component = active_stack.get_component(component_type)
+    active_component = active_stack.get_component_wrapper(component_type)
 
     if component_name:
         try:
@@ -162,7 +162,7 @@ def generate_stack_component_describe_command(
         cli_utils.print_active_stack()
 
         singular_display_name = _component_display_name(component_type)
-        component_wrapper, is_active = _get_stack_component(
+        component_wrapper, is_active = _get_stack_component_wrapper(
             component_type, component_name=name
         )
         if component_wrapper is None:
@@ -195,7 +195,7 @@ def generate_stack_component_list_command(
             return
         active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
         active_component_name = None
-        active_component = active_stack.get_component(component_type)
+        active_component = active_stack.get_component_wrapper(component_type)
         if active_component:
             active_component_name = active_component.name
 
@@ -349,7 +349,7 @@ def generate_stack_component_update_command(
             kwargs.append(name)
             name = None
 
-        component_wrapper, _ = _get_stack_component(
+        component_wrapper, _ = _get_stack_component_wrapper(
             component_type, component_name=name
         )
         if component_wrapper is None:
@@ -494,7 +494,7 @@ def generate_stack_component_up_command(
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        component_wrapper, _ = _get_stack_component(
+        component_wrapper, _ = _get_stack_component_wrapper(
             component_type, component_name=name
         )
         if component_wrapper is None:
@@ -565,7 +565,7 @@ def generate_stack_component_down_command(
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        component_wrapper, _ = _get_stack_component(
+        component_wrapper, _ = _get_stack_component_wrapper(
             component_type, component_name=name
         )
         if component_wrapper is None:
@@ -629,7 +629,7 @@ def generate_stack_component_logs_command(
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        component_wrapper, _ = _get_stack_component(
+        component_wrapper, _ = _get_stack_component_wrapper(
             component_type, component_name=name
         )
         if component_wrapper is None:
