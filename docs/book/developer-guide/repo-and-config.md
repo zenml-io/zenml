@@ -47,7 +47,7 @@ configuration back to its default factory state
 
 The first time that ZenML is run on a machine, it creates the _Global Config
 Directory_ and initializes the default configuration in it, along with a default
-profile and stack:
+Profile and Stack:
 
 ```
 $ zenml stack list
@@ -79,18 +79,18 @@ immediately after initialization:
 ```
 /home/stefan/.config/zenml   <- Global Config Directory
 ├── config.yaml              <- Global Configuration Settings
-├── local_stores             <- Every stack component that stores information
+├── local_stores             <- Every Stack component that stores information
 |   |                        locally will have its own subdirectory here.
 |   |                        
 │   └── 09fcdb1c-4079-4d20-afdb-957965405863   <- Local Store path for the `default`
 |                                              local Artifact Store
 |
 └── profiles                 <- root path where Profiles data (stacks, components,
-    |                        etc) are stored by default. Every profile will have
-    |                        its own subdirectory here, unless the profile is
+    |                        etc) are stored by default. Every Profile will have
+    |                        its own subdirectory here, unless the Profile is
     |                        configured with a custom configuration path.
     |
-    └── default              <- configuration folder for the `default` profile.
+    └── default              <- configuration folder for the `default` Profile.
         ├── artifact_stores
         │   └── default.yaml
         ├── metadata_stores
@@ -144,7 +144,7 @@ the _Global Config Directory_, depending on what you do with ZenML:
 * `zenml_examples` - used as a local cache by the `zenml example` command, where
 the pulled ZenML examples are stored.
 * `kubeflow` - this is where the Kubeflow orchestrators that are part of a Stack
-store some of their configuration and logs
+store some of their configuration and logs.
 
 ## The ZenML Repository
 
@@ -166,10 +166,10 @@ The _Repository_ designation plays a double role in ZenML:
 it builds that are used to execute pipeline steps remotely, such as container
 images.
 * it stores local configuration parameters that can be set independently of the
-global configuration: the _Repository_ active profile and active stack. These
+global configuration: the _Repository_ active Profile and active Stack. These
 settings are in effect when ZenML code is executed while the current working
 directory is the _Repository_ root or one of its sub-folders. For more information
-on setting the active profile and stack local to a _Repository_, please visit
+on setting the active Profile and Stack local to a _Repository_, please visit
 the [ZenML Profiles](./profiles.md) section.
 
 A ZenML _Repository_ is easily identifiable by the presence of a (hidden) `.zen`
@@ -218,7 +218,7 @@ management for Stacks, Stack Components, Stack Component flavors and other
 associated ZenML concepts. The following are examples of how to use these
 singletons to perform various operations:
 
-* to retrieve the global configuration, active profile and active stack:
+* to retrieve the global configuration, active Profile and active Stack:
 
     ```python
     from zenml.config.global_config import GlobalConfiguration
@@ -259,7 +259,7 @@ singletons to perform various operations:
     repo.activate_profile("local")
     ```
 
-* access the active stack
+* access the active Stack
 
     ```python
     from zenml.repository import Repository
@@ -275,7 +275,7 @@ singletons to perform various operations:
     print(stack.metadata_store.uri)
     ```
 
-* register and set a new stack
+* register and set a new Stack
 
     ```python
     from zenml.repository import Repository
@@ -307,4 +307,4 @@ singletons to perform various operations:
     ```
 
 To explore all possible operations that can be performed via the `GlobalConfiguration`
-and `Repository` singletons, please consult the API docs sections on [GlobalConfiguration](https://apidocs.zenml.io/0.7.3/api_docs/config/#zenml.config.global_config.GlobalConfiguration) and [Repository](https://apidocs.zenml.io/0.7.3/api_docs/repository/#zenml.repository.Repository).
+and `Repository` singletons, please consult the API docs sections on [GlobalConfiguration](https://apidocs.zenml.io/latest/api_docs/config/#zenml.config.global_config.GlobalConfiguration) and [Repository](https://apidocs.zenml.io/latest/api_docs/repository/#zenml.repository.Repository).
