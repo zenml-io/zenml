@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Optional
 
 import click
-from rich.style import Style
 
 from zenml.cli.cli import cli
 from zenml.cli.text_utils import (
@@ -109,9 +108,7 @@ def _delete_local_files(force_delete: bool = False) -> None:
                         fileio.rmtree(str(path))
                     else:
                         fileio.remove(str(path))
-                    warning(
-                        f"Deleted `{path}`", Style(color="blue", italic=True)
-                    )
+                    warning(f"Deleted `{path}`", italic=True)
     declare("Deleted all files relating to the local active stack.")
 
 

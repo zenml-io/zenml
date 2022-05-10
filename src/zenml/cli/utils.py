@@ -54,15 +54,13 @@ if TYPE_CHECKING:
     from zenml.integrations.integration import IntegrationMeta
 
 
-def title(
-    text: str, custom_style: Optional[Union[str, Style]] = "title"
-) -> None:
+def title(text: str) -> None:
     """Echo a title formatted string on the CLI.
 
     Args:
       text: Input text string.
     """
-    console.print(text.upper(), style=custom_style)
+    console.print(text.upper(), style="title")
 
 
 def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
@@ -81,14 +79,22 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
 
 
 def declare(
-    text: Union[str, Text], custom_style: Optional[Union[str, Style]] = "info"
+    text: Union[str, Text], bold: bool = False, italic: bool = False
 ) -> None:
     """Echo a declaration on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
     """
-    console.print(text, style=custom_style)
+    style = Style(color="cyan", dim=True)
+    if bold:
+        style.bold = True
+    if italic:
+        style.italic = True
+
+    console.print(text, style=style)
 
 
 def error(text: str) -> None:
@@ -104,16 +110,21 @@ def error(text: str) -> None:
     # console.print(text, style="error")
 
 
-def warning(
-    text: str, custom_style: Optional[Union[str, Style]] = "warning"
-) -> None:
+def warning(text: str, bold: bool = False, italic: bool = False) -> None:
     """Echo a warning string on the CLI.
 
     Args:
-      text: Input text string.
-      custom_style: Optional custom style to be used.
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
     """
-    console.print(text, style=custom_style)
+    style = Style(color="yellow")
+    if bold:
+        style.bold = True
+    if italic:
+        style.italic = True
+
+    console.print(text, style=style)
 
 
 def pretty_print(obj: Any) -> None:
