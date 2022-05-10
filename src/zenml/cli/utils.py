@@ -111,6 +111,7 @@ def warning(
 
     Args:
       text: Input text string.
+      custom_style: Optional custom style to be used.
     """
     console.print(text, style=custom_style)
 

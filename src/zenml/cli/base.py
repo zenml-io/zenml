@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from rich.style import Style
 
 from zenml.cli.cli import cli
 from zenml.cli.text_utils import (
@@ -29,7 +30,10 @@ from zenml.cli.text_utils import (
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
+from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.exceptions import GitNotFoundError, InitializationException
+from zenml.io import fileio
+from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import identify_user
@@ -80,28 +84,101 @@ def init(path: Optional[Path]) -> None:
     )
 
 
-@cli.command("clean")
-@click.option("--yes", "-y", type=click.BOOL, default=False)
-@click.option("--force", "-f", type=click.BOOL, default=False)
-def clean(yes: bool = False, force: bool = False) -> None:
-    """Clean everything in repository.
+def _delete_local_files(force_delete: bool = False) -> None:
+    """Delete local files corresponding to the active stack.
 
     Args:
-      yes: bool:  (Default value = False)
-    """
-    if force:
-        yes = force
-        warning(
-            "The `--force` option will soon be deprecated. Please use `--yes` instead."
+      force_delete: Whether to force delete the files."""
+    if not force_delete:
+        confirm = confirmation(
+            "DANGER: This will completely delete metadata, artifacts and so on associated with all active stack components. \n\n"
+            "Are you sure you want to proceed?"
         )
+        if not confirm:
+            declare("Aborting clean.")
+            return
+
+    repo = Repository()
+    if repo.active_stack:
+        stack_components = repo.active_stack.components
+        for _, component in stack_components.items():
+            local_path = component.local_path
+            if local_path:
+                for path in Path(local_path).iterdir():
+                    if fileio.isdir(str(path)):
+                        fileio.rmtree(str(path))
+                    else:
+                        fileio.remove(str(path))
+                    warning(
+                        f"Deleted `{path}`", Style(color="blue", italic=True)
+                    )
+    declare("Deleted all files relating to the local active stack.")
+
+
+@cli.command("clean", hidden=True)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Don't ask for confirmation.",
+)
+@click.option(
+    "--local",
+    "-l",
+    is_flag=True,
+    default=False,
+    help="Delete local files relating to the active stack.",
+)
+def clean(yes: bool = False, local: bool = False) -> None:
+    """Delete all ZenML metadata, artifacts, profiles and stacks.
+
+    This is a destructive operation, primarily intended for use in development.
+
+    Args:
+      yes (flag; default value = False): If you don't want a confirmation prompt.
+      local (flag; default value = False): If you want to delete local files associated with the active stack.
+    """
+    if local:
+        _delete_local_files(force_delete=yes)
+        return
+
     if not yes:
-        _ = confirmation(
-            "This will completely delete all pipelines, their associated "
-            "artifacts and metadata ever created in this ZenML repository. "
+        confirm = confirmation(
+            "DANGER: This will completely delete all artifacts, metadata, stacks and profiles \n"
+            "ever created during the use of ZenML. Pipelines and stack components running non-\n"
+            "locally will still exist. Please delete those manually. \n\n"
             "Are you sure you want to proceed?"
         )
 
-    error("Not implemented for this version")
+    if yes or confirm:
+        # delete the .zen folder
+        local_zen_repo_config = Path.cwd() / REPOSITORY_DIRECTORY_NAME
+        if fileio.exists(str(local_zen_repo_config)):
+            fileio.rmtree(str(local_zen_repo_config))
+            declare(f"Deleted local ZenML config from {local_zen_repo_config}.")
+
+        # delete the profiles (and stacks)
+        global_zen_config = Path(get_global_config_directory())
+        if fileio.exists(str(global_zen_config)):
+            gc = GlobalConfiguration()
+            for dir_name in fileio.listdir(str(global_zen_config)):
+                if fileio.isdir(str(global_zen_config / str(dir_name))):
+                    warning(
+                        f"Deleting '{str(dir_name)}' directory from global config."
+                    )
+            fileio.rmtree(str(global_zen_config))
+            declare(f"Deleted global ZenML config from {global_zen_config}.")
+            fresh_gc = GlobalConfiguration(
+                user_id=gc.user_id,
+                analytics_opt_in=gc.analytics_opt_in,
+                version=gc.version,
+            )
+            fresh_gc._add_and_activate_default_profile()
+            declare(f"Reinitialized ZenML global config at {Path.cwd()}.")
+
+    else:
+        declare("Aborting clean.")
 
 
 @cli.command("go")
