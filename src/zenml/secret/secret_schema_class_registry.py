@@ -88,7 +88,7 @@ class SecretSchemaClassRegistry:
             except KeyError:
                 raise KeyError(
                     f"No SecretSchema class found for schema flavor "
-                    f"{secret_schema}. Registered flavors are: "
+                    f"`{secret_schema}`. Registered flavors are: "
                     f"{set(available_schemas)}. If your secret schema "
                     f"class is part of a ZenML integration, make "
                     f"sure the corresponding integration is installed by "
