@@ -26,8 +26,8 @@ from zenml.constants import (
     ABSL_LOGGING_VERBOSITY,
     APP_NAME,
     ENABLE_RICH_TRACEBACK,
+    ENV_ZENML_SUPPRESS_LOGS,
     ZENML_LOGGING_VERBOSITY,
-    ZENML_SUPPRESS_LOGS,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
@@ -166,7 +166,9 @@ def init_logging() -> None:
     set_root_verbosity()
 
     # Enable logs if environment variable SUPRESS_ZENML_LOGS is not set to True
-    supress_zenml_logs: bool = handle_bool_env_var(ZENML_SUPPRESS_LOGS, True)
+    supress_zenml_logs: bool = handle_bool_env_var(
+        ENV_ZENML_SUPPRESS_LOGS, True
+    )
     if supress_zenml_logs:
         # supress logger info messages
         supressed_logger_names = [
