@@ -12,32 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Main entrypoint for containers with Kubeflow TFX component executors."""
-import argparse
 import importlib
 import json
 import logging
 import os
 import sys
 import textwrap
-from typing import Dict, List, MutableMapping, Optional, Tuple, cast
+from typing import Dict, List, MutableMapping, Optional, Type, cast
 
+import click
 import kfp
 from google.protobuf import json_format
 from kubernetes import config as k8s_config
-from tfx.dsl.compiler import constants
-from tfx.orchestration import metadata
-from tfx.orchestration.local import runner_utils
-from tfx.orchestration.portable import (
-    data_types,
-    launcher,
-    runtime_parameter_utils,
-)
-from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline, \
-    OutputSpec, RuntimeParameter
-from tfx.proto.orchestration.pipeline_pb2 import PipelineNode, InputSpec
-from tfx.proto.orchestration import executable_spec_pb2
+from tfx.orchestration.portable import data_types
+from tfx.proto.orchestration.pipeline_pb2 import InputSpec, OutputSpec
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
+from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 from tfx.types import artifact, channel, standard_artifacts
-from tfx.types.channel import Property
 
 import zenml.constants
 from zenml.artifact_stores import LocalArtifactStore
@@ -45,7 +36,6 @@ from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.integrations.registry import integration_registry
-from zenml.orchestrators.utils import execute_step
 from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps.utils import generate_component_class
@@ -145,15 +135,15 @@ def _render_artifact_as_mdstr(single_artifact: artifact.Artifact) -> str:
             producer_component=_sanitize_underscore(
                 single_artifact.producer_component
             )
-                               or "None",
+            or "None",
         )
     )
 
 
 def _dump_ui_metadata(
-        node: PipelineNode,
-        execution_info: data_types.ExecutionInfo,
-        ui_metadata_path: str = "/tmp/mlpipeline-ui-metadata.json",
+    node: PipelineNode,
+    execution_info: data_types.ExecutionInfo,
+    ui_metadata_path: str = "/tmp/mlpipeline-ui-metadata.json",
 ) -> None:
     """Dump KFP UI metadata json file for visualization purpose.
 
@@ -177,8 +167,8 @@ def _dump_ui_metadata(
     )
 
     def _dump_input_populated_artifacts(
-            node_inputs: MutableMapping[str, InputSpec],
-            name_to_artifacts: Dict[str, List[artifact.Artifact]],
+        node_inputs: MutableMapping[str, InputSpec],
+        name_to_artifacts: Dict[str, List[artifact.Artifact]],
     ) -> List[str]:
         """Dump artifacts markdown string for inputs.
 
@@ -212,8 +202,8 @@ def _dump_ui_metadata(
         return rendered_list
 
     def _dump_output_populated_artifacts(
-            node_outputs: MutableMapping[str, OutputSpec],
-            name_to_artifacts: Dict[str, List[artifact.Artifact]],
+        node_outputs: MutableMapping[str, OutputSpec],
+        name_to_artifacts: Dict[str, List[artifact.Artifact]],
     ) -> List[str]:
         """Dump artifacts markdown string for outputs.
 
@@ -281,9 +271,9 @@ def _dump_ui_metadata(
     # Add Tensorboard view for ModelRun outputs.
     for name, spec in node.outputs.outputs.items():
         if (
-                spec.artifact_spec.type.name
-                == standard_artifacts.ModelRun.TYPE_NAME
-                or spec.artifact_spec.type.name == ModelArtifact.TYPE_NAME
+            spec.artifact_spec.type.name
+            == standard_artifacts.ModelRun.TYPE_NAME
+            or spec.artifact_spec.type.name == ModelArtifact.TYPE_NAME
         ):
             output_model = execution_info.output_dict[name][0]
             source = output_model.uri
@@ -308,9 +298,9 @@ def _dump_ui_metadata(
 
 
 def _create_executor_class(
-        step: BaseStep,
-        executor_class_target_module_name: str,
-        input_artifact_type_mapping: Dict[str, str],
+    step: BaseStep,
+    executor_class_target_module_name: str,
+    input_artifact_type_mapping: Dict[str, str],
 ) -> None:
     """Creates an executor class for a given step and adds it to the target
     module.
@@ -354,21 +344,6 @@ def _create_executor_class(
     )
 
 
-def _parse_command_line_arguments() -> argparse.Namespace:
-    """Parses the command line input arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--metadata_ui_path", type=str, required=True)
-    parser.add_argument("--tfx_ir", type=str, required=True)
-    parser.add_argument("--node_id", type=str, required=True)
-    parser.add_argument("--main_module", type=str, required=True)
-    parser.add_argument("--step_module", type=str, required=True)
-    parser.add_argument("--original_step_module", type=str, required=True)
-    parser.add_argument("--step_function_name", type=str, required=True)
-    parser.add_argument("--input_artifact_types", type=str, required=True)
-
-    return parser.parse_args()
-
-
 def _get_run_name() -> str:
     """Gets the KFP run name."""
     k8s_config.load_incluster_config()
@@ -376,52 +351,60 @@ def _get_run_name() -> str:
     return kfp.Client().get_run(run_id).run.name  # type: ignore[no-any-return]
 
 
-def main() -> None:
+@click.command()
+@click.option("--pb2_pipeline_json", required=True, type=str)
+@click.option("--main_module", required=True, type=str)
+@click.option("--step_source_path", required=True, type=str)
+@click.option("--original_step_module", required=True, type=str)
+@click.option("--input_artifact_types", required=True, type=str)
+@click.option("--metadata_ui_path", required=True, type=str)
+def main(
+    pb2_pipeline_json: str,
+    main_module: str,
+    step_source_path: str,
+    original_step_module: str,
+    input_artifact_types: str,
+    metadata_ui_path: str,
+) -> None:
     """Runs a single step defined by the command line arguments."""
     # Log to the container's stdout so Kubeflow Pipelines UI can display logs to
     # the user.
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     logging.getLogger().setLevel(logging.INFO)
 
-    args = _parse_command_line_arguments()
-
     # make sure all integrations are activated so all materializers etc. are
     # available
     integration_registry.activate_integrations()
     # import the user main module to register all the materializers
-    importlib.import_module(args.main_module)
-    zenml.constants.USER_MAIN_MODULE = args.main_module
+    importlib.import_module(main_module)
+    zenml.constants.USER_MAIN_MODULE = main_module
 
-    step_module = importlib.import_module(args.step_module)
-    step_class = getattr(step_module, args.step_function_name)
-    step_instance = cast(BaseStep, step_class())
+    step_class = cast(
+        Type[BaseStep], source_utils.load_source_path_class(step_source_path)
+    )
+    step_instance = step_class()
 
     # When executing a step,
     _create_executor_class(
         step=step_instance,
-        executor_class_target_module_name=args.original_executor_module,
-        input_artifact_type_mapping=json.loads(args.input_artifact_types),
+        executor_class_target_module_name=original_step_module,
+        input_artifact_type_mapping=json.loads(input_artifact_types),
     )
 
-    pipeline_pb2 = Pb2Pipeline()
-    json_format.Parse(args.tfx_ir, pipeline_pb2)
+    pb2_pipeline = Pb2Pipeline()
+    json_format.Parse(pb2_pipeline_json, pb2_pipeline)
 
     orchestrator = Repository().active_stack.orchestrator
 
     execution_info = orchestrator.setup_and_execute_step(
-        step=step_instance,
-        run_name=_get_run_name()
+        step=step_instance, run_name=_get_run_name(), pb2_pipeline=pb2_pipeline
     )
 
     if execution_info:
         pipeline_node = orchestrator._get_node_with_step_name(
-            step_name=step_instance.name,
-            pb2_pipeline=pipeline_pb2
+            step_name=step_instance.name, pb2_pipeline=pb2_pipeline
         )
-        _dump_ui_metadata(
-            pipeline_node,
-            execution_info,
-            args.metadata_ui_path)
+        _dump_ui_metadata(pipeline_node, execution_info, metadata_ui_path)
 
 
 if __name__ == "__main__":

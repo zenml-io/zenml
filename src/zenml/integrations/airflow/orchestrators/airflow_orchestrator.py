@@ -25,8 +25,8 @@ from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.steps import BaseStep
 from zenml.pipelines import Schedule
+from zenml.steps import BaseStep
 from zenml.utils import daemon
 from zenml.utils.source_utils import get_source_root_path
 
@@ -258,7 +258,9 @@ class AirflowOrchestrator(BaseOrchestrator):
         logger.info("Airflow spun down.")
 
     @staticmethod
-    def _translate_schedule(schedule: Optional[Schedule]) -> Dict[str, Any]:
+    def _translate_schedule(
+        schedule: Optional[Schedule] = None,
+    ) -> Dict[str, Any]:
         """Convert ZenML schedule into airflow schedule which uses slightly
         different naming and needs some default entries for execution without a
         schedule.
@@ -275,18 +277,19 @@ class AirflowOrchestrator(BaseOrchestrator):
                 "schedule_interval": schedule.interval_second,
                 "start_date": schedule.start_time,
                 "end_date": schedule.end_time or None,
-                "catchup": schedule.catchup or False
+                "catchup": schedule.catchup or False,
             }
         return {
             "schedule_interval": "@once",
             "start_date": datetime.datetime.now() - datetime.timedelta(7),
-            "catchup": False
+            "catchup": False,
         }
 
     def prepare_steps(
         self,
+        pipeline: "BasePipeline",
         sorted_list_of_steps: List[BaseStep],
-        schedule: Schedule
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
 
         import airflow
@@ -294,9 +297,9 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         # Instantiate and configure airflow Dag with name and schedule
         airflow_dag = airflow.DAG(
-            dag_id=self._pipeline.name,
+            dag_id=pipeline.name,
             is_paused_upon_creation=False,
-            **self._translate_schedule(schedule),
+            **self._translate_schedule(runtime_configuration.schedule),
         )
 
         # Dictionary mapping step name to airflow_operator. This will be needed
@@ -309,16 +312,18 @@ class AirflowOrchestrator(BaseOrchestrator):
             #  orchestrated environment
             def _step_callable(step_instance: "BaseStep", **kwargs):
                 run_name = kwargs["ti"].get_dagrun().run_id
-                self.setup_and_execute_step(step=step_instance,
-                                            run_name=run_name)
+                self.setup_and_execute_step(
+                    step=step_instance, run_name=run_name
+                )
 
             # Create airflow step operator that contains the step callable
             airflow_step_operator = airflow_python.PythonOperator(
                 dag=airflow_dag,
                 task_id=step.name,
                 provide_context=True,
-                python_callable=functools.partial(_step_callable,
-                                                  step_instance=step),
+                python_callable=functools.partial(
+                    _step_callable, step_instance=step
+                ),
             )
 
             # Give the airflow step operator the information which operators

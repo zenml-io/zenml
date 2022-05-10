@@ -35,20 +35,16 @@ import sys
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     List,
     MutableMapping,
     Optional,
     Set,
     Type,
-    Union,
 )
 
-from kfp import compiler, dsl, gcp
-from kubernetes import client as k8s_client
+from kfp import compiler, dsl
 from tfx.dsl.compiler import compiler as tfx_compiler
-from tfx.dsl.components.base import base_component as tfx_base_component
 from tfx.dsl.components.base import base_node
 from tfx.orchestration import data_types
 from tfx.orchestration.config import pipeline_config
@@ -56,9 +52,6 @@ from tfx.orchestration.launcher import (
     base_component_launcher,
     in_process_component_launcher,
     kubernetes_component_launcher,
-)
-from tfx.orchestration.pipeline import (
-    ROOT_PARAMETER as TFX_PIPELINE_ROOT_PARAMETER,
 )
 from tfx.orchestration.pipeline import Pipeline as TfxPipeline
 from tfx.proto.orchestration.pipeline_pb2 import IntermediateDeploymentConfig
@@ -81,82 +74,6 @@ if TYPE_CHECKING:
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
-
-# OpFunc represents the type of function that takes as input a
-# dsl.ContainerOp and returns the same object. Common operations such as adding
-# k8s secrets, mounting volumes, specifying the use of TPUs and so on can be
-# specified as an OpFunc.
-# See example usage here:
-# https://github.com/kubeflow/pipelines/blob/master/sdk/python/kfp/gcp.py
-OpFunc = Callable[[dsl.ContainerOp], Union[dsl.ContainerOp, None]]
-
-# Default secret name for GCP credentials. This secret is installed as part of
-# a typical Kubeflow installation when the component is GKE.
-_KUBEFLOW_GCP_SECRET_NAME = "user-gcp-sa"
-
-
-def _mount_config_map_op(config_map_name: str) -> OpFunc:
-    """Mounts all key-value pairs found in the named Kubernetes ConfigMap.
-    All key-value pairs in the ConfigMap are mounted as environment variables.
-    Args:
-      config_map_name: The name of the ConfigMap resource.
-    Returns:
-      An OpFunc for mounting the ConfigMap.
-    """
-
-    def mount_config_map(container_op: dsl.ContainerOp) -> None:
-        """Mounts all key-value pairs found in the Kubernetes ConfigMap."""
-        config_map_ref = k8s_client.V1ConfigMapEnvSource(
-            name=config_map_name, optional=True
-        )
-        container_op.container.add_env_from(
-            k8s_client.V1EnvFromSource(config_map_ref=config_map_ref)
-        )
-
-    return mount_config_map
-
-
-def _mount_secret_op(secret_name: str) -> OpFunc:
-    """Mounts all key-value pairs found in the named Kubernetes Secret.
-    All key-value pairs in the Secret are mounted as environment variables.
-    Args:
-      secret_name: The name of the Secret resource.
-    Returns:
-      An OpFunc for mounting the Secret.
-    """
-
-    def mount_secret(container_op: dsl.ContainerOp) -> None:
-        """Mounts all key-value pairs found in the named Kubernetes Secret."""
-        secret_ref = k8s_client.V1ConfigMapEnvSource(
-            name=secret_name, optional=True
-        )
-
-        container_op.container.add_env_from(
-            k8s_client.V1EnvFromSource(secret_ref=secret_ref)
-        )
-
-    return mount_secret
-
-
-def get_default_pipeline_operator_funcs(
-    use_gcp_sa: bool = False,
-) -> List[OpFunc]:
-    """Returns a default list of pipeline operator functions.
-    Args:
-      use_gcp_sa: If true, mount a GCP service account secret to each pod, with
-        the name _KUBEFLOW_GCP_SECRET_NAME.
-    Returns:
-      A list of functions with type OpFunc.
-    """
-    # Enables authentication for GCP services if needed.
-    gcp_secret_op = gcp.use_gcp_secret(_KUBEFLOW_GCP_SECRET_NAME)
-
-    # Mounts configmap containing Metadata gRPC server configuration.
-    mount_config_map_op = _mount_config_map_op("metadata-grpc-configmap")
-    if use_gcp_sa:
-        return [gcp_secret_op, mount_config_map_op]
-    else:
-        return [mount_config_map_op]
 
 
 def get_default_pod_labels() -> Dict[str, str]:
@@ -256,41 +173,6 @@ class KubeflowDagRunner:
     def config(self) -> pipeline_config.PipelineConfig:
         """The config property"""
         return self._config
-
-    def _parse_parameter_from_component(
-        self, component: tfx_base_component.BaseComponent
-    ) -> None:
-        """Extract embedded RuntimeParameter placeholders from a component.
-        Extract embedded RuntimeParameter placeholders from a component, then
-        append the corresponding dsl.PipelineParam to KubeflowDagRunner.
-        Args:
-          component: a TFX component.
-        """
-
-        deduped_parameter_names_for_component = set()
-        for parameter in component.exec_properties.values():
-            if not isinstance(parameter, data_types.RuntimeParameter):
-                continue
-            # Ignore pipeline root because it will be added later.
-            if parameter.name == TFX_PIPELINE_ROOT_PARAMETER.name:
-                continue
-            if parameter.name in deduped_parameter_names_for_component:
-                continue
-
-            deduped_parameter_names_for_component.add(parameter.name)
-            self._params_by_component_id[component.id].append(parameter)
-            if parameter.name not in self._deduped_parameter_names:
-                self._deduped_parameter_names.add(parameter.name)
-                dsl_parameter = dsl.PipelineParam(
-                    name=parameter.name, value=str(parameter.default)
-                )
-                self._params.append(dsl_parameter)
-
-    def _parse_parameter_from_pipeline(self, pipeline: TfxPipeline) -> None:
-        """Extract all the RuntimeParameter placeholders from the pipeline."""
-
-        for component in pipeline.components:
-            self._parse_parameter_from_component(component)
 
     def _construct_pipeline_graph(
         self,
@@ -428,19 +310,6 @@ class KubeflowDagRunner:
         """
         tfx_pipeline = create_tfx_pipeline(pipeline, stack=stack)
 
-        pipeline_root = tfx_pipeline.pipeline_info.pipeline_root
-        if not isinstance(pipeline_root, str):
-            raise TypeError(
-                "TFX Pipeline root may not be a Placeholder, "
-                "but must be a specific string."
-            )
-
-        for component in tfx_pipeline.components:
-            # TODO(b/187122662): Pass through pip dependencies as a first-class
-            # component flag.
-            if isinstance(component, tfx_base_component.BaseComponent):
-                component._resolve_pip_dependencies(pipeline_root)
-
         def _construct_pipeline() -> None:
             """Creates Kubeflow ContainerOps for each TFX component
             encountered in the pipeline definition."""
@@ -448,9 +317,6 @@ class KubeflowDagRunner:
                 pipeline, tfx_pipeline, stack, runtime_configuration
             )
 
-        # Need to run this first to get self._params populated. Then KFP
-        # compiler can correctly match default value with PipelineParam.
-        self._parse_parameter_from_pipeline(tfx_pipeline)
         # Create workflow spec and write out to package.
         self._compiler._create_and_write_workflow(
             # pylint: disable=protected-access

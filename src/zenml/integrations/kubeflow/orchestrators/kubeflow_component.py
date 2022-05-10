@@ -38,15 +38,8 @@ from zenml.integrations.kubeflow.orchestrators import kubeflow_utils as utils
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.utils import source_utils
 
 logger = get_logger(__name__)
-
-CONTAINER_ENTRYPOINT_COMMAND = [
-    "python",
-    "-m",
-    "zenml.integrations.kubeflow.container_entrypoint",
-]
 
 
 def _encode_runtime_parameter(param: data_types.RuntimeParameter) -> str:
@@ -59,23 +52,6 @@ def _encode_runtime_parameter(param: data_types.RuntimeParameter) -> str:
         type_enum = pipeline_pb2.RuntimeParameter.STRING
     type_str = pipeline_pb2.RuntimeParameter.Type.Name(type_enum)
     return f"{param.name}={type_str}:{str(dsl.PipelineParam(name=param.name))}"
-
-
-def _get_input_artifact_type_mapping(
-    step_component: tfx_base_component.BaseComponent,
-) -> Dict[str, str]:
-    """Gets artifact classes for each component input.
-
-    Args:
-        step_component: The component for which the mapping should be created.
-
-    Returns:
-        A dictionary mapping component input names to resolved artifact classes.
-    """
-    return {
-        input_name: source_utils.resolve_class(channel.type)
-        for input_name, channel in step_component.spec.inputs.items()
-    }
 
 
 class KubeflowComponent:
@@ -143,6 +119,8 @@ class KubeflowComponent:
             main_module,
             "--step_module",
             step_module,
+            "--original_step_module",
+            original_step_module,
             "--step_function_name",
             step_function_name,
             "--input_artifact_types",
