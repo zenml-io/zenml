@@ -53,6 +53,3 @@ class BaseSecretSchema(BaseModel, ABC):
             for schema_key in cls.__fields__.keys()
             if schema_key not in ignored_keys
         ]
-
-
-# TODO [ENG-723]: Validate that Secret contents conform to schema

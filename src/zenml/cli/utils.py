@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import base64
 import datetime
+import os
 import subprocess
 import sys
 from typing import (
@@ -389,11 +390,67 @@ def format_date(
     return dt.strftime(format)
 
 
-def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
+MAX_ARGUMENT_VALUE_SIZE = 10240
+
+
+def _expand_argument_value_from_file(name: str, value: str) -> str:
+    """Expands the value of an argument pointing to a file into the contents of
+    that file.
+
+    Args:
+        name: Name of the argument. Used solely for logging purposes.
+        value: The value of the argument. This is to be interpreted as a
+            filename if it begins with a `@` character.
+
+    Returns:
+        The argument value expanded into the contents of the file, if the
+        argument value begins with a `@` character. Otherwise, the argument
+        value is returned unchanged.
+
+    Raises:
+        ValueError: If the argument value points to a file that doesn't exist,
+            that cannot be read, or is too long (i.e. exceeds
+            `MAX_ARGUMENT_VALUE_SIZE` bytes).
+    """
+    if value.startswith("@@"):
+        return value[1:]
+    if not value.startswith("@"):
+        return value
+    filename = value[1:]
+    logger.info(
+        f"Expanding argument value `{name}` to contents of file `{filename}`."
+    )
+    if not os.path.isfile(filename):
+        raise ValueError(
+            f"Could not load argument '{name}' value: file "
+            f"'{filename}' does not exist or is not readable."
+        )
+    try:
+        if os.path.getsize(filename) > MAX_ARGUMENT_VALUE_SIZE:
+            raise ValueError(
+                f"Could not load argument '{name}' value: file "
+                f"'{filename}' is too large (max size is "
+                f"{MAX_ARGUMENT_VALUE_SIZE} bytes)."
+            )
+
+        with open(filename, "r") as f:
+            return f.read()
+    except OSError as e:
+        raise ValueError(
+            f"Could not load argument '{name}' value: file "
+            f"'{filename}' could not be accessed: {str(e)}"
+        )
+
+
+def parse_unknown_options(
+    args: List[str], expand_args: bool = False
+) -> Dict[str, Any]:
     """Parse unknown options from the CLI.
 
     Args:
-      args: A list of strings from the CLI.
+        args: A list of strings from the CLI.
+        expand_args: Whether to expand argument values into the contents of the
+            files they may pointing at using the special `@` character.
 
     Returns:
         Dict of parsed args.
@@ -411,8 +468,13 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
 
     assert all(k.isidentifier() for k, _ in p_args), warning_message
 
-    r_args = {k: v for k, v in p_args}
+    r_args = {k: _expand_argument_value_from_file(k, v) for k, v in p_args}
     assert len(p_args) == len(r_args), "Replicated arguments!"
+
+    if expand_args:
+        r_args = {
+            k: _expand_argument_value_from_file(k, v) for k, v in r_args.items()
+        }
 
     return r_args
 
@@ -465,7 +527,6 @@ def pretty_print_secret(
 
     stack_dicts = [
         {
-            "SECRET_NAME": secret.name,
             "SECRET_KEY": key,
             "SECRET_VALUE": get_secret_value(value),
         }

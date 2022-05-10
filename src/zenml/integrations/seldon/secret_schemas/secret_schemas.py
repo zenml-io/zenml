@@ -55,6 +55,14 @@ class SeldonS3SecretSchema(BaseSecretSchema):
     rclone_config_s3_region: Optional[str]
     rclone_config_s3_endpoint: Optional[str]
 
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # report extra attributes as validation failures
+        extra = "forbid"
+
 
 @register_secret_schema_class
 class SeldonGSSecretSchema(BaseSecretSchema):
@@ -92,6 +100,14 @@ class SeldonGSSecretSchema(BaseSecretSchema):
     rclone_config_gs_auth_url: Optional[str]
     rclone_config_gs_token_url: Optional[str]
 
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # report extra attributes as validation failures
+        extra = "forbid"
+
 
 @register_secret_schema_class
 class SeldonAzureSecretSchema(BaseSecretSchema):
@@ -120,3 +136,11 @@ class SeldonAzureSecretSchema(BaseSecretSchema):
     rclone_config_azureblob_key: Optional[str]
     rclone_config_azureblob_sas_url: Optional[str]
     rclone_config_azureblob_use_msi: bool = False
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # validate attribute assignments
+        validate_assignment = True
+        # report extra attributes as validation failures
+        extra = "forbid"
