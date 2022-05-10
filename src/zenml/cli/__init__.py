@@ -426,8 +426,10 @@ are long or contain newline or special characters, you can also use the special
 `@` syntax to indicate to ZenML that the value needs to be read from a file:
 
 ```bash
-zenml secret register SECRET_NAME --attr_from_literal=value \
-   --attr_from_file=@path/to/file.txt ...
+zenml secret register SECRET_NAME --schema=aws \
+   --aws_access_key_id=1234567890 \
+   --aws_secret_access_key=abcdefghij \
+   --aws_session_token=@/path/to/token.txt
 ```
 
 
