@@ -32,6 +32,7 @@ from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
 from rich.prompt import Confirm
+from rich.style import Style
 from rich.text import Text
 
 from zenml.config.profile_config import ProfileConfiguration
@@ -88,9 +89,21 @@ def declare(
     """
     style = zenml_style_defaults["info"]
     if bold:
-        style.bold = True
+        style = Style(
+            color=style.color,
+            dim=style.dim,
+            bold=bold,
+            italic=style.italic,
+            underline=style.underline,
+        )
     if italic:
-        style.italic = True
+        style = Style(
+            color=style.color,
+            dim=style.dim,
+            bold=style.bold,
+            italic=italic,
+            underline=style.underline,
+        )
 
     console.print(text, style=style)
 
@@ -117,9 +130,21 @@ def warning(text: str, bold: bool = False, italic: bool = False) -> None:
     """
     style = zenml_style_defaults["warning"]
     if bold:
-        style.bold = True
+        style = Style(
+            color=style.color,
+            dim=style.dim,
+            bold=bold,
+            italic=style.italic,
+            underline=style.underline,
+        )
     if italic:
-        style.italic = True
+        style = Style(
+            color=style.color,
+            dim=style.dim,
+            bold=style.bold,
+            italic=italic,
+            underline=style.underline,
+        )
 
     console.print(text, style=style)
 
