@@ -42,6 +42,7 @@ from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
 from zenml.steps import BaseStep
 from zenml.utils import networking_utils
+from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -412,26 +413,27 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
         """
+        from zenml.utils.docker_utils import build_docker_image
 
-        self.get_docker_image_name(pipeline.name)
+        image_name = self.get_docker_image_name(pipeline.name)
 
         requirements = {*stack.requirements(), *pipeline.requirements}
 
         logger.debug("Kubeflow docker container requirements: %s", requirements)
 
-        # build_docker_image(
-        #     build_context_path=get_source_root_path(),
-        #     image_name=image_name,
-        #     dockerignore_path=pipeline.dockerignore_file,
-        #     requirements=requirements,
-        #     base_image=self.custom_docker_base_image_name,
-        #     environment_vars=self._get_environment_vars_from_secrets(
-        #         pipeline.secrets
-        #     ),
-        # )
-        #
-        # assert stack.container_registry  # should never happen due to validation
-        # stack.container_registry.push_image(image_name)
+        build_docker_image(
+            build_context_path=get_source_root_path(),
+            image_name=image_name,
+            dockerignore_path=pipeline.dockerignore_file,
+            requirements=requirements,
+            base_image=self.custom_docker_base_image_name,
+            environment_vars=self._get_environment_vars_from_secrets(
+                pipeline.secrets
+            ),
+        )
+
+        assert stack.container_registry  # should never happen due to validation
+        stack.container_registry.push_image(image_name)
 
     def _configure_container_op(self, container_op):
         import re
