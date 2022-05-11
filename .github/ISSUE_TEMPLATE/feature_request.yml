@@ -2,8 +2,6 @@ name: Feature Request
 description: Request a new feature.
 title: "[FEATURE]: "
 labels: ["enhancement"]
-assignees:
-  - htahir1
 body:
   - type: markdown
     attributes:
@@ -15,7 +13,7 @@ body:
     attributes:
       label: Contact Details [Optional]
       description: How can we get in touch with you if we need more info?
-      placeholder: your@awesome.com
+      placeholder: youre@awesome.com
     validations:
       required: false
 

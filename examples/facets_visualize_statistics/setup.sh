@@ -8,6 +8,6 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install facets -f
-  zenml integration install tensorflow -f
+  zenml integration install facets -y
+  zenml integration install tensorflow -y
 }

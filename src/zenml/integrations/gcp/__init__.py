@@ -12,7 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-The GCP integration submodule allows the use of the cloud artifact store (GCS).
+The GCP integration submodule provides a way to run ZenML pipelines in a cloud
+environment. Specifically, it allows the use of cloud artifact stores, metadata
+stores, and an `io` module to handle file operations on Google Cloud Storage
+(GCS).
 """
 
 from typing import List

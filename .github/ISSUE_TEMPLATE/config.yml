@@ -3,3 +3,6 @@ contact_links:
   - name: Slack Channel
     url: https://zenml.io/slack-invite/
     about: Chat with us directly here.
+  - name: Docs
+    url: https://docs.zenml.io/
+    about: Read the docs to answer most commonly asked questions.

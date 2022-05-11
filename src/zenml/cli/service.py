@@ -94,7 +94,7 @@ def up_server(port: int, profile: Optional[str]) -> None:
                     case the specified port is in use or if the service was
                     already running on port {zen_service.endpoint.status.port}.
                     In case you want to change to port={port} shut down the
-                    service with `zenml service down -f` and restart it with
+                    service with `zenml service down -y` and restart it with
                     a free port of your choice.
                     """
                 )
@@ -134,13 +134,26 @@ def status_server() -> None:
 
 @service.command("down")
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Deprovisions local resources instead of suspending them.",
 )
-def down_service(force: bool = False) -> None:
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Deprovisions local resources instead of suspending them. Use `-y/--yes` instead.",
+)
+def down_service(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the local zen service."""
+    if old_force:
+        force = old_force
+        cli_utils.warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
 
     try:
         with open(GLOBAL_ZENML_SERVICE_CONFIG_FILEPATH, "r") as f:
