@@ -100,7 +100,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
     """Abstract base class for all ZenML pipelines.
 
     Attributes:
-        name: The name of this pipeline. enable_cache: A boolean indicating if
+        name: The name of this pipeline. 
+        enable_cache: A boolean indicating if
         caching is enabled for this
             pipeline.
         requirements_file: DEPRECATED: Optional path to a pip requirements file
