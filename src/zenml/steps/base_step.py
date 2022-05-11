@@ -169,7 +169,7 @@ class BaseStepMeta(type):
                 f"Missing return type annotation when "
                 f"trying to create step '{name}'. Please make sure to "
                 f"include type annotations for all your step inputs "
-                f"and outputs."
+                f"and outputs. If your step returns nothing, please annotate it with `-> None`."
             )
         return_type = step_function_signature.annotations.get("return", None)
         if return_type is not None:

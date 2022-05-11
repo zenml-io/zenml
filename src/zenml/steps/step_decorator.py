@@ -86,9 +86,6 @@ def step(
     Returns:
         the inner decorator which creates the step class based on the
         ZenML BaseStep
-
-    Raises:
-        StepInterfaceError: raises an error if _func is not type annotated.
     """
 
     def inner_decorator(func: F) -> Type[BaseStep]:
@@ -100,9 +97,6 @@ def step(
 
         Returns:
             The class of a newly generated ZenML Step.
-
-        Raises:
-            StepInterfaceError: raises an error if _func is not type annotated.
         """
         step_name = name or func.__name__
         output_spec = output_types or {}
