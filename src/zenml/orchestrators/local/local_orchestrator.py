@@ -32,7 +32,6 @@ from typing import TYPE_CHECKING, Any, ClassVar, List
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.pipelines import Schedule
 from zenml.steps import BaseStep
 
 if TYPE_CHECKING:
@@ -64,9 +63,8 @@ class LocalOrchestrator(BaseOrchestrator):
         pipeline: "BasePipeline",
         sorted_list_of_steps: List[BaseStep],
         runtime_configuration: "RuntimeConfiguration",
-        schedule: Schedule,
     ) -> Any:
-        if schedule:
+        if runtime_configuration.schedule:
             logger.warning(
                 "Local Orchestrator currently does not support the"
                 "use of schedules. The `schedule` will be ignored "
