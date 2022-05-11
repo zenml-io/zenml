@@ -13,6 +13,9 @@
 #  permissions and limitations under the License.
 import os
 import subprocess
+import sys
+
+import click
 
 from zenml.enums import ExecutionStatus
 from zenml.repository import Repository
@@ -28,14 +31,22 @@ def test_pipeline_run_single_file(
 ) -> None:
     """Test that zenml pipeline run works as expected when the pipeline, its
     steps and materializers are all in the same file."""
+    clean_sys_modules = sys.modules
+
     os.chdir(files_dir)
     clean_repo.activate_root()
+
+    assert os.path.isfile(os.path.join(files_dir, "run.py"))
+    assert os.path.isfile(os.path.join(files_dir, "config.yaml"))
 
     # Run Pipeline using subprocess as runner.invoke seems to have issues with
     #  pytest https://github.com/pallets/click/issues/824,
     #  https://github.com/pytest-dev/pytest/issues/3344
     subprocess.check_call(
-        ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"]
+        ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"],
+        cwd=files_dir,
+        shell=click._compat.WIN,
+        env=os.environ.copy(),
     )
 
     # Assert that the pipeline ran successfully
@@ -44,6 +55,11 @@ def test_pipeline_run_single_file(
     assert len(historic_pipeline.runs) == 1
 
     assert historic_pipeline.runs[-1].status == ExecutionStatus.COMPLETED
+
+    # Clean up sys modules that were imported in the course of this test
+    for mod in sys.modules:
+        if mod not in clean_sys_modules:
+            del sys.modules[mod]
 
 
 def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
@@ -60,14 +76,22 @@ def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     |config.yaml
     |run.py
     """
+    clean_sys_modules = sys.modules
+
     os.chdir(files_dir)
     clean_repo.activate_root()
+
+    assert os.path.isfile(os.path.join(files_dir, "run.py"))
+    assert os.path.isfile(os.path.join(files_dir, "config.yaml"))
 
     # Run Pipeline using subprocess as runner.invoke seems to have issues with
     #  pytest https://github.com/pallets/click/issues/824,
     #  https://github.com/pytest-dev/pytest/issues/3344
     subprocess.check_call(
-        ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"]
+        ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"],
+        cwd=files_dir,
+        shell=click._compat.WIN,
+        env=os.environ.copy(),
     )
 
     # Assert that pipeline completed successfully
@@ -76,3 +100,8 @@ def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     assert len(historic_pipeline.runs) == 1
 
     assert historic_pipeline.runs[-1].status == ExecutionStatus.COMPLETED
+
+    # Clean up sys modules that were imported in the course of this test
+    for mod in sys.modules:
+        if mod not in clean_sys_modules:
+            del sys.modules[mod]
