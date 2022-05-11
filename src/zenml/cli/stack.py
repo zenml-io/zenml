@@ -819,7 +819,7 @@ def _import_stack_component(
             f"'{component_name}' already exists, "
             f"but is configured differently. "
             f"Please choose a different name.",
-            type=str,  # type:ignore[arg-type]
+            type=str,
         )
 
     _register_stack_component(
@@ -871,7 +871,7 @@ def import_stack(
         stack_name = click.prompt(
             f"Stack `{stack_name}` already exists. "
             f"Please choose a different name.",
-            type=str,  # type:ignore[arg-type]
+            type=str,
         )
 
     # import stack components
