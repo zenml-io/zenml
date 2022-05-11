@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.entrypoints.base_container_entrypoint import (
-    SingleStepContainerEntrypoint,
+from zenml.entrypoints.step_entrypoint_configuration import (
+    StepEntrypointConfiguration,
 )
 
-__all__ = ["SingleStepContainerEntrypoint"]
+__all__ = ["StepEntrypointConfiguration"]

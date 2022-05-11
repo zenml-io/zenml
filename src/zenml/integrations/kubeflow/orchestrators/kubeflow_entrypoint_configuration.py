@@ -20,9 +20,7 @@ from kubernetes import config as k8s_config
 from tfx.orchestration.portable import data_types
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode as Pb2PipelineNode
 
-from zenml.entrypoints.step_entrypoint_configuration import (
-    StepEntrypointConfiguration,
-)
+from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.integrations.kubeflow.orchestrators import entrypoint_utils
 from zenml.steps import BaseStep
 
