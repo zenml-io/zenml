@@ -46,7 +46,6 @@ from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService
 from zenml.services.service_status import ServiceState
-from zenml.stack import StackComponent
 from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
 from zenml.zen_stores.models.flavor_wrapper import validate_flavor_source
 
@@ -186,12 +185,14 @@ def format_integration_list(
     can then be printed in a table style using cli_utils.print_table."""
     list_of_dicts = []
     for name, integration_impl in integrations:
-        is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
+        # type: ignore[attr-defined]
+        is_installed = integration_impl.check_installation()
         list_of_dicts.append(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
+                # type: ignore[attr-defined]
+                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
             }
         )
     return list_of_dicts
@@ -309,10 +310,10 @@ def print_flavor_list(
 
 
 def print_stack_component_configuration(
-    component: StackComponent, display_name: str, active_status: bool
+    component: ComponentWrapper, display_name: str, active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component."""
-    title = f"{component.TYPE.value.upper()} Component Configuration"
+    title = f"{component.type.value.upper()} Component Configuration"
     if active_status:
         title += " (ACTIVE)"
     rich_table = table.Table(
@@ -322,7 +323,13 @@ def print_stack_component_configuration(
     )
     rich_table.add_column("COMPONENT_PROPERTY")
     rich_table.add_column("VALUE", overflow="fold")
-    items = component.dict().items()
+
+    component_dict = component.dict()
+    component_dict.pop("config")
+    component_dict.update(
+        yaml.safe_load(base64.b64decode(component.config).decode())
+    )
+    items = component_dict.items()
     for item in items:
         elements = []
         for idx, elem in enumerate(item):

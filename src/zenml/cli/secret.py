@@ -48,14 +48,19 @@ def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
 @click.pass_context
 def secret(ctx: click.Context) -> None:
     """List and manage your secrets."""
-    ctx.obj = Repository().active_stack.components.get(
-        StackComponentType.SECRETS_MANAGER, None
+    repo = Repository()
+    active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+    secrets_manager_wrapper = active_stack.get_component_wrapper(
+        StackComponentType.SECRETS_MANAGER
     )
-    if ctx.obj is None:
+    if secrets_manager_wrapper is None:
         error(
             "No active secrets manager found. Please create a secrets manager "
             "first and add it to your stack."
         )
+        return
+
+    ctx.obj = secrets_manager_wrapper.to_component()
 
 
 @secret.command("register", help="Register a secret with the given name as key")
