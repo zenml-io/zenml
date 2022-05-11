@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import platform
-import random
 
 import pytest
 import requests
@@ -20,6 +19,7 @@ import requests
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import STACK_CONFIGURATIONS, STACKS, USERS
 from zenml.services import ServiceState
+from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
 from zenml.zen_stores import LocalZenStore
 from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
@@ -37,7 +37,7 @@ def running_zen_service(tmp_path_factory: pytest.TempPathFactory) -> ZenService:
         store_type=backing_zen_store.type,
     )
 
-    port = random.randint(8003, 9000)
+    port = scan_for_available_port(start=8003, stop=9000)
     zen_service = ZenService(
         ZenServiceConfig(port=port, store_profile_configuration=store_profile)
     )
@@ -93,7 +93,7 @@ def test_service_requires_auth(running_zen_service: ZenService):
 )
 def test_service_up_down():
     """Test spinning up and shutting down Zen service."""
-    port = random.randint(8003, 9000)
+    port = scan_for_available_port(start=8003, stop=9000)
     zen_service = ZenService(
         ZenServiceConfig(
             port=port,

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,20 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.constants import DASH
-from zenml.integrations.integration import Integration
+from zenml.pipelines import pipeline
 
 
-class DashIntegration(Integration):
-    """Definition of Dash integration for ZenML."""
-
-    NAME = DASH
-    REQUIREMENTS = [
-        "dash>=2.0.0",
-        "dash-cytoscape>=0.3.0",
-        "dash-bootstrap-components>=1.0.1",
-        "jupyter-dash>=0.4.2",
-    ]
-
-
-DashIntegration.check_installation()
+@pipeline(enable_cache=False)
+def some_pipe(
+    step_1,
+):
+    step_1()
