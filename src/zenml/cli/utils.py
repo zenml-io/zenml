@@ -31,11 +31,10 @@ import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
-from rich.style import Style
 from rich.text import Text
 
 from zenml.config.profile_config import ProfileConfiguration
-from zenml.console import console
+from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -60,7 +59,7 @@ def title(text: str) -> None:
     Args:
       text: Input text string.
     """
-    console.print(text.upper(), style="title")
+    console.print(text.upper(), style=zenml_style_defaults["title"])
 
 
 def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
@@ -88,7 +87,11 @@ def declare(
         bold: Optional boolean to bold the text.
         italic: Optional boolean to italicize the text.
     """
-    style = Style(color="cyan", dim=True, bold=bold, italic=italic)
+    style = zenml_style_defaults["info"]
+    if bold:
+        style.bold = True
+    if italic:
+        style.italic = True
 
     console.print(text, style=style)
 
@@ -114,7 +117,7 @@ def warning(text: str, bold: bool = False, italic: bool = False) -> None:
         bold: Optional boolean to bold the text.
         italic: Optional boolean to italicize the text.
     """
-    style = Style(color="yellow", dim=True, bold=bold, italic=italic)
+    style = zenml_style_defaults["warning"]
     if bold:
         style.bold = True
     if italic:
