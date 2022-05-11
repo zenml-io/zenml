@@ -29,11 +29,6 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
-
-# from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
-#     KubeflowDagRunner,
-#     KubeflowDagRunnerConfig,
-# )
 from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
 )
