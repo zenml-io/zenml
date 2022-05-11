@@ -31,6 +31,7 @@ import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
+from rich.prompt import Confirm
 from rich.text import Text
 
 from zenml.config.profile_config import ProfileConfiguration
@@ -73,8 +74,7 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
     Returns:
         Boolean based on user response.
     """
-    # return Confirm.ask(text, console=console)
-    return click.confirm(click.style(text, fg="yellow"), *args, **kwargs)
+    return Confirm.ask(text, console=console)
 
 
 def declare(
@@ -106,7 +106,6 @@ def error(text: str) -> None:
         click.ClickException: when called.
     """
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
-    # console.print(text, style="error")
 
 
 def warning(text: str, bold: bool = False, italic: bool = False) -> None:
