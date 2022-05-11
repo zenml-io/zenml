@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import inspect
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -23,6 +24,7 @@ from typing import (
     overload,
 )
 
+from zenml.exceptions import StepInterfaceError
 from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
@@ -39,6 +41,42 @@ if TYPE_CHECKING:
 F = TypeVar("F", bound=Callable[..., Any])
 
 
+def _check_function_is_type_annotated(_func: F) -> None:
+    """
+    Check if given function has full type annotations.
+
+    Args:
+        _func: function to be checked.
+
+    Raises:
+        StepInterfaceError: raises an error if an annotation is missing.
+    """
+    func_name = _func.__name__
+    argspec = inspect.getfullargspec(_func)
+
+    # check if function has return type annotations
+    annotations = argspec.annotations
+    if "return" not in annotations:
+        raise StepInterfaceError(
+            f"All `@step` annotated functions must have type annotations. "
+            f"Function '{func_name}' has no return type annotation."
+        )
+
+    # for all args (incl. *args, **kwargs), check type annotations exist
+    args = argspec.args
+    if argspec.varargs is not None:
+        args.append(argspec.varargs)
+    if argspec.varkw is not None:
+        args.append(argspec.varkw)
+    for arg in args:
+        if arg in annotations:
+            continue
+        raise StepInterfaceError(
+            f"All `@step` annotated functions must have type annotations. "
+            f"Function '{func_name}' has no type annotation for arg '{arg}'."
+        )
+
+
 @overload
 def step(_func: F) -> Type[BaseStep]:
     """Type annotations for step decorator in case of no arguments."""
@@ -51,7 +89,7 @@ def step(
     name: Optional[str] = None,
     enable_cache: bool = True,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
-    custom_step_operator: Optional[str] = None
+    custom_step_operator: Optional[str] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     """Type annotations for step decorator in case of arguments."""
     ...
@@ -63,7 +101,7 @@ def step(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
-    custom_step_operator: Optional[str] = None
+    custom_step_operator: Optional[str] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
 
@@ -86,6 +124,9 @@ def step(
     Returns:
         the inner decorator which creates the step class based on the
         ZenML BaseStep
+
+    Raises:
+        StepInterfaceError: raises an error if _func is not type annotated.
     """
 
     def inner_decorator(func: F) -> Type[BaseStep]:
@@ -97,7 +138,11 @@ def step(
 
         Returns:
             The class of a newly generated ZenML Step.
+
+        Raises:
+            StepInterfaceError: raises an error if _func is not type annotated.
         """
+        _check_function_is_type_annotated(func)
         step_name = name or func.__name__
         output_spec = output_types or {}
 
