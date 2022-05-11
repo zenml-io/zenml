@@ -110,6 +110,7 @@ class BaseOrchestrator(StackComponent, ABC):
         run_name: str,
         pb2_pipeline: Optional[Pb2Pipeline] = None,
     ) -> Optional[data_types.ExecutionInfo]:
+        """"""
 
         pb2_pipeline = pb2_pipeline or self._pb2_pipeline
 
@@ -164,6 +165,16 @@ class BaseOrchestrator(StackComponent, ABC):
     def _get_node_with_step_name(
         step_name: str, pb2_pipeline: Pb2Pipeline
     ) -> PipelineNode:
+        """Given the name of a step, return the node with that name from the
+        pb2_pipeline.
+
+        Args:
+            step_name: Name of the step
+            pb2_pipeline: pb2 pipeline containing nodes
+
+        Returns:
+            PipelineNode instance
+        """
         for node in pb2_pipeline.nodes:
             if (
                 node.WhichOneof("node") == "pipeline_node"
