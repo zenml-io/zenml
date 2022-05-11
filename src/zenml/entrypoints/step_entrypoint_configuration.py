@@ -47,15 +47,49 @@ INPUT_SPEC_OPTION = "input_spec"
 
 
 class StepEntrypointConfiguration:
+    """
+
+    Subclasses:
+    custom_entrypoint_options
+    setup
+    post_run
+
+    """
+
     def __init__(self, arguments: List[str]):
         self.entrypoint_args = self.parse_arguments(arguments)
 
     @classmethod
     def get_entrypoint_command(cls) -> List[str]:
+        """Returns a command that runs the entrypoint module.
+
+        This entrypoint module must execute a ZenML step when called. If
+        subclasses don't overwrite this method, it will default to the
+        `zenml.entrypoints.step_entrypoint` module.
+        """
         return DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND
 
     @classmethod
+    def get_custom_entrypoint_options(cls) -> Set[str]:
+        """Custom options for this entrypoint configuration that are
+        required in addition to the default ZenML ones.
+
+        The options returned by this method should be strings like "my_option"
+        (no "--" prefix). When the entrypoint is executed, it will parse the
+        CLI arguments and expect all options to be passed in the form
+        "--my_option my_value". You'll be able to retrieve the argument
+        value by calling `self.entrypoint_args["my_option"]`.
+        """
+        return set()
+
+    @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
+        """Gets all the options that are required when running an entrypoint
+        with this configuration.
+
+        Subclasses should implement the `get_custom_entrypoint_options()` class
+        method instead of this one if they require custom options.
+        """
         zenml_default_options = {
             ENTRYPOINT_CONFIG_SOURCE_OPTION,
             PB2_PIPELINE_JSON_OPTION,
@@ -67,8 +101,9 @@ class StepEntrypointConfiguration:
         return zenml_default_options.union(cls.get_custom_entrypoint_options())
 
     @classmethod
-    def get_custom_entrypoint_options(cls) -> Set[str]:
-        return set()
+    def get_custom_entrypoint_arguments(cls, step: BaseStep) -> List[str]:
+        """Overwrite this in subclass if it needs custom additional arguments."""
+        return []
 
     @classmethod
     def get_entrypoint_arguments(
@@ -109,18 +144,33 @@ class StepEntrypointConfiguration:
 
         return zenml_arguments + cls.get_custom_entrypoint_arguments(step=step)
 
-    @classmethod
-    def get_custom_entrypoint_arguments(cls, step: BaseStep) -> List[str]:
-        """Overwrite this in subclass if it needs custom additional arguments."""
-        return []
-
     @abstractmethod
     def get_run_name(self, pipeline_name: str) -> str:
-        """"""
+        """Returns the run name.
+
+        Subclasses must implement this and return a run name that is the same
+        for all steps of this pipeline run.
+
+        TODO: add some examples
+        """
 
     def parse_arguments(self, arguments: List[str]) -> Dict[str, Any]:
-        """"""
-        parser_ = argparse.ArgumentParser()
+        """Parses command line arguments.
+
+        This method will create an `argparse.ArgumentParser` and add required
+        arguments for all the options specified in the
+        `get_entrypoint_options()` method of this class. Subclasses that
+        require additional arguments during entrypoint execution should provide
+        them by implementing the `get_custom_entrypoint_options()` class method.
+
+        Args:
+            arguments: Arguments to parse. The format should be similar to
+                `sys.argv[1:]`, e.g. `["--some_option", "some_value"]`.
+
+        Returns:
+            Dictionary of the parsed arguments.
+        """
+        parser = argparse.ArgumentParser()
 
         for option_name in self.get_entrypoint_options():
             if option_name == ENTRYPOINT_CONFIG_SOURCE_OPTION:
@@ -128,17 +178,25 @@ class StepEntrypointConfiguration:
                 # `zenml.entrypoints.step_entrypoint` to read which config
                 # class to use
                 continue
-            parser_.add_argument(f"--{option_name}")
+            parser.add_argument(f"--{option_name}", required=True)
 
-        result = parser_.parse_args(arguments)
+        result, _ = parser.parse_known_args(arguments)
         return vars(result)
 
     def setup(self, pipeline_name: str, step_name: str) -> None:
-        # Make sure this entrypoint does not run an entire pipeline when
-        # importing user modules. This could happen if the `pipeline.run()` call
-        # is not wrapped in a function or a `if __name__== "__main__":` check)
-        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+        """Runs setup code that needs to run before any user code is imported
+        or the step is executed.
 
+        Subclasses should overwrite this method if they need to perform any
+        additional setup, but should in most cases include a
+        `super().setup(...)` call so the ZenML setup code will still be
+        executed.
+
+        Args:
+            pipeline_name: Name of the parent pipeline of the step that will
+                be executed.
+            step_name: Name of the step that will be executed.
+        """
         logging.basicConfig(stream=sys.stdout, level=logging.INFO)
         logging.getLogger().setLevel(logging.INFO)
 
@@ -149,7 +207,19 @@ class StepEntrypointConfiguration:
         pipeline_node: Pb2PipelineNode,
         execution_info: Optional[data_types.ExecutionInfo] = None,
     ) -> None:
-        """"""
+        """Does cleanup or post-processing after the step execution is finished.
+
+        Subclasses should overwrite this method if they need to run any
+        additional code after the step execution.
+
+        Args:
+            pipeline_name: Name of the parent pipeline of the step that was
+                executed.
+            step_name: Name of the step that was executed.
+            pipeline_node: Protobuf node corresponding to the step that was
+                executed.
+            execution_info: Info about the finished step execution.
+        """
 
     @staticmethod
     def _create_executor_class(
@@ -172,12 +242,13 @@ class StepEntrypointConfiguration:
         materializers = step.get_materializers(ensure_complete=True)
 
         input_spec = {}
-        for input_name, class_path in input_spec_config.items():
-            artifact_class = source_utils.load_source_path_class(class_path)
+        for input_name, source in input_spec_config.items():
+            artifact_class = source_utils.load_source_path_class(source)
             if not issubclass(artifact_class, BaseArtifact):
-                raise RuntimeError(
-                    f"Class `{artifact_class}` specified as artifact class for "
-                    f"input '{input_name}' is not a ZenML BaseArtifact subclass."
+                raise TypeError(
+                    f"The artifact source `{source}` passed to the entrypoint "
+                    f"for the step input '{input_name}' is not pointing to a "
+                    f"`{BaseArtifact}` subclass."
                 )
             input_spec[input_name] = artifact_class
 
@@ -201,7 +272,21 @@ class StepEntrypointConfiguration:
         )
 
     def run(self) -> None:
-        # Make sure all the required args were passed to the entrypoint.
+        """Runs the ZenML step defined by the entrypoint arguments.
+
+        Subclasses should in most cases not need to overwrite this method and
+        implement their custom logic in the `setup(...)` and `post_run(...)`
+        methods instead. If you still need to customize the functionality of
+        this method, make sure to still include all the existing steps as
+        otherwise your step won't be executed properly.
+        """
+        # Make sure this entrypoint does not run an entire pipeline when
+        # importing user modules. This could happen if the `pipeline.run()` call
+        # is not wrapped in a function or an `if __name__== "__main__":` check)
+        constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
+
+        # Extract and parse all the entrypoint arguments required to execute
+        # the step.
         pb2_pipeline_json = self.entrypoint_args[PB2_PIPELINE_JSON_OPTION]
         pb2_pipeline = Pb2Pipeline()
         json_format.Parse(pb2_pipeline_json, pb2_pipeline)
@@ -212,8 +297,7 @@ class StepEntrypointConfiguration:
         input_spec = json.loads(self.entrypoint_args[INPUT_SPEC_OPTION])
 
         # Do any setup that is needed before user code is imported and the step
-        # is executed. Subclasses can overwrite this method to do additional
-        # custom setup if they need to.
+        # is executed.
         pipeline_name = pb2_pipeline.pipeline_info.id
         _, step_name = step_source.rsplit(".", 1)
         self.setup(pipeline_name=pipeline_name, step_name=step_name)
@@ -243,7 +327,7 @@ class StepEntrypointConfiguration:
         if not issubclass(step_class, BaseStep):
             raise TypeError(
                 f"The step source `{step_source}` passed to the entrypoint is "
-                f"not pointing to a `zenml.steps.BaseStep` subclass."
+                f"not pointing to a `{BaseStep}` subclass."
             )
 
         step = step_class()

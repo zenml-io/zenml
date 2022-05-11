@@ -22,17 +22,23 @@ from zenml.utils import source_utils
 
 def main():
     """"""
+    # Read the source for the entrypoint configuration class from the cli
+    # arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument(f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}")
+    parser.add_argument(f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}", required=True)
     args, remaining_args = parser.parse_known_args()
 
-    # Create instance of the entrypoint configuration and pass it the remaining
-    # cli arguments
+    # Create an instance of the entrypoint configuration and pass it the
+    # remaining cli arguments
     entrypoint_config_class = source_utils.load_source_path_class(
         args.entrypoint_config_source
     )
     if not issubclass(entrypoint_config_class, StepEntrypointConfiguration):
-        raise TypeError
+        raise TypeError(
+            f"The entrypoint config source `{args.entrypoint_config_source}` "
+            f"passed to the entrypoint is not pointing to a "
+            f"`{StepEntrypointConfiguration}` subclass."
+        )
 
     entrypoint_config = entrypoint_config_class(arguments=remaining_args)
 
