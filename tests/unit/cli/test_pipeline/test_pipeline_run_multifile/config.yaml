@@ -1,0 +1,12 @@
+name: some_pipe
+steps:
+  step_1:
+    materializers:
+      output_1:
+        file: materializer_file/materializer_file.py
+        name: SomeMaterializer
+    parameters:
+      some_option: 3
+    source:
+      file: step_file/step_file.py
+      name: some_step
