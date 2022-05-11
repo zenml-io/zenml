@@ -20,7 +20,6 @@ from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig
 from zenml.config.global_config import GlobalConfiguration
 from zenml.io import fileio
 from zenml.metadata_stores import BaseMetadataStore
-
 from zenml.repository import Repository
 
 
@@ -91,8 +90,7 @@ class MySQLMetadataStore(BaseMetadataStore):
         # Set the SSL configuration if there is one
         if secret:
             secret_folder = Path(
-                GlobalConfiguration().config_directory,
-                str(self.uuid)
+                GlobalConfiguration().config_directory, str(self.uuid)
             )
 
             ssl_options = {}
@@ -129,8 +127,10 @@ class MySQLMetadataStore(BaseMetadataStore):
             try:
                 secret = secret_manager.get_secret(self.secret)
 
-                from zenml.metadata_stores.mysql_secret_schema import \
-                    MYSQLSecretSchema
+                from zenml.metadata_stores.mysql_secret_schema import (
+                    MYSQLSecretSchema,
+                )
+
                 if not isinstance(secret, MYSQLSecretSchema):
                     raise RuntimeError(
                         f"If you are using a secret with a MySQL Metadata "
