@@ -120,7 +120,7 @@ def stack() -> None:
 @click.option(
     "-al",
     "--alerter",
-    "aleter_name",
+    "alerter_name",
     help="Name of the alerter for this stack.",
     type=str,
     required=False,

@@ -22,7 +22,7 @@ from zenml.integrations.constants import SLACK
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-SLACK_ALERTER_FLAVOR = "slack_alerter"
+SLACK_ALERTER_FLAVOR = "slack"
 
 
 class SlackIntegration(Integration):

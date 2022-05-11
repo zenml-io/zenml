@@ -22,11 +22,8 @@ logger = get_logger(__name__)
 
 
 class SlackAlerter(BaseAlerter):
-    """Stores wandb configuration options.
+    """TBD
 
-    ZenML should take care of configuring wandb for you, but should you still
-    need access to the configuration inside your step you can do it using a
-    step context:
     ```python
     from zenml.steps import StepContext
 
@@ -43,47 +40,9 @@ class SlackAlerter(BaseAlerter):
             entity and project.
     """
 
-    api_key: str
-    entity: Optional[str] = None
-    project_name: Optional[str] = None
+    slack_token: str
+    slack_channel_id: str
+    thread_ts: Optional[str] = None
 
     # Class Configuration
     FLAVOR: ClassVar[str] = SLACK_ALERTER_FLAVOR
-
-    def prepare_step_run(self) -> None:
-        """Sets the wandb api key."""
-        os.environ[WANDB_API_KEY] = self.api_key
-
-    @contextmanager
-    def activate_wandb_run(
-        self,
-        run_name: str,
-        tags: Tuple[str, ...] = (),
-        settings: Optional[wandb.Settings] = None,
-    ) -> Iterator[None]:
-        """Activates a wandb run for the duration of this context manager.
-
-        Anything logged to wandb that is run while this context manager is
-        active will automatically log to the same wandb run configured by the
-        run name passed as an argument to this function.
-
-        Args:
-            run_name: Name of the wandb run to create.
-            tags: Tags to attach to the wandb run.
-            settings: Additional settings for the wandb run.
-        """
-        try:
-            logger.info(
-                f"Initializing wandb with project name: {self.project_name}, "
-                f"run_name: {run_name}, entity: {self.entity}."
-            )
-            wandb.init(
-                project=self.project_name,
-                name=run_name,
-                entity=self.entity,
-                settings=settings,
-                tags=tags,
-            )
-            yield
-        finally:
-            wandb.finish()
