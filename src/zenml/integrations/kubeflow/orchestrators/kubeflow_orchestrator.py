@@ -29,6 +29,9 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
+from zenml.integrations.kubeflow.orchestrators.kubeflow_entrypoint_configuration import (
+    KubeflowEntrypointConfiguration,
+)
 from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
 )
@@ -561,13 +564,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "orchestrator."
             )
 
-        import json
-
-        from google.protobuf import json_format
         from kfp import dsl
         from kfp.compiler import Compiler as KFPCompiler
 
-        from zenml.utils import source_utils
         from zenml.utils.docker_utils import get_image_digest
 
         image_name = self.get_docker_image_name(pipeline.name)
@@ -578,44 +577,20 @@ class KubeflowOrchestrator(BaseOrchestrator):
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step in sorted_list_of_steps:
-                main_module = source_utils.get_module_source_from_module(
-                    sys.modules["__main__"]
-                )
-
-                original_step_module = step.__module__
-
-                if original_step_module == "__main__":
-                    step_module = main_module
-                else:
-                    step_module = original_step_module
-
-                step_source_path = f"{step_module}.{step.name}"
                 metadata_ui_path = "/outputs/mlpipeline-ui-metadata.json"
 
-                input_artifact_type_mapping = {
-                    input_name: source_utils.resolve_class(input_type)
-                    for input_name, input_type in step.INPUT_SPEC.items()
-                }
-
-                arguments = [
-                    "--pb2_pipeline_json",
-                    json_format.MessageToJson(self._pb2_pipeline),
-                    "--metadata_ui_path",
-                    metadata_ui_path,
-                    "--main_module",
-                    main_module,
-                    "--step_source_path",
-                    step_source_path,
-                    "--original_step_module",
-                    original_step_module,
-                    "--input_artifact_types",
-                    json.dumps(input_artifact_type_mapping),
-                ]
-
+                command = (
+                    KubeflowEntrypointConfiguration.get_entrypoint_command()
+                )
+                arguments = (
+                    KubeflowEntrypointConfiguration.get_entrypoint_arguments(
+                        step=step, pb2_pipeline=self._pb2_pipeline
+                    )
+                )
                 container_op = dsl.ContainerOp(
                     name=step.name,
                     image=image_name,
-                    command=CONTAINER_ENTRYPOINT_COMMAND,
+                    command=command,
                     arguments=arguments,
                     output_artifact_paths={
                         "mlpipeline-ui-metadata": metadata_ui_path,
