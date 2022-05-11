@@ -25,7 +25,7 @@ from zenml.repository import Repository
 class MySQLMetadataStore(BaseMetadataStore):
     """MySQL backend for ZenML metadata store."""
 
-    user: Optional[str]
+    username: Optional[str]
     password: Optional[str]
     host: str
     port: int
@@ -52,19 +52,19 @@ class MySQLMetadataStore(BaseMetadataStore):
         secret = self._get_mysql_secret()
 
         # Set the user
-        if self.user:
+        if self.username:
             if secret and secret.user:
                 raise RuntimeError(
                     f"Both the metadata store {self.name} and the secret "
                     f"{self.secret} within your secrets manager define "
-                    f"a username `{self.user}` and `{secret.user}`. Please "
+                    f"a username `{self.username}` and `{secret.user}`. Please "
                     f"make sure that you only use one."
                 )
             else:
-                config.user = self.user
+                config.user = self.username
         else:
             if secret and secret.user:
-                config.user = self.user
+                config.user = self.username
             else:
                 raise RuntimeError(
                     "Your metadata store does not have a username. Please "
