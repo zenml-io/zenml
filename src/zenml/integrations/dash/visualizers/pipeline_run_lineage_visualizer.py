@@ -21,6 +21,7 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 
 from zenml.enums import ExecutionStatus
+from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineRunView
 from zenml.visualizers import BasePipelineRunVisualizer
@@ -114,14 +115,20 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         """Method to visualize pipeline runs via the Dash library. The layout
         puts every layer of the dag in a column.
         """
-
-        app = dash.Dash(
-            __name__,
-            external_stylesheets=[
-                dbc.themes.BOOTSTRAP,
-                dbc.icons.BOOTSTRAP,
-            ],
-        )
+        external_stylesheets = [
+            dbc.themes.BOOTSTRAP,
+            dbc.icons.BOOTSTRAP,
+        ]
+        if Environment.in_notebook:
+            app = dash.JupyterDash(
+                __name__,
+                external_stylesheets=external_stylesheets,
+            )
+        else:
+            app = dash.Dash(
+                __name__,
+                external_stylesheets=external_stylesheets,
+            )
         nodes, edges, first_step_id = [], [], None
         first_step_id = None
         for step in object.steps:
