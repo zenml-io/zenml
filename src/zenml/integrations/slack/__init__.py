@@ -15,8 +15,14 @@
 The Slack integration... TBD
 """
 
+from typing import List
+
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import SLACK
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
+
+SLACK_ALERTER_FLAVOR = "slack_alerter"
 
 
 class SlackIntegration(Integration):
@@ -25,6 +31,18 @@ class SlackIntegration(Integration):
 
     NAME = SLACK
     REQUIREMENTS = ["slack-sdk>=3.16.1"]
+
+    @classmethod
+    def flavors(cls) -> List[FlavorWrapper]:
+        """Declare the stack component flavors for the Sagemaker integration."""
+        return [
+            FlavorWrapper(
+                name=SLACK_ALERTER_FLAVOR,
+                source="zenml.integrations.slack.alerters.slack_alerter.SlackAlerter",
+                type=StackComponentType.ALERTER,
+                integration=cls.NAME,
+            )
+        ]
 
 
 SlackIntegration.check_installation()
