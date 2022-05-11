@@ -46,8 +46,9 @@
   * [Deploy Locally]()
   * [Deploy on Cloud]()
 
-## Stack Components
+## Extending ZenML
 
+* [Stack and Stack Components]()
 * [Artifact Store](stack_components/artifact_store.md)
 * [Metadata Store](stack_components/metadata_store.md)
 * [Orchestrator](stack_components/orchestrator.md)
