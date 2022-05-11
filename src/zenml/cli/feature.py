@@ -33,14 +33,18 @@ if TYPE_CHECKING:
 @click.pass_context
 def feature(ctx: click.Context) -> None:
     """Features as obtained from a feature store."""
-    ctx.obj = Repository().active_stack.components.get(
-        StackComponentType.FEATURE_STORE, None
+    repo = Repository()
+    active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+    feature_store_wrapper = active_stack.get_component_wrapper(
+        StackComponentType.FEATURE_STORE
     )
-    if ctx.obj is None:
+    if feature_store_wrapper is None:
         error(
             "No active feature store found. Please create a feature store "
             "first and add it to your stack."
         )
+        return
+    ctx.obj = feature_store_wrapper.to_component()
 
 
 @feature.command("get-data-sources")

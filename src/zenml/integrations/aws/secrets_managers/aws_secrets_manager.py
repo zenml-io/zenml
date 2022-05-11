@@ -14,7 +14,7 @@
 import json
 from typing import Any, ClassVar, Dict, List
 
-import boto3 as boto3  # type: ignore
+import boto3
 
 from zenml.integrations.aws import AWS_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
@@ -72,6 +72,8 @@ class AWSSecretsManager(BaseSecretsManager):
         secret_value = jsonify_secret_contents(secret)
 
         kwargs = {"Name": secret.name, "SecretString": secret_value}
+        # TODO [ENG-872]: Catch error if secret name already exists and use
+        #  SecretExistsError instead.
         self.CLIENT.create_secret(**kwargs)
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:

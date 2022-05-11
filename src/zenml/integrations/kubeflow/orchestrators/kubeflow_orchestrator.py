@@ -323,10 +323,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
         """
-        from zenml.utils.docker_utils import (
-            build_docker_image,
-            push_docker_image,
-        )
+        from zenml.utils.docker_utils import build_docker_image
 
         image_name = self.get_docker_image_name(pipeline.name)
 
@@ -345,8 +342,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
             ),
         )
 
-        if stack.container_registry:
-            push_docker_image(image_name)
+        assert stack.container_registry  # should never happen due to validation
+        stack.container_registry.push_image(image_name)
 
     def run_pipeline(
         self,
@@ -616,7 +613,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             logger.info(
                 "Found already existing local Kubeflow Pipelines deployment. "
                 "If there are any issues with the existing deployment, please "
-                "run 'zenml stack down --force' to delete it."
+                "run 'zenml stack down --yes' to delete it."
             )
             return
 

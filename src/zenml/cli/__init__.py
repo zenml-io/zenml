@@ -126,11 +126,11 @@ command, as follows:
 ```bash
 zenml example pull quickstart
 ```
-If you would like to force-redownload the examples, use the ``--force``
-or ``-f`` flag as in this example:
+If you would like to force-redownload the examples, use the ``--yes``
+or ``-y`` flag as in this example:
 
 ```bash
-zenml example pull --force
+zenml example pull --yes
 ```
 This will redownload all the examples afresh, using the same version of
 ZenML as you currently have installed. If for some reason you want to
@@ -138,7 +138,7 @@ download examples corresponding to a previous release of ZenML, use the
 ``--version`` or ``-v`` flag to specify, as in the following example:
 
 ```bash
-zenml example pull --force --version 0.3.8
+zenml example pull --yes --version 0.3.8
 ```
 If you wish to run the example, allowing the ZenML CLI to do the work of setting
 up whatever dependencies are required, use the ``run`` subcommand:
@@ -195,7 +195,7 @@ machine. If you wish to register a new metadata store, do so with the
 ``register`` command:
 
 ```bash
-zenml metadata-store register METADATA_STORE_NAME --flavor=METADATA_STORE_TYPE [--OPTIONS]
+zenml metadata-store register METADATA_STORE_NAME --flavor=METADATA_STORE_FLAVOR [--OPTIONS]
 ```
 If you wish to list the metadata stores that have already been
 registered within your ZenML project / repository, type:
@@ -219,7 +219,7 @@ artifact store with everything kept on your local machine. If you wish
 to register a new artifact store, do so with the ``register`` command:
 
 ```bash
-zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_TYPE [--OPTIONS]
+zenml artifact-store register ARTIFACT_STORE_NAME --flavor=ARTIFACT_STORE_FLAVOR [--OPTIONS]
 ```
 If you wish to list the artifact stores that have already been
 registered within your ZenML project / repository, type:
@@ -246,7 +246,7 @@ If you wish to register a new orchestrator, do so with the ``register``
 command:
 
 ```bash
-zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_TYPE [--ORCHESTRATOR_OPTIONS]
+zenml orchestrator register ORCHESTRATOR_NAME --flavor=ORCHESTRATOR_FLAVOR [--ORCHESTRATOR_OPTIONS]
 ```
 If you wish to list the orchestrators that have already been registered
 within your ZenML project / repository, type:
@@ -270,7 +270,7 @@ will not register a container registry. If you wish to register a new container
 registry, do so with the `register` command:
 
 ```bash
-zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_TYPE [--REGISTRY_OPTIONS]
+zenml container-registry register REGISTRY_NAME --flavor=REGISTRY_FLAVOR [--REGISTRY_OPTIONS]
 ```
 
 If you want the name of the current container registry, use the `get` command:
@@ -310,7 +310,7 @@ experiment tracker in one of your stacks, you need to first register it:
 
 ```bash
 zenml experiment-tracker register EXPERIMENT_TRACKER_NAME \
-    --flavor=EXPERIMENT_TRACKER_TYPE [--EXPERIMENT_TRACKER_OPTIONS]
+    --flavor=EXPERIMENT_TRACKER_FLAVOR [--EXPERIMENT_TRACKER_OPTIONS]
 ```
 
 If you want the name of the current experiment tracker, use the `get` command:
@@ -351,7 +351,7 @@ operator. If you wish to register a new step operator, do so with the
 `register` command:
 
 ```bash
-zenml step-operator register STEP_OPERATOR_NAME --type STEP_OPERATOR_TYPE [--STEP_OPERATOR_OPTIONS]
+zenml step-operator register STEP_OPERATOR_NAME --type STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
 ```
 
 If you want the name of the current step operator, use the `get` command:

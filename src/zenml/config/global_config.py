@@ -107,7 +107,9 @@ class GlobalConfiguration(
     profiles: Dict[str, ProfileConfiguration] = Field(default_factory=dict)
     _config_path: str
 
-    def __init__(self, config_path: Optional[str] = None) -> None:
+    def __init__(
+        self, config_path: Optional[str] = None, **kwargs: Any
+    ) -> None:
         """Initializes a GlobalConfiguration object using values from the config
         file.
 
@@ -134,6 +136,7 @@ class GlobalConfiguration(
         """
         self._config_path = config_path or self.default_config_directory()
         config_values = self._read_config()
+        config_values.update(**kwargs)
         super().__init__(**config_values)
 
         if not fileio.exists(self._config_file(config_path)):
