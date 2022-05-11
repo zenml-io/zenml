@@ -76,7 +76,7 @@ class StepEntrypointConfiguration:
 
         The options returned by this method should be strings like "my_option"
         (no "--" prefix). When the entrypoint is executed, it will parse the
-        CLI arguments and expect all options to be passed in the form
+        command line arguments and expect all options to be passed in the form
         "--my_option my_value". You'll be able to retrieve the argument
         value by calling `self.entrypoint_args["my_option"]`.
         """
@@ -277,8 +277,8 @@ class StepEntrypointConfiguration:
         Subclasses should in most cases not need to overwrite this method and
         implement their custom logic in the `setup(...)` and `post_run(...)`
         methods instead. If you still need to customize the functionality of
-        this method, make sure to still include all the existing steps as
-        otherwise your step won't be executed properly.
+        this method, make sure to still include all the existing steps as your
+        step won't be executed properly otherwise.
         """
         # Make sure this entrypoint does not run an entire pipeline when
         # importing user modules. This could happen if the `pipeline.run()` call
@@ -296,8 +296,8 @@ class StepEntrypointConfiguration:
         original_step_module = self.entrypoint_args[ORIGINAL_STEP_MODULE_OPTION]
         input_spec = json.loads(self.entrypoint_args[INPUT_SPEC_OPTION])
 
-        # Do any setup that is needed before user code is imported and the step
-        # is executed.
+        # Allow subclasses to run custom code before user code is imported and
+        # the step is executed.
         pipeline_name = pb2_pipeline.pipeline_info.id
         _, step_name = step_source.rsplit(".", 1)
         self.setup(pipeline_name=pipeline_name, step_name=step_name)
@@ -333,7 +333,7 @@ class StepEntrypointConfiguration:
         step = step_class()
 
         # Create the executor class that is responsible for running the step
-        # function. This function call dynamically creates an executor class
+        # function. This method call dynamically creates an executor class
         # in the `original_step_module` module which will later be used when the
         # `orchestrator.setup_and_execute_step(...)` is running the step.
         self._create_executor_class(

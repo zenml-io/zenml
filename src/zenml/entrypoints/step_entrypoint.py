@@ -22,14 +22,14 @@ from zenml.utils import source_utils
 
 def main():
     """"""
-    # Read the source for the entrypoint configuration class from the cli
-    # arguments
+    # Read the source for the entrypoint configuration class from the command
+    # line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}", required=True)
     args, remaining_args = parser.parse_known_args()
 
     # Create an instance of the entrypoint configuration and pass it the
-    # remaining cli arguments
+    # remaining command line arguments
     entrypoint_config_class = source_utils.load_source_path_class(
         args.entrypoint_config_source
     )
