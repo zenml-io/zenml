@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import inspect
+import os
 from abc import abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -100,7 +101,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
     """Abstract base class for all ZenML pipelines.
 
     Attributes:
-        name: The name of this pipeline. 
+        name: The name of this pipeline.
         enable_cache: A boolean indicating if
         caching is enabled for this
             pipeline.
@@ -282,6 +283,24 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         for requirement in f.read().split("\n")
                     }
                 )
+        elif isinstance(self._requirements, str) and self._requirements:
+            root = str(Repository().root)
+            if root:
+                assumed_requirements_file = os.path.join(
+                    root, "requirements.txt"
+                )
+                if fileio.exists(assumed_requirements_file):
+                    with fileio.open(assumed_requirements_file, "r") as f:
+                        requirements.update(
+                            {
+                                requirement.strip()
+                                for requirement in f.read().split("\n")
+                            }
+                        )
+                        logger.info(
+                            "Using requirements file: `%s`",
+                            assumed_requirements_file,
+                        )
         elif isinstance(self._requirements, List) and self._requirements:
             requirements.update(self._requirements)
         elif self.requirements_file and fileio.exists(self.requirements_file):
