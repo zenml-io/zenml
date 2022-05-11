@@ -11,14 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os
+from pathlib import Path
 from typing import Any, ClassVar, Optional, Union
 
 from ml_metadata.proto import metadata_store_pb2
 from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig
 
+from zenml.config.global_config import GlobalConfiguration
+from zenml.io import fileio
 from zenml.metadata_stores import BaseMetadataStore
-from zenml.metadata_stores.mysql_secret_schema import MYSQLSecretSchema
+
 from zenml.repository import Repository
 
 
@@ -88,15 +90,22 @@ class MySQLMetadataStore(BaseMetadataStore):
 
         # Set the SSL configuration if there is one
         if secret:
+            secret_folder = Path(
+                GlobalConfiguration().config_directory,
+                str(self.uuid)
+            )
+
             ssl_options = {}
             # Handle the files
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
                 content = getattr(secret, key)
                 if content:
-                    filepath = os.path.join(os.getcwd(), f"{key}.pem")
-                    ssl_options[key.lstrip("ssl_")] = filepath
-                    with open(filepath, "w") as f:
+                    fileio.makedirs(str(secret_folder))
+                    file_path = Path(secret_folder, f"{key}.pem")
+                    ssl_options[key.lstrip("ssl_")] = str(file_path)
+                    with open(file_path, "w") as f:
                         f.write(content)
+                    file_path.chmod(0o600)
 
             # Handle additional params
             ssl_options["verify_server_cert"] = secret.ssl_verify_server_cert
@@ -120,6 +129,8 @@ class MySQLMetadataStore(BaseMetadataStore):
             try:
                 secret = secret_manager.get_secret(self.secret)
 
+                from zenml.metadata_stores.mysql_secret_schema import \
+                    MYSQLSecretSchema
                 if not isinstance(secret, MYSQLSecretSchema):
                     raise RuntimeError(
                         f"If you are using a secret with a MySQL Metadata "
