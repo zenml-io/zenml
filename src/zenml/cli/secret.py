@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import getpass
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import click
 from pydantic import ValidationError
@@ -31,8 +31,9 @@ from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
-from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+
+if TYPE_CHECKING:
+    from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 
 
 # Secrets
@@ -140,6 +141,8 @@ def register_secret(
     """
     # flake8: noqa: C901
 
+    # TODO [ENG-871]: Formatting for `zenml secret register --help` currently
+    #  broken.
     # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
     #   additional option for the user on top of the interactive
     try:
@@ -435,7 +438,8 @@ def delete_secret_set(
     "-f",
     "old_force",
     is_flag=True,
-    help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` instead.",
+    help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` "
+    "instead.",
     type=click.BOOL,
 )
 @click.pass_obj
@@ -451,7 +455,8 @@ def delete_all_secrets(
     if old_force:
         force = old_force
         warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` "
+            "instead."
         )
     confirmation_response = confirmation(
         "This will delete all secrets. Are you sure you want to proceed?"
