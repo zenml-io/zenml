@@ -15,6 +15,8 @@ import os
 import subprocess
 import sys
 
+import click
+
 from zenml.enums import ExecutionStatus
 from zenml.repository import Repository
 
@@ -43,6 +45,8 @@ def test_pipeline_run_single_file(
     subprocess.check_call(
         ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"],
         cwd=files_dir,
+        shell=click._compat.WIN,
+        env=os.environ.copy(),
     )
 
     # Assert that the pipeline ran successfully
@@ -86,6 +90,8 @@ def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     subprocess.check_call(
         ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"],
         cwd=files_dir,
+        shell=click._compat.WIN,
+        env=os.environ.copy(),
     )
 
     # Assert that pipeline completed successfully
