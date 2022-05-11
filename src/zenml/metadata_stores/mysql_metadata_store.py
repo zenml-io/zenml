@@ -92,10 +92,11 @@ class MySQLMetadataStore(BaseMetadataStore):
             # Handle the files
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
                 content = getattr(secret, key)
-                filepath = os.path.join(os.getcwd(), f"{key}.pem")
-                ssl_options[key.lstrip("ssl_")] = filepath
-                with open(filepath, "w") as f:
-                    f.write(content)
+                if content:
+                    filepath = os.path.join(os.getcwd(), f"{key}.pem")
+                    ssl_options[key.lstrip("ssl_")] = filepath
+                    with open(filepath, "w") as f:
+                        f.write(content)
 
             # Handle additional params
             ssl_options["verify_server_cert"] = secret.ssl_verify_server_cert
