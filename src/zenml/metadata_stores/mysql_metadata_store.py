@@ -125,6 +125,8 @@ class MySQLMetadataStore(BaseMetadataStore):
                         f"Store, please make sure to use the schema: "
                         f"{MYSQLSecretSchema.TYPE}"
                     )
+                return secret
+
             except KeyError:
                 raise RuntimeError(
                     f"The secret `{self.secret}` used for your MySQL metadata "
