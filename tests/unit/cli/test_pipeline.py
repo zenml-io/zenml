@@ -34,11 +34,15 @@ def test_pipeline_run_single_file(
     os.chdir(files_dir)
     clean_repo.activate_root()
 
+    assert os.path.isfile(os.path.join(files_dir, 'run.py'))
+    assert os.path.isfile(os.path.join(files_dir, 'config.yaml'))
+
     # Run Pipeline using subprocess as runner.invoke seems to have issues with
     #  pytest https://github.com/pallets/click/issues/824,
     #  https://github.com/pytest-dev/pytest/issues/3344
     subprocess.check_call(
-        ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"]
+        ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"],
+        cwd=files_dir
     )
 
     # Assert that the pipeline ran successfully
@@ -73,11 +77,15 @@ def test_pipeline_run_multifile(clean_repo: Repository, files_dir: str) -> None:
     os.chdir(files_dir)
     clean_repo.activate_root()
 
+    assert os.path.isfile(os.path.join(files_dir, 'run.py'))
+    assert os.path.isfile(os.path.join(files_dir, 'config.yaml'))
+
     # Run Pipeline using subprocess as runner.invoke seems to have issues with
     #  pytest https://github.com/pallets/click/issues/824,
     #  https://github.com/pytest-dev/pytest/issues/3344
     subprocess.check_call(
-        ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"]
+        ["zenml", "pipeline", "run", "run.py", "-c", "config.yaml"],
+        cwd=files_dir
     )
 
     # Assert that pipeline completed successfully
