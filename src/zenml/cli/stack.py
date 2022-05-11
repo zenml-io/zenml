@@ -117,6 +117,14 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "-al",
+    "--alerter",
+    "aleter_name",
+    help="Name of the alerter for this stack.",
+    type=str,
+    required=False,
+)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
@@ -128,6 +136,7 @@ def register_stack(
     feature_store_name: Optional[str] = None,
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
+    alerter_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
     cli_utils.print_active_profile()
@@ -192,6 +201,14 @@ def register_stack(
             ] = repo.get_stack_component(
                 StackComponentType.EXPERIMENT_TRACKER,
                 name=experiment_tracker_name,
+            )
+
+        if alerter_name:
+            stack_components[
+                StackComponentType.ALERTER
+            ] = repo.get_stack_component(
+                StackComponentType.ALERTER,
+                name=alerter_name,
             )
 
         stack_ = Stack.from_components(
@@ -261,7 +278,7 @@ def register_stack(
 )
 @click.option(
     "-d",
-    "--model-deployer",
+    "--model_deployer",
     "model_deployer_name",
     help="Name of the new model deployer for this stack.",
     type=str,
@@ -272,6 +289,14 @@ def register_stack(
     "--experiment_tracker",
     "experiment_tracker_name",
     help="Name of the new experiment tracker for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-al",
+    "--alerter",
+    "alerter_name",
+    help="Name of the new alerter for this stack.",
     type=str,
     required=False,
 )
@@ -286,6 +311,7 @@ def update_stack(
     feature_store_name: Optional[str] = None,
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
+    alerter_name: Optional[str] = None,
 ) -> None:
     """Update a stack."""
     cli_utils.print_active_profile()
@@ -372,6 +398,14 @@ def update_stack(
             ] = repo.get_stack_component(
                 StackComponentType.EXPERIMENT_TRACKER,
                 name=experiment_tracker_name,
+            )
+
+        if alerter_name:
+            stack_components[
+                StackComponentType.ALERTER
+            ] = repo.get_stack_component(
+                StackComponentType.ALERTER,
+                name=alerter_name,
             )
 
         stack_ = Stack.from_components(

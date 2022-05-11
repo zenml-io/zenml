@@ -11,26 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List, Optional, Sequence, Tuple
-
-import pandas as pd
 
 
 from zenml.artifacts import DataArtifact
-from zenml.steps import Output
 from zenml.steps.step_interfaces.base_drift_detection_step import (
     BaseAlerterConfig,
     BaseAlerterStep,
 )
 
+
 class SlackAlertConfig(BaseAlerterConfig):
     """TBD"""
+
     a: str = ""
 
 
 class SlackAlerterStep(BaseAlerterStep):
     """TBD"""
-    
+
     OUTPUT_SPEC = {
         "result": DataArtifact,
     }
@@ -44,9 +42,8 @@ class SlackAlerterStep(BaseAlerterStep):
         step.
 
         Args:
-            
+
 
         Returns:
-            
+
         """
-        pass
