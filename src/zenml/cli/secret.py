@@ -164,6 +164,10 @@ def register_secret(
         error("Secret names cannot be passed as arguments.")
 
     try:
+        from zenml.secret.secret_schema_class_registry import (
+            SecretSchemaClassRegistry,
+        )
+
         secret_schema = SecretSchemaClassRegistry.get_class(
             secret_schema=secret_schema_type
         )
