@@ -34,10 +34,9 @@ class SlackAlerter(BaseAlerter):
     ```
 
     Attributes:
-        entity: Name of an existing wandb entity.
-        project_name: Name of an existing wandb project to log to.
-        api_key: API key to should be authorized to log to the configured wandb
-            entity and project.
+        slack_token:
+        slack_channel_id:
+        thread_ts:
     """
 
     slack_token: str

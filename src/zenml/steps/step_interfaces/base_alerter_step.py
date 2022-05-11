@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,39 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+from abc import abstractmethod
 
 from zenml.artifacts import DataArtifact
-from zenml.steps.step_interfaces.base_alerter_step import (
-    BaseAlerterStep,
-    BaseAlerterStepConfig,
-)
+from zenml.steps import BaseStep, BaseStepConfig, Output, StepContext
 
 
-class SlackAlertConfig(BaseAlerterStepConfig):
-    """TBD"""
-
-    a: str = ""
+class BaseAlerterStepConfig(BaseStepConfig):
+    """"""
 
 
-class SlackAlerterStep(BaseAlerterStep):
-    """TBD"""
+class BaseAlerterStep(BaseStep):
+    """"""
 
-    OUTPUT_SPEC = {
-        "result": DataArtifact,
-    }
-
+    @abstractmethod
     def entrypoint(  # type: ignore[override]
         self,
-        message: str,
-        config: SlackAlertConfig,
-    ) -> bool:
-        """Main entrypoint for the Evidently categorical target drift detection
-        step.
-
-        Args:
-
-
-        Returns:
-
-        """
+        dataset: DataArtifact,
+        config: BaseSplitStepConfig,
+        context: StepContext,
+    ) -> Output(  # type:ignore[valid-type]
+        train=DataArtifact, test=DataArtifact, validation=DataArtifact
+    ):
+        """Entrypoint for a function for the split steps to run"""
