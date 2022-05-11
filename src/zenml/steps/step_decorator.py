@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import inspect
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -24,7 +23,6 @@ from typing import (
     overload,
 )
 
-from zenml.exceptions import StepInterfaceError
 from zenml.steps import BaseStep
 from zenml.steps.utils import (
     INSTANCE_CONFIGURATION,
@@ -39,42 +37,6 @@ if TYPE_CHECKING:
     from zenml.artifacts.base_artifact import BaseArtifact
 
 F = TypeVar("F", bound=Callable[..., Any])
-
-
-def _check_function_is_type_annotated(_func: F) -> None:
-    """
-    Check if given function has full type annotations.
-
-    Args:
-        _func: function to be checked.
-
-    Raises:
-        StepInterfaceError: raises an error if an annotation is missing.
-    """
-    func_name = _func.__name__
-    argspec = inspect.getfullargspec(_func)
-
-    # check if function has return type annotations
-    annotations = argspec.annotations
-    if "return" not in annotations:
-        raise StepInterfaceError(
-            f"All `@step` annotated functions must have type annotations. "
-            f"Function '{func_name}' has no return type annotation."
-        )
-
-    # for all args (incl. *args, **kwargs), check type annotations exist
-    args = argspec.args
-    if argspec.varargs is not None:
-        args.append(argspec.varargs)
-    if argspec.varkw is not None:
-        args.append(argspec.varkw)
-    for arg in args:
-        if arg in annotations:
-            continue
-        raise StepInterfaceError(
-            f"All `@step` annotated functions must have type annotations. "
-            f"Function '{func_name}' has no type annotation for arg '{arg}'."
-        )
 
 
 @overload
@@ -142,7 +104,6 @@ def step(
         Raises:
             StepInterfaceError: raises an error if _func is not type annotated.
         """
-        _check_function_is_type_annotated(func)
         step_name = name or func.__name__
         output_spec = output_types or {}
 

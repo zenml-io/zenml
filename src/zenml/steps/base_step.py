@@ -164,6 +164,13 @@ class BaseStepMeta(type):
                 cls.INPUT_SIGNATURE.update({arg: arg_type})
 
         # Parse the returns of the step function
+        if "return" not in step_function_signature.annotations:
+            raise StepInterfaceError(
+                f"Missing return type annotation when "
+                f"trying to create step '{name}'. Please make sure to "
+                f"include type annotations for all your step inputs "
+                f"and outputs."
+            )
         return_type = step_function_signature.annotations.get("return", None)
         if return_type is not None:
             if isinstance(return_type, Output):
