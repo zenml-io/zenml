@@ -7,5 +7,5 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install neural_prophet -f
+  zenml integration install neural_prophet -y
 }

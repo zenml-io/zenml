@@ -26,7 +26,9 @@ from zenml.constants import (
     ABSL_LOGGING_VERBOSITY,
     APP_NAME,
     ENABLE_RICH_TRACEBACK,
+    ENV_ZENML_SUPPRESS_LOGS,
     ZENML_LOGGING_VERBOSITY,
+    handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
 
@@ -163,17 +165,34 @@ def init_logging() -> None:
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     set_root_verbosity()
 
-    # Mute apache_beam
-    muted_logger_names = [
-        "apache_beam",
-        "rdbms_metadata_access_object",
-        "apache_beam.io.gcp.bigquery",
-        "backoff",
-        "segment",
-    ]
-    for logger_name in muted_logger_names:
-        logging.getLogger(logger_name).setLevel(logging.WARNING)
-        logging.getLogger(logger_name).disabled = True
+    # Enable logs if environment variable SUPRESS_ZENML_LOGS is not set to True
+    supress_zenml_logs: bool = handle_bool_env_var(
+        ENV_ZENML_SUPPRESS_LOGS, True
+    )
+    if supress_zenml_logs:
+        # supress logger info messages
+        supressed_logger_names = [
+            "urllib3",
+            "azure.core.pipeline.policies.http_logging_policy",
+            "grpc",
+            "requests",
+            "kfp",
+            "tensorflow",
+        ]
+        for logger_name in supressed_logger_names:
+            logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+        # disable logger messages
+        disabled_logger_names = [
+            "apache_beam",
+            "rdbms_metadata_access_object",
+            "apache_beam.io.gcp.bigquery",
+            "backoff",
+            "segment",
+        ]
+        for logger_name in disabled_logger_names:
+            logging.getLogger(logger_name).setLevel(logging.WARNING)
+            logging.getLogger(logger_name).disabled = True
 
     # set absl logging
     absl_logging.set_verbosity(ABSL_LOGGING_VERBOSITY)

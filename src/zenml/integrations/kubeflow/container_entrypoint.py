@@ -513,7 +513,7 @@ def main() -> None:
 
     repo.active_stack.prepare_step_run()
     execution_info = execute_step(component_launcher)
-    repo.active_stack.prepare_step_run()
+    repo.active_stack.cleanup_step_run()
 
     if execution_info:
         _dump_ui_metadata(pipeline_node, execution_info, args.metadata_ui_path)
