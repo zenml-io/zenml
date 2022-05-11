@@ -16,6 +16,8 @@ import inspect
 import os
 import sys
 from contextlib import ExitStack as does_not_raise
+from pathlib import Path
+from typing import Callable
 
 import pytest
 
@@ -78,3 +80,106 @@ def test_loading_class_by_path_prepends_repo_path(clean_repo, mocker, tmp_path):
         # the subdirectory will not be in the python path and therefore this
         # import should not work
         source_utils.load_source_path_class("python_file.test")
+
+
+def test_import_python_file_for_first_time(clean_repo, mocker, files_dir: Path):
+    """Test that importing a python file as module works and allows for
+    importing of module attributes even with module popped from sys path"""
+
+    SOME_MODULE = "some_module"
+    SOME_MODULE_FILENAME = SOME_MODULE + ".py"
+    SOME_FUNC = "some_func"
+
+    os.chdir(str(files_dir))
+
+    Repository.initialize()
+    clean_repo.activate_root()
+
+    mocker.patch.object(sys, "path", [])
+
+    module = source_utils.import_python_file(SOME_MODULE_FILENAME)
+
+    # Assert that attr could be fetched from module
+    assert isinstance(getattr(module, SOME_FUNC), Callable)
+
+    # Assert that module has been loaded into sys.module
+    assert SOME_MODULE in sys.modules
+
+    # Assert that sys path is unaffected
+    assert len(sys.path) == 0
+
+    # Cleanup modules for future tests
+    del sys.modules[SOME_MODULE]
+
+
+def test_import_python_file_when_already_loaded(
+    clean_repo, mocker, files_dir: Path
+):
+    """Test that importing a python file as module works even if it is
+    already on sys path and allows for importing of module attributes"""
+
+    SOME_MODULE = "some_module"
+    SOME_MODULE_FILENAME = SOME_MODULE + ".py"
+    SOME_FUNC = "some_func"
+
+    os.chdir(str(files_dir))
+    clean_repo.activate_root()
+
+    mocker.patch.object(sys, "path", [])
+
+    source_utils.import_python_file(str(SOME_MODULE_FILENAME))
+
+    # Assert that module has been loaded into sys.module
+    assert SOME_MODULE in sys.modules
+
+    # Load module again, to cover alternative behaviour of the
+    #  import_python_file, where the module is loaded already
+    module = source_utils.import_python_file(str(SOME_MODULE_FILENAME))
+
+    # Assert that attr could be fetched from the module returned by the func
+    assert isinstance(getattr(module, SOME_FUNC), Callable)
+
+    # Assert that sys path is unaffected
+    assert len(sys.path) == 0
+
+    # Cleanup modules for future tests
+    del sys.modules[SOME_MODULE]
+
+
+def test_import_python_file(clean_repo, mocker, files_dir: Path):
+    """Test that importing a python file as module works even if it is
+    already imported within the another previously loaded module"""
+
+    MAIN_MODULE = "main_module"
+    MAIN_MODULE_FILENAME = MAIN_MODULE + ".py"
+    SOME_MODULE = "some_module"
+    SOME_MODULE_FILENAME = SOME_MODULE + ".py"
+    OTHER_FUNC = "other_func"
+
+    os.chdir(str(files_dir))
+    clean_repo.activate_root()
+
+    main_python_file = files_dir / MAIN_MODULE_FILENAME
+    some_python_file = files_dir / SOME_MODULE_FILENAME
+
+    assert main_python_file.exists()
+    assert some_python_file.exists()
+
+    mocker.patch.object(sys, "path", [])
+
+    source_utils.import_python_file(str(main_python_file))
+
+    # Assert that module has been loaded into sys.module
+    assert MAIN_MODULE in sys.modules
+
+    module = source_utils.import_python_file(str(some_python_file))
+
+    # Assert that attr could be fetched from the module returned by the func
+    assert isinstance(getattr(module, OTHER_FUNC), Callable)
+
+    # Assert that sys path is unaffected
+    assert len(sys.path) == 0
+
+    # Cleanup modules for future tests
+    del sys.modules[MAIN_MODULE]
+    del sys.modules[SOME_MODULE]

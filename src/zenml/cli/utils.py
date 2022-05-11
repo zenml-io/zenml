@@ -45,7 +45,6 @@ from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
 from zenml.services import BaseService
 from zenml.services.service_status import ServiceState
-from zenml.stack import StackComponent
 from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
 from zenml.zen_stores.models.flavor_wrapper import validate_flavor_source
 
@@ -290,10 +289,10 @@ def print_flavor_list(
 
 
 def print_stack_component_configuration(
-    component: StackComponent, display_name: str, active_status: bool
+    component: ComponentWrapper, display_name: str, active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component."""
-    title = f"{component.TYPE.value.upper()} Component Configuration"
+    title = f"{component.type.value.upper()} Component Configuration"
     if active_status:
         title += " (ACTIVE)"
     rich_table = table.Table(
@@ -303,8 +302,13 @@ def print_stack_component_configuration(
     )
     rich_table.add_column("COMPONENT_PROPERTY")
     rich_table.add_column("VALUE")
-    items = component.dict().items()
-    for item in items:
+    component_dict = component.dict()
+    component_dict.pop("config")
+    component_dict.update(
+        yaml.safe_load(base64.b64decode(component.config).decode())
+    )
+
+    for item in component_dict.items():
         rich_table.add_row(*[str(elem) for elem in item])
 
     # capitalize entries in first column
