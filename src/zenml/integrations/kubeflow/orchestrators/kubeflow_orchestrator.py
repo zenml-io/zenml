@@ -545,10 +545,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
         for operator in get_default_pipeline_operator_funcs():
             container_op.apply(operator)
 
-    def prepare_steps(
+    def prepare_or_run_pipeline(
         self,
-        pipeline: "BasePipeline",
         sorted_list_of_steps: List[BaseStep],
+        pipeline: "BasePipeline",
+        stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         # First check whether its running in a notebok

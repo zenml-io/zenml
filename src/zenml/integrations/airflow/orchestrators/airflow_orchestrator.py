@@ -285,10 +285,11 @@ class AirflowOrchestrator(BaseOrchestrator):
             "catchup": False,
         }
 
-    def prepare_steps(
+    def prepare_or_run_pipeline(
         self,
-        pipeline: "BasePipeline",
         sorted_list_of_steps: List[BaseStep],
+        pipeline: "BasePipeline",
+        stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
 

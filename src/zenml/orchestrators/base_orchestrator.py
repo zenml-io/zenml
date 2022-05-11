@@ -50,7 +50,49 @@ logger = get_logger(__name__)
 
 
 class BaseOrchestrator(StackComponent, ABC):
-    """Base class for all ZenML orchestrators."""
+    """
+    Base class for all orchestrators. In order to implement an
+    orchestrator you will need to subclass from this class.
+
+    How it works:
+        The **run_pipeline** method is the entrypoint that is executed when the
+        pipeline's run method is called within the user code
+        (`pipeline_instance.run()`).
+
+        This method will take the ZenML Pipeline instance and prepare it for
+        eventual execution. To do this the following steps are taken:
+
+        * The underlying tfx and protobuf pipelines
+        are created within the **set_class_attributes** method.
+
+        * Within the **configure_step_context** method the pipeline
+        requirements, stack and runtime configuration is added to the step
+        context
+
+        * The **get_sorted_steps** method then generates a sorted_list_of_steps
+        which will later be used to directly execute these steps in order, or to
+        easily build a dag
+
+        * After these initial steps comes the most crucial one. Within the
+        **prepare_or_run_pipeline** method each orchestrator will have its own
+        implementation that dictates the pipeline orchestration. In the simplest
+        case this method will iterate through all steps and execute them one by
+        one. In other cases this method will build and deploy an intermediate
+        representation of the pipeline (e.g an airflow dag or a kubeflow.yaml)
+        to be executed within the orchestrators environmenrt.
+
+        * Finally the private class attributes will be reset using the
+        **clean_class_attributes** method in order to be able to run another
+        pipeline from the same orchestrator instance.
+
+    Building your own:
+        In order to build your own orchestrator, all you need to do is subclass
+        from this class and implement your own **prepare_or_run_pipeline**
+        method. Overwriting other methods is NOT recommended but possible and
+        maybe even necessary for complex implementations. See the docstring of
+        the prepare_or_run_pipeline method to find out details of what needs
+        to be implemented.
+    """
 
     _stack: Optional["Stack"] = None
     _runtime_configuration: Optional["RuntimeConfiguration"] = None
@@ -59,6 +101,32 @@ class BaseOrchestrator(StackComponent, ABC):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
+
+    @abstractmethod
+    def prepare_or_run_pipeline(
+        self,
+        sorted_list_of_steps: List[BaseStep],
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> Any:
+        """
+        This method needs to be implemented by the respective orchestrator.
+        Depending on the type of orchestrator you'll have to perform slightly
+        different operations.
+
+        Simple Case:
+            The Steps are run directly from within the environment in which the
+            orchestrator code is executed. In this case you will need to deal
+            with implementation-specific runtime configurations (like the
+            schedule) and then iterate through each step and finally call
+            self.setup_and_execute_step() to run the step.
+
+        Advanced Case:
+            Most orchestrators will run the pipeline in a non-trivial way. ...
+
+        ...
+        """
 
     def run_pipeline(
         self,
@@ -73,8 +141,34 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack on which the pipeline is run.
             runtime_configuration: Runtime configuration of the pipeline run.
         """
-        self.set_class_attributes(pipeline, stack, runtime_configuration)
+        self.set_class_attributes(pipeline, stack)
 
+        self.configure_node_context(pipeline, stack, runtime_configuration)
+
+        sorted_list_of_steps = self.get_sorted_steps(pipeline)
+
+        prepared_steps = self.prepare_or_run_pipeline(
+            sorted_list_of_steps=sorted_list_of_steps,
+            pipeline=pipeline,
+            stack=stack,
+            runtime_configuration=runtime_configuration,
+        )
+
+        self.clean_class_attributes()
+
+        return prepared_steps
+
+    def get_sorted_steps(self, pipeline: "BasePipeline") -> List["BaseStep"]:
+        """Get steps sorted in the execution order. This simplifies the
+        building of a DAG at a later stage as it can be built with one iteration
+        over this sorted list of steps.
+
+        Args:
+            pipeline: The pipeline
+
+        Returns:
+            List of steps in execution order
+        """
         # Create a list of sorted steps
         sorted_steps = []
         for node in self._pb2_pipeline.nodes:
@@ -84,25 +178,50 @@ class BaseOrchestrator(StackComponent, ABC):
                     pipeline_node, steps=list(pipeline.steps.values())
                 )
             )
+        return sorted_steps
 
-        prepared_steps = self.prepare_steps(
-            pipeline=pipeline,
-            sorted_list_of_steps=sorted_steps,
-            runtime_configuration=runtime_configuration,
-        )
-
-        self.clean_class_attributes()
-
-        return prepared_steps
-
-    @abstractmethod
-    def prepare_steps(
+    def set_class_attributes(
         self,
         pipeline: "BasePipeline",
-        sorted_list_of_steps: List[BaseStep],
-        runtime_configuration: "RuntimeConfiguration",
-    ) -> Any:
-        """BLAH BLAH BLAH"""
+        stack: "Stack",
+    ):
+
+        self._tfx_pipeline: TfxPipeline = create_tfx_pipeline(
+            pipeline, stack=stack
+        )
+
+        self._pb2_pipeline: Pb2Pipeline = Compiler().compile(self._tfx_pipeline)
+
+    def configure_node_context(
+            self,
+            pipeline: "BasePipeline",
+            stack: "Stack",
+            runtime_configuration: "RuntimeConfiguration",
+    ):
+        for node in self._pb2_pipeline.nodes:
+            pipeline_node: PipelineNode = node.pipeline_node
+
+            # Add pipeline requirements to the step context
+            requirements = " ".join(sorted(pipeline.requirements))
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.PIPELINE_REQUIREMENTS.value,
+                name=str(hash(requirements)),
+                properties={"pipeline_requirements": requirements},
+            )
+
+            # Add the zenml stack to the step context
+            context_utils.add_context_to_node(
+                pipeline_node,
+                type_=MetadataContextTypes.STACK.value,
+                name=str(hash(json.dumps(stack.dict(), sort_keys=True))),
+                properties=stack.dict(),
+            )
+
+            # Add all pydantic objects from runtime_configuration to the context
+            context_utils.add_runtime_configuration_to_node(
+                pipeline_node, runtime_configuration
+            )
 
     def setup_and_execute_step(
         self,
@@ -110,7 +229,10 @@ class BaseOrchestrator(StackComponent, ABC):
         run_name: str,
         pb2_pipeline: Optional[Pb2Pipeline] = None,
     ) -> Optional[data_types.ExecutionInfo]:
-        """"""
+        """
+
+
+        """
 
         pb2_pipeline = pb2_pipeline or self._pb2_pipeline
 
@@ -188,53 +310,8 @@ class BaseOrchestrator(StackComponent, ABC):
             f"{pb2_pipeline.pipeline_info.id}"
         )
 
-    def set_class_attributes(
-        self,
-        pipeline: "BasePipeline",
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
-    ):
-        self._stack = stack
-
-        self._runtime_configuration = runtime_configuration
-
-        self._tfx_pipeline: TfxPipeline = create_tfx_pipeline(
-            pipeline, stack=stack
-        )
-
-        self._pb2_pipeline: Pb2Pipeline = Compiler().compile(self._tfx_pipeline)
-
-        for node in self._pb2_pipeline.nodes:
-            pipeline_node: PipelineNode = node.pipeline_node
-
-            step = get_step_for_node(
-                pipeline_node, steps=list(pipeline.steps.values())
-            )
-
-            # Add pipeline requirements as a context
-            requirements = " ".join(sorted(pipeline.requirements))
-            context_utils.add_context_to_node(
-                pipeline_node,
-                type_=MetadataContextTypes.PIPELINE_REQUIREMENTS.value,
-                name=str(hash(requirements)),
-                properties={"pipeline_requirements": requirements},
-            )
-
-            # fill out that context
-            context_utils.add_context_to_node(
-                pipeline_node,
-                type_=MetadataContextTypes.STACK.value,
-                name=str(hash(json.dumps(stack.dict(), sort_keys=True))),
-                properties=stack.dict(),
-            )
-
-            # Add all pydantic objects from runtime_configuration to the context
-            context_utils.add_runtime_configuration_to_node(
-                pipeline_node, runtime_configuration
-            )
-
     def get_upstream_steps(self, step: "BaseStep") -> List[str]:
-        """Given a step use the associated pb2 node to find the names of all
+        """Given a step, use the associated pb2 node to find the names of all
         upstream nodes.
 
         Args:
@@ -251,14 +328,14 @@ class BaseOrchestrator(StackComponent, ABC):
 
         return upstream_steps
 
-    def prepare_entrypoint(self) -> None:
-        # ...
-
-        # self._pb2_pipeline
-
-        # ...
-        pass
-
     def clean_class_attributes(self) -> None:
-        # ...
+        """
+        Resets all class attributes so that the same orchestrator instance
+        can be reused for another pipeline run with no adverse effects.
+        """
+
+        self._stack = None
+        self._tfx_pipeline = None
+        self._pb2_pipeline = None
+        self._runtime_configuration =None
         pass

@@ -32,6 +32,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, List
 
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.stack import Stack
 from zenml.steps import BaseStep
 
 if TYPE_CHECKING:
@@ -44,26 +45,16 @@ logger = get_logger(__name__)
 class LocalOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines locally."""
 
-    def provision(self) -> None:
-        pass
-
-    def deprovision(self) -> None:
-        pass
-
-    def resume(self) -> None:
-        pass
-
-    def suspend(self) -> None:
-        pass
-
     FLAVOR: ClassVar[str] = "local"
 
-    def prepare_steps(
+    def prepare_or_run_pipeline(
         self,
-        pipeline: "BasePipeline",
         sorted_list_of_steps: List[BaseStep],
+        pipeline: "BasePipeline",
+        stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
+        """"""
         if runtime_configuration.schedule:
             logger.warning(
                 "Local Orchestrator currently does not support the"
