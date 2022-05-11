@@ -185,14 +185,12 @@ def format_integration_list(
     can then be printed in a table style using cli_utils.print_table."""
     list_of_dicts = []
     for name, integration_impl in integrations:
-        # type: ignore[attr-defined]
-        is_installed = integration_impl.check_installation()
+        is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
         list_of_dicts.append(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
-                # type: ignore[attr-defined]
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
+                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
             }
         )
     return list_of_dicts
