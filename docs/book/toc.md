@@ -18,7 +18,6 @@
   * [Class Based API](developer-guide/class-based-api.md)
 * [Stacks]()
 * [Repo & Config](developer-guide/repo-and-config.md)
-* [Profiles](developer-guide/profiles.md)
 
 ## Advanced Guide
 
@@ -42,9 +41,10 @@
 
 ## Collaborate
 
-* [ZenML Service]()
-  * [Deploy Locally]()
-  * [Deploy on Cloud]()
+* [Collaborate with ZenML](collaborate/collaborate.md)
+* [Stack Export/Import](collaborate/stack-export.md)
+* [Share with Profiles](collaborate/profiles.md)
+* [ZenServer](collaborate/zenml-server.md)
 
 ## Stack Components
 
