@@ -286,7 +286,7 @@ def print_flavor_list(
 
 
 def print_stack_component_configuration(
-    component: ComponentWrapper, display_name: str, active_status: bool
+    component: "ComponentWrapper", display_name: str, active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component."""
     title = f"{component.type.value.upper()} Component Configuration"
