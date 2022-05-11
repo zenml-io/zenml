@@ -284,7 +284,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         elif isinstance(self._requirements, List) and self._requirements:
             requirements.update(self._requirements)
         elif self.requirements_file and fileio.exists(self.requirements_file):
-            # TODO: [MEDIUM] deprecate this requirements_file option
+            # TODO [MEDIUM]: Deprecate the `requirements_file` option
             with fileio.open(self.requirements_file, "r") as f:
                 requirements.update(
                     {
