@@ -15,13 +15,17 @@
 
 # TODO [ENG-795]: Generalize these commands to all feature stores.
 
+from typing import TYPE_CHECKING
+
 import click
 
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import declare, error
 from zenml.enums import StackComponentType
-from zenml.feature_stores.base_feature_store import BaseFeatureStore
 from zenml.repository import Repository
+
+if TYPE_CHECKING:
+    from zenml.feature_stores.base_feature_store import BaseFeatureStore
 
 
 # Features

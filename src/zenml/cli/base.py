@@ -19,13 +19,6 @@ from typing import Optional
 import click
 
 from zenml.cli.cli import cli
-from zenml.cli.text_utils import (
-    zenml_go_email_prompt,
-    zenml_go_notebook_tutorial_message,
-    zenml_go_privacy_message,
-    zenml_go_thank_you_message,
-    zenml_go_welcome_message,
-)
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
@@ -181,9 +174,14 @@ def clean(yes: bool = False, local: bool = False) -> None:
 @cli.command("go")
 def go() -> None:
     """Quickly explore ZenML with this walkthrough."""
-    console.print(zenml_go_welcome_message, width=80)
-
+    from zenml.cli.text_utils import (
+        zenml_go_notebook_tutorial_message,
+        zenml_go_privacy_message,
+        zenml_go_welcome_message,
+    )
     from zenml.config.global_config import GlobalConfiguration
+
+    console.print(zenml_go_welcome_message, width=80)
 
     gc = GlobalConfiguration()
     if not gc.user_metadata:
@@ -217,6 +215,10 @@ def go() -> None:
 
 def _prompt_email(gc: GlobalConfiguration) -> None:
     """Ask the user to give their email address"""
+    from zenml.cli.text_utils import (
+        zenml_go_email_prompt,
+        zenml_go_thank_you_message,
+    )
 
     console.print(zenml_go_email_prompt, width=80)
 

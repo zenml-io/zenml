@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import getpass
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import click
 
@@ -29,8 +29,9 @@ from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
-from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+
+if TYPE_CHECKING:
+    from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 
 
 def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
@@ -109,6 +110,10 @@ def register_secret(
         secret_key: Key of the secret key-value pair
         secret_value: Value of the secret Key-value pair
     """
+    from zenml.secret.secret_schema_class_registry import (
+        SecretSchemaClassRegistry,
+    )
+
     # TODO [ENG-871]: Formatting for `zenml secret register --help` currently
     #  broken.
     # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
@@ -242,6 +247,8 @@ def update_secret(
         secrets_manager: Stack component that implements the interface to the
             underlying secrets engine
         name: Name of the secret
+        secret_value: Updated value of the secret
+        secret_key: The key to update
     """
     # TODO [ENG-726]: allow users to pass in dict or json
     # TODO [ENG-727]: allow adding new key value pairs to the secret
@@ -331,7 +338,8 @@ def delete_secret_set(
     "-f",
     "old_force",
     is_flag=True,
-    help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` instead.",
+    help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` "
+    "instead.",
     type=click.BOOL,
 )
 @click.pass_obj
@@ -350,7 +358,8 @@ def delete_all_secrets(
     if old_force:
         force = old_force
         warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` "
+            "instead."
         )
     confirmation_response = confirmation(
         "This will delete all secrets. Are you sure you want to proceed?"

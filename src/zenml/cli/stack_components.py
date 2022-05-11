@@ -27,8 +27,8 @@ from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
+from zenml.utils.source_utils import validate_flavor_source
 from zenml.zen_stores.models.component_wrapper import ComponentWrapper
-from zenml.zen_stores.models.flavor_wrapper import validate_flavor_source
 
 
 def _get_required_properties(
@@ -551,7 +551,8 @@ def generate_stack_component_down_command(
         "-f",
         "old_force",
         is_flag=True,
-        help="DEPRECATED: Deprovisions local resources instead of suspending them. Use `-y/--yes` instead.",
+        help="DEPRECATED: Deprovisions local resources instead of suspending "
+        "them. Use `-y/--yes` instead.",
     )
     def down_stack_component_command(
         name: Optional[str] = None, force: bool = False, old_force: bool = False
@@ -560,7 +561,8 @@ def generate_stack_component_down_command(
         if old_force:
             force = old_force
             cli_utils.warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+                "The `--force` flag will soon be deprecated. Use `--yes` "
+                "or `-y` instead."
             )
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
