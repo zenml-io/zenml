@@ -16,6 +16,7 @@ import logging
 import os
 import re
 import sys
+from contextlib import contextmanager
 from logging.handlers import TimedRotatingFileHandler
 from typing import Any, Dict
 
@@ -189,3 +190,26 @@ def init_logging() -> None:
 
     # set absl logging
     absl_logging.set_verbosity(ABSL_LOGGING_VERBOSITY)
+
+
+@contextmanager
+def disable_logging(log_level: int):
+    """Contextmanager that temporarily disables logs below a threshold level.
+
+    Use it like this:
+    ```python
+    with disable_logging(log_level=logging.INFO):
+        # do something that shouldn't show DEBUG/INFO logs
+        ...
+    ```
+
+    Args:
+        log_level: All logs below this level will be disabled for the duration
+            of this contextmanager.
+    """
+    old_level = logging.root.manager.disable
+    try:
+        logging.disable(log_level)
+        yield
+    finally:
+        logging.disable(old_level)
