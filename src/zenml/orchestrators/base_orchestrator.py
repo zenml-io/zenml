@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import json
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
 
 from tfx.dsl.compiler.compiler import Compiler
 from tfx.dsl.compiler.constants import PIPELINE_RUN_ID_PARAMETER_NAME
@@ -21,7 +21,9 @@ from tfx.orchestration import metadata
 from tfx.orchestration.local import runner_utils
 from tfx.orchestration.pipeline import Pipeline as TfxPipeline
 from tfx.orchestration.portable import (
-    data_types, launcher, runtime_parameter_utils
+    data_types,
+    launcher,
+    runtime_parameter_utils,
 )
 from tfx.proto.orchestration import executable_spec_pb2
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
@@ -38,10 +40,9 @@ from zenml.orchestrators.utils import (
 from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.steps import BaseStep
-from zenml.pipelines import Schedule
 
 if TYPE_CHECKING:
-    from zenml.pipelines import BasePipeline, Schedule
+    from zenml.pipelines import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
 
@@ -51,7 +52,6 @@ logger = get_logger(__name__)
 class BaseOrchestrator(StackComponent, ABC):
     """Base class for all ZenML orchestrators."""
 
-    _pipeline: Optional["BasePipeline"] = None
     _stack: Optional["Stack"] = None
     _runtime_configuration: Optional["RuntimeConfiguration"] = None
     _tfx_pipeline: Optional["TfxPipeline"] = None
@@ -81,13 +81,15 @@ class BaseOrchestrator(StackComponent, ABC):
             pipeline_node: PipelineNode = node.pipeline_node
             sorted_steps.append(
                 get_step_for_node(
-                    pipeline_node, steps=list(self._pipeline.steps.values())
+                    pipeline_node, steps=list(pipeline.steps.values())
                 )
             )
 
         prepared_steps = self.prepare_steps(
+            pipeline=pipeline,
             sorted_list_of_steps=sorted_steps,
-            schedule=self._runtime_configuration.schedule)
+            runtime_configuration=runtime_configuration,
+        )
 
         self.clean_class_attributes()
 
@@ -96,8 +98,9 @@ class BaseOrchestrator(StackComponent, ABC):
     @abstractmethod
     def prepare_steps(
         self,
+        pipeline: "BasePipeline",
         sorted_list_of_steps: List[BaseStep],
-        schedule: Schedule
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """BLAH BLAH BLAH"""
 
@@ -105,7 +108,7 @@ class BaseOrchestrator(StackComponent, ABC):
         self,
         step: "BaseStep",
         run_name: str,
-        pb2_pipeline: Optional[Pb2Pipeline] = None
+        pb2_pipeline: Optional[Pb2Pipeline] = None,
     ) -> Optional[data_types.ExecutionInfo]:
         """"""
 
@@ -138,8 +141,9 @@ class BaseOrchestrator(StackComponent, ABC):
             executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator
         }
 
-        pipeline_node = self._get_node_with_step_name(step_name=step.name,
-                                                      pb2_pipeline=pb2_pipeline)
+        pipeline_node = self._get_node_with_step_name(
+            step_name=step.name, pb2_pipeline=pb2_pipeline
+        )
 
         component_launcher = launcher.Launcher(
             pipeline_node=pipeline_node,
@@ -159,8 +163,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     @staticmethod
     def _get_node_with_step_name(
-        step_name: str,
-        pb2_pipeline: Pb2Pipeline
+        step_name: str, pb2_pipeline: Pb2Pipeline
     ) -> PipelineNode:
         """Given the name of a step, return the node with that name from the
         pb2_pipeline.
@@ -174,14 +177,16 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         for node in pb2_pipeline.nodes:
             if (
-                    node.WhichOneof("node") == "pipeline_node"
-                    and node.pipeline_node.node_info.id == step_name
+                node.WhichOneof("node") == "pipeline_node"
+                and node.pipeline_node.node_info.id == step_name
             ):
 
                 return node.pipeline_node
 
-        raise KeyError(f"Step {step_name} not found in Pipeline "
-                       f"{pb2_pipeline.pipeline_info.id}")
+        raise KeyError(
+            f"Step {step_name} not found in Pipeline "
+            f"{pb2_pipeline.pipeline_info.id}"
+        )
 
     def set_class_attributes(
         self,
@@ -189,9 +194,6 @@ class BaseOrchestrator(StackComponent, ABC):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ):
-        """"""
-        self._pipeline = pipeline
-
         self._stack = stack
 
         self._runtime_configuration = runtime_configuration
@@ -206,11 +208,11 @@ class BaseOrchestrator(StackComponent, ABC):
             pipeline_node: PipelineNode = node.pipeline_node
 
             step = get_step_for_node(
-                pipeline_node, steps=list(self._pipeline.steps.values())
+                pipeline_node, steps=list(pipeline.steps.values())
             )
 
             # Add pipeline requirements as a context
-            requirements = " ".join(sorted(self._pipeline.requirements))
+            requirements = " ".join(sorted(pipeline.requirements))
             context_utils.add_context_to_node(
                 pipeline_node,
                 type_=MetadataContextTypes.PIPELINE_REQUIREMENTS.value,
@@ -228,7 +230,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
             # Add all pydantic objects from runtime_configuration to the context
             context_utils.add_runtime_configuration_to_node(
-                pipeline_node, self._runtime_configuration
+                pipeline_node, runtime_configuration
             )
 
     def get_upstream_steps(self, step: "BaseStep") -> List[str]:
@@ -241,7 +243,7 @@ class BaseOrchestrator(StackComponent, ABC):
         Returns:
             List of step names from direct upstream steps
         """
-        node = self._stepname_to_node[step.name]
+        node = self._get_node_with_step_name(step.name, self._pb2_pipeline)
 
         upstream_steps = []
         for upstream_node in node.upstream_nodes:

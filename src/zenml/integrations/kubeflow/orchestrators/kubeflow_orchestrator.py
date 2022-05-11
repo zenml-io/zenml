@@ -29,17 +29,17 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
-from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
-    KubeflowDagRunner,
-    KubeflowDagRunnerConfig,
-)
+
+# from zenml.integrations.kubeflow.orchestrators.kubeflow_dag_runner import (
+#     KubeflowDagRunner,
+#     KubeflowDagRunnerConfig,
+# )
 from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
-from zenml.pipelines import Schedule
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
 from zenml.steps import BaseStep
@@ -53,6 +53,96 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 DEFAULT_KFP_UI_PORT = 8080
+KFP_POD_LABELS = {
+    "add-pod-env": "true",
+    "pipelines.kubeflow.org/pipeline-sdk-type": "zenml",
+}
+CONTAINER_ENTRYPOINT_COMMAND = [
+    "python",
+    "-m",
+    "zenml.integrations.kubeflow.container_entrypoint",
+]
+
+from typing import Callable, Union
+
+from kfp import dsl, gcp
+from kubernetes import client as k8s_client
+
+# OpFunc represents the type of function that takes as input a
+# dsl.ContainerOp and returns the same object. Common operations such as adding
+# k8s secrets, mounting volumes, specifying the use of TPUs and so on can be
+# specified as an OpFunc.
+# See example usage here:
+# https://github.com/kubeflow/pipelines/blob/master/sdk/python/kfp/gcp.py
+OpFunc = Callable[[dsl.ContainerOp], Union[dsl.ContainerOp, None]]
+
+# Default secret name for GCP credentials. This secret is installed as part of
+# a typical Kubeflow installation when the component is GKE.
+_KUBEFLOW_GCP_SECRET_NAME = "user-gcp-sa"
+
+
+def _mount_config_map_op(config_map_name: str) -> OpFunc:
+    """Mounts all key-value pairs found in the named Kubernetes ConfigMap.
+    All key-value pairs in the ConfigMap are mounted as environment variables.
+    Args:
+      config_map_name: The name of the ConfigMap resource.
+    Returns:
+      An OpFunc for mounting the ConfigMap.
+    """
+
+    def mount_config_map(container_op: dsl.ContainerOp) -> None:
+        """Mounts all key-value pairs found in the Kubernetes ConfigMap."""
+        config_map_ref = k8s_client.V1ConfigMapEnvSource(
+            name=config_map_name, optional=True
+        )
+        container_op.container.add_env_from(
+            k8s_client.V1EnvFromSource(config_map_ref=config_map_ref)
+        )
+
+    return mount_config_map
+
+
+def _mount_secret_op(secret_name: str) -> OpFunc:
+    """Mounts all key-value pairs found in the named Kubernetes Secret.
+    All key-value pairs in the Secret are mounted as environment variables.
+    Args:
+      secret_name: The name of the Secret resource.
+    Returns:
+      An OpFunc for mounting the Secret.
+    """
+
+    def mount_secret(container_op: dsl.ContainerOp) -> None:
+        """Mounts all key-value pairs found in the named Kubernetes Secret."""
+        secret_ref = k8s_client.V1ConfigMapEnvSource(
+            name=secret_name, optional=True
+        )
+
+        container_op.container.add_env_from(
+            k8s_client.V1EnvFromSource(secret_ref=secret_ref)
+        )
+
+    return mount_secret
+
+
+def get_default_pipeline_operator_funcs(
+    use_gcp_sa: bool = False,
+) -> List[OpFunc]:
+    """Returns a default list of pipeline operator functions.
+    Args:
+      use_gcp_sa: If true, mount a GCP service account secret to each pod, with
+        the name _KUBEFLOW_GCP_SECRET_NAME.
+    Returns:
+      A list of functions with type OpFunc.
+    """
+    # Enables authentication for GCP services if needed.
+    gcp_secret_op = gcp.use_gcp_secret(_KUBEFLOW_GCP_SECRET_NAME)
+
+    # Mounts configmap containing Metadata gRPC server configuration.
+    mount_config_map_op = _mount_config_map_op("metadata-grpc-configmap")
+    if use_gcp_sa:
+        return [gcp_secret_op, mount_config_map_op]
+    else:
+        return [mount_config_map_op]
 
 
 class KubeflowOrchestrator(BaseOrchestrator):
@@ -347,20 +437,122 @@ class KubeflowOrchestrator(BaseOrchestrator):
         assert stack.container_registry  # should never happen due to validation
         stack.container_registry.push_image(image_name)
 
+    def _configure_container_op(self, container_op):
+        import re
+
+        from kubernetes import client as k8s_client
+
+        from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
+        from zenml.io.utils import get_global_config_directory
+
+        # Path to a metadata file that will be displayed in the KFP UI
+        # This metadata file needs to be in a mounted emptyDir to avoid
+        # sporadic failures with the (not mature) PNS executor
+        # See these links for more information about limitations of PNS +
+        # security context:
+        # https://www.kubeflow.org/docs/components/pipelines/installation/localcluster-deployment/#deploying-kubeflow-pipelines
+        # https://argoproj.github.io/argo-workflows/empty-dir/
+        # KFP will switch to the Emissary executor (soon), when this emptyDir
+        # mount will not be necessary anymore, but for now it's still in alpha
+        # status (https://www.kubeflow.org/docs/components/pipelines/installation/choose-executor/#emissary-executor)
+        volumes: Dict[str, k8s_client.V1Volume] = {
+            "/outputs": k8s_client.V1Volume(
+                name="outputs", empty_dir=k8s_client.V1EmptyDirVolumeSource()
+            ),
+        }
+
+        stack = Repository().active_stack
+        global_cfg_dir = get_global_config_directory()
+
+        # go through all stack components and identify those that advertise
+        # a local path where they persist information that they need to be
+        # available when running pipelines. For those that do, mount them
+        # into the Kubeflow container.
+        has_local_repos = False
+        for stack_comp in stack.components.values():
+            local_path = stack_comp.local_path
+            if not local_path:
+                continue
+            # double-check this convention, just in case it wasn't respected
+            # as documented in `StackComponent.local_path`
+            if not local_path.startswith(global_cfg_dir):
+                raise ValueError(
+                    f"Local path {local_path} for component {stack_comp.name} "
+                    f"is not in the global config directory ({global_cfg_dir})."
+                )
+            has_local_repos = True
+            host_path = k8s_client.V1HostPathVolumeSource(
+                path=local_path, type="Directory"
+            )
+            volume_name = f"{stack_comp.TYPE.value}-{stack_comp.name}"
+            volumes[local_path] = k8s_client.V1Volume(
+                name=re.sub(r"[^0-9a-zA-Z-]+", "-", volume_name)
+                .strip("-")
+                .lower(),
+                host_path=host_path,
+            )
+            logger.debug(
+                "Adding host path volume for %s %s (path: %s) "
+                "in kubeflow pipelines container.",
+                stack_comp.TYPE.value,
+                stack_comp.name,
+                local_path,
+            )
+        container_op.add_pvolumes(volumes)
+
+        if has_local_repos:
+            if sys.platform == "win32":
+                # File permissions are not checked on Windows. This if clause
+                # prevents mypy from complaining about unused 'type: ignore'
+                # statements
+                pass
+            else:
+                # Run KFP containers in the context of the local UID/GID
+                # to ensure that the artifact and metadata stores can be shared
+                # with the local pipeline runs.
+                container_op.container.security_context = (
+                    k8s_client.V1SecurityContext(
+                        run_as_user=os.getuid(),
+                        run_as_group=os.getgid(),
+                    )
+                )
+                logger.debug(
+                    "Setting security context UID and GID to local user/group "
+                    "in kubeflow pipelines container."
+                )
+
+        container_op.container.add_env_variable(
+            k8s_client.V1EnvVar(
+                name=ENV_ZENML_PREVENT_PIPELINE_EXECUTION, value="True"
+            )
+        )
+        # Add environment variables for Azure Blob Storage to pod in case they
+        # are set locally
+        # TODO [ENG-699]: remove this as soon as we implement credential handling
+        for key in [
+            "AZURE_STORAGE_ACCOUNT_KEY",
+            "AZURE_STORAGE_ACCOUNT_NAME",
+            "AZURE_STORAGE_CONNECTION_STRING",
+            "AZURE_STORAGE_SAS_TOKEN",
+        ]:
+            value = os.getenv(key)
+            if value:
+                container_op.container.add_env_variable(
+                    k8s_client.V1EnvVar(name=key, value=value)
+                )
+
+        for k, v in KFP_POD_LABELS.items():
+            container_op.add_pod_label(k, v)
+
+        for operator in get_default_pipeline_operator_funcs():
+            container_op.apply(operator)
+
     def prepare_steps(
         self,
-        sorted_list_of_steps: List[BaseStep],
-        schedule: Schedule
-    ) -> Any:
-        pass
-
-    def run_pipeline(
-        self,
         pipeline: "BasePipeline",
-        stack: "Stack",
+        sorted_list_of_steps: List[BaseStep],
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """Runs a pipeline on Kubeflow Pipelines."""
         # First check whether its running in a notebok
         from zenml.environment import Environment
 
@@ -374,24 +566,87 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "orchestrator."
             )
 
+        import json
+
+        from google.protobuf import json_format
+        from kfp import dsl
+        from kfp.compiler import Compiler as KFPCompiler
+
+        from zenml.utils import source_utils
         from zenml.utils.docker_utils import get_image_digest
 
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
+        def _construct_kfp_pipeline() -> None:
+
+            step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
+
+            for step in sorted_list_of_steps:
+                main_module = source_utils.get_module_source_from_module(
+                    sys.modules["__main__"]
+                )
+
+                original_step_module = step.__module__
+
+                if original_step_module == "__main__":
+                    step_module = main_module
+                else:
+                    step_module = original_step_module
+
+                step_source_path = f"{step_module}.{step.name}"
+                metadata_ui_path = "/outputs/mlpipeline-ui-metadata.json"
+
+                input_artifact_type_mapping = {
+                    input_name: source_utils.resolve_class(input_type)
+                    for input_name, input_type in step.INPUT_SPEC.items()
+                }
+
+                arguments = [
+                    "--pb2_pipeline_json",
+                    json_format.MessageToJson(self._pb2_pipeline),
+                    "--metadata_ui_path",
+                    metadata_ui_path,
+                    "--main_module",
+                    main_module,
+                    "--step_source_path",
+                    step_source_path,
+                    "--original_step_module",
+                    original_step_module,
+                    "--input_artifact_types",
+                    json.dumps(input_artifact_type_mapping),
+                ]
+
+                container_op = dsl.ContainerOp(
+                    name=step.name,
+                    image=image_name,
+                    command=CONTAINER_ENTRYPOINT_COMMAND,
+                    arguments=arguments,
+                    output_artifact_paths={
+                        "mlpipeline-ui-metadata": metadata_ui_path,
+                    },
+                )
+
+                self._configure_container_op(container_op=container_op)
+
+                for upstream_step in self.get_upstream_steps(step):
+                    upstream_container_op = step_name_to_container_op[
+                        upstream_step
+                    ]
+                    container_op.after(upstream_container_op)
+
+                step_name_to_container_op[step.name] = container_op
+
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
             self.pipeline_directory, f"{pipeline.name}.yaml"
         )
-        runner_config = KubeflowDagRunnerConfig(image=image_name)
-        runner = KubeflowDagRunner(
-            config=runner_config, output_path=pipeline_file_path
-        )
 
-        runner.run(
-            pipeline=pipeline,
-            stack=stack,
-            runtime_configuration=runtime_configuration,
+        # write the argo pipeline yaml
+        KFPCompiler()._create_and_write_workflow(
+            pipeline_func=_construct_kfp_pipeline,
+            pipeline_name=pipeline.name,
+            package_path=pipeline_file_path,
         )
 
         self._upload_and_run_pipeline(
@@ -450,7 +705,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     enable_caching=enable_cache,
                     start_time=schedule.utc_start_time,
                     end_time=schedule.utc_end_time,
-                    interval_second=schedule.interval_second,
+                    interval_second=schedule.interval_second.seconds,
                     no_catchup=not schedule.catchup,
                 )
 
