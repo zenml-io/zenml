@@ -74,7 +74,7 @@ class BaseOrchestrator(StackComponent, ABC):
         requirements, stack and runtime configuration is added to the step
         context
 
-        * The `get_sorted_steps()` method then generates a sorted list of
+        * The `_get_sorted_steps()` method then generates a sorted list of
         steps which will later be used to directly execute these steps in order,
         or to easily build a dag
 
@@ -100,7 +100,7 @@ class BaseOrchestrator(StackComponent, ABC):
     @abstractmethod
     def prepare_or_run_pipeline(
         self,
-        sorted_list_of_steps: List[BaseStep],
+        sorted_steps: List[BaseStep],
         pipeline: "BasePipeline",
         pb2_pipeline: Pb2Pipeline,
         stack: "Stack",
@@ -130,6 +130,7 @@ class BaseOrchestrator(StackComponent, ABC):
             the `setup_and_execute_step()` method is used.
 
         Args:
+            sorted_steps: List of sorted steps
             pipeline: Zenml Pipeline instance
             pb2_pipeline: Protobuf Pipeline instance
             stack: The stack the pipeline was run on
@@ -163,19 +164,19 @@ class BaseOrchestrator(StackComponent, ABC):
             create_tfx_pipeline(pipeline, stack=stack)
         )
 
-        self.configure_node_context(
+        self._configure_node_context(
             pipeline=pipeline,
             pb2_pipeline=pb2_pipeline,
             stack=stack,
             runtime_configuration=runtime_configuration,
         )
 
-        sorted_list_of_steps = self.get_sorted_steps(
+        sorted_steps = self._get_sorted_steps(
             pipeline=pipeline, pb2_pipeline=pb2_pipeline
         )
 
         prepared_steps = self.prepare_or_run_pipeline(
-            sorted_list_of_steps=sorted_list_of_steps,
+            sorted_steps=sorted_steps,
             pipeline=pipeline,
             pb2_pipeline=pb2_pipeline,
             stack=stack,
@@ -185,7 +186,7 @@ class BaseOrchestrator(StackComponent, ABC):
         return prepared_steps
 
     @staticmethod
-    def get_sorted_steps(
+    def _get_sorted_steps(
         pipeline: "BasePipeline", pb2_pipeline: Pb2Pipeline
     ) -> List["BaseStep"]:
         """Get steps sorted in the execution order. This simplifies the
@@ -274,13 +275,13 @@ class BaseOrchestrator(StackComponent, ABC):
         # This is where the step actually get executed using the
         # component_launcher
         repo.active_stack.prepare_step_run()
-        execution_info = self.execute_step(component_launcher)
+        execution_info = self._execute_step(component_launcher)
         repo.active_stack.cleanup_step_run()
 
         return execution_info
 
     @staticmethod
-    def execute_step(
+    def _execute_step(
         tfx_launcher: launcher.Launcher,
     ) -> Optional[data_types.ExecutionInfo]:
         """Executes a tfx component.
@@ -378,7 +379,7 @@ class BaseOrchestrator(StackComponent, ABC):
         )
 
     @staticmethod
-    def configure_node_context(
+    def _configure_node_context(
         pipeline: "BasePipeline",
         pb2_pipeline: Pb2Pipeline,
         stack: "Stack",
