@@ -122,6 +122,7 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         if Environment.in_notebook:
             # Only import jupyter_dash in this case
             from jupyter_dash import JupyterDash  # noqa
+
             JupyterDash.infer_jupyter_proxy_config()
 
             app = JupyterDash(

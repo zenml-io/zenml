@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -26,17 +27,21 @@ from zenml.console import console
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
-from zenml.io.utils import get_global_config_directory
+from zenml.io.utils import copy_dir, get_global_config_directory
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.utils.analytics_utils import AnalyticsEvent, track_event, identify_user
+from zenml.utils.analytics_utils import (
+    AnalyticsEvent,
+    identify_user,
+    track_event,
+)
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
 # exists, we are on the latest Windows Terminal that supports emojis
 _SHOW_EMOJIS = not os.name == "nt" or os.environ.get("WT_SESSION")
 
-TUTORIAL_REPO = "https://github.com/zenml-io/zenbytes"
+TUTORIAL_REPO = "https://github.com/zenml-io/zenml"
 
 
 @cli.command("init", help="Initialize a ZenML repository.")
@@ -183,14 +188,14 @@ def go() -> None:
         zenml_go_welcome_message,
     )
     from zenml.config.global_config import GlobalConfiguration
+
     gc = GlobalConfiguration()
-    metadata = {}
-    
+
     console.print(zenml_go_welcome_message, width=80)
 
     if not gc.user_metadata:
         gave_email = _prompt_email(gc)
-        metadata = {"gave_email" : gave_email}
+        metadata = {"gave_email": gave_email}
 
     # Add telemetry
     track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
@@ -208,10 +213,21 @@ def go() -> None:
                 "your machine to let you dive right into our code. However, "
                 "this machine has no installation of Git. Feel free to install "
                 "git and rerun this command. Alternatively you can also "
-                f"download the repo manually here: {TUTORIAL_REPO}."
+                f"download the repo manually here: {TUTORIAL_REPO}. The tutorial "
+                "is in the 'examples/quickstart/notebooks' directory."
             )
             raise GitNotFoundError(e)
-        Repo.clone_from(TUTORIAL_REPO, zenml_tutorial_path)
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            print("created temporary directory", tmpdirname)
+            tmp_cloned_dir = os.path.join(os.getcwd(), "zenml_repo")
+            Repo.clone_from(TUTORIAL_REPO, tmp_cloned_dir)
+            example_dir = os.path.join(tmp_cloned_dir, "examples/quickstart")
+            copy_dir(example_dir, zenml_tutorial_path)
+    else:
+        logger.warning(
+            f"{zenml_tutorial_path} already exists! Continuing without cloning."
+        )
 
     ipynb_files = [
         fi for fi in os.listdir(zenml_tutorial_path) if fi.endswith(".ipynb")
@@ -222,7 +238,7 @@ def go() -> None:
 
 
 def _prompt_email(gc: GlobalConfiguration) -> bool:
-    """Ask the user to give their email address. Returns 
+    """Ask the user to give their email address. Returns
     True if email is given, else returns False."""
     from zenml.cli.text_utils import (
         zenml_go_email_prompt,
