@@ -29,7 +29,7 @@ from zenml.io import fileio
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.utils.analytics_utils import identify_user
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event, identify_user
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -183,12 +183,17 @@ def go() -> None:
         zenml_go_welcome_message,
     )
     from zenml.config.global_config import GlobalConfiguration
-
+    gc = GlobalConfiguration()
+    metadata = {}
+    
     console.print(zenml_go_welcome_message, width=80)
 
-    gc = GlobalConfiguration()
     if not gc.user_metadata:
-        _prompt_email(gc)
+        gave_email = _prompt_email(gc)
+        metadata = {"gave_email" : gave_email}
+
+    # Add telemetry
+    track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
 
     console.print(zenml_go_privacy_message, width=80)
 
@@ -216,8 +221,9 @@ def go() -> None:
     subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
 
 
-def _prompt_email(gc: GlobalConfiguration) -> None:
-    """Ask the user to give their email address"""
+def _prompt_email(gc: GlobalConfiguration) -> bool:
+    """Ask the user to give their email address. Returns 
+    True if email is given, else returns False."""
     from zenml.cli.text_utils import (
         zenml_go_email_prompt,
         zenml_go_thank_you_message,
@@ -237,3 +243,5 @@ def _prompt_email(gc: GlobalConfiguration) -> None:
 
             gc.user_metadata = {"email": email}
             identify_user({"email": email})
+        return True
+    return False
