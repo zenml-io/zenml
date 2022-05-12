@@ -11,10 +11,11 @@ concept of [stacks, stack components and their flavors](./introduction.md).
 
 ## Base Implementation
 
-Now, let us take a deeper dive into the fundamentals behind the abstraction 
-of an artifact store in ZenML:
+The artifact store establishes one of the main components in every ZenML stack.
+Now, let us take a deeper dive into the fundamentals behind its abstraction,
+namely the `BaseArtifactStore`:
 
-1. This is the base class for a specific type of `StackComponent`, which means
+1. As it is the base class for a specific type of `StackComponent`,
     it inherits from the `StackComponent` class and sets the `TYPE` class 
     variable to a `StackComponentType` leaving the `FLAVOR` class variable is 
     still unoccupied.
@@ -130,24 +131,39 @@ class BaseArtifactStore(StackComponent):
 
 ## List of available artifact stores
 
-Out of the box, ZenML comes with the `BaseArtifactStore` and
-`LocalArtifactStore` implementations. While the `BaseArtifactStore` establishes
-an interface for people who want to extend it to their needs, the
-`LocalArtifactStore` is a simple implementation for a local setup.
+Out of the box, ZenML comes with a `LocalArtifactStore` implementation, which 
+is a simple implementation for a local setup.
 
 Moreover, additional artifact stores can be found in specific `integrations`
 modules, such as the `GCPArtifactStore` in the `gcp` integration and the
 `AzureArtifactStore` in the `azure` integration.
 
-|                 |||
-|-----------------|----------|-------------|
-| Orchestrator    | ✅        |             |
-| Artifact Store  | ✅        |             |
-| Metadata Store  | ✅        |             |
-| Container Registry |          |             |
-| Secrets Manager |          |             |
-| Step Operator   |          |             |
-| Model Deployer  |          |             |
-| Feature Store   |          |             |
-| Experiment Tracker |          |             |
-| Alerter         |          |             |
+|                     | Flavor | Integration |
+|---------------------|--------|-------------|
+| LocalArtifactStore  | local  | `built-in`  |
+| S3ArtifactStore     | s3     | s3          |
+| GCPArtifactStore    | gcp    | gcp         |
+| AzureArtifactStore  | azure  | azure       |
+
+If you would like to see the available flavors for artifact stores, you can 
+use the command:
+
+```shell
+zenml artifact-store flavor list
+```
+
+## Build your own custom artifact store
+
+If you want to create your own custom flavor for an artifact store, you can 
+follow the following steps:
+
+1. Create a class which inherits from the `BaseArtifactStore`.
+2. Define the `FLAVOR` class variable.
+3. Implement the `abstactmethod`s based on your desired filesystem.
+
+Once you are done with the implementation, you can register it through the CLI 
+as:
+
+```shell
+zenml artifact-store flavor register <THE-SOURCE-PATH-OF-YOUR-ARTIFACT-STORE>
+```
