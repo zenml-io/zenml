@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 
 from typing import Any, Collection, Dict, List, Union
+from jupyter_dash import JupyterDash  # noqa
+JupyterDash.infer_jupyter_proxy_config()
 
 import dash
 import dash_bootstrap_components as dbc
@@ -120,15 +122,17 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
             dbc.icons.BOOTSTRAP,
         ]
         if Environment.in_notebook:
-            app = dash.JupyterDash(
+            app = JupyterDash(
                 __name__,
                 external_stylesheets=external_stylesheets,
             )
+            mode = "inline"
         else:
             app = dash.Dash(
                 __name__,
                 external_stylesheets=external_stylesheets,
             )
+            mode = None
         nodes, edges, first_step_id = [], [], None
         first_step_id = None
         for step in object.steps:
@@ -345,5 +349,5 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
             logger.debug(n_clicks, "clicked in reset button.")
             return [1, edges + nodes]
 
-        app.run_server()
+        app.run_server(mode=mode)
         return app
