@@ -53,17 +53,64 @@ class StepEntrypointConfiguration(ABC):
     (e.g. a docker container), you should create a custom entrypoint
     configuration class that inherits from this class and use it to implement
     your custom entrypoint logic.
-    Make sure to also call it with command and args TODO
 
     How to subclass:
-        *
+    ----------------
+    There is only one mandatory method `get_run_name(...)` that you need to
+    implement in order to get a functioning entrypoint. Inside this method you
+    need to return a string which *has* to be the same for all steps that are
+    executed as part of the same pipeline run.
 
-    custom_entrypoint_options()
-    custom_entrypoint_arguments(...)
-    get_run_name(...)
-    setup(...)
-    post_run(...)
+    Passing additional arguments to the entrypoint:
+        If you need to pass additional arguments to the entrypoint, there are
+        two methods that you need to implement:
+            * `get_custom_entrypoint_options()`: This method should return all
+                the additional options that you require in the entrypoint.
 
+            * `get_custom_entrypoint_arguments(...)`: This method should return
+                a list of arguments that should be passed to the entrypoint.
+                The arguments need to provide values for all options defined
+                in the `custom_entrypoint_options()` method mentioned above.
+
+        You'll be able to access the argument values from `self.entrypoint_args`
+        inside your `StepEntrypointConfiguration` subclass.
+
+    Running custom code inside the entrypoint:
+        If you need to run custom code in the entrypoint, you can overwrite
+        the `setup(...)` and `post_run(...)` methods which allow you to run
+        code before and after the step execution respectively.
+
+    How to use:
+    -----------
+    After you created your `StepEntrypointConfiguration` subclass, you only
+    have to run the entrypoint somewhere. To do this, you should execute the
+    command returned by the `get_entrypoint_command()` method with the
+    arguments returned by the `get_entrypoint_arguments(...)` method.
+
+    Example:
+    ```python
+    class MyStepEntrypointConfiguration(StepEntrypointConfiguration):
+        ...
+
+    class MyOrchestrator(BaseOrchestrator):
+        def prepare_or_run_pipeline(
+            self,
+            sorted_list_of_steps: List[BaseStep],
+            pipeline: "BasePipeline",
+            pb2_pipeline: Pb2Pipeline,
+            stack: "Stack",
+            runtime_configuration: "RuntimeConfiguration",
+        ) -> Any:
+            ...
+
+            cmd = MyStepEntrypointConfiguration.get_entrypoint_command()
+            for step in sorted_list_of_steps:
+                args = MyStepEntrypointConfiguration.get_entrypoint_arguments(
+                    step=step, pb2_pipeline=pb2_pipeline
+                )
+                # TODO
+
+    ```
     """
 
     def __init__(self, arguments: List[str]):
@@ -89,7 +136,7 @@ class StepEntrypointConfiguration(ABC):
 
     @classmethod
     def get_custom_entrypoint_arguments(
-        cls, step: BaseStep, *args: Any, **kwargs: Any
+        cls, step: BaseStep, **kwargs: Any
     ) -> List[str]:
         """Custom arguments that the entrypoint command should be called with.
 
@@ -215,7 +262,6 @@ class StepEntrypointConfiguration(ABC):
         cls,
         step: BaseStep,
         pb2_pipeline: Pb2Pipeline,
-        *args: Any,
         **kwargs: Any,
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
@@ -235,7 +281,7 @@ class StepEntrypointConfiguration(ABC):
                 returned by this method.
             pb2_pipeline: The protobuf representation of the pipeline to which
                 the `step` belongs.
-            *args/**kwargs: Custom options that will be passed to
+            **kwargs: Custom options that will be passed to
                 `get_custom_entrypoint_arguments()`.
 
         Raises:
@@ -283,7 +329,7 @@ class StepEntrypointConfiguration(ABC):
         ]
 
         custom_arguments = cls.get_custom_entrypoint_arguments(
-            step=step, *args, **kwargs
+            step=step, **kwargs
         )
         all_arguments = zenml_arguments + custom_arguments
 
@@ -345,7 +391,7 @@ class StepEntrypointConfiguration(ABC):
         """Creates an executor class for the given step.
 
         Args:
-            step: The step for which the executor should be created.
+            step: The step for which the executor class should be created.
             input_spec_config: The input spec config for the step. The keys
                 are supposed to be the step input names and the values are
                 source strings which will be imported and should point to

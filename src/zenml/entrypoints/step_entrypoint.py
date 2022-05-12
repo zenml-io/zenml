@@ -20,7 +20,7 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 from zenml.utils import source_utils
 
 
-def main():
+def main() -> None:
     """Runs the ZenML step defined by the command line arguments.
 
     This main logic for running the step is not implemented in this file,
