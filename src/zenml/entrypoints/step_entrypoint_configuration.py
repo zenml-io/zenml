@@ -58,7 +58,7 @@ class StepEntrypointConfiguration(ABC):
     ----------------
     There is only one mandatory method `get_run_name(...)` that you need to
     implement in order to get a functioning entrypoint. Inside this method you
-    need to return a string which *has* to be the same for all steps that are
+    need to return a string which **has** to be the same for all steps that are
     executed as part of the same pipeline run.
 
     Passing additional arguments to the entrypoint:
@@ -222,7 +222,7 @@ class StepEntrypointConfiguration(ABC):
         subclasses don't overwrite this method, it will default to running the
         `zenml.entrypoints.step_entrypoint` module.
 
-        *Note*: This command won't work on its own but needs to be called with
+        **Note**: This command won't work on its own but needs to be called with
             the arguments returned by the `get_entrypoint_arguments(...)`
             method of this class.
         """
@@ -233,7 +233,7 @@ class StepEntrypointConfiguration(ABC):
         """Gets all the options that are required when running an entrypoint
         with this configuration.
 
-        *Note*: Subclasses should implement the
+        **Note**: Subclasses should implement the
             `get_custom_entrypoint_options()` class method instead of this
             one if they require custom options.
         """
@@ -278,7 +278,7 @@ class StepEntrypointConfiguration(ABC):
         It needs to provide values for all options returned by the
         `get_entrypoint_options()` method of this class.
 
-        *Note*: Subclasses should implement the
+        **Note**: Subclasses should implement the
             `get_custom_entrypoint_arguments(...)` class method instead of
             this one if they require custom arguments.
 
