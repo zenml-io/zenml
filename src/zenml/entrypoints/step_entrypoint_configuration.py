@@ -38,11 +38,11 @@ DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND = [
     "-m",
     "zenml.entrypoints.step_entrypoint",
 ]
+# Constants for all the ZenML default entrypoint options
 ENTRYPOINT_CONFIG_SOURCE_OPTION = "entrypoint_config_source"
 PB2_PIPELINE_JSON_OPTION = "pb2_pipeline_json"
-MAIN_MODULE_OPTION = "main_module"
+MAIN_MODULE_SOURCE_OPTION = "main_module_source"
 STEP_SOURCE_OPTION = "step_source"
-ORIGINAL_STEP_MODULE_OPTION = "original_step_module"
 INPUT_SPEC_OPTION = "input_spec"
 
 
@@ -53,9 +53,10 @@ class StepEntrypointConfiguration(ABC):
     (e.g. a docker container), you should create a custom entrypoint
     configuration class that inherits from this class and use it to implement
     your custom entrypoint logic.
+    Make sure to also call it with command and args TODO
 
     How to subclass:
-        TODO:
+        *
 
     custom_entrypoint_options()
     custom_entrypoint_arguments(...)
@@ -71,7 +72,7 @@ class StepEntrypointConfiguration(ABC):
         Args:
             arguments: Command line arguments to configure this object.
         """
-        self.entrypoint_args = self.parse_arguments(arguments)
+        self.entrypoint_args = self._parse_arguments(arguments)
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
@@ -97,6 +98,10 @@ class StepEntrypointConfiguration(ABC):
         `["--some_option", "some_value"]` or `["--some_option=some_value"]`).
         It needs to provide values for all options returned by the
         `get_custom_entrypoint_options()` method of this class.
+
+        Args:
+            step: The step that the entrypoint should run using the arguments
+                returned by this method.
         """
         return []
 
@@ -180,11 +185,26 @@ class StepEntrypointConfiguration(ABC):
             one if they require custom options.
         """
         zenml_options = {
+            # Importable source pointing to the entrypoint configuration class
+            # that should be used inside the entrypoint.
             ENTRYPOINT_CONFIG_SOURCE_OPTION,
+            # Protobuf representation of the parent pipeline of the step that
+            # will be executed. This is needed in order to create the tfx
+            # launcher in the entrypoint that will run the ZenML step.
             PB2_PIPELINE_JSON_OPTION,
-            MAIN_MODULE_OPTION,
+            # Importable source pointing to the python module that was executed
+            # to run a pipeline. This will be imported inside the entrypoint to
+            # make sure all custom materializer/artifact types are registered.
+            MAIN_MODULE_SOURCE_OPTION,
+            # Importable source pointing to the ZenML step class that should be
+            # run inside the entrypoint. This will be used to recreate the tfx
+            # executor class that is required to run the step function.
             STEP_SOURCE_OPTION,
-            ORIGINAL_STEP_MODULE_OPTION,
+            # Dictionary mapping the step input names to importable sources
+            # pointing to `zenml.artifacts.base_artifact.BaseArtifact`
+            # subclasses. These classes are needed to recreate the tfx executor
+            # class and can't be inferred as we do not have access to the
+            # output artifacts from previous steps.
             INPUT_SPEC_OPTION,
         }
         custom_options = cls.get_custom_entrypoint_options()
@@ -215,42 +235,49 @@ class StepEntrypointConfiguration(ABC):
                 returned by this method.
             pb2_pipeline: The protobuf representation of the pipeline to which
                 the `step` belongs.
-            *args/**kwargs: Custom arguments that will be passed to
+            *args/**kwargs: Custom options that will be passed to
                 `get_custom_entrypoint_arguments()`.
 
         Raises:
             ValueError: If the argument format is incorrect or one of the
                 options is missing.
         """
-        main_module = source_utils.get_module_source_from_module(
-            sys.modules["__main__"]
-        )
+        # Get an importable source of the user main module. If the `__main__`
+        # module is not the actual module that a user executed (e.g. if we're
+        # in some docker container entrypoint) use the ZenML constant that
+        # points to the actual user main module. If not resolve the `__main__`
+        # module to something that can be imported during entrypoint execution.
+        main_module_source = constants.USER_MAIN_MODULE
+        if not main_module_source:
+            main_module_source = source_utils.get_module_source_from_module(
+                sys.modules["__main__"]
+            )
 
-        original_step_module = step.__module__
-
-        if original_step_module == "__main__":
-            step_module = main_module
-        else:
-            step_module = original_step_module
-
+        # Get an importable source of the step class. If the step is defined in
+        # the `__main__` module, replace it with the main module source
+        # computed above.
+        step_module = step.__module__
+        if step_module == "__main__":
+            step_module = main_module_source
         step_source = f"{step_module}.{step.name}"
 
+        # Resolve the input artifact classes
         input_spec = {
             input_name: source_utils.resolve_class(input_type)
             for input_name, input_type in step.INPUT_SPEC.items()
         }
 
+        # See `get_entrypoint_options()` for an in -depth explanation of all
+        # these arguments.
         zenml_arguments = [
             f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}",
             source_utils.resolve_class(cls),
             f"--{PB2_PIPELINE_JSON_OPTION}",
             json_format.MessageToJson(pb2_pipeline),
-            f"--{MAIN_MODULE_OPTION}",
-            main_module,
+            f"--{MAIN_MODULE_SOURCE_OPTION}",
+            main_module_source,
             f"--{STEP_SOURCE_OPTION}",
             step_source,
-            f"--{ORIGINAL_STEP_MODULE_OPTION}",
-            original_step_module,
             f"--{INPUT_SPEC_OPTION}",
             json.dumps(input_spec),
         ]
@@ -262,12 +289,12 @@ class StepEntrypointConfiguration(ABC):
 
         # Try to parse the arguments here to validate the format and that
         # values for all options are provided.
-        cls.parse_arguments(all_arguments)
+        cls._parse_arguments(all_arguments)
 
         return all_arguments
 
     @classmethod
-    def parse_arguments(cls, arguments: List[str]) -> Dict[str, Any]:
+    def _parse_arguments(cls, arguments: List[str]) -> Dict[str, Any]:
         """Parses command line arguments.
 
         This method will create an `argparse.ArgumentParser` and add required
@@ -313,23 +340,20 @@ class StepEntrypointConfiguration(ABC):
     @staticmethod
     def _create_executor_class(
         step: BaseStep,
-        original_step_module: str,
         input_spec_config: Dict[str, str],
     ) -> None:
-        """Creates an executor class for a given step and adds it to the target
-        module.
+        """Creates an executor class for the given step.
 
         Args:
             step: The step for which the executor should be created.
-            original_step_module: Name of the step module when `pipeline.run()`
-                was called.
             input_spec_config: The input spec config for the step. The keys
-                are supposed to be the input names and the values are strings
-                which will be imported and should point to
+                are supposed to be the step input names and the values are
+                source strings which will be imported and should point to
                 `zenml.artifacts.BaseArtifact` subclasses.
         """
         materializers = step.get_materializers(ensure_complete=True)
 
+        # Import the input artifact classes from the given sources
         input_spec = {}
         for input_name, source in input_spec_config.items():
             artifact_class = source_utils.load_source_path_class(source)
@@ -341,9 +365,10 @@ class StepEntrypointConfiguration(ABC):
                 )
             input_spec[input_name] = artifact_class
 
-        output_spec = {}
-        for key, value in step.OUTPUT_SIGNATURE.items():
-            output_spec[key] = type_registry.get_artifact_type(value)[0]
+        output_spec = {
+            key: type_registry.get_artifact_type(value)[0]
+            for key, value in step.OUTPUT_SIGNATURE.items()
+        }
 
         execution_parameters = {
             **step.PARAM_SPEC,
@@ -352,7 +377,7 @@ class StepEntrypointConfiguration(ABC):
 
         step_utils.generate_component_class(
             step_name=step.name,
-            step_module=original_step_module,
+            step_module=step.__module__,
             input_spec=input_spec,
             output_spec=output_spec,
             execution_parameter_names=set(execution_parameters),
@@ -375,20 +400,23 @@ class StepEntrypointConfiguration(ABC):
         constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
 
         # Extract and parse all the entrypoint arguments required to execute
-        # the step.
+        # the step. See `get_entrypoint_options()` for an in-depth explanation
+        # of all these arguments.
         pb2_pipeline_json = self.entrypoint_args[PB2_PIPELINE_JSON_OPTION]
         pb2_pipeline = Pb2Pipeline()
         json_format.Parse(pb2_pipeline_json, pb2_pipeline)
 
-        main_module = self.entrypoint_args[MAIN_MODULE_OPTION]
+        main_module_source = self.entrypoint_args[MAIN_MODULE_SOURCE_OPTION]
         step_source = self.entrypoint_args[STEP_SOURCE_OPTION]
-        original_step_module = self.entrypoint_args[ORIGINAL_STEP_MODULE_OPTION]
         input_spec = json.loads(self.entrypoint_args[INPUT_SPEC_OPTION])
+
+        # Get some common values that will be used throughout the remainder of
+        # this method
+        pipeline_name = pb2_pipeline.pipeline_info.id
+        step_module, step_name = step_source.rsplit(".", 1)
 
         # Allow subclasses to run custom code before user code is imported and
         # the step is executed.
-        pipeline_name = pb2_pipeline.pipeline_info.id
-        _, step_name = step_source.rsplit(".", 1)
         self.setup(pipeline_name=pipeline_name, step_name=step_name)
 
         # Activate all the integrations. This makes sure that all materializers
@@ -400,9 +428,9 @@ class StepEntrypointConfiguration(ABC):
         # defined in this module, we need to import it in case the user
         # defined/imported custom materializers/artifacts here that ZenML needs
         # to execute the step.
-        importlib.import_module(main_module)
+        importlib.import_module(main_module_source)
 
-        # The __main__ module when running a step inside a docker container
+        # The `__main__` module when running a step inside a docker container
         # will always be the entrypoint file
         # (e.g. `zenml.entrypoints.single_step_entrypoint`). If this entrypoint
         # now needs to execute something in a different environment,
@@ -410,7 +438,7 @@ class StepEntrypointConfiguration(ABC):
         # module anymore. That's why we set this constant here so other
         # components (e.g. step operators) can use it to correctly import it
         # in the containers they create.
-        constants.USER_MAIN_MODULE = main_module
+        constants.USER_MAIN_MODULE = main_module_source
 
         # Create an instance of the ZenML step that this entrypoint should run.
         step_class = source_utils.load_source_path_class(step_source)
@@ -422,13 +450,30 @@ class StepEntrypointConfiguration(ABC):
 
         step = step_class()
 
+        # Compute the name of the module in which the step was in when the
+        # pipeline run was started. This could potentially differ from the
+        # module part of `STEP_SOURCE_OPTION` if the step was defined in the
+        # `__main__` module (e.g. the step was defined in `run.py` and the
+        # pipeline run was started by the call `python run.py`).
+        # Why we need this: We need to recreate the tfx executor class in the
+        # original module as the `executor.__module__` is used to create a row
+        # in the `Type` table of the MLMD metadata store (and we want those
+        # values to be consistent with the local orchestrator).
+        original_step_module = (
+            "__main__" if step_module == main_module_source else step_module
+        )
+
+        # Make sure the `__module__` attribute of our step instance points to
+        # this original module so the executor class gets created in the
+        # correct module.
+        step.__module__ = original_step_module
+
         # Create the executor class that is responsible for running the step
         # function. This method call dynamically creates an executor class
-        # in the `original_step_module` module which will later be used when the
-        # `orchestrator.setup_and_execute_step(...)` is running the step.
+        # in the `original_step_module` module which will later be used when
+        # `orchestrator.run_step(...)` is running the step.
         self._create_executor_class(
             step=step,
-            original_step_module=original_step_module,
             input_spec_config=input_spec,
         )
 
