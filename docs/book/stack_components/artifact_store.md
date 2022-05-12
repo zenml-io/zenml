@@ -112,3 +112,13 @@ WIP
 
 
 ## List of 
+
+
+`    @abstractmethod`
+`    def walk(`
+`       self,`
+`       top: PathType,`
+`        topdown: bool = True,`
+`        onerror: Optional[Callable[..., None]] = None,`
+`     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:`
+`         """Return an iterator that walks the contents of the given directory."""`
