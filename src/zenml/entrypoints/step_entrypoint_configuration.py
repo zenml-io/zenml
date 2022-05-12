@@ -17,7 +17,7 @@ import json
 import logging
 import sys
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, NoReturn, Optional, Set
 
 from google.protobuf import json_format
 from tfx.orchestration.portable import data_types
@@ -50,9 +50,11 @@ class StepEntrypointConfiguration:
     """
 
     Subclasses:
-    custom_entrypoint_options
-    setup
-    post_run
+    custom_entrypoint_options()
+    custom_entrypoint_arguments(...)
+    get_run_name(...)
+    setup(...)
+    post_run(...)
 
     """
 
@@ -81,8 +83,13 @@ class StepEntrypointConfiguration:
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, *args: Any, **kwargs: Any
     ) -> List[str]:
-        """Custom arguments for
-        TODO: symmetry with options
+        """Custom arguments that the entrypoint command should be called with.
+
+        The argument list should be something that
+        `argparse.ArgumentParser.parse_args(...)` can handle (e.g.
+        `["--some_option", "some_value"]` or `["--some_option=some_value"]`).
+        It needs to provide values for all options returned by the
+        `get_custom_entrypoint_options()` method of this class.
         """
         return []
 
@@ -150,7 +157,9 @@ class StepEntrypointConfiguration:
         subclasses don't overwrite this method, it will default to the
         `zenml.entrypoints.step_entrypoint` module.
 
-        *Note*: This command by itself is not enough to run a step TODO
+        *Note*: This command won't work on its own but needs to be called with
+            the arguments returned by the `get_entrypoint_arguments(...)`
+            method of this class.
         """
         return DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND
 
@@ -159,8 +168,9 @@ class StepEntrypointConfiguration:
         """Gets all the options that are required when running an entrypoint
         with this configuration.
 
-        Subclasses should implement the `get_custom_entrypoint_options()` class
-        method instead of this one if they require custom options.
+        *Note*: Subclasses should implement the
+            `get_custom_entrypoint_options()` class method instead of this
+            one if they require custom options.
         """
         zenml_options = {
             ENTRYPOINT_CONFIG_SOURCE_OPTION,
@@ -181,13 +191,29 @@ class StepEntrypointConfiguration:
         *args: Any,
         **kwargs: Any,
     ) -> List[str]:
-        """Gets all arguments that the entrypoint should be called with.
+        """Gets all arguments that the entrypoint command should be called with.
 
-        TODO: Container needs to run: `get_command` `get_args`
-        TODO: symmetry with options
+        The argument list should be something that
+        `argparse.ArgumentParser.parse_args(...)` can handle (e.g.
+        `["--some_option", "some_value"]` or `["--some_option=some_value"]`).
+        It needs to provide values for all options returned by the
+        `get_entrypoint_options()` method of this class.
 
-        Subclasses should implement the `get_custom_entrypoint_arguments(...)`
-        class method instead of this one if they require custom arguments.
+        *Note*: Subclasses should implement the
+            `get_custom_entrypoint_arguments(...)` class method instead of
+            this one if they require custom arguments.
+
+        Args:
+            step: The step that the entrypoint should run using the arguments
+                returned by this method.
+            pb2_pipeline: The proto representation of the pipeline to which the
+                `step` belongs.
+            *args/**kwargs: Custom arguments that will be passed to
+                `get_custom_entrypoint_arguments()`.
+
+        Raises:
+            ValueError: If the argument format is incorrect or one of the
+                options is missing.
         """
         main_module = source_utils.get_module_source_from_module(
             sys.modules["__main__"]
@@ -225,9 +251,16 @@ class StepEntrypointConfiguration:
         custom_arguments = cls.get_custom_entrypoint_arguments(
             step=step, *args, **kwargs
         )
-        return zenml_arguments + custom_arguments
+        all_arguments = zenml_arguments + custom_arguments
 
-    def parse_arguments(self, arguments: List[str]) -> Dict[str, Any]:
+        # Try to parse the arguments here to validate the format and that
+        # values for all options are provided.
+        cls.parse_arguments(all_arguments)
+
+        return all_arguments
+
+    @classmethod
+    def parse_arguments(cls, arguments: List[str]) -> Dict[str, Any]:
         """Parses command line arguments.
 
         This method will create an `argparse.ArgumentParser` and add required
@@ -237,15 +270,29 @@ class StepEntrypointConfiguration:
         them by implementing the `get_custom_entrypoint_options()` class method.
 
         Args:
-            arguments: Arguments to parse. The format should be similar to
-                `sys.argv[1:]`, e.g. `["--some_option", "some_value"]`.
+            arguments: Arguments to parse. The format should be something that
+                `argparse.ArgumentParser.parse_args(...)` can handle (e.g.
+                `["--some_option", "some_value"]` or
+                `["--some_option=some_value"]`).
 
         Returns:
             Dictionary of the parsed arguments.
-        """
-        parser = argparse.ArgumentParser()
 
-        for option_name in self.get_entrypoint_options():
+        Raises:
+            ValueError: If the parsing failed because the argument format is
+                incorrect or one of the options is missing.
+        """
+        # Argument parser subclass that suppresses some argparse logs and
+        # raises an exception instead of the `sys.exit()` call
+        class _CustomParser(argparse.ArgumentParser):
+            def error(self, message: str) -> NoReturn:
+                raise ValueError(
+                    f"Failed to parse entrypoint arguments: {message}"
+                )
+
+        parser = _CustomParser()
+
+        for option_name in cls.get_entrypoint_options():
             if option_name == ENTRYPOINT_CONFIG_SOURCE_OPTION:
                 # This option is already used by
                 # `zenml.entrypoints.step_entrypoint` to read which config

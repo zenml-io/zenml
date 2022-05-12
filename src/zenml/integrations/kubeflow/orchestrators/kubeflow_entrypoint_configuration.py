@@ -30,15 +30,18 @@ METADATA_UI_PATH_OPTION = "metadata_ui_path"
 class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
+        """Kubeflow specific entrypoint options."""
         return {METADATA_UI_PATH_OPTION}
 
     @classmethod
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, *args: Any, **kwargs: Any
     ) -> List[str]:
+        """Kubeflow specific arguments for the entrypoint command."""
         return [f"--{METADATA_UI_PATH_OPTION}", kwargs[METADATA_UI_PATH_OPTION]]
 
     def get_run_name(self, pipeline_name: str) -> str:
+        """Returns the Kubeflow pipeline run name."""
         k8s_config.load_incluster_config()
         run_id = os.environ["KFP_RUN_ID"]
         return kfp.Client().get_run(run_id).run.name  # type: ignore[no-any-return]
@@ -50,6 +53,7 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
         pipeline_node: Pb2PipelineNode,
         execution_info: Optional[data_types.ExecutionInfo] = None,
     ) -> None:
+        """Writes markdown files that will be displayed in the KFP UI."""
         if execution_info:
             entrypoint_utils.dump_ui_metadata(
                 node=pipeline_node,
