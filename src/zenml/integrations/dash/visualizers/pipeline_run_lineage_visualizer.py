@@ -13,8 +13,6 @@
 #  permissions and limitations under the License.
 
 from typing import Any, Collection, Dict, List, Union
-from jupyter_dash import JupyterDash  # noqa
-JupyterDash.infer_jupyter_proxy_config()
 
 import dash
 import dash_bootstrap_components as dbc
@@ -122,6 +120,10 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
             dbc.icons.BOOTSTRAP,
         ]
         if Environment.in_notebook:
+            # Only import jupyter_dash in this case
+            from jupyter_dash import JupyterDash  # noqa
+            JupyterDash.infer_jupyter_proxy_config()
+
             app = JupyterDash(
                 __name__,
                 external_stylesheets=external_stylesheets,
