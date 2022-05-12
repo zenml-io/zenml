@@ -105,11 +105,18 @@ class StepEntrypointConfiguration(ABC):
 
             cmd = MyStepEntrypointConfiguration.get_entrypoint_command()
             for step in sorted_list_of_steps:
+                ...
+
                 args = MyStepEntrypointConfiguration.get_entrypoint_arguments(
                     step=step, pb2_pipeline=pb2_pipeline
                 )
-                # TODO
-
+                # Run the command and provide it the returned arguments. Our
+                # example orchestrator here executes the entrypoint in a
+                # separate process, but in a real-world scenario you would
+                # probably run it inside a docker container or a different
+                # environment.
+                import subprocess
+                subprocess.check_call(cmd + args)
     ```
     """
 
