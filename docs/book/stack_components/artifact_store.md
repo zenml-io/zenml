@@ -1,15 +1,39 @@
 # Artifact Store
 
-An artifact store is a place where artifacts are stored. These artifacts may 
-have been produced by the pipeline steps, or they may be the data first 
-ingested into a pipeline via an ingestion step. An artifact store will store all
-intermediary pipeline step results, which in turn will be tracked in 
-the metadata store.
+In ZenML, the inputs and outputs which go through any step is treated as an
+artifact and as its name suggests, an `ArtifactStore` is a place where these
+artifacts get stored.
 
-Check out the CLI commands concerning the artifact store
-[here](https://apidocs.zenml.io/latest/cli/#zenml.cli--customizing-your-artifact-store).
+
+
+---
 
 ## Base Implementations
+
+Now, let us take a deeper dive into the fundamentals behind the abstraction 
+of an artifact store in ZenML:
+
+1. This is the base class for a specific type of `StackComponent`, which means
+    it inherits from the `StackComponent` class and sets the `TYPE` class 
+    variable to a `StackComponentType` leaving the `FLAVOR` class variable is 
+    still unoccupied.
+2. As ZenML only supports filesystem-based artifact stores, it features an 
+    instance configuration parameter called `path`, which will indicate the 
+    root path of the artifact store. When creating an instance of any flavor of 
+    an `ArtifactStore`, the users will have to define this parameter.
+3. Moreover, there is an empty class variable called `SUPPORTED_SCHEMES` that 
+    needs to be defined by every flavor implementation. It indicates the 
+    supported filepath schemes for the corresponding implementation.
+    For instance, for the Azure artifact store, this set will be defined as
+    `{"abfs://", "az://"}`.
+4. Lastly, the base class features a set of `abstractmethod`s: `open`,
+   `copyfile`,`exists`,`glob`,`isdir`,`listdir`,`makedirs`,`mkdir`,`remove`,
+   `rename`,`rmtree`,`stat`,`walk`. In the implementation of every 
+   `ArtifactStore` flavor, it is required to define these methods with respect 
+    to the flavor at hand.
+
+Putting all these considerations together, we end up with the following 
+implementation:
 
 ```python
 from abc import abstractmethod
@@ -31,16 +55,13 @@ from zenml.stack import StackComponent
 PathType = Union[bytes, str]
 
 class BaseArtifactStore(StackComponent):
-    """Base class for all ZenML artifact stores.
-    Attributes:
-        path: The root path of the artifact store.
-    """
+    """Base class for all ZenML artifact stores."""
 
-    path: str
+    # Instance configuration
+    path: str  # The root path of the artifact store.
 
-    # Class Configuration
+    # Class variables
     TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
-    FLAVOR: ClassVar[str]
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
     # --- User interface ---
@@ -106,19 +127,26 @@ class BaseArtifactStore(StackComponent):
         """Return an iterator that walks the contents of the given directory."""
 ```
 
-## Build Your Own
+## List of available artifact stores
 
-WIP
+Out of the box, ZenML comes with the `BaseArtifactStore` and
+`LocalArtifactStore` implementations. While the `BaseArtifactStore` establishes
+an interface for people who want to extend it to their needs, the
+`LocalArtifactStore` is a simple implementation for a local setup.
 
+Moreover, additional artifact stores can be found in specific `integrations`
+modules, such as the `GCPArtifactStore` in the `gcp` integration and the
+`AzureArtifactStore` in the `azure` integration.
 
-## List of 
-
-
-`    @abstractmethod`
-`    def walk(`
-`       self,`
-`       top: PathType,`
-`        topdown: bool = True,`
-`        onerror: Optional[Callable[..., None]] = None,`
-`     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:`
-`         """Return an iterator that walks the contents of the given directory."""`
+|                 |||
+|-----------------|----------|-------------|
+| Orchestrator    | ✅        |             |
+| Artifact Store  | ✅        |             |
+| Metadata Store  | ✅        |             |
+| Container Registry |          |             |
+| Secrets Manager |          |             |
+| Step Operator   |          |             |
+| Model Deployer  |          |             |
+| Feature Store   |          |             |
+| Experiment Tracker |          |             |
+| Alerter         |          |             |

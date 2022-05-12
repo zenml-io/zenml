@@ -27,7 +27,7 @@
 #  permissions and limitations under the License.
 
 import textwrap
-from abc import ABC
+from abc import abstractmethod
 from typing import (
     Any,
     Callable,
@@ -68,7 +68,7 @@ def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
     return inner_function
 
 
-class BaseArtifactStore(StackComponent, ABC):
+class BaseArtifactStore(StackComponent):
     """Base class for all ZenML artifact stores.
     Attributes:
         path: The root path of the artifact store.
@@ -78,67 +78,62 @@ class BaseArtifactStore(StackComponent, ABC):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
-    FLAVOR: ClassVar[str]
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initiate the Pydantic object and register the corresponding
-        filesystem."""
-        super(BaseArtifactStore, self).__init__(*args, **kwargs)
-        self._register()
-
+    # --- User interface ---
+    @abstractmethod
     def open(self, name: PathType, mode: str = "r") -> Any:
         """Open a file at the given path."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def copyfile(
         self, src: PathType, dst: PathType, overwrite: bool = False
     ) -> None:
         """Copy a file from the source to the destination."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def exists(self, path: PathType) -> bool:
         """Returns `True` if the given path exists."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def glob(self, pattern: PathType) -> List[PathType]:
         """Return the paths that match a glob pattern."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def isdir(self, path: PathType) -> bool:
         """Returns whether the given path points to a directory."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def listdir(self, path: PathType) -> List[PathType]:
         """Returns a list of files under a given directory in the filesystem."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def makedirs(self, path: PathType) -> None:
         """Make a directory at the given path, recursively creating parents."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def mkdir(self, path: PathType) -> None:
         """Make a directory at the given path; parent directory must exist."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def remove(self, path: PathType) -> None:
         """Remove the file at the given path. Dangerous operation."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def rename(
         self, src: PathType, dst: PathType, overwrite: bool = False
     ) -> None:
         """Rename source file to destination file."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def rmtree(self, path: PathType) -> None:
         """Deletes dir recursively. Dangerous operation."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def stat(self, path: PathType) -> Any:
         """Return the stat descriptor for a given file path."""
-        raise NotImplementedError()
 
+    @abstractmethod
     def walk(
         self,
         top: PathType,
@@ -146,7 +141,13 @@ class BaseArtifactStore(StackComponent, ABC):
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
         """Return an iterator that walks the contents of the given directory."""
-        raise NotImplementedError()
+
+    # --- Internal interface ---
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initiate the Pydantic object and register the corresponding
+        filesystem."""
+        super(BaseArtifactStore, self).__init__(*args, **kwargs)
+        self._register()
 
     @root_validator
     def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
@@ -159,9 +160,11 @@ class BaseArtifactStore(StackComponent, ABC):
                 textwrap.dedent(
                     """
                     When you are working with any classes which subclass from
-                    zenml.artifact_store.BaseArtifactStore please make sure that your class
-                    has a ClassVar named `SUPPORTED_SCHEMES` which should hold a set of
-                    supported file schemes such as {"s3://"} or {"gcs://"}.
+                    zenml.artifact_store.BaseArtifactStore please make sure 
+                    that your class has a ClassVar named `SUPPORTED_SCHEMES` 
+                    which should hold a set of supported file schemes such 
+                    as {"s3://"} or {"gcs://"}.
+
                     Example:
                     class S3ArtifactStore(StackComponent):
                         ...
