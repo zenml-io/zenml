@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,67 +12,39 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import numpy as np
-from sklearn.base import ClassifierMixin
 
-from zenml.integrations.constants import SKLEARN
-from zenml.integrations.sklearn.helpers.digits import (
-    get_digits,
-    get_digits_model,
+from pipelines.quickstart_pipeline.pipeline_definition import (
+    quickstart_pipeline,
 )
-from zenml.pipelines import pipeline
-from zenml.steps import Output, step
+from steps.deployer.deployment_trigger import deployment_trigger
+from steps.drift_detector.evidently_reference_data_splitter import (
+    get_reference_data,
+)
+from steps.evaluator.sklearn_evaluator import evaluator
+from steps.importer.import_digits import importer
+from steps.trainer.sklearn_svc_trainer import svc_trainer_mlflow
 
-
-@step
-def importer() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
-):
-    """Loads the digits array as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
-    return X_train, X_test, y_train, y_test
-
-
-@step
-def trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a simple sklearn classifier for the digits dataset."""
-    model = get_digits_model()
-    model.fit(X_train, y_train)
-    return model
-
-
-@step
-def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: ClassifierMixin,
-) -> float:
-    """Calculate the accuracy on the test set"""
-    test_acc = model.score(X_test, y_test)
-    print(f"Test accuracy: {test_acc}")
-    return test_acc
-
-
-@pipeline(required_integrations=[SKLEARN])
-def mnist_pipeline(
-    importer,
-    trainer,
-    evaluator,
-):
-    """Links all the steps together in a pipeline"""
-    X_train, X_test, y_train, y_test = importer()
-    model = trainer(X_train=X_train, y_train=y_train)
-    evaluator(X_test=X_test, y_test=y_test, model=model)
-
+from zenml.integrations.evidently.steps import (
+    EvidentlyProfileConfig,
+    EvidentlyProfileStep,
+)
+from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 
 if __name__ == "__main__":
 
-    pipeline = mnist_pipeline(
-        importer=importer(),
-        trainer=trainer(),
-        evaluator=evaluator(),
+    # We need to make sure the evidently step is configured properly
+    evidently_profile_config = EvidentlyProfileConfig(
+        column_mapping=None, profile_sections=["datadrift"]
     )
-    pipeline.run()
+
+    p = quickstart_pipeline(
+        importer=importer(),
+        trainer=svc_trainer_mlflow(),
+        evaluator=evaluator(),
+        get_reference_data=get_reference_data(),
+        drift_detector=EvidentlyProfileStep(config=evidently_profile_config),
+        deployment_trigger=deployment_trigger(),
+        model_deployer=mlflow_model_deployer_step(),
+    )
+
+    p.run()

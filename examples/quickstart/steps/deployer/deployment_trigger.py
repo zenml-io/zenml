@@ -11,3 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.steps import step
+
+
+@step
+def deployment_trigger(val_acc: float) -> bool:
+    """Only deploy if the validation accuracy > 90%."""
+    return val_acc > 0.9

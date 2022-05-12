@@ -1,8 +1,10 @@
-from IPython.display import HTML, Javascript, display
+from IPython.display import HTML, display
+
 
 def display_restart_button():
-    display(HTML(
-        '''
+    display(
+        HTML(
+            """
             <script>
                 code_show = false;
                 function restart(){
@@ -18,5 +20,6 @@ def display_restart_button():
                 }
             </script>
             <button onclick="restart()">Click to Restart Kernel</button>
-        '''
-    ))
+        """
+        )
+    )

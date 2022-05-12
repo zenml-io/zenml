@@ -11,3 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+import mlflow
+import numpy as np
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
+
+from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+from zenml.steps import step
+
+
+@enable_mlflow  # setup MLflow
+@step(enable_cache=False)
+def svc_trainer_mlflow(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier and log to MLflow."""
+    mlflow.sklearn.autolog()  # log all model hparams and metrics to MLflow
+    model = SVC(gamma=0.01)
+    model.fit(X_train, y_train)
+    return model
