@@ -29,7 +29,7 @@ from uuid import UUID
 
 import kfp
 import urllib3
-from kfp import dsl, gcp
+from kfp import dsl
 from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
