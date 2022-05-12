@@ -45,7 +45,9 @@ logger = get_logger(__name__)
 
 
 class LocalOrchestrator(BaseOrchestrator):
-    """Orchestrator responsible for running pipelines locally."""
+    """Orchestrator responsible for running pipelines locally. This orchestrator
+    does not allow for concurrent execution of steps and also does not support
+    running on a schedule."""
 
     FLAVOR: ClassVar[str] = "local"
 
@@ -72,5 +74,5 @@ class LocalOrchestrator(BaseOrchestrator):
             self.run_step(
                 step=step,
                 run_name=runtime_configuration.run_name,
-                pb2_pipeline=pb2_pipeline
+                pb2_pipeline=pb2_pipeline,
             )

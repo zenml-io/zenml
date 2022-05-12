@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import json
+import time
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
 
@@ -29,16 +30,22 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.enums import MetadataContextTypes, StackComponentType
+from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
 from zenml.orchestrators import context_utils
 from zenml.orchestrators.utils import (
     create_tfx_pipeline,
-    execute_step,
+    get_cache_status,
     get_step_for_node,
 )
 from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.steps import BaseStep
+from zenml.steps.utils import (
+    INTERNAL_EXECUTION_PARAMETER_PREFIX,
+    PARAM_PIPELINE_PARAMETER_NAME,
+)
+from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -54,7 +61,7 @@ class BaseOrchestrator(StackComponent, ABC):
     orchestrator you will need to subclass from this class.
 
     How it works:
-        The **run()** method is the entrypoint that is executed when the
+        The `run()` method is the entrypoint that is executed when the
         pipeline's run method is called within the user code
         (`pipeline_instance.run()`).
 
@@ -63,16 +70,16 @@ class BaseOrchestrator(StackComponent, ABC):
 
         * The underlying protobuf pipeline is created.
 
-        * Within the **configure_step_context()** method the pipeline
+        * Within the `configure_step_context()` method the pipeline
         requirements, stack and runtime configuration is added to the step
         context
 
-        * The **get_sorted_steps()** method then generates a sorted list of
+        * The `get_sorted_steps()` method then generates a sorted list of
         steps which will later be used to directly execute these steps in order,
         or to easily build a dag
 
         * After these initial steps comes the most crucial one. Within the
-        **prepare_or_run_pipeline()** method each orchestrator will have its own
+        `prepare_or_run_pipeline()` method each orchestrator will have its own
         implementation that dictates the pipeline orchestration. In the simplest
         case this method will iterate through all steps and execute them one by
         one. In other cases this method will build and deploy an intermediate
@@ -81,7 +88,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     Building your own:
         In order to build your own orchestrator, all you need to do is subclass
-        from this class and implement your own **prepare_or_run_pipeline()**
+        from this class and implement your own `prepare_or_run_pipeline()`
         method. Overwriting other methods is NOT recommended but possible.
         See the docstring of the prepare_or_run_pipeline method to find out
         details of what needs to be implemented within it.
@@ -120,7 +127,13 @@ class BaseOrchestrator(StackComponent, ABC):
 
             Regardless of the implementation details, the orchestrator will need
             to a way to trigger each step in the target environment. For this
-            the **setup_and_execute_step()** method is used.
+            the `setup_and_execute_step()` method is used.
+
+        Args:
+            pipeline: Zenml Pipeline instance
+            pb2_pipeline: Protobuf Pipeline instance
+            stack: The stack the pipeline was run on
+            runtime_configuration: The Runtime configuration of the current run
         """
 
     def run(
@@ -147,19 +160,19 @@ class BaseOrchestrator(StackComponent, ABC):
         # Create the protobuf pipeline which will be needed for various reasons
         # in the following steps
         pb2_pipeline: Pb2Pipeline = Compiler().compile(
-            create_tfx_pipeline(
-                pipeline, stack=stack
-            ))
+            create_tfx_pipeline(pipeline, stack=stack)
+        )
 
         self.configure_node_context(
             pipeline=pipeline,
             pb2_pipeline=pb2_pipeline,
             stack=stack,
-            runtime_configuration=runtime_configuration)
+            runtime_configuration=runtime_configuration,
+        )
 
         sorted_list_of_steps = self.get_sorted_steps(
-            pipeline=pipeline,
-            pb2_pipeline=pb2_pipeline)
+            pipeline=pipeline, pb2_pipeline=pb2_pipeline
+        )
 
         prepared_steps = self.prepare_or_run_pipeline(
             sorted_list_of_steps=sorted_list_of_steps,
@@ -173,8 +186,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     @staticmethod
     def get_sorted_steps(
-        pipeline: "BasePipeline",
-        pb2_pipeline: Pb2Pipeline
+        pipeline: "BasePipeline", pb2_pipeline: Pb2Pipeline
     ) -> List["BaseStep"]:
         """Get steps sorted in the execution order. This simplifies the
         building of a DAG at a later stage as it can be built with one iteration
@@ -238,8 +250,7 @@ class BaseOrchestrator(StackComponent, ABC):
             metadata_store.get_tfx_metadata_config()
         )
         custom_executor_operators = {
-            executable_spec_pb2.PythonClassExecutableSpec:
-                step.executor_operator
+            executable_spec_pb2.PythonClassExecutableSpec: step.executor_operator
         }
 
         # The protobuf node for the current step is loaded here.
@@ -263,15 +274,64 @@ class BaseOrchestrator(StackComponent, ABC):
         # This is where the step actually get executed using the
         # component_launcher
         repo.active_stack.prepare_step_run()
-        execution_info = execute_step(component_launcher)
+        execution_info = self.execute_step(component_launcher)
         repo.active_stack.cleanup_step_run()
 
         return execution_info
 
+    @staticmethod
+    def execute_step(
+        tfx_launcher: launcher.Launcher,
+    ) -> Optional[data_types.ExecutionInfo]:
+        """Executes a tfx component.
+
+        Args:
+            tfx_launcher: A tfx launcher to execute the component.
+
+        Returns:
+            Optional execution info returned by the launcher.
+        """
+        step_name_param = (
+            INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
+        )
+        pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
+        start_time = time.time()
+        logger.info(f"Step `{pipeline_step_name}` has started.")
+        try:
+            execution_info = tfx_launcher.launch()
+            if execution_info and get_cache_status(execution_info):
+                if execution_info.exec_properties:
+                    step_name = json.loads(
+                        execution_info.exec_properties[step_name_param]
+                    )
+                    logger.info(
+                        f"Using cached version of `{pipeline_step_name}` "
+                        f"[`{step_name}`].",
+                    )
+                else:
+                    logger.error(
+                        f"No execution properties found for step "
+                        f"`{pipeline_step_name}`."
+                    )
+        except RuntimeError as e:
+            if "execution has already succeeded" in str(e):
+                # Hacky workaround to catch the error that a pipeline run with
+                # this name already exists. Raise an error with a more
+                # descriptive
+                # message instead.
+                raise DuplicateRunNameError()
+            else:
+                raise
+
+        run_duration = time.time() - start_time
+        logger.info(
+            f"Step `{pipeline_step_name}` has finished in "
+            f"{string_utils.get_human_readable_time(run_duration)}."
+        )
+        return execution_info
+
     def get_upstream_steps(
-        self,
-        step: "BaseStep",
-        pb2_pipeline: Pb2Pipeline
+        self, step: "BaseStep", pb2_pipeline: Pb2Pipeline
     ) -> List[str]:
         """Given a step, use the associated pb2 node to find the names of all
         upstream nodes.
@@ -307,8 +367,8 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         for node in pb2_pipeline.nodes:
             if (
-                    node.WhichOneof("node") == "pipeline_node"
-                    and node.pipeline_node.node_info.id == step_name
+                node.WhichOneof("node") == "pipeline_node"
+                and node.pipeline_node.node_info.id == step_name
             ):
                 return node.pipeline_node
 
