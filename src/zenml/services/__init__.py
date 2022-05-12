@@ -45,10 +45,6 @@ from zenml.services.service_status import ServiceState, ServiceStatus
 from zenml.services.service_type import ServiceType
 from zenml.services.utils import load_last_service_from_step
 
-# Import ZenServer here because it needs to be registered in the service registry
-# early on in order to be available for use in other modules.
-from zenml.zen_server.zen_server import ZenServer
-
 __all__ = [
     "load_last_service_from_step",
     "ServiceState",
