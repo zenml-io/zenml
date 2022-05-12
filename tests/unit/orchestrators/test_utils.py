@@ -40,7 +40,7 @@ def test_get_cache_status_works_when_running_pipeline_twice():
     from zenml.steps import step
 
     @step
-    def step_one():
+    def step_one() -> int:
         return 1
 
     @pipeline

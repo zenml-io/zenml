@@ -44,8 +44,10 @@ from typing import Any, Callable, Iterator, Optional, Type, Union
 
 from zenml import __version__
 from zenml.constants import APP_NAME
+from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.logger import get_logger
+from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
 
@@ -477,3 +479,40 @@ def import_python_file(file_path: str) -> types.ModuleType:
         return module
     else:
         return sys.modules[full_module_path]
+
+
+def validate_flavor_source(
+    source: str, component_type: StackComponentType
+) -> Type[StackComponent]:
+    """Utility function to import a StackComponent class from a given source
+    and validate its type.
+
+    Args:
+        source: source path of the implementation
+        component_type: the type of the stack component
+
+    Raises:
+        ValueError: If ZenML cannot find the given module path
+        TypeError: If the given module path does not point to a subclass of a
+            StackComponent which has the right component type.
+    """
+    try:
+        stack_component_class = load_source_path_class(source)
+    except (ValueError, AttributeError, ImportError):
+        raise ValueError(
+            f"ZenML can not import the source '{source}' of the given module."
+        )
+
+    if not issubclass(stack_component_class, StackComponent):
+        raise TypeError(
+            f"The source '{source}' does not point to a subclass of the ZenML"
+            f"StackComponent."
+        )
+
+    if stack_component_class.TYPE != component_type:  # noqa
+        raise TypeError(
+            f"The source points to a {stack_component_class.TYPE}, not a "  # noqa
+            f"{component_type}."
+        )
+
+    return stack_component_class  # noqa

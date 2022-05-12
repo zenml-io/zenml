@@ -30,4 +30,4 @@ class GitLabContainerRegistry(BaseContainerRegistry):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITLAB
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITLAB.value

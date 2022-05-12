@@ -30,4 +30,4 @@ class DockerHubContainerRegistry(BaseContainerRegistry):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.DOCKERHUB
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.DOCKERHUB.value

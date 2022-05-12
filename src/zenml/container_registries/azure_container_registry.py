@@ -30,4 +30,4 @@ class AzureContainerRegistry(BaseContainerRegistry):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.AZURE
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.AZURE.value

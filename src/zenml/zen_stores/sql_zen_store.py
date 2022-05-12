@@ -152,7 +152,6 @@ class SqlZenStore(BaseZenStore):
         sql_kwargs = kwargs.copy()
         sql_kwargs.pop("skip_default_registrations", False)
         self.engine = create_engine(url, *args, **sql_kwargs)
-        self.engine = create_engine(url, *args, **kwargs)
         SQLModel.metadata.create_all(self.engine)
         with Session(self.engine) as session:
             if not session.exec(select(ZenUser)).first():
@@ -425,6 +424,15 @@ class SqlZenStore(BaseZenStore):
             if stack is None:
                 stack = ZenStack(name=name, created_by=1)
                 session.add(stack)
+            else:
+                # clear the existing stack definitions for a stack
+                # that is about to be updated
+                query = select(ZenStackDefinition).where(
+                    ZenStackDefinition.stack_name == name
+                )
+                for result in session.exec(query).all():
+                    session.delete(result)
+
             for ctype, cname in stack_configuration.items():
                 statement = (
                     select(ZenStackDefinition)
