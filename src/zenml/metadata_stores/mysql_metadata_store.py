@@ -92,7 +92,7 @@ class MySQLMetadataStore(BaseMetadataStore):
             secret_folder = Path(
                 GlobalConfiguration().config_directory,
                 "mysql-metadata",
-                str(self.uuid)
+                str(self.uuid),
             )
 
             ssl_options = {}
