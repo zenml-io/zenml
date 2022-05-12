@@ -22,6 +22,7 @@ import urllib3
 from kfp_server_api.exceptions import ApiException
 from kubernetes import config as k8s_config
 from pydantic import root_validator
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 import zenml.io.utils
 from zenml.artifact_stores import LocalArtifactStore
@@ -547,11 +548,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
             container_op.apply(operator)
 
     def prepare_or_run_pipeline(
-        self,
-        sorted_list_of_steps: List[BaseStep],
-        pipeline: "BasePipeline",
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
+            self,
+            sorted_list_of_steps: List[BaseStep],
+            pipeline: "BasePipeline",
+            pb2_pipeline: Pb2Pipeline,
+            stack: "Stack",
+            runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         # First check whether its running in a notebok
         from zenml.environment import Environment
@@ -587,7 +589,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 arguments = (
                     KubeflowEntrypointConfiguration.get_entrypoint_arguments(
                         step=step,
-                        pb2_pipeline=self._pb2_pipeline,
+                        pb2_pipeline=pb2_pipeline,
                         **{METADATA_UI_PATH_OPTION: metadata_ui_path},
                     )
                 )
@@ -603,7 +605,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
                 self._configure_container_op(container_op=container_op)
 
-                for upstream_step in self.get_upstream_steps(step):
+                upstream_steps = self.get_upstream_steps(
+                    step=step, pb2_pipeline=pb2_pipeline
+                )
+                for upstream_step in upstream_steps:
                     upstream_container_op = step_name_to_container_op[
                         upstream_step
                     ]

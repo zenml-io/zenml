@@ -432,7 +432,7 @@ class Stack:
             )
             pipeline.enable_cache = runtime_configuration.get("enable_cache")
 
-        return_value = self.orchestrator.run_pipeline(
+        return_value = self.orchestrator.run(
             pipeline, stack=self, runtime_configuration=runtime_configuration
         )
 

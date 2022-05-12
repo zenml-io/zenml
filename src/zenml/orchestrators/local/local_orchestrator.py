@@ -30,6 +30,8 @@
 
 from typing import TYPE_CHECKING, Any, ClassVar, List
 
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
+
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack
@@ -51,10 +53,12 @@ class LocalOrchestrator(BaseOrchestrator):
         self,
         sorted_list_of_steps: List[BaseStep],
         pipeline: "BasePipeline",
+        pb2_pipeline: Pb2Pipeline,
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """"""
+        """This method iterates through all steps and executes them. In case of
+        a schedule within the runtime configuration, a warning is raised."""
         if runtime_configuration.schedule:
             logger.warning(
                 "Local Orchestrator currently does not support the"
@@ -63,7 +67,10 @@ class LocalOrchestrator(BaseOrchestrator):
             )
         assert runtime_configuration.run_name, "Run name must be set"
 
+        # Run each step
         for step in sorted_list_of_steps:
-            self.setup_and_execute_step(
-                step, run_name=runtime_configuration.run_name
+            self.run_step(
+                step=step,
+                run_name=runtime_configuration.run_name,
+                pb2_pipeline=pb2_pipeline
             )

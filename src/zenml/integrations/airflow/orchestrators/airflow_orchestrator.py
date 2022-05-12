@@ -19,6 +19,7 @@ import time
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
 from pydantic import root_validator
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 import zenml.io.utils
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
@@ -286,11 +287,12 @@ class AirflowOrchestrator(BaseOrchestrator):
         }
 
     def prepare_or_run_pipeline(
-        self,
-        sorted_list_of_steps: List[BaseStep],
-        pipeline: "BasePipeline",
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
+            self,
+            sorted_list_of_steps: List[BaseStep],
+            pipeline: "BasePipeline",
+            pb2_pipeline: Pb2Pipeline,
+            stack: "Stack",
+            runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
 
         import airflow
@@ -313,8 +315,10 @@ class AirflowOrchestrator(BaseOrchestrator):
             #  orchestrated environment
             def _step_callable(step_instance: "BaseStep", **kwargs):
                 run_name = kwargs["ti"].get_dagrun().run_id
-                self.setup_and_execute_step(
-                    step=step_instance, run_name=run_name
+                self.run_step(
+                    step=step_instance,
+                    run_name=run_name,
+                    pb2_pipeline=pb2_pipeline
                 )
 
             # Create airflow step operator that contains the step callable
@@ -330,9 +334,12 @@ class AirflowOrchestrator(BaseOrchestrator):
             # Give the airflow step operator the information which operators
             #  are directly upstream from it
             component_impl_map[step.name] = airflow_step_operator
-            for upstream_node in self.get_upstream_steps(step):
+            upstream_steps = self.get_upstream_steps(
+                    step=step, pb2_pipeline=pb2_pipeline
+            )
+            for upstream_step in upstream_steps:
                 airflow_step_operator.set_upstream(
-                    component_impl_map[upstream_node]
+                    component_impl_map[upstream_step]
                 )
 
         # Return the finished airflow directed acyclic graph
