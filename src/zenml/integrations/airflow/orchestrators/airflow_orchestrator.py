@@ -84,12 +84,12 @@ class AirflowOrchestrator(BaseOrchestrator):
         }
 
     def prepare_or_run_pipeline(
-            self,
-            sorted_list_of_steps: List[BaseStep],
-            pipeline: "BasePipeline",
-            pb2_pipeline: Pb2Pipeline,
-            stack: "Stack",
-            runtime_configuration: "RuntimeConfiguration",
+        self,
+        sorted_list_of_steps: List[BaseStep],
+        pipeline: "BasePipeline",
+        pb2_pipeline: Pb2Pipeline,
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """Create an airflow dag as the intermediate representation for the
         pipeline. This dag will be loaded by airflow in the target environment
@@ -132,7 +132,7 @@ class AirflowOrchestrator(BaseOrchestrator):
                 self.run_step(
                     step=step_instance,
                     run_name=run_name,
-                    pb2_pipeline=pb2_pipeline
+                    pb2_pipeline=pb2_pipeline,
                 )
 
             # Create airflow step operator that contains the step callable
@@ -149,7 +149,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             #  are directly upstream from it
             component_impl_map[step.name] = airflow_step_operator
             upstream_steps = self.get_upstream_steps(
-                    step=step, pb2_pipeline=pb2_pipeline
+                step=step, pb2_pipeline=pb2_pipeline
             )
             for upstream_step in upstream_steps:
                 airflow_step_operator.set_upstream(
@@ -361,4 +361,3 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         fileio.rmtree(self.airflow_home)
         logger.info("Airflow spun down.")
-

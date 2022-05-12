@@ -14,12 +14,24 @@
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 from uuid import UUID
 
 import kfp
 import urllib3
+from kfp import dsl, gcp
 from kfp_server_api.exceptions import ApiException
+from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from pydantic import root_validator
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
@@ -63,10 +75,6 @@ CONTAINER_ENTRYPOINT_COMMAND = [
     "zenml.integrations.kubeflow.container_entrypoint",
 ]
 
-from typing import Callable, Union
-
-from kfp import dsl, gcp
-from kubernetes import client as k8s_client
 
 # OpFunc represents the type of function that takes as input a
 # dsl.ContainerOp and returns the same object. Common operations such as adding
@@ -548,12 +556,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
             container_op.apply(operator)
 
     def prepare_or_run_pipeline(
-            self,
-            sorted_list_of_steps: List[BaseStep],
-            pipeline: "BasePipeline",
-            pb2_pipeline: Pb2Pipeline,
-            stack: "Stack",
-            runtime_configuration: "RuntimeConfiguration",
+        self,
+        sorted_list_of_steps: List[BaseStep],
+        pipeline: "BasePipeline",
+        pb2_pipeline: Pb2Pipeline,
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """
         Creates a kfp yaml file as intermediary representation of the
