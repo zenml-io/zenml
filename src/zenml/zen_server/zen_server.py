@@ -34,7 +34,7 @@ class ZenServerEndpointConfig(LocalDaemonServiceEndpointConfig):
     """Zen Server endpoint configuration.
 
     Attributes:
-        zen_service_uri_path: URI path for the zenml service
+        zen_server_uri_path: URI path for the zenml service
     """
 
     zen_server_uri_path: str
