@@ -30,6 +30,7 @@ from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
 from zenml.integrations.kubeflow.orchestrators.kubeflow_entrypoint_configuration import (
+    METADATA_UI_PATH_OPTION,
     KubeflowEntrypointConfiguration,
 )
 from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
@@ -585,7 +586,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
                 arguments = (
                     KubeflowEntrypointConfiguration.get_entrypoint_arguments(
-                        step=step, pb2_pipeline=self._pb2_pipeline
+                        step=step,
+                        pb2_pipeline=self._pb2_pipeline,
+                        **{METADATA_UI_PATH_OPTION: metadata_ui_path},
                     )
                 )
                 container_op = dsl.ContainerOp(
