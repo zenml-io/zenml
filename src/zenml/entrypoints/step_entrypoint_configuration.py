@@ -312,7 +312,7 @@ class StepEntrypointConfiguration:
         Subclasses should in most cases not need to overwrite this method and
         implement their custom logic in the `setup(...)` and `post_run(...)`
         methods instead. If you still need to customize the functionality of
-        this method, make sure to still include all the existing steps as your
+        this method, make sure to still include all the existing logic as your
         step won't be executed properly otherwise.
         """
         # Make sure this entrypoint does not run an entire pipeline when
@@ -381,7 +381,7 @@ class StepEntrypointConfiguration:
         # Execute the actual step code.
         run_name = self.get_run_name(pipeline_name=pipeline_name)
         orchestrator = Repository().active_stack.orchestrator
-        execution_info = orchestrator.setup_and_execute_step(
+        execution_info = orchestrator.run_step(
             step=step, run_name=run_name, pb2_pipeline=pb2_pipeline
         )
 

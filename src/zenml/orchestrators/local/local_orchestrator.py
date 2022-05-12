@@ -30,6 +30,8 @@
 
 from typing import TYPE_CHECKING, Any, ClassVar, List
 
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
+
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack
@@ -48,11 +50,12 @@ class LocalOrchestrator(BaseOrchestrator):
     FLAVOR: ClassVar[str] = "local"
 
     def prepare_or_run_pipeline(
-        self,
-        sorted_list_of_steps: List[BaseStep],
-        pipeline: "BasePipeline",
-        stack: "Stack",
-        runtime_configuration: "RuntimeConfiguration",
+            self,
+            sorted_list_of_steps: List[BaseStep],
+            pipeline: "BasePipeline",
+            pb2_pipeline: Pb2Pipeline,
+            stack: "Stack",
+            runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
         """"""
         if runtime_configuration.schedule:
@@ -64,6 +67,6 @@ class LocalOrchestrator(BaseOrchestrator):
         assert runtime_configuration.run_name, "Run name must be set"
 
         for step in sorted_list_of_steps:
-            self.setup_and_execute_step(
+            self.run_step(
                 step, run_name=runtime_configuration.run_name
             )
