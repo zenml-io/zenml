@@ -241,7 +241,7 @@ def empty_step():
     """Pytest fixture that returns an empty (no input, no output) step."""
 
     @step
-    def _empty_step():
+    def _empty_step() -> None:
         pass
 
     return _empty_step
@@ -258,7 +258,7 @@ def generate_empty_steps():
         for i in range(count):
 
             @step(name=f"step_{i}")
-            def _step_function():
+            def _step_function() -> None:
                 pass
 
             output.append(_step_function)
@@ -305,7 +305,7 @@ def int_step_output():
 @pytest.fixture
 def step_with_two_int_inputs():
     @step
-    def _step(input_1: int, input_2: int):
+    def _step(input_1: int, input_2: int) -> None:
         pass
 
     return _step
