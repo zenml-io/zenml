@@ -75,11 +75,12 @@ class LegacyRepositoryConfig(BaseModel):
     stacks: Dict[str, Dict[StackComponentType, Optional[str]]]
     stack_components: Dict[StackComponentType, Dict[str, str]]
 
-    def get_stack_data(self) -> "ZenStoreModel":
+    def get_stack_data(self, config_file: str) -> "ZenStoreModel":
         """Extract stack data from Legacy Repository file."""
         from zenml.zen_stores.models import ZenStoreModel
 
         return ZenStoreModel(
+            config_file=config_file,
             stacks={
                 name: {
                     component_type: value
@@ -438,14 +439,13 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             f"This warning will not be shown again for this Repository."
         )
 
-        stack_data = legacy_config.get_stack_data()
+        stack_data = legacy_config.get_stack_data(config_file=config_file)
 
         from zenml.config.profile_config import ProfileConfiguration
         from zenml.zen_stores import LocalZenStore
 
         store = LocalZenStore()
         store.initialize(url=config_path, store_data=stack_data)
-        store._write_store()
         profile = ProfileConfiguration(
             name=profile_name,
             store_url=store.url,

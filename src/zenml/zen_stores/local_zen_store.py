@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import base64
-import json
 import os
 import re
 from pathlib import Path
@@ -23,7 +22,6 @@ from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
 from zenml.io import fileio, utils
 from zenml.logger import get_logger
-from zenml.utils import yaml_utils
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
     ComponentWrapper,
@@ -121,13 +119,8 @@ class LocalZenStore(BaseZenStore):
 
         if store_data is not None:
             self.__store = store_data
-            self._write_store()
-        elif fileio.exists(self._store_path()):
-            config_dict = yaml_utils.read_yaml(self._store_path())
-            self.__store = ZenStoreModel.parse_obj(config_dict)
         else:
-            self.__store = ZenStoreModel.empty_store()
-            self._write_store()
+            self.__store = ZenStoreModel(str(self.root / "stacks.yaml"))
 
         super().initialize(url, *args, **kwargs)
         return self
@@ -244,7 +237,7 @@ class LocalZenStore(BaseZenStore):
 
         # add the component to the zen store dict and write it to disk
         components[component.name] = component.flavor
-        self._write_store()
+        self.__store.write_config()
         logger.info(
             "Registered stack component with type '%s' and name '%s'.",
             component.type,
@@ -300,7 +293,7 @@ class LocalZenStore(BaseZenStore):
             for component_type, component_name in conf.items():
                 if component_name == name and component_type == component.type:
                     conf[component_type] = component.name
-        self._write_store()
+        self.__store.write_config()
 
         logger.info(
             "Updated stack component with type '%s' and name '%s'.",
@@ -319,7 +312,7 @@ class LocalZenStore(BaseZenStore):
             KeyError: If no stack exists for the given name.
         """
         del self.__store.stacks[name]
-        self._write_store()
+        self.__store.write_config()
 
     # Private interface implementations:
 
@@ -335,7 +328,7 @@ class LocalZenStore(BaseZenStore):
             stack_configuration: Dict[StackComponentType, str] to persist.
         """
         self.__store.stacks[name] = stack_configuration
-        self._write_store()
+        self.__store.write_config()
 
     def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str
@@ -398,7 +391,7 @@ class LocalZenStore(BaseZenStore):
 
         components = self.__store.stack_components[component_type]
         del components[name]
-        self._write_store()
+        self.__store.write_config()
 
     # User, project and role management
 
@@ -446,7 +439,7 @@ class LocalZenStore(BaseZenStore):
 
         user = User(name=user_name)
         self.__store.users.append(user)
-        self._write_store()
+        self.__store.write_config()
         return user
 
     def delete_user(self, user_name: str) -> None:
@@ -468,7 +461,7 @@ class LocalZenStore(BaseZenStore):
             for assignment in self.__store.role_assignments
             if assignment.user_id != user.id
         ]
-        self._write_store()
+        self.__store.write_config()
         logger.info("Deleted user %s.", user)
 
     @property
@@ -515,7 +508,7 @@ class LocalZenStore(BaseZenStore):
 
         team = Team(name=team_name)
         self.__store.teams.append(team)
-        self._write_store()
+        self.__store.write_config()
         return team
 
     def delete_team(self, team_name: str) -> None:
@@ -535,7 +528,7 @@ class LocalZenStore(BaseZenStore):
             for assignment in self.__store.role_assignments
             if assignment.team_id != team.id
         ]
-        self._write_store()
+        self.__store.write_config()
         logger.info("Deleted team %s.", team)
 
     def add_user_to_team(self, team_name: str, user_name: str) -> None:
@@ -551,7 +544,7 @@ class LocalZenStore(BaseZenStore):
         team = _get_unique_entity(team_name, self.__store.teams)
         user = _get_unique_entity(user_name, self.__store.users)
         self.__store.team_assignments[team.name].add(user.name)
-        self._write_store()
+        self.__store.write_config()
 
     def remove_user_from_team(self, team_name: str, user_name: str) -> None:
         """Removes a user from a team.
@@ -566,7 +559,7 @@ class LocalZenStore(BaseZenStore):
         team = _get_unique_entity(team_name, self.__store.teams)
         user = _get_unique_entity(user_name, self.__store.users)
         self.__store.team_assignments[team.name].remove(user.name)
-        self._write_store()
+        self.__store.write_config()
 
     @property
     def projects(self) -> List[Project]:
@@ -617,7 +610,7 @@ class LocalZenStore(BaseZenStore):
 
         project = Project(name=project_name, description=description)
         self.__store.projects.append(project)
-        self._write_store()
+        self.__store.write_config()
         return project
 
     def delete_project(self, project_name: str) -> None:
@@ -639,7 +632,7 @@ class LocalZenStore(BaseZenStore):
             if assignment.project_id != project.id
         ]
 
-        self._write_store()
+        self.__store.write_config()
         logger.info("Deleted project %s.", project)
 
     @property
@@ -695,7 +688,7 @@ class LocalZenStore(BaseZenStore):
 
         role = Role(name=role_name)
         self.__store.roles.append(role)
-        self._write_store()
+        self.__store.write_config()
         return role
 
     def delete_role(self, role_name: str) -> None:
@@ -715,7 +708,7 @@ class LocalZenStore(BaseZenStore):
             if assignment.role_id != role.id
         ]
 
-        self._write_store()
+        self.__store.write_config()
         logger.info("Deleted role %s.", role)
 
     def assign_role(
@@ -756,7 +749,7 @@ class LocalZenStore(BaseZenStore):
             )
 
         self.__store.role_assignments.append(assignment)
-        self._write_store()
+        self.__store.write_config()
 
     def revoke_role(
         self,
@@ -803,7 +796,7 @@ class LocalZenStore(BaseZenStore):
             self.__store.role_assignments.remove(
                 assignments[0]
             )  # there should only be one
-            self._write_store()
+            self.__store.write_config()
 
     def get_users_for_team(self, team_name: str) -> List[User]:
         """Fetches all users of a team.
@@ -960,7 +953,7 @@ class LocalZenStore(BaseZenStore):
         )
 
         self.__store.stack_component_flavors.append(flavor)
-        self._write_store()
+        self.__store.write_config()
 
         return flavor
 
@@ -1024,15 +1017,6 @@ class LocalZenStore(BaseZenStore):
         """Path to the configuration file of a stack component."""
         path = self.root / component_type.plural / f"{name}.yaml"
         return str(path)
-
-    def _store_path(self) -> str:
-        """Path to the zen store yaml file."""
-        return str(self.root / "stacks.yaml")
-
-    def _write_store(self) -> None:
-        """Writes the zen store yaml file."""
-        config_dict = json.loads(self.__store.json())
-        yaml_utils.write_yaml(self._store_path(), config_dict)
 
     def _get_role_assignments(
         self,

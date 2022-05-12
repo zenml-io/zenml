@@ -18,7 +18,10 @@ from typing import Any, Optional
 from pydantic import BaseModel
 
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.utils import yaml_utils
+
+logger = get_logger(__name__)
 
 
 class FileSyncModel(BaseModel):
@@ -92,6 +95,9 @@ class FileSyncModel(BaseModel):
         file_timestamp = os.path.getmtime(self._config_file)
         if file_timestamp == self._config_file_timestamp:
             return
+
+        if self._config_file_timestamp is not None:
+            logger.info(f"Reloading configuration file {self._config_file}")
 
         # refresh the model from the configuration file values
         config_dict = yaml_utils.read_yaml(self._config_file)
