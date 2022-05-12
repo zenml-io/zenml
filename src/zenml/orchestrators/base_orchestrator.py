@@ -259,7 +259,7 @@ class BaseOrchestrator(StackComponent, ABC):
             step_name=step.name, pb2_pipeline=pb2_pipeline
         )
 
-        #
+        # Create the tfx launcher responsible for executing the step.
         component_launcher = launcher.Launcher(
             pipeline_node=pipeline_node,
             mlmd_connection=metadata_connection,
@@ -272,7 +272,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         # In some stack configurations, some stack components (like experiment
         # trackers) will run some code before and after the actual step run.
-        # This is where the step actually get executed using the
+        # This is where the step actually gets executed using the
         # component_launcher
         repo.active_stack.prepare_step_run()
         execution_info = self._execute_step(component_launcher)
@@ -386,7 +386,7 @@ class BaseOrchestrator(StackComponent, ABC):
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
         """Iterates through each node of a pb2_pipeline and attaches important
-        context to the nodes; namely pipeline.requirements, stack
+        contexts to the nodes; namely pipeline.requirements, stack
         information and the runtime configuration.
 
         Args:
