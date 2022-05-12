@@ -4,11 +4,12 @@ In ZenML, the inputs and outputs which go through any step is treated as an
 artifact and as its name suggests, an `ArtifactStore` is a place where these
 artifacts get stored.
 
+{% hint style="warning" %}
+Before reading this chapter, make sure that you are familiar with the 
+concept of [stacks, stack components and their flavors](./introduction.md).  
+{% endhint %}
 
-
----
-
-## Base Implementations
+## Base Implementation
 
 Now, let us take a deeper dive into the fundamentals behind the abstraction 
 of an artifact store in ZenML:
