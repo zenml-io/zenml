@@ -15,6 +15,6 @@ jobs:
     needs: lint-code
     uses: ./.github/workflows/publish_to_pypi.yml
 
-  publish-docker-iamge:
-    needs: lint-code
+  publish-docker-image:
+    needs: publish-python-package
     uses: ./.github/workflows/publish_docker_image.yml
