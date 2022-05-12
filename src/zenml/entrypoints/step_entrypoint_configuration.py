@@ -16,7 +16,7 @@ import importlib
 import json
 import logging
 import sys
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Any, Dict, List, NoReturn, Optional, Set
 
 from google.protobuf import json_format
@@ -46,10 +46,17 @@ ORIGINAL_STEP_MODULE_OPTION = "original_step_module"
 INPUT_SPEC_OPTION = "input_spec"
 
 
-class StepEntrypointConfiguration:
-    """
+class StepEntrypointConfiguration(ABC):
+    """Abstract base class for entrypoint configurations that run a single step.
 
-    Subclasses:
+    If an orchestrator needs to run steps in a separate process or environment
+    (e.g. a docker container), you should create a custom entrypoint
+    configuration class that inherits from this class and use it to implement
+    your custom entrypoint logic.
+
+    How to subclass:
+        TODO:
+
     custom_entrypoint_options()
     custom_entrypoint_arguments(...)
     get_run_name(...)
@@ -101,11 +108,11 @@ class StepEntrypointConfiguration:
         for all steps of this pipeline run.
 
         Examples:
-        - If you're in an orchestrator environment which has an equivalent
+        * If you're in an orchestrator environment which has an equivalent
             concept to a pipeline run, you can use that as the run name. E.g.
             Kubeflow Pipelines sets a run id as environment variable in all
             pods which we can reuse: `return os.environ["KFP_RUN_ID"]`
-        - If that isn't possible, you could pass a unique value as an argument
+        * If that isn't possible, you could pass a unique value as an argument
             to the entrypoint (make sure to also return it from
             `get_custom_entrypoint_options()`) and use it like this:
             `return self.entrypoint_args["run_name_option"]`
@@ -135,7 +142,7 @@ class StepEntrypointConfiguration:
         pipeline_node: Pb2PipelineNode,
         execution_info: Optional[data_types.ExecutionInfo] = None,
     ) -> None:
-        """Does cleanup or post-processing after the step execution is finished.
+        """Does cleanup or post-processing after the step finished running.
 
         Subclasses should overwrite this method if they need to run any
         additional code after the step execution.
@@ -154,7 +161,7 @@ class StepEntrypointConfiguration:
         """Returns a command that runs the entrypoint module.
 
         This entrypoint module must execute a ZenML step when called. If
-        subclasses don't overwrite this method, it will default to the
+        subclasses don't overwrite this method, it will default to running the
         `zenml.entrypoints.step_entrypoint` module.
 
         *Note*: This command won't work on its own but needs to be called with
@@ -206,8 +213,8 @@ class StepEntrypointConfiguration:
         Args:
             step: The step that the entrypoint should run using the arguments
                 returned by this method.
-            pb2_pipeline: The proto representation of the pipeline to which the
-                `step` belongs.
+            pb2_pipeline: The protobuf representation of the pipeline to which
+                the `step` belongs.
             *args/**kwargs: Custom arguments that will be passed to
                 `get_custom_entrypoint_arguments()`.
 
