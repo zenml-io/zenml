@@ -65,7 +65,7 @@ class MySQLMetadataStore(BaseMetadataStore):
                 config.user = self.username
         else:
             if secret and secret.user:
-                config.user = self.username
+                config.user = secret.user
             else:
                 raise RuntimeError(
                     "Your metadata store does not have a username. Please "
