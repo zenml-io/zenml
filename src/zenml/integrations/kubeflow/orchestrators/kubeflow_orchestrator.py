@@ -132,27 +132,6 @@ def _mount_secret_op(secret_name: str) -> OpFunc:
     return mount_secret
 
 
-def get_default_pipeline_operator_funcs(
-    use_gcp_sa: bool = False,
-) -> List[OpFunc]:
-    """Returns a default list of pipeline operator functions.
-    Args:
-      use_gcp_sa: If true, mount a GCP service account secret to each pod, with
-        the name _KUBEFLOW_GCP_SECRET_NAME.
-    Returns:
-      A list of functions with type OpFunc.
-    """
-    # Enables authentication for GCP services if needed.
-    gcp_secret_op = gcp.use_gcp_secret(_KUBEFLOW_GCP_SECRET_NAME)
-
-    # Mounts configmap containing Metadata gRPC server configuration.
-    mount_config_map_op = _mount_config_map_op("metadata-grpc-configmap")
-    if use_gcp_sa:
-        return [gcp_secret_op, mount_config_map_op]
-    else:
-        return [mount_config_map_op]
-
-
 class KubeflowOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow.
 
@@ -445,12 +424,20 @@ class KubeflowOrchestrator(BaseOrchestrator):
         assert stack.container_registry  # should never happen due to validation
         stack.container_registry.push_image(image_name)
 
-    def _configure_container_op(self, container_op):
+    def _configure_container_op(self, container_op: dsl.ContainerOp) -> None:
+        """Performs a few important changes in place to the configuration of the
+        container op.
+        Configures persistent mounted volumes for each stack component that
+        writes to a local path.
+        Adds some labels to the container_op and applies some functions to ir.
+
+        Args:
+            container_op
+        """
         import re
 
         from kubernetes import client as k8s_client
 
-        from zenml.constants import ENV_ZENML_PREVENT_PIPELINE_EXECUTION
         from zenml.io.utils import get_global_config_directory
 
         # Path to a metadata file that will be displayed in the KFP UI
@@ -529,14 +516,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     "in kubeflow pipelines container."
                 )
 
-        container_op.container.add_env_variable(
-            k8s_client.V1EnvVar(
-                name=ENV_ZENML_PREVENT_PIPELINE_EXECUTION, value="True"
-            )
-        )
         # Add environment variables for Azure Blob Storage to pod in case they
         # are set locally
-        # TODO [ENG-699]: remove this as soon as we implement credential handling
+        # TODO [ENG-699]: remove this as soon as we implement credential
+        #  handling
         for key in [
             "AZURE_STORAGE_ACCOUNT_KEY",
             "AZURE_STORAGE_ACCOUNT_NAME",
@@ -549,11 +532,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     k8s_client.V1EnvVar(name=key, value=value)
                 )
 
+        # Add some pod labels to the container_op
         for k, v in KFP_POD_LABELS.items():
             container_op.add_pod_label(k, v)
 
-        for operator in get_default_pipeline_operator_funcs():
-            container_op.apply(operator)
+        # Mounts configmap containing Metadata gRPC server configuration.
+        container_op.apply(_mount_config_map_op("metadata-grpc-configmap"))
 
     def prepare_or_run_pipeline(
         self,
@@ -607,21 +591,33 @@ class KubeflowOrchestrator(BaseOrchestrator):
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
+        # Create a callable for future compilation into a dsl.Pipeline.
         def _construct_kfp_pipeline() -> None:
             """Create a container_op for each step which contains the name
-            of the docker image and configures the entrypoint to run the
-            step. Additionally, gives each container_op information about its
-            downstream steps.
+            of the docker image and configures the entrypoint of the docker
+            image to run the step.
+
+            Additionally, this gives each container_op information about its
+            direct downstream steps.
+
+            If this callable is passed to the `_create_and_write_workflow()`
+            method of a KFPCompiler all dsl.ContainerOp instances will be
+            automatically added to a singular dsl.Pipeline instance.
             """
 
+            # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step in sorted_list_of_steps:
-                metadata_ui_path = "/outputs/mlpipeline-ui-metadata.json"
-
+                # The command will be needed to eventually call the python step
+                # within the docker container
                 command = (
                     KubeflowEntrypointConfiguration.get_entrypoint_command()
                 )
+
+                # The arguments are passed to configure the entrypoint of the
+                # docker container when the step is called.
+                metadata_ui_path = "/outputs/mlpipeline-ui-metadata.json"
                 arguments = (
                     KubeflowEntrypointConfiguration.get_entrypoint_arguments(
                         step=step,
@@ -629,6 +625,14 @@ class KubeflowOrchestrator(BaseOrchestrator):
                         **{METADATA_UI_PATH_OPTION: metadata_ui_path},
                     )
                 )
+
+                # Create a container_op - the kubeflow equivalent of a step. It
+                # contains the name of the step, the name of the docker image,
+                # the command to use to run the step entrypoint
+                # (e.g. `python -m zenml.entrypoints.step_entrypoint`)
+                # and the arguments to be passed along with the command. Find
+                # out more about how these arguments are parsed and used
+                # in the base entrypoint run() method.
                 container_op = dsl.ContainerOp(
                     name=step.name,
                     image=image_name,
@@ -639,8 +643,12 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     },
                 )
 
+                # Configure the container op by adding pvolumes, labels and
+                # applying
                 self._configure_container_op(container_op=container_op)
 
+                # Find the upstream steps of the current step and configure it
+                # directly on the container_op
                 upstream_steps = self.get_upstream_steps(
                     step=step, pb2_pipeline=pb2_pipeline
                 )
@@ -650,8 +658,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     ]
                     container_op.after(upstream_container_op)
 
+                # Update dictionary of container ops with the current one
                 step_name_to_container_op[step.name] = container_op
 
+        # Get a filepath to use to save the finished yaml to
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
             self.pipeline_directory, f"{pipeline.name}.yaml"
@@ -664,6 +674,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
             package_path=pipeline_file_path,
         )
 
+        # using the kfp client uploads the pipeline to kubeflow pipelines and
+        # runs it there
         self._upload_and_run_pipeline(
             pipeline_name=pipeline.name,
             pipeline_file_path=pipeline_file_path,
