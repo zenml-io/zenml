@@ -50,14 +50,15 @@ class LocalOrchestrator(BaseOrchestrator):
     FLAVOR: ClassVar[str] = "local"
 
     def prepare_or_run_pipeline(
-            self,
-            sorted_list_of_steps: List[BaseStep],
-            pipeline: "BasePipeline",
-            pb2_pipeline: Pb2Pipeline,
-            stack: "Stack",
-            runtime_configuration: "RuntimeConfiguration",
+        self,
+        sorted_list_of_steps: List[BaseStep],
+        pipeline: "BasePipeline",
+        pb2_pipeline: Pb2Pipeline,
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """"""
+        """This method iterates through all steps and executes them. In case of
+        a schedule within the runtime configuration, a warning is raised."""
         if runtime_configuration.schedule:
             logger.warning(
                 "Local Orchestrator currently does not support the"
@@ -66,7 +67,10 @@ class LocalOrchestrator(BaseOrchestrator):
             )
         assert runtime_configuration.run_name, "Run name must be set"
 
+        # Run each step
         for step in sorted_list_of_steps:
             self.run_step(
-                step, run_name=runtime_configuration.run_name
+                step=step,
+                run_name=runtime_configuration.run_name,
+                pb2_pipeline=pb2_pipeline
             )

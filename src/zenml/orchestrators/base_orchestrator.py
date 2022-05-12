@@ -151,9 +151,15 @@ class BaseOrchestrator(StackComponent, ABC):
                 pipeline, stack=stack
             ))
 
-        self.configure_node_context(pipeline, stack, runtime_configuration)
+        self.configure_node_context(
+            pipeline=pipeline,
+            pb2_pipeline=pb2_pipeline,
+            stack=stack,
+            runtime_configuration=runtime_configuration)
 
-        sorted_list_of_steps = self.get_sorted_steps(pipeline)
+        sorted_list_of_steps = self.get_sorted_steps(
+            pipeline=pipeline,
+            pb2_pipeline=pb2_pipeline)
 
         prepared_steps = self.prepare_or_run_pipeline(
             sorted_list_of_steps=sorted_list_of_steps,
