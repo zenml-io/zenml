@@ -1,3 +1,7 @@
+---
+description: Setting up the store for your artifacts
+---
+
 # Artifact Store
 
 In ZenML, the inputs and outputs which go through any step is treated as an
