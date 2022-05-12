@@ -130,6 +130,23 @@ configuration lives, e.g., the active
 [Stack](../advanced_guide/deploy-to-production.md) that you are using to
 run pipelines, is stored.
 
+## Runner Scripts
+
+A runner script is a python file, usually called `run.py` and located at the root of a 
+ZenML repository, which has the code to actually create a pipeline run. The code usually 
+looks like this:
+
+```python
+from pipelines.my_pipeline import my_pipeline
+from steps.step_1 import step_1
+
+if __name__ == "__main__":
+    p = my_pipeline(
+        step_1=step_1(),
+    )
+    p.run()
+```
+
 ## Secret
 
 A ZenML Secret is a grouping of key-value pairs. These are accessed and
