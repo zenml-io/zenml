@@ -193,10 +193,10 @@ class BaseOrchestrator(StackComponent, ABC):
         self._pb2_pipeline: Pb2Pipeline = Compiler().compile(self._tfx_pipeline)
 
     def configure_node_context(
-            self,
-            pipeline: "BasePipeline",
-            stack: "Stack",
-            runtime_configuration: "RuntimeConfiguration",
+        self,
+        pipeline: "BasePipeline",
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
     ):
         for node in self._pb2_pipeline.nodes:
             pipeline_node: PipelineNode = node.pipeline_node
@@ -229,10 +229,7 @@ class BaseOrchestrator(StackComponent, ABC):
         run_name: str,
         pb2_pipeline: Optional[Pb2Pipeline] = None,
     ) -> Optional[data_types.ExecutionInfo]:
-        """
-
-
-        """
+        """ """
 
         pb2_pipeline = pb2_pipeline or self._pb2_pipeline
 
@@ -337,5 +334,4 @@ class BaseOrchestrator(StackComponent, ABC):
         self._stack = None
         self._tfx_pipeline = None
         self._pb2_pipeline = None
-        self._runtime_configuration =None
-        pass
+        self._runtime_configuration = None

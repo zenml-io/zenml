@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import List, Optional, Set
+from typing import Any, List, Optional, Set
 
 import kfp
 from kubernetes import config as k8s_config
@@ -24,19 +24,21 @@ from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.integrations.kubeflow.orchestrators import entrypoint_utils
 from zenml.steps import BaseStep
 
+METADATA_UI_PATH_OPTION = "metadata_ui_path"
+
 
 class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
-        return {"metadata_ui_path"}
+        return {METADATA_UI_PATH_OPTION}
 
     @classmethod
-    def get_custom_entrypoint_arguments(cls, step: BaseStep) -> List[str]:
-        """Overwrite this in subclass if it needs custom additional arguments."""
-        return ["--metadata_ui_path", "/outputs/mlpipeline-ui-metadata.json"]
+    def get_custom_entrypoint_arguments(
+        cls, step: BaseStep, *args: Any, **kwargs: Any
+    ) -> List[str]:
+        return [f"--{METADATA_UI_PATH_OPTION}", kwargs[METADATA_UI_PATH_OPTION]]
 
     def get_run_name(self, pipeline_name: str) -> str:
-        """"""
         k8s_config.load_incluster_config()
         run_id = os.environ["KFP_RUN_ID"]
         return kfp.Client().get_run(run_id).run.name  # type: ignore[no-any-return]
@@ -52,5 +54,5 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
             entrypoint_utils.dump_ui_metadata(
                 node=pipeline_node,
                 execution_info=execution_info,
-                ui_metadata_path=self.entrypoint_args["metadata_ui_path"],
+                metadata_ui_path=self.entrypoint_args[METADATA_UI_PATH_OPTION],
             )

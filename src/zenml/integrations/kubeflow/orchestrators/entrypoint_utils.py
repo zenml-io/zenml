@@ -117,7 +117,7 @@ def _render_artifact_as_mdstr(single_artifact: artifact.Artifact) -> str:
 def dump_ui_metadata(
     node: PipelineNode,
     execution_info: data_types.ExecutionInfo,
-    ui_metadata_path: str = "/tmp/mlpipeline-ui-metadata.json",
+    metadata_ui_path: str,
 ) -> None:
     """Dump KFP UI metadata json file for visualization purpose.
 
@@ -128,7 +128,7 @@ def dump_ui_metadata(
       node: associated TFX node.
       execution_info: runtime execution info for this component, including
         materialized inputs/outputs/execution properties and id.
-      ui_metadata_path: path to dump ui metadata.
+      metadata_ui_path: path to dump ui metadata.
     """
     exec_properties_list = [
         "**{}**: {}".format(
@@ -267,5 +267,5 @@ def dump_ui_metadata(
 
     metadata_dict = {"outputs": outputs}
 
-    with open(ui_metadata_path, "w") as f:
+    with open(metadata_ui_path, "w") as f:
         json.dump(metadata_dict, f)
