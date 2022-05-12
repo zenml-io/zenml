@@ -46,8 +46,9 @@
   * [Deploy Locally]()
   * [Deploy on Cloud]()
 
-## Stack Components
+## Extending ZenML
 
+* [Stacks, Components, Flavors](stack_components/introduction.md)
 * [Artifact Store](stack_components/artifact_store.md)
 * [Metadata Store](stack_components/metadata_store.md)
 * [Orchestrator](stack_components/orchestrator.md)
@@ -56,7 +57,8 @@
 * [Secret Manager](stack_components/secrets_manager.md)
 * [Model Deployer](stack_components/model_deployer.md)
 * [Experiment Tracker](stack_components/experiment_tracker.md)
-* [Feature Store](stack_components/feature-store.md)
+* [Feature Store](stack_components/feature_store.md)
+* [Alerter](stack_components/alerter.md)
 
 ## Support
 
