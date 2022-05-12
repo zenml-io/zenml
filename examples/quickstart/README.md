@@ -38,7 +38,7 @@ zenml init
 Now we're ready. Execute:
 
 ```shell
-python quickstart.py
+python run.py
 ```
 
 Or just a jupyter notebook
