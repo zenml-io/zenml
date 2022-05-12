@@ -54,7 +54,7 @@ class BaseOrchestrator(StackComponent, ABC):
     orchestrator you will need to subclass from this class.
 
     How it works:
-        The **run()** method is the entrypoint that is executed when the
+        The `run()` method is the entrypoint that is executed when the
         pipeline's run method is called within the user code
         (`pipeline_instance.run()`).
 
@@ -63,16 +63,16 @@ class BaseOrchestrator(StackComponent, ABC):
 
         * The underlying protobuf pipeline is created.
 
-        * Within the **configure_step_context()** method the pipeline
+        * Within the `configure_step_context()` method the pipeline
         requirements, stack and runtime configuration is added to the step
         context
 
-        * The **get_sorted_steps()** method then generates a sorted list of
+        * The `get_sorted_steps()` method then generates a sorted list of
         steps which will later be used to directly execute these steps in order,
         or to easily build a dag
 
         * After these initial steps comes the most crucial one. Within the
-        **prepare_or_run_pipeline()** method each orchestrator will have its own
+        `prepare_or_run_pipeline()` method each orchestrator will have its own
         implementation that dictates the pipeline orchestration. In the simplest
         case this method will iterate through all steps and execute them one by
         one. In other cases this method will build and deploy an intermediate
@@ -81,7 +81,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
     Building your own:
         In order to build your own orchestrator, all you need to do is subclass
-        from this class and implement your own **prepare_or_run_pipeline()**
+        from this class and implement your own `prepare_or_run_pipeline()`
         method. Overwriting other methods is NOT recommended but possible.
         See the docstring of the prepare_or_run_pipeline method to find out
         details of what needs to be implemented within it.
@@ -120,7 +120,13 @@ class BaseOrchestrator(StackComponent, ABC):
 
             Regardless of the implementation details, the orchestrator will need
             to a way to trigger each step in the target environment. For this
-            the **setup_and_execute_step()** method is used.
+            the `setup_and_execute_step()` method is used.
+
+        Args:
+            pipeline: Zenml Pipeline instance
+            pb2_pipeline: Protobuf Pipeline instance
+            stack: The stack the pipeline was run on
+            runtime_configuration: The Runtime configuration of the current run
         """
 
     def run(

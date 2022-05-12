@@ -555,7 +555,30 @@ class KubeflowOrchestrator(BaseOrchestrator):
             stack: "Stack",
             runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        # First check whether its running in a notebok
+        """
+        Creates a kfp yaml file as intermediary representation of the
+        pipeline which is then deployed to the kubeflow pipelines instance.
+
+        How it works:
+            Before this method is called the `prepare_pipeline_deployment()`
+            method builds a docker image that contains the code for the
+            pipeline, all steps the context around these files.
+
+            Based on this docker image a callable is created which builds
+            container_ops for each step (`_construct_kfp_pipeline`).
+            To do this the entrypoint of the docker image is configured to
+            run the correct step within the docker image. The dependencies
+            between these container_ops are then also configured onto each
+            container_op by pointing at the downstream steps.
+
+            This callable is then compiled into a kfp yaml file that is used as
+            the intermediary representation of the kubeflow pipeline.
+
+            This file, together with some metadata, runtime configurations is
+            then uploaded into the kubeflow pipelines cluster for execution.
+        """
+
+        # First check whether the code running in a notebook
         from zenml.environment import Environment
 
         if Environment.in_notebook():
@@ -577,6 +600,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
         image_name = get_image_digest(image_name) or image_name
 
         def _construct_kfp_pipeline() -> None:
+            """Create a container_op for each step which contains the name
+            of the docker image and configures the entrypoint to run the
+            step. Additionally, gives each container_op information about its
+            downstream steps.
+            """
 
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 

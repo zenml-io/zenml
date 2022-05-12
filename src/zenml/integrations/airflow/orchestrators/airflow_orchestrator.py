@@ -95,12 +95,17 @@ class AirflowOrchestrator(BaseOrchestrator):
         pipeline. This dag will be loaded by airflow in the target environment
         and used for orchestration of the pipeline.
 
-        For each step of the pipeline a callable is created. This callable uses
-        the run_step() method to execute the step. The parameters of
-        this callable are pre-filled and an airflow step_operator is created
-        within the dag. Then the dependecies to upstream steps are configured.
+        How it works:
+            A new airflow_dag is instantiated with the pipeline name and among
+            others things the run schedule.
 
-        Finally, the finished dag is returned.
+            For each step of the pipeline a callable is created. This callable
+            uses the run_step() method to execute the step. The parameters of
+            this callable are pre-filled and an airflow step_operator is created
+            within the dag. The dependecies to upstream steps are then
+            configured.
+
+            Finally, the finished dag is returned.
         """
 
         import airflow
