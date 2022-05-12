@@ -123,7 +123,7 @@ def profile() -> None:
 @click.option(
     "--user",
     "user_name",
-    help="The username that is used to authenticate with the ZenService. This "
+    help="The username that is used to authenticate with the ZenServe. This "
     "is required if you're creating a profile with REST storage.",
     required=False,
     type=str,

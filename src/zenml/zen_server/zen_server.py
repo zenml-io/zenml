@@ -7,8 +7,8 @@ from pydantic import Field
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
     ENV_ZENML_PROFILE_NAME,
-    ZEN_SERVICE_ENTRYPOINT,
-    ZEN_SERVICE_IP,
+    ZEN_SERVER_ENTRYPOINT,
+    ZEN_SERVER_IP,
 )
 from zenml.enums import StoreType
 from zenml.logger import get_logger
@@ -26,29 +26,29 @@ from zenml.services import (
 
 logger = get_logger(__name__)
 
-ZEN_SERVICE_URL_PATH = ""
-ZEN_SERVICE_HEALTHCHECK_URL_PATH = "health"
+ZEN_SERVER_URL_PATH = ""
+ZEN_SERVER_HEALTHCHECK_URL_PATH = "health"
 
 
-class ZenServiceEndpointConfig(LocalDaemonServiceEndpointConfig):
-    """Zen Service endpoint configuration.
+class ZenServerEndpointConfig(LocalDaemonServiceEndpointConfig):
+    """Zen Server endpoint configuration.
 
     Attributes:
         zen_service_uri_path: URI path for the zenml service
     """
 
-    zen_service_uri_path: str
+    zen_server_uri_path: str
 
 
-class ZenServiceEndpoint(LocalDaemonServiceEndpoint):
-    """A service endpoint exposed by the Zen service daemon.
+class ZenServerEndpoint(LocalDaemonServiceEndpoint):
+    """A service endpoint exposed by the Zen Server daemon.
 
     Attributes:
         config: service endpoint configuration
         monitor: optional service endpoint health monitor
     """
 
-    config: ZenServiceEndpointConfig
+    config: ZenServerEndpointConfig
     monitor: HTTPEndpointHealthMonitor
 
     @property
@@ -56,14 +56,14 @@ class ZenServiceEndpoint(LocalDaemonServiceEndpoint):
         uri = self.status.uri
         if not uri:
             return None
-        return f"{uri}{self.config.zen_service_uri_path}"
+        return f"{uri}{self.config.zen_server_uri_path}"
 
 
-class ZenServiceConfig(LocalDaemonServiceConfig):
-    """Zen Service deployment configuration.
+class ZenServerConfig(LocalDaemonServiceConfig):
+    """Zen Server deployment configuration.
 
     Attributes:
-        port: Port at which the service is running
+        port: Port at which the service responisble for Zen Server is running
         store_profile_configuration: ProfileConfiguration describing where
             the service should persist its data.
     """
@@ -74,8 +74,8 @@ class ZenServiceConfig(LocalDaemonServiceConfig):
     )
 
 
-class ZenService(LocalDaemonService):
-    """ZenService daemon that can be used to start a local ZenService server.
+class ZenServer(LocalDaemonService):
+    """Service daemon that can be used to start a local Zen Server.
 
     Attributes:
         config: service configuration
@@ -83,32 +83,32 @@ class ZenService(LocalDaemonService):
     """
 
     SERVICE_TYPE = ServiceType(
-        name="zen_service",
+        name="zen_server",
         type="zenml",
         flavor="zenml",
-        description="ZenService to manage stacks, users and pipelines",
+        description="ZenServer to manage stacks, users and pipelines",
     )
 
-    config: ZenServiceConfig
-    endpoint: ZenServiceEndpoint
+    config: ZenServerConfig
+    endpoint: ZenServerEndpoint
 
     def __init__(
         self,
-        config: Union[ZenServiceConfig, Dict[str, Any]],
+        config: Union[ZenServerConfig, Dict[str, Any]],
         **attrs: Any,
     ) -> None:
         # ensure that the endpoint is created before the service is initialized
-        if isinstance(config, ZenServiceConfig) and "endpoint" not in attrs:
+        if isinstance(config, ZenServerConfig) and "endpoint" not in attrs:
 
-            endpoint_uri_path = ZEN_SERVICE_URL_PATH
-            healthcheck_uri_path = ZEN_SERVICE_HEALTHCHECK_URL_PATH
+            endpoint_uri_path = ZEN_SERVER_URL_PATH
+            healthcheck_uri_path = ZEN_SERVER_HEALTHCHECK_URL_PATH
             use_head_request = True
 
-            endpoint = ZenServiceEndpoint(
-                config=ZenServiceEndpointConfig(
+            endpoint = ZenServerEndpoint(
+                config=ZenServerEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
                     port=config.port,
-                    zen_service_uri_path=endpoint_uri_path,
+                    zen_server_uri_path=endpoint_uri_path,
                 ),
                 monitor=HTTPEndpointHealthMonitor(
                     config=HTTPEndpointHealthMonitorConfig(
@@ -125,13 +125,13 @@ class ZenService(LocalDaemonService):
             raise ValueError(
                 "Service cannot be started with REST store type. Make sure you "
                 "specify a profile with a non-networked persistence backend "
-                "when trying to start the Zen Service. (use command line flag "
+                "when trying to start the Zen Server. (use command line flag "
                 "`--profile=$PROFILE_NAME` or set the env variable "
                 f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
                 "other than the currently active one)"
             )
         logger.info(
-            "Starting ZenService as blocking "
+            "Starting ZenServer as blocking "
             "process... press CTRL+C once to stop it."
         )
 
@@ -144,17 +144,17 @@ class ZenService(LocalDaemonService):
 
         try:
             uvicorn.run(
-                ZEN_SERVICE_ENTRYPOINT,
-                host=ZEN_SERVICE_IP,
+                ZEN_SERVER_ENTRYPOINT,
+                host=ZEN_SERVER_IP,
                 port=self.endpoint.status.port,
                 log_level="info",
             )
         except KeyboardInterrupt:
-            logger.info("Zen service stopped. Resuming normal execution.")
+            logger.info("Zen Server stopped. Resuming normal execution.")
 
     @property
-    def zen_service_uri(self) -> Optional[str]:
-        """Get the URI where the service is running.
+    def zen_server_uri(self) -> Optional[str]:
+        """Get the URI where the service responisble for Zen Server is running.
 
         Returns:
             The URI where the service can be contacted for requests,

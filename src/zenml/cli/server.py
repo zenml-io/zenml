@@ -45,9 +45,9 @@ def server() -> None:
 
 
 @server.command("explain", help="Explain the the concept of the Zen Server.")
-def explain_service() -> None:
+def explain_server() -> None:
     """Explain the concept of the Zen Service."""
-    component_module = import_module("zenml.zen_service")
+    component_module = import_module("zenml.zen_server")
 
     if component_module.__doc__ is not None:
         md = Markdown(component_module.__doc__)
@@ -60,40 +60,40 @@ def explain_service() -> None:
 def up_server(port: int, profile: Optional[str]) -> None:
     """Provisions resources for the zen server."""
     from zenml.services import ServiceRegistry
-    from zenml.zen_service.zen_service import ZenService, ZenServiceConfig
+    from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
 
     if profile is not None:
         profile_configuration = GlobalConfiguration().get_profile(profile)
         if profile_configuration is None:
             raise ValueError(f"Could not find profile of name {profile}.")
-        service_config = ZenServiceConfig(
+        service_config = ZenServerConfig(
             port=port, store_profile_configuration=profile_configuration
         )
     else:
-        service_config = ZenServiceConfig(port=port)
+        service_config = ZenServerConfig(port=port)
 
     try:
         with open(GLOBAL_ZENML_SERVER_CONFIG_FILEPATH, "r") as f:
-            zen_service = ServiceRegistry().load_service_from_json(f.read())
+            zen_server = ServiceRegistry().load_service_from_json(f.read())
     except (JSONDecodeError, FileNotFoundError, ModuleNotFoundError, TypeError):
-        zen_service = ZenService(service_config)
+        zen_server = ZenServer(service_config)
 
     cli_utils.declare(
         f"Provisioning resources for service "
-        f"'{zen_service.SERVICE_TYPE.name}'."
+        f"'{zen_server.SERVICE_TYPE.name}'."
     )
 
-    zen_service.start(timeout=30)
+    zen_server.start(timeout=30)
 
-    if zen_service.endpoint:
-        if zen_service.endpoint.status.port != port:
+    if zen_server.endpoint:
+        if zen_server.endpoint.status.port != port:
             cli_utils.warning(
                 textwrap.dedent(
                     f"""
                     You specified port={port} but the server is running at
-                    '{zen_service.endpoint.status.uri}'. This can happen in the
+                    '{zen_server.endpoint.status.uri}'. This can happen in the
                     case the specified port is in use or if the server was
-                    already running on port {zen_service.endpoint.status.port}.
+                    already running on port {zen_server.endpoint.status.port}.
                     In case you want to change to port={port} shut down the
                     server with `zenml server down -y` and restart it with
                     a free port of your choice.
@@ -102,13 +102,13 @@ def up_server(port: int, profile: Optional[str]) -> None:
             )
         else:
             cli_utils.declare(
-                f"Zenml Service running at '{zen_service.endpoint.status.uri}'."
+                f"Zenml Server running at '{zen_server.endpoint.status.uri}'."
             )
     else:
         raise ValueError("No endpoint found for Zen Server.")
 
     with open(GLOBAL_ZENML_SERVER_CONFIG_FILEPATH, "w") as f:
-        f.write(zen_service.json(indent=4))
+        f.write(zen_server.json(indent=4))
 
 
 @server.command("status")
@@ -122,16 +122,16 @@ def status_server() -> None:
     except FileNotFoundError:
         cli_utils.warning("No service found!")
     else:
-        zen_service_status = zervice.check_status()
+        zen_server_status = zervice.check_status()
 
         running = (
             f" and running at {zervice.endpoint.status.uri}."
-            if zen_service_status[0] == ServiceState.ACTIVE and zervice.endpoint
+            if zen_server_status[0] == ServiceState.ACTIVE and zervice.endpoint
             else ""
         )
 
         cli_utils.declare(
-            f"The Zenml Service status is {zen_service_status[0]}{running}."
+            f"The Zenml Server status is {zen_server_status[0]}{running}."
         )
 
 
@@ -151,8 +151,8 @@ def status_server() -> None:
     help="DEPRECATED: Deprovisions local resources instead of suspending "
     "them. Use `-y/--yes` instead.",
 )
-def down_service(force: bool = False, old_force: bool = False) -> None:
-    """Suspends resources of the local zen service."""
+def down_server(force: bool = False, old_force: bool = False) -> None:
+    """Suspends resources of the local Zen Server."""
     from zenml.services import ServiceRegistry
 
     if old_force:
@@ -166,7 +166,7 @@ def down_service(force: bool = False, old_force: bool = False) -> None:
         with open(GLOBAL_ZENML_SERVER_CONFIG_FILEPATH, "r") as f:
             zervice = ServiceRegistry().load_service_from_json(f.read())
     except FileNotFoundError:
-        cli_utils.error("No running service found!")
+        cli_utils.error("No running server found!")
     else:
         if force:
             cli_utils.declare(
