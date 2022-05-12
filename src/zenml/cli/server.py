@@ -46,7 +46,7 @@ def server() -> None:
 
 @server.command("explain", help="Explain the the concept of the Zen Server.")
 def explain_server() -> None:
-    """Explain the concept of the Zen Service."""
+    """Explain the concept of the Zen Server."""
     component_module = import_module("zenml.zen_server")
 
     if component_module.__doc__ is not None:
@@ -102,7 +102,7 @@ def up_server(port: int, profile: Optional[str]) -> None:
             )
         else:
             cli_utils.declare(
-                f"Zenml Server running at '{zen_server.endpoint.status.uri}'."
+                f"Zen Server running at '{zen_server.endpoint.status.uri}'."
             )
     else:
         raise ValueError("No endpoint found for Zen Server.")
@@ -131,7 +131,7 @@ def status_server() -> None:
         )
 
         cli_utils.declare(
-            f"The Zenml Server status is {zen_server_status[0]}{running}."
+            f"The Zen Server status is {zen_server_status[0]}{running}."
         )
 
 
