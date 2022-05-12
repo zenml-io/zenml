@@ -272,7 +272,7 @@ class StepEntrypointConfiguration:
         )
 
     def run(self) -> None:
-        """Runs the ZenML step defined by the entrypoint arguments.
+        """Runs a single ZenML step.
 
         Subclasses should in most cases not need to overwrite this method and
         implement their custom logic in the `setup(...)` and `post_run(...)`

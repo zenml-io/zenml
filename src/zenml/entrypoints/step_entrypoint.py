@@ -21,7 +21,13 @@ from zenml.utils import source_utils
 
 
 def main():
-    """"""
+    """Runs the ZenML step defined by the command line arguments.
+
+    This main logic for running the step is not implemented in this file,
+    instead it simply creates a `zenml.entrypoints.StepEntrypointConfiguration`
+    object (the concrete implementation can be specified using the command line
+    arguments) and calls its `run()` method.
+    """
     # Read the source for the entrypoint configuration class from the command
     # line arguments
     parser = argparse.ArgumentParser()
