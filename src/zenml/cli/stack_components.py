@@ -27,6 +27,7 @@ from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.source_utils import validate_flavor_source
 from zenml.zen_stores.models.component_wrapper import ComponentWrapper
 
@@ -291,6 +292,14 @@ def generate_stack_component_flavor_register_command(
             )
         except EntityExistsError as e:
             cli_utils.error(str(e))
+
+        analytics_metadata = {
+            "type": component_class.TYPE.value,
+        }
+        track_event(
+            AnalyticsEvent.REGISTERED_STACK_FLAVOR,
+            metadata=analytics_metadata,
+        )
 
     return register_stack_component_flavor_command
 

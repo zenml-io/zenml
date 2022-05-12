@@ -45,6 +45,9 @@ class AnalyticsEvent(str, Enum):
     SET_STACK = "Stack set"
     UPDATED_STACK = "Stack updated"
 
+    # Stack Flavors
+    REGISTERED_STACK_FLAVOR = "Stack flavor registered"
+
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
     OPT_OUT_ANALYTICS = "Analytics opt-out"
