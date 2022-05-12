@@ -75,7 +75,9 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
 
 
 def declare(
-    text: Union[str, Text], bold: bool = False, italic: bool = False
+    text: Union[str, Text],
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
 ) -> None:
     """Echo a declaration on the CLI.
 
@@ -84,24 +86,8 @@ def declare(
         bold: Optional boolean to bold the text.
         italic: Optional boolean to italicize the text.
     """
-    style = zenml_style_defaults["info"]
-    if bold:
-        style = Style(
-            color=style.color,
-            dim=style.dim,
-            bold=bold,
-            italic=style.italic,
-            underline=style.underline,
-        )
-    if italic:
-        style = Style(
-            color=style.color,
-            dim=style.dim,
-            bold=style.bold,
-            italic=italic,
-            underline=style.underline,
-        )
-
+    base_style = zenml_style_defaults["info"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
     console.print(text, style=style)
 
 
@@ -117,7 +103,11 @@ def error(text: str) -> None:
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
 
 
-def warning(text: str, bold: bool = False, italic: bool = False) -> None:
+def warning(
+    text: str,
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
+) -> None:
     """Echo a warning string on the CLI.
 
     Args:
@@ -125,24 +115,8 @@ def warning(text: str, bold: bool = False, italic: bool = False) -> None:
         bold: Optional boolean to bold the text.
         italic: Optional boolean to italicize the text.
     """
-    style = zenml_style_defaults["warning"]
-    if bold:
-        style = Style(
-            color=style.color,
-            dim=style.dim,
-            bold=bold,
-            italic=style.italic,
-            underline=style.underline,
-        )
-    if italic:
-        style = Style(
-            color=style.color,
-            dim=style.dim,
-            bold=style.bold,
-            italic=italic,
-            underline=style.underline,
-        )
-
+    base_style = zenml_style_defaults["warning"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
     console.print(text, style=style)
 
 
