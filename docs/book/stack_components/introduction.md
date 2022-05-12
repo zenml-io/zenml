@@ -2,9 +2,21 @@
 description: Setting up your MLOps infrastructure
 ---
 
+Talking about the fractured space of MLOps and tooling
+
+Different components of a production grade ML workflow
+
+Moving from research to production
+
+ZenML helps you with the concept of stacks and their extendable nature
 
 ## Abstractions
 
+The base abstractions of ZenML.
+
+Short description of what stacks, stack components and flavors mean
+
+The aim of this document...
 
 ### Stack
 
@@ -24,19 +36,13 @@ description: Setting up your MLOps infrastructure
 | Alerter                 |          |             |
 
 
-## In-depth look at the implementation
+### Stack Component
 
-
-
-### `pydantic` Models
+### Using `pydantic`
 
 ```python
 pydantic example
 ```
-
-
-
-### Stack Component
 
 ```python
 class StackComponent(BaseModel, ABC):
@@ -54,7 +60,7 @@ class StackComponent(BaseModel, ABC):
     ...
 ```
 
-Pydantic config
+Pydantic configuration
 
 ```python
 class BaseArtifactStore(StackComponent):
@@ -115,8 +121,14 @@ environment where ZenML can import the flavor through its source.
 zenml artifact-store flavor register TODO
 ```
 
-
 ```bash
 zenml artifact-store flavor list
 ```
+
+## Configuration and usage
+
+Configuration with instance parameters
+Configuration with secrets
+Configuration with runtime configs
+
 
