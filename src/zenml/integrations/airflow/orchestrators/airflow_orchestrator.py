@@ -65,7 +65,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
         Args:
             schedule: Containing the interval, start and end date and
-                a boolean flag that defines if past runs shopuld be caught up
+                a boolean flag that defines if past runs should be caught up
                 on
         Returns:
             Airflow configuration dict.
