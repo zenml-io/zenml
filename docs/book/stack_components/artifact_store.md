@@ -59,10 +59,10 @@ PathType = Union[bytes, str]
 class BaseArtifactStore(StackComponent):
     """Base class for all ZenML artifact stores."""
 
-    # Instance configuration
+    # --- Instance configuration ---
     path: str  # The root path of the artifact store.
 
-    # Class variables
+    # --- Class variables ---
     TYPE: ClassVar[StackComponentType] = StackComponentType.ARTIFACT_STORE
     SUPPORTED_SCHEMES: ClassVar[Set[str]]
 
