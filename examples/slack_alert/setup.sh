@@ -3,9 +3,9 @@
 set -Eeo pipefail
 
 pre_run () {
-  zenml integration install xgboost slack
+  zenml integration install sklearn slack
 }
 
 pre_run_forced () {
-  zenml integration install xgboost slack -y
+  zenml integration install sklearn slack -y
 }

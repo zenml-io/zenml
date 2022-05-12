@@ -10,84 +10,74 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import tempfile
+
 
 import numpy as np
-import requests
-import xgboost as xgb
+from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
 
-from zenml.integrations.constants import XGBOOST
-from zenml.logger import get_logger
+from zenml.integrations.sklearn.helpers.digits import get_digits
+from zenml.integrations.slack.steps.slack_alerter_step import slack_alerter_step
 from zenml.pipelines import pipeline
-from zenml.steps import BaseStepConfig, Output, step
-
-logger = get_logger(__name__)
-
-TRAIN_SET_RAW = "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.train"
-TEST_SET_RAW = "https://raw.githubusercontent.com/dmlc/xgboost/master/demo/data/agaricus.txt.test"
-
-
-class XGBoostConfig(BaseStepConfig):
-    max_depth: int = 1
-    eta: int = 1
-    objective: str = "binary:logistic"
-    num_round: int = 2
+from zenml.steps import Output, step
 
 
 @step
-def data_loader() -> Output(mat_train=xgb.DMatrix, mat_test=xgb.DMatrix):
-    """Retrieves the data from the demo directory of the XGBoost repo."""
-    # Write data to temporary files to load it with `xgb.DMatrix`.
-    with tempfile.NamedTemporaryFile(
-        mode="w", delete=False, suffix=".html", encoding="utf-8"
-    ) as f:
-        f.write(requests.get(TRAIN_SET_RAW).text)
-        mat_train = xgb.DMatrix(f.name)
-
-    with tempfile.NamedTemporaryFile(
-        mode="w", delete=False, suffix=".html", encoding="utf-8"
-    ) as f:
-        f.write(requests.get(TEST_SET_RAW).text)
-        mat_test = xgb.DMatrix(f.name)
-
-    return mat_train, mat_test
-
-
-@step
-def trainer(
-    config: XGBoostConfig, mat_train: xgb.DMatrix, mat_test: xgb.DMatrix
-) -> xgb.Booster:
-    """Trains a XGBoost model on the data."""
-    num_round = 2
-    params = {
-        "max_depth": config.max_depth,
-        "eta": config.eta,
-        "objective": config.objective,
-    }
-    return xgb.train(params, mat_train, num_round)
-
-
-@step
-def predictor(model: xgb.Booster, mat: xgb.DMatrix) -> np.ndarray:
-    """Makes predictions on a trained XGBoost booster model."""
-    return model.predict(mat)
-
-
-@pipeline(enable_cache=True, required_integrations=[XGBOOST])
-def xgboost_pipeline(
-    data_loader,
-    trainer,
-    predictor,
+def importer() -> Output(
+    X_train=np.ndarray,
+    X_test=np.ndarray,
+    y_train=np.ndarray,
+    y_test=np.ndarray,
 ):
-    """Links all the steps together in a pipeline"""
-    mat_train, mat_test = data_loader()
-    model = trainer(mat_train, mat_test)
-    predictor(model, mat_train)
+    """Load the digits dataset as numpy arrays."""
+    X_train, X_test, y_train, y_test = get_digits()
+    return X_train, X_test, y_train, y_test
+
+
+@step
+def svc_trainer(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a sklearn SVC classifier."""
+    model = SVC(gamma=0.001)
+    model.fit(X_train, y_train)
+    return model
+
+
+@step
+def evaluator(
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    model: ClassifierMixin,
+) -> float:
+    """Calculate the test set accuracy of an sklearn model."""
+    test_acc = model.score(X_test, y_test)
+    print(f"Test accuracy: {test_acc}")
+    return test_acc
+
+
+@step
+def test_acc_formatter(test_acc: float) -> str:
+    """Wrap given test accuracy in a nice text message."""
+    return f"Test Accuracy: {test_acc}"
+
+
+@pipeline
+def slack_pipeline(importer, trainer, evaluator, formatter, alertor):
+    """Train and evaluate a model and post the test accuracy to slack."""
+    X_train, X_test, y_train, y_test = importer()
+    model = trainer(X_train=X_train, y_train=y_train)
+    test_acc = evaluator(X_test=X_test, y_test=y_test, model=model)
+    message = formatter(test_acc)
+    alertor(message)
 
 
 if __name__ == "__main__":
-
-    pipeline = xgboost_pipeline(
-        data_loader=data_loader(), trainer=trainer(), predictor=predictor()
-    )
-    pipeline.run()
+    slack_pipeline(
+        importer=importer(),
+        trainer=svc_trainer(),
+        evaluator=evaluator(),
+        formatter=test_acc_formatter(),
+        alertor=slack_alerter_step(),
+    ).run()
