@@ -40,7 +40,7 @@ DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND = [
 ]
 # Constants for all the ZenML default entrypoint options
 ENTRYPOINT_CONFIG_SOURCE_OPTION = "entrypoint_config_source"
-PB2_PIPELINE_JSON_OPTION = "pb2_pipeline_json"
+PIPELINE_JSON_OPTION = "pipeline_json"
 MAIN_MODULE_SOURCE_OPTION = "main_module_source"
 STEP_SOURCE_OPTION = "step_source"
 INPUT_SPEC_OPTION = "input_spec"
@@ -241,10 +241,10 @@ class StepEntrypointConfiguration(ABC):
             # Importable source pointing to the entrypoint configuration class
             # that should be used inside the entrypoint.
             ENTRYPOINT_CONFIG_SOURCE_OPTION,
-            # Protobuf representation of the parent pipeline of the step that
+            # Json representation of the parent pipeline of the step that
             # will be executed. This is needed in order to create the tfx
             # launcher in the entrypoint that will run the ZenML step.
-            PB2_PIPELINE_JSON_OPTION,
+            PIPELINE_JSON_OPTION,
             # Importable source pointing to the python module that was executed
             # to run a pipeline. This will be imported inside the entrypoint to
             # make sure all custom materializer/artifact types are registered.
@@ -324,7 +324,7 @@ class StepEntrypointConfiguration(ABC):
         zenml_arguments = [
             f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}",
             source_utils.resolve_class(cls),
-            f"--{PB2_PIPELINE_JSON_OPTION}",
+            f"--{PIPELINE_JSON_OPTION}",
             json_format.MessageToJson(pb2_pipeline),
             f"--{MAIN_MODULE_SOURCE_OPTION}",
             main_module_source,
@@ -454,7 +454,7 @@ class StepEntrypointConfiguration(ABC):
         # Extract and parse all the entrypoint arguments required to execute
         # the step. See `get_entrypoint_options()` for an in-depth explanation
         # of all these arguments.
-        pb2_pipeline_json = self.entrypoint_args[PB2_PIPELINE_JSON_OPTION]
+        pb2_pipeline_json = self.entrypoint_args[PIPELINE_JSON_OPTION]
         pb2_pipeline = Pb2Pipeline()
         json_format.Parse(pb2_pipeline_json, pb2_pipeline)
 
