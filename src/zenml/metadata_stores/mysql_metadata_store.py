@@ -84,13 +84,15 @@ class MySQLMetadataStore(BaseMetadataStore):
             else:
                 config.password = self.password
         else:
-            if secret and secret.user:
-                config.password = self.password
+            if secret and secret.password:
+                config.password = secret.password
 
         # Set the SSL configuration if there is one
         if secret:
             secret_folder = Path(
-                GlobalConfiguration().config_directory, str(self.uuid)
+                GlobalConfiguration().config_directory,
+                "mysql-metadata",
+                str(self.uuid)
             )
 
             ssl_options = {}
