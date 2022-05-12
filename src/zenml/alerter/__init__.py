@@ -12,10 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Chat Operator
+## Alerter
 
-Chat Operators allow you send alerts from within your pipeline, to allow for 
-reporting and interactive elements within your pipeline.
+Alerters allow you to send alerts from within your pipeline.
+This is useful to immediately get notified when failures happen,
+and also for general monitoring / reporting.
 """
 
 from zenml.alerter.base_alerter import BaseAlerter

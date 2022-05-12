@@ -12,7 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import ClassVar, Optional
+from typing import ClassVar
+
+from slack_sdk import WebClient  # type: ignore[attr-defined]
+from slack_sdk.errors import SlackApiError
 
 from zenml.alerter.base_alerter import BaseAlerter
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
@@ -22,26 +25,36 @@ logger = get_logger(__name__)
 
 
 class SlackAlerter(BaseAlerter):
-    """TBD
-
-    ```python
-    from zenml.steps import StepContext
-
-    @enable_wandb
-    @step
-    def my_step(context: StepContext, ...)
-        context.stack.experiment_tracker  # get the tracking_uri etc. from here
-    ```
+    """Send messages to Slack channels.
 
     Attributes:
-        slack_token:
-        slack_channel_id:
-        thread_ts:
+        slack_token: The Slack token tied to the Slack account to be used.
+        slack_channel_id: The ID of the Slack channel to use for communication.
     """
 
     slack_token: str
     slack_channel_id: str
-    thread_ts: Optional[str] = None
 
     # Class Configuration
     FLAVOR: ClassVar[str] = SLACK_ALERTER_FLAVOR
+
+    def post(self, message: str) -> bool:
+        """Post a message to a Slack channel.
+
+        Args:
+            message: message to be posted
+
+        Returns:
+            True if operation succeeded, else False
+        """
+        client = WebClient(token=self.slack_token)
+        try:
+            response = client.chat_postMessage(
+                channel=self.slack_channel_id,
+                text=message,
+            )
+            return True
+        except SlackApiError as error:
+            response = error.response["error"]
+            logger.error(f"SlackAlerter.post() failed: {response}")
+            raise error

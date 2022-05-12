@@ -13,5 +13,5 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.slack.steps.slack_alerter_step import (  # noqa
-    SlackAlerterStep,
+    slack_alerter_step,
 )

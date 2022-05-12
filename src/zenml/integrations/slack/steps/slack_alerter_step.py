@@ -13,37 +13,42 @@
 #  permissions and limitations under the License.
 
 
-from zenml.artifacts import DataArtifact
-from zenml.steps.step_interfaces.base_alerter_step import (
-    BaseAlerterStep,
-    BaseAlerterStepConfig,
-)
+from zenml.integrations.slack.alerters.slack_alerter import SlackAlerter
+from zenml.repository import Repository
+from zenml.steps import step
+from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
 
 
 class SlackAlertConfig(BaseAlerterStepConfig):
     """TBD"""
 
-    a: str = ""
 
+@step
+def slack_alerter_step(message: str) -> bool:
+    """Post a given message to Slack.
 
-class SlackAlerterStep(BaseAlerterStep):
-    """TBD"""
+    Args:
+        message: message to be posted
 
-    OUTPUT_SPEC = {
-        "result": DataArtifact,
-    }
+    Returns:
+        True if operation succeeded, else False
 
-    def entrypoint(  # type: ignore[override]
-        self,
-        message: str,
-        config: SlackAlertConfig,
-    ) -> bool:
-        """Main entrypoint for the Evidently categorical target drift detection
-        step.
+    Raises:
+        ValueError if active stack has no slack alerter
+    """
 
-        Args:
+    alerter = Repository(  # type: ignore[call-arg]
+        skip_repository_check=True
+    ).active_stack.alerter
 
+    if not isinstance(alerter, SlackAlerter):
+        raise ValueError(
+            "The active stack needs to have a Slack alerter component registered "
+            "to be able to use `slack_alerter_step`. "
+            "You can create a new stack with a Slack alerter component or update "
+            "your existing stack to add this component, e.g.:\n\n"
+            "  'zenml alerter register slack_alerter --type=slack' ...\n"
+            "  'zenml stack register stack-name -al slack_alerter ...'\n"
+        )
 
-        Returns:
-
-        """
+    return alerter.post(message)

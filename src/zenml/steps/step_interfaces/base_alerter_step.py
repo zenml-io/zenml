@@ -13,24 +13,21 @@
 #  permissions and limitations under the License.
 from abc import abstractmethod
 
-from zenml.artifacts import DataArtifact
-from zenml.steps import BaseStep, BaseStepConfig, Output, StepContext
+from zenml.steps import BaseStep, BaseStepConfig, StepContext
 
 
 class BaseAlerterStepConfig(BaseStepConfig):
-    """"""
+    """TBD"""
 
 
 class BaseAlerterStep(BaseStep):
-    """"""
+    """Send a message to the configured ChatOps tool."""
 
     @abstractmethod
     def entrypoint(  # type: ignore[override]
         self,
-        dataset: DataArtifact,
-        config: BaseSplitStepConfig,
+        message: str,
+        config: BaseAlerterStepConfig,
         context: StepContext,
-    ) -> Output(  # type:ignore[valid-type]
-        train=DataArtifact, test=DataArtifact, validation=DataArtifact
-    ):
-        """Entrypoint for a function for the split steps to run"""
+    ) -> bool:
+        """Entrypoint for an Alerter step."""

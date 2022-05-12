@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from abc import ABC
+
+from abc import ABC, abstractmethod
 from typing import ClassVar
 
 from zenml.enums import StackComponentType
@@ -24,3 +25,14 @@ class BaseAlerter(StackComponent, ABC):
     # Class configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ALERTER
     FLAVOR: ClassVar[str]
+
+    @abstractmethod
+    def post(self, message: str) -> bool:
+        """Post a message to some ChatOps service.
+
+        Args:
+            message: message to be posted
+
+        Returns:
+            True if operation succeeded, else False
+        """
