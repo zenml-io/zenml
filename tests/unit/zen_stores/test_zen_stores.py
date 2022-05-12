@@ -115,7 +115,7 @@ def fresh_zen_store(
                 time.sleep(1)
         else:
             proc.kill()
-            raise RuntimeError("Failed to start Zen Server.")
+            raise RuntimeError("Failed to start ZenServer.")
 
         yield RestZenStore().initialize(url)
 
@@ -129,7 +129,7 @@ def fresh_zen_store(
             else:
                 break
         else:
-            raise RuntimeError("Failed to shutdown Zen Server.")
+            raise RuntimeError("Failed to shutdown ZenServer.")
     else:
         raise NotImplementedError(f"No ZenStore for {store_type}")
 

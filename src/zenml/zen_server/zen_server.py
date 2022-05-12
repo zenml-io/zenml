@@ -154,7 +154,7 @@ class ZenServer(LocalDaemonService):
 
     @property
     def zen_server_uri(self) -> Optional[str]:
-        """Get the URI where the service responisble for Zen Server is running.
+        """Get the URI where the service responsible for Zen Server is running.
 
         Returns:
             The URI where the service can be contacted for requests,

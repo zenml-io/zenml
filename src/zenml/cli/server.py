@@ -44,9 +44,9 @@ def server() -> None:
     """ZenML server."""
 
 
-@server.command("explain", help="Explain the the concept of the Zen Server.")
+@server.command("explain", help="Explain the Zen Server concept.")
 def explain_server() -> None:
-    """Explain the concept of the Zen Server."""
+    """Explain the Zen Server concept."""
     component_module = import_module("zenml.zen_server")
 
     if component_module.__doc__ is not None:
