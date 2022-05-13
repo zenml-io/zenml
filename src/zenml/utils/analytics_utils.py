@@ -90,10 +90,8 @@ def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
         # That means user opted out of analytics
         if not gc.analytics_opt_in:
             return False
-        
-        import analytics
 
-        from zenml.config.global_config import GlobalConfiguration
+        import analytics
 
         if analytics.write_key is None:
             analytics.write_key = get_segment_key()

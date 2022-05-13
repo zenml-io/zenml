@@ -219,7 +219,10 @@ def go() -> None:
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             tmp_cloned_dir = os.path.join(tmpdirname, "zenml_repo")
-            Repo.clone_from(TUTORIAL_REPO, tmp_cloned_dir)
+            with console.status(
+                "Cloning tutorial. This sometimes takes a minute..."
+            ):
+                Repo.clone_from(TUTORIAL_REPO, tmp_cloned_dir)
             example_dir = os.path.join(tmp_cloned_dir, "examples/quickstart")
             copy_dir(example_dir, zenml_tutorial_path)
     else:
