@@ -75,7 +75,7 @@ if profile.store_type == StoreType.REST:
     raise ValueError(
         "Server cannot be started with REST store type. Make sure you "
         "specify a profile with a non-networked persistence backend "
-        "when trying to start the Zen Server. (use command line flag "
+        "when trying to start the ZenServer. (use command line flag "
         "`--profile=$PROFILE_NAME` or set the env variable "
         f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
         "other than the currently active one)"

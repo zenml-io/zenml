@@ -44,9 +44,9 @@ def server() -> None:
     """ZenML server."""
 
 
-@server.command("explain", help="Explain the Zen Server concept.")
+@server.command("explain", help="Explain the ZenServer concept.")
 def explain_server() -> None:
-    """Explain the Zen Server concept."""
+    """Explain the ZenServer concept."""
     component_module = import_module("zenml.zen_server")
 
     if component_module.__doc__ is not None:
@@ -54,7 +54,7 @@ def explain_server() -> None:
         console.print(md)
 
 
-@server.command("up", help="Start a daemon service running the Zenml Server.")
+@server.command("up", help="Start a daemon service running the ZenServer.")
 @click.option("--port", type=int, default=8000, show_default=True)
 @click.option("--profile", type=str, default=None)
 def up_server(port: int, profile: Optional[str]) -> None:
@@ -102,10 +102,10 @@ def up_server(port: int, profile: Optional[str]) -> None:
             )
         else:
             cli_utils.declare(
-                f"Zen Server running at '{zen_server.endpoint.status.uri}'."
+                f"ZenServer running at '{zen_server.endpoint.status.uri}'."
             )
     else:
-        raise ValueError("No endpoint found for Zen Server.")
+        raise ValueError("No endpoint found for ZenServer.")
 
     with open(GLOBAL_ZENML_SERVER_CONFIG_FILEPATH, "w") as f:
         f.write(zen_server.json(indent=4))
@@ -113,7 +113,7 @@ def up_server(port: int, profile: Optional[str]) -> None:
 
 @server.command("status")
 def status_server() -> None:
-    """Get the status of the Zen Server."""
+    """Get the status of the ZenServer."""
     from zenml.services import ServiceRegistry, ServiceState
 
     try:
@@ -131,7 +131,7 @@ def status_server() -> None:
         )
 
         cli_utils.declare(
-            f"The Zen Server status is {zen_server_status[0]}{running}."
+            f"The ZenServer status is {zen_server_status[0]}{running}."
         )
 
 
@@ -152,7 +152,7 @@ def status_server() -> None:
     "them. Use `-y/--yes` instead.",
 )
 def down_server(force: bool = False, old_force: bool = False) -> None:
-    """Suspends resources of the local Zen Server."""
+    """Suspends resources of the local ZenServer."""
     from zenml.services import ServiceRegistry
 
     if old_force:

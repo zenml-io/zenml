@@ -12,13 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Zen Server
+## ZenServer
 
-The Zen Server is a simple webserver to let you collaborate on stacks via
+The ZenServer is a simple webserver to let you collaborate on stacks via
 the network. It can be spun up in a background daemon from the command line
 using `zenml server up` and managed from the same command line group.
 
-Using the Zen Server's stacks in your project just requires setting up a
+Using the ZenServer's stacks in your project just requires setting up a
 profile with `rest` store-type pointed to the url of the server.
 """
 

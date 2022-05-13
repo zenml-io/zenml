@@ -31,7 +31,7 @@ ZEN_SERVER_HEALTHCHECK_URL_PATH = "health"
 
 
 class ZenServerEndpointConfig(LocalDaemonServiceEndpointConfig):
-    """Zen Server endpoint configuration.
+    """ZenServer endpoint configuration.
 
     Attributes:
         zen_server_uri_path: URI path for the zenml service
@@ -41,7 +41,7 @@ class ZenServerEndpointConfig(LocalDaemonServiceEndpointConfig):
 
 
 class ZenServerEndpoint(LocalDaemonServiceEndpoint):
-    """A service endpoint exposed by the Zen Server daemon.
+    """A service endpoint exposed by the ZenServer daemon.
 
     Attributes:
         config: service endpoint configuration
@@ -60,10 +60,10 @@ class ZenServerEndpoint(LocalDaemonServiceEndpoint):
 
 
 class ZenServerConfig(LocalDaemonServiceConfig):
-    """Zen Server deployment configuration.
+    """ZenServer deployment configuration.
 
     Attributes:
-        port: Port at which the service responisble for Zen Server is running
+        port: Port at which the service responisble for ZenServer is running
         store_profile_configuration: ProfileConfiguration describing where
             the service should persist its data.
     """
@@ -75,7 +75,7 @@ class ZenServerConfig(LocalDaemonServiceConfig):
 
 
 class ZenServer(LocalDaemonService):
-    """Service daemon that can be used to start a local Zen Server.
+    """Service daemon that can be used to start a local ZenServer.
 
     Attributes:
         config: service configuration
@@ -125,7 +125,7 @@ class ZenServer(LocalDaemonService):
             raise ValueError(
                 "Service cannot be started with REST store type. Make sure you "
                 "specify a profile with a non-networked persistence backend "
-                "when trying to start the Zen Server. (use command line flag "
+                "when trying to start the ZenServer. (use command line flag "
                 "`--profile=$PROFILE_NAME` or set the env variable "
                 f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
                 "other than the currently active one)"
@@ -150,11 +150,11 @@ class ZenServer(LocalDaemonService):
                 log_level="info",
             )
         except KeyboardInterrupt:
-            logger.info("Zen Server stopped. Resuming normal execution.")
+            logger.info("ZenServer stopped. Resuming normal execution.")
 
     @property
     def zen_server_uri(self) -> Optional[str]:
-        """Get the URI where the service responsible for Zen Server is running.
+        """Get the URI where the service responsible for ZenServer is running.
 
         Returns:
             The URI where the service can be contacted for requests,

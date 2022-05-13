@@ -92,7 +92,7 @@ def test_server_requires_auth(running_zen_server: ZenServer):
     reason="ZenServer not supported as daemon on Windows.",
 )
 def test_server_up_down():
-    """Test spinning up and shutting down Zen Server."""
+    """Test spinning up and shutting down ZenServer."""
     port = scan_for_available_port(start=8003, stop=9000)
     zen_server = ZenServer(
         ZenServerConfig(
