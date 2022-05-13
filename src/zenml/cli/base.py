@@ -187,6 +187,7 @@ def go() -> None:
     from zenml.config.global_config import GlobalConfiguration
 
     gc = GlobalConfiguration()
+    metadata = {}
 
     console.print(zenml_go_welcome_message, width=80)
 
@@ -195,7 +196,7 @@ def go() -> None:
         metadata = {"gave_email": gave_email}
 
     # Add telemetry
-    track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+    track_event(AnalyticsEvent.RUN_ZENML_GO, metadata=metadata)
 
     console.print(zenml_go_privacy_message, width=80)
 
@@ -216,8 +217,7 @@ def go() -> None:
             raise GitNotFoundError(e)
 
         with tempfile.TemporaryDirectory() as tmpdirname:
-            print("created temporary directory", tmpdirname)
-            tmp_cloned_dir = os.path.join(os.getcwd(), "zenml_repo")
+            tmp_cloned_dir = os.path.join(tmpdirname, "zenml_repo")
             Repo.clone_from(TUTORIAL_REPO, tmp_cloned_dir)
             example_dir = os.path.join(tmp_cloned_dir, "examples/quickstart")
             copy_dir(example_dir, zenml_tutorial_path)
