@@ -120,12 +120,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.secrets = kwargs.pop(PARAM_SECRETS, [])
 
         self.name = self.__class__.__name__
-        logger.info("Creating run for pipeline: `%s`", self.name)
-        logger.info(
-            f'Cache {"enabled" if self.enable_cache else "disabled"} for '
-            f"pipeline `{self.name}`"
-        )
-
         self.__steps: Dict[str, BaseStep] = {}
         self._verify_arguments(*args, **kwargs)
 
@@ -237,6 +231,19 @@ class BasePipeline(metaclass=BasePipelineMeta):
         raise NotImplementedError
 
     @property
+    def id(self) -> str:
+        import hashlib
+
+        from zenml.utils import source_utils
+
+        hashes = [source_utils.get_hashed_source(self.connect)] + [
+            step.id for step in self.steps.values()
+        ]
+        code_hash = hashlib.sha256(str(hashes).encode("utf-8")).hexdigest()
+
+        return f"{self.name}-{code_hash}"
+
+    @property
     def requirements(self) -> Set[str]:
         """Set of python requirements of this pipeline.
 
@@ -333,6 +340,12 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
             )
             return
+
+        logger.info("Creating run for pipeline: `%s`", self.name)
+        logger.info(
+            f'Cache {"enabled" if self.enable_cache else "disabled"} for '
+            f"pipeline `{self.name}`"
+        )
 
         # Activating the built-in integrations through lazy loading
         from zenml.integrations.registry import integration_registry

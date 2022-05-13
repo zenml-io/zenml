@@ -141,6 +141,7 @@ PROJECTS = "/projects"
 ROLES = "/roles"
 FLAVORS = "/flavors"
 ROLE_ASSIGNMENTS = "/role_assignments"
+PIPELINE_RUNS = "/pipeline_runs"
 
 # mandatory stack component properties
 MANDATORY_COMPONENT_PROPERTIES = ["name", "uuid"]

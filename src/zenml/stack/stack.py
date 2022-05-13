@@ -372,6 +372,32 @@ class Stack:
             if component.validator:
                 component.validator.validate(stack=self)
 
+    def _register_pipeline_run(
+        self,
+        pipeline: "BasePipeline",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> None:
+        """Registers a pipeline run in the ZenStore."""
+        from zenml.repository import Repository
+        from zenml.zen_stores.models import StackWrapper
+        from zenml.zen_stores.models.pipeline_models import (
+            PipelineRunWrapper,
+            PipelineWrapper,
+        )
+
+        repo = Repository()
+        active_project = repo.active_project
+        pipeline_run_wrapper = PipelineRunWrapper(
+            name=runtime_configuration.run_name,
+            pipeline=PipelineWrapper.from_pipeline(pipeline),
+            stack=StackWrapper.from_stack(self),
+            runtime_configuration=runtime_configuration,
+            user_id=repo.active_user.id,
+            project_name=active_project.name if active_project else None,
+        )
+
+        Repository().zen_store.register_pipeline_run(pipeline_run_wrapper)
+
     def deploy_pipeline(
         self,
         pipeline: "BasePipeline",
@@ -431,6 +457,10 @@ class Stack:
                 runtime_configuration["enable_cache"],
             )
             pipeline.enable_cache = runtime_configuration.get("enable_cache")
+
+        self._register_pipeline_run(
+            pipeline=pipeline, runtime_configuration=runtime_configuration
+        )
 
         return_value = self.orchestrator.run_pipeline(
             pipeline, stack=self, runtime_configuration=runtime_configuration

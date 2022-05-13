@@ -15,6 +15,7 @@ import base64
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from uuid import UUID
 
 import yaml
 
@@ -33,6 +34,7 @@ from zenml.zen_stores.models import (
     Team,
     User,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 logger = get_logger(__name__)
 
@@ -594,6 +596,55 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: If no team or project with the given names exists.
+        """
+
+    # Pipelines and pipeline runs
+
+    @abstractmethod
+    def get_pipeline_run(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunWrapper:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+
+    @abstractmethod
+    def get_pipeline_runs(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunWrapper]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+        """
+
+    @abstractmethod
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunWrapper,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
         """
 
     # Stack component flavors

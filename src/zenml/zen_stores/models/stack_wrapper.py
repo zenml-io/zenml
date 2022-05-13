@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
+from zenml.enums import StackComponentType
 from zenml.stack import Stack
 from zenml.zen_stores.models import ComponentWrapper
 
@@ -51,3 +52,13 @@ class StackWrapper(BaseModel):
         return Stack.from_components(
             name=self.name, components=stack_components
         )
+
+    def get_component(
+        self, component_type: StackComponentType
+    ) -> Optional[ComponentWrapper]:
+        """Returns the stack component for the given type if it exists."""
+        for component in self.components:
+            if component.type == component_type:
+                return component
+
+        return None

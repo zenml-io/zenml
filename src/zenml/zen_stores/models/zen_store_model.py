@@ -26,6 +26,7 @@ from zenml.zen_stores.models import (
     Team,
     User,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 
 class ZenStoreModel(BaseModel):
@@ -46,6 +47,7 @@ class ZenStoreModel(BaseModel):
         role_assignments: All role assignments.
         team_assignments: Maps team names to names of users that are part of
             the team.
+        pipeline_runs: Maps pipeline names to runs of that pipeline.
     """
 
     stacks: Dict[str, Dict[StackComponentType, str]]
@@ -57,6 +59,7 @@ class ZenStoreModel(BaseModel):
     roles: List[Role] = []
     role_assignments: List[RoleAssignment] = []
     team_assignments: DefaultDict[str, Set[str]] = defaultdict(set)
+    pipeline_runs: DefaultDict[str, List[PipelineRunWrapper]] = defaultdict(list)
 
     @validator("stack_components")
     def _construct_stack_components_defaultdict(
@@ -73,6 +76,14 @@ class ZenStoreModel(BaseModel):
         """Ensures that `team_assignments` is a defaultdict so users
         of a new teams can be added without issues."""
         return defaultdict(set, team_assignments)
+
+    @validator("pipeline_runs")
+    def _construct_pipeline_runs_defaultdict(
+        cls, pipeline_runs: Dict[str, List[PipelineRunWrapper]]
+    ) -> DefaultDict[str, List[PipelineRunWrapper]]:
+        """Ensures that `pipeline_runs` is a defaultdict so runs
+        of a new pipeline can be added without issues."""
+        return defaultdict(list, pipeline_runs)
 
     @classmethod
     def empty_store(cls) -> "ZenStoreModel":

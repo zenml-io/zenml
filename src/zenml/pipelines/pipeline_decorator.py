@@ -114,6 +114,8 @@ def pipeline(
                     PARAM_DOCKERIGNORE_FILE: dockerignore_file,
                     PARAM_SECRETS: secrets,
                 },
+                "__module__": func.__module__,
+                "__doc__": func.__doc__,
             },
         )
 

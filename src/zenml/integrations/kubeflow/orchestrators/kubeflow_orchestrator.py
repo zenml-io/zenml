@@ -323,7 +323,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
         """
-        from zenml.utils.docker_utils import build_docker_image
+        from zenml.utils import docker_utils
 
         image_name = self.get_docker_image_name(pipeline.name)
 
@@ -331,7 +331,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         logger.debug("Kubeflow docker container requirements: %s", requirements)
 
-        build_docker_image(
+        docker_utils.build_docker_image(
             build_context_path=get_source_root_path(),
             image_name=image_name,
             dockerignore_path=pipeline.dockerignore_file,
@@ -344,6 +344,11 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
         assert stack.container_registry  # should never happen due to validation
         stack.container_registry.push_image(image_name)
+
+        # Store the docker image digest in the runtime configuration so it gets
+        # tracked in the ZenStore
+        image_digest = docker_utils.get_image_digest(image_name) or image_name
+        runtime_configuration["docker_image"] = image_digest
 
     def run_pipeline(
         self,

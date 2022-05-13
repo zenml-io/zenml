@@ -120,17 +120,13 @@ class Project(BaseModel):
         id: Id of the project.
         creation_date: Date when the project was created.
         name: Name of the project.
-        created_by: ID of the user that created the project.
         description: Optional project description.
-        default_stack: Optional ID of the stack to use by default for pipelines.
     """
 
     id: UUID = Field(default_factory=uuid4)
     creation_date: datetime = Field(default_factory=datetime.now)
-    created_by: UUID = Field(default_factory=get_active_user_id)
     name: str
     description: Optional[str] = None
-    default_stack: Optional[UUID] = None
 
 
 class RoleAssignment(BaseModel):

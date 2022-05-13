@@ -988,8 +988,11 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 name,
             )
 
-    def set_active_project(self, project: Project) -> None:
+    def set_active_project(self, project: Optional[Project] = None) -> None:
         """Set the project for the local repository.
+
+        If no object is passed, this will unset the active project for this
+        repository.
 
         Args:
             project: The project to set as active.
@@ -997,22 +1000,20 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Raises:
             RuntimeError: if not in an initialized repository directory.
         """
-        if self.__config is None:
-            raise RuntimeError("Invalid repository, no configuration storage.")
-        self.__config.project_name = project.name
-        self.__config.project_id = project.id
-        self._write_config()
+        if not self.__config:
+            raise RuntimeError(
+                "Must be in a local ZenML repository to set an active project. "
+                "Make sure you are in the right directory, or first run "
+                "`zenml init` to initialize a ZenML repository."
+            )
 
-    def unset_active_project(self) -> None:
-        """Unset the active project for the local repository.
+        if project:
+            self.__config.project_name = project.name
+            self.__config.project_id = project.id
+        else:
+            self.__config.project_name = None
+            self.__config.project_id = None
 
-        Raises:
-            RuntimeError: if not in an initialized repository directory.
-        """
-        if self.__config is None:
-            raise RuntimeError("Invalid repository, no configuration storage.")
-        self.__config.project_name = None
-        self.__config.project_id = None
         self._write_config()
 
     @property
@@ -1022,11 +1023,13 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Returns:
              Project, if one is set that matches the id in the store.
         """
-        if self.__config is None:
-            raise RuntimeError("Invalid repository, no configuration storage.")
-        project_name = self.__config.project_name
-        if project_name is None:
+        if not self.__config:
             return None
+
+        project_name = self.__config.project_name
+        if not project_name:
+            return None
+
         project = self.zen_store.get_project(project_name)
         if self.__config.project_id != project.id:
             logger.warning(
@@ -1094,6 +1097,12 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
         metadata_store = self.get_stack(stack_name).metadata_store
         return metadata_store.get_pipeline(pipeline_name)
+
+        #
+        #
+        # from zenml.post_execution.pipeline_run import PipelineRunView
+        # runs = [PipelineRunView(pipeline_run_wrapper=run) for run in ]
+        # return PipelineView(name=pipeline_name, runs=runs)
 
     @staticmethod
     def is_repository_directory(path: Path) -> bool:

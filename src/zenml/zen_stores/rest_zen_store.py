@@ -29,6 +29,7 @@ from zenml.constants import (
     STACKS_EMPTY,
     TEAMS,
     USERS,
+PIPELINE_RUNS
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
@@ -39,6 +40,8 @@ from zenml.exceptions import (
 )
 from zenml.logger import get_logger
 from zenml.zen_stores import BaseZenStore
+from uuid import UUID
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 from zenml.zen_stores.models import (
     ComponentWrapper,
     FlavorWrapper,
@@ -829,6 +832,69 @@ class RestZenStore(BaseZenStore):
             RoleAssignment.parse_obj(assignment_dict)
             for assignment_dict in body
         ]
+
+    # Pipelines and pipeline runs
+
+    def get_pipeline_run(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunWrapper:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+        path = f"{PIPELINE_RUNS}/{pipeline_name}/{run_name}"
+        if project_name:
+            path += f"?project_name={project_name}"
+
+        body = self.get(path)
+        return PipelineRunWrapper.parse_obj(body)
+
+    def get_pipeline_runs(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunWrapper]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+        """
+        path = f"{PIPELINE_RUNS}/{pipeline_name}"
+        if project_name:
+            path += f"?project_name={project_name}"
+
+        body = self.get(path)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [PipelineRunWrapper.parse_obj(dict_) for dict_ in body]
+
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunWrapper,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
+        """
+        self.post(PIPELINE_RUNS, body=pipeline_run)
 
     # Private interface shall not be implemented for REST store, instead the
     # API only provides all public methods, including the ones that would

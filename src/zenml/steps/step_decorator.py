@@ -113,6 +113,7 @@ def step(
                 },
                 OUTPUT_SPEC: output_spec,
                 "__module__": func.__module__,
+                "__doc__": func.__doc__,
             },
         )
 

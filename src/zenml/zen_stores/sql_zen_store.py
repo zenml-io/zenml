@@ -16,7 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
-
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
@@ -122,6 +122,19 @@ class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
     project_id: Optional[UUID] = Field(
         default=None, foreign_key="projecttable.id"
     )
+
+
+class PipelineRunTable(SQLModel, table=True):
+    name: str = Field(primary_key=True)
+    zenml_version: str
+    git_sha: Optional[str]
+
+    # pipeline: PipelineWrapper
+    # stack: StackWrapper
+    # runtime_configuration: Dict[str, Any]
+
+    user_id: UUID = Field(foreign_key="usertable.id")
+    project_name: Optional[str] = Field(default=None, foreign_key="projecttable.name")
 
 
 class SqlZenStore(BaseZenStore):
@@ -1211,6 +1224,95 @@ class SqlZenStore(BaseZenStore):
                 RoleAssignment(**assignment.dict())
                 for assignment in session.exec(statement).all()
             ]
+
+    # Pipelines and pipeline runs
+
+    def get_pipeline_run(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunWrapper:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                statement = (
+                    select(PipelineRunTable).where(PipelineRunTable.name == run_name)
+                )
+                # TODO: pipeline name
+                if project_name:
+                    statement = statement.where(PipelineRunTable.project_name == project_name)
+
+                run = session.exec(statement).one()
+
+            except NoResultFound as error:
+                raise KeyError from error
+
+            return PipelineRunWrapper(**run.dict())
+
+    def get_pipeline_runs(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunWrapper]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+        """
+        with Session(self.engine) as session:
+            try:
+                statement = select(PipelineRunTable)
+                # TODO: pipeline name
+                if project_name:
+                    statement = statement.where(
+                        PipelineRunTable.project_name == project_name)
+
+                return [PipelineRunWrapper(**run.dict()) for run in session.exec(statement).all()]
+            except NoResultFound as error:
+                raise KeyError from error
+
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunWrapper,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
+        """
+        with Session(self.engine) as session:
+            existing_run = session.exec(
+                select(PipelineRunTable).where(PipelineRunTable.name == pipeline_run.name)
+            ).first()
+            if existing_run:
+                raise EntityExistsError(
+                    f"Pipeline run with name '{pipeline_run.name}' already exists."
+                )
+            sql_run = PipelineRunTable(
+                name=pipeline_run.name,
+                zenml_version=pipeline_run.zenml_version,
+                git_sha=pipeline_run.git_sha,
+                user_id=pipeline_run.user_id,
+                project_name=pipeline_run.project_name
+            )
+            session.add(sql_run)
+            session.commit()
 
     # Handling stack component flavors
 

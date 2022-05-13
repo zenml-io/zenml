@@ -35,6 +35,7 @@ from zenml.zen_stores.models import (
     User,
     ZenStoreModel,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 logger = get_logger(__name__)
 
@@ -910,6 +911,76 @@ class LocalZenStore(BaseZenStore):
         return self._get_role_assignments(
             team_id=team.id, project_id=project_id
         )
+
+    # Pipelines and pipeline runs
+
+    def get_pipeline_run(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunWrapper:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+        runs = self.__store.pipeline_runs[pipeline_name]
+
+        for run in runs:
+            if run.name != run_name:
+                continue
+            if project_name and run.project_name != project_name:
+                continue
+
+            return run
+
+        project_message = f" in project {project_name}." if project_name else "."
+        raise KeyError(
+            f"No pipeline run '{run_name}' found for pipeline "
+            f"'{pipeline_name}'{project_message}"
+        )
+
+    def get_pipeline_runs(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunWrapper]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+        """
+        runs = self.__store.pipeline_runs[pipeline_name]
+        if project_name:
+            runs = [run for run in runs if run.project_name == project_name]
+
+        return runs
+
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunWrapper,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
+        """
+        self.__store.pipeline_runs[pipeline_run.pipeline.name].append(
+            pipeline_run
+        )
+        self._write_store()
 
     # Handling stack component flavors
 

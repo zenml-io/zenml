@@ -182,23 +182,14 @@ def project() -> None:
 
 
 @project.command("list")
-@click.option("--user", "-u", type=str)
-def list_projects(user: Optional[str] = None) -> None:
+def list_projects() -> None:
     """List all projects."""
     cli_utils.print_active_profile()
     projects = Repository().zen_store.projects
-    if user is not None:
-        try:
-            user_id = Repository().zen_store.get_user(user).id
-        except KeyError:
-            cli_utils.warning(f"No such user: `{user}`. Showing all projects.")
-        else:
-            projects = [p for p in projects if p.created_by == user_id]
+
     if projects:
         active_project = Repository().active_project
-        active: Optional[UUID] = (
-            active_project.id if active_project is not None else None
-        )
+        active: Optional[UUID] = active_project.id if active_project else None
         cli_utils.print_pydantic_models(
             projects,
             columns=("name", "description", "creation_date", "default_stack"),
@@ -223,37 +214,8 @@ def create_project(
     except EntityExistsError:
         cli_utils.error(
             f"Cannot create project `{project_name}`. A project with this "
-            "name exists already."
+            "name already exists."
         )
-
-
-def _set_project(project_name: str) -> None:
-    """Set the project for the current repository."""
-    cli_utils.print_active_profile()
-    if Repository.find_repository() is None:
-        cli_utils.error(
-            "Must be in an active repository to register project. "
-            "Make sure you are in the right directory, or first run "
-            "`zenml init` to initialize a ZenML repository."
-        )
-    try:
-        active_project = Repository().zen_store.get_project(project_name)
-        Repository().set_active_project(project=active_project)
-    except KeyError:
-        cli_utils.error(
-            f'Cannot set "`{project_name}`" as active project. No such '
-            "project found in the store. If you want to create it first, "
-            f"try using `zenml project register {project_name}` to create "
-            "and set the project in one go, or create it first with "
-            f"`zenml project create {project_name}`."
-        )
-
-
-@project.command("set")
-@click.argument("project_name", type=str, required=True)
-def set_project(project_name: str) -> None:
-    """Set the project for the current repository."""
-    _set_project(project_name=project_name)
 
 
 @project.command("get")
@@ -266,83 +228,76 @@ def get_project() -> None:
             "No Repository configuration found. You must run `zenml init` "
             "before you can set or use an active project."
         )
-    if active_project is None:
-        cli_utils.warning(
-            "No project configured for this Repository. Run "
-            "`zenml project register NEW_PROJECT_NAME` to register this "
-            "repository as a new project or `zenml project set NAME` to set an "
-            "existing project for this repository."
-        )
-    else:
-        desc = (
+
+    if active_project:
+        description = (
             "\nDescription: " + active_project.description
             if active_project.description
             else ""
         )
-        cli_utils.declare(f"ACTIVE PROJECT: {active_project.name}{desc}")
+        cli_utils.declare(f"ACTIVE PROJECT: {active_project.name}{description}")
+    else:
+        cli_utils.warning(
+            "No project configured for this Repository. Run "
+            "`zenml project set <PROJECT_NAME>` to associate this "
+            "repository with an existing project."
+        )
 
 
-@project.command("register")
+@project.command("set")
 @click.argument("project_name", type=str, required=True)
-@click.option("--description", type=str, required=False)
-def register_project(
-    project_name: str, description: Optional[str] = None
-) -> None:
-    """Register current repository as new project."""
+def set_project(project_name: str) -> None:
+    """Set the project for the current repository."""
     cli_utils.print_active_profile()
     if Repository.find_repository() is None:
         cli_utils.error(
-            "Must be in an active repository to register project. "
+            "Must be in a local ZenML repository to set an active project. "
             "Make sure you are in the right directory, or first run "
             "`zenml init` to initialize a ZenML repository."
         )
     try:
-        Repository().zen_store.create_project(
-            project_name, description=description
-        )
-    except EntityExistsError:
+        active_project = Repository().zen_store.get_project(project_name)
+        Repository().set_active_project(project=active_project)
+    except KeyError:
         cli_utils.error(
-            f"Cannot register project as `{project_name}`. A project with this "
-            "name exists already."
+            f'Cannot set "`{project_name}`" as active project. No such '
+            "project found in the store. If you want to create it, run:"
+            f"`zenml project create {project_name}`."
         )
-    else:
-        _set_project(project_name)
 
 
 @project.command("unset")
 def unset_project() -> None:
     """Unset the active project from current repository"""
     cli_utils.print_active_profile()
-    Repository().unset_active_project()
-    cli_utils.declare("Removed active project setting from current repository.")
+    if not Repository.find_repository():
+        cli_utils.error(
+            "Must be in a local ZenML repository to unset an active project. "
+            "Make sure you are in the right directory, or first run "
+            "`zenml init` to initialize a ZenML repository."
+        )
+    Repository().set_active_project(None)
 
 
 @project.command("delete")
 @click.argument(
     "project_name",
     type=str,
-    required=False,
+    required=True,
 )
-def delete_project(project_name: Optional[str] = None) -> None:
+def delete_project(project_name: str) -> None:
     """Delete a project. If name isn't specified, delete current project."""
     cli_utils.print_active_profile()
     active_project = Repository().active_project
-    active_project_name = active_project.name if active_project else None
-    name = project_name or active_project_name
-    if not name:
-        cli_utils.error(
-            "No project specified or currently active. Can't delete anything."
-        )
-    cli_utils.confirmation(f"Are you sure you want to delete project `{name}`?")
 
-    if name == active_project_name:
-        # if the profile is active, deactive it first before deleting
+    cli_utils.confirmation(
+        f"Are you sure you want to delete project `{project_name}`?"
+    )
+
+    if active_project:
         unset_project()
 
-    try:
-        Repository().zen_store.delete_project(project_name=name)
-    except KeyError:
-        cli_utils.warning(f"No project found for name '{name}'.")
+    Repository().zen_store.delete_project(project_name=project_name)
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
