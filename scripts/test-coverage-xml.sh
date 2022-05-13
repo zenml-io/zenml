@@ -18,6 +18,7 @@ if [ -n "$1" ]; then
     coverage run -m pytest $TEST_SRC --color=yes -vv
 else
     coverage run -m pytest tests/unit --color=yes -vv
+    coverage run -m pytest tests/unit --store-type=sql --color=yes -vv
     coverage run -m pytest tests/integration --use-virtualenv --color=yes -vv
 fi
 coverage combine

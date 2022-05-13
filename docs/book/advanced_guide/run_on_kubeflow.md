@@ -164,7 +164,7 @@ creates for you. We do that by passing a file
 path as a parameter to the `@pipeline` decorator:
 
 ```python
-@pipeline(requirements_file="path_to_requirements.txt")
+@pipeline(requirements="path_to_requirements.txt")
 def mnist_pipeline(...)
 ```
 
@@ -175,7 +175,7 @@ Make sure to not add the `.zen`
 folder to the `.dockerignore`.
 
 ```python
-@pipeline(requirements_file="path_to_requirements.txt",
+@pipeline(requirements="path_to_requirements.txt",
           dockerignore_file="path_to_dockerignore")
 def mnist_pipeline(...)
 ```

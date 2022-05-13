@@ -187,7 +187,7 @@ class AzureMLStepOperator(BaseStepOperator):
             # active profile contents into the build context, to have
             # the configured stacks accessible from within the Azure ML
             # environment.
-            GlobalConfiguration().copy_config_with_active_profile(
+            GlobalConfiguration().copy_active_configuration(
                 config_path,
                 load_config_path=f"./{CONTAINER_ZENML_CONFIG_DIR}",
             )
