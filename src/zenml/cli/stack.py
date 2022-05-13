@@ -600,7 +600,8 @@ def delete_stack(
     if old_force:
         yes = old_force
         cli_utils.warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+            "The `--force` flag will soon be deprecated. Use `--yes` or "
+            "`-y` instead."
         )
     cli_utils.print_active_profile()
     confirmation = yes or cli_utils.confirmation(
@@ -704,14 +705,16 @@ def up_stack() -> None:
     "-f",
     "old_force",
     is_flag=True,
-    help="DEPRECATED: Deprovisions local resources instead of suspending them. Use `-y/--yes` instead.",
+    help="DEPRECATED: Deprovisions local resources instead of suspending "
+    "them. Use `-y/--yes` instead.",
 )
 def down_stack(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the active stack deployment."""
     if old_force:
         force = old_force
         cli_utils.warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+            "The `--force` flag will soon be deprecated. Use `--yes` "
+            "or `-y` instead."
         )
     cli_utils.print_active_profile()
 
@@ -848,7 +851,8 @@ def import_stack(
 
     # standard 'zenml stack import stack_name [file.yaml]' calls
     else:
-        # if filename is not given, assume default export name "<stack_name>.yaml"
+        # if filename is not given, assume default export name
+        # "<stack_name>.yaml"
         if filename is None:
             filename = stack_name + ".yaml"
         data = read_yaml(filename)
@@ -858,8 +862,9 @@ def import_stack(
     if data["zenml_version"] != zenml.__version__:
         cli_utils.error(
             f"Cannot import stacks from other ZenML versions. "
-            f"The stack was created using ZenML version {data['zenml_version']}, "
-            f"you have version {zenml.__version__} installed."
+            f"The stack was created using ZenML version "
+            f"{data['zenml_version']}, you have version "
+            f"{zenml.__version__} installed."
         )
 
     # ask user for new stack_name if current one already exists

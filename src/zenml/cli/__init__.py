@@ -407,21 +407,31 @@ that should be used. For example, an AWS secret has predefined keys of
 `aws_session_token`). If you do not have a specific secret type you wish to use,
 ZenML will use the `arbitrary` type to store your key-value pairs.
 
-To register a secret, use the `register` command:
+To register a secret, use the `register` command and pass the key-value pairs
+as command line arguments:
 
 ```bash
-zenml secret register SECRET_NAME
+zenml secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
-If you wish to register a single secret non-interactively, you can
-pass in a key-value pair at the command line, as in the following example:
+Note that the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `register` command instead:
 
 ```shell
-zenml secret register SECRET_NAME -k KEY -v VALUE
+zenml secret register SECRET_NAME -i
 ```
 
-Note that the key and value will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `register` command instead.
+As an alternative to the interactive mode, also useful for values that
+are long or contain newline or special characters, you can also use the special
+`@` syntax to indicate to ZenML that the value needs to be read from a file:
+
+```bash
+zenml secret register SECRET_NAME --schema=aws \
+   --aws_access_key_id=1234567890 \
+   --aws_secret_access_key=abcdefghij \
+   --aws_session_token=@/path/to/token.txt
+```
+
 
 To list all the secrets available, use the `list` command:
 
@@ -438,18 +448,15 @@ zenml secret get SECRET_NAME
 To update a secret, use the `update` command:
 
 ```bash
-zenml secret update SECRET_NAME
+zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
-If you wish to update a single secret non-interactively, you can
-pass in a key-value pair at the command line, as in the following example:
+Note that the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `update` command instead:
 
 ```shell
-zenml secret update SECRET_NAME -k KEY -v NEW_VALUE
+zenml secret update SECRET_NAME -i
 ```
-
-Note that the key and value will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `update` command instead.
 
 Finally, to delete a secret, use the `delete` command:
 
