@@ -132,7 +132,7 @@ run pipelines, is stored.
 
 ## Runner Scripts
 
-A runner script is a python file, usually called `run.py` and located at the root of a 
+A runner script is a Python file, usually called `run.py` and located at the root of a 
 ZenML repository, which has the code to actually create a pipeline run. The code usually 
 looks like this:
 
