@@ -39,21 +39,15 @@ from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 from zenml.repository import Repository
 
 if __name__ == "__main__":
-
-    # We need to make sure the evidently step is configured properly
-    evidently_profile_config = EvidentlyProfileConfig(
-        column_mapping=None, profile_sections=["datadrift"]
-    )
-
     p = quickstart_pipeline(
         importer=importer(),
         trainer=svc_trainer_mlflow(),
         evaluator=evaluator(),
         get_reference_data=get_reference_data(),
-        drift_detector=EvidentlyProfileStep(config=evidently_profile_config),
+        drift_detector=EvidentlyProfileStep(),
         deployment_trigger=deployment_trigger(),
         model_deployer=mlflow_model_deployer_step(),
-    )
+    ).with_config('pipelines/quickstart_pipeline/config.yaml')
 
     p.run()
 

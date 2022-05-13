@@ -1,0 +1,5 @@
+steps:
+  drift_detector:
+    parameters:
+      profile_sections: 
+        - "numericaltargetdrift"
