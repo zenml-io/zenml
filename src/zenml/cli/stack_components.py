@@ -450,11 +450,13 @@ def generate_stack_component_remove_attribute_command(
                 cli_utils.error(str(e))
                 return
 
-            component_class = repo.get_flavor(
-                name=current_component.FLAVOR,
-                component_type=component_type,
+            optional_attributes = _get_optional_attributes(
+                current_component.__class__
             )
-            required_attributes = current_component.schema()["required"]
+            required_attributes = _get_required_attributes(
+                current_component.__class__
+            )
+
             for arg in parsed_args:
                 if (
                     arg in required_attributes
@@ -463,10 +465,7 @@ def generate_stack_component_remove_attribute_command(
                     cli_utils.error(
                         f"Cannot remove mandatory attribute '{arg}' of '{name}' {current_component.TYPE}. "
                     )
-
-            optional_attributes = _get_optional_attributes(component_class)
-            for arg in parsed_args:
-                if arg not in optional_attributes:
+                elif arg not in optional_attributes:
                     cli_utils.error(
                         f"You cannot remove the attribute '{arg}' of "
                         f"'{name}' {current_component.TYPE}. \n"
