@@ -143,10 +143,78 @@ representation of the pipeline and uploaded to the kubeflow instance.
 To create this yaml file a callable is defined within which a `dsl.ContainerOp` 
 is created for each step. This ContainerOp contains the container entrypoint 
 command and arguments that will make the image run just the one step.
-The ContainerOps are assembled according to their interdependencies inside of a 
+The ContainerOps are assembled according to their interdependencies inside a 
 `dsl.Pipeline` which can then be compiled into the yaml file.
 
 
-## How to use the Step Entrypoint and its Configuration
+## Base Implementation of the Step Entrypoint Configuration
+
+Within the base docker images that is used for container based orchestration
+the `src.zenml.entrypoints.step_entrypoint.py` is the default entrypoint to run 
+a specific step. It does so by loading an orchestrator specific 
+`StepEntrypointConfiguration` object. This object is then used to parse all
+entrypoint arguments (e.g. --step_source <relative-path-to-step>). Finally, the
+`StepEntrypointConfiguration.run()` method is used to execute the step. 
+Under the hood this will eventually also call the orchestrators `run_step()` 
+method.
+
+The `StepEntrypointConfiguration` is the base class that already implements 
+most of the required functionality. 
 
 ...
+
+```python
+from abc import ABC, abstractmethod
+from typing import Any, List, Set
+
+from zenml.steps import BaseStep
+
+DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND = [
+    "python",
+    "-m",
+    "zenml.entrypoints.step_entrypoint",
+]
+# Constants for all the ZenML default entrypoint options
+ENTRYPOINT_CONFIG_SOURCE_OPTION = "entrypoint_config_source"
+PIPELINE_JSON_OPTION = "pipeline_json"
+MAIN_MODULE_SOURCE_OPTION = "main_module_source"
+STEP_SOURCE_OPTION = "step_source"
+INPUT_SPEC_OPTION = "input_spec"
+
+class StepEntrypointConfiguration(ABC):
+    
+    @classmethod
+    def get_custom_entrypoint_options(cls) -> Set[str]:
+        """Custom options for this entrypoint configuration"""
+        return set()
+
+    @classmethod
+    def get_custom_entrypoint_arguments(
+        cls, step: BaseStep, **kwargs: Any
+) -> List[str]:
+        """Custom arguments the entrypoint command should be called with."""
+        return []
+
+    @abstractmethod
+    def get_run_name(self, pipeline_name: str) -> str:
+        """Returns the run name."""
+
+```
+
+## Build your own Step Entrypoint Configuration
+
+There is only one mandatory method `get_run_name(...)` that you need to
+implement in order to get a functioning entrypoint. Inside this method you
+need to return a string which **has** to be the same for all steps that are
+executed as part of the same pipeline run.
+
+If you need to pass additional arguments to the entrypoint, there are
+two methods that you need to implement:
+
+* `get_custom_entrypoint_options()`: This method should return all the 
+additional options that you require in the entrypoint.
+
+* `get_custom_entrypoint_arguments(...)`: This method should return a list of 
+arguments that should be passed to the entrypoint. The arguments need to provide
+values for all options defined in the `custom_entrypoint_options()` method 
+mentioned above.
