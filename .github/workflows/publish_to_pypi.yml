@@ -33,8 +33,6 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: publish
         env: # Or as an environment variable
-#          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
-#          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
           PYPI_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
           PYPI_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
         run: ./scripts/publish.sh
