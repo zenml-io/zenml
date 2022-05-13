@@ -31,8 +31,10 @@
 import json
 import os
 import textwrap
-from typing import Dict, List, MutableMapping, Optional
+from typing import Callable, Dict, List, MutableMapping, Optional
 
+from kfp import dsl
+from kubernetes import client as k8s_client
 from tfx.orchestration.portable import data_types
 from tfx.proto.orchestration.pipeline_pb2 import (
     InputSpec,
@@ -44,6 +46,29 @@ from tfx.types import artifact, channel, standard_artifacts
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.repository import Repository
+
+
+def mount_config_map_op(
+    config_map_name: str,
+) -> Callable[[dsl.ContainerOp], None]:
+    """Mounts all key-value pairs found in the named Kubernetes ConfigMap.
+    All key-value pairs in the ConfigMap are mounted as environment variables.
+    Args:
+      config_map_name: The name of the ConfigMap resource.
+    Returns:
+      An OpFunc for mounting the ConfigMap.
+    """
+
+    def mount_config_map(container_op: dsl.ContainerOp) -> None:
+        """Mounts all key-value pairs found in the Kubernetes ConfigMap."""
+        config_map_ref = k8s_client.V1ConfigMapEnvSource(
+            name=config_map_name, optional=True
+        )
+        container_op.container.add_env_from(
+            k8s_client.V1EnvFromSource(config_map_ref=config_map_ref)
+        )
+
+    return mount_config_map
 
 
 def _sanitize_underscore(name: str) -> Optional[str]:

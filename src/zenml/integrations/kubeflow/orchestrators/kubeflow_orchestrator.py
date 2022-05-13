@@ -26,23 +26,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# The `_mount_config_map_op()` and minor parts of the
-# `prepare_or_run_pipeline()` method of this file are inspired by the kubeflow
-# dag runner implementation of tfx
+# Minor parts of the `prepare_or_run_pipeline()` method of this file are
+# inspired by the kubeflow dag runner implementation of tfx
 
 import os
 import re
 import sys
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 from uuid import UUID
 
 import kfp
@@ -61,7 +51,10 @@ from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
-from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
+from zenml.integrations.kubeflow.orchestrators import (
+    local_deployment_utils,
+    utils,
+)
 from zenml.integrations.kubeflow.orchestrators.kubeflow_entrypoint_configuration import (
     METADATA_UI_PATH_OPTION,
     KubeflowEntrypointConfiguration,
@@ -91,34 +84,6 @@ KFP_POD_LABELS = {
     "add-pod-env": "true",
     "pipelines.kubeflow.org/pipeline-sdk-type": "zenml",
 }
-CONTAINER_ENTRYPOINT_COMMAND = [
-    "python",
-    "-m",
-    "zenml.integrations.kubeflow.container_entrypoint",
-]
-
-
-def _mount_config_map_op(
-    config_map_name: str,
-) -> Callable[[dsl.ContainerOp], None]:
-    """Mounts all key-value pairs found in the named Kubernetes ConfigMap.
-    All key-value pairs in the ConfigMap are mounted as environment variables.
-    Args:
-      config_map_name: The name of the ConfigMap resource.
-    Returns:
-      An OpFunc for mounting the ConfigMap.
-    """
-
-    def mount_config_map(container_op: dsl.ContainerOp) -> None:
-        """Mounts all key-value pairs found in the Kubernetes ConfigMap."""
-        config_map_ref = k8s_client.V1ConfigMapEnvSource(
-            name=config_map_name, optional=True
-        )
-        container_op.container.add_env_from(
-            k8s_client.V1EnvFromSource(config_map_ref=config_map_ref)
-        )
-
-    return mount_config_map
 
 
 class KubeflowOrchestrator(BaseOrchestrator):
@@ -413,7 +378,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
         assert stack.container_registry  # should never happen due to validation
         stack.container_registry.push_image(image_name)
 
-    def _configure_container_op(self, container_op: dsl.ContainerOp) -> None:
+    @staticmethod
+    def _configure_container_op(container_op: dsl.ContainerOp) -> None:
         """Performs a few important changes in place to the configuration of the
         container op.
         Configures persistent mounted volumes for each stack component that
@@ -520,7 +486,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             container_op.add_pod_label(k, v)
 
         # Mounts configmap containing Metadata gRPC server configuration.
-        container_op.apply(_mount_config_map_op("metadata-grpc-configmap"))
+        container_op.apply(utils.mount_config_map_op("metadata-grpc-configmap"))
 
     def prepare_or_run_pipeline(
         self,

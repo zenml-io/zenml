@@ -21,7 +21,7 @@ from tfx.orchestration.portable import data_types
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode as Pb2PipelineNode
 
 from zenml.entrypoints import StepEntrypointConfiguration
-from zenml.integrations.kubeflow.orchestrators import entrypoint_utils
+from zenml.integrations.kubeflow.orchestrators import utils
 from zenml.steps import BaseStep
 
 METADATA_UI_PATH_OPTION = "metadata_ui_path"
@@ -69,7 +69,7 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
         """Writes a markdown file that will display information about the step
         execution and input/output artifacts in the KFP UI."""
         if execution_info:
-            entrypoint_utils.dump_ui_metadata(
+            utils.dump_ui_metadata(
                 node=pipeline_node,
                 execution_info=execution_info,
                 metadata_ui_path=self.entrypoint_args[METADATA_UI_PATH_OPTION],
