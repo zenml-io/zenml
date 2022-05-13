@@ -524,7 +524,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        sorted_list_of_steps: List[BaseStep],
+        sorted_steps: List[BaseStep],
         pipeline: "BasePipeline",
         pb2_pipeline: Pb2Pipeline,
         stack: "Stack",
@@ -584,7 +584,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             # Dictionary of container_ops index by the associated step name
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
-            for step in sorted_list_of_steps:
+            for step in sorted_steps:
                 # The command will be needed to eventually call the python step
                 # within the docker container
                 command = (

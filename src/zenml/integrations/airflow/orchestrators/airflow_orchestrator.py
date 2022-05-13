@@ -102,7 +102,7 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        sorted_list_of_steps: List[BaseStep],
+        sorted_steps: List[BaseStep],
         pipeline: "BasePipeline",
         pb2_pipeline: Pb2Pipeline,
         stack: "Stack",
@@ -139,7 +139,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         # to link steps together with the operators of their upstream nodes
         step_name_to_airflow_operator = {}
 
-        for step in sorted_list_of_steps:
+        for step in sorted_steps:
             # Create callable that will be used by airflow to execute the step
             # within the orchestrated environment
             def _step_callable(step_instance: "BaseStep", **kwargs):

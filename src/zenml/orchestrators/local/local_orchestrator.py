@@ -37,7 +37,7 @@ class LocalOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        sorted_list_of_steps: List[BaseStep],
+        sorted_steps: List[BaseStep],
         pipeline: "BasePipeline",
         pb2_pipeline: Pb2Pipeline,
         stack: "Stack",
@@ -54,7 +54,7 @@ class LocalOrchestrator(BaseOrchestrator):
         assert runtime_configuration.run_name, "Run name must be set"
 
         # Run each step
-        for step in sorted_list_of_steps:
+        for step in sorted_steps:
             self.run_step(
                 step=step,
                 run_name=runtime_configuration.run_name,
