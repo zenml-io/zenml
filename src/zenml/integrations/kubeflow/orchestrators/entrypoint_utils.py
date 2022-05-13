@@ -26,7 +26,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-# This file is a copied in large parts from the tfx kubeflow entrypoint.
+# This file is copied in large parts from the tfx kubeflow entrypoint.
 
 import json
 import os
