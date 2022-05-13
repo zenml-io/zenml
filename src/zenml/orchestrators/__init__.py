@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Orchestrator
-
 An orchestrator is a special kind of backend that manages the running of each
 step of the pipeline. Orchestrators administer the actual pipeline runs. You can
 think of it as the 'root' of any pipeline job that you run during your

@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Zen Service
-
 The Zen Service is a simple webserver to let you collaborate on stacks via
 the network. It can be spun up in a background daemon from the command line
 using `zenml service up` and managed from the same command line group.

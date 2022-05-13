@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Container Registry
-
 A container registry is a store for (Docker) containers. A ZenML workflow
 involving a container registry would automatically containerize your code to
 be transported across stacks running remotely. As part of the deployment to
