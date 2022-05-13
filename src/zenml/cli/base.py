@@ -168,6 +168,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
                 user_id=gc.user_id,
                 analytics_opt_in=gc.analytics_opt_in,
                 version=gc.version,
+                user_metadata=gc.user_metadata,
             )
             fresh_gc._add_and_activate_default_profile()
             declare(f"Reinitialized ZenML global config at {Path.cwd()}.")
