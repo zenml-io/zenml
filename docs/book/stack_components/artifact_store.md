@@ -17,10 +17,10 @@ The artifact store establishes one of the main components in every ZenML stack.
 Now, let us take a deeper dive into the fundamentals behind its abstraction,
 namely the `BaseArtifactStore`:
 
-1. As it is the base class for a specific type of `StackComponent`,
-    it inherits from the `StackComponent` class and sets the `TYPE` class 
-    variable to a `StackComponentType` leaving the `FLAVOR` class variable is 
-    still unoccupied.
+1. As it is the base class for a specific type of StackComponent,
+    it inherits from the StackComponent class. This sets the `TYPE`
+    variable to a StackComponentType. The `FLAVOR` class variable needs to be 
+    set in the specific subclass.
 2. As ZenML only supports filesystem-based artifact stores, it features an 
     instance configuration parameter called `path`, which will indicate the 
     root path of the artifact store. When creating an instance of any flavor of 
