@@ -41,7 +41,7 @@ GLOBAL_ZENML_SERVER_CONFIG_FILEPATH = os.path.join(
     tag=CliCategories.MANAGEMENT_TOOLS,
 )
 def server() -> None:
-    """ZenML server."""
+    """Commands for managing the ZenServer."""
 
 
 @server.command("explain", help="Explain the ZenServer concept.")
@@ -58,7 +58,7 @@ def explain_server() -> None:
 @click.option("--port", type=int, default=8000, show_default=True)
 @click.option("--profile", type=str, default=None)
 def up_server(port: int, profile: Optional[str]) -> None:
-    """Provisions resources for the zen server."""
+    """Provisions resources for the ZenServer."""
     from zenml.services import ServiceRegistry
     from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
 

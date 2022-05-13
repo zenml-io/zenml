@@ -27,7 +27,7 @@ from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 
 @pytest.fixture
 def running_zen_server(tmp_path_factory: pytest.TempPathFactory) -> ZenServer:
-    """Spin up a zen server to do tests on."""
+    """Spin up a ZenServer to do tests on."""
     tmp_path = tmp_path_factory.mktemp("local_zen_store")
 
     backing_zen_store = LocalZenStore().initialize(str(tmp_path))

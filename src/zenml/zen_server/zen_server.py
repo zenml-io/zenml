@@ -34,7 +34,7 @@ class ZenServerEndpointConfig(LocalDaemonServiceEndpointConfig):
     """ZenServer endpoint configuration.
 
     Attributes:
-        zen_server_uri_path: URI path for the zenml service
+        zen_server_uri_path: URI path for the ZenServer
     """
 
     zen_server_uri_path: str
@@ -63,7 +63,7 @@ class ZenServerConfig(LocalDaemonServiceConfig):
     """ZenServer deployment configuration.
 
     Attributes:
-        port: Port at which the service responisble for ZenServer is running
+        port: Port at which the service responisble for the ZenServer is running
         store_profile_configuration: ProfileConfiguration describing where
             the service should persist its data.
     """
@@ -154,7 +154,7 @@ class ZenServer(LocalDaemonService):
 
     @property
     def zen_server_uri(self) -> Optional[str]:
-        """Get the URI where the service responsible for ZenServer is running.
+        """Get the URI where the service responsible for the ZenServer is running.
 
         Returns:
             The URI where the service can be contacted for requests,
