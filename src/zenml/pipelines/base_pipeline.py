@@ -311,7 +311,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"Using the values passed in as `requirements` and ignoring the file '{self.requirements_file}'."
                 )
         elif self.requirements_file and fileio.exists(self.requirements_file):
-            # TODO [MEDIUM]: Deprecate the `requirements_file` option
+            # TODO [ENG-883]: Deprecate the `requirements_file` option
             with fileio.open(self.requirements_file, "r") as f:
                 requirements.update(
                     {
