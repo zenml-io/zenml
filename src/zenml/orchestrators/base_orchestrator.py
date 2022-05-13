@@ -110,7 +110,7 @@ class BaseOrchestrator(StackComponent, ABC):
     In order to build your own orchestrator, all you need to do is subclass
     from this class and implement your own `prepare_or_run_pipeline()`
     method. Overwriting other methods is NOT recommended but possible.
-    See the docstring of the prepare_or_run_pipeline method to find out
+    See the docstring of the `prepare_or_run_pipeline()` method to find out
     details of what needs to be implemented within it.
     """
 
