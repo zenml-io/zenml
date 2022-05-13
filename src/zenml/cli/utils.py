@@ -476,7 +476,7 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
     )
 
     assert all(a.startswith("--") for a in args), warning_message
-    p_args = [a.lstrip("--") for a in args]
+    p_args = [a.lstrip("-") for a in args]
     assert all(v.isidentifier() for v in p_args), warning_message
     return p_args
 

@@ -31,7 +31,7 @@ from zenml.utils.source_utils import validate_flavor_source
 from zenml.zen_stores.models.component_wrapper import ComponentWrapper
 
 
-def _get_required_properties(
+def _get_required_attributes(
     component_class: Type[StackComponent],
 ) -> List[str]:
     """Gets the required properties for a stack component."""
@@ -43,7 +43,7 @@ def _get_required_properties(
     ]
 
 
-def _get_available_properties(
+def _get_available_attributes(
     component_class: Type[StackComponent],
 ) -> List[str]:
     """Gets the available non-mandatory properties for a stack component."""
@@ -54,7 +54,7 @@ def _get_available_properties(
     ]
 
 
-def _get_optional_properties(
+def _get_optional_attributes(
     component_class: Type[StackComponent],
 ) -> List[str]:
     """Gets the optional properties for a stack component."""
@@ -388,7 +388,7 @@ def generate_stack_component_update_command(
                 component_type=component_type,
             )
 
-            available_properties = _get_available_properties(component_class)
+            available_properties = _get_available_attributes(component_class)
             for prop in parsed_args.keys():
                 if (prop not in available_properties) and (
                     len(available_properties) > 0
@@ -464,14 +464,14 @@ def generate_stack_component_remove_attribute_command(
                         f"Cannot remove mandatory attribute '{arg}' of '{name}' {current_component.TYPE}. "
                     )
 
-            optional_properties = _get_optional_properties(component_class)
+            optional_attributes = _get_optional_attributes(component_class)
             for arg in parsed_args:
-                if arg not in optional_properties:
+                if arg not in optional_attributes:
                     cli_utils.error(
                         f"You cannot remove the attribute '{arg}' of "
                         f"'{name}' {current_component.TYPE}. \n"
-                        f"You can only remove the following attributes: "
-                        f"'{', '.join(optional_properties)}'."
+                        f"You can only remove the following optional attributes: "
+                        f"'{', '.join(optional_attributes)}'."
                     )
 
             updated_component = current_component.copy(
