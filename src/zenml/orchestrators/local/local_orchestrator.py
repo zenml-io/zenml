@@ -43,8 +43,7 @@ class LocalOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """This method iterates through all steps and executes them. In case of
-        a schedule within the runtime configuration, a warning is raised."""
+        """This method iterates through all steps and executes them sequentially."""
         if runtime_configuration.schedule:
             logger.warning(
                 "Local Orchestrator currently does not support the"
