@@ -237,7 +237,7 @@ def go() -> None:
 
 def _prompt_email(gc: GlobalConfiguration) -> bool:
     """Ask the user to give their email address. Returns
-    True if email is given, else returns False."""
+    True if email is given, else False."""
     from zenml.cli.text_utils import (
         zenml_go_email_prompt,
         zenml_go_thank_you_message,
