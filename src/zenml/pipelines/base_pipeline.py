@@ -18,6 +18,7 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    List,
     NoReturn,
     Optional,
     Set,
@@ -28,6 +29,7 @@ from typing import (
     cast,
 )
 
+import zenml.cli.utils as cli_utils
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
@@ -61,6 +63,7 @@ PIPELINE_INNER_FUNC_NAME: str = "connect"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_REQUIRED_INTEGRATIONS: str = "required_integrations"
 PARAM_REQUIREMENTS_FILE: str = "requirements_file"
+PARAM_REQUIREMENTS: str = "requirements"
 PARAM_DOCKERIGNORE_FILE: str = "dockerignore_file"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_SECRETS: str = "secrets"
@@ -101,8 +104,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
         name: The name of this pipeline.
         enable_cache: A boolean indicating if caching is enabled for this
             pipeline.
-        requirements_file: Optional path to a pip requirements file that
-            contains all requirements to run the pipeline.
+        requirements_file: DEPRECATED: Optional path to a pip requirements file
+            that contains all requirements to run the pipeline. (Use
+            `requirements` instead.)
+        requirements: Optional list of (string) pip requirements to run the pipeline, or a string path to a requirements file.
         required_integrations: Optional set of integrations that need to be
             installed for this pipeline to run.
     """
@@ -116,6 +121,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
         self.required_integrations = kwargs.pop(PARAM_REQUIRED_INTEGRATIONS, ())
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
+        if self.requirements_file:
+            logger.warning(
+                "The `requirements_file` argument has been deprecated. Please use `requirements` instead to pass in either a string path to a file listing your 'requirements' or a list of the individual requirements."
+            )
+        self._requirements = kwargs.pop(PARAM_REQUIREMENTS, None)
         self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
         self.secrets = kwargs.pop(PARAM_SECRETS, [])
 
@@ -238,11 +248,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     @property
     def requirements(self) -> Set[str]:
-        """Set of python requirements of this pipeline.
+        """Set of Python requirements of this pipeline.
 
         This property is a combination of the requirements of
         - required integrations for this pipeline
-        - the `requirements_file` specified for this pipeline
+        - the `requirements` specified for this pipeline
         """
         requirements = set()
 
@@ -260,7 +270,48 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"'{integration_name}'."
                 ) from e
 
-        if self.requirements_file and fileio.exists(self.requirements_file):
+        if isinstance(self._requirements, str) and fileio.exists(
+            self._requirements
+        ):
+            with fileio.open(self._requirements, "r") as f:
+                requirements.update(
+                    {
+                        requirement.strip()
+                        for requirement in f.read().split("\n")
+                    }
+                )
+            if self.requirements_file:
+                cli_utils.warning(
+                    f"Using the file path passed in as `requirements` and ignoring the file '{self.requirements_file}'."
+                )
+        # Add this logic back in (described in #ENG-882)
+        #
+        # elif isinstance(self._requirements, str) and self._requirements:
+        #     root = str(Repository().root)
+        #     if root:
+        #         assumed_requirements_file = os.path.join(
+        #             root, "requirements.txt"
+        #         )
+        #         if fileio.exists(assumed_requirements_file):
+        #             with fileio.open(assumed_requirements_file, "r") as f:
+        #                 requirements.update(
+        #                     {
+        #                         requirement.strip()
+        #                         for requirement in f.read().split("\n")
+        #                     }
+        #                 )
+        #                 logger.info(
+        #                     "Using requirements file: `%s`",
+        #                     assumed_requirements_file,
+        #                 )
+        elif isinstance(self._requirements, List):
+            requirements.update(self._requirements)
+            if self.requirements_file:
+                cli_utils.warning(
+                    f"Using the values passed in as `requirements` and ignoring the file '{self.requirements_file}'."
+                )
+        elif self.requirements_file and fileio.exists(self.requirements_file):
+            # TODO [MEDIUM]: Deprecate the `requirements_file` option
             with fileio.open(self.requirements_file, "r") as f:
                 requirements.update(
                     {
