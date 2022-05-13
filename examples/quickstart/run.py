@@ -81,5 +81,5 @@ if __name__ == "__main__":
 
     X_test = latest_run.steps[0].outputs["X_test"].read()
     y_test = latest_run.steps[0].outputs["y_test"].read()
-
+    pred0 = service.predict(X_test[0:1])
     print(f"Model predicted {pred0}, true label was {y_test[0]}")
