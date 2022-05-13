@@ -13,13 +13,17 @@
 #  permissions and limitations under the License.
 
 from contextlib import ExitStack as does_not_raise
+from typing import Iterator
 
 import pytest
 from click.testing import CliRunner
 
+from tests.unit.test_flavor import AriaOrchestrator
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
+from zenml.stack.flavor_registry import flavor_registry
 from zenml.stack.stack_component import StackComponent
+from zenml.zen_stores.models import FlavorWrapper
 
 NOT_STACK_COMPONENTS = ["abc", "my_other_cat_is_called_blupus", "stack123"]
 
@@ -169,212 +173,160 @@ def test_updating_stack_component_with_unconfigured_property_fails(
         ).favorite_cat
 
 
+@pytest.fixture
+def test_flavor() -> Iterator[FlavorWrapper]:
+    """Create a flavor for testing."""
+    aria_flavor = FlavorWrapper(
+        name=AriaOrchestrator.FLAVOR,
+        type=AriaOrchestrator.TYPE,
+        source=f"{AriaOrchestrator.__module__}.{AriaOrchestrator.__name__}",
+    )
+
+    flavor_registry._register_flavor(aria_flavor)
+    yield aria_flavor
+    flavor_registry._flavors[aria_flavor.type].pop(aria_flavor.name)
+
+
 def test_removing_attributes_from_stack_component_works(
-    clean_repo,
+    clean_repo, test_flavor
 ) -> None:
     """Test that removing an optional attribute from a stack component succeeds."""
     runner = CliRunner()
 
-    register_container_registry_command = cli.commands[
-        "container-registry"
-    ].commands["register"]
-    register_step_operator_command = cli.commands["step-operator"].commands[
+    register_orchestrator_command = cli.commands["orchestrator"].commands[
         "register"
     ]
 
-    container_registry_registration = runner.invoke(
-        register_container_registry_command,
+    orchestrator_registration = runner.invoke(
+        register_orchestrator_command,
         [
-            "new_container_registry",
+            "new_orchestrator",
             "--flavor",
-            "default",
-            "--uri=some_random_uri.com",
+            "aria",
+            '--favorite_orchestration_language="arn:arias:aws:iam"',
+            '--favorite_orchestration_language_version="a1.big.cat"',
         ],
     )
-    assert container_registry_registration.exit_code == 0
+    assert orchestrator_registration.exit_code == 0
 
-    step_operator_registration = runner.invoke(
-        register_step_operator_command,
-        [
-            "new_step_operator",
-            "--flavor",
-            "sagemaker",
-            '--role="arn:arias:aws:iam"',
-            '--instance_type="a1.big.cat"',
-            '--bucket="s3://ariasbucket"',
-        ],
-    )
-    assert step_operator_registration.exit_code == 0
-
-    remove_attribute_command = cli.commands["step-operator"].commands[
+    remove_attribute_command = cli.commands["orchestrator"].commands[
         "remove-attribute"
     ]
     remove_attribute = runner.invoke(
         remove_attribute_command,
         [
-            "new_step_operator",
-            "--bucket",
+            "new_orchestrator",
+            "--favorite_orchestration_language_version",
         ],
     )
     assert remove_attribute.exit_code == 0
-    step_operator = clean_repo.get_stack_component(
-        StackComponentType.STEP_OPERATOR, "new_step_operator"
+    orchestrator = clean_repo.get_stack_component(
+        StackComponentType.ORCHESTRATOR, "new_orchestrator"
     )
-    assert step_operator.bucket is None
+    assert orchestrator.favorite_orchestration_language_version is None
 
 
 def test_removing_nonexistent_component_attributes_fails(
-    clean_repo,
+    clean_repo, test_flavor
 ) -> None:
     """Test that removing a a nonexistent component attribute fails."""
     runner = CliRunner()
 
-    register_container_registry_command = cli.commands[
-        "container-registry"
-    ].commands["register"]
-    register_step_operator_command = cli.commands["step-operator"].commands[
+    register_orchestrator_command = cli.commands["orchestrator"].commands[
         "register"
     ]
 
-    container_registry_registration = runner.invoke(
-        register_container_registry_command,
+    orchestrator_registration = runner.invoke(
+        register_orchestrator_command,
         [
-            "new_container_registry",
+            "new_orchestrator",
             "--flavor",
-            "default",
-            "--uri=some_random_uri.com",
+            "aria",
+            '--favorite_orchestration_language="arn:arias:aws:iam"',
+            '--favorite_orchestration_language_version="a1.big.cat"',
         ],
     )
-    assert container_registry_registration.exit_code == 0
+    assert orchestrator_registration.exit_code == 0
 
-    step_operator_registration = runner.invoke(
-        register_step_operator_command,
-        [
-            "new_step_operator",
-            "--flavor",
-            "sagemaker",
-            '--role="arn:arias:aws:iam"',
-            '--instance_type="a1.big.cat"',
-            '--bucket="s3://ariasbucket"',
-        ],
-    )
-    assert step_operator_registration.exit_code == 0
-
-    remove_attribute_command = cli.commands["step-operator"].commands[
+    remove_attribute_command = cli.commands["orchestrator"].commands[
         "remove-attribute"
     ]
     remove_attribute = runner.invoke(
         remove_attribute_command,
         [
-            "new_step_operator",
-            "--aria",
+            "new_orchestrator",
+            "--favorite_food",
         ],
     )
     assert remove_attribute.exit_code != 0
 
 
 def test_removing_attribute_from_nonexistent_component_fails(
-    clean_repo,
+    clean_repo, test_flavor
 ) -> None:
     """Test that removing an attribute from a nonexistent stack component fails."""
     runner = CliRunner()
 
-    register_container_registry_command = cli.commands[
-        "container-registry"
-    ].commands["register"]
-    register_step_operator_command = cli.commands["step-operator"].commands[
+    register_orchestrator_command = cli.commands["orchestrator"].commands[
         "register"
     ]
 
-    container_registry_registration = runner.invoke(
-        register_container_registry_command,
+    orchestrator_registration = runner.invoke(
+        register_orchestrator_command,
         [
-            "new_container_registry",
+            "new_orchestrator",
             "--flavor",
-            "default",
-            "--uri=some_random_uri.com",
+            "aria",
+            '--favorite_orchestration_language="arn:arias:aws:iam"',
+            '--favorite_orchestration_language_version="a1.big.cat"',
         ],
     )
-    assert container_registry_registration.exit_code == 0
+    assert orchestrator_registration.exit_code == 0
 
-    step_operator_registration = runner.invoke(
-        register_step_operator_command,
-        [
-            "new_step_operator",
-            "--flavor",
-            "sagemaker",
-            '--role="arn:arias:aws:iam"',
-            '--instance_type="a1.big.cat"',
-            '--bucket="s3://ariasbucket"',
-        ],
-    )
-    assert step_operator_registration.exit_code == 0
-
-    remove_attribute_command = cli.commands["step-operator"].commands[
+    remove_attribute_command = cli.commands["orchestrator"].commands[
         "remove-attribute"
     ]
     remove_attribute = runner.invoke(
         remove_attribute_command,
         [
-            "arias_dream_step_operator",
-            "--salmon",
+            "arias_dream_orchestrator",
+            "--cat-size",
         ],
     )
     assert remove_attribute.exit_code != 0
 
 
-def test_removing_required_attribute_fails(
-    clean_repo,
-) -> None:
+def test_removing_required_attribute_fails(clean_repo, test_flavor) -> None:
     """Test that removing a required attribute from a stack component fails."""
     runner = CliRunner()
 
-    register_container_registry_command = cli.commands[
-        "container-registry"
-    ].commands["register"]
-    register_step_operator_command = cli.commands["step-operator"].commands[
+    register_orchestrator_command = cli.commands["orchestrator"].commands[
         "register"
     ]
 
-    container_registry_registration = runner.invoke(
-        register_container_registry_command,
+    orchestrator_registration = runner.invoke(
+        register_orchestrator_command,
         [
-            "new_container_registry",
+            "new_orchestrator",
             "--flavor",
-            "default",
-            "--uri=some_random_uri.com",
+            "aria",
+            '--favorite_orchestration_language="arn:arias:aws:iam"',
+            '--favorite_orchestration_language_version="a1.big.cat"',
         ],
     )
-    assert container_registry_registration.exit_code == 0
+    assert orchestrator_registration.exit_code == 0
 
-    step_operator_registration = runner.invoke(
-        register_step_operator_command,
-        [
-            "new_step_operator",
-            "--flavor",
-            "sagemaker",
-            '--role="arn:arias:aws:iam"',
-            '--instance_type="a1.big.cat"',
-            '--bucket="s3://ariasbucket"',
-        ],
-    )
-    assert step_operator_registration.exit_code == 0
-
-    remove_attribute_command = cli.commands["step-operator"].commands[
+    remove_attribute_command = cli.commands["orchestrator"].commands[
         "remove-attribute"
     ]
     remove_attribute = runner.invoke(
         remove_attribute_command,
         [
-            "new_step_operator",
-            "--role",
+            "new_orchestrator",
+            "--favorite_orchestration_language",
         ],
     )
     assert remove_attribute.exit_code != 0
-    step_operator = clean_repo.get_stack_component(
-        StackComponentType.STEP_OPERATOR, "new_step_operator"
-    )
-    assert step_operator.role is not None
 
 
 def test_renaming_stack_component_to_preexisting_name_fails(
