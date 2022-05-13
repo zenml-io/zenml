@@ -33,10 +33,11 @@ from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
 from rich.markup import escape
+from rich.prompt import Confirm
 from rich.style import Style
 from rich.text import Text
 
-from zenml.console import console
+from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.logger import get_logger
 
@@ -58,7 +59,7 @@ def title(text: str) -> None:
     Args:
       text: Input text string.
     """
-    console.print(text.upper(), style="title")
+    console.print(text.upper(), style=zenml_style_defaults["title"])
 
 
 def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
@@ -72,17 +73,24 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
     Returns:
         Boolean based on user response.
     """
-    # return Confirm.ask(text, console=console)
-    return click.confirm(click.style(text, fg="yellow"), *args, **kwargs)
+    return Confirm.ask(text, console=console)
 
 
-def declare(text: Union[str, Text]) -> None:
+def declare(
+    text: Union[str, Text],
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
+) -> None:
     """Echo a declaration on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
     """
-    console.print(text, style="info")
+    base_style = zenml_style_defaults["info"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
+    console.print(text, style=style)
 
 
 def error(text: str) -> None:
@@ -95,19 +103,23 @@ def error(text: str) -> None:
         click.ClickException: when called.
     """
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
-    # console.print(text, style="error")
 
 
 def warning(
-    text: str, custom_style: Optional[Union[str, Style]] = "warning"
+    text: str,
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
 ) -> None:
     """Echo a warning string on the CLI.
 
     Args:
-      text: Input text string.
-      custom_style: Optional custom style to be used.
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
     """
-    console.print(text, style=custom_style)
+    base_style = zenml_style_defaults["warning"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
+    console.print(text, style=style)
 
 
 def pretty_print(obj: Any) -> None:
