@@ -12,26 +12,26 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Zen Service
+## ZenServer
 
-The Zen Service is a simple webserver to let you collaborate on stacks via
+The ZenServer is a simple webserver to let you collaborate on stacks via
 the network. It can be spun up in a background daemon from the command line
-using `zenml service up` and managed from the same command line group.
+using `zenml server up` and managed from the same command line group.
 
-Using the Zen Service's stacks in your project just requires setting up a
-profile with `rest` store-type pointed to the url of the service.
+Using the ZenServer's stacks in your project just requires setting up a
+profile with `rest` store-type pointed to the url of the server.
 """
 
-from zenml.zen_service.zen_service import (
-    ZenService,
-    ZenServiceConfig,
-    ZenServiceEndpoint,
-    ZenServiceEndpointConfig,
+from zenml.zen_server.zen_server import (
+    ZenServer,
+    ZenServerConfig,
+    ZenServerEndpoint,
+    ZenServerEndpointConfig,
 )
 
 __all__ = [
-    "ZenService",
-    "ZenServiceConfig",
-    "ZenServiceEndpoint",
-    "ZenServiceEndpointConfig",
+    "ZenServer",
+    "ZenServerConfig",
+    "ZenServerEndpoint",
+    "ZenServerEndpointConfig",
 ]
