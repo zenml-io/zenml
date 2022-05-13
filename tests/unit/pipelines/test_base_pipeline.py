@@ -35,7 +35,7 @@ def create_pipeline_with_config_value(config_value: int):
         value: int
 
     @step
-    def step_with_config(config: Config):
+    def step_with_config(config: Config) -> None:
         pass
 
     @pipeline
@@ -319,7 +319,7 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
     operator fails if the active stack does not contain this step operator."""
 
     @step(custom_step_operator="azureml")
-    def step_that_requires_step_operator():
+    def step_that_requires_step_operator() -> None:
         pass
 
     assert not Repository().active_stack.step_operator
