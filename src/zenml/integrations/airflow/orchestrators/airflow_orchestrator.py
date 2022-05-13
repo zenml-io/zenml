@@ -91,11 +91,12 @@ class AirflowOrchestrator(BaseOrchestrator):
             return {
                 "schedule_interval": schedule.interval_second,
                 "start_date": schedule.start_time,
-                "end_date": schedule.end_time or None,
-                "catchup": schedule.catchup or False,
+                "end_date": schedule.end_time,
+                "catchup": schedule.catchup,
             }
         return {
             "schedule_interval": "@once",
+           # set the a start time in the past and disable catchup so airflow runs the dag immediately
             "start_date": datetime.datetime.now() - datetime.timedelta(7),
             "catchup": False,
         }
@@ -136,8 +137,8 @@ class AirflowOrchestrator(BaseOrchestrator):
             **self._translate_schedule(runtime_configuration.schedule),
         )
 
-        # Dictionary mapping step name to airflow_operators. This will be needed
-        # to link steps together with the operators of their upstream nodes
+        # Dictionary mapping step names to airflow_operators. This will be needed
+        # to configure airflow operator dependencies 
         step_name_to_airflow_operator = {}
 
         for step in sorted_steps:
@@ -153,8 +154,8 @@ class AirflowOrchestrator(BaseOrchestrator):
                     pb2_pipeline=pb2_pipeline,
                 )
 
-            # Create airflow step operator that contains the step callable
-            airflow_step_operator = airflow_python.PythonOperator(
+            # Create airflow python operator that contains the step callable
+            airflow_operator = airflow_python.PythonOperator(
                 dag=airflow_dag,
                 task_id=step.name,
                 provide_context=True,
@@ -165,12 +166,12 @@ class AirflowOrchestrator(BaseOrchestrator):
 
             # Configure the current airflow operator to run after all upstream
             # operators finished executing
-            step_name_to_airflow_operator[step.name] = airflow_step_operator
+            step_name_to_airflow_operator[step.name] = airflow_operator
             upstream_step_names = self.get_upstream_step_names(
                 step=step, pb2_pipeline=pb2_pipeline
             )
             for upstream_step_name in upstream_step_names:
-                airflow_step_operator.set_upstream(
+                airflow_operator.set_upstream(
                     step_name_to_airflow_operator[upstream_step_name]
                 )
 
