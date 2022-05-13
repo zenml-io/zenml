@@ -32,8 +32,8 @@ jobs:
 
       - name: publish
         env:
-          PYPI_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
-          PYPI_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
+          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
           if [ "$(cat src/zenml/VERSION)" = "$(echo ${GITHUB_REF} | sed 's|refs/tags/||g')" ];
           then ./scripts/publish.sh;
