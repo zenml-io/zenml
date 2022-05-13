@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import re
 import sys
 from typing import (
     TYPE_CHECKING,
@@ -30,6 +31,7 @@ from uuid import UUID
 import kfp
 import urllib3
 from kfp import dsl
+from kfp.compiler import Compiler as KFPCompiler
 from kfp_server_api.exceptions import ApiException
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -39,6 +41,7 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 import zenml.io.utils
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
+from zenml.environment import Environment
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubeflow import KUBEFLOW_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubeflow.orchestrators import local_deployment_utils
@@ -50,12 +53,14 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
 )
 from zenml.io import fileio
+from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
 from zenml.steps import BaseStep
 from zenml.utils import networking_utils
+from zenml.utils.docker_utils import get_image_digest
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
@@ -432,14 +437,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
         Adds some labels to the container_op and applies some functions to ir.
 
         Args:
-            container_op
+            container_op: The kubeflow container operation to configure.
         """
-        import re
-
-        from kubernetes import client as k8s_client
-
-        from zenml.io.utils import get_global_config_directory
-
         # Path to a metadata file that will be displayed in the KFP UI
         # This metadata file needs to be in a mounted emptyDir to avoid
         # sporadic failures with the (not mature) PNS executor
@@ -571,8 +570,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """
 
         # First check whether the code running in a notebook
-        from zenml.environment import Environment
-
         if Environment.in_notebook():
             raise RuntimeError(
                 "The Kubeflow orchestrator cannot run pipelines in a notebook "
@@ -582,11 +579,6 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 "and run the code outside of a notebook when using this "
                 "orchestrator."
             )
-
-        from kfp import dsl
-        from kfp.compiler import Compiler as KFPCompiler
-
-        from zenml.utils.docker_utils import get_image_digest
 
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
@@ -632,7 +624,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 # (e.g. `python -m zenml.entrypoints.step_entrypoint`)
                 # and the arguments to be passed along with the command. Find
                 # out more about how these arguments are parsed and used
-                # in the base entrypoint run() method.
+                # in the base entrypoint `run()` method.
                 container_op = dsl.ContainerOp(
                     name=step.name,
                     image=image_name,
@@ -643,8 +635,8 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     },
                 )
 
-                # Configure the container op by adding pvolumes, labels and
-                # applying
+                # Mounts persistent volumes, configmaps and adds lables to the
+                # container op
                 self._configure_container_op(container_op=container_op)
 
                 # Find the upstream steps of the current step and configure it
