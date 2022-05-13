@@ -40,7 +40,7 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m poetry install
-        python -m poetry run zenml integration install -f
+        python -m poetry run zenml integration install -y
         python -m poetry run pip install click~=8.0.3 typing-extensions~=3.10.0.2
         python -m poetry run pip install awscli
 

@@ -100,13 +100,16 @@ class GlobalConfiguration(
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
+    user_metadata: Optional[Dict[str, str]]
     analytics_opt_in: bool = True
     version: Optional[str]
     activated_profile: Optional[str]
     profiles: Dict[str, ProfileConfiguration] = Field(default_factory=dict)
     _config_path: str
 
-    def __init__(self, config_path: Optional[str] = None) -> None:
+    def __init__(
+        self, config_path: Optional[str] = None, **kwargs: Any
+    ) -> None:
         """Initializes a GlobalConfiguration object using values from the config
         file.
 
@@ -133,6 +136,7 @@ class GlobalConfiguration(
         """
         self._config_path = config_path or self.default_config_directory()
         config_values = self._read_config()
+        config_values.update(**kwargs)
         super().__init__(**config_values)
 
         if not fileio.exists(self._config_file(config_path)):
@@ -218,14 +222,25 @@ class GlobalConfiguration(
         else:
             config_version = VersionInfo.parse(self.version)
             if self.version > curr_version:
-                raise RuntimeError(
+                logger.error(
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
-                    "Please update ZenML to at least match the global "
-                    "configuration version to avoid loss of information.",
+                    "This may happen if you recently downgraded ZenML to an "
+                    "earlier version, or if you have already used a more recent "
+                    "ZenML version on the same machine."
+                    "It is highly recommended that you update ZenML to at least "
+                    "match the global configuration version, otherwise you may "
+                    "run into unexpected issues such as model schema "
+                    "validation failures or even loss of information. As an "
+                    "alternative, if you run into incompatibility issues but "
+                    "do not want to update ZenML, you can use the `zenml clean` "
+                    "command to wipe your global configuration, profiles and "
+                    "stacks and restore ZenML to a clean and valid state.",
                     config_version,
                     curr_version,
                 )
+                return
+
             if config_version == curr_version:
                 return
 
@@ -312,7 +327,7 @@ class GlobalConfiguration(
         Args:
             config_path: path where the active configuration copy should be saved
             load_config_path: path that will be used to load the configuration
-                copy. This can be set to a value different than `config_path`
+                copy. This can be set to a value different from `config_path`
                 if the configuration copy will be loaded from a different
                 path, e.g. when the global config copy is copied to a
                 container image. This will be reflected in the paths and URLs

@@ -53,6 +53,7 @@ ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 ENV_ZENML_DEFAULT_STORE_TYPE = "ZENML_DEFAULT_STORE_TYPE"
 ENV_ZENML_PROFILE_NAME = "ZENML_PROFILE_NAME"
 ENV_ZENML_PROFILE_CONFIGURATION = "ZENML_PROFILE_CONFIGURATION"
+ENV_ZENML_SUPPRESS_LOGS = "ZENML_SUPPRESS_LOGS"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -116,6 +117,9 @@ LOCAL_STORES_DIRECTORY_NAME = "local_stores"
 
 USER_MAIN_MODULE: Optional[str] = None
 
+# Config file name
+CONFIG_FILE_NAME = "config.yaml"
+
 # Secrets Manager
 ZENML_SCHEMA_NAME = "zenml_schema_name"
 LOCAL_SECRETS_FILENAME = "secrets.yaml"
@@ -139,6 +143,7 @@ USERS = "/users"
 TEAMS = "/teams"
 PROJECTS = "/projects"
 ROLES = "/roles"
+FLAVORS = "/flavors"
 ROLE_ASSIGNMENTS = "/role_assignments"
 
 # mandatory stack component properties

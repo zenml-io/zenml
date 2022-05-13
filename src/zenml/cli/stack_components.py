@@ -13,19 +13,22 @@
 #  permissions and limitations under the License.
 import time
 from importlib import import_module
-from typing import Callable, List, Optional, Type
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Type
 
 import click
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.console import console
 from zenml.constants import MANDATORY_COMPONENT_PROPERTIES
-from zenml.enums import StackComponentType
+from zenml.enums import CliCategories, StackComponentType
+from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
+from zenml.utils.source_utils import validate_flavor_source
+from zenml.zen_stores.models.component_wrapper import ComponentWrapper
 
 
 def _get_required_properties(
@@ -59,10 +62,10 @@ def _component_display_name(
     return name.replace("_", " ")
 
 
-def _get_stack_component(
+def _get_stack_component_wrapper(
     component_type: StackComponentType,
     component_name: Optional[str] = None,
-) -> StackComponent:
+) -> Tuple[Optional[ComponentWrapper], bool]:
     """Gets a stack component for a given type and name.
 
     Args:
@@ -71,21 +74,48 @@ def _get_stack_component(
             component of the active stack gets returned.
 
     Returns:
-        A stack component of the given type.
-
-    Raises:
-        KeyError: If no stack component is registered for the given name.
+        A stack component of the given type and name, or None, if no stack
+        component is registered for the given name and type, and a boolean
+        indicating whether the component is active or not.
     """
-    repo = Repository()
-    if component_name:
-        return repo.get_stack_component(component_type, name=component_name)
 
-    component = repo.active_stack.components[component_type]
-    cli_utils.declare(
-        f"No component name given, using `{component.name}` "
-        f"from active stack."
-    )
-    return component
+    singular_display_name = _component_display_name(component_type)
+    plural_display_name = _component_display_name(component_type, plural=True)
+
+    repo = Repository()
+
+    components = repo.zen_store.get_stack_components(component_type)
+    if len(components) == 0:
+        cli_utils.warning(f"No {plural_display_name} registered.")
+        return None, False
+
+    active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+    active_component = active_stack.get_component_wrapper(component_type)
+
+    if component_name:
+        try:
+            return (
+                repo.zen_store.get_stack_component(
+                    component_type, name=component_name
+                ),
+                (
+                    active_component is not None
+                    and component_name == active_component.name
+                ),
+            )
+        except KeyError:
+            cli_utils.error(
+                f"No {singular_display_name} found for name '{component_name}'."
+            )
+    elif active_component:
+        cli_utils.declare(
+            f"No component name given; using `{active_component.name}` "
+            f"from active stack."
+        )
+        return active_component, True
+    else:
+        cli_utils.error(f"No {singular_display_name} in active stack.")
+    return None, False
 
 
 def generate_stack_component_get_command(
@@ -106,7 +136,8 @@ def generate_stack_component_get_command(
             cli_utils.declare(f"Active {display_name}: '{component.name}'")
         else:
             cli_utils.warning(
-                f"No {display_name} set for active stack ('{active_stack.name}')."
+                f"No {display_name} set for active stack "
+                f"('{active_stack.name}')."
             )
 
     return get_stack_component_command
@@ -131,41 +162,14 @@ def generate_stack_component_describe_command(
         cli_utils.print_active_stack()
 
         singular_display_name = _component_display_name(component_type)
-        plural_display_name = _component_display_name(
-            component_type, plural=True
+        component_wrapper, is_active = _get_stack_component_wrapper(
+            component_type, component_name=name
         )
-        repo = Repository()
-        components = repo.get_stack_components(component_type)
-        if len(components) == 0:
-            cli_utils.warning(f"No {plural_display_name} registered.")
+        if component_wrapper is None:
             return
-
-        try:
-            component = _get_stack_component(
-                component_type, component_name=name
-            )
-        except KeyError:
-            if name:
-                cli_utils.warning(
-                    f"No {singular_display_name} found for name '{name}'."
-                )
-            else:
-                cli_utils.warning(
-                    f"No {singular_display_name} in active stack."
-                )
-            return
-
-        try:
-            active_component_name = repo.active_stack.components[
-                component_type
-            ].name
-            is_active = active_component_name == component.name
-        except KeyError:
-            # there is no component of this type in the active stack
-            is_active = False
 
         cli_utils.print_stack_component_configuration(
-            component, singular_display_name, is_active
+            component_wrapper, singular_display_name, is_active
         )
 
     return describe_stack_component_command
@@ -184,23 +188,37 @@ def generate_stack_component_list_command(
 
         repo = Repository()
 
-        components = repo.get_stack_components(component_type)
+        components = repo.zen_store.get_stack_components(component_type)
         display_name = _component_display_name(component_type, plural=True)
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
             return
-        try:
-            active_component_name = repo.active_stack.components[
-                component_type
-            ].name
-        except KeyError:
-            active_component_name = None
+        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+        active_component_name = None
+        active_component = active_stack.get_component_wrapper(component_type)
+        if active_component:
+            active_component_name = active_component.name
 
         cli_utils.print_stack_component_list(
             components, active_component_name=active_component_name
         )
 
     return list_stack_components_command
+
+
+def _register_stack_component(
+    component_type: StackComponentType,
+    component_name: str,
+    component_flavor: str,
+    **kwargs: Any,
+) -> None:
+    """Register a stack component."""
+    repo = Repository()
+    flavor_class = repo.get_flavor(
+        name=component_flavor, component_type=component_type
+    )
+    component = flavor_class(name=component_name, **kwargs)
+    Repository().register_stack_component(component)
 
 
 def generate_stack_component_register_command(
@@ -215,8 +233,8 @@ def generate_stack_component_register_command(
         required=True,
     )
     @click.option(
-        "--type",
-        "-t",
+        "--flavor",
+        "-f",
         "flavor",
         help=f"The type of the {display_name} to register.",
         required=True,
@@ -234,21 +252,77 @@ def generate_stack_component_register_command(
             except AssertionError as e:
                 cli_utils.error(str(e))
                 return
-
-            from zenml.stack.stack_component_class_registry import (
-                StackComponentClassRegistry,
+            _register_stack_component(
+                component_type=component_type,
+                component_name=name,
+                component_flavor=flavor,
+                **parsed_args,
             )
-
-            component_class = StackComponentClassRegistry.get_class(
-                component_type=component_type, component_flavor=flavor
-            )
-            component = component_class(name=name, **parsed_args)
-            Repository().register_stack_component(component)
-            cli_utils.declare(
-                f"Successfully registered {display_name} `{name}`."
-            )
+        cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 
     return register_stack_component_command
+
+
+def generate_stack_component_flavor_register_command(
+    component_type: StackComponentType,
+) -> Callable[[str], None]:
+    """Generates a `register` command for the flavors of a stack component."""
+
+    @click.argument(
+        "source",
+        type=str,
+        required=True,
+    )
+    def register_stack_component_flavor_command(source: str) -> None:
+        """Adds a flavor for a stack component type"""
+        cli_utils.print_active_profile()
+
+        # Check whether the module exists and is the right type
+        component_class = validate_flavor_source(
+            source=source, component_type=component_type
+        )
+
+        # Register the flavor in the given source
+        try:
+            Repository().zen_store.create_flavor(
+                name=component_class.FLAVOR,
+                stack_component_type=component_class.TYPE,
+                source=source,
+            )
+        except EntityExistsError as e:
+            cli_utils.error(str(e))
+
+    return register_stack_component_flavor_command
+
+
+def generate_stack_component_flavor_list_command(
+    component_type: StackComponentType,
+) -> Callable[[], None]:
+    """Generates a `list` command for the flavors of a stack component."""
+
+    def list_stack_component_flavor_command() -> None:
+        """Adds a flavor for a stack component type"""
+        cli_utils.print_active_profile()
+
+        from zenml.stack.flavor_registry import flavor_registry
+
+        # List all the flavors of the component type
+        zenml_flavors = [
+            f
+            for f in flavor_registry.get_flavors_by_type(
+                component_type=component_type
+            ).values()
+        ]
+
+        custom_flavors = Repository().zen_store.get_flavors_by_type(
+            component_type=component_type
+        )
+
+        cli_utils.print_flavor_list(
+            zenml_flavors + custom_flavors, component_type=component_type
+        )
+
+    return list_stack_component_flavor_command
 
 
 def generate_stack_component_update_command(
@@ -260,53 +334,72 @@ def generate_stack_component_update_command(
     @click.argument(
         "name",
         type=str,
-        required=True,
+        required=False,
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-    def update_stack_component_command(name: str, args: List[str]) -> None:
+    def update_stack_component_command(
+        name: Optional[str], args: Sequence[str]
+    ) -> None:
         """Updates a stack component."""
         cli_utils.print_active_profile()
+        cli_utils.print_active_stack()
+
+        kwargs = list(args)
+        if name and name.startswith("--"):
+            kwargs.append(name)
+            name = None
+
+        component_wrapper, _ = _get_stack_component_wrapper(
+            component_type, component_name=name
+        )
+        if component_wrapper is None:
+            return
+
+        name = component_wrapper.name
         with console.status(f"Updating {display_name} '{name}'...\n"):
             repo = Repository()
-            current_component = repo.get_stack_component(component_type, name)
-            if current_component is None:
-                cli_utils.error(f"No {display_name} found for name '{name}'.")
 
             try:
-                parsed_args = cli_utils.parse_unknown_options(args)
+                parsed_args = cli_utils.parse_unknown_options(kwargs)
             except AssertionError as e:
                 cli_utils.error(str(e))
                 return
             for prop in MANDATORY_COMPONENT_PROPERTIES:
                 if prop in parsed_args:
                     cli_utils.error(
-                        f"Cannot update mandatory property '{prop}' of '{name}' {current_component.TYPE}. "
+                        f"Cannot update mandatory property '{prop}' of "
+                        f"'{name}' {component_wrapper.type}. "
                     )
 
-            from zenml.stack.stack_component_class_registry import (
-                StackComponentClassRegistry,
+            component_class = repo.get_flavor(
+                name=component_wrapper.flavor,
+                component_type=component_type,
             )
 
-            component_class = StackComponentClassRegistry.get_class(
-                component_type=component_type,
-                component_flavor=current_component.FLAVOR,
-            )
             available_properties = _get_available_properties(component_class)
             for prop in parsed_args.keys():
                 if (prop not in available_properties) and (
                     len(available_properties) > 0
                 ):
                     cli_utils.error(
-                        f"You cannot update the {display_name} `{current_component.name}` with property '{prop}'. You can only update the following properties: {available_properties}."
+                        f"You cannot update the {display_name} "
+                        f"`{component_wrapper.name}` with property "
+                        f"'{prop}'. You can only update the following "
+                        f"properties: {available_properties}."
                     )
                 elif prop not in available_properties:
                     cli_utils.error(
-                        f"You cannot update the {display_name} `{current_component.name}` with property '{prop}' as this {display_name} has no optional properties that can be configured."
+                        f"You cannot update the {display_name} "
+                        f"`{component_wrapper.name}` with property "
+                        f"'{prop}' as this {display_name} has no optional "
+                        f"properties that can be configured."
                     )
                 else:
                     continue
 
-            updated_component = current_component.copy(update=parsed_args)
+            updated_component = component_wrapper.to_component().copy(
+                update=parsed_args
+            )
 
             repo.update_stack_component(
                 name, updated_component.TYPE, updated_component
@@ -414,7 +507,10 @@ def generate_stack_component_rename_command(
             }
             if new_name in registered_components:
                 cli_utils.error(
-                    f"Unable to rename '{name}' {display_name} to '{new_name}': \nA component of type '{display_name}' with the name '{new_name}' already exists. \nPlease choose a different name."
+                    f"Unable to rename '{name}' {display_name} to "
+                    f"'{new_name}': \nA component of type '{display_name}' "
+                    f"with the name '{new_name}' already exists. \nPlease "
+                    f"choose a different name."
                 )
 
             renamed_component = current_component.copy(
@@ -465,7 +561,13 @@ def generate_stack_component_up_command(
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        component = _get_stack_component(component_type, component_name=name)
+        component_wrapper, _ = _get_stack_component_wrapper(
+            component_type, component_name=name
+        )
+        if component_wrapper is None:
+            return
+        component = component_wrapper.to_component()
+
         display_name = _component_display_name(component_type)
 
         if component.is_running:
@@ -505,19 +607,40 @@ def generate_stack_component_down_command(
 
     @click.argument("name", type=str, required=False)
     @click.option(
-        "--force",
-        "-f",
+        "--yes",
+        "-y",
+        "force",
         is_flag=True,
         help="Deprovisions local resources instead of suspending them.",
     )
+    @click.option(
+        "--force",
+        "-f",
+        "old_force",
+        is_flag=True,
+        help="DEPRECATED: Deprovisions local resources instead of suspending "
+        "them. Use `-y/--yes` instead.",
+    )
     def down_stack_component_command(
-        name: Optional[str] = None, force: bool = False
+        name: Optional[str] = None, force: bool = False, old_force: bool = False
     ) -> None:
         """Stops/Tears down the local deployment of a stack component."""
+        if old_force:
+            force = old_force
+            cli_utils.warning(
+                "The `--force` flag will soon be deprecated. Use `--yes` "
+                "or `-y` instead."
+            )
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        component = _get_stack_component(component_type, component_name=name)
+        component_wrapper, _ = _get_stack_component_wrapper(
+            component_type, component_name=name
+        )
+        if component_wrapper is None:
+            return
+
+        component = component_wrapper.to_component()
         display_name = _component_display_name(component_type)
 
         if not force:
@@ -532,8 +655,8 @@ def generate_stack_component_down_command(
                     cli_utils.error(
                         f"Provisioning local resources not implemented for "
                         f"{display_name} '{component.name}'. If you want to "
-                        f"deprovision all resources for this component, use the "
-                        f"`--force/-f` flag."
+                        f"deprovision all resources for this component, use "
+                        f"the `--yes/-y` flag."
                     )
             else:
                 cli_utils.declare(
@@ -575,7 +698,13 @@ def generate_stack_component_logs_command(
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        component = _get_stack_component(component_type, component_name=name)
+        component_wrapper, _ = _get_stack_component_wrapper(
+            component_type, component_name=name
+        )
+        if component_wrapper is None:
+            return
+
+        component = component_wrapper.to_component()
         display_name = _component_display_name(component_type)
         log_file = component.log_file
 
@@ -641,7 +770,10 @@ def register_single_stack_component_cli_commands(
     plural_display_name = _component_display_name(component_type, plural=True)
 
     @parent_group.group(
-        command_name, help=f"Commands to interact with {plural_display_name}."
+        command_name,
+        cls=TagGroup,
+        help=f"Commands to interact with {plural_display_name}.",
+        tag=CliCategories.STACK_COMPONENTS,
     )
     def command_group() -> None:
         """Group commands for a single stack component type."""
@@ -677,6 +809,32 @@ def register_single_stack_component_cli_commands(
         context_settings=context_settings,
         help=f"Register a new {singular_display_name}.",
     )(register_command)
+
+    # zenml stack-component flavor
+    @command_group.group(
+        "flavor", help=f"Commands to interact with {plural_display_name}."
+    )
+    def flavor_group() -> None:
+        """Group commands for handling the flavors of single stack component
+        type."""
+
+    # zenml stack-component flavor register
+    register_flavor_command = generate_stack_component_flavor_register_command(
+        component_type=component_type
+    )
+    flavor_group.command(
+        "register",
+        help=f"Identify a new flavor for {plural_display_name}.",
+    )(register_flavor_command)
+
+    # zenml stack-component flavor list
+    list_flavor_command = generate_stack_component_flavor_list_command(
+        component_type=component_type
+    )
+    flavor_group.command(
+        "list",
+        help=f"List all registered flavors for {plural_display_name}.",
+    )(list_flavor_command)
 
     # zenml stack-component update
     update_command = generate_stack_component_update_command(component_type)
@@ -714,14 +872,16 @@ def register_single_stack_component_cli_commands(
     up_command = generate_stack_component_up_command(component_type)
     command_group.command(
         "up",
-        help=f"Provisions or resumes local resources for the {singular_display_name} if possible.",
+        help=f"Provisions or resumes local resources for the "
+        f"{singular_display_name} if possible.",
     )(up_command)
 
     # zenml stack-component down
     down_command = generate_stack_component_down_command(component_type)
     command_group.command(
         "down",
-        help=f"Suspends resources of the local {singular_display_name} deployment.",
+        help=f"Suspends resources of the local {singular_display_name} "
+        f"deployment.",
     )(down_command)
 
     # zenml stack-component logs

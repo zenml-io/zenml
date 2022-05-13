@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import base64
 import datetime
 import subprocess
 import sys
@@ -24,29 +25,32 @@ from typing import (
     Tuple,
     Union,
 )
+from urllib.parse import quote
 
 import click
+import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
+from rich.markup import escape
+from rich.prompt import Confirm
+from rich.style import Style
 from rich.text import Text
 
-from zenml.config.profile_config import ProfileConfiguration
-from zenml.console import console
+from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
-from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.model_deployers import BaseModelDeployer
-from zenml.repository import Repository
-from zenml.secret import BaseSecretSchema
-from zenml.services import BaseService
-from zenml.services.service_status import ServiceState
-from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
+    from zenml.config.profile_config import ProfileConfiguration
+    from zenml.enums import StackComponentType
     from zenml.integrations.integration import IntegrationMeta
+    from zenml.model_deployers import BaseModelDeployer
+    from zenml.secret import BaseSecretSchema
+    from zenml.services import BaseService
+    from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
 
 
 def title(text: str) -> None:
@@ -55,7 +59,7 @@ def title(text: str) -> None:
     Args:
       text: Input text string.
     """
-    console.print(text.upper(), style="title")
+    console.print(text.upper(), style=zenml_style_defaults["title"])
 
 
 def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
@@ -69,17 +73,24 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
     Returns:
         Boolean based on user response.
     """
-    # return Confirm.ask(text, console=console)
-    return click.confirm(click.style(text, fg="yellow"), *args, **kwargs)
+    return Confirm.ask(text, console=console)
 
 
-def declare(text: Union[str, Text]) -> None:
+def declare(
+    text: Union[str, Text],
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
+) -> None:
     """Echo a declaration on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
     """
-    console.print(text, style="info")
+    base_style = zenml_style_defaults["info"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
+    console.print(text, style=style)
 
 
 def error(text: str) -> None:
@@ -92,16 +103,23 @@ def error(text: str) -> None:
         click.ClickException: when called.
     """
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
-    # console.print(text, style="error")
 
 
-def warning(text: str) -> None:
+def warning(
+    text: str,
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
+) -> None:
     """Echo a warning string on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
     """
-    console.print(text, style="warning")
+    base_style = zenml_style_defaults["warning"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
+    console.print(text, style=style)
 
 
 def pretty_print(obj: Any) -> None:
@@ -115,7 +133,7 @@ def pretty_print(obj: Any) -> None:
     console.print(obj)
 
 
-def print_table(obj: List[Dict[str, Any]]) -> None:
+def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     """Prints the list of dicts in a table format. The input object should be a
     List of Dicts. Each item in that list represent a line in the Table. Each
     dict should have the same keys. The keys of the dict will be used as
@@ -123,15 +141,33 @@ def print_table(obj: List[Dict[str, Any]]) -> None:
 
     Args:
       obj: A List containing dictionaries.
+      columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
-    column_names = [key.upper() for key in column_keys]
-    rich_table = table.Table(*column_names, box=box.HEAVY_EDGE)
+    column_names = [columns.get(key, key.upper()) for key in column_keys]
+    rich_table = table.Table(box=box.HEAVY_EDGE, show_lines=True)
+    for col_name in column_names:
+        rich_table.add_column(str(col_name), overflow="fold")
 
     for dict_ in obj:
-        values = [dict_.get(key) for key in column_keys]
+        values = []
+        for key in column_keys:
+            if key is None:
+                values.append(None)
+            else:
+                value = str(dict_.get(key))
+                if value == "":
+                    value = " "
+                # append the value as a link so it's accessible in the console
+                # (handle spaces and the use of '[' and ']' in markdown text)
+                if "[" in value:
+                    lv = escape(value)
+                elif " " in value:
+                    lv = f"[link={quote(value)}]{value}[/link]"
+                else:
+                    lv = f"[link='{value}']{value}[/link]"
+                values.append(lv)
         rich_table.add_row(*values)
-
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
     console.print(rich_table)
@@ -161,7 +197,7 @@ def format_integration_list(
         is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
         list_of_dicts.append(
             {
-                "INSTALLED": ":white_check_mark:" if is_installed else "",
+                "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
                 "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
             }
@@ -170,7 +206,7 @@ def format_integration_list(
 
 
 def print_stack_component_list(
-    components: List[StackComponent],
+    components: List["ComponentWrapper"],
     active_component_name: Optional[str] = None,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
@@ -188,9 +224,14 @@ def print_stack_component_list(
         is_active = component.name == active_component_name
         component_config = {
             "ACTIVE": ":point_right:" if is_active else "",
+            "NAME": component.name,
+            "FLAVOR": component.flavor,
+            "UUID": component.uuid,
             **{
                 key.upper(): str(value)
-                for key, value in component.dict().items()
+                for key, value in yaml.safe_load(
+                    base64.b64decode(component.config).decode()
+                ).items()
             },
         }
         configurations.append(component_config)
@@ -198,7 +239,7 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    config: Dict[StackComponentType, str], active: bool, stack_name: str
+    config: Dict["StackComponentType", str], active: bool, stack_name: str
 ) -> None:
     """Prints the configuration options of a stack."""
     stack_caption = f"'{stack_name}' stack"
@@ -210,23 +251,77 @@ def print_stack_configuration(
         caption=stack_caption,
         show_lines=True,
     )
-    rich_table.add_column("COMPONENT_TYPE")
-    rich_table.add_column("COMPONENT_NAME")
+    rich_table.add_column("COMPONENT_TYPE", overflow="fold")
+    rich_table.add_column("COMPONENT_NAME", overflow="fold")
     for component_type, name in config.items():
-        rich_table.add_row(component_type.value, name)
+        link_name = f"[link={name}]{name}[/link]"
+        rich_table.add_row(component_type.value, link_name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
-        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
+        component.upper()  # type: ignore[union-attr]
+        for component in rich_table.columns[0]._cells
     ]
     console.print(rich_table)
 
 
+def print_flavor_list(
+    flavors: List["FlavorWrapper"],
+    component_type: "StackComponentType",
+) -> None:
+    """Prints the list of flavors."""
+    from zenml.integrations.registry import integration_registry
+    from zenml.utils.source_utils import validate_flavor_source
+
+    flavor_table = []
+    for f in flavors:
+        reachable = False
+
+        if f.integration:
+            if f.integration == "built-in":
+                reachable = True
+            else:
+                reachable = integration_registry.is_installed(f.integration)
+
+        else:
+            try:
+                validate_flavor_source(f.source, component_type=component_type)
+                reachable = True
+            except (
+                AssertionError,
+                ModuleNotFoundError,
+                ImportError,
+                ValueError,
+            ):
+                pass
+
+        flavor_table.append(
+            {
+                "FLAVOR": f.name,
+                "INTEGRATION": f.integration,
+                "READY-TO-USE": ":white_check_mark:" if reachable else "",
+                "SOURCE": f.source,
+            }
+        )
+
+    print_table(flavor_table)
+    warning(
+        "The flag 'READY-TO-USE' indicates whether you can directly "
+        "create/use/manage a stack component with that specific flavor. "
+        "You can bring a flavor to a state where it is 'READY-TO-USE' in two "
+        "different ways. If the flavor belongs to a ZenML integration, "
+        "you can use `zenml integration install <name-of-the-integration>` and "
+        "if it doesn't, you can make sure that you are using ZenML in an "
+        "environment where ZenML can import the flavor through its source "
+        "path (also shown in the list)."
+    )
+
+
 def print_stack_component_configuration(
-    component: StackComponent, display_name: str, active_status: bool
+    component: "ComponentWrapper", display_name: str, active_status: bool
 ) -> None:
     """Prints the configuration options of a stack component."""
-    title = f"{component.TYPE.value.upper()} Component Configuration"
+    title = f"{component.type.value.upper()} Component Configuration"
     if active_status:
         title += " (ACTIVE)"
     rich_table = table.Table(
@@ -235,20 +330,31 @@ def print_stack_component_configuration(
         show_lines=True,
     )
     rich_table.add_column("COMPONENT_PROPERTY")
-    rich_table.add_column("VALUE")
-    items = component.dict().items()
-    for item in items:
-        rich_table.add_row(*[str(elem) for elem in item])
+    rich_table.add_column("VALUE", overflow="fold")
 
-    # capitalize entries in first column
-    rich_table.columns[0]._cells = [
-        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
-    ]
+    component_dict = component.dict()
+    component_dict.pop("config")
+    component_dict.update(
+        yaml.safe_load(base64.b64decode(component.config).decode())
+    )
+    items = component_dict.items()
+    for item in items:
+        elements = []
+        for idx, elem in enumerate(item):
+            if idx == 0:
+                elements.append(f"{elem.upper()}")
+            else:
+                link_elem = f"[link={elem}]{elem}[/link]"
+                elements.append(link_elem)
+        rich_table.add_row(*elements)
+
     console.print(rich_table)
 
 
 def print_active_profile() -> None:
     """Print active profile."""
+    from zenml.repository import Repository
+
     repo = Repository()
     scope = "local" if repo.root else "global"
     declare(
@@ -258,12 +364,14 @@ def print_active_profile() -> None:
 
 def print_active_stack() -> None:
     """Print active stack."""
+    from zenml.repository import Repository
+
     repo = Repository()
     declare(f"Running with active stack: '{repo.active_stack_name}'")
 
 
 def print_profile(
-    profile: ProfileConfiguration,
+    profile: "ProfileConfiguration",
     active: bool,
 ) -> None:
     """Prints the configuration options of a profile.
@@ -271,7 +379,6 @@ def print_profile(
     Args:
         profile: Profile to print.
         active: Whether the profile is active.
-        name: Name of the profile.
     """
     profile_title = f"'{profile.name}' Profile Configuration"
     if active:
@@ -283,15 +390,18 @@ def print_profile(
         show_lines=True,
     )
     rich_table.add_column("PROPERTY")
-    rich_table.add_column("VALUE")
+    rich_table.add_column("VALUE", overflow="fold")
     items = profile.dict().items()
     for item in items:
-        rich_table.add_row(*[str(elem) for elem in item])
+        elements = []
+        for idx, elem in enumerate(item):
+            if idx == 0:
+                elements.append(f"{elem.upper()}")
+            else:
+                link_elem = f"[link='{elem}']{elem}[/link]"
+                elements.append(link_elem)
+        rich_table.add_row(*elements)
 
-    # capitalize entries in first column
-    rich_table.columns[0]._cells = [
-        component.upper() for component in rich_table.columns[0]._cells  # type: ignore[union-attr]
-    ]
     console.print(rich_table)
 
 
@@ -352,12 +462,7 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
 
 def install_packages(packages: List[str]) -> None:
     """Installs pypi packages into the current environment with pip"""
-    command = [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-    ] + packages
+    command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
         command += [
@@ -384,7 +489,7 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: BaseSecretSchema, hide_secret: bool = True
+    secret: "BaseSecretSchema", hide_secret: bool = True
 ) -> None:
     """Given a secret set print all key value pairs associated with the secret
 
@@ -423,15 +528,15 @@ def print_secrets(secrets: List[str]) -> None:
         title="Secrets",
         show_lines=True,
     )
-    rich_table.add_column("SECRET_NAME")
+    rich_table.add_column("SECRET_NAME", overflow="fold")
     secrets.sort()
     for item in secrets:
-        rich_table.add_row(item)
+        rich_table.add_row(f"[link='{item}']{item}[/link]")
 
     console.print(rich_table)
 
 
-def get_service_status_emoji(service: BaseService) -> str:
+def get_service_status_emoji(service: "BaseService") -> str:
     """Get the rich emoji representing the operational status of a Service.
 
     Args:
@@ -440,6 +545,8 @@ def get_service_status_emoji(service: BaseService) -> str:
     Returns:
         String representing the emoji.
     """
+    from zenml.services.service_status import ServiceState
+
     if service.status.state == ServiceState.ACTIVE:
         return ":white_check_mark:"
     if service.status.state == ServiceState.INACTIVE:
@@ -450,7 +557,7 @@ def get_service_status_emoji(service: BaseService) -> str:
 
 
 def pretty_print_model_deployer(
-    model_services: List[BaseService], model_deployer: BaseModelDeployer
+    model_services: List["BaseService"], model_deployer: "BaseModelDeployer"
 ) -> None:
     """Given a list of served_models print all key value pairs associated with
     the secret
@@ -462,22 +569,27 @@ def pretty_print_model_deployer(
     model_service_dicts = []
     for model_service in model_services:
         served_model_info = model_deployer.get_model_server_info(model_service)
-
+        dict_uuid = str(model_service.uuid)
+        dict_pl_name = model_service.config.pipeline_name
+        dict_pl_stp_name = model_service.config.pipeline_step_name
+        dict_model_name = served_model_info.get("MODEL_NAME", "")
         model_service_dicts.append(
             {
                 "STATUS": get_service_status_emoji(model_service),
-                "UUID": str(model_service.uuid),
-                "PIPELINE_NAME": model_service.config.pipeline_name,
-                "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
-                "MODEL_NAME": served_model_info.get("MODEL_NAME", ""),
+                "UUID": f"[link='{dict_uuid}']{dict_uuid}[/link]",
+                "PIPELINE_NAME": f"[link='{dict_pl_name}']{dict_pl_name}[/link]",
+                "PIPELINE_STEP_NAME": f"[link='{dict_pl_stp_name}']{dict_pl_stp_name}[/link]",
+                "MODEL_NAME": f"[link='{dict_model_name}']{dict_model_name}[/link]",
             }
         )
 
-    print_table(model_service_dicts)
+    print_table(
+        model_service_dicts, UUID=table.Column(header="UUID", min_width=36)
+    )
 
 
 def print_served_model_configuration(
-    model_service: BaseService, model_deployer: BaseModelDeployer
+    model_service: "BaseService", model_deployer: "BaseModelDeployer"
 ) -> None:
     """Prints the configuration of a model_service.
 
@@ -492,8 +604,8 @@ def print_served_model_configuration(
         title=title,
         show_lines=True,
     )
-    rich_table.add_column("MODEL SERVICE PROPERTY")
-    rich_table.add_column("VALUE")
+    rich_table.add_column("MODEL SERVICE PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
 
     # Get implementation specific info
     served_model_info = model_deployer.get_model_server_info(model_service)

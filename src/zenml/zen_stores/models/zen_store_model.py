@@ -15,13 +15,21 @@
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Set
 
-from pydantic import BaseModel, validator
+from pydantic import Field, validator
 
 from zenml.enums import StackComponentType
-from zenml.zen_stores.models import Project, Role, RoleAssignment, Team, User
+from zenml.utils.filesync_model import FileSyncModel
+from zenml.zen_stores.models import (
+    FlavorWrapper,
+    Project,
+    Role,
+    RoleAssignment,
+    Team,
+    User,
+)
 
 
-class ZenStoreModel(BaseModel):
+class ZenStoreModel(FileSyncModel):
     """Pydantic object used for serializing a ZenStore.
 
     Attributes:
@@ -30,6 +38,8 @@ class ZenStoreModel(BaseModel):
             names and flavors of all stack components.
         stack_components: Contains names and flavors of all registered stack
             components.
+        stack_component_flavors: Contains the flavor definitions of each
+            stack component type
         users: All registered users.
         teams: All registered teams.
         projects: All registered projects.
@@ -39,14 +49,21 @@ class ZenStoreModel(BaseModel):
             the team.
     """
 
-    stacks: Dict[str, Dict[StackComponentType, str]]
-    stack_components: DefaultDict[StackComponentType, Dict[str, str]]
-    users: List[User] = []
-    teams: List[Team] = []
-    projects: List[Project] = []
-    roles: List[Role] = []
-    role_assignments: List[RoleAssignment] = []
-    team_assignments: DefaultDict[str, Set[str]] = defaultdict(set)
+    stacks: Dict[str, Dict[StackComponentType, str]] = Field(
+        default_factory=dict
+    )
+    stack_components: DefaultDict[StackComponentType, Dict[str, str]] = Field(
+        default=defaultdict(dict)
+    )
+    stack_component_flavors: List[FlavorWrapper] = Field(default_factory=list)
+    users: List[User] = Field(default_factory=list)
+    teams: List[Team] = Field(default_factory=list)
+    projects: List[Project] = Field(default_factory=list)
+    roles: List[Role] = Field(default_factory=list)
+    role_assignments: List[RoleAssignment] = Field(default_factory=list)
+    team_assignments: DefaultDict[str, Set[str]] = Field(
+        default=defaultdict(set)
+    )
 
     @validator("stack_components")
     def _construct_stack_components_defaultdict(
@@ -63,11 +80,6 @@ class ZenStoreModel(BaseModel):
         """Ensures that `team_assignments` is a defaultdict so users
         of a new teams can be added without issues."""
         return defaultdict(set, team_assignments)
-
-    @classmethod
-    def empty_store(cls) -> "ZenStoreModel":
-        """Initialize a new empty zen store with current zen version."""
-        return cls(stacks={}, stack_components={})
 
     class Config:
         """Pydantic configuration class."""

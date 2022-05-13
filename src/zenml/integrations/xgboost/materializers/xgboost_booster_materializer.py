@@ -61,9 +61,12 @@ class XgboostBoosterMaterializer(BaseMaterializer):
 
         # Make a temporary phantom artifact
         with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=True
+            mode="w", suffix=".json", delete=False
         ) as f:
             booster.save_model(f.name)
-
             # Copy it into artifact store
             fileio.copy(f.name, filepath)
+
+        # Close and remove the temporary file
+        f.close()
+        fileio.remove(f.name)

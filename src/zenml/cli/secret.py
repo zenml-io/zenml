@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 
 import getpass
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import click
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
     error,
@@ -26,11 +26,12 @@ from zenml.cli.utils import (
     warning,
 )
 from zenml.console import console
-from zenml.enums import StackComponentType
+from zenml.enums import CliCategories, StackComponentType
 from zenml.repository import Repository
 from zenml.secret import ARBITRARY_SECRET_SCHEMA_TYPE
-from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
-from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+
+if TYPE_CHECKING:
+    from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 
 
 def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
@@ -44,23 +45,26 @@ def validate_kv_pairs(key: Optional[str], value: Optional[str]) -> bool:
 
 
 # Secrets
-@cli.group()
+@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 @click.pass_context
 def secret(ctx: click.Context) -> None:
-    """Secrets for storing key-value pairs for use in authentication."""
-    # TODO [ENG-724]: Ensure the stack actually contains an active secrets
-    #  manager
-    ctx.obj = Repository().active_stack.components.get(
-        StackComponentType.SECRETS_MANAGER, None
+    """List and manage your secrets."""
+    repo = Repository()
+    active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+    secrets_manager_wrapper = active_stack.get_component_wrapper(
+        StackComponentType.SECRETS_MANAGER
     )
-    if ctx.obj is None:
+    if secrets_manager_wrapper is None:
         error(
             "No active secrets manager found. Please create a secrets manager "
             "first and add it to your stack."
         )
+        return
+
+    ctx.obj = secrets_manager_wrapper.to_component()
 
 
-@secret.command("register")
+@secret.command("register", help="Register a secret with the given name as key")
 @click.argument("name", type=click.STRING)
 @click.option(
     "--schema",
@@ -98,13 +102,20 @@ def register_secret(
 
     Args:
         secrets_manager: Stack component that implements the interface to the
-            underlying secrets engine
+                         underlying secrets engine
         name: Name of the secret
         secret_schema_type: Type of the secret schema - make sure the schema of
-            choice is registered with the secret_schema_class_registry
+                            choice is registered with the
+                            secret_schema_class_registry
         secret_key: Key of the secret key-value pair
         secret_value: Value of the secret Key-value pair
     """
+    from zenml.secret.secret_schema_class_registry import (
+        SecretSchemaClassRegistry,
+    )
+
+    # TODO [ENG-871]: Formatting for `zenml secret register --help` currently
+    #  broken.
     # TODO [ENG-725]: Allow passing in json/dict when registering a secret as an
     #   additional option for the user on top of the interactive
     if not validate_kv_pairs(secret_key, secret_value):
@@ -170,7 +181,7 @@ def register_secret(
         secrets_manager.register_secret(secret=secret)
 
 
-@secret.command("get")
+@secret.command("get", help="Get a secret by its name.")
 @click.argument("name", type=click.STRING)
 @click.pass_obj
 def get_secret(
@@ -192,7 +203,7 @@ def get_secret(
         error(f"Secret Set with name:`{name}` does not exist.")
 
 
-@secret.command("list")
+@secret.command("list", help="List all secrets tracked by your secret manager")
 @click.pass_obj
 def list_secret(secrets_manager: "BaseSecretsManager") -> None:
     """Get a list of all the keys to secrets sets in the store.
@@ -202,11 +213,10 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
     """
     with console.status("Getting secret names..."):
         secret_names = secrets_manager.get_all_secret_keys()
-        # TODO: [HIGH] implement as a table?
         print_secrets(secret_names)
 
 
-@secret.command("update")
+@secret.command("update", help="Update a secret with new values.")
 @click.argument("name", type=click.STRING)
 @click.option(
     "--key",
@@ -237,6 +247,8 @@ def update_secret(
         secrets_manager: Stack component that implements the interface to the
             underlying secrets engine
         name: Name of the secret
+        secret_value: Updated value of the secret
+        secret_key: The key to update
     """
     # TODO [ENG-726]: allow users to pass in dict or json
     # TODO [ENG-727]: allow adding new key value pairs to the secret
@@ -249,7 +261,8 @@ def update_secret(
 
     if not validate_kv_pairs(secret_key, secret_value):
         error(
-            "To directly pass in a key-value pair for updating, you must pass in values for both."
+            "To directly pass in a key-value pair for updating, you must pass "
+            "in values for both."
         )
 
     updated_contents = {"name": name}
@@ -280,7 +293,7 @@ def update_secret(
             error(f"Secret Set with name:`{name}` already exists.")
 
 
-@secret.command("delete")
+@secret.command("delete", help="Delete a secret,")
 @click.argument("name", type=click.STRING)
 @click.pass_obj
 def delete_secret_set(
@@ -309,18 +322,29 @@ def delete_secret_set(
                 error(f"Secret with name:`{name}` already did not exist.")
 
 
-@secret.command("cleanup")
+@secret.command(
+    "cleanup", help="Delete all secrets from the secret-manager", hidden=True
+)
 @click.option(
-    "--force",
-    "-f",
+    "--yes",
+    "-y",
     "force",
     is_flag=True,
     help="Force the deletion of all secrets",
     type=click.BOOL,
 )
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` "
+    "instead.",
+    type=click.BOOL,
+)
 @click.pass_obj
 def delete_all_secrets(
-    secrets_manager: "BaseSecretsManager", force: bool
+    secrets_manager: "BaseSecretsManager", force: bool, old_force: bool
 ) -> None:
     """Delete all secrets.
 
@@ -331,8 +355,14 @@ def delete_all_secrets(
             This might have differing implications depending on the underlying
             secrets manager
     """
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` "
+            "instead."
+        )
     confirmation_response = confirmation(
-        "This will delete all secrets and the `secrets.yaml` file. Are you sure you want to proceed?"
+        "This will delete all secrets. Are you sure you want to proceed?"
     )
     if not confirmation_response:
         console.print("Aborting secret set deletion...")

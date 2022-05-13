@@ -18,6 +18,7 @@ from typing import (
     Any,
     ClassVar,
     Dict,
+    List,
     NoReturn,
     Optional,
     Set,
@@ -28,6 +29,7 @@ from typing import (
     cast,
 )
 
+import zenml.cli.utils as cli_utils
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
@@ -37,6 +39,7 @@ from zenml.constants import (
     SHOULD_PREVENT_PIPELINE_EXECUTION,
 )
 from zenml.exceptions import (
+    DuplicatedConfigurationError,
     PipelineConfigurationError,
     PipelineInterfaceError,
     StackValidationError,
@@ -48,6 +51,7 @@ from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
+from zenml.steps.base_step import BaseStepMeta
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -59,6 +63,7 @@ PIPELINE_INNER_FUNC_NAME: str = "connect"
 PARAM_ENABLE_CACHE: str = "enable_cache"
 PARAM_REQUIRED_INTEGRATIONS: str = "required_integrations"
 PARAM_REQUIREMENTS_FILE: str = "requirements_file"
+PARAM_REQUIREMENTS: str = "requirements"
 PARAM_DOCKERIGNORE_FILE: str = "dockerignore_file"
 INSTANCE_CONFIGURATION = "INSTANCE_CONFIGURATION"
 PARAM_SECRETS: str = "secrets"
@@ -99,8 +104,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
         name: The name of this pipeline.
         enable_cache: A boolean indicating if caching is enabled for this
             pipeline.
-        requirements_file: Optional path to a pip requirements file that
-            contains all requirements to run the pipeline.
+        requirements_file: DEPRECATED: Optional path to a pip requirements file
+            that contains all requirements to run the pipeline. (Use
+            `requirements` instead.)
+        requirements: Optional list of (string) pip requirements to run the pipeline, or a string path to a requirements file.
         required_integrations: Optional set of integrations that need to be
             installed for this pipeline to run.
     """
@@ -114,6 +121,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, True)
         self.required_integrations = kwargs.pop(PARAM_REQUIRED_INTEGRATIONS, ())
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
+        if self.requirements_file:
+            logger.warning(
+                "The `requirements_file` argument has been deprecated. Please use `requirements` instead to pass in either a string path to a file listing your 'requirements' or a list of the individual requirements."
+            )
+        self._requirements = kwargs.pop(PARAM_REQUIREMENTS, None)
         self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
         self.secrets = kwargs.pop(PARAM_SECRETS, [])
 
@@ -153,42 +165,20 @@ class BasePipeline(metaclass=BasePipelineMeta):
         combined_steps = {}
         step_classes: Dict[Type[BaseStep], str] = {}
 
-        for i, step in enumerate(steps):
-            step_class = type(step)
-            key = input_step_keys[i]
-
-            if not isinstance(step, BaseStep):
-                raise PipelineInterfaceError(
-                    f"Wrong argument type (`{step_class}`) for positional "
-                    f"argument {i} of pipeline '{self.name}'. Only "
-                    f"`@step` decorated functions or instances of `BaseStep` "
-                    f"subclasses can be used as arguments when creating "
-                    f"a pipeline."
-                )
-
-            if step_class in step_classes:
-                previous_key = step_classes[step_class]
-                raise PipelineInterfaceError(
-                    f"Found multiple step objects of the same class "
-                    f"(`{step_class}`) for arguments '{previous_key}' and "
-                    f"'{key}' in pipeline '{self.name}'. Only one step object "
-                    f"per class is allowed inside a ZenML pipeline."
-                )
-
-            step.pipeline_parameter_name = key
-            combined_steps[key] = step
-            step_classes[step_class] = key
-
-        for key, step in kw_steps.items():
+        def _verify_step(key: str, step: BaseStep) -> None:
+            """Verifies a single step of the pipeline."""
             step_class = type(step)
 
-            if key in combined_steps:
-                # a step for this key was already set by
-                # the positional input steps
+            if isinstance(step, BaseStepMeta):
                 raise PipelineInterfaceError(
-                    f"Unexpected keyword argument '{key}' for pipeline "
-                    f"'{self.name}'. A step for this key was "
-                    f"already passed as a positional argument."
+                    f"Wrong argument type (`{step_class}`) for argument "
+                    f"'{key}' of pipeline '{self.name}'. "
+                    f"A `BaseStep` subclass was provided instead of an "
+                    f"instance. "
+                    f"This might have been caused due to missing brackets of "
+                    f"your steps when creating a pipeline with `@step` "
+                    f"decorated functions, "
+                    f"for which the correct syntax is `pipeline(step=step())`."
                 )
 
             if not isinstance(step, BaseStep):
@@ -212,6 +202,23 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step.pipeline_parameter_name = key
             combined_steps[key] = step
             step_classes[step_class] = key
+
+        # verify args
+        for i, step in enumerate(steps):
+            key = input_step_keys[i]
+            _verify_step(key, step)
+
+        # verify kwargs
+        for key, step in kw_steps.items():
+            if key in combined_steps:
+                # a step for this key was already set by
+                # the positional input steps
+                raise PipelineInterfaceError(
+                    f"Unexpected keyword argument '{key}' for pipeline "
+                    f"'{self.name}'. A step for this key was "
+                    f"already passed as a positional argument."
+                )
+            _verify_step(key, step)
 
         # check if there are any missing or unexpected steps
         expected_steps = set(self.STEP_SPEC.keys())
@@ -241,11 +248,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
     @property
     def requirements(self) -> Set[str]:
-        """Set of python requirements of this pipeline.
+        """Set of Python requirements of this pipeline.
 
         This property is a combination of the requirements of
         - required integrations for this pipeline
-        - the `requirements_file` specified for this pipeline
+        - the `requirements` specified for this pipeline
         """
         requirements = set()
 
@@ -263,7 +270,48 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"'{integration_name}'."
                 ) from e
 
-        if self.requirements_file and fileio.exists(self.requirements_file):
+        if isinstance(self._requirements, str) and fileio.exists(
+            self._requirements
+        ):
+            with fileio.open(self._requirements, "r") as f:
+                requirements.update(
+                    {
+                        requirement.strip()
+                        for requirement in f.read().split("\n")
+                    }
+                )
+            if self.requirements_file:
+                cli_utils.warning(
+                    f"Using the file path passed in as `requirements` and ignoring the file '{self.requirements_file}'."
+                )
+        # Add this logic back in (described in #ENG-882)
+        #
+        # elif isinstance(self._requirements, str) and self._requirements:
+        #     root = str(Repository().root)
+        #     if root:
+        #         assumed_requirements_file = os.path.join(
+        #             root, "requirements.txt"
+        #         )
+        #         if fileio.exists(assumed_requirements_file):
+        #             with fileio.open(assumed_requirements_file, "r") as f:
+        #                 requirements.update(
+        #                     {
+        #                         requirement.strip()
+        #                         for requirement in f.read().split("\n")
+        #                     }
+        #                 )
+        #                 logger.info(
+        #                     "Using requirements file: `%s`",
+        #                     assumed_requirements_file,
+        #                 )
+        elif isinstance(self._requirements, List):
+            requirements.update(self._requirements)
+            if self.requirements_file:
+                cli_utils.warning(
+                    f"Using the values passed in as `requirements` and ignoring the file '{self.requirements_file}'."
+                )
+        elif self.requirements_file and fileio.exists(self.requirements_file):
+            # TODO [ENG-883]: Deprecate the `requirements_file` option
             with fileio.open(self.requirements_file, "r") as f:
                 requirements.update(
                     {
@@ -346,7 +394,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
         dag_filepath = utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr] # noqa
+            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
         )
         runtime_configuration = RuntimeConfiguration(
             run_name=run_name,
@@ -385,7 +433,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         Args:
             config_file: Path to a yaml file which contains configuration
                 options for running this pipeline. See
-                https://docs.zenml.io/features/pipeline-configuration#setting-step-parameters-using-a-config-file
+                https://docs.zenml.io/features/pipeline-configuration#setting
+                -step-parameters-using-a-config-file
                 for details regarding the specification of this file.
             overwrite_step_parameters: If set to `True`, values from the
                 configuration file will overwrite configuration parameters
@@ -453,11 +502,18 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         step_name,
                     )
                 if previous_value and not overwrite:
-                    logger.warning(
-                        "Parameter '%s' from configuration yaml will NOT be "
-                        "set as a configuration object was given when "
-                        "creating the step. Set `overwrite_step_parameters="
-                        "True` when setting the configuration yaml to always "
-                        "use the options specified in the yaml file.",
-                        parameter,
+                    raise DuplicatedConfigurationError(
+                        "The value for parameter '{}' is set twice for step "
+                        "'{}' ({} vs. {}). This can happen when you "
+                        "instantiate your step with a step configuration that "
+                        "sets the parameter, while also setting the same "
+                        "parameter within a config file that is added to the "
+                        "pipeline instance using the `.with_config()` method. "
+                        "Make sure each parameter is only defined **once**. \n"
+                        "While it is not recommended, you can overwrite the "
+                        "step configuration using the configuration file: \n"
+                        "`.with_config('config.yaml', "
+                        "overwrite_step_parameters=True)".format(
+                            parameter, step_name, previous_value, value
+                        )
                     )

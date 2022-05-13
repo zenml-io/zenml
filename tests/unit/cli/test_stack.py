@@ -12,16 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+
 import pytest
 from click.testing import CliRunner
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.cli.stack import (
+    delete_stack,
     describe_stack,
+    export_stack,
+    import_stack,
     remove_stack_component,
     rename_stack,
     update_stack,
 )
+from zenml.enums import StackComponentType
+from zenml.metadata_stores import SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
@@ -203,3 +210,75 @@ def test_remove_non_core_component_from_stack_succeeds(clean_repo) -> None:
     )
     assert result.exit_code == 0
     assert clean_repo.active_stack.secrets_manager is None
+
+
+def test_deleting_stack_with_flag_succeeds(clean_repo) -> None:
+    """Test stack delete with flag succeeds."""
+    new_stack = Stack(
+        name="arias_new_stack",
+        orchestrator=clean_repo.active_stack.orchestrator,
+        metadata_store=clean_repo.active_stack.metadata_store,
+        artifact_store=clean_repo.active_stack.artifact_store,
+    )
+    clean_repo.register_stack(new_stack)
+    runner = CliRunner()
+    result = runner.invoke(delete_stack, ["arias_new_stack", "-y"])
+    assert result.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_repo.get_stack("arias_new_stack")
+
+
+def test_stack_export(clean_repo) -> None:
+    """Test exporting default stack succeeds."""
+    runner = CliRunner()
+    result = runner.invoke(export_stack, ["default", "default.yaml"])
+    assert result.exit_code == 0
+    assert os.path.exists("default.yaml")
+
+
+def test_stack_export_delete_import(clean_repo) -> None:
+    """Test exporting, deleting, then importing a stack succeeds."""
+    # create new stack
+    artifact_store_name = "arias_artifact_store"
+    artifact_store = LocalArtifactStore(name=artifact_store_name, path="path/")
+    clean_repo.register_stack_component(artifact_store)
+    metadata_store_name = "arias_metadata_store"
+    metadata_store = SQLiteMetadataStore(name=metadata_store_name, uri="uri")
+    clean_repo.register_stack_component(metadata_store)
+    orchestrator_name = "arias_orchestrator"
+    orchestrator = LocalOrchestrator(name=orchestrator_name)
+    clean_repo.register_stack_component(orchestrator)
+    stack_name = "arias_new_stack"
+    stack = Stack(
+        name=stack_name,
+        orchestrator=orchestrator,
+        metadata_store=metadata_store,
+        artifact_store=artifact_store,
+    )
+    clean_repo.register_stack(stack)
+
+    # export stack
+    runner = CliRunner()
+    export_import_args = ["arias_new_stack", "arias_new_stack.yaml"]
+    result = runner.invoke(export_stack, export_import_args)
+    assert result.exit_code == 0
+    assert os.path.exists("arias_new_stack.yaml")
+
+    # delete stack and corresponding components
+    clean_repo.deregister_stack(stack_name)
+    clean_repo.deregister_stack_component(
+        StackComponentType.ARTIFACT_STORE, artifact_store_name
+    )
+    clean_repo.deregister_stack_component(
+        StackComponentType.METADATA_STORE, metadata_store_name
+    )
+    clean_repo.deregister_stack_component(
+        StackComponentType.ORCHESTRATOR, orchestrator_name
+    )
+    with pytest.raises(KeyError):
+        clean_repo.get_stack("arias_new_stack")
+
+    # import stack
+    result = runner.invoke(import_stack, export_import_args)
+    assert result.exit_code == 0
+    assert clean_repo.get_stack("arias_new_stack") is not None

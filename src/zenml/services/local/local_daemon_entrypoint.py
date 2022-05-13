@@ -45,6 +45,7 @@ def run(
         from zenml.integrations.registry import integration_registry
         from zenml.logger import get_logger
         from zenml.services import LocalDaemonService, ServiceRegistry
+        from zenml.zen_service.zen_service import ZenService  # noqa
 
         logger = get_logger(__name__)
 
