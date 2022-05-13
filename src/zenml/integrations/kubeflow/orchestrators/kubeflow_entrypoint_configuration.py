@@ -28,16 +28,29 @@ METADATA_UI_PATH_OPTION = "metadata_ui_path"
 
 
 class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
+    """Entrypoint configuration for running steps on kubeflow.
+
+    This class writes a markdown file that will be displayed in the KFP UI.
+    """
+
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
-        """Kubeflow specific entrypoint options."""
+        """Kubeflow specific entrypoint options.
+
+        The metadata ui path option expects a path where the markdown file
+        that will be displayed in the kubeflow UI should be written. The same
+        path needs to be added as an output artifact called
+        `mlpipeline-ui-metadata` for the corresponding `kfp.dsl.ContainerOp`.
+        """
         return {METADATA_UI_PATH_OPTION}
 
     @classmethod
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, *args: Any, **kwargs: Any
     ) -> List[str]:
-        """Kubeflow specific arguments for the entrypoint command."""
+        """Sets the metadata ui path argument to the value passed in via the
+        keyword args.
+        """
         return [f"--{METADATA_UI_PATH_OPTION}", kwargs[METADATA_UI_PATH_OPTION]]
 
     def get_run_name(self, pipeline_name: str) -> str:
@@ -53,7 +66,8 @@ class KubeflowEntrypointConfiguration(StepEntrypointConfiguration):
         pipeline_node: Pb2PipelineNode,
         execution_info: Optional[data_types.ExecutionInfo] = None,
     ) -> None:
-        """Writes markdown files that will be displayed in the KFP UI."""
+        """Writes a markdown file that will display information about the step
+        execution and input/output artifacts in the KFP UI."""
         if execution_info:
             entrypoint_utils.dump_ui_metadata(
                 node=pipeline_node,
