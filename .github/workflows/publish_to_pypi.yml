@@ -30,12 +30,12 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-
       # Runs a set of commands using the runners shell
       - name: publish
         env: # Or as an environment variable
           PYPI_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
           PYPI_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
-        run: ./scripts/publish.sh
+        run: ./scripts/publish.sh || echo "Failed"
+        
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
