@@ -52,18 +52,23 @@ aep = airflow_example_pipeline(
 
 # NOTE: the airflow DAG object returned by the aep.run() call actually
 # needs to be a global object (airflow imports this file and does a for-loop
-# over globals() that checks if there are any DAG instances). That's why the
-# airflow example can't have the `__name__=="__main__"` condition
+# over globals() that checks if there are any DAG instances). That's why
+# pipelines run via airflow can't have the `__name__=="__main__"` condition
 
 # Run the new pipeline
 DAG = aep.run()
 
-# In case you want to run this on a schedule uncomment the following line:
+# In case you want to run this on a schedule uncomment the following lines.
+# Note that airflow schedules need to be set in the past:
+
+# from datetime import datetime, timedelta
+# from zenml.pipelines import Schedule
+#
 # DAG = aep.run(
 #     schedule=Schedule(
-#         start_time=datetime.now(),
-#         end_time=datetime.now() + timedelta(minutes=9),
-#         interval_second=180,
+#         start_time=datetime.now() - timedelta(hours=1),
+#         end_time=datetime.now() + timedelta(minutes=19),
+#         interval_second=timedelta(seconds=120),
 #         catchup=False,
 #     )
 # )

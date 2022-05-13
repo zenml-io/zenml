@@ -11,23 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import ClassVar
 
-from zenml.container_registries.base_container_registry import (
-    BaseContainerRegistry,
+from zenml.entrypoints.step_entrypoint_configuration import (
+    StepEntrypointConfiguration,
 )
-from zenml.enums import ContainerRegistryFlavor, StackComponentType
 
-
-class DockerHubContainerRegistry(BaseContainerRegistry):
-    """Class for DockerHub Container Registry.
-
-    Attributes:
-        uri: The URI of the container registry.
-    """
-
-    uri: str
-
-    # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.DOCKERHUB.value
+__all__ = ["StepEntrypointConfiguration"]

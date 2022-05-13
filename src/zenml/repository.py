@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
 import os
 import random
 from abc import ABCMeta
@@ -35,6 +34,7 @@ from zenml.logger import get_logger
 from zenml.stack import Stack, StackComponent
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
+from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.profile_config import ProfileConfiguration
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class RepositoryConfiguration(BaseModel):
+class RepositoryConfiguration(FileSyncModel):
     """Pydantic object used for serializing repository configuration options.
 
     Attributes:
@@ -75,11 +75,12 @@ class LegacyRepositoryConfig(BaseModel):
     stacks: Dict[str, Dict[StackComponentType, Optional[str]]]
     stack_components: Dict[StackComponentType, Dict[str, str]]
 
-    def get_stack_data(self) -> "ZenStoreModel":
+    def get_stack_data(self, config_file: str) -> "ZenStoreModel":
         """Extract stack data from Legacy Repository file."""
         from zenml.zen_stores.models import ZenStoreModel
 
         return ZenStoreModel(
+            config_file=config_file,
             stacks={
                 name: {
                     component_type: value
@@ -389,8 +390,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
             self.__config.active_stack_name = backup_stack_name
 
-        self._write_config()
-
     @staticmethod
     def _migrate_legacy_repository(
         config_file: str,
@@ -440,26 +439,25 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             f"This warning will not be shown again for this Repository."
         )
 
-        stack_data = legacy_config.get_stack_data()
+        stack_data = legacy_config.get_stack_data(config_file=config_file)
 
         from zenml.config.profile_config import ProfileConfiguration
         from zenml.zen_stores import LocalZenStore
 
         store = LocalZenStore()
         store.initialize(url=config_path, store_data=stack_data)
-        store._write_store()
         profile = ProfileConfiguration(
             name=profile_name,
             store_url=store.url,
             active_stack=legacy_config.active_stack_name,
         )
 
-        new_config = RepositoryConfiguration(
+        # Calling this will dump the new configuration to disk
+        RepositoryConfiguration(
+            config_file=config_file,
             active_profile_name=profile.name,
             active_stack_name=legacy_config.active_stack_name,
         )
-        new_config_dict = json.loads(new_config.json())
-        yaml_utils.write_yaml(config_file, new_config_dict)
         GlobalConfiguration().add_or_update_profile(profile)
 
         return profile
@@ -496,26 +494,13 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             # detect an old style repository configuration and migrate it to
             # the new format and create a profile out of it if necessary
             self._migrate_legacy_repository(config_path)
+        else:
+            logger.debug(
+                "No repository configuration file found, creating default "
+                "configuration."
+            )
 
-            config_dict = yaml_utils.read_yaml(config_path)
-            config = RepositoryConfiguration.parse_obj(config_dict)
-
-            return config
-
-        logger.debug(
-            "No repository configuration file found, creating default "
-            "configuration."
-        )
-        return RepositoryConfiguration()
-
-    def _write_config(self) -> None:
-        """Writes the repository configuration to disk, if the repository has
-        been initialized."""
-        config_path = self._config_path()
-        if not config_path or not self.__config:
-            return
-        config_dict = json.loads(self.__config.json())
-        yaml_utils.write_yaml(config_path, config_dict)
+        return RepositoryConfiguration(config_path)
 
     @staticmethod
     def get_store_class(type: StoreType) -> Optional[Type["BaseZenStore"]]:
@@ -785,7 +770,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self.zen_store.get_stack(name)  # raises KeyError
         if self.__config:
             self.__config.active_stack_name = name
-            self._write_config()
 
         # set the active stack globally in the active profile only if the
         # repository doesn't have a root configured (i.e. repository root hasn't
