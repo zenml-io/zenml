@@ -30,13 +30,10 @@ from typing import (
 )
 
 import zenml.cli.utils as cli_utils
+from zenml import constants
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
-)
-from zenml.constants import (
-    ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
-    SHOULD_PREVENT_PIPELINE_EXECUTION,
 )
 from zenml.exceptions import (
     DuplicatedConfigurationError,
@@ -371,7 +368,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
             run_name: Name of the pipeline run.
             schedule: Optional schedule of the pipeline.
         """
-        if SHOULD_PREVENT_PIPELINE_EXECUTION:
+        if constants.SHOULD_PREVENT_PIPELINE_EXECUTION:
             # An environment variable was set to stop the execution of
             # pipelines. This is done to prevent execution of module-level
             # pipeline.run() calls inside docker containers which should only
@@ -381,7 +378,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 "intended behavior, make sure to unset the environment "
                 "variable '%s'.",
                 self.name,
-                ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
+                constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
             )
             return
 

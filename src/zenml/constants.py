@@ -131,8 +131,8 @@ ENABLE_RICH_TRACEBACK = handle_bool_env_var(
 
 # Services
 DEFAULT_SERVICE_START_STOP_TIMEOUT = 10
-ZEN_SERVICE_ENTRYPOINT = "zenml.zen_service.zen_service_api:app"
-ZEN_SERVICE_IP = "127.0.0.1"
+ZEN_SERVER_ENTRYPOINT = "zenml.zen_server.zen_server_api:app"
+ZEN_SERVER_IP = "127.0.0.1"
 
 # API Endpoint paths:
 IS_EMPTY = "/empty"

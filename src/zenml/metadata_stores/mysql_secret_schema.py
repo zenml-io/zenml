@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,18 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import ClassVar, Optional
 
-import os
+from zenml.secret.base_secret import BaseSecretSchema
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+MYSQL_METADATA_STORE_SCHEMA_TYPE = "mysql"
 
-with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
-    __version__: str = version_file.read().strip()
 
-from zenml.logger import init_logging  # noqa
+class MYSQLSecretSchema(BaseSecretSchema):
+    TYPE: ClassVar[str] = MYSQL_METADATA_STORE_SCHEMA_TYPE
 
-init_logging()
-
-# Import ZenServer here because it needs to be registered in the service registry
-# early on in order to be available for use in other modules.
-from zenml.zen_server.zen_server import ZenServer
+    user: Optional[str]
+    password: Optional[str]
+    ssl_ca: Optional[str]
+    ssl_cert: Optional[str]
+    ssl_key: Optional[str]
+    ssl_verify_server_cert: Optional[bool] = False
