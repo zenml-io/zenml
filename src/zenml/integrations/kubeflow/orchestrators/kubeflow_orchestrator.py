@@ -501,22 +501,23 @@ class KubeflowOrchestrator(BaseOrchestrator):
         pipeline which is then deployed to the kubeflow pipelines instance.
 
         How it works:
-            Before this method is called the `prepare_pipeline_deployment()`
-            method builds a docker image that contains the code for the
-            pipeline, all steps the context around these files.
+        -------------
+        Before this method is called the `prepare_pipeline_deployment()`
+        method builds a docker image that contains the code for the
+        pipeline, all steps the context around these files.
 
-            Based on this docker image a callable is created which builds
-            container_ops for each step (`_construct_kfp_pipeline`).
-            To do this the entrypoint of the docker image is configured to
-            run the correct step within the docker image. The dependencies
-            between these container_ops are then also configured onto each
-            container_op by pointing at the downstream steps.
+        Based on this docker image a callable is created which builds
+        container_ops for each step (`_construct_kfp_pipeline`).
+        To do this the entrypoint of the docker image is configured to
+        run the correct step within the docker image. The dependencies
+        between these container_ops are then also configured onto each
+        container_op by pointing at the downstream steps.
 
-            This callable is then compiled into a kfp yaml file that is used as
-            the intermediary representation of the kubeflow pipeline.
+        This callable is then compiled into a kfp yaml file that is used as
+        the intermediary representation of the kubeflow pipeline.
 
-            This file, together with some metadata, runtime configurations is
-            then uploaded into the kubeflow pipelines cluster for execution.
+        This file, together with some metadata, runtime configurations is
+        then uploaded into the kubeflow pipelines cluster for execution.
         """
 
         # First check whether the code running in a notebook

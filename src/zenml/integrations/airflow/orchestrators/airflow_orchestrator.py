@@ -113,16 +113,17 @@ class AirflowOrchestrator(BaseOrchestrator):
         and used for orchestration of the pipeline.
 
         How it works:
-            A new airflow_dag is instantiated with the pipeline name and among
-            others things the run schedule.
+        -------------
+        A new airflow_dag is instantiated with the pipeline name and among
+        others things the run schedule.
 
-            For each step of the pipeline a callable is created. This callable
-            uses the run_step() method to execute the step. The parameters of
-            this callable are pre-filled and an airflow step_operator is created
-            within the dag. The dependecies to upstream steps are then
-            configured.
+        For each step of the pipeline a callable is created. This callable
+        uses the run_step() method to execute the step. The parameters of
+        this callable are pre-filled and an airflow step_operator is created
+        within the dag. The dependencies to upstream steps are then
+        configured.
 
-            Finally, the finished dag is returned.
+        Finally, the dag is fully complete and can be returned.
         """
 
         import airflow
