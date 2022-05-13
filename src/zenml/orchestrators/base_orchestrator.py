@@ -1,3 +1,17 @@
+# Copyright 2019 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,6 +25,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+# The `run_step()` method of this file is a modified version of the local dag
+# runner implementation of tfx
+
 import json
 import time
 from abc import ABC, abstractmethod
@@ -134,10 +152,14 @@ class BaseOrchestrator(StackComponent, ABC):
          the `run_step()` method should be used.
 
          In case the orchestrator is using docker containers for orchestration
-         of each step, the src/zenml/entrypoints/step_entrypoint.py can be
+         of each step, the `zenml.entrypoints.step_entrypoint` module can be
          used as a generalized entrypoint that sets up all the necessary
          prerequisites, parses input parameters and finally executes the step
          using the `run_step()`method.
+
+         If the orchestrator needs to know the upstream steps for a specific
+         step to build a DAG, it can use the `get_upstream_step_names()` method
+         to get them.
 
          Args:
              sorted_steps: List of sorted steps
@@ -344,7 +366,7 @@ class BaseOrchestrator(StackComponent, ABC):
         )
         return execution_info
 
-    def get_upstream_steps(
+    def get_upstream_step_names(
         self, step: "BaseStep", pb2_pipeline: Pb2Pipeline
     ) -> List[str]:
         """Given a step, use the associated pb2 node to find the names of all

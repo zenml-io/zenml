@@ -29,8 +29,8 @@ from typing import (
     cast,
 )
 
-from zenml import constants
 import zenml.cli.utils as cli_utils
+from zenml import constants
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,

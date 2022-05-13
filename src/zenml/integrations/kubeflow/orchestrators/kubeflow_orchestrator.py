@@ -1,4 +1,18 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,6 +26,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+# The `_mount_config_map_op()` and minor parts of the
+# `prepare_or_run_pipeline()` method of this file are inspired by the kubeflow
+# dag runner implementation of tfx
+
 import os
 import re
 import sys
@@ -24,7 +42,6 @@ from typing import (
     List,
     Optional,
     Tuple,
-    Union,
 )
 from uuid import UUID
 
@@ -81,20 +98,9 @@ CONTAINER_ENTRYPOINT_COMMAND = [
 ]
 
 
-# OpFunc represents the type of function that takes as input a
-# dsl.ContainerOp and returns the same object. Common operations such as adding
-# k8s secrets, mounting volumes, specifying the use of TPUs and so on can be
-# specified as an OpFunc.
-# See example usage here:
-# https://github.com/kubeflow/pipelines/blob/master/sdk/python/kfp/gcp.py
-OpFunc = Callable[[dsl.ContainerOp], Union[dsl.ContainerOp, None]]
-
-# Default secret name for GCP credentials. This secret is installed as part of
-# a typical Kubeflow installation when the component is GKE.
-_KUBEFLOW_GCP_SECRET_NAME = "user-gcp-sa"
-
-
-def _mount_config_map_op(config_map_name: str) -> OpFunc:
+def _mount_config_map_op(
+    config_map_name: str,
+) -> Callable[[dsl.ContainerOp], None]:
     """Mounts all key-value pairs found in the named Kubernetes ConfigMap.
     All key-value pairs in the ConfigMap are mounted as environment variables.
     Args:
@@ -113,28 +119,6 @@ def _mount_config_map_op(config_map_name: str) -> OpFunc:
         )
 
     return mount_config_map
-
-
-def _mount_secret_op(secret_name: str) -> OpFunc:
-    """Mounts all key-value pairs found in the named Kubernetes Secret.
-    All key-value pairs in the Secret are mounted as environment variables.
-    Args:
-      secret_name: The name of the Secret resource.
-    Returns:
-      An OpFunc for mounting the Secret.
-    """
-
-    def mount_secret(container_op: dsl.ContainerOp) -> None:
-        """Mounts all key-value pairs found in the named Kubernetes Secret."""
-        secret_ref = k8s_client.V1ConfigMapEnvSource(
-            name=secret_name, optional=True
-        )
-
-        container_op.container.add_env_from(
-            k8s_client.V1EnvFromSource(secret_ref=secret_ref)
-        )
-
-    return mount_secret
 
 
 class KubeflowOrchestrator(BaseOrchestrator):
@@ -635,18 +619,18 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     },
                 )
 
-                # Mounts persistent volumes, configmaps and adds lables to the
+                # Mounts persistent volumes, configmaps and adds labels to the
                 # container op
                 self._configure_container_op(container_op=container_op)
 
-                # Find the upstream steps of the current step and configure it
-                # directly on the container_op
-                upstream_steps = self.get_upstream_steps(
+                # Find the upstream container ops of the current step and
+                # configure the current container op to run after them
+                upstream_step_names = self.get_upstream_step_names(
                     step=step, pb2_pipeline=pb2_pipeline
                 )
-                for upstream_step in upstream_steps:
+                for upstream_step_name in upstream_step_names:
                     upstream_container_op = step_name_to_container_op[
-                        upstream_step
+                        upstream_step_name
                     ]
                     container_op.after(upstream_container_op)
 

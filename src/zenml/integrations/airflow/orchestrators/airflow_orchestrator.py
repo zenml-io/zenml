@@ -1,4 +1,18 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,6 +25,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+# Minor parts of the  `prepare_or_run_pipeline()` method of this file are
+# inspired by the airflow dag runner implementation of tfx
 
 import datetime
 import functools
@@ -118,9 +135,9 @@ class AirflowOrchestrator(BaseOrchestrator):
             **self._translate_schedule(runtime_configuration.schedule),
         )
 
-        # Dictionary mapping step name to airflow_operator. This will be needed
-        #  to link steps together with the operators of their upstream nodes
-        component_impl_map = {}
+        # Dictionary mapping step name to airflow_operators. This will be needed
+        # to link steps together with the operators of their upstream nodes
+        step_name_to_airflow_operator = {}
 
         for step in sorted_list_of_steps:
             # Create callable that will be used by airflow to execute the step
@@ -145,15 +162,15 @@ class AirflowOrchestrator(BaseOrchestrator):
                 ),
             )
 
-            # Give the airflow step operator the information which operators
-            #  are directly upstream from it
-            component_impl_map[step.name] = airflow_step_operator
-            upstream_steps = self.get_upstream_steps(
+            # Configure the current airflow operator to run after all upstream
+            # operators finished executing
+            step_name_to_airflow_operator[step.name] = airflow_step_operator
+            upstream_step_names = self.get_upstream_step_names(
                 step=step, pb2_pipeline=pb2_pipeline
             )
-            for upstream_step in upstream_steps:
+            for upstream_step_name in upstream_step_names:
                 airflow_step_operator.set_upstream(
-                    component_impl_map[upstream_step]
+                    step_name_to_airflow_operator[upstream_step_name]
                 )
 
         # Return the finished airflow dag
