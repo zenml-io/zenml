@@ -11,7 +11,7 @@ Before reading this chapter, make sure that you are familiar with the
 concept of [stacks, stack components and their flavors](./introduction.md).  
 {% endhint %}
 
-## Base Implementation
+## Base Abstraction
 
 The artifact store establishes one of the main components in every ZenML stack.
 Now, let us take a deeper dive into the fundamentals behind its abstraction,

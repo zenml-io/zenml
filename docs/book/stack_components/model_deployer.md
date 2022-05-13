@@ -1,4 +1,6 @@
-# Model Deployer
+---
+description: ...
+---
 
 Model deployers are stack components responsible for online model serving.
 Online serving is the process of hosting and
@@ -19,14 +21,15 @@ inference or filtered according to a
 particular pipeline run or step, or to suspend, resume or delete an external
 model server managed through ZenML.
 
-## CLI
+## Base Abstraction
 
 WIP
 
-## Implementations
+## List of available .......
 
 WIP
 
-## Build Your Own
+## Building your own .......
 
 WIP
+

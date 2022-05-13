@@ -1,4 +1,6 @@
-# Container Registry
+---
+description: ...
+---
 
 A container registry is a store for (Docker) containers. A ZenML workflow
 involving a container registry would
@@ -15,16 +17,14 @@ You could also use a remote container
 registry like the Elastic Container Registry at AWS in a more production
 setting.
 
-## CLI
-
-Check out the CLI commands concerning the container registry
-[here](https://apidocs.zenml.io/latest/cli/#zenml.cli--customizing-your-container-registry)
-.
-
-## Implementations
+## Base Abstraction
 
 WIP
 
-## Build Your Own
+## List of available .......
+
+WIP
+
+## Building your own .......
 
 WIP
