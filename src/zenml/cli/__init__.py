@@ -630,6 +630,15 @@ change the name of your stack component, use the following command:
 zenml STACK_COMPONENT rename STACK_COMPONENT_NAME NEW_STACK_COMPONENT_NAME
 ```
 
+If you wish to remove an attribute (or multiple attributes) from a stack
+component, use the following command:
+
+```shell
+zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME --ATTRIBUTE_NAME1
+```
+
+Note that you can only remove optional attributes.
+
 Managing users, teams, projects and roles
 -----------------------------------------
 
