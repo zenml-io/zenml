@@ -30,6 +30,9 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       # Runs a set of commands using the runners shell
       - name: publish
         env: # Or as an environment variable
