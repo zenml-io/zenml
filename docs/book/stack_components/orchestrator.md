@@ -1,5 +1,5 @@
 ---
-description: Orchestrating the run pipelines
+description: Orchestrating the run of pipelines
 ---
 
 The orchestrator is one of the most critical components of your stack, as it
