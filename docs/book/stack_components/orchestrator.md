@@ -65,7 +65,7 @@ class BaseOrchestrator(StackComponent, ABC):
        """
 ```
 
-## List of available artifact stores
+## List of available orchestrators
 
 Out of the box, ZenML comes with a `LocalOrchestrator` implementation, which
 is a simple implementation for running your pipelines locally.
@@ -94,7 +94,7 @@ follow the following steps:
 
 1. Create a class which inherits from the `BaseOrchestrator`.
 2. Define the `FLAVOR` class variable.
-3. Implement the `abstactmethod`s based on your desired orchestrator.
+3. Implement the `prepare_or_run_pipeline()` based on your desired orchestrator.
 
 Once you are done with the implementation, you can register it through the CLI 
 as:
@@ -103,12 +103,13 @@ as:
 zenml orchestrator flavor register <THE-SOURCE-PATH-OF-YOUR-ORCHESTRATOR>
 ```
 
-## Some additional details
+# Some additional implementation details
 
-Not all orchestrators are created equal.
+Not all orchestrators are created equal. Here is a few basic categories that
+differentiate them.
 
-### Direct Orchestration
-The implementation of the `local` orchestrator can be summarized in two lines of 
+## Direct Orchestration
+The implementation of a `local` orchestrator can be summarized in two lines of 
 code:
 
 ```python
@@ -117,11 +118,13 @@ for step in sorted_steps:
 ```
 
 The orchestrator basically iterates through each step and directly executes
-the step. within the same python process.
+the step. within the same python process. Obviously all kind of additional
+configuration could be added around this.
 
-### Python Operator based Orchestration
+## Python Operator based Orchestration
 
-The `airflow` orchestrator is using this approach. Instead of immediately 
+The `airflow` orchestrator has a slightly more complex implementation of the
+`prepare_or_run_pipeline()` method. Instead of immediately 
 executing a step, a `PythonOperator` is created which contains a 
 `_step_callable`. This `_step_callable` will ultimately execute the 
 `self.run_step(...)` method of the orchestrator. The PythonOperators are
@@ -129,10 +132,20 @@ assembled into an AirflowDag which is returned. Through some airflow magic,
 this dag is loaded by the connected instance of airflow and orchestration of 
 this dag is performed either directly or on a set schedule.
 
-### Container based Orchestration
+## Container based Orchestration
 
 The `kubeflow` orchestrator is a great example of container based orchestration.
-In this case a docker container is built ...
+In an implementation-specific method called `prepare_pipeline_deployment()`
+a docker image containing the complete project context is built.
+
+Within `prepare_or_run_pipeline()` a yaml file is created as an intermediary 
+representation of the pipeline and uploaded to the kubeflow instance. 
+To create this yaml file a callable is defined within which a `dsl.ContainerOp` 
+is created for each step. This ContainerOp contains the container entrypoint 
+command and arguments that will make the image run just the one step.
+The ContainerOps are assembled according to their interdependencies inside of a 
+`dsl.Pipeline` which can then be compiled into the yaml file.
+
 
 ## How to use the Step Entrypoint and its Configuration
 
