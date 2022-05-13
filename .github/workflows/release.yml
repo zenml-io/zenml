@@ -6,6 +6,8 @@ on:
   push:
     tags:
       - '*'
+  pull_request:
+    types: [opened, synchronize]
 
 jobs:
   lint-code:

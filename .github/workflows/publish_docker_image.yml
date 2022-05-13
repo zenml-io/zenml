@@ -25,10 +25,12 @@ jobs:
           service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
           project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
 
-      # Cloudbuild
-      - name: Build docker images
-        run: |-
-          gcloud builds submit \
-            --quiet \
-            --config=cloudbuild.yaml \
-            --substitutions=TAG_NAME=${{github.ref_name}} .
+      - name: Do nothing
+        run: echo "Go Baris State Warriors!"
+#      # Cloudbuild
+#      - name: Build docker images
+#        run: |-
+#          gcloud builds submit \
+#            --quiet \
+#            --config=cloudbuild.yaml \
+#            --substitutions=TAG_NAME=${{github.ref_name}} .
