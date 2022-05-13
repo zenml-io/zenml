@@ -169,6 +169,214 @@ def test_updating_stack_component_with_unconfigured_property_fails(
         ).favorite_cat
 
 
+def test_removing_attributes_from_stack_component_works(
+    clean_repo,
+) -> None:
+    """Test that removing an optional attribute from a stack component succeeds."""
+    runner = CliRunner()
+
+    register_container_registry_command = cli.commands[
+        "container-registry"
+    ].commands["register"]
+    register_step_operator_command = cli.commands["step-operator"].commands[
+        "register"
+    ]
+
+    container_registry_registration = runner.invoke(
+        register_container_registry_command,
+        [
+            "new_container_registry",
+            "--flavor",
+            "default",
+            "--uri=some_random_uri.com",
+        ],
+    )
+    assert container_registry_registration.exit_code == 0
+
+    step_operator_registration = runner.invoke(
+        register_step_operator_command,
+        [
+            "new_step_operator",
+            "--flavor",
+            "sagemaker",
+            '--role="arn:arias:aws:iam"',
+            '--instance_type="a1.big.cat"',
+            '--bucket="s3://ariasbucket"',
+        ],
+    )
+    assert step_operator_registration.exit_code == 0
+
+    remove_attribute_command = cli.commands["step-operator"].commands[
+        "remove-attribute"
+    ]
+    remove_attribute = runner.invoke(
+        remove_attribute_command,
+        [
+            "new_step_operator",
+            "--bucket",
+        ],
+    )
+    assert remove_attribute.exit_code == 0
+    step_operator = clean_repo.get_stack_component(
+        StackComponentType.STEP_OPERATOR, "new_step_operator"
+    )
+    assert step_operator.bucket is None
+
+
+def test_removing_nonexistent_component_attributes_fails(
+    clean_repo,
+) -> None:
+    """Test that removing a a nonexistent component attribute fails."""
+    runner = CliRunner()
+
+    register_container_registry_command = cli.commands[
+        "container-registry"
+    ].commands["register"]
+    register_step_operator_command = cli.commands["step-operator"].commands[
+        "register"
+    ]
+
+    container_registry_registration = runner.invoke(
+        register_container_registry_command,
+        [
+            "new_container_registry",
+            "--flavor",
+            "default",
+            "--uri=some_random_uri.com",
+        ],
+    )
+    assert container_registry_registration.exit_code == 0
+
+    step_operator_registration = runner.invoke(
+        register_step_operator_command,
+        [
+            "new_step_operator",
+            "--flavor",
+            "sagemaker",
+            '--role="arn:arias:aws:iam"',
+            '--instance_type="a1.big.cat"',
+            '--bucket="s3://ariasbucket"',
+        ],
+    )
+    assert step_operator_registration.exit_code == 0
+
+    remove_attribute_command = cli.commands["step-operator"].commands[
+        "remove-attribute"
+    ]
+    remove_attribute = runner.invoke(
+        remove_attribute_command,
+        [
+            "new_step_operator",
+            "--aria",
+        ],
+    )
+    assert remove_attribute.exit_code != 0
+
+
+def test_removing_attribute_from_nonexistent_component_fails(
+    clean_repo,
+) -> None:
+    """Test that removing an attribute from a nonexistent stack component fails."""
+    runner = CliRunner()
+
+    register_container_registry_command = cli.commands[
+        "container-registry"
+    ].commands["register"]
+    register_step_operator_command = cli.commands["step-operator"].commands[
+        "register"
+    ]
+
+    container_registry_registration = runner.invoke(
+        register_container_registry_command,
+        [
+            "new_container_registry",
+            "--flavor",
+            "default",
+            "--uri=some_random_uri.com",
+        ],
+    )
+    assert container_registry_registration.exit_code == 0
+
+    step_operator_registration = runner.invoke(
+        register_step_operator_command,
+        [
+            "new_step_operator",
+            "--flavor",
+            "sagemaker",
+            '--role="arn:arias:aws:iam"',
+            '--instance_type="a1.big.cat"',
+            '--bucket="s3://ariasbucket"',
+        ],
+    )
+    assert step_operator_registration.exit_code == 0
+
+    remove_attribute_command = cli.commands["step-operator"].commands[
+        "remove-attribute"
+    ]
+    remove_attribute = runner.invoke(
+        remove_attribute_command,
+        [
+            "arias_dream_step_operator",
+            "--salmon",
+        ],
+    )
+    assert remove_attribute.exit_code != 0
+
+
+def test_removing_required_attribute_fails(
+    clean_repo,
+) -> None:
+    """Test that removing a required attribute from a stack component fails."""
+    runner = CliRunner()
+
+    register_container_registry_command = cli.commands[
+        "container-registry"
+    ].commands["register"]
+    register_step_operator_command = cli.commands["step-operator"].commands[
+        "register"
+    ]
+
+    container_registry_registration = runner.invoke(
+        register_container_registry_command,
+        [
+            "new_container_registry",
+            "--flavor",
+            "default",
+            "--uri=some_random_uri.com",
+        ],
+    )
+    assert container_registry_registration.exit_code == 0
+
+    step_operator_registration = runner.invoke(
+        register_step_operator_command,
+        [
+            "new_step_operator",
+            "--flavor",
+            "sagemaker",
+            '--role="arn:arias:aws:iam"',
+            '--instance_type="a1.big.cat"',
+            '--bucket="s3://ariasbucket"',
+        ],
+    )
+    assert step_operator_registration.exit_code == 0
+
+    remove_attribute_command = cli.commands["step-operator"].commands[
+        "remove-attribute"
+    ]
+    remove_attribute = runner.invoke(
+        remove_attribute_command,
+        [
+            "new_step_operator",
+            "--role",
+        ],
+    )
+    assert remove_attribute.exit_code != 0
+    step_operator = clean_repo.get_stack_component(
+        StackComponentType.STEP_OPERATOR, "new_step_operator"
+    )
+    assert step_operator.role is not None
+
+
 def test_renaming_stack_component_to_preexisting_name_fails(
     clean_repo,
 ) -> None:

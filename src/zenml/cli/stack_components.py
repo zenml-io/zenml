@@ -21,7 +21,7 @@ from rich.markdown import Markdown
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.console import console
-from zenml.constants import MANDATORY_COMPONENT_PROPERTIES
+from zenml.constants import MANDATORY_COMPONENT_ATTRIBUTES
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
@@ -39,7 +39,7 @@ def _get_required_properties(
         field_name
         for field_name, field in component_class.__fields__.items()
         if (field.required is True)
-        and field_name not in MANDATORY_COMPONENT_PROPERTIES
+        and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
     ]
 
 
@@ -50,7 +50,19 @@ def _get_available_properties(
     return [
         field_name
         for field_name, _ in component_class.__fields__.items()
-        if field_name not in MANDATORY_COMPONENT_PROPERTIES
+        if field_name not in MANDATORY_COMPONENT_ATTRIBUTES
+    ]
+
+
+def _get_optional_properties(
+    component_class: Type[StackComponent],
+) -> List[str]:
+    """Gets the optional properties for a stack component."""
+    return [
+        field_name
+        for field_name, field in component_class.__fields__.items()
+        if field.required is False
+        and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
     ]
 
 
@@ -364,7 +376,7 @@ def generate_stack_component_update_command(
             except AssertionError as e:
                 cli_utils.error(str(e))
                 return
-            for prop in MANDATORY_COMPONENT_PROPERTIES:
+            for prop in MANDATORY_COMPONENT_ATTRIBUTES:
                 if prop in parsed_args:
                     cli_utils.error(
                         f"Cannot update mandatory property '{prop}' of "
@@ -433,40 +445,38 @@ def generate_stack_component_remove_attribute_command(
                 cli_utils.error(f"No {display_name} found for name '{name}'.")
 
             try:
-                parsed_args = cli_utils.parse_unknown_options(args)
+                parsed_args = cli_utils.parse_unknown_component_attributes(args)
             except AssertionError as e:
                 cli_utils.error(str(e))
                 return
-            for prop in MANDATORY_COMPONENT_PROPERTIES:
-                if prop in parsed_args:
-                    cli_utils.error(
-                        f"Cannot update mandatory property '{prop}' of '{name}' {current_component.TYPE}. "
-                    )
 
-            from zenml.stack.stack_component_class_registry import (
-                StackComponentClassRegistry,
-            )
-
-            component_class = StackComponentClassRegistry.get_class(
+            component_class = repo.get_flavor(
+                name=current_component.FLAVOR,
                 component_type=component_type,
-                component_flavor=current_component.FLAVOR,
             )
-            available_properties = _get_available_properties(component_class)
-            for prop in parsed_args.keys():
-                if (prop not in available_properties) and (
-                    len(available_properties) > 0
+            required_attributes = current_component.schema()["required"]
+            for arg in parsed_args:
+                if (
+                    arg in required_attributes
+                    or arg in MANDATORY_COMPONENT_ATTRIBUTES
                 ):
                     cli_utils.error(
-                        f"You cannot update the {display_name} `{current_component.name}` with property '{prop}'. You can only update the following properties: {available_properties}."
+                        f"Cannot remove mandatory attribute '{arg}' of '{name}' {current_component.TYPE}. "
                     )
-                elif prop not in available_properties:
-                    cli_utils.error(
-                        f"You cannot update the {display_name} `{current_component.name}` with property '{prop}' as this {display_name} has no optional properties that can be configured."
-                    )
-                else:
-                    continue
 
-            updated_component = current_component.copy(update=parsed_args)
+            optional_properties = _get_optional_properties(component_class)
+            for arg in parsed_args:
+                if arg not in optional_properties:
+                    cli_utils.error(
+                        f"You cannot remove the attribute '{arg}' of "
+                        f"'{name}' {current_component.TYPE}. \n"
+                        f"You can only remove the following attributes: "
+                        f"'{', '.join(optional_properties)}'."
+                    )
+
+            updated_component = current_component.copy(
+                update={arg: None for arg in parsed_args}
+            )
 
             repo.update_stack_component(
                 name, updated_component.TYPE, updated_component
@@ -785,9 +795,7 @@ def register_single_stack_component_cli_commands(
     )(get_command)
 
     # zenml stack-component describe
-    describe_command = generate_stack_component_describe_command(
-        component_type
-    )
+    describe_command = generate_stack_component_describe_command(component_type)
     command_group.command(
         "describe",
         help=f"Show details about the (active) {singular_display_name}.",
@@ -800,9 +808,7 @@ def register_single_stack_component_cli_commands(
     )(list_command)
 
     # zenml stack-component register
-    register_command = generate_stack_component_register_command(
-        component_type
-    )
+    register_command = generate_stack_component_register_command(component_type)
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "register",
