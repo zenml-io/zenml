@@ -18,7 +18,7 @@ import re
 import sys
 from contextlib import contextmanager
 from logging.handlers import TimedRotatingFileHandler
-from typing import Any, Dict
+from typing import Any, Dict, Iterator
 
 from absl import logging as absl_logging
 from rich.traceback import install as rich_tb_install
@@ -200,7 +200,7 @@ def init_logging() -> None:
 
 
 @contextmanager
-def disable_logging(log_level: int):
+def disable_logging(log_level: int) -> Iterator[None]:
     """Contextmanager that temporarily disables logs below a threshold level.
 
     Use it like this:
