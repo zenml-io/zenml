@@ -29,6 +29,7 @@ from typing import (
     cast,
 )
 
+import zenml.cli.utils as cli_utils
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     StepConfigurationKeys,
@@ -279,6 +280,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
                         for requirement in f.read().split("\n")
                     }
                 )
+            if self.requirements_file:
+                cli_utils.warning(
+                    f"Using the file path passed in as `requirements` and ignoring the file '{self.requirements_file}'."
+                )
         # Add this logic back in (described in #ENG-882)
         #
         # elif isinstance(self._requirements, str) and self._requirements:
@@ -301,6 +306,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
         #                 )
         elif isinstance(self._requirements, List):
             requirements.update(self._requirements)
+            if self.requirements_file:
+                cli_utils.warning(
+                    f"Using the values passed in as `requirements` and ignoring the file '{self.requirements_file}'."
+                )
         elif self.requirements_file and fileio.exists(self.requirements_file):
             # TODO [MEDIUM]: Deprecate the `requirements_file` option
             with fileio.open(self.requirements_file, "r") as f:
