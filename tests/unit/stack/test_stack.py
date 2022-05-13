@@ -209,7 +209,7 @@ def test_stack_deployment(
     preparation/cleanup methods on all of its components and calls the
     orchestrator to run the pipeline."""
     pipeline_run_return_value = object()
-    stack_with_mock_components.orchestrator.run_pipeline.return_value = (
+    stack_with_mock_components.orchestrator.run.return_value = (
         pipeline_run_return_value
     )
 
@@ -225,7 +225,7 @@ def test_stack_deployment(
         component.prepare_pipeline_run.assert_called_once()
         component.cleanup_pipeline_run.assert_called_once()
 
-    stack_with_mock_components.orchestrator.run_pipeline.assert_called_once_with(
+    stack_with_mock_components.orchestrator.run.assert_called_once_with(
         pipeline,
         stack=stack_with_mock_components,
         runtime_configuration=runtime_config,

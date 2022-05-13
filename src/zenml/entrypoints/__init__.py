@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,17 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
+from zenml.entrypoints.step_entrypoint_configuration import (
+    StepEntrypointConfiguration,
+)
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
-    __version__: str = version_file.read().strip()
-
-from zenml.logger import init_logging  # noqa
-
-init_logging()
-
-# Import ZenServer here because it needs to be registered in the service registry
-# early on in order to be available for use in other modules.
-from zenml.zen_server.zen_server import ZenServer
+__all__ = ["StepEntrypointConfiguration"]

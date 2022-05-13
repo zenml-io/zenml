@@ -130,7 +130,7 @@ def main(
 ) -> None:
     """Runs a single ZenML step."""
     # prevent running entire pipeline in user code if they would run at import
-    # time (e.g. not wrapped in a function or __name__=="__main__" check)
+    # time (e.g. not wrapped in a function or __name__== "__main__" check)
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
 
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
