@@ -16,6 +16,13 @@ concept of [stacks, stack components and their flavors](./introduction.md).
 ...
 
 ```python
+from abc import ABC, abstractmethod
+from typing import ClassVar, List
+
+from zenml.enums import StackComponentType
+from zenml.secret.base_secret import BaseSecretSchema
+from zenml.stack import StackComponent
+
 class BaseSecretsManager(StackComponent, ABC):
     """Base class for all ZenML secrets managers."""
 
