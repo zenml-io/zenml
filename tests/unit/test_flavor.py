@@ -11,9 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
+
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
+from zenml.steps import BaseStep
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -26,6 +29,16 @@ class AriaOrchestrator(BaseOrchestrator):
 
     favorite_orchestration_language: str
     favorite_orchestration_language_version: Optional[str] = "1.0"
+
+    def prepare_or_run_pipeline(
+        self,
+        sorted_steps: List[BaseStep],
+        pipeline: "BasePipeline",
+        pb2_pipeline: Pb2Pipeline,
+        stack: "Stack",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> Any:
+        """Mock function."""
 
     def run_pipeline(
         self,
