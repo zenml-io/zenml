@@ -40,6 +40,7 @@ from zenml.utils import string_utils
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
+    from zenml.drift_detector import BaseDriftDetector
     from zenml.experiment_trackers.base_experiment_tracker import (
         BaseExperimentTracker,
     )
@@ -79,6 +80,7 @@ class Stack:
         feature_store: Optional["BaseFeatureStore"] = None,
         model_deployer: Optional["BaseModelDeployer"] = None,
         experiment_tracker: Optional["BaseExperimentTracker"] = None,
+        drift_detector: Optional["BaseDriftDetector"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -95,6 +97,7 @@ class Stack:
         self._feature_store = feature_store
         self._model_deployer = model_deployer
         self._experiment_tracker = experiment_tracker
+        self._drift_detector = drift_detector
 
     @classmethod
     def from_components(
@@ -115,6 +118,7 @@ class Stack:
         """
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
+        from zenml.drift_detector import BaseDriftDetector
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.metadata_stores import BaseMetadataStore
@@ -185,6 +189,12 @@ class Stack:
         ):
             _raise_type_error(experiment_tracker, BaseExperimentTracker)
 
+        drift_detector = components.get(StackComponentType.DRIFT_DETECTOR)
+        if drift_detector is not None and not isinstance(
+            drift_detector, BaseDriftDetector
+        ):
+            _raise_type_error(drift_detector, BaseDriftDetector)
+
         return Stack(
             name=name,
             orchestrator=orchestrator,
@@ -196,6 +206,7 @@ class Stack:
             feature_store=feature_store,
             model_deployer=model_deployer,
             experiment_tracker=experiment_tracker,
+            drift_detector=drift_detector,
         )
 
     @classmethod
@@ -247,6 +258,7 @@ class Stack:
                 self.feature_store,
                 self.model_deployer,
                 self.experiment_tracker,
+                self.drift_detector,
             ]
             if component is not None
         }
@@ -300,6 +312,11 @@ class Stack:
     def experiment_tracker(self) -> Optional["BaseExperimentTracker"]:
         """The experiment tracker of the stack."""
         return self._experiment_tracker
+
+    @property
+    def drift_detector(self) -> Optional["BaseDriftDetector"]:
+        """The drift detectpr of the stack."""
+        return self._drift_detector
 
     @property
     def runtime_options(self) -> Dict[str, Any]:

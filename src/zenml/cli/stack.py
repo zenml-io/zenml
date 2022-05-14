@@ -117,6 +117,14 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "-dd",
+    "--drift_detector",
+    "drift_detector_name",
+    help="Name of the drift detector for this stack.",
+    type=str,
+    required=False,
+)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
@@ -128,6 +136,7 @@ def register_stack(
     feature_store_name: Optional[str] = None,
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
+    drift_detector_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
     cli_utils.print_active_profile()
@@ -192,6 +201,14 @@ def register_stack(
             ] = repo.get_stack_component(
                 StackComponentType.EXPERIMENT_TRACKER,
                 name=experiment_tracker_name,
+            )
+
+        if drift_detector_name:
+            stack_components[
+                StackComponentType.DRIFT_DETECTOR
+            ] = repo.get_stack_component(
+                StackComponentType.DRIFT_DETECTOR,
+                name=drift_detector_name,
             )
 
         stack_ = Stack.from_components(
@@ -275,6 +292,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-dd",
+    "--drift_detector",
+    "drift_detector_name",
+    help="Name of the drift detector for this stack.",
+    type=str,
+    required=False,
+)
 def update_stack(
     stack_name: Optional[str],
     metadata_store_name: Optional[str] = None,
@@ -286,6 +311,7 @@ def update_stack(
     feature_store_name: Optional[str] = None,
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
+    drift_detector_name: Optional[str] = None,
 ) -> None:
     """Update a stack."""
     cli_utils.print_active_profile()
@@ -372,6 +398,14 @@ def update_stack(
             ] = repo.get_stack_component(
                 StackComponentType.EXPERIMENT_TRACKER,
                 name=experiment_tracker_name,
+            )
+
+        if drift_detector_name:
+            stack_components[
+                StackComponentType.DRIFT_DETECTOR
+            ] = repo.get_stack_component(
+                StackComponentType.DRIFT_DETECTOR,
+                name=drift_detector_name,
             )
 
         stack_ = Stack.from_components(
