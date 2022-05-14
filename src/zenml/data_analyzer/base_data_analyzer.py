@@ -55,7 +55,10 @@ class BaseDataAnalyzer(StackComponent, ABC):
     FLAVOR: ClassVar[str]
 
     def analyze(
-        self, config: Optional[BaseStepConfig] = None, *args: Any, **kwargs: Any
+        self,
+        config: Optional[BaseDataAnalyzerConfig] = None,
+        *args: Any,
+        **kwargs: Any
     ) -> Any:
         """Generic analyze method that accepts all arguments.
 
@@ -70,7 +73,7 @@ class BaseDataAnalyzer(StackComponent, ABC):
         analysis: pd.DataFrame,
         reference: Optional[pd.DataFrame] = None,
         model: Optional[Any] = None,
-        config: Optional[BaseStepConfig] = None,
+        config: Optional[BaseDataAnalyzerConfig] = None,
     ) -> Any:
         """Generic method for analyzing pandas dataframes.
 
