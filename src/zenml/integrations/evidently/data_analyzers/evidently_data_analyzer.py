@@ -11,13 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-Drift detectors let you detect different sorts of drift in your machine learning 
-pipelines.
-"""
+from typing import ClassVar
 
-from zenml.drift_detector.base_drift_detector import BaseDriftDetector
+from zenml.data_analyzer.base_data_analyzer import BaseDataAnalyzer
+from zenml.integrations.evidently import EVIDENTLY_DATA_ANALYZER_FLAVOR
+from zenml.logger import get_logger
 
-__all__ = [
-    "BaseDriftDetector",
-]
+logger = get_logger(__name__)
+
+
+class EvidentlyDataAnalyzer(BaseDataAnalyzer):
+    """Stores evidently configuration options."""
+
+    # Class Configuration
+    FLAVOR: ClassVar[str] = EVIDENTLY_DATA_ANALYZER_FLAVOR

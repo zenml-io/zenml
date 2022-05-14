@@ -40,7 +40,7 @@ from zenml.utils import string_utils
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
-    from zenml.drift_detector import BaseDriftDetector
+    from zenml.data_analyzer import BaseDataAnalyzer
     from zenml.experiment_trackers.base_experiment_tracker import (
         BaseExperimentTracker,
     )
@@ -80,7 +80,7 @@ class Stack:
         feature_store: Optional["BaseFeatureStore"] = None,
         model_deployer: Optional["BaseModelDeployer"] = None,
         experiment_tracker: Optional["BaseExperimentTracker"] = None,
-        drift_detector: Optional["BaseDriftDetector"] = None,
+        data_analyzer: Optional["BaseDataAnalyzer"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -97,7 +97,7 @@ class Stack:
         self._feature_store = feature_store
         self._model_deployer = model_deployer
         self._experiment_tracker = experiment_tracker
-        self._drift_detector = drift_detector
+        self._data_analyzer = data_analyzer
 
     @classmethod
     def from_components(
@@ -118,7 +118,7 @@ class Stack:
         """
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
-        from zenml.drift_detector import BaseDriftDetector
+        from zenml.data_analyzer import BaseDataAnalyzer
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.metadata_stores import BaseMetadataStore
@@ -189,11 +189,11 @@ class Stack:
         ):
             _raise_type_error(experiment_tracker, BaseExperimentTracker)
 
-        drift_detector = components.get(StackComponentType.DRIFT_DETECTOR)
-        if drift_detector is not None and not isinstance(
-            drift_detector, BaseDriftDetector
+        data_analyzer = components.get(StackComponentType.DATA_ANALYZER)
+        if data_analyzer is not None and not isinstance(
+            data_analyzer, BaseDataAnalyzer
         ):
-            _raise_type_error(drift_detector, BaseDriftDetector)
+            _raise_type_error(data_analyzer, BaseDataAnalyzer)
 
         return Stack(
             name=name,
@@ -206,7 +206,7 @@ class Stack:
             feature_store=feature_store,
             model_deployer=model_deployer,
             experiment_tracker=experiment_tracker,
-            drift_detector=drift_detector,
+            data_analyzer=data_analyzer,
         )
 
     @classmethod
@@ -258,7 +258,7 @@ class Stack:
                 self.feature_store,
                 self.model_deployer,
                 self.experiment_tracker,
-                self.drift_detector,
+                self.data_analyzer,
             ]
             if component is not None
         }
@@ -314,9 +314,9 @@ class Stack:
         return self._experiment_tracker
 
     @property
-    def drift_detector(self) -> Optional["BaseDriftDetector"]:
-        """The drift detectpr of the stack."""
-        return self._drift_detector
+    def data_analyzer(self) -> Optional["BaseDataAnalyzer"]:
+        """The data analyzer of the stack."""
+        return self._data_analyzer
 
     @property
     def runtime_options(self) -> Dict[str, Any]:

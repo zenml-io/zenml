@@ -11,19 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import ClassVar
+"""
+Data Analyzers are stack components that analyze data as they flow through the 
+pipeline. A good example of a data analyzer is a drift detection component that 
+detects drift, or a data quality assesment component.
+"""
 
-from zenml.experiment_trackers.base_experiment_tracker import (
-    BaseExperimentTracker,
-)
-from zenml.integrations.evidently import EVIDENTLY_DRIFT_DETECTOR_FLAVOR
-from zenml.logger import get_logger
+from zenml.data_analyzer.base_data_analyzer import BaseDataAnalyzer
 
-logger = get_logger(__name__)
-
-
-class EvidentlyDriftDetector(BaseExperimentTracker):
-    """Stores evidently configuration options."""
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = EVIDENTLY_DRIFT_DETECTOR_FLAVOR
+__all__ = [
+    "BaseDataAnalyzer",
+]

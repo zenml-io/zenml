@@ -50,7 +50,7 @@ class StackComponentType(StrEnum):
     SECRETS_MANAGER = "secrets_manager"
     MODEL_DEPLOYER = "model_deployer"
     EXPERIMENT_TRACKER = "experiment_tracker"
-    DRIFT_DETECTOR = "drift_detector"
+    DATA_ANALYZER = "data_analyzer"
 
     @property
     def plural(self) -> str:

@@ -28,7 +28,7 @@ from zenml.integrations.constants import EVIDENTLY, WANDB
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-EVIDENTLY_DRIFT_DETECTOR_FLAVOR = "evidently"
+EVIDENTLY_DATA_ANALYZER_FLAVOR = "evidently"
 
 
 class EvidentlyIntegration(Integration):
@@ -43,9 +43,9 @@ class EvidentlyIntegration(Integration):
         """Declare the stack component flavors for the MLflow integration"""
         return [
             FlavorWrapper(
-                name=EVIDENTLY_DRIFT_DETECTOR_FLAVOR,
-                source="zenml.integrations.evidently.drift_detectors.evidently_drift_detector.EvidentlyDriftDetector",
-                type=StackComponentType.DRIFT_DETECTOR,
+                name=EVIDENTLY_DATA_ANALYZER_FLAVOR,
+                source="zenml.integrations.evidently.data_analyzers.evidently_data_analyzer.EvidentlyDataAnalyzer",
+                type=StackComponentType.DATA_ANALYZER,
                 integration=cls.NAME,
             )
         ]

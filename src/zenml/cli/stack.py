@@ -119,9 +119,9 @@ def stack() -> None:
 )
 @click.option(
     "-dd",
-    "--drift_detector",
-    "drift_detector_name",
-    help="Name of the drift detector for this stack.",
+    "--data_analyzer",
+    "data_analyzer_name",
+    help="Name of the data analyzer for this stack.",
     type=str,
     required=False,
 )
@@ -136,7 +136,7 @@ def register_stack(
     feature_store_name: Optional[str] = None,
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
-    drift_detector_name: Optional[str] = None,
+    data_analyzer_name: Optional[str] = None,
 ) -> None:
     """Register a stack."""
     cli_utils.print_active_profile()
@@ -203,12 +203,12 @@ def register_stack(
                 name=experiment_tracker_name,
             )
 
-        if drift_detector_name:
+        if data_analyzer_name:
             stack_components[
-                StackComponentType.DRIFT_DETECTOR
+                StackComponentType.DATA_ANALYZER
             ] = repo.get_stack_component(
-                StackComponentType.DRIFT_DETECTOR,
-                name=drift_detector_name,
+                StackComponentType.DATA_ANALYZER,
+                name=data_analyzer_name,
             )
 
         stack_ = Stack.from_components(
@@ -294,9 +294,9 @@ def register_stack(
 )
 @click.option(
     "-dd",
-    "--drift_detector",
-    "drift_detector_name",
-    help="Name of the drift detector for this stack.",
+    "--data_analyzer",
+    "data_analyzer_name",
+    help="Name of the data analyzer for this stack.",
     type=str,
     required=False,
 )
@@ -311,7 +311,7 @@ def update_stack(
     feature_store_name: Optional[str] = None,
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
-    drift_detector_name: Optional[str] = None,
+    data_analyzer_name: Optional[str] = None,
 ) -> None:
     """Update a stack."""
     cli_utils.print_active_profile()
@@ -400,12 +400,12 @@ def update_stack(
                 name=experiment_tracker_name,
             )
 
-        if drift_detector_name:
+        if data_analyzer_name:
             stack_components[
-                StackComponentType.DRIFT_DETECTOR
+                StackComponentType.DATA_ANALYZER
             ] = repo.get_stack_component(
-                StackComponentType.DRIFT_DETECTOR,
-                name=drift_detector_name,
+                StackComponentType.DATA_ANALYZER,
+                name=data_analyzer_name,
             )
 
         stack_ = Stack.from_components(

@@ -32,15 +32,15 @@ from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
 
-class BaseDriftDetector(StackComponent, ABC):
-    """Base class for all ZenML drift detectors."""
+class BaseDataAnalyzer(StackComponent, ABC):
+    """Base class for all ZenML data analyzers."""
 
     # Class configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.DRIFT_DETECTOR
+    TYPE: ClassVar[StackComponentType] = StackComponentType.DATA_ANALYZER
     FLAVOR: ClassVar[str]
 
     @abstractmethod
-    def post(self, message: str) -> bool:
+    def analyze(self, message: str) -> bool:
         """Post a message to some ChatOps service.
         Args:
             message: message to be posted
