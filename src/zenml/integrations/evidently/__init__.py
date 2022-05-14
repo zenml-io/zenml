@@ -44,7 +44,7 @@ class EvidentlyIntegration(Integration):
         return [
             FlavorWrapper(
                 name=EVIDENTLY_DRIFT_DETECTOR_FLAVOR,
-                source="zenml.integrations.evidently.drift_detectors.EvidentlyDriftDetector",
+                source="zenml.integrations.evidently.drift_detectors.evidently_drift_detector.EvidentlyDriftDetector",
                 type=StackComponentType.DRIFT_DETECTOR,
                 integration=cls.NAME,
             )
