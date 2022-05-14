@@ -13,6 +13,5 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.evidently.steps.evidently_profile import (
-    EvidentlyProfileConfig,
-    EvidentlyProfileStep,
+    EvidentlyDataAnalysisStep,
 )

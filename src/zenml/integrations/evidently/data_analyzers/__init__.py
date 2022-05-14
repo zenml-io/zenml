@@ -11,4 +11,5 @@
 #  permissions and limitations under the License.
 from zenml.integrations.evidently.data_analyzers.evidently_data_analyzer import (  # noqa
     EvidentlyDataAnalyzer,
+    EvidentlyDataAnalyzerConfig,
 )
