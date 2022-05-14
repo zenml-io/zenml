@@ -26,10 +26,25 @@
 #  permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import Any, ClassVar, List, Optional, Sequence, Union
+
+import pandas as pd
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
+from zenml.steps import BaseStepConfig
+
+
+class BaseDataAnalyzerConfig(BaseStepConfig):
+    """Base class for all data analysis configurations"""
+
+    target: Optional[str] = "target"
+    prediction: Optional[Union[str, Sequence[str]]] = "prediction"
+    datetime: Optional[str] = "datetime"
+    id: Optional[str] = None
+    numerical_features: Optional[List[str]] = None
+    categorical_features: Optional[List[str]] = None
+    target_names: Optional[List[str]] = None
 
 
 class BaseDataAnalyzer(StackComponent, ABC):
@@ -40,10 +55,30 @@ class BaseDataAnalyzer(StackComponent, ABC):
     FLAVOR: ClassVar[str]
 
     @abstractmethod
-    def analyze(self, message: str) -> bool:
-        """Post a message to some ChatOps service.
+    def analyze(self, config: BaseStepConfig, *args: Any, **kwargs: Any) -> Any:
+        """Generic analyze method that accepts all arguments.
+
         Args:
-            message: message to be posted
+            config: configuration of the analysis.
         Returns:
-            True if operation succeeded, else False
+            Result of analysis.
+        """
+
+    @abstractmethod
+    def analyze_tabular(
+        self,
+        config: BaseStepConfig,
+        analysis: pd.DataFrame,
+        reference: Optional[pd.DataFrame],
+        model: Optional[Any],
+    ) -> Any:
+        """Post a message to some ChatOps service.
+
+        Args:
+            config: configuration of the analysis.
+            analysis: dataframe to be analyzed.
+            reference: optional dataframe which is the reference.
+            model: optional model to aid in analysis.
+        Returns:
+            Result of analysis.
         """
