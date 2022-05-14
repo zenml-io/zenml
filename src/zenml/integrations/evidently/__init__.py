@@ -21,8 +21,14 @@ dashboard (visualized as an html file or in your Jupyter notebook), or as a JSON
 file.
 """
 
-from zenml.integrations.constants import EVIDENTLY
+from typing import List
+
+from zenml.enums import StackComponentType
+from zenml.integrations.constants import EVIDENTLY, WANDB
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
+
+EVIDENTLY_DRIFT_DETECTOR_FLAVOR = "evidently"
 
 
 class EvidentlyIntegration(Integration):
@@ -31,6 +37,18 @@ class EvidentlyIntegration(Integration):
 
     NAME = EVIDENTLY
     REQUIREMENTS = ["evidently==v0.1.41.dev0"]
+
+    @classmethod
+    def flavors(cls) -> List[FlavorWrapper]:
+        """Declare the stack component flavors for the MLflow integration"""
+        return [
+            FlavorWrapper(
+                name=EVIDENTLY_DRIFT_DETECTOR_FLAVOR,
+                source="zenml.integrations.evidently.drift_detectors.EvidentlyDriftDetector",
+                type=StackComponentType.DRIFT_DETECTOR,
+                integration=cls.NAME,
+            )
+        ]
 
 
 EvidentlyIntegration.check_installation()
