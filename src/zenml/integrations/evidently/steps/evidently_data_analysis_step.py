@@ -94,4 +94,4 @@ class EvidentlyDataAnalysisStep(BaseDriftDetectionStep):
         data_profile, data_drift_dashboard = data_analyzer.analyze_tabular(
             reference_dataset, comparison_dataset, config=config
         )
-        return [data_profile.object(), data_drift_dashboard.html()]
+        return [data_profile, data_drift_dashboard]

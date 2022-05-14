@@ -18,10 +18,10 @@ from rich import print
 from sklearn import datasets
 
 from zenml.integrations.constants import EVIDENTLY, SKLEARN
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-    EvidentlyProfileStep,
+from zenml.integrations.evidently.data_analyzers import (
+    EvidentlyDataAnalyzerConfig,
 )
+from zenml.integrations.evidently.steps import EvidentlyDataAnalysisStep
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.logger import get_logger
 from zenml.pipelines import pipeline
@@ -51,9 +51,8 @@ def data_splitter(
     return input_df[100:], input_df[:100]
 
 
-drift_detector = EvidentlyProfileStep(
-    EvidentlyProfileConfig(
-        column_mapping=None,
+drift_detector = EvidentlyDataAnalysisStep(
+    EvidentlyDataAnalyzerConfig(
         profile_sections=["datadrift"],
     )
 )

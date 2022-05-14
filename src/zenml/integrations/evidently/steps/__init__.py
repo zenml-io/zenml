@@ -12,6 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.evidently.steps.evidently_profile import (
+from zenml.integrations.evidently.steps.evidently_data_analysis_step import (  # noqa
     EvidentlyDataAnalysisStep,
 )
