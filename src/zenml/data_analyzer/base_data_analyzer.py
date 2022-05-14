@@ -25,7 +25,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import Any, ClassVar, List, Optional, Sequence, Union
 
 import pandas as pd
@@ -54,8 +54,9 @@ class BaseDataAnalyzer(StackComponent, ABC):
     TYPE: ClassVar[StackComponentType] = StackComponentType.DATA_ANALYZER
     FLAVOR: ClassVar[str]
 
-    @abstractmethod
-    def analyze(self, config: BaseStepConfig, *args: Any, **kwargs: Any) -> Any:
+    def analyze(
+        self, config: Optional[BaseStepConfig] = None, *args: Any, **kwargs: Any
+    ) -> Any:
         """Generic analyze method that accepts all arguments.
 
         Args:
@@ -64,15 +65,14 @@ class BaseDataAnalyzer(StackComponent, ABC):
             Result of analysis.
         """
 
-    @abstractmethod
     def analyze_tabular(
         self,
-        config: BaseStepConfig,
         analysis: pd.DataFrame,
-        reference: Optional[pd.DataFrame],
-        model: Optional[Any],
+        reference: Optional[pd.DataFrame] = None,
+        model: Optional[Any] = None,
+        config: Optional[BaseStepConfig] = None,
     ) -> Any:
-        """Post a message to some ChatOps service.
+        """Generic method for analyzing pandas dataframes.
 
         Args:
             config: configuration of the analysis.
