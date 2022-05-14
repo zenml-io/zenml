@@ -129,25 +129,13 @@ class EvidentlyDataAnalyzer(BaseDataAnalyzer):
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str
     ):
-        """Generic method for analyzing pandas dataframes.
+        """Generic method for analyzing pandas dataframe with Evidently.
 
         Args:
             config: configuration of the analysis.
             analysis: dataframe to be analyzed.
             reference: optional dataframe which is the reference.
-            model: optional model to aid in analysis.
-        Returns:
-            Result of analysis.
-        """
-        """Main entrypoint for the Evidently categorical target drift detection
-        step.
-
-        Args:
-            reference_dataset: a Pandas dataframe
-            comparison_dataset: a Pandas dataframe of new data you wish to
-                compare against the reference data
-            config: the configuration for the step
-
+            model: optional model to aid in analysis. In this case, not used.
         Returns:
             profile: dictionary report extracted from an Evidently Profile
               generated for the data drift
