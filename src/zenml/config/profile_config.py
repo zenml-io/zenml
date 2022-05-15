@@ -18,7 +18,11 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 import requests
 from pydantic import BaseModel, Field, root_validator
 
-from zenml.constants import ENV_ZENML_DEFAULT_STORE_TYPE
+from zenml.constants import (
+    ENV_ZENML_DEFAULT_STORE_TYPE,
+    ENV_ZENML_ACTIVATED_STACK,
+)
+
 from zenml.enums import StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -126,6 +130,14 @@ class ProfileConfiguration(BaseModel):
         from zenml.config.global_config import GlobalConfiguration
 
         return self._config or GlobalConfiguration()
+
+    def get_active_stack(self) -> Optional[str]:
+        """Get the active stack for the profile.
+
+        Returns:
+            The name of the active stack or None if no stack is active.
+        """
+        return os.getenv(ENV_ZENML_ACTIVATED_STACK, self.active_stack)
 
     def activate_stack(self, stack_name: str) -> None:
         """Set the active stack for the profile.
