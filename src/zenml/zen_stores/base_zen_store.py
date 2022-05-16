@@ -974,7 +974,7 @@ class BaseZenStore(ABC):
         Raises:
             EntityExistsError: If a user with the given name already exists.
         """
-        track_event(AnalyticsEvent.CREATE_USER)
+        track_event(AnalyticsEvent.CREATED_USER)
         return self._create_user(user_name)
 
     def delete_user(self, user_name: str) -> None:
@@ -986,7 +986,7 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: If no user with the given name exists.
         """
-        track_event(AnalyticsEvent.DELETE_USER)
+        track_event(AnalyticsEvent.DELETED_USER)
         self._delete_user(user_name)
 
     def get_user(self, user_name: str) -> User:

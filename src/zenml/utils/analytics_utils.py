@@ -61,10 +61,26 @@ class AnalyticsEvent(str, Enum):
     INSTALL_INTEGRATION = "Integration installed"
 
     # Users
-    CREATE_USER = "User created"
-    CREATE_DEFAULT_USER = "Default user created"
-    DELETE_USER = "User deleted"
+    CREATED_USER = "User created"
+    CREATED_DEFAULT_USER = "Default user created"
+    DELETED_USER = "User deleted"
 
+    # Teams
+    CREATED_TEAM = "Team created"
+    DELETED_TEAM = "Team deleted"
+    
+    # Projects
+    CREATED_PROJECT = "Project created"
+    DELETED_PROJECT = "Project deleted"
+    
+    # Role
+    CREATED_ROLE = "Role created"
+    DELETED_ROLE = "Role deleted"
+    
+    # Flavor
+    CREATED_FLAVOR = "Flavor created"
+    DELETED_FLAVOR = "Flavor deleted"
+    
     # Test event
     EVENT_TEST = "Test event"
 
