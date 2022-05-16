@@ -279,7 +279,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> User:
         """Creates a new user.
 
         Args:
@@ -881,7 +881,9 @@ class BaseZenStore(ABC):
         try:
             self.get_user(user_name=DEFAULT_USERNAME)
         except KeyError:
-            self.create_user(user_name=DEFAULT_USERNAME)
+            # Use private interface and send custom tracking event
+            track_event(AnalyticsEvent.CREATE_DEFAULT_USER)
+            self._create_user(user_name=DEFAULT_USERNAME)
 
     # Common code (internal implementations, private):
 
@@ -959,3 +961,18 @@ class BaseZenStore(ABC):
         """
         # No tracking events, here for consistency
         self._delete_stack_component(name)
+
+    def create_user(self, user_name: str) -> User:
+        """Creates a new user.
+
+        Args:
+            user_name: Unique username.
+
+        Returns:
+             The newly created user.
+
+        Raises:
+            EntityExistsError: If a user with the given name already exists.
+        """
+        track_event(AnalyticsEvent.CREATE_USER)
+        return self._create_user(user_name)

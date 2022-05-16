@@ -418,7 +418,7 @@ class LocalZenStore(BaseZenStore):
         """
         return _get_unique_entity(user_name, collection=self.__store.users)
 
-    def create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> User:
         """Creates a new user.
 
         Args:

@@ -60,6 +60,10 @@ class AnalyticsEvent(str, Enum):
     # Integrations
     INSTALL_INTEGRATION = "Integration installed"
 
+    # Users
+    CREATE_USER = "User created"
+    CREATE_DEFAULT_USER = "Default user created"
+
     # Test event
     EVENT_TEST = "Test event"
 

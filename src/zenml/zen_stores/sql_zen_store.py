@@ -566,7 +566,7 @@ class SqlZenStore(BaseZenStore):
 
             return User(**user.dict())
 
-    def create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> User:
         """Creates a new user.
 
         Args:

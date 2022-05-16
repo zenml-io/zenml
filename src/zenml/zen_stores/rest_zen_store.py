@@ -404,7 +404,7 @@ class RestZenStore(BaseZenStore):
         """
         return User.parse_obj(self.get(f"{USERS}/{user_name}"))
 
-    def create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> User:
         """Creates a new user.
 
         Args:
