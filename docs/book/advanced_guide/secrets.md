@@ -58,15 +58,25 @@ wish to do so interactively, simply passing the secret name in as an argument
 (as in the following example) will initiate an interactive process:
 
 ```shell
-zenml secret register SECRET_NAME
+zenml secret register SECRET_NAME -i
 ```
 
-If you wish to specify a single key-value pair and pass it in as a
-non-interactive process, you can type:
+If you wish to specify key-value pairs using command line arguments, you can do
+so instead:
 
 ```shell
-zenml secret register SECRET_NAME -k KEY -v VALUE
+zenml secret register SECRET_NAME --key1=value1 --key2=value2
 ```
+
+For secret values that are too big to pass as a command line argument, or have
+special characters, you can also use the special `@` syntax to indicate to ZenML
+that the value needs to be read from a file:
+
+```bash
+zenml secret register SECRET_NAME --attr_from_literal=value \
+   --attr_from_file=@path/to/file.txt ...
+```
+
 
 ## Using Secrets in a Kubeflow environment
 

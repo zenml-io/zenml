@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import base64
 import datetime
+import os
 import subprocess
 import sys
 from typing import (
@@ -25,16 +26,19 @@ from typing import (
     Tuple,
     Union,
 )
+from urllib.parse import quote
 
 import click
 import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
+from rich.markup import escape
+from rich.prompt import Confirm
 from rich.style import Style
 from rich.text import Text
 
-from zenml.console import console
+from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
 from zenml.logger import get_logger
 
@@ -56,7 +60,7 @@ def title(text: str) -> None:
     Args:
       text: Input text string.
     """
-    console.print(text.upper(), style="title")
+    console.print(text.upper(), style=zenml_style_defaults["title"])
 
 
 def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
@@ -70,17 +74,24 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
     Returns:
         Boolean based on user response.
     """
-    # return Confirm.ask(text, console=console)
-    return click.confirm(click.style(text, fg="yellow"), *args, **kwargs)
+    return Confirm.ask(text, console=console)
 
 
-def declare(text: Union[str, Text]) -> None:
+def declare(
+    text: Union[str, Text],
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
+) -> None:
     """Echo a declaration on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
     """
-    console.print(text, style="info")
+    base_style = zenml_style_defaults["info"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
+    console.print(text, style=style)
 
 
 def error(text: str) -> None:
@@ -93,19 +104,23 @@ def error(text: str) -> None:
         click.ClickException: when called.
     """
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
-    # console.print(text, style="error")
 
 
 def warning(
-    text: str, custom_style: Optional[Union[str, Style]] = "warning"
+    text: str,
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
 ) -> None:
     """Echo a warning string on the CLI.
 
     Args:
-      text: Input text string.
-      custom_style: Optional custom style to be used.
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
     """
-    console.print(text, style=custom_style)
+    base_style = zenml_style_defaults["warning"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
+    console.print(text, style=style)
 
 
 def pretty_print(obj: Any) -> None:
@@ -131,12 +146,29 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
-    rich_table = table.Table(*column_names, box=box.HEAVY_EDGE)
+    rich_table = table.Table(box=box.HEAVY_EDGE, show_lines=True)
+    for col_name in column_names:
+        rich_table.add_column(str(col_name), overflow="fold")
 
     for dict_ in obj:
-        values = [dict_.get(key) for key in column_keys]
+        values = []
+        for key in column_keys:
+            if key is None:
+                values.append(None)
+            else:
+                value = str(dict_.get(key))
+                if value == "":
+                    value = " "
+                # append the value as a link so it's accessible in the console
+                # (handle spaces and the use of '[' and ']' in markdown text)
+                if "[" in value:
+                    lv = escape(value)
+                elif " " in value:
+                    lv = f"[link={quote(value)}]{value}[/link]"
+                else:
+                    lv = f"[link='{value}']{value}[/link]"
+                values.append(lv)
         rich_table.add_row(*values)
-
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
     console.print(rich_table)
@@ -166,7 +198,7 @@ def format_integration_list(
         is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
         list_of_dicts.append(
             {
-                "INSTALLED": ":white_check_mark:" if is_installed else "",
+                "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
                 "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
             }
@@ -220,10 +252,11 @@ def print_stack_configuration(
         caption=stack_caption,
         show_lines=True,
     )
-    rich_table.add_column("COMPONENT_TYPE")
-    rich_table.add_column("COMPONENT_NAME")
+    rich_table.add_column("COMPONENT_TYPE", overflow="fold")
+    rich_table.add_column("COMPONENT_NAME", overflow="fold")
     for component_type, name in config.items():
-        rich_table.add_row(component_type.value, name)
+        link_name = f"[link={name}]{name}[/link]"
+        rich_table.add_row(component_type.value, link_name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -298,21 +331,24 @@ def print_stack_component_configuration(
         show_lines=True,
     )
     rich_table.add_column("COMPONENT_PROPERTY")
-    rich_table.add_column("VALUE")
+    rich_table.add_column("VALUE", overflow="fold")
+
     component_dict = component.dict()
     component_dict.pop("config")
     component_dict.update(
         yaml.safe_load(base64.b64decode(component.config).decode())
     )
+    items = component_dict.items()
+    for item in items:
+        elements = []
+        for idx, elem in enumerate(item):
+            if idx == 0:
+                elements.append(f"{elem.upper()}")
+            else:
+                link_elem = f"[link={elem}]{elem}[/link]"
+                elements.append(link_elem)
+        rich_table.add_row(*elements)
 
-    for item in component_dict.items():
-        rich_table.add_row(*[str(elem) for elem in item])
-
-    # capitalize entries in first column
-    rich_table.columns[0]._cells = [
-        component.upper()  # type: ignore[union-attr]
-        for component in rich_table.columns[0]._cells
-    ]
     console.print(rich_table)
 
 
@@ -355,16 +391,18 @@ def print_profile(
         show_lines=True,
     )
     rich_table.add_column("PROPERTY")
-    rich_table.add_column("VALUE")
+    rich_table.add_column("VALUE", overflow="fold")
     items = profile.dict().items()
     for item in items:
-        rich_table.add_row(*[str(elem) for elem in item])
+        elements = []
+        for idx, elem in enumerate(item):
+            if idx == 0:
+                elements.append(f"{elem.upper()}")
+            else:
+                link_elem = f"[link='{elem}']{elem}[/link]"
+                elements.append(link_elem)
+        rich_table.add_row(*elements)
 
-    # capitalize entries in first column
-    rich_table.columns[0]._cells = [
-        component.upper()  # type: ignore[union-attr]
-        for component in rich_table.columns[0]._cells
-    ]
     console.print(rich_table)
 
 
@@ -395,11 +433,67 @@ def format_date(
     return dt.strftime(format)
 
 
-def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
+MAX_ARGUMENT_VALUE_SIZE = 10240
+
+
+def _expand_argument_value_from_file(name: str, value: str) -> str:
+    """Expands the value of an argument pointing to a file into the contents of
+    that file.
+
+    Args:
+        name: Name of the argument. Used solely for logging purposes.
+        value: The value of the argument. This is to be interpreted as a
+            filename if it begins with a `@` character.
+
+    Returns:
+        The argument value expanded into the contents of the file, if the
+        argument value begins with a `@` character. Otherwise, the argument
+        value is returned unchanged.
+
+    Raises:
+        ValueError: If the argument value points to a file that doesn't exist,
+            that cannot be read, or is too long (i.e. exceeds
+            `MAX_ARGUMENT_VALUE_SIZE` bytes).
+    """
+    if value.startswith("@@"):
+        return value[1:]
+    if not value.startswith("@"):
+        return value
+    filename = value[1:]
+    logger.info(
+        f"Expanding argument value `{name}` to contents of file `{filename}`."
+    )
+    if not os.path.isfile(filename):
+        raise ValueError(
+            f"Could not load argument '{name}' value: file "
+            f"'{filename}' does not exist or is not readable."
+        )
+    try:
+        if os.path.getsize(filename) > MAX_ARGUMENT_VALUE_SIZE:
+            raise ValueError(
+                f"Could not load argument '{name}' value: file "
+                f"'{filename}' is too large (max size is "
+                f"{MAX_ARGUMENT_VALUE_SIZE} bytes)."
+            )
+
+        with open(filename, "r") as f:
+            return f.read()
+    except OSError as e:
+        raise ValueError(
+            f"Could not load argument '{name}' value: file "
+            f"'{filename}' could not be accessed: {str(e)}"
+        )
+
+
+def parse_unknown_options(
+    args: List[str], expand_args: bool = False
+) -> Dict[str, Any]:
     """Parse unknown options from the CLI.
 
     Args:
-      args: A list of strings from the CLI.
+        args: A list of strings from the CLI.
+        expand_args: Whether to expand argument values into the contents of the
+            files they may be pointing at using the special `@` character.
 
     Returns:
         Dict of parsed args.
@@ -417,8 +511,13 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
 
     assert all(k.isidentifier() for k, _ in p_args), warning_message
 
-    r_args = {k: v for k, v in p_args}
+    r_args = {k: _expand_argument_value_from_file(k, v) for k, v in p_args}
     assert len(p_args) == len(r_args), "Replicated arguments!"
+
+    if expand_args:
+        r_args = {
+            k: _expand_argument_value_from_file(k, v) for k, v in r_args.items()
+        }
 
     return r_args
 
@@ -471,7 +570,6 @@ def pretty_print_secret(
 
     stack_dicts = [
         {
-            "SECRET_NAME": secret.name,
             "SECRET_KEY": key,
             "SECRET_VALUE": get_secret_value(value),
         }
@@ -491,10 +589,10 @@ def print_secrets(secrets: List[str]) -> None:
         title="Secrets",
         show_lines=True,
     )
-    rich_table.add_column("SECRET_NAME")
+    rich_table.add_column("SECRET_NAME", overflow="fold")
     secrets.sort()
     for item in secrets:
-        rich_table.add_row(item)
+        rich_table.add_row(f"[link='{item}']{item}[/link]")
 
     console.print(rich_table)
 
@@ -532,14 +630,17 @@ def pretty_print_model_deployer(
     model_service_dicts = []
     for model_service in model_services:
         served_model_info = model_deployer.get_model_server_info(model_service)
-
+        dict_uuid = str(model_service.uuid)
+        dict_pl_name = model_service.config.pipeline_name
+        dict_pl_stp_name = model_service.config.pipeline_step_name
+        dict_model_name = served_model_info.get("MODEL_NAME", "")
         model_service_dicts.append(
             {
                 "STATUS": get_service_status_emoji(model_service),
-                "UUID": str(model_service.uuid),
-                "PIPELINE_NAME": model_service.config.pipeline_name,
-                "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
-                "MODEL_NAME": served_model_info.get("MODEL_NAME", ""),
+                "UUID": f"[link='{dict_uuid}']{dict_uuid}[/link]",
+                "PIPELINE_NAME": f"[link='{dict_pl_name}']{dict_pl_name}[/link]",
+                "PIPELINE_STEP_NAME": f"[link='{dict_pl_stp_name}']{dict_pl_stp_name}[/link]",
+                "MODEL_NAME": f"[link='{dict_model_name}']{dict_model_name}[/link]",
             }
         )
 
@@ -564,8 +665,8 @@ def print_served_model_configuration(
         title=title,
         show_lines=True,
     )
-    rich_table.add_column("MODEL SERVICE PROPERTY")
-    rich_table.add_column("VALUE")
+    rich_table.add_column("MODEL SERVICE PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
 
     # Get implementation specific info
     served_model_info = model_deployer.get_model_server_info(model_service)
