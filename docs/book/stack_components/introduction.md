@@ -21,10 +21,13 @@ At ZenML, we believe that this is one of the most important and challenging
 problems in the field of MLOps, and it can be solved with a set of 
 well-structured abstractions. Owing to the nature of MLOps, it is critical 
 that these abstractions do not only cover concepts such as pipelines, steps and 
-materializer but also cover the infrastructure that these concepts are 
-running on.
+materializers that we covered in the starter guide but also the infrastructure 
+elements that the pipelines are running on. 
 
-### Stack
+With that in mind, we will go through the three main concepts that our solution 
+is based on: Stacks, Stack Components and Flavors.
+
+## Stacks
 
 In ZenML, this is where the concept of stacks comes into play. It 
 
@@ -35,23 +38,23 @@ Short description of what stacks, stack components and flavors mean
 The aim of this document...
 
 
-#### List of components
+### List of different types of components
 
-| Type of Stack Component | Required | Description |
-|-------------------------|----------|-------------|
-| Orchestrator            | ✅        |             |
-| Artifact Store          | ✅        |             |
-| Metadata Store          | ✅        |             |
-| Container Registry      |          |             |
-| Secrets Manager         |          |             |
-| Step Operator           |          |             |
-| Model Deployer          |          |             |
-| Feature Store           |          |             |
-| Experiment Tracker      |          |             |
-| Alerter                 |          |             |
+| Type of Stack Component | Required | Description                                                       |
+|-------------------------|----------|-------------------------------------------------------------------|
+| Orchestrator            | ✅        | Orchestrating the runs of your pipeline                           |
+| Artifact Store          | ✅        | Storage for the artifacts created by your pipelines               |
+| Metadata Store          | ✅        | Tracking the execution of your pipelines/steps                    |
+| Container Registry      |          | Store for your containers                                         |
+| Secrets Manager         |          | Centralized location for the storage of your secrets              |
+| Step Operator           |          | Execution of individual steps in specialized runtime environments |
+| Model Deployer          |          | Services/platforms responsible for online model serving           |
+| Feature Store           |          | Management of your data/features                                  |
+| Experiment Tracker      |          | Tracking your ML experiments                                      |
+| Alerter                 |          | Sending alerts through specified channels                         |
 
 
-### Stack Component
+## Stack Components
 
 ### Using `pydantic`
 
@@ -95,7 +98,7 @@ class BaseArtifactStore(StackComponent):
     ...
 ```
 
-### Flavors
+## Flavors
 
 ```python
 class LocalArtifactStore(BaseArtifactStore):
@@ -108,7 +111,15 @@ class LocalArtifactStore(BaseArtifactStore):
     ...
 ```
 
-## Customize your ZenML
+provision, deprovision
+
+## Configuration and usage
+
+Configuration with instance parameters
+Configuration with secrets
+Configuration with runtime configs
+
+## Create your own flavors
 
 ```bash
 zenml artifact-store flavor list
@@ -139,11 +150,4 @@ zenml artifact-store flavor register TODO
 ```bash
 zenml artifact-store flavor list
 ```
-
-## Configuration and usage
-
-Configuration with instance parameters
-Configuration with secrets
-Configuration with runtime configs
-
 
