@@ -522,6 +522,27 @@ def parse_unknown_options(
     return r_args
 
 
+def parse_unknown_component_attributes(args: List[str]) -> List[str]:
+    """Parse unknown options from the CLI.
+
+    Args:
+      args: A list of strings from the CLI.
+
+    Returns:
+        List of parsed args.
+    """
+    warning_message = (
+        "Please provide args with a proper "
+        "identifier as the key and the following structure: "
+        "--custom_attribute"
+    )
+
+    assert all(a.startswith("--") for a in args), warning_message
+    p_args = [a.lstrip("-") for a in args]
+    assert all(v.isidentifier() for v in p_args), warning_message
+    return p_args
+
+
 def install_packages(packages: List[str]) -> None:
     """Installs pypi packages into the current environment with pip"""
     command = [sys.executable, "-m", "pip", "install"] + packages
