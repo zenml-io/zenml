@@ -148,7 +148,7 @@ class BaseArtifactStore(StackComponent, ABC):
         """Return an iterator that walks the contents of the given directory."""
         raise NotImplementedError()
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
         """Validator function for the Artifact Stores. Checks whether
         supported schemes are defined and the given path is supported"""
@@ -159,9 +159,11 @@ class BaseArtifactStore(StackComponent, ABC):
                 textwrap.dedent(
                     """
                     When you are working with any classes which subclass from
-                    zenml.artifact_store.BaseArtifactStore please make sure that your class
-                    has a ClassVar named `SUPPORTED_SCHEMES` which should hold a set of
-                    supported file schemes such as {"s3://"} or {"gcs://"}.
+                    zenml.artifact_store.BaseArtifactStore please make sure 
+                    that your class has a ClassVar named `SUPPORTED_SCHEMES` 
+                    which should hold a set of supported file schemes such 
+                    as {"s3://"} or {"gcs://"}.
+                    
                     Example:
                     class S3ArtifactStore(StackComponent):
                         ...

@@ -16,6 +16,7 @@ from importlib import import_module
 from typing import Any, Callable, List, Optional, Sequence, Tuple, Type
 
 import click
+from pydantic import ValidationError
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
@@ -235,7 +236,7 @@ def _register_stack_component(
 
 def generate_stack_component_register_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, List[str]], None]:
+) -> Callable[[str, str, str, List[str]], None]:
     """Generates a `register` command for the specific stack component type."""
     display_name = _component_display_name(component_type)
 
@@ -275,9 +276,9 @@ def generate_stack_component_register_command(
                         f"please just use the option '--flavor' to specify "
                         f"the flavor."
                     )
-            flavor = old_flavor
+                flavor = old_flavor
             cli_utils.warning(
-                "The option '--type'/'-t' will soon be DEPRECATED, please"
+                "The option '--type'/'-t' will soon be DEPRECATED, please "
                 "use '--flavor'/'-f' instead. "
             )
         else:
@@ -292,12 +293,21 @@ def generate_stack_component_register_command(
             except AssertionError as e:
                 cli_utils.error(str(e))
                 return
-            _register_stack_component(
-                component_type=component_type,
-                component_name=name,
-                component_flavor=flavor,
-                **parsed_args,
-            )
+
+            try:
+                _register_stack_component(
+                    component_type=component_type,
+                    component_name=name,
+                    component_flavor=flavor,
+                    **parsed_args,
+                )
+            except ValidationError as e:
+                cli_utils.error(
+                    f"When you are registering a new {flavor}, make "
+                    f"sure that you are utilizing the right attributes. "
+                    f"Current problems:\n\n{e}"
+                )
+
         cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 
     return register_stack_component_command
@@ -452,7 +462,8 @@ def generate_stack_component_update_command(
 def generate_stack_component_remove_attribute_command(
     component_type: StackComponentType,
 ) -> Callable[[str, List[str]], None]:
-    """Generates an `remove_attribute` command for the specific stack component type."""
+    """Generates an `remove_attribute` command for the specific stack
+    component type."""
     display_name = _component_display_name(component_type)
 
     @click.argument(
@@ -491,13 +502,15 @@ def generate_stack_component_remove_attribute_command(
                     or arg in MANDATORY_COMPONENT_ATTRIBUTES
                 ):
                     cli_utils.error(
-                        f"Cannot remove mandatory attribute '{arg}' of '{name}' {current_component.TYPE}. "
+                        f"Cannot remove mandatory attribute '{arg}' of "
+                        f"'{name}' {current_component.TYPE}. "
                     )
                 elif arg not in optional_attributes:
                     cli_utils.error(
                         f"You cannot remove the attribute '{arg}' of "
                         f"'{name}' {current_component.TYPE}. \n"
-                        f"You can only remove the following optional attributes: "
+                        f"You can only remove the following optional "
+                        f"attributes: "
                         f"'{', '.join(optional_attributes)}'."
                     )
 

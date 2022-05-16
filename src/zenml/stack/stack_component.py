@@ -201,7 +201,7 @@ class StackComponent(BaseModel, ABC):
         """String representation of the stack component."""
         return self.__repr__()
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def _ensure_stack_component_complete(cls, values: Dict[str, Any]) -> Any:
         try:
             stack_component_type = getattr(cls, "TYPE")
@@ -213,10 +213,11 @@ class StackComponent(BaseModel, ABC):
                     When you are working with any classes which subclass from
                     `zenml.stack.StackComponent` please make sure that your
                     class has a ClassVar named `TYPE` and its value is set to a
-                    `StackComponentType` from `from zenml.enums import StackComponentType`.
+                    `StackComponentType` from `from zenml.enums import 
+                    StackComponentType`.
 
-                    In most of the cases, this is already done for you within the
-                    implementation of the base concept.
+                    In most of the cases, this is already done for you within 
+                    the implementation of the base concept.
 
                     Example:
 

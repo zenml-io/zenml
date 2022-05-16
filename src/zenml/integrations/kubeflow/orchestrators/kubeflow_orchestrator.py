@@ -139,7 +139,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         UUID."""
         return f"k3d-{KubeflowOrchestrator._get_k3d_cluster_name(uuid)}"
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def set_default_kubernetes_context(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
