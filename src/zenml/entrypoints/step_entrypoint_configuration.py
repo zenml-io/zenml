@@ -17,7 +17,7 @@ import json
 import logging
 import sys
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, NoReturn, Optional, Set
+from typing import Any, Dict, List, NoReturn, Optional, Set, Type
 
 from google.protobuf import json_format
 from tfx.orchestration.portable import data_types
@@ -28,6 +28,7 @@ from zenml import constants
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.artifacts.type_registry import type_registry
 from zenml.integrations.registry import integration_registry
+from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps import utils as step_utils
@@ -44,6 +45,7 @@ PIPELINE_JSON_OPTION = "pipeline_json"
 MAIN_MODULE_SOURCE_OPTION = "main_module_source"
 STEP_SOURCE_OPTION = "step_source"
 INPUT_SPEC_OPTION = "input_spec"
+MATERIALIZERS_OPTION = "materializers"
 
 
 class StepEntrypointConfiguration(ABC):
@@ -259,6 +261,12 @@ class StepEntrypointConfiguration(ABC):
             # class and can't be inferred as we do not have access to the
             # output artifacts from previous steps.
             INPUT_SPEC_OPTION,
+            # Dictionary mapping the step output names to importable sources
+            # pointing to
+            # `zenml.materializers.base_materializer.BaseMaterializer`
+            # subclasses. These classes are needed to recreate the tfx executor
+            # class if custom materializers were specified for the step.
+            MATERIALIZERS_OPTION,
         }
         custom_options = cls.get_custom_entrypoint_options()
         return zenml_options.union(custom_options)
@@ -305,18 +313,36 @@ class StepEntrypointConfiguration(ABC):
                 sys.modules["__main__"]
             )
 
-        # Get an importable source of the step class. If the step is defined in
-        # the `__main__` module, replace it with the main module source
-        # computed above.
-        step_module = step.__module__
-        if step_module == "__main__":
-            step_module = main_module_source
-        step_source = f"{step_module}.{step.name}"
+        def _resolve_class(class_: Type[Any]) -> str:
+            """Resolves the input class in a way that it is importable inside
+            the entrypoint.
+            """
+            source = source_utils.resolve_class(class_)
+            module_source, class_source = source.rsplit(".", 1)
+            if module_source == "__main__":
+                # If the class is defined inside the `__main__` module it will
+                # not be importable in the entrypoint (The `__main__` module
+                # there will be the actual entrypoint module). We therefore
+                # replace the module source by the importable main module
+                # source computed above.
+                module_source = main_module_source
+
+            return f"{module_source}.{class_source}"
+
+        # Resolve the step class
+        step_source = _resolve_class(step.__class__)
 
         # Resolve the input artifact classes
         input_spec = {
-            input_name: source_utils.resolve_class(input_type)
+            input_name: _resolve_class(input_type)
             for input_name, input_type in step.INPUT_SPEC.items()
+        }
+
+        # Resolve the output materializer classes
+        materializer_classes = step.get_materializers(ensure_complete=True)
+        materializers = {
+            output_name: _resolve_class(materializer_class)
+            for output_name, materializer_class in materializer_classes.items()
         }
 
         # See `get_entrypoint_options()` for an in -depth explanation of all
@@ -332,6 +358,8 @@ class StepEntrypointConfiguration(ABC):
             step_source,
             f"--{INPUT_SPEC_OPTION}",
             json.dumps(input_spec),
+            f"--{MATERIALIZERS_OPTION}",
+            json.dumps(materializers),
         ]
 
         custom_arguments = cls.get_custom_entrypoint_arguments(
@@ -393,6 +421,7 @@ class StepEntrypointConfiguration(ABC):
     def _create_executor_class(
         step: BaseStep,
         input_spec_config: Dict[str, str],
+        materializers_config: Dict[str, str],
     ) -> None:
         """Creates an executor class for the given step.
 
@@ -402,9 +431,9 @@ class StepEntrypointConfiguration(ABC):
                 are supposed to be the step input names and the values are
                 source strings which will be imported and should point to
                 `zenml.artifacts.BaseArtifact` subclasses.
+            materializers_config: Dictionary mapping step output names to a
+                source string of the materializer class to use for that output.
         """
-        materializers = step.get_materializers(ensure_complete=True)
-
         # Import the input artifact classes from the given sources
         input_spec = {}
         for input_name, source in input_spec_config.items():
@@ -426,6 +455,17 @@ class StepEntrypointConfiguration(ABC):
             **step.PARAM_SPEC,
             **step._internal_execution_parameters,
         }
+
+        materializers = {}
+        for output_name, source in materializers_config.items():
+            materializer_class = source_utils.load_source_path_class(source)
+            if not issubclass(materializer_class, BaseMaterializer):
+                raise TypeError(
+                    f"The materializer source `{source}` passed to the "
+                    f"entrypoint for the step output '{output_name}' is not "
+                    f"pointing to a `{BaseMaterializer}` subclass."
+                )
+            materializers[output_name] = materializer_class
 
         step_utils.generate_component_class(
             step_name=step.name,
@@ -461,6 +501,7 @@ class StepEntrypointConfiguration(ABC):
         main_module_source = self.entrypoint_args[MAIN_MODULE_SOURCE_OPTION]
         step_source = self.entrypoint_args[STEP_SOURCE_OPTION]
         input_spec = json.loads(self.entrypoint_args[INPUT_SPEC_OPTION])
+        materializers = json.loads(self.entrypoint_args[MATERIALIZERS_OPTION])
 
         # Get some common values that will be used throughout the remainder of
         # this method
@@ -527,6 +568,7 @@ class StepEntrypointConfiguration(ABC):
         self._create_executor_class(
             step=step,
             input_spec_config=input_spec,
+            materializers_config=materializers,
         )
 
         # Execute the actual step code.
