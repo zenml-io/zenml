@@ -21,10 +21,10 @@ in order to run specific steps of your pipeline in a separate environment. As
 step operators can come in many shapes and forms, the base class exposes a 
 deliberately simple and generic interface:
 
-1. As it is the base class for a specific type of StackComponent,
-   it inherits from the StackComponent class. This sets the TYPE
-   variable to the specific StackComponentType.
-2. The FLAVOR class variable needs to be set in subclasses as it
+1. As it is the base class for a specific type of `StackComponent`,
+   it inherits from the `StackComponent` class. This sets the `TYPE`
+   variable to the specific `StackComponentType`.
+2. The `FLAVOR` class variable needs to be set in subclasses as it
    is meant to indentify the implementation flavor of the particular
    step operator.
 3. Lastly, the base class features one `abstractmethod` called `launch()`. In 
