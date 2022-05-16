@@ -248,16 +248,44 @@ def generate_stack_component_register_command(
         "--flavor",
         "-f",
         "flavor",
-        help=f"The type of the {display_name} to register.",
-        required=True,
+        help=f"The flavor of the {display_name} to register.",
+        type=str,
+    )
+    @click.option(
+        "--type",
+        "-t",
+        "old_flavor",
+        help=f"DEPRECATED: The flavor of the {display_name} to register.",
         type=str,
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def register_stack_component_command(
-        name: str, flavor: str, args: List[str]
+        name: str, flavor: str, old_flavor: str, args: List[str]
     ) -> None:
         """Registers a stack component."""
         cli_utils.print_active_profile()
+
+        if flavor or old_flavor:
+            if old_flavor:
+                if flavor:
+                    cli_utils.error(
+                        f"You have used both '--type': {old_flavor} and a "
+                        f"'--flavor': {flavor}, which is not allowed. "
+                        f"The option '--type' will soon be DEPRECATED and "
+                        f"please just use the option '--flavor' to specify "
+                        f"the flavor."
+                    )
+            flavor = old_flavor
+            cli_utils.warning(
+                "The option '--type'/'-t' will soon be DEPRECATED, please"
+                "use '--flavor'/'-f' instead. "
+            )
+        else:
+            cli_utils.error(
+                "Please use the option to specify '--flavor'/'-f' of the "
+                f"{display_name} you want to register."
+            )
+
         with console.status(f"Registering {display_name} '{name}'...\n"):
             try:
                 parsed_args = cli_utils.parse_unknown_options(args)
