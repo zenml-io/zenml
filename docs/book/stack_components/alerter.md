@@ -8,14 +8,14 @@ concept of [stacks, stack components and their flavors](./introduction.md).
 {% endhint %}
 
 
-## Base Abstraction
+## Base abstraction
 
 WIP
 
-## List of available .......
+## List of available alerters
 
 WIP
 
-## Building your own .......
+## Building your own alerters
 
 WIP
