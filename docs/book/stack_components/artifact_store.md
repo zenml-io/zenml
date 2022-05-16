@@ -136,7 +136,7 @@ class BaseArtifactStore(StackComponent):
 Out of the box, ZenML comes with a `LocalArtifactStore` implementation, which 
 is a simple implementation for a local setup.
 
-Moreover, additional artifact stores can be found in specific `integrations`
+Moreover, additional artifact stores can be found in specific `integration`
 modules, such as the `GCPArtifactStore` in the `gcp` integration and the
 `AzureArtifactStore` in the `azure` integration.
 

@@ -24,7 +24,7 @@ details away from the actual implementation and exposes a simplified interface:
 2. The FLAVOR class variable needs to be set in the particular sub-class as it
    is meant to indentify the implementation flavor of the particular
    orchestrator.
-3. Lastly, the base class features one `abstractmethod`s:
+3. Lastly, the base class features one `abstractmethod`:
    `prepare_or_run_pipeline`. In the implementation of every
    `Orchestrator` flavor, it is required to define this method with respect
    to the flavor at hand.
