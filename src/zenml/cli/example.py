@@ -203,7 +203,7 @@ class Example:
             name: The name of the example, specifically the name of the folder
                   on git
             path_in_repo: Path to the local example within the global zenml
-                          folder.
+                  folder.
         """
         self.name = name
         self.path_in_repo = path_in_repo
@@ -576,8 +576,7 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     "old_force",
     is_flag=True,
     help="DEPRECATED: Force the redownload of the examples folder to the ZenML "
-    "config. Use `-y/--yes` instead."
-    "folder.",
+    "config folder. Use `-y/--yes` instead.",
 )
 @click.option(
     "--version",

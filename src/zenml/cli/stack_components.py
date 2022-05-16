@@ -277,10 +277,10 @@ def generate_stack_component_register_command(
                         f"the flavor."
                     )
                 flavor = old_flavor
-            cli_utils.warning(
-                "The option '--type'/'-t' will soon be DEPRECATED, please "
-                "use '--flavor'/'-f' instead. "
-            )
+                cli_utils.warning(
+                    "The option '--type'/'-t' will soon be DEPRECATED, please "
+                    "use '--flavor'/'-f' instead. "
+                )
         else:
             cli_utils.error(
                 "Please use the option to specify '--flavor'/'-f' of the "
@@ -303,10 +303,12 @@ def generate_stack_component_register_command(
                 )
             except ValidationError as e:
                 cli_utils.error(
-                    f"When you are registering a new {flavor}, make "
-                    f"sure that you are utilizing the right attributes. "
-                    f"Current problems:\n\n{e}"
+                    f"When you are registering a new {display_name} with the "
+                    f"flavor `{flavor}`, make sure that you are utilizing "
+                    f"the right attributes. Current problems:\n\n{e}"
                 )
+            except Exception as e:
+                cli_utils.error(e)  # type: ignore[arg-type]
 
         cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 
