@@ -244,7 +244,7 @@ class LocalZenStore(BaseZenStore):
             component.name,
         )
 
-    def update_stack_component(
+    def _update_stack_component(
         self,
         name: str,
         component_type: StackComponentType,

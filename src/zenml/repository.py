@@ -876,14 +876,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             component_type,
             ComponentWrapper.from_component(component),
         )
-        analytics_metadata = {
-            "type": component.TYPE.value,
-            "flavor": component.FLAVOR,
-        }
-        track_event(
-            AnalyticsEvent.UPDATED_STACK_COMPONENT,
-            metadata=analytics_metadata,
-        )
 
     def get_stack_components(
         self, component_type: StackComponentType

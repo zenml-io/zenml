@@ -312,7 +312,7 @@ class SqlZenStore(BaseZenStore):
             session.add(new_component)
             session.commit()
 
-    def update_stack_component(
+    def _update_stack_component(
         self,
         name: str,
         component_type: StackComponentType,

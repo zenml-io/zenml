@@ -165,7 +165,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def update_stack_component(
+    def _update_stack_component(
         self,
         name: str,
         component_type: StackComponentType,
@@ -919,3 +919,29 @@ class BaseZenStore(ABC):
             metadata=analytics_metadata,
         )
         self._register_stack_component(component)
+
+    def update_stack_component(
+        self,
+        name: str,
+        component_type: StackComponentType,
+        component: ComponentWrapper,
+    ) -> Dict[str, str]:
+        """Update a stack component.
+
+        Args:
+            name: The original name of the stack component.
+            component_type: The type of the stack component to update.
+            component: The new component to update with.
+
+        Raises:
+            KeyError: If no stack component exists with the given name.
+        """
+        analytics_metadata = {
+            "type": component.TYPE.value,
+            "flavor": component.FLAVOR,
+        }
+        track_event(
+            AnalyticsEvent.UPDATED_STACK_COMPONENT,
+            metadata=analytics_metadata,
+        )
+        self._update_stack_component(name, component_type, component)
