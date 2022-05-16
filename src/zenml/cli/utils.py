@@ -26,7 +26,6 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import quote
 
 import click
 import yaml
@@ -159,20 +158,12 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
                 values.append(None)
             else:
                 value = str(dict_.get(key))
-                if value == "":
+                if value in {"", "None"}:
                     value = " "
-                # append the value as a link so it's accessible in the console
-                # (handle spaces and the use of '[' and ']' in markdown text)
+                # escape text when square brackets are used
                 if "[" in value:
-                    lv = escape(value)
-                elif " " in value:
-                    lv = f"[link={quote(value)}]{value}[/link]"
-                else:
-                    if value == "None":
-                        lv = " "
-                    else:
-                        lv = f"[link='{value}']{value}[/link]"
-                values.append(lv)
+                    value = escape(value)
+                values.append(value)
         rich_table.add_row(*values)
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
@@ -260,8 +251,7 @@ def print_stack_configuration(
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
     for component_type, name in config.items():
-        link_name = f"[link={name}]{name}[/link]"
-        rich_table.add_row(component_type.value, link_name)
+        rich_table.add_row(component_type.value, name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -350,8 +340,7 @@ def print_stack_component_configuration(
             if idx == 0:
                 elements.append(f"{elem.upper()}")
             else:
-                link_elem = f"[link={elem}]{elem}[/link]"
-                elements.append(link_elem)
+                elements.append(str(elem))
         rich_table.add_row(*elements)
 
     console.print(rich_table)
@@ -404,8 +393,7 @@ def print_profile(
             if idx == 0:
                 elements.append(f"{elem.upper()}")
             else:
-                link_elem = f"[link='{elem}']{elem}[/link]"
-                elements.append(link_elem)
+                elements.append(elem)
         rich_table.add_row(*elements)
 
     console.print(rich_table)
@@ -597,7 +585,7 @@ def print_secrets(secrets: List[str]) -> None:
     rich_table.add_column("SECRET_NAME", overflow="fold")
     secrets.sort()
     for item in secrets:
-        rich_table.add_row(f"[link='{item}']{item}[/link]")
+        rich_table.add_row(item)
 
     console.print(rich_table)
 
