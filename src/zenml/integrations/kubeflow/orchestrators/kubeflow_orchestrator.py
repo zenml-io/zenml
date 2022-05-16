@@ -605,9 +605,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 step_name_to_container_op[step.name] = container_op
 
         # Get a filepath to use to save the finished yaml to
+        assert runtime_configuration.run_name
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{pipeline.name}.yaml"
+            self.pipeline_directory, f"{runtime_configuration.run_name}.yaml"
         )
 
         # write the argo pipeline yaml
