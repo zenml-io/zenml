@@ -235,6 +235,7 @@ module = [
     "scipy.*",
     "boto3.*",
     "botocore.*",
+    "jupyter_dash.*",
 ]
 ignore_missing_imports = true
 
