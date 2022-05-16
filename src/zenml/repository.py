@@ -937,15 +937,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         if component.post_registration_message:
             logger.info(component.post_registration_message)
 
-        analytics_metadata = {
-            "type": component.TYPE.value,
-            "flavor": component.FLAVOR,
-        }
-        track_event(
-            AnalyticsEvent.REGISTERED_STACK_COMPONENT,
-            metadata=analytics_metadata,
-        )
-
     def deregister_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> None:

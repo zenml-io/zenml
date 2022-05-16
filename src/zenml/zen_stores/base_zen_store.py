@@ -150,7 +150,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def register_stack_component(
+    def _register_stack_component(
         self,
         component: ComponentWrapper,
     ) -> None:
@@ -894,3 +894,28 @@ class BaseZenStore(ABC):
             for component_type, component_name in stack_configuration.items()
         ]
         return StackWrapper(name=name, components=stack_components)
+
+    # Public facing APIs
+
+    def register_stack_component(
+        self,
+        component: ComponentWrapper,
+    ) -> None:
+        """Register a stack component.
+
+        Args:
+            component: The component to register.
+
+        Raises:
+            StackComponentExistsError: If a stack component with the same type
+                and name already exists.
+        """
+        analytics_metadata = {
+            "type": component.TYPE.value,
+            "flavor": component.FLAVOR,
+        }
+        track_event(
+            AnalyticsEvent.REGISTERED_STACK_COMPONENT,
+            metadata=analytics_metadata,
+        )
+        self._register_stack_component(component)

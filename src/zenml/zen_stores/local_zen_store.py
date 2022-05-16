@@ -202,7 +202,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.stacks.copy()
 
-    def register_stack_component(
+    def _register_stack_component(
         self,
         component: ComponentWrapper,
     ) -> None:

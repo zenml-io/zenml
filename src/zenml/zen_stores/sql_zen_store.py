@@ -278,7 +278,7 @@ class SqlZenStore(BaseZenStore):
         """
         return {n: self.get_stack_configuration(n) for n in self.stack_names}
 
-    def register_stack_component(
+    def _register_stack_component(
         self,
         component: ComponentWrapper,
     ) -> None:

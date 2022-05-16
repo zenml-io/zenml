@@ -183,7 +183,7 @@ class RestZenStore(BaseZenStore):
             for key, value in body.items()
         }
 
-    def register_stack_component(
+    def _register_stack_component(
         self,
         component: ComponentWrapper,
     ) -> None:
