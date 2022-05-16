@@ -29,14 +29,9 @@ is based on: Stacks, Stack Components and Flavors.
 
 ## Stacks
 
-In ZenML, this is where the concept of stacks comes into play. It 
-
-The base abstractions of ZenML.
+In ZenML, this is where the concept of stacks comes into play. It
 
 Short description of what stacks, stack components and flavors mean
-
-The aim of this document...
-
 
 ### List of different types of components
 
@@ -53,6 +48,8 @@ The aim of this document...
 | Experiment Tracker      |          | Tracking your ML experiments                                      |
 | Alerter                 |          | Sending alerts through specified channels                         |
 
+In order to establish a stack, you only need instances of an orchestrator, 
+an artifact store and a metadata store. 
 
 ## Stack Components
 
