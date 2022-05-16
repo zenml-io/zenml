@@ -224,7 +224,7 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected dict, got {type(body)}"
             )
 
-    def deregister_stack(self, name: str) -> None:
+    def _deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
         Args:

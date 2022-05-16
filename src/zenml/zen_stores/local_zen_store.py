@@ -302,7 +302,7 @@ class LocalZenStore(BaseZenStore):
         )
         return {component.type.value: component.flavor}
 
-    def deregister_stack(self, name: str) -> None:
+    def _deregister_stack(self, name: str) -> None:
         """Remove a stack from storage.
 
         Args:

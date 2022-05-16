@@ -149,6 +149,8 @@ class BaseZenStore(ABC):
             Dictionary mapping stack names to Dict[StackComponentType, str]'s
         """
 
+    # Private interface (must be implemented, not to be called by user):
+
     @abstractmethod
     def _register_stack_component(
         self,
@@ -183,7 +185,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def deregister_stack(self, name: str) -> None:
+    def _deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
         Args:
@@ -192,8 +194,6 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: If no stack exists for the given name.
         """
-
-    # Private interface (must be implemented, not to be called by user):
 
     @abstractmethod
     def _save_stack(
@@ -597,6 +597,7 @@ class BaseZenStore(ABC):
         """
 
     # Stack component flavors
+
     @property
     @abstractmethod
     def flavors(self) -> List[FlavorWrapper]:
@@ -662,6 +663,7 @@ class BaseZenStore(ABC):
         """
 
     # Common code (user facing):
+
     @property
     def stacks(self) -> List[StackWrapper]:
         """All stacks registered in this zen store."""
@@ -945,3 +947,15 @@ class BaseZenStore(ABC):
             metadata=analytics_metadata,
         )
         self._update_stack_component(name, component_type, component)
+
+    def deregister_stack(self, name: str) -> None:
+        """Delete a stack from storage.
+
+        Args:
+            name: The name of the stack to be deleted.
+
+        Raises:
+            KeyError: If no stack exists for the given name.
+        """
+        # No tracking events, here for consistency
+        self._delete_stack_component(name)
