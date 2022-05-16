@@ -307,11 +307,12 @@ class StepEntrypointConfiguration(ABC):
         # in some docker container entrypoint) use the ZenML constant that
         # points to the actual user main module. If not resolve the `__main__`
         # module to something that can be imported during entrypoint execution.
-        main_module_source = constants.USER_MAIN_MODULE
-        if not main_module_source:
-            main_module_source = source_utils.get_module_source_from_module(
+        main_module_source = (
+            constants.USER_MAIN_MODULE
+            or source_utils.get_module_source_from_module(
                 sys.modules["__main__"]
             )
+        )
 
         def _resolve_class(class_: Type[Any]) -> str:
             """Resolves the input class in a way that it is importable inside
