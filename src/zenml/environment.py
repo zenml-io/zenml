@@ -137,7 +137,13 @@ class Environment(metaclass=SingletonMetaClass):
     @staticmethod
     def in_google_colab() -> bool:
         """If the current Python process is running in a Google Colab."""
-        return "COLAB_GPU" in os.environ
+        try:
+            import google.colab  # noqa
+
+            return True
+
+        except ModuleNotFoundError:
+            return False
 
     @staticmethod
     def in_notebook() -> bool:
