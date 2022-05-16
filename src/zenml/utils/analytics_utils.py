@@ -85,6 +85,7 @@ def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
     # TODO [ENG-857]: The identify_user function shares a lot of setup with
     #  track_event() - this duplicated code could be given its own function
     try:
+        from zenml.config.global_config import GlobalConfiguration
         gc = GlobalConfiguration()
 
         # That means user opted out of analytics
