@@ -49,9 +49,9 @@
 ## Extending ZenML
 
 * [Stacks, Components, Flavors](stack_components/introduction.md)
+* [Orchestrator](stack_components/orchestrator.md)
 * [Artifact Store](stack_components/artifact_store.md)
 * [Metadata Store](stack_components/metadata_store.md)
-* [Orchestrator](stack_components/orchestrator.md)
 * [Container Registry](stack_components/container_registry.md)
 * [Step Operator](stack_components/step_operator.md)
 * [Secret Manager](stack_components/secrets_manager.md)
