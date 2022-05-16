@@ -419,7 +419,7 @@ class RestZenStore(BaseZenStore):
         user = User(name=user_name)
         return User.parse_obj(self.post(USERS, body=user))
 
-    def delete_user(self, user_name: str) -> None:
+    def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
 
         Args:

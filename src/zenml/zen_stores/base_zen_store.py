@@ -293,7 +293,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def delete_user(self, user_name: str) -> None:
+    def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
 
         Args:
@@ -976,3 +976,15 @@ class BaseZenStore(ABC):
         """
         track_event(AnalyticsEvent.CREATE_USER)
         return self._create_user(user_name)
+
+    def delete_user(self, user_name: str) -> None:
+        """Deletes a user.
+
+        Args:
+            user_name: Name of the user to delete.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        track_event(AnalyticsEvent.DELETE_USER)
+        self._delete_user(user_name)

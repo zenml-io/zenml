@@ -591,7 +591,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
         return user
 
-    def delete_user(self, user_name: str) -> None:
+    def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
 
         Args:

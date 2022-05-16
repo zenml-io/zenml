@@ -442,7 +442,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.write_config()
         return user
 
-    def delete_user(self, user_name: str) -> None:
+    def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
 
         Args:

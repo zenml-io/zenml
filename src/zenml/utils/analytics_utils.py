@@ -63,6 +63,7 @@ class AnalyticsEvent(str, Enum):
     # Users
     CREATE_USER = "User created"
     CREATE_DEFAULT_USER = "Default user created"
+    DELETE_USER = "User deleted"
 
     # Test event
     EVENT_TEST = "Test event"
