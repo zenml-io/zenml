@@ -148,8 +148,10 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     column_names = [columns.get(key, key.upper()) for key in column_keys]
     rich_table = table.Table(box=box.HEAVY_EDGE, show_lines=True)
     for col_name in column_names:
-        rich_table.add_column(str(col_name), overflow="fold")
-
+        if isinstance(col_name, str):
+            rich_table.add_column(str(col_name), overflow="fold")
+        else:
+            rich_table.add_column(str(col_name.header).upper(), overflow="fold")
     for dict_ in obj:
         values = []
         for key in column_keys:
@@ -166,7 +168,10 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
                 elif " " in value:
                     lv = f"[link={quote(value)}]{value}[/link]"
                 else:
-                    lv = f"[link='{value}']{value}[/link]"
+                    if value == "None":
+                        lv = " "
+                    else:
+                        lv = f"[link='{value}']{value}[/link]"
                 values.append(lv)
         rich_table.add_row(*values)
     if len(rich_table.columns) > 1:
@@ -212,7 +217,7 @@ def print_stack_component_list(
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
-    If a component is active (its name matches the `active_component_name`),
+    If a component is active(its name matches the `active_component_name`),
     it will be highlighted in a separate table column.
 
     Args:
@@ -452,7 +457,7 @@ def _expand_argument_value_from_file(name: str, value: str) -> str:
 
     Raises:
         ValueError: If the argument value points to a file that doesn't exist,
-            that cannot be read, or is too long (i.e. exceeds
+            that cannot be read, or is too long(i.e. exceeds
             `MAX_ARGUMENT_VALUE_SIZE` bytes).
     """
     if value.startswith("@@"):
@@ -637,13 +642,12 @@ def pretty_print_model_deployer(
         model_service_dicts.append(
             {
                 "STATUS": get_service_status_emoji(model_service),
-                "UUID": f"[link='{dict_uuid}']{dict_uuid}[/link]",
-                "PIPELINE_NAME": f"[link='{dict_pl_name}']{dict_pl_name}[/link]",
-                "PIPELINE_STEP_NAME": f"[link='{dict_pl_stp_name}']{dict_pl_stp_name}[/link]",
-                "MODEL_NAME": f"[link='{dict_model_name}']{dict_model_name}[/link]",
+                "UUID": dict_uuid,
+                "PIPELINE_NAME": dict_pl_name,
+                "PIPELINE_STEP_NAME": dict_pl_stp_name,
+                "MODEL_NAME": dict_model_name,
             }
         )
-
     print_table(
         model_service_dicts, UUID=table.Column(header="UUID", min_width=36)
     )
