@@ -480,7 +480,8 @@ Add a Feature Store to your Stack
 ZenML supports connecting to a Redis-backed Feast feature store as a stack
 component integration. To set up a feature store, use the following CLI command:
 
-```shell zenml feature-store register FEATURE_STORE_NAME --flavor=feast
+```shell
+zenml feature-store register FEATURE_STORE_NAME --flavor=feast
 --feast_repo=REPO_PATH --online_host HOST_NAME --online_port ONLINE_PORT_NUMBER
 ```
 
@@ -489,9 +490,6 @@ in your ZenML Stack.
 
 Interacting with Deployed Models
 --------------------------------
-
-Deployed models are
-
 
 If you want to simply see what models have been deployed within your stack, run
 the following command:
@@ -529,8 +527,10 @@ zenml served-models stop <UUID>
 
 If you want to completely remove a served model you can also irreversibly delete
  it using:
+
 ```bash
 zenml served-models delete <UUID>
+```
 
 Administering the Stack
 -----------------------
@@ -646,6 +646,15 @@ change the name of your stack component, use the following command:
 ```shell
 zenml STACK_COMPONENT rename STACK_COMPONENT_NAME NEW_STACK_COMPONENT_NAME
 ```
+
+If you wish to remove an attribute (or multiple attributes) from a stack
+component, use the following command:
+
+```shell
+zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME --ATTRIBUTE_NAME [--OTHER_ATTRIBUTE_NAME]
+```
+
+Note that you can only remove optional attributes.
 
 Managing users, teams, projects and roles
 -----------------------------------------

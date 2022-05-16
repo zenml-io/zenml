@@ -51,7 +51,7 @@ class EvidentlyVisualizer(BaseStepVisualizer):
         Args:
             html_: HTML represented as a string.
         """
-        if Environment.in_notebook():
+        if Environment.in_notebook() or Environment.in_google_colab():
             from IPython.core.display import HTML, display
 
             display(HTML(html_))
