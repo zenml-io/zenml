@@ -1058,6 +1058,7 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: If no project with the given name exists.
         """
+        # No tracking events, here for consistency
         self._get_project(project_name)
 
     def create_project(
@@ -1089,3 +1090,68 @@ class BaseZenStore(ABC):
         """
         track_event(AnalyticsEvent.DELETED_PROJECT)
         self._delete_project(project_name)
+
+    def get_role(self, role_name: str) -> Role:
+        """Gets a specific role.
+
+        Args:
+            role_name: Name of the role to get.
+
+        Returns:
+            The requested role.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+        # No tracking events, here for consistency
+        self._get_role(role_name)
+
+    def create_role(self, role_name: str) -> Role:
+        """Creates a new role.
+
+        Args:
+            role_name: Unique role name.
+
+        Returns:
+             The newly created role.
+
+        Raises:
+            EntityExistsError: If a role with the given name already exists.
+        """
+        track_event(AnalyticsEvent.CREATED_ROLE)
+        self._create_role(role_name)
+
+    def delete_role(self, role_name: str) -> None:
+        """Deletes a role.
+
+        Args:
+            role_name: Name of the role to delete.
+
+        Raises:
+            KeyError: If no role with the given name exists.
+        """
+        track_event(AnalyticsEvent.DELETED_ROLE)
+        self._delete_role(role_name)
+
+    def create_flavor(
+        self,
+        source: str,
+        name: str,
+        stack_component_type: StackComponentType,
+    ) -> FlavorWrapper:
+        """Creates a new flavor.
+
+        Args:
+            source: the source path to the implemented flavor.
+            name: the name of the flavor.
+            stack_component_type: the corresponding StackComponentType.
+
+        Returns:
+             The newly created flavor.
+
+        Raises:
+            EntityExistsError: If a flavor with the given name and type
+                already exists.
+        """
+        track_event(AnalyticsEvent.CREATED_FLAVOR)
+        self._create_flavor(source, name, stack_component_type)
