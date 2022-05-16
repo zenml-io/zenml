@@ -1,5 +1,5 @@
 ---
-description: Setting up the storage for your artifacts
+description: Run individual steps in specialized environments
 ---
 
 Step operators allow you to run individual steps in a custom environment
@@ -16,12 +16,83 @@ concept of [stacks, stack components and their flavors](./introduction.md).
 
 ## Base Abstraction
 
-WIP
+The `BaseStepOperator` is the abstract base class that needs to be subclassed 
+in order to run specific steps of your pipeline in a separate environment. As 
+step operators can come in many shapes and forms, the base class exposes a 
+deliberately simple and generic interface:
 
-## List of available .......
+1. As it is the base class for a specific type of `StackComponent`,
+   it inherits from the `StackComponent` class. This sets the `TYPE`
+   variable to the specific `StackComponentType`.
+2. The `FLAVOR` class variable needs to be set in subclasses as it
+   is meant to indentify the implementation flavor of the particular
+   step operator.
+3. Lastly, the base class features one `abstractmethod` called `launch()`. In 
+   the implementation of every step operator flavor, the `launch()` method must 
+   prepare a suitable execution environment (e.g. a docker image) by installing 
+   certain pip requirements and then running the provided entrypoint command.
 
-WIP
+```python
+from abc import ABC, abstractmethod
+from typing import ClassVar, List
 
-## Building your own .......
+from zenml.enums import StackComponentType
+from zenml.stack import StackComponent
 
-WIP
+
+class BaseStepOperator(StackComponent, ABC):
+    """Base class for all ZenML step operators."""
+
+    # Class Configuration
+    TYPE: ClassVar[StackComponentType] = StackComponentType.STEP_OPERATOR
+
+    @abstractmethod
+    def launch(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        requirements: List[str],
+        entrypoint_command: List[str],
+    ) -> None:
+        """Abstract method to execute a step.
+
+        Concrete step operator subclasses must implement the following
+        functionality in this method:
+        - Prepare the execution environment and install all the necessary
+          `requirements`
+        - Launch a **synchronous** job that executes the `entrypoint_command`
+        """
+```
+
+## List of available step operators
+
+You can find step operator implementations for the three big cloud providers in 
+the `azureml`, `sagemaker` and `vertex` integrations.
+
+|                       | Flavor    | Integration |
+|-----------------------|-----------|-------------|
+| AzureMLStepOperator   | azureml   | azureml     |
+| SagemakerStepOperator | sagemaker | sagemaker   |
+| VertexStepOperator    | vertex    | vertex      |
+
+If you would like to see the available flavors for step operators, you can 
+use the command:
+
+```shell
+zenml step-operator flavor list
+```
+
+## Building your own custom step operator
+
+If you want to create a custom step operator, you can follow these steps:
+
+1. Create a class which inherits from the `BaseStepOperator`.
+2. Define the `FLAVOR` class variable.
+3. Implement the abstract `launch()` method.
+
+Once you are done with the implementation, you can register it through the CLI 
+as:
+
+```shell
+zenml step-operator flavor register <SOURCE-PATH-OF-YOUR-STEP-OPERATOR-CLASS>
+```

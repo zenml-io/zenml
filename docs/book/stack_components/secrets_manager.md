@@ -67,17 +67,17 @@ For production use cases some more flavors can be found in specific
 `gcp_secrets_manager` integration and the `AWSSecretsManager` in the 
 `aws` integration.
 
-|                    | Flavor               | Integration         |
-|--------------------|----------------------|---------------------|
-| LocalArtifactStore | local                | `built-in`          |
-| AWSSecretsManager  | aws                  | aws                 |
-| GCPSecretsManager  | gcp_secrets_manager  | gcp_secrets_manager |
+|                     | Flavor               | Integration         |
+|---------------------|----------------------|---------------------|
+| LocalSecretsManager | local                | `built-in`          |
+| AWSSecretsManager   | aws                  | aws                 |
+| GCPSecretsManager   | gcp_secrets_manager  | gcp_secrets_manager |
 
 If you would like to see the available flavors for artifact stores, you can 
 use the command:
 
 ```shell
-zenml artifact-store flavor list
+zenml secrets-manager flavor list
 ```
 
 ## Build your own custom secrets manager
