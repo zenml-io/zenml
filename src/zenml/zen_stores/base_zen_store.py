@@ -313,7 +313,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> Team:
         """Creates a new team.
 
         Args:
@@ -327,7 +327,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> Team:
         """Gets a specific team.
 
         Args:
@@ -341,7 +341,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def delete_team(self, team_name: str) -> None:
+    def _delete_team(self, team_name: str) -> None:
         """Deletes a team.
 
         Args:
@@ -385,7 +385,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_project(self, project_name: str) -> Project:
+    def _get_project(self, project_name: str) -> Project:
         """Gets a specific project.
 
         Args:
@@ -399,7 +399,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def create_project(
+    def _create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
         """Creates a new project.
@@ -416,7 +416,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def delete_project(self, project_name: str) -> None:
+    def _delete_project(self, project_name: str) -> None:
         """Deletes a project.
 
         Args:
@@ -445,7 +445,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> Role:
         """Gets a specific role.
 
         Args:
@@ -459,7 +459,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> Role:
         """Creates a new role.
 
         Args:
@@ -473,7 +473,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def delete_role(self, role_name: str) -> None:
+    def _delete_role(self, role_name: str) -> None:
         """Deletes a role.
 
         Args:
@@ -608,7 +608,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def create_flavor(
+    def _create_flavor(
         self,
         source: str,
         name: str,
@@ -1003,3 +1003,89 @@ class BaseZenStore(ABC):
         """
         # No tracking events, here for consistency
         self._get_user(user_name)
+
+    def create_team(self, team_name: str) -> Team:
+        """Creates a new team.
+
+        Args:
+            team_name: Unique team name.
+
+        Returns:
+             The newly created team.
+
+        Raises:
+            EntityExistsError: If a team with the given name already exists.
+        """
+        track_event(AnalyticsEvent.CREATED_TEAM)
+        self._create_team(team_name)
+
+    def get_team(self, team_name: str) -> Team:
+        """Gets a specific team.
+
+        Args:
+            team_name: Name of the team to get.
+
+        Returns:
+            The requested team.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+        # No tracking events, here for consistency
+        self._get_team(team_name)
+
+    def delete_team(self, team_name: str) -> None:
+        """Deletes a team.
+
+        Args:
+            team_name: Name of the team to delete.
+
+        Raises:
+            KeyError: If no team with the given name exists.
+        """
+        track_event(AnalyticsEvent.DELETED_TEAM)
+        self._delete_team(team_name)
+
+    def get_project(self, project_name: str) -> Project:
+        """Gets a specific project.
+
+        Args:
+            project_name: Name of the project to get.
+
+        Returns:
+            The requested project.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+        self._get_project(project_name)
+
+    def create_project(
+        self, project_name: str, description: Optional[str] = None
+    ) -> Project:
+        """Creates a new project.
+
+        Args:
+            project_name: Unique project name.
+            description: Optional project description.
+
+        Returns:
+             The newly created project.
+
+        Raises:
+            EntityExistsError: If a project with the given name already exists.
+        """
+        track_event(AnalyticsEvent.CREATED_PROJECT)
+        self._create_project(project_name, description)
+
+    def delete_project(self, project_name: str) -> None:
+        """Deletes a project.
+
+        Args:
+            project_name: Name of the project to delete.
+
+        Raises:
+            KeyError: If no project with the given name exists.
+        """
+        track_event(AnalyticsEvent.DELETED_PROJECT)
+        self._delete_project(project_name)

@@ -447,7 +447,7 @@ class RestZenStore(BaseZenStore):
             )
         return [Team.parse_obj(team_dict) for team_dict in body]
 
-    def get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> Team:
         """Gets a specific team.
 
         Args:
@@ -461,7 +461,7 @@ class RestZenStore(BaseZenStore):
         """
         return Team.parse_obj(self.get(f"{TEAMS}/{team_name}"))
 
-    def create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> Team:
         """Creates a new team.
 
         Args:
@@ -476,7 +476,7 @@ class RestZenStore(BaseZenStore):
         team = Team(name=team_name)
         return Team.parse_obj(self.post(TEAMS, body=team))
 
-    def delete_team(self, team_name: str) -> None:
+    def _delete_team(self, team_name: str) -> None:
         """Deletes a team.
 
         Args:
@@ -529,7 +529,7 @@ class RestZenStore(BaseZenStore):
             )
         return [Project.parse_obj(project_dict) for project_dict in body]
 
-    def get_project(self, project_name: str) -> Project:
+    def _get_project(self, project_name: str) -> Project:
         """Gets a specific project.
 
         Args:
@@ -543,7 +543,7 @@ class RestZenStore(BaseZenStore):
         """
         return Project.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
 
-    def create_project(
+    def _create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
         """Creates a new project.
@@ -561,7 +561,7 @@ class RestZenStore(BaseZenStore):
         project = Project(name=project_name, description=description)
         return Project.parse_obj(self.post(PROJECTS, body=project))
 
-    def delete_project(self, project_name: str) -> None:
+    def _delete_project(self, project_name: str) -> None:
         """Deletes a project.
 
         Args:
@@ -609,7 +609,7 @@ class RestZenStore(BaseZenStore):
             for assignment_dict in body
         ]
 
-    def get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> Role:
         """Gets a specific role.
 
         Args:
@@ -623,7 +623,7 @@ class RestZenStore(BaseZenStore):
         """
         return Role.parse_obj(self.get(f"{ROLES}/{role_name}"))
 
-    def create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> Role:
         """Creates a new role.
 
         Args:
@@ -638,7 +638,7 @@ class RestZenStore(BaseZenStore):
         role = Role(name=role_name)
         return Role.parse_obj(self.post(ROLES, body=role))
 
-    def delete_role(self, role_name: str) -> None:
+    def _delete_role(self, role_name: str) -> None:
         """Deletes a role.
 
         Args:
@@ -876,7 +876,7 @@ class RestZenStore(BaseZenStore):
             )
         return [FlavorWrapper.parse_obj(flavor_dict) for flavor_dict in body]
 
-    def create_flavor(
+    def _create_flavor(
         self,
         source: str,
         name: str,
