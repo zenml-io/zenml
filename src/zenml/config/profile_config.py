@@ -19,10 +19,9 @@ import requests
 from pydantic import BaseModel, Field, root_validator
 
 from zenml.constants import (
-    ENV_ZENML_DEFAULT_STORE_TYPE,
     ENV_ZENML_ACTIVATED_STACK,
+    ENV_ZENML_DEFAULT_STORE_TYPE,
 )
-
 from zenml.enums import StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
