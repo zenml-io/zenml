@@ -2,15 +2,31 @@
 description: Setting up your MLOps infrastructure
 ---
 
-Talking about the fractured space of MLOps and tooling
+Machine Learning in production is not just about designing and training models. 
+It is a fractured space consisting of a wide variety of tasks ranging from 
+experiment tracking to orchestration, from model deployment to monitoring, 
+from drift detection to feature stores and much, much more than that. Even 
+though there are already some seemingly well-established solutions for some 
+of these tasks, it can become increasingly difficult to establish a running 
+production system in a reliable and modular manner, once all these solutions 
+are brought together.
 
-Different components of a production grade ML workflow
+As an example, this is a problem which occurs quite often in the case of the 
+switch from a research setting to a production setting. Due to the lack of 
+standards, the time and resources invested in a small PoC-like project can 
+completely to waste, if the initial system can not be transferred to a 
+production-grade setting.
 
-Moving from research to production
+At ZenML, we believe that this is one of the most important and challenging 
+problems in the field of MLOps, and it can be solved with a set of 
+well-structured abstractions. Owing to the nature of MLOps, it is critical 
+that these abstractions do not only cover concepts such as pipelines, steps and 
+materializer but also cover the infrastructure that these concepts are 
+running on.
 
-ZenML helps you with the concept of stacks and their extendable nature
+### Stack
 
-## Abstractions
+In ZenML, this is where the concept of stacks comes into play. It 
 
 The base abstractions of ZenML.
 
@@ -18,7 +34,6 @@ Short description of what stacks, stack components and flavors mean
 
 The aim of this document...
 
-### Stack
 
 #### List of components
 
