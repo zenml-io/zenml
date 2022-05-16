@@ -265,7 +265,7 @@ class BaseZenStore(ABC):
         """
 
     @abstractmethod
-    def get_user(self, user_name: str) -> User:
+    def _get_user(self, user_name: str) -> User:
         """Gets a specific user.
 
         Args:
@@ -988,3 +988,18 @@ class BaseZenStore(ABC):
         """
         track_event(AnalyticsEvent.DELETE_USER)
         self._delete_user(user_name)
+
+    def get_user(self, user_name: str) -> User:
+        """Gets a specific user.
+
+        Args:
+            user_name: Name of the user to get.
+
+        Returns:
+            The requested user.
+
+        Raises:
+            KeyError: If no user with the given name exists.
+        """
+        # No tracking events, here for consistency
+        self._get_user(user_name)

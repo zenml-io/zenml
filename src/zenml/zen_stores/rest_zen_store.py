@@ -390,7 +390,7 @@ class RestZenStore(BaseZenStore):
             )
         return [User.parse_obj(user_dict) for user_dict in body]
 
-    def get_user(self, user_name: str) -> User:
+    def _get_user(self, user_name: str) -> User:
         """Gets a specific user.
 
         Args:

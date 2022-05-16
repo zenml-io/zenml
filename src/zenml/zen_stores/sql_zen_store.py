@@ -544,7 +544,7 @@ class SqlZenStore(BaseZenStore):
                 for user in session.exec(select(UserTable)).all()
             ]
 
-    def get_user(self, user_name: str) -> User:
+    def _get_user(self, user_name: str) -> User:
         """Gets a specific user.
 
         Args:

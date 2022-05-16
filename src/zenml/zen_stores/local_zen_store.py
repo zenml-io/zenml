@@ -404,7 +404,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.users
 
-    def get_user(self, user_name: str) -> User:
+    def _get_user(self, user_name: str) -> User:
         """Gets a specific user.
 
         Args:
