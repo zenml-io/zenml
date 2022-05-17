@@ -16,7 +16,6 @@
   * [Step Fixture](developer-guide/step-fixtures.md)
   * [Fetching Historic Runs](developer-guide/fetching-historic-runs.md)
   * [Class Based API](developer-guide/class-based-api.md)
-* [Stacks](developer-guide/stacks.md)
 * [Repo & Config](developer-guide/repo-and-config.md)
 
 ## Advanced Guide
@@ -66,13 +65,16 @@
 * [Learn more on Youtube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
 * [Slack Community](https://zenml.io/slack-invite/)
 
-## Reference
+## Misc
 
-* [Roadmap](https://zenml.io/roadmap)
-* [Glossary](reference/glossary.md)
-* [FAQ](reference/faq.md)
 * [System Environmental Variables](reference/system-env.md)
-* [CLI Reference](https://apidocs.zenml.io/latest/cli/)
-* [API Reference](https://apidocs.zenml.io/latest/)
 * [Usage Analytics](reference/usage-analytics.md)
 * [Contact](reference/contact.md)
+* [FAQ](reference/faq.md)
+* [Roadmap](https://zenml.io/roadmap)
+  
+## Reference
+
+* [Glossary](reference/glossary.md)
+* [CLI Reference](https://apidocs.zenml.io/latest/cli/)
+* [API Reference](https://apidocs.zenml.io/latest/)
