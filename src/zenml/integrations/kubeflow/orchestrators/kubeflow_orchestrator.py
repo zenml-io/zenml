@@ -99,6 +99,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
             https://hub.docker.com/r/zenmldocker/zenml/
         kubeflow_pipelines_ui_port: A local port to which the KFP UI will be
             forwarded.
+        kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
+            API. If not set, the hostname will be derived from the Kubernetes
+            API proxy.
         kubernetes_context: Optional name of a kubernetes context to run
             pipelines in. If not set, the current active context will be used.
             You can find the active context by running `kubectl config
@@ -115,6 +118,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
+    kubeflow_hostname: Optional[str] = None
     kubernetes_context: Optional[str] = None
     synchronous: bool = False
     skip_local_validations: bool = False
@@ -649,7 +653,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
             # upload the pipeline to Kubeflow and start it
-            client = kfp.Client(kube_context=self.kubernetes_context)
+            client = kfp.Client(
+                host=self.kubeflow_hostname,
+                kube_context=self.kubernetes_context,
+            )
             if runtime_configuration.schedule:
                 try:
                     experiment = client.get_experiment(pipeline_name)
