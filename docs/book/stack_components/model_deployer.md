@@ -144,7 +144,7 @@ and get the complete docstrings, please check the source code on GitHub.
 ## List of available model deployers
 
 In its current version, ZenML features two integrations, namely the `mlflow` 
-and the `seldon` integration, with model deployers as stack components. In 
+and the `seldon` integrations, with model deployers as stack components. In 
 order to get more information on how you can use these flavors in your stack, 
 please check the corresponding pages in the API docs linked below.
 
@@ -157,7 +157,7 @@ If you would like to see the available flavors for model deployers, you can
 use the command:
 
 ```shell
-zenml model-delployer flavor list
+zenml model-deployer flavor list
 ```
 
 ## Building your own model deployers
