@@ -26,7 +26,6 @@ from typing import (
     Tuple,
     Union,
 )
-from urllib.parse import quote
 
 import click
 import yaml
@@ -148,26 +147,21 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
     column_names = [columns.get(key, key.upper()) for key in column_keys]
     rich_table = table.Table(box=box.HEAVY_EDGE, show_lines=True)
     for col_name in column_names:
-        rich_table.add_column(str(col_name), overflow="fold")
-
+        if isinstance(col_name, str):
+            rich_table.add_column(str(col_name), overflow="fold")
+        else:
+            rich_table.add_column(str(col_name.header).upper(), overflow="fold")
     for dict_ in obj:
         values = []
         for key in column_keys:
             if key is None:
                 values.append(None)
             else:
-                value = str(dict_.get(key))
-                if value == "":
-                    value = " "
-                # append the value as a link so it's accessible in the console
-                # (handle spaces and the use of '[' and ']' in markdown text)
+                value = str(dict_.get(key) or " ")
+                # escape text when square brackets are used
                 if "[" in value:
-                    lv = escape(value)
-                elif " " in value:
-                    lv = f"[link={quote(value)}]{value}[/link]"
-                else:
-                    lv = f"[link='{value}']{value}[/link]"
-                values.append(lv)
+                    value = escape(value)
+                values.append(value)
         rich_table.add_row(*values)
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
@@ -255,8 +249,7 @@ def print_stack_configuration(
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
     for component_type, name in config.items():
-        link_name = f"[link={name}]{name}[/link]"
-        rich_table.add_row(component_type.value, link_name)
+        rich_table.add_row(component_type.value, name)
 
     # capitalize entries in first column
     rich_table.columns[0]._cells = [
@@ -345,8 +338,7 @@ def print_stack_component_configuration(
             if idx == 0:
                 elements.append(f"{elem.upper()}")
             else:
-                link_elem = f"[link={elem}]{elem}[/link]"
-                elements.append(link_elem)
+                elements.append(str(elem))
         rich_table.add_row(*elements)
 
     console.print(rich_table)
@@ -399,8 +391,7 @@ def print_profile(
             if idx == 0:
                 elements.append(f"{elem.upper()}")
             else:
-                link_elem = f"[link='{elem}']{elem}[/link]"
-                elements.append(link_elem)
+                elements.append(elem)
         rich_table.add_row(*elements)
 
     console.print(rich_table)
@@ -452,7 +443,7 @@ def _expand_argument_value_from_file(name: str, value: str) -> str:
 
     Raises:
         ValueError: If the argument value points to a file that doesn't exist,
-            that cannot be read, or is too long (i.e. exceeds
+            that cannot be read, or is too long(i.e. exceeds
             `MAX_ARGUMENT_VALUE_SIZE` bytes).
     """
     if value.startswith("@@"):
@@ -613,7 +604,7 @@ def print_secrets(secrets: List[str]) -> None:
     rich_table.add_column("SECRET_NAME", overflow="fold")
     secrets.sort()
     for item in secrets:
-        rich_table.add_row(f"[link='{item}']{item}[/link]")
+        rich_table.add_row(item)
 
     console.print(rich_table)
 
@@ -658,13 +649,12 @@ def pretty_print_model_deployer(
         model_service_dicts.append(
             {
                 "STATUS": get_service_status_emoji(model_service),
-                "UUID": f"[link='{dict_uuid}']{dict_uuid}[/link]",
-                "PIPELINE_NAME": f"[link='{dict_pl_name}']{dict_pl_name}[/link]",
-                "PIPELINE_STEP_NAME": f"[link='{dict_pl_stp_name}']{dict_pl_stp_name}[/link]",
-                "MODEL_NAME": f"[link='{dict_model_name}']{dict_model_name}[/link]",
+                "UUID": dict_uuid,
+                "PIPELINE_NAME": dict_pl_name,
+                "PIPELINE_STEP_NAME": dict_pl_stp_name,
+                "MODEL_NAME": dict_model_name,
             }
         )
-
     print_table(
         model_service_dicts, UUID=table.Column(header="UUID", min_width=36)
     )
