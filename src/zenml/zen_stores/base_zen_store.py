@@ -739,7 +739,7 @@ class BaseZenStore(ABC):
                         f"'{component.name}' already exists."
                     )
             except KeyError:
-                self.register_stack_component(component)
+                self._register_stack_component(component)
             return component.type, component.name
 
         stack_configuration = {
@@ -787,7 +787,7 @@ class BaseZenStore(ABC):
                     component_type=component.type, name=component.name
                 )
             except KeyError:
-                self.register_stack_component(component)
+                self._register_stack_component(component)
             return component.type, component.name
 
         stack_configuration = {
@@ -864,7 +864,7 @@ class BaseZenStore(ABC):
         a local artifact store and a local SQLite metadata store.
         """
         stack = Stack.default_local_stack()
-        metadata = self.register_stack(StackWrapper.from_stack(stack))
+        metadata = self._register_stack(StackWrapper.from_stack(stack))
         metadata["store_type"] = self.type.value
         self._track_event(
             AnalyticsEvent.REGISTERED_DEFAULT_STACK, metadata=metadata
@@ -876,7 +876,7 @@ class BaseZenStore(ABC):
             self.get_user(user_name=DEFAULT_USERNAME)
         except KeyError:
             # Use private interface and send custom tracking event
-            self._track_event(AnalyticsEvent.CREATE_DEFAULT_USER)
+            self._track_event(AnalyticsEvent.CREATED_DEFAULT_USER)
             self._create_user(user_name=DEFAULT_USERNAME)
 
     # Common code (internal implementations, private):
