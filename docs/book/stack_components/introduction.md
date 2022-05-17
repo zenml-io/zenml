@@ -53,9 +53,41 @@ component types that you can use within your stack in the table below:
 | Experiment Tracker      |          | Tracking your ML experiments                                      |
 | Alerter                 |          | Sending alerts through specified channels                         |
 
-Establishing a stack will require you to define at least of an orchestrator, 
-an artifact store, and a metadata store. The rest of the stack components are 
-optional, and you can use them as you see fit.
+Each pipeline run that you execute with ZenML will require you to have an 
+**active** stack as the components within the stack are essential to the entire 
+workflow. Any ZenML repository that you created through `zenml init` comes 
+with an initial active `default` stack, which features a local artifact store, 
+a local metadata store, and a local orchestrator. You can see this stack if you 
+execute the following command:
+
+```shell
+zenml stack list
+```
+
+If you would like to work with a different stack, you can register another 
+one through the CLI. Keep in mind that establishing a stack will require you 
+to define at least of an orchestrator, an artifact store, and a metadata store. 
+The rest of the stack components are optional, and you can use them as you 
+see fit.
+
+```shell
+zenml stack register STACK_NAME -o <name-of-your-orchestrator> \
+                                -a <name-of-your-artifact-store> \
+                                -m <name-of-your-metadata-store> \
+                                ...
+```
+
+Once you registered your stack, you can activate it with:
+
+```shell
+zenml stack set <name-of-your-stack>
+```
+
+{% hint style="info" %}
+Our CLI features a wide variety of commands that let you manage/use your 
+stacks in an easy manner. If you would like to learn more, please do 
+`zenml stack --help` or visit our CLI docs.
+{% endhint %}
 
 ## Stack Components
 
@@ -122,10 +154,18 @@ provision, deprovision
 
 ## CLI
 
+Our CLI is the main channel that lets our users interact with their stacks, 
+stack components and flavors.
+
+### Interacting with stacks
+
 #### zenml stack list
 #### zenml stack register
+#### zenml stack set
+
 #### zenml stack-component list
 #### zenml stack-component register
+
 #### zenml stack-component flavor list
 #### zenml stack-component flavor register
 
