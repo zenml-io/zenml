@@ -238,19 +238,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         raise NotImplementedError
 
     @property
-    def id(self) -> str:
-        import hashlib
-
-        from zenml.utils import source_utils
-
-        hashes = [source_utils.get_hashed_source(self.connect)] + [
-            step.id for step in self.steps.values()
-        ]
-        code_hash = hashlib.sha256(str(hashes).encode("utf-8")).hexdigest()
-
-        return f"{self.name}-{code_hash}"
-
-    @property
     def requirements(self) -> Set[str]:
         """Set of Python requirements of this pipeline.
 

@@ -331,16 +331,6 @@ class BaseStep(metaclass=BaseStepMeta):
         return materializers
 
     @property
-    def id(self) -> str:
-        source_object = (
-            self.entrypoint
-            if self._created_by_functional_api
-            else self.__class__
-        )
-
-        return f"{self.name}-{get_hashed_source(source_object)}"
-
-    @property
     def _internal_execution_parameters(self) -> Dict[str, Any]:
         """ZenML internal execution parameters for this step."""
         parameters = {
