@@ -2,7 +2,7 @@
 
 * [Introduction](index.md)
 * [Quickstart](introduction/quickstart-guide.md)
-* [Core Concepts](introduction/core-concepts-revised.md)
+* [Core Concepts](introduction/core-concepts.md)
 
 ## Developer Guide
 
