@@ -59,17 +59,18 @@
 
 ## Support
 
-* [Integration Examples](https://github.com/zenml-io/zenml/tree/main/examples)
-* [Tutorial Notebooks](https://github.com/zenml-io/zenbytes)
+* [Best Practices](support/best-practices.md)
+* [Integrations Usages](https://github.com/zenml-io/zenml/tree/main/examples)
+* [Learn MLOps with ZenML](https://github.com/zenml-io/zenbytes)
 * [ZenML in Practice](https://github.com/zenml-io/zenfiles)
 * [Learn more on Youtube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
-* [Join our Slack](https://zenml.io/slack-invite/)
+* [Slack Community](https://zenml.io/slack-invite/)
 
 ## Reference
 
-* [Roadmap](reference/roadmap.md)
+* [Roadmap](https://zenml.io/roadmap)
 * [Glossary](reference/glossary.md)
-*
+* [FAQ](reference/faq.md)
 * [System Environmental Variables](reference/system-env.md)
 * [CLI Reference](https://apidocs.zenml.io/latest/cli/)
 * [API Reference](https://apidocs.zenml.io/latest/)
