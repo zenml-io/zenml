@@ -25,6 +25,7 @@ from zenml.constants import (
     ENV_ZENML_PROFILE_CONFIGURATION,
     ENV_ZENML_PROFILE_NAME,
     FLAVORS,
+    PIPELINE_RUNS,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
@@ -34,10 +35,7 @@ from zenml.constants import (
     STACKS_EMPTY,
     TEAMS,
     USERS,
-PIPELINE_RUNS
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
-
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
     DoesNotExistException,
@@ -57,6 +55,7 @@ from zenml.zen_stores.models import (
     Team,
     User,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 profile_configuration_json = os.environ.get(ENV_ZENML_PROFILE_CONFIGURATION)
 profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
@@ -586,17 +585,33 @@ async def revoke_role(data: Dict[str, Any]) -> None:
         raise not_found(error) from error
 
 
-@authed.get(PIPELINE_RUNS + "/{pipeline_name}", response_model=List[PipelineRunWrapper])
-async def pipeline_runs(pipeline_name: str, project_name: Optional[str] = None) -> List[PipelineRunWrapper]:
+@authed.get(
+    PIPELINE_RUNS + "/{pipeline_name}", response_model=List[PipelineRunWrapper]
+)
+async def pipeline_runs(
+    pipeline_name: str, project_name: Optional[str] = None
+) -> List[PipelineRunWrapper]:
     """Returns all runs for a pipeline."""
-    return zen_store.get_pipeline_runs(pipeline_name=pipeline_name, project_name=project_name)
+    return zen_store.get_pipeline_runs(
+        pipeline_name=pipeline_name, project_name=project_name
+    )
 
 
-@authed.get(PIPELINE_RUNS + "/{pipeline_name}/{run_name}", response_model=PipelineRunWrapper, responses={404: error_response})
-async def pipeline_run(pipeline_name: str, run_name: str, project_name: Optional[str] = None) -> PipelineRunWrapper:
+@authed.get(
+    PIPELINE_RUNS + "/{pipeline_name}/{run_name}",
+    response_model=PipelineRunWrapper,
+    responses={404: error_response},
+)
+async def pipeline_run(
+    pipeline_name: str, run_name: str, project_name: Optional[str] = None
+) -> PipelineRunWrapper:
     """Returns a single pipeline run."""
     try:
-        return zen_store.get_pipeline_run(pipeline_name=pipeline_name, run_name=run_name, project_name=project_name)
+        return zen_store.get_pipeline_run(
+            pipeline_name=pipeline_name,
+            run_name=run_name,
+            project_name=project_name,
+        )
     except KeyError as error:
         raise not_found(error) from error
 

@@ -51,7 +51,6 @@ class ZenStoreModel(FileSyncModel):
         pipeline_runs: Maps pipeline names to runs of that pipeline.
     """
 
-
     stacks: Dict[str, Dict[StackComponentType, str]] = Field(
         default_factory=dict
     )
@@ -67,7 +66,9 @@ class ZenStoreModel(FileSyncModel):
     team_assignments: DefaultDict[str, Set[str]] = Field(
         default=defaultdict(set)
     )
-    pipeline_runs: DefaultDict[str, List[PipelineRunWrapper]] = Field(default=defaultdict(list))
+    pipeline_runs: DefaultDict[str, List[PipelineRunWrapper]] = Field(
+        default=defaultdict(list)
+    )
 
     @validator("stack_components")
     def _construct_stack_components_defaultdict(

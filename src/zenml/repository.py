@@ -16,8 +16,8 @@ import random
 from abc import ABCMeta
 from collections import defaultdict
 from pathlib import Path
-from uuid import UUID
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
 
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
     from zenml.config.profile_config import ProfileConfiguration
     from zenml.post_execution import PipelineView
     from zenml.zen_stores import BaseZenStore
-    from zenml.zen_stores.models import User, ZenStoreModel, Project
+    from zenml.zen_stores.models import Project, User, ZenStoreModel
 
 logger = get_logger(__name__)
 

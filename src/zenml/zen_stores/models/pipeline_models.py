@@ -38,8 +38,8 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
             working tree, this function will return `None`.
     """
     try:
-        from git.repo.base import Repo
         from git.exc import InvalidGitRepositoryError
+        from git.repo.base import Repo
     except ImportError:
         return None
 

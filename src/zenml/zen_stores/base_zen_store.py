@@ -15,7 +15,6 @@ import base64
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-from uuid import UUID
 
 import yaml
 

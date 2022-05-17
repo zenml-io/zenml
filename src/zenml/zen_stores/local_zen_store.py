@@ -935,7 +935,9 @@ class LocalZenStore(BaseZenStore):
 
             return run
 
-        project_message = f" in project {project_name}." if project_name else "."
+        project_message = (
+            f" in project {project_name}." if project_name else "."
+        )
         raise KeyError(
             f"No pipeline run '{run_name}' found for pipeline "
             f"'{pipeline_name}'{project_message}"
