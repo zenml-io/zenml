@@ -39,18 +39,18 @@ explore the concept **Stack Components** in more detail in the next section,
 however, before we get there, you can find a short list of all the stack 
 component types that you can use within your stack in the table below:
 
-| Type of Stack Component | Required | Description                                                       |
-|-------------------------|----------|-------------------------------------------------------------------|
-| **Orchestrator**            | ✅        | Orchestrating the runs of your pipeline                           |
-| **Artifact Store**          | ✅        | Storage for the artifacts created by your pipelines               |
-| **Metadata Store**          | ✅        | Tracking the execution of your pipelines/steps                    |
-| Container Registry      |          | Store for your containers                                         |
-| Secrets Manager         |          | Centralized location for the storage of your secrets              |
-| Step Operator           |          | Execution of individual steps in specialized runtime environments |
-| Model Deployer          |          | Services/platforms responsible for online model serving           |
-| Feature Store           |          | Management of your data/features                                  |
-| Experiment Tracker      |          | Tracking your ML experiments                                      |
-| Alerter                 |          | Sending alerts through specified channels                         |
+| Type of Stack Component | Description                                                       |
+|-------------------------|-------------------------------------------------------------------|
+| **Orchestrator (req)**   | Orchestrating the runs of your pipeline                           |
+| **Artifact Store (req)** | Storage for the artifacts created by your pipelines               |
+| **Metadata Store (req)** | Tracking the execution of your pipelines/steps                    |
+| Container Registry      | Store for your containers                                         |
+| Secrets Manager         | Centralized location for the storage of your secrets              |
+| Step Operator           | Execution of individual steps in specialized runtime environments |
+| Model Deployer          | Services/platforms responsible for online model serving           |
+| Feature Store           | Management of your data/features                                  |
+| Experiment Tracker      | Tracking your ML experiments                                      |
+| Alerter                 | Sending alerts through specified channels                         |
 
 Each pipeline run that you execute with ZenML will require you to have an 
 **active** stack as the components within the stack are essential to the entire 
@@ -84,21 +84,16 @@ zenml stack set <name-of-your-stack>
 
 {% hint style="info" %}
 Our CLI features a wide variety of commands that let you easily manage/use your 
-stacks. If you would like to learn more, please do:
-
-```shell
-zenml stack --help
-``` 
-
+stacks. If you would like to learn more, please do: "`zenml stack --help`"
 or visit our CLI docs.
 {% endhint %}
 
 ## Stack Components
 
-A Stack Component represents the abstraction interface that is created for a 
-specific task in your ML workflow.
+As Stacks represent the entire configuration of your infrastructure, Stack
+Components represent the configuration of individual layers within your 
+Stack which are responsible for specific self-contained tasks.
 
-For instance,
 ### Using `pydantic`
 
 ```python
