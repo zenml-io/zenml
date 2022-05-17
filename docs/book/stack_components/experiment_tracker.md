@@ -17,7 +17,7 @@ the moment. If you would like to use an experiment tracker in your stack,
 please check the list of already available alerters down below.
 {% endhint %}
 
-## List of available experiment tracker
+## List of available experiment trackers
 
 In its current version, ZenML comes with two integrations which feature 
 experiment trackers as stack components, namely the `MLFlowExperimentTracker`
