@@ -1161,7 +1161,14 @@ class BaseZenStore(ABC):
             EntityExistsError: If a flavor with the given name and type
                 already exists.
         """
-        self._track_event(AnalyticsEvent.CREATED_FLAVOR)
+
+        analytics_metadata = {
+            "type": stack_component_type.value,
+        }
+        track_event(
+            AnalyticsEvent.CREATED_FLAVOR,
+            metadata=analytics_metadata,
+        )
         return self._create_flavor(source, name, stack_component_type)
 
     def register_stack(self, stack: StackWrapper) -> None:

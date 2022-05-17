@@ -48,9 +48,6 @@ class AnalyticsEvent(str, Enum):
     IMPORT_STACK = "Stack imported"
     EXPORT_STACK = "Stack exported"
 
-    # Stack Flavors
-    REGISTERED_STACK_FLAVOR = "Stack flavor registered"
-
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
     OPT_OUT_ANALYTICS = "Analytics opt-out"
