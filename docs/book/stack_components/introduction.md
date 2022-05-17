@@ -12,9 +12,10 @@ production system in a reliable and modular manner, once all these solutions
 are brought together.
 
 This is a problem which is especially visible when switching from a research 
-setting to a production setting. Due to the lack of standards, the time and 
-resources invested in a small PoC-like project can completely to waste, 
-if the initial system can not be transferred to a production-grade setting.
+setting to a production setting. For instance, due to the lack of standards, 
+the time and resources invested in a small PoC-like project can completely to 
+waste, if the initial system can not be transferred to a production-grade 
+setting.
 
 At **ZenML**, we believe that this is one of the most important and challenging 
 problems in the field of MLOps, and it can be solved with a set of standards and 
@@ -23,8 +24,8 @@ that these abstractions do not only cover concepts such as pipelines, steps and
 materializers that we covered in the starter guide but also the infrastructure 
 elements that the pipelines are running on.
 
-Taking that into consideration, we will introduce you the three main concepts 
-that our ZenML is based on: **Stacks**, **Stack Components** and **Flavors**.
+Taking this into consideration, we will introduce three major concepts 
+that ZenML is based on: **Stacks**, **Stack Components** and **Flavors**.
 
 ## Stacks
 
@@ -37,8 +38,6 @@ that are responsible for specific tasks within your ML workflow. We will
 explore the concept **Stack Components** in more detail in the next section, 
 however, before we get there, you can find a short list of all the stack 
 component types that you can use within your stack in the table below:
-
-### List of different types of components
 
 | Type of Stack Component | Required | Description                                                       |
 |-------------------------|----------|-------------------------------------------------------------------|
@@ -65,8 +64,8 @@ zenml stack list
 ```
 
 If you would like to work with a different stack, you can register another 
-one through the CLI. Keep in mind that establishing a stack will require you 
-to define at least of an orchestrator, an artifact store, and a metadata store. 
+one through our CLI. Keep in mind, that establishing a stack will require you 
+to specify at least of an orchestrator, an artifact store, and a metadata store. 
 The rest of the stack components are optional, and you can use them as you 
 see fit.
 
@@ -84,9 +83,14 @@ zenml stack set <name-of-your-stack>
 ```
 
 {% hint style="info" %}
-Our CLI features a wide variety of commands that let you manage/use your 
-stacks in an easy manner. If you would like to learn more, please do 
-`zenml stack --help` or visit our CLI docs.
+Our CLI features a wide variety of commands that let you easily manage/use your 
+stacks. If you would like to learn more, please do:
+
+```shell
+zenml stack --help
+``` 
+
+or visit our CLI docs.
 {% endhint %}
 
 ## Stack Components
@@ -156,18 +160,6 @@ provision, deprovision
 
 Our CLI is the main channel that lets our users interact with their stacks, 
 stack components and flavors.
-
-### Interacting with stacks
-
-#### zenml stack list
-#### zenml stack register
-#### zenml stack set
-
-#### zenml stack-component list
-#### zenml stack-component register
-
-#### zenml stack-component flavor list
-#### zenml stack-component flavor register
 
 ## Configuration and usage
 
