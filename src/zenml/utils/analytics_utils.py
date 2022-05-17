@@ -79,7 +79,6 @@ class AnalyticsEvent(str, Enum):
 
     # Flavor
     CREATED_FLAVOR = "Flavor created"
-    DELETED_FLAVOR = "Flavor deleted"
 
     # Test event
     EVENT_TEST = "Test event"
