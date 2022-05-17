@@ -754,7 +754,7 @@ def _get_component_as_dict(
 def export_stack(stack_name: str, filename: Optional[str]) -> None:
     """Export a stack to YAML."""
     track_event(AnalyticsEvent.EXPORT_STACK)
-    
+
     # Get configuration of given stack
     # TODO [LOW]: code duplicate with describe_stack()
     repo = Repository()
@@ -845,7 +845,7 @@ def import_stack(
 ) -> None:
     """Import a stack from YAML."""
     track_event(AnalyticsEvent.IMPORT_STACK)
-    
+
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:
         filename = stack_name
