@@ -43,17 +43,8 @@ def test_global_config_returns_value_from_environment_variable(
     variables."""
     config = GlobalConfiguration()
 
-    original_env = os.environ.copy()
-
-    # delete the environment variable that is set at the beginning of all tests
-    mocker.patch.dict(os.environ, values={}, clear=True)
+    os.environ["ZENML_ANALYTICS_OPT_IN"] = "true"
     assert config.analytics_opt_in is True
 
-    # make sure the environment variable is set, then the global config should
-    # return the corresponding value
-    mocker.patch.dict(
-        os.environ, values={"ZENML_ANALYTICS_OPT_IN": "false"}, clear=True
-    )
+    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
     assert config.analytics_opt_in is False
-
-    os.environ = original_env
