@@ -748,7 +748,7 @@ class BaseZenStore(ABC):
         self._save_stack(stack.name, stack_configuration)
         logger.info("Registered stack with name '%s'.", stack.name)
 
-    def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
+    def _update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
         """Update a stack and its components.
 
         If any of the stack's components aren't registered in the stack store
@@ -757,9 +757,6 @@ class BaseZenStore(ABC):
         Args:
             name: The original name of the stack.
             stack: The new stack to use in the update.
-
-        Returns:
-            metadata dict for telemetry or logging.
 
         Raises:
             DoesNotExistException: If no stack exists with the given name.
@@ -796,14 +793,11 @@ class BaseZenStore(ABC):
         stack_configuration = {
             typ: name for typ, name in map(__check_component, stack.components)
         }
-        metadata = {c.type.value: c.flavor for c in stack.components}
         self._save_stack(stack.name, stack_configuration)
 
         logger.info("Updated stack with name '%s'.", name)
         if name != stack.name:
             self.deregister_stack(name)
-
-        return metadata
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
@@ -1190,3 +1184,21 @@ class BaseZenStore(ABC):
         metadata["store_type"] = self.type.value
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
         return self._register_stack(stack)
+
+    def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
+        """Update a stack and its components.
+
+        If any of the stack's components aren't registered in the stack store
+        yet, this method will try to register them as well.
+
+        Args:
+            name: The original name of the stack.
+            stack: The new stack to use in the update.
+
+        Raises:
+            DoesNotExistException: If no stack exists with the given name.
+        """
+        metadata = {c.type.value: c.flavor for c in stack.components}
+        metadata["store_type"] = self.type.value
+        track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
+        return self._update_stack(name, stack)

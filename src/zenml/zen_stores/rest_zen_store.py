@@ -300,7 +300,7 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected dict, got {type(body)}"
             )
 
-    def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
+    def _update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
         """Update a stack and its components.
 
         If any of the stack's components aren't registered in the stack store

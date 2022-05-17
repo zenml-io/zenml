@@ -33,7 +33,7 @@ from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackComponent
 from zenml.utils import yaml_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
@@ -823,13 +823,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         from zenml.zen_stores.models import StackWrapper
 
         stack.validate()
-        metadata = self.zen_store.update_stack(
-            name, StackWrapper.from_stack(stack)
-        )
+        self.zen_store.update_stack(name, StackWrapper.from_stack(stack))
         if self.active_stack_name == name:
             self.activate_stack(stack.name)
-        metadata["store_type"] = self.active_profile.store_type.value
-        track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
 
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack.
