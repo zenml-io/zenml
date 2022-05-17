@@ -750,7 +750,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             stack_name = self.__config.active_stack_name
 
         if not stack_name:
-            stack_name = self.active_profile.active_stack
+            stack_name = self.active_profile.get_active_stack()
 
         if not stack_name:
             raise RuntimeError(

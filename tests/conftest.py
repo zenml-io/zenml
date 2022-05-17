@@ -172,6 +172,7 @@ def clean_repo(
 
     # monkey patch base repo cwd for later user and yield
     repo.original_cwd = base_repo.original_cwd
+
     yield repo
 
     # remove all traces, and change working directory back to base path

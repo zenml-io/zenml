@@ -49,10 +49,15 @@ class LocalDaemonServiceConfig(ServiceConfig):
             daemon output will be redirected to a logfile.
         root_runtime_path: the root path where the service daemon will store
             service configuration files
+        singleton: set to True to store the service daemon configuration files
+            directly in the `root_runtime_path` directory instead of creating
+            a subdirectory for each service instance. Only has effect if the
+            `root_runtime_path` is also set.
     """
 
     silent_daemon: bool = False
     root_runtime_path: Optional[str] = None
+    singleton: bool = False
 
 
 class LocalDaemonServiceStatus(ServiceStatus):
@@ -266,13 +271,14 @@ class LocalDaemonService(BaseService):
         if not self.status.runtime_path or not os.path.exists(
             self.status.runtime_path
         ):
-            # runtime_path points to zenml local stores with uuid to make it
-            # easy to track from other locations.
             if self.config.root_runtime_path:
-                self.status.runtime_path = os.path.join(
-                    self.config.root_runtime_path,
-                    str(self.uuid),
-                )
+                if self.config.singleton:
+                    self.status.runtime_path = self.config.root_runtime_path
+                else:
+                    self.status.runtime_path = os.path.join(
+                        self.config.root_runtime_path,
+                        str(self.uuid),
+                    )
                 create_dir_recursive_if_not_exists(self.status.runtime_path)
             else:
                 self.status.runtime_path = tempfile.mkdtemp(

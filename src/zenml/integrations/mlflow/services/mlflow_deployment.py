@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 import numpy as np
 import requests
 from mlflow.pyfunc.backend import PyFuncBackend  # type: ignore [import]
+from mlflow.version import VERSION as MLFLOW_VERSION  # type: ignore [import]
 
 from zenml.logger import get_logger
 from zenml.services import (
@@ -141,6 +142,12 @@ class MLFlowDeploymentService(LocalDaemonService):
         self.endpoint.prepare_for_start()
 
         try:
+            serve_kwargs: Dict[str, Any] = {}
+            # MLflow version 1.26 introduces an additional mandatory
+            # `timeout` argument to the `PyFuncBackend.serve` function
+            if int(MLFLOW_VERSION.split(".")[1]) >= 26:
+                serve_kwargs["timeout"] = None
+
             backend = PyFuncBackend(
                 config={},
                 no_conda=True,
@@ -152,6 +159,7 @@ class MLFlowDeploymentService(LocalDaemonService):
                 port=self.endpoint.status.port,
                 host="localhost",
                 enable_mlserver=self.config.mlserver,
+                **serve_kwargs,
             )
         except KeyboardInterrupt:
             logger.info(

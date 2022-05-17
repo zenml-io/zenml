@@ -22,7 +22,6 @@ import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
-    ENV_ZENML_PROFILE_CONFIGURATION,
     ENV_ZENML_PROFILE_NAME,
     FLAVORS,
     IS_EMPTY,
@@ -55,14 +54,10 @@ from zenml.zen_stores.models import (
     User,
 )
 
-profile_configuration_json = os.environ.get(ENV_ZENML_PROFILE_CONFIGURATION)
 profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
 
-# Hopefully profile configuration was passed as env variable:
-if profile_configuration_json:
-    profile = ProfileConfiguration.parse_raw(profile_configuration_json)
-# Otherwise, check if profile name was passed as env variable:
-elif profile_name:
+# Check if profile name was passed as env variable:
+if profile_name:
     profile = (
         GlobalConfiguration().get_profile(profile_name)
         or Repository().active_profile
