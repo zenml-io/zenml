@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import datetime as dt
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -32,11 +33,15 @@ from zenml.zen_stores.models import (
     Project,
     Role,
     RoleAssignment,
+    StackWrapper,
     Team,
     User,
     get_active_user_id,
 )
-from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+from zenml.zen_stores.models.pipeline_models import (
+    PipelineRunWrapper,
+    PipelineWrapper,
+)
 
 logger = get_logger(__name__)
 
@@ -130,14 +135,43 @@ class PipelineRunTable(SQLModel, table=True):
     zenml_version: str
     git_sha: Optional[str]
 
-    # pipeline: PipelineWrapper
-    # stack: StackWrapper
-    # runtime_configuration: Dict[str, Any]
+    pipeline_name: str
+    pipeline: str
+    stack: str
+    runtime_configuration: str
 
     user_id: UUID = Field(foreign_key="usertable.id")
     project_name: Optional[str] = Field(
         default=None, foreign_key="projecttable.name"
     )
+
+    @classmethod
+    def from_pipeline_run_wrapper(
+        cls, wrapper: PipelineRunWrapper
+    ) -> "PipelineRunTable":
+        return PipelineRunTable(
+            name=wrapper.name,
+            zenml_version=wrapper.zenml_version,
+            git_sha=wrapper.git_sha,
+            pipeline_name=wrapper.pipeline.name,
+            pipeline=wrapper.pipeline.json(),
+            stack=wrapper.stack.json(),
+            runtime_configuration=json.dumps(wrapper.runtime_configuration),
+            user_id=wrapper.user_id,
+            project_name=wrapper.project_name,
+        )
+
+    def to_pipeline_run_wrapper(self) -> PipelineRunWrapper:
+        return PipelineRunWrapper(
+            name=self.name,
+            zenml_version=self.zenml_version,
+            git_sha=self.git_sha,
+            pipeline=PipelineWrapper.parse_raw(self.pipeline),
+            stack=StackWrapper.parse_raw(self.stack),
+            runtime_configuration=json.loads(self.runtime_configuration),
+            user_id=self.user_id,
+            project_name=self.project_name,
+        )
 
 
 class SqlZenStore(BaseZenStore):
@@ -1258,21 +1292,21 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             try:
-                statement = select(PipelineRunTable).where(
-                    PipelineRunTable.name == run_name
+                statement = (
+                    select(PipelineRunTable)
+                    .where(PipelineRunTable.name == run_name)
+                    .where(PipelineRunTable.pipeline_name == pipeline_name)
                 )
-                # TODO: pipeline name
+
                 if project_name:
                     statement = statement.where(
                         PipelineRunTable.project_name == project_name
                     )
 
                 run = session.exec(statement).one()
-
+                return run.to_pipeline_run_wrapper()
             except NoResultFound as error:
                 raise KeyError from error
-
-            return PipelineRunWrapper(**run.dict())
 
     def get_pipeline_runs(
         self, pipeline_name: str, project_name: Optional[str] = None
@@ -1286,15 +1320,16 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             try:
-                statement = select(PipelineRunTable)
-                # TODO: pipeline name
+                statement = select(PipelineRunTable).where(
+                    PipelineRunTable.pipeline_name == pipeline_name
+                )
+
                 if project_name:
                     statement = statement.where(
                         PipelineRunTable.project_name == project_name
                     )
-
                 return [
-                    PipelineRunWrapper(**run.dict())
+                    run.to_pipeline_run_wrapper()
                     for run in session.exec(statement).all()
                 ]
             except NoResultFound as error:
@@ -1321,15 +1356,11 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_run:
                 raise EntityExistsError(
-                    f"Pipeline run with name '{pipeline_run.name}' already exists."
+                    f"Pipeline run with name '{pipeline_run.name}' already "
+                    f"exists."
                 )
-            sql_run = PipelineRunTable(
-                name=pipeline_run.name,
-                zenml_version=pipeline_run.zenml_version,
-                git_sha=pipeline_run.git_sha,
-                user_id=pipeline_run.user_id,
-                project_name=pipeline_run.project_name,
-            )
+
+            sql_run = PipelineRunTable.from_pipeline_run_wrapper(pipeline_run)
             session.add(sql_run)
             session.commit()
 
