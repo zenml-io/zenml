@@ -500,9 +500,12 @@ mysql -u zenml -p
 CREATE DATABASE zenml;
 ```
 
-Then, on the client machine, some additional packages need to be installed (check
-[the SQLAlchemy documentation](https://docs.sqlalchemy.org/en/14/dialects/mysql.html)
-for the various MySQL drivers that are supported and how to use them):
+Then, on the client machine, some additional packages need to be installed.
+Check [the SQLAlchemy documentation](https://docs.sqlalchemy.org/en/14/dialects/mysql.html)
+for the various MySQL drivers that are supported and how to install and use
+them. The following is an example of using the [mysqlclient](https://docs.sqlalchemy.org/en/14/dialects/mysql.html#module-sqlalchemy.dialects.mysql.mysqldb)
+driver for SQLAlchemy on an Ubuntu OS. Depending on your choice of driver and
+host OS, your experience may vary:
 
 ```
 sudo apt install libmysqlclient-dev

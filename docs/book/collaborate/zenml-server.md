@@ -59,7 +59,7 @@ Running with active profile: 'devel' (global)
 Active profile changed to: 'zenml-remote'
 ```
 
-All ZenML Pipelines executed while the ZenServer backed Profile is active will
+All ZenML pipelines executed while the ZenServer backed Profile is active will
 use the Stack and Stack Component definitions stored on the server.
 
 ## Running the ZenServer Locally

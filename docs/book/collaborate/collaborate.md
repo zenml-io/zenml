@@ -6,10 +6,10 @@ description: Collaboration with ZenML.
 
 Using ZenML to develop and execute pipelines from the comfortable confines of
 your workstation or laptop is a great way to incorporate MLOps best practices
-and production grade quality into your project from day one. However, as Machine
-Learning projects grow, managing and running ZenML in a single-user and
+and production grade quality into your project from day one. However, as machine
+learning projects grow, managing and running ZenML in a single-user and
 single-machine setting can become a strenuous task. More demanding projects
-involve creating and managing an increasing number of Pipelines and complex
+involve creating and managing an increasing number of pipelines and complex
 Stacks built on a wider and continuously evolving set of technologies. This can
 easily exceed the capabilities of a single machine and person or role.
 
@@ -21,14 +21,14 @@ responsibilities assigned to different members of a team or department without
 incurring the overhead and friction usually associated with larger
 organizations.
 
-One such example is the decoupling of ZenML Stacks from Pipelines and their
+One such example is the decoupling of ZenML Stacks from pipelines and their
 associated code, a principle that provides for a smooth transition from
-experimenting with and running Pipelines locally to deploying them to production
+experimenting with and running pipelines locally to deploying them to production
 environments. It is this same decoupling that also allows ZenML to be used
 in a setting where part of a team is iterating on writing ML code and
-implementing Pipelines, while the other part is defining and actively
+implementing pipelines, while the other part is defining and actively
 maintaining the infrastructure and the Stacks that will be used to execute
-Pipelines in production. Everyone can remain focused on their responsibilities
+pipelines in production. Everyone can remain focused on their responsibilities
 with ZenML acting as the central piece that connects and coordinates everything
 together.
 
