@@ -43,7 +43,7 @@ DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND = [
 ENTRYPOINT_CONFIG_SOURCE_OPTION = "entrypoint_config_source"
 PIPELINE_JSON_OPTION = "pipeline_json"
 MAIN_MODULE_SOURCE_OPTION = "main_module_source"
-STEP_CLASS_SOURCE_OPTION = "step_class_source"
+STEP_SOURCE_OPTION = "step_source"
 INPUT_ARTIFACT_SOURCES_OPTION = "input_artifact_sources"
 MATERIALIZER_SOURCES_OPTION = "materializer_sources"
 
@@ -254,7 +254,7 @@ class StepEntrypointConfiguration(ABC):
             # Importable source pointing to the ZenML step class that should be
             # run inside the entrypoint. This will be used to recreate the tfx
             # executor class that is required to run the step function.
-            STEP_CLASS_SOURCE_OPTION,
+            STEP_SOURCE_OPTION,
             # Dictionary mapping the step input names to importable sources
             # pointing to `zenml.artifacts.base_artifact.BaseArtifact`
             # subclasses. These classes are needed to recreate the tfx executor
@@ -331,7 +331,7 @@ class StepEntrypointConfiguration(ABC):
             return f"{module_source}.{class_source}"
 
         # Resolve the step class
-        step_class_source = _resolve_class(step.__class__)
+        step_source = _resolve_class(step.__class__)
 
         # Resolve the input artifact classes
         input_artifact_sources = {
@@ -355,8 +355,8 @@ class StepEntrypointConfiguration(ABC):
             json_format.MessageToJson(pb2_pipeline),
             f"--{MAIN_MODULE_SOURCE_OPTION}",
             main_module_source,
-            f"--{STEP_CLASS_SOURCE_OPTION}",
-            step_class_source,
+            f"--{STEP_SOURCE_OPTION}",
+            step_source,
             f"--{INPUT_ARTIFACT_SOURCES_OPTION}",
             json.dumps(input_artifact_sources),
             f"--{MATERIALIZER_SOURCES_OPTION}",
@@ -498,7 +498,7 @@ class StepEntrypointConfiguration(ABC):
         json_format.Parse(pb2_pipeline_json, pb2_pipeline)
 
         main_module_source = self.entrypoint_args[MAIN_MODULE_SOURCE_OPTION]
-        step_class_source = self.entrypoint_args[STEP_CLASS_SOURCE_OPTION]
+        step_source = self.entrypoint_args[STEP_SOURCE_OPTION]
         input_artifact_sources = json.loads(
             self.entrypoint_args[INPUT_ARTIFACT_SOURCES_OPTION]
         )
@@ -509,7 +509,7 @@ class StepEntrypointConfiguration(ABC):
         # Get some common values that will be used throughout the remainder of
         # this method
         pipeline_name = pb2_pipeline.pipeline_info.id
-        step_module, step_name = step_class_source.rsplit(".", 1)
+        step_module, step_name = step_source.rsplit(".", 1)
 
         # Allow subclasses to run custom code before user code is imported and
         # the step is executed.
@@ -537,10 +537,10 @@ class StepEntrypointConfiguration(ABC):
         constants.USER_MAIN_MODULE = main_module_source
 
         # Create an instance of the ZenML step that this entrypoint should run.
-        step_class = source_utils.load_source_path_class(step_class_source)
+        step_class = source_utils.load_source_path_class(step_source)
         if not issubclass(step_class, BaseStep):
             raise TypeError(
-                f"The step source `{step_class_source}` passed to the "
+                f"The step source `{step_source}` passed to the "
                 f"entrypoint is not pointing to a `{BaseStep}` subclass."
             )
 
@@ -548,7 +548,7 @@ class StepEntrypointConfiguration(ABC):
 
         # Compute the name of the module in which the step was in when the
         # pipeline run was started. This could potentially differ from the
-        # module part of `STEP_CLASS_SOURCE_OPTION` if the step was defined in
+        # module part of `STEP_SOURCE_OPTION` if the step was defined in
         # the `__main__` module (e.g. the step was defined in `run.py` and the
         # pipeline run was started by the call `python run.py`).
         # Why we need this: The executor source is stored inside the protobuf
