@@ -8,7 +8,7 @@ You can use Google Colab to see ZenML in action, no signup / installation requir
 
 ## :earth_americas: Overview
 
-The goal of this quickstart is to give you a small sample of what ZenML can do. To do so, we will:
+This quickstart aims to give you a small illustration of what ZenML can do. To do so, we will:
 - Train a model on the Digits dataset, evaluate it, deploy it, and embed it in an inference pipeline,
 - Automatically version, track, and cache data, models, and other artifacts,
 - Track model hyperparameters and metrics in an experiment tracking tool,
@@ -17,7 +17,7 @@ The goal of this quickstart is to give you a small sample of what ZenML can do. 
 ## :computer: Run Locally
 
 ### :page_facing_up: Prerequisites 
-In order to run locally, install ZenML and pull this quickstart:
+To run locally, install ZenML and the required integrations, pull this quickstart, and set up your ZenML stack:
 
 ```shell
 # Install ZenML
@@ -60,7 +60,7 @@ python run.py
 
 ### :sponge: Clean up
 
-In order to clean up, simply delete the examples folder we downloaded earlier:
+To clean up, simply delete the examples folder we downloaded earlier:
 
 ```shell
 rm -rf zenml_examples
@@ -68,17 +68,18 @@ rm -rf zenml_examples
 
 ## :bulb: Learn More
 
-If you want to learn more about ZenML, then the [:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) 
-are the perfect place for you to get started.
+If you want to learn more about ZenML, 
+then the [:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) 
+are the perfect place to get started.
 
-Already have an MLOps stack in mind? Whatever tools you plan on using,
-ZenML most likely has 
-[**:link: Integrations**](https://docs.zenml.io/features/integrations) for them already.
-Check out the 
+Already have an MLOps stack in mind?
+ZenML most likely has
+[**:link: Integrations**](https://docs.zenml.io/features/integrations) 
+for whatever tools you plan to use. Check out the
 [**:pray: ZenML Examples**](https://github.com/zenml-io/zenml/tree/main/examples)
-to see how to use a specific tool in ZenML.
+to see how to use a specific tool with ZenML.
 
-If you would like to learn about the different MLOps concepts in more detail, check out
+If you would like to learn more about the various MLOps concepts, check out
 [**:teacher: ZenBytes**](https://github.com/zenml-io/zenbytes),
 our series of short practical MLOps lessons.
 
