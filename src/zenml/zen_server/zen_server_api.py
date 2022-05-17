@@ -80,6 +80,8 @@ if profile.store_type == StoreType.REST:
         f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
         "other than the currently active one)"
     )
+# We initialize with track_analytics=False because we do not
+# want to track anything server side.
 zen_store: BaseZenStore = Repository.create_store(
     profile, skip_default_registrations=True, track_analytics=False
 )
