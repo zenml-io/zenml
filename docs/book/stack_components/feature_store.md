@@ -8,6 +8,11 @@ sync between the two. It also offers a centralized registry where features (and
 feature schemas) are stored for use
 within a team or wider organization.
 
+{% hint style="warning" %}
+Before reading this chapter, make sure that you are familiar with the 
+concept of [stacks, stack components and their flavors](./introduction.md).  
+{% endhint %}
+
 ## Base Abstraction
 
 WIP

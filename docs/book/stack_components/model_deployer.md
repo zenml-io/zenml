@@ -21,6 +21,11 @@ inference or filtered according to a
 particular pipeline run or step, or to suspend, resume or delete an external
 model server managed through ZenML.
 
+{% hint style="warning" %}
+Before reading this chapter, make sure that you are familiar with the 
+concept of [stacks, stack components and their flavors](./introduction.md).  
+{% endhint %}
+
 ## Base Abstraction
 
 WIP

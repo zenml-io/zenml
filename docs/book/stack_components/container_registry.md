@@ -17,6 +17,11 @@ You could also use a remote container
 registry like the Elastic Container Registry at AWS in a more production
 setting.
 
+{% hint style="warning" %}
+Before reading this chapter, make sure that you are familiar with the 
+concept of [stacks, stack components and their flavors](./introduction.md).  
+{% endhint %}
+
 ## Base Abstraction
 
 WIP
