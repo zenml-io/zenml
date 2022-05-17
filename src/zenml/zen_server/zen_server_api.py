@@ -222,7 +222,7 @@ async def get_stack(name: str) -> StackWrapper:
     STACKS,
     responses={409: error_response},
 )
-async def register_stack(stack: StackWrapper) -> Dict[str, str]:
+async def register_stack(stack: StackWrapper) -> None:
     """Registers a stack."""
     try:
         zen_store.register_stack(stack)
@@ -234,7 +234,7 @@ async def register_stack(stack: StackWrapper) -> Dict[str, str]:
     STACKS + "/{name}",
     responses={404: error_response},
 )
-async def update_stack(stack: StackWrapper, name: str) -> Dict[str, str]:
+async def update_stack(stack: StackWrapper, name: str) -> None:
     """Updates a stack."""
     try:
         zen_store.update_stack(name, stack)

@@ -300,9 +300,6 @@ class RestZenStore(BaseZenStore):
         Args:
             name: The original name of the stack.
             stack: The new stack to use in the update.
-
-        Raises:
-            ValueError: If a dict is not returned from the API.
         """
         self.put(f"{STACKS}/{name}", body=stack)
         if name != stack.name:

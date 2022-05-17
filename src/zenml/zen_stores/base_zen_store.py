@@ -884,9 +884,10 @@ class BaseZenStore(ABC):
         self,
         event: Union[str, AnalyticsEvent],
         metadata: Optional[Dict[str, Any]] = None,
-    ):
+    ) -> bool:
         if self._track_analytics:
-            track_event(event, metadata)
+            return track_event(event, metadata)
+        return False
 
     def _stack_from_dict(
         self, name: str, stack_configuration: Dict[StackComponentType, str]
@@ -1184,7 +1185,7 @@ class BaseZenStore(ABC):
         track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
         return self._register_stack(stack)
 
-    def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
+    def update_stack(self, name: str, stack: StackWrapper) -> None:
         """Update a stack and its components.
 
         If any of the stack's components aren't registered in the stack store
