@@ -124,7 +124,7 @@ highlight the abstraction layer. In order to see the full implementation
 and get the complete docstrings, please check the source code on GitHub.
 {% endhint %}
 
-<!--- TODO: Short description about fileio --->
+TODO: Short description about fileio
 
 ## List of available artifact stores
 
