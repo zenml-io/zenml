@@ -57,10 +57,10 @@ like Airflow and Kubeflow.
 All the data that passes through your pipelines is stored in the Artifact Store.
 These artifacts may have been produced by the pipeline steps, or they may be the
 data first ingested into a pipeline via an ingestion step. An artifact store
-will store all intermediary pipeline step results, which in turn will be tracked in the
-metadata store. The fact that all your data inputs / outputs are tracked and
-versioned here in the artifact store allows for extremely useful features like
-data caching which speed up your pace of experimentation.
+will store all intermediary pipeline step results, which in turn will be tracked
+in the metadata store. The fact that all your data inputs / outputs are tracked
+and versioned here in the artifact store allows for extremely useful features
+like data caching which speed up your pace of experimentation.
 
 - A Metadata Store
 
@@ -76,7 +76,8 @@ experiments through the metadata store.
 
 At a certain point, however, you'll want to do something that requires a bit
 more compute power - perhaps requiring GPUs for model training - or some custom
-functionality at which point you'll want to add some extra components to your stack.
+functionality at which point you'll want to add some extra components to your
+stack.
 
 ## Cloud Training, Deployment, Monitoring...
 
@@ -84,7 +85,8 @@ When you are ready to switch out your infrastructure and the components used as
 part of your machine learning workflow, it's as simple as a four word CLI
 command that switches out your stack. The code defining your steps and pipelines
 stays the same, but it gets run in whatever cloud infrastructure you've set up
-in your custom stack.
+in your custom stack; all you change is the stack you're using and your pipeline
+code gets run someplace different.
 
 ![Running your pipeline in the cloud](../assets/core_concepts/concepts-3.png)
 
@@ -123,8 +125,8 @@ encounter further down the road while using ZenML.
 - Profiles - Profiles are groupings of stacks. You might want to keep all your
   AWS stacks separate from your GCP stacks, for example, or your work
   infrastructure use separate from that which you use for your personal
-  projects. Profiles allow you to separate these out, and switching
-  between them is easy.
+  projects. Profiles allow you to separate these out, and switching between them
+  is easy.
 - Service - A service is a longer-lived entity that extends the capabilities of
   ZenML beyond the run of a pipeline. For example, a service could be a
   prediction service that loads models for inference in a production setting.
@@ -132,6 +134,7 @@ encounter further down the road while using ZenML.
   allows teams to collaborate and share stacks, data stores and more.
 
 There's a lot more detail to digest when it comes to ZenML, but with the above
-you should be sufficiently armed to understand how the framework works, where
-you might want to extend it. The next best place for you to read in the
-documentation is... ADD THIS DEPENDING ON FEEDBACK.
+you should be sufficiently armed to understand how the framework works and where
+you might want to extend it. We'd recommend you check out [the Developer
+Guide](LINKLINKLINK) as your next port of call...
+
