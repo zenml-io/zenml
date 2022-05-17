@@ -1,5 +1,5 @@
 ---
-description: Use secrets across your ZenML pipeline.
+description: Using secrets across your ZenML pipeline
 ---
 
 Most projects involving either cloud infrastructure or of a certain complexity

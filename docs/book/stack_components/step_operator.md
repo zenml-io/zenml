@@ -1,5 +1,5 @@
 ---
-description: Run individual steps in specialized environments
+description: Running individual steps in specialized environments
 ---
 
 Step operators allow you to run individual steps in a custom environment
