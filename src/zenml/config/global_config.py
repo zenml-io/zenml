@@ -526,7 +526,8 @@ class GlobalConfiguration(
         """
         if not self.active_profile:
             return None
-        return self.active_profile.active_stack
+
+        return self.active_profile.get_active_stack()
 
     class Config:
         """Pydantic configuration class."""

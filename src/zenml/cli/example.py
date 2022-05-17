@@ -203,7 +203,7 @@ class Example:
             name: The name of the example, specifically the name of the folder
                   on git
             path_in_repo: Path to the local example within the global zenml
-                          folder.
+                  folder.
         """
         self.name = name
         self.path_in_repo = path_in_repo
@@ -541,7 +541,8 @@ def clean(git_examples_handler: GitExamplesHandler, path: str) -> None:
 @pass_git_examples_handler
 @click.argument("example_name")
 def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
-    """Find out more about an example. Outputs a pager view of the example's README.md file."""
+    """Find out more about an example. Outputs a pager view of the example's
+    README.md file."""
     check_for_version_mismatch(git_examples_handler)
 
     try:
@@ -574,8 +575,8 @@ def info(git_examples_handler: GitExamplesHandler, example_name: str) -> None:
     "-f",
     "old_force",
     is_flag=True,
-    help="DEPRECATED: Force the redownload of the examples folder to the ZenML config. Use `-y/--yes` instead."
-    "folder.",
+    help="DEPRECATED: Force the redownload of the examples folder to the ZenML "
+    "config folder. Use `-y/--yes` instead.",
 )
 @click.option(
     "--version",
@@ -616,7 +617,8 @@ def pull(
     if old_force:
         force = old_force
         warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+            "The `--force` flag will soon be deprecated. Use `--yes` or "
+            "`-y` instead."
         )
 
     branch = branch.strip() if branch else f"release/{version}"
@@ -681,9 +683,9 @@ def pull(
     "-f",
     "old_force",
     is_flag=True,
-    help="DEPRECATED: Force the run of the example. This deletes the .zen folder from the "
-    "example folder and force installs all necessary integration "
-    "requirements. Use `-y/--yes` instead.",
+    help="DEPRECATED: Force the run of the example. This deletes the .zen "
+    "folder from the example folder and force installs all necessary "
+    "integration requirements. Use `-y/--yes` instead.",
 )
 @click.option(
     "--shell-executable",
@@ -713,7 +715,8 @@ def run(
     if old_force:
         force = old_force
         warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+            "The `--force` flag will soon be deprecated. Use `--yes` or "
+            "`-y` instead."
         )
     check_for_version_mismatch(git_examples_handler)
 

@@ -4,11 +4,11 @@ from typing import Any, Dict, Optional, Union
 import uvicorn  # type: ignore[import]
 from pydantic import Field
 
-from zenml.config.profile_config import ProfileConfiguration
+from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
+    DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     ENV_ZENML_PROFILE_NAME,
     ZEN_SERVER_ENTRYPOINT,
-    ZEN_SERVER_IP,
 )
 from zenml.enums import StoreType
 from zenml.logger import get_logger
@@ -63,14 +63,16 @@ class ZenServerConfig(LocalDaemonServiceConfig):
     """ZenServer deployment configuration.
 
     Attributes:
-        port: Port at which the service responisble for the ZenServer is running
-        store_profile_configuration: ProfileConfiguration describing where
-            the service should persist its data.
+        ip_address: The IP address where the ZenServer will listen for
+            connections
+        port: Port at which the the ZenServer is accepting connections
+        profile_name: name of the Profile to use to store data.
     """
 
+    ip_address: str = DEFAULT_LOCAL_SERVICE_IP_ADDRESS
     port: int = 8000
-    store_profile_configuration: ProfileConfiguration = Field(
-        default_factory=lambda: Repository().active_profile
+    profile_name: str = Field(
+        default_factory=lambda: Repository().active_profile_name
     )
 
 
@@ -107,6 +109,7 @@ class ZenServer(LocalDaemonService):
             endpoint = ZenServerEndpoint(
                 config=ZenServerEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
+                    ip_address=config.ip_address,
                     port=config.port,
                     zen_server_uri_path=endpoint_uri_path,
                 ),
@@ -121,7 +124,13 @@ class ZenServer(LocalDaemonService):
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
-        if self.config.store_profile_configuration.store_type == StoreType.REST:
+        profile = GlobalConfiguration().get_profile(self.config.profile_name)
+        if profile is None:
+            raise ValueError(
+                f"Could not find profile with name {self.config.profile_name}."
+            )
+
+        if profile.store_type == StoreType.REST:
             raise ValueError(
                 "Service cannot be started with REST store type. Make sure you "
                 "specify a profile with a non-networked persistence backend "
@@ -138,14 +147,12 @@ class ZenServer(LocalDaemonService):
         self.endpoint.prepare_for_start()
 
         # this is the only way to pass information into the FastAPI app??
-        os.environ[
-            "ZENML_PROFILE_CONFIGURATION"
-        ] = self.config.store_profile_configuration.json()
+        os.environ["ZENML_PROFILE_NAME"] = self.config.profile_name
 
         try:
             uvicorn.run(
                 ZEN_SERVER_ENTRYPOINT,
-                host=ZEN_SERVER_IP,
+                host=self.config.ip_address,
                 port=self.endpoint.status.port,
                 log_level="info",
             )
