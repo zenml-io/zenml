@@ -314,7 +314,7 @@ class StepEntrypointConfiguration(ABC):
             )
         )
 
-        # TODO [MEDIUM]: Move this method to source utils
+        # TODO [ENG-887]: Move this method to source utils
         def _resolve_class(class_: Type[Any]) -> str:
             """Resolves the input class in a way that it is importable inside
             the entrypoint.
