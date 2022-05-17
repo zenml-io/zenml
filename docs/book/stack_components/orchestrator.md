@@ -33,9 +33,6 @@ Putting all these considerations together, we end up with the following
 (simplified) implementation:
 
 ```python
-from abc import abstractmethod, ABC
-from typing import Any, ClassVar, List
-
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.enums import StackComponentType
@@ -58,11 +55,16 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: "Stack",
             runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """
-        Prepares and runs the pipeline outright or returns an intermediate
+        """Prepares and runs the pipeline outright or returns an intermediate
         pipeline representation that gets deployed.
         """
 ```
+
+{% hint style="info" %}
+This is a slimmed-down version of the base implementation which aims to 
+highlight the abstraction layer. In order to see the full implementation 
+and get the complete docstrings, please check the source code on GitHub.
+{% endhint %}
 
 ## List of available orchestrators
 

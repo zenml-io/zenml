@@ -2,21 +2,24 @@
 description: Sending alerts through specified channels
 ---
 
-<!--- TODO: Short opening paragraph about alerters --->
+Alerters allow you to send alerts from within your pipeline.
+This is useful to immediately get notified when failures happen,
+and also for general monitoring / reporting.
 
-{% hint style="warning" %} 
-Before reading this chapter, make sure that you are familiar with the concept of 
-[stacks, stack components and their flavors](./introduction.md).  
+{% hint style="warning" %}
+**Base abstraction in progress**
+
+We are actively working on the base abstraction for the alerters, which 
+will be available soon. As a result, their extension is possible at the moment.
+If you would like to use an alerter in your stack, please check the list 
+of already available alerters down below.
 {% endhint %}
-
-## Base abstraction
-
-WIP
 
 ## List of available alerters
 
-WIP
+When it comes to alerters, ZenML comes with an integration into Slack, which 
+can be used to post messages to a specified channel.
 
-## Building your own alerters
-
-WIP
+|                     | Flavor | Integration |
+|---------------------|--------|-------------|
+| SlackAlerter  | slack  | slack  |

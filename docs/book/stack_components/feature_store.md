@@ -8,19 +8,20 @@ offers a centralized registry where features (and feature schemas) are stored
 for use within a team or wider organization.
 
 {% hint style="warning" %}
-Before reading this chapter, make sure that you are familiar with the 
-concept of [stacks, stack components and their flavors](./introduction.md).  
-{% endhint %}
+**Base abstraction in progress**
 
-## Base Abstraction
-
-{% hint style="warning" %}
 We are actively working on the base abstraction for the feature stores, which 
 will be available soon. As a result, their extension is possible at the moment.
 If you would like to use a feature store in your stack, please check the list 
-of already available feature stores.
+of already available feature stores down below.
 {% endhint %}
 
-## List of available .......
+## List of available feature stores
 
-WIP
+For production use cases, some more flavors can be found in specific 
+`integrations` modules. In terms of features stores, ZenML features an 
+integration of `feast`.
+
+|                     | Flavor | Integration |
+|---------------------|--------|-------------|
+| FeastFeatureStore  | feast  | feast  |

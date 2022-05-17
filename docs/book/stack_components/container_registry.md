@@ -25,7 +25,6 @@ Before reading this chapter, make sure that you are familiar with the concept of
 import re
 from typing import ClassVar
 
-from pydantic import validator
 
 from zenml.enums import ContainerRegistryFlavor, StackComponentType
 from zenml.stack import StackComponent
@@ -33,11 +32,7 @@ from zenml.utils import docker_utils
 
 
 class BaseContainerRegistry(StackComponent):
-    """Base class for all ZenML container registries.
-
-    Attributes:
-        uri: The URI of the container registry.
-    """
+    """Base class for all ZenML container registries."""
 
     # Instance configuration
     uri: str
@@ -48,22 +43,10 @@ class BaseContainerRegistry(StackComponent):
 
     def prepare_image_push(self, image_name: str) -> None:
         """Method that subclasses can overwrite to do any necessary checks or
-        preparations before an image gets pushed.
-
-        Args:
-            image_name: Name of the docker image that will be pushed.
-        """
+        preparations before an image gets pushed."""
 
     def push_image(self, image_name: str) -> None:
-        """Pushes a docker image.
-
-        Args:
-            image_name: Name of the docker image that will be pushed.
-
-        Raises:
-            ValueError: If the image name is not associated with this
-                container registry.
-        """
+        """Pushes a docker image."""
         if not image_name.startswith(self.uri):
             raise ValueError(
                 f"Docker image `{image_name}` does not belong to container "
@@ -74,6 +57,12 @@ class BaseContainerRegistry(StackComponent):
         docker_utils.push_docker_image(image_name)
 
 ```
+
+{% hint style="info" %}
+This is a slimmed-down version of the base implementation which aims to 
+highlight the abstraction layer. In order to see the full implementation 
+and get the complete docstrings, please check the source code on GitHub.
+{% endhint %}
 
 ## List of available container registry
 

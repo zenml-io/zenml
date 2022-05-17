@@ -62,7 +62,7 @@ is a simple implementation for a local setup. This secrets manager simply saves
 secrets into a local yaml file with base64 encoding. This implementation is
 not intended for production use.
 
-For production use cases some more flavors can be found in specific 
+For production use cases, some more flavors can be found in specific 
 `integrations` modules, such as the `GCPSecretsManager` in the 
 `gcp_secrets_manager` integration and the `AWSSecretsManager` in the 
 `aws` integration.
