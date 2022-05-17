@@ -100,7 +100,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 )
         return tracking_uri
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def _ensure_authentication_if_necessary(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:

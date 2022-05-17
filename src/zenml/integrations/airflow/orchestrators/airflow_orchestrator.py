@@ -178,7 +178,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         # Return the finished airflow dag
         return airflow_dag
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Sets airflow home according to orchestrator UUID."""
         if "uuid" not in values:
