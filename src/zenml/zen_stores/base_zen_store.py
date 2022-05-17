@@ -689,7 +689,7 @@ class BaseZenStore(ABC):
         """
         return self._stack_from_dict(name, self.get_stack_configuration(name))
 
-    def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
+    def _register_stack(self, stack: StackWrapper) -> None:
         """Register a stack and its components.
 
         If any of the stack's components aren't registered in the zen store
@@ -725,9 +725,6 @@ class BaseZenStore(ABC):
             Args:
                 component: StackComponentWrapper to register.
 
-            Returns:
-                metadata key value pair for telemetry.
-
             Raises:
                 StackComponentExistsError: If a component with same name exists.
             """
@@ -748,10 +745,8 @@ class BaseZenStore(ABC):
         stack_configuration = {
             typ: name for typ, name in map(__check_component, stack.components)
         }
-        metadata = {c.type.value: c.flavor for c in stack.components}
         self._save_stack(stack.name, stack_configuration)
         logger.info("Registered stack with name '%s'.", stack.name)
-        return metadata
 
     def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
         """Update a stack and its components.
@@ -935,7 +930,7 @@ class BaseZenStore(ABC):
             AnalyticsEvent.REGISTERED_STACK_COMPONENT,
             metadata=analytics_metadata,
         )
-        self._register_stack_component(component)
+        return self._register_stack_component(component)
 
     def update_stack_component(
         self,
@@ -961,7 +956,7 @@ class BaseZenStore(ABC):
             AnalyticsEvent.UPDATED_STACK_COMPONENT,
             metadata=analytics_metadata,
         )
-        self._update_stack_component(name, component_type, component)
+        return self._update_stack_component(name, component_type, component)
 
     def deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
@@ -973,7 +968,7 @@ class BaseZenStore(ABC):
             KeyError: If no stack exists for the given name.
         """
         # No tracking events, here for consistency
-        self._delete_stack_component(name)
+        return self._delete_stack_component(name)
 
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
@@ -1000,7 +995,7 @@ class BaseZenStore(ABC):
             KeyError: If no user with the given name exists.
         """
         self._track_event(AnalyticsEvent.DELETED_USER)
-        self._delete_user(user_name)
+        return self._delete_user(user_name)
 
     def get_user(self, user_name: str) -> User:
         """Gets a specific user.
@@ -1015,7 +1010,7 @@ class BaseZenStore(ABC):
             KeyError: If no user with the given name exists.
         """
         # No tracking events, here for consistency
-        self._get_user(user_name)
+        return self._get_user(user_name)
 
     def create_team(self, team_name: str) -> Team:
         """Creates a new team.
@@ -1030,7 +1025,7 @@ class BaseZenStore(ABC):
             EntityExistsError: If a team with the given name already exists.
         """
         self._track_event(AnalyticsEvent.CREATED_TEAM)
-        self._create_team(team_name)
+        return self._create_team(team_name)
 
     def get_team(self, team_name: str) -> Team:
         """Gets a specific team.
@@ -1045,7 +1040,7 @@ class BaseZenStore(ABC):
             KeyError: If no team with the given name exists.
         """
         # No tracking events, here for consistency
-        self._get_team(team_name)
+        return self._get_team(team_name)
 
     def delete_team(self, team_name: str) -> None:
         """Deletes a team.
@@ -1057,7 +1052,7 @@ class BaseZenStore(ABC):
             KeyError: If no team with the given name exists.
         """
         self._track_event(AnalyticsEvent.DELETED_TEAM)
-        self._delete_team(team_name)
+        return self._delete_team(team_name)
 
     def get_project(self, project_name: str) -> Project:
         """Gets a specific project.
@@ -1072,7 +1067,7 @@ class BaseZenStore(ABC):
             KeyError: If no project with the given name exists.
         """
         # No tracking events, here for consistency
-        self._get_project(project_name)
+        return self._get_project(project_name)
 
     def create_project(
         self, project_name: str, description: Optional[str] = None
@@ -1090,7 +1085,7 @@ class BaseZenStore(ABC):
             EntityExistsError: If a project with the given name already exists.
         """
         self._track_event(AnalyticsEvent.CREATED_PROJECT)
-        self._create_project(project_name, description)
+        return self._create_project(project_name, description)
 
     def delete_project(self, project_name: str) -> None:
         """Deletes a project.
@@ -1102,7 +1097,7 @@ class BaseZenStore(ABC):
             KeyError: If no project with the given name exists.
         """
         self._track_event(AnalyticsEvent.DELETED_PROJECT)
-        self._delete_project(project_name)
+        return self._delete_project(project_name)
 
     def get_role(self, role_name: str) -> Role:
         """Gets a specific role.
@@ -1117,7 +1112,7 @@ class BaseZenStore(ABC):
             KeyError: If no role with the given name exists.
         """
         # No tracking events, here for consistency
-        self._get_role(role_name)
+        return self._get_role(role_name)
 
     def create_role(self, role_name: str) -> Role:
         """Creates a new role.
@@ -1132,7 +1127,7 @@ class BaseZenStore(ABC):
             EntityExistsError: If a role with the given name already exists.
         """
         self._track_event(AnalyticsEvent.CREATED_ROLE)
-        self._create_role(role_name)
+        return self._create_role(role_name)
 
     def delete_role(self, role_name: str) -> None:
         """Deletes a role.
@@ -1144,7 +1139,7 @@ class BaseZenStore(ABC):
             KeyError: If no role with the given name exists.
         """
         self._track_event(AnalyticsEvent.DELETED_ROLE)
-        self._delete_role(role_name)
+        return self._delete_role(role_name)
 
     def create_flavor(
         self,
@@ -1167,4 +1162,24 @@ class BaseZenStore(ABC):
                 already exists.
         """
         self._track_event(AnalyticsEvent.CREATED_FLAVOR)
-        self._create_flavor(source, name, stack_component_type)
+        return self._create_flavor(source, name, stack_component_type)
+
+    def register_stack(self, stack: StackWrapper) -> None:
+        """Register a stack and its components.
+
+        If any of the stack's components aren't registered in the zen store
+        yet, this method will try to register them as well.
+
+        Args:
+            stack: The stack to register.
+
+        Raises:
+            StackExistsError: If a stack with the same name already exists.
+            StackComponentExistsError: If a component of the stack wasn't
+                registered and a different component with the same name
+                already exists.
+        """
+        metadata = {c.type.value: c.flavor for c in stack.components}
+        metadata["store_type"] = self.type.value
+        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+        return self._register_stack(stack)

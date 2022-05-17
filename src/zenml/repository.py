@@ -809,9 +809,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         from zenml.zen_stores.models import StackWrapper
 
         stack.validate()
-        metadata = self.zen_store.register_stack(StackWrapper.from_stack(stack))
-        metadata["store_type"] = self.active_profile.store_type.value
-        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+        self.zen_store.register_stack(StackWrapper.from_stack(stack))
 
     def update_stack(self, name: str, stack: Stack) -> None:
         """Updates a stack and its components.

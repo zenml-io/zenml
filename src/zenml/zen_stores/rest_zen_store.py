@@ -274,7 +274,7 @@ class RestZenStore(BaseZenStore):
         """
         return StackWrapper.parse_obj(self.get(f"{STACKS}/{name}"))
 
-    def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
+    def _register_stack(self, stack: StackWrapper) -> Dict[str, str]:
         """Register a stack and its components.
 
         If any of the stacks' components aren't registered in the stack store
