@@ -44,7 +44,7 @@ class LocalSecretsManager(BaseSecretsManager):
     # Class configuration
     FLAVOR: ClassVar[str] = "local"
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def set_secrets_file(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Sets the secrets_file attribute value according to the component
         UUID."""

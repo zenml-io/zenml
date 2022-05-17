@@ -149,7 +149,7 @@ class BaseArtifactStore(StackComponent):
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
         """Validator function for the Artifact Stores. Checks whether
         supported schemes are defined and the given path is supported"""
@@ -157,7 +157,12 @@ class BaseArtifactStore(StackComponent):
             getattr(cls, "SUPPORTED_SCHEMES")
         except AttributeError:
             raise ArtifactStoreInterfaceError(
-                textwrap.dedent(
+                "When you are working with any classes which subclass from "
+                "'zenml.artifact_store.BaseArtifactStore' please make sure "
+                "that your class has a ClassVar named `SUPPORTED_SCHEMES` "
+                "which should hold a set of supported file schemes such "
+                "as {'s3://'} or {'gcs://'}. \n"
+                + textwrap.dedent(
                     """
                     When you are working with any classes which subclass from
                     zenml.artifact_store.BaseArtifactStore please make sure 
@@ -166,10 +171,10 @@ class BaseArtifactStore(StackComponent):
                     as {"s3://"} or {"gcs://"}.
 
                     Example:
+
                     class S3ArtifactStore(StackComponent):
                         ...
                         # Class Variables
-                        ...
                         SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"s3://"}
                         ...
                     """
@@ -177,14 +182,10 @@ class BaseArtifactStore(StackComponent):
             )
         if not any(values["path"].startswith(i) for i in cls.SUPPORTED_SCHEMES):
             raise ArtifactStoreInterfaceError(
-                textwrap.dedent(
-                    f"""
-                    The path: "{values["path"]}" you defined for your artifact
-                    store is not supported by the implementation of
-                    {cls.schema()["title"]}, because it does not start with
-                    one of its supported schemes: {cls.SUPPORTED_SCHEMES}.
-                    """
-                )
+                f"The path: '{values['path']}' you defined for your "
+                f"artifact store is not supported by the implementation of "
+                f"{cls.schema()['title']}, because it does not start with "
+                f"one of its supported schemes: {cls.SUPPORTED_SCHEMES}."
             )
 
         return values
