@@ -22,37 +22,40 @@ concept of [stacks, stack components and their flavors](./introduction.md).
 
 ## Base Abstraction
 
-The base abstraction of the model deployer serves three major purposes:
+In ZenML, the base abstraction of the model deployer is built on top of three 
+major criteria:
 
-1. It contains all the stack related configuration attributes required to
-    interact with the remote model serving tool, service or platform (e.g.
-    hostnames, URLs, references to credentials, other client related
-    configuration parameters).
+1. It needs to contain all the stack related configuration attributes required 
+   to interact with the remote model serving tool, service or platform (e.g.
+   hostnames, URLs, references to credentials, other client related
+   configuration parameters).
     
-2. It implements the continuous deployment logic necessary to deploy models
-    in a way that updates an existing model server that is already serving a
-    previous version of the same model instead of creating a new model server
-    for every new model version (see the `deploy_model` abstract method).
-    This functionality can be consumed directly from ZenML pipeline steps, but
-    it can also be used outside the pipeline to deploy ad-hoc models. It is
-    also usually coupled with a standard model deployer step, implemented by
-    each integration, that hides the details of the deployment process away from
-    the user.
+2. It needs to implement the continuous deployment logic necessary to deploy 
+   models in a way that updates an existing model server that is already serving 
+   a previous version of the same model instead of creating a new model server
+   for every new model version (see the `deploy_model` abstract method).
+   This functionality can be consumed directly from ZenML pipeline steps, but
+   it can also be used outside the pipeline to deploy ad-hoc models. It is
+   also usually coupled with a standard model deployer step, implemented by
+   each integration, that hides the details of the deployment process away from
+   the user.
     
-3. It acts as a ZenML BaseService registry, where every BaseService instance
-    is used as an internal representation of a remote model server (see the
-    `find_model_server` abstract method). To achieve this, it must be able to
-    re-create the configuration of a BaseService from information that is
-    persisted externally, alongside or even part of the remote model server
-    configuration itself. For example, for model servers that are implemented as
-    Kubernetes resources, the BaseService instances can be serialized and saved
-    as Kubernetes resource annotations. This allows the model deployer to keep
-    track of all externally running model servers and to re-create their
-    corresponding BaseService instance representations at any given time.
-    The model deployer also defines methods that implement basic life-cycle
-    management on remote model servers outside the coverage of a pipeline
-    (see `stop_model_server`, `start_model_server` and `delete_model_server`).
+3. It needs to act as a ZenML BaseService registry, where every BaseService 
+   instance is used as an internal representation of a remote model server (see 
+   the `find_model_server` abstract method). To achieve this, it must be able to
+   re-create the configuration of a BaseService from information that is
+   persisted externally, alongside or even part of the remote model server
+   configuration itself. For example, for model servers that are implemented as
+   Kubernetes resources, the BaseService instances can be serialized and saved
+   as Kubernetes resource annotations. This allows the model deployer to keep
+   track of all externally running model servers and to re-create their
+   corresponding BaseService instance representations at any given time.
+   The model deployer also defines methods that implement basic life-cycle
+   management on remote model servers outside the coverage of a pipeline
+   (see `stop_model_server`, `start_model_server` and `delete_model_server`).
 
+Putting all these considerations together, we end up with the following
+interface:
 
 ```python
 from abc import ABC, abstractmethod
@@ -139,6 +142,11 @@ and get the complete docstrings, please check the source code on GitHub.
 
 
 ## List of available model deployers
+
+In its current version, ZenML features two integrations, namely the `mlflow` 
+and the `seldon` integration, with model deployers as stack components. In 
+order to get more information on how you can use these flavors in your stack, 
+please check the corresponding pages in the API docs linked below.
 
 |                     | Flavor | Integration |
 |---------------------|--------|-------------|
