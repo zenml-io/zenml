@@ -12,12 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
+import ipaddress
 import os
 import shutil
 import textwrap
 from importlib import import_module
 from json import JSONDecodeError
-from typing import Optional
+from typing import Optional, Union
 
 import click
 from click_params import IP_ADDRESS  # type: ignore[import]
@@ -65,10 +66,16 @@ def explain_server() -> None:
 )
 @click.option("--port", type=int, default=8000, show_default=True)
 @click.option("--profile", type=str, default=None)
-def up_server(ip_address: str, port: int, profile: Optional[str]) -> None:
+def up_server(
+    ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address],
+    port: int,
+    profile: Optional[str],
+) -> None:
     """Provisions resources for the ZenServer."""
     from zenml.services import ServiceRegistry
     from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
+
+    print(type(ip_address))
 
     service_config = ZenServerConfig(
         root_runtime_path=GLOBAL_ZENML_SERVER_CONFIG_PATH,

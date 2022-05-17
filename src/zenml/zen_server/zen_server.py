@@ -125,9 +125,6 @@ class ZenServer(LocalDaemonService):
 
     def run(self) -> None:
         profile = GlobalConfiguration().get_profile(self.config.profile_name)
-        print(
-            f"Config path is {GlobalConfiguration().config_directory} and curent profiles are {GlobalConfiguration().profiles}"
-        )
         if profile is None:
             raise ValueError(
                 f"Could not find profile with name {self.config.profile_name}."
