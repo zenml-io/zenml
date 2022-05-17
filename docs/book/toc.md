@@ -69,10 +69,10 @@
 
 * [System Environmental Variables](misc/system-env.md)
 * [Usage Analytics](misc/usage-analytics.md)
-* [Contact](misc/contact.md)
+* [🙋‍♀️ Contributing](misc/contributing.md)
 * [FAQ](misc/faq.md)
 * [Roadmap](https://zenml.io/roadmap)
-  
+
 ## Reference
 
 * [Glossary](reference/glossary.md)
