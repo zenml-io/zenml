@@ -973,7 +973,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.pipeline_runs[pipeline_run.pipeline.name].append(
             pipeline_run
         )
-        self._write_store()
+        self.__store.write_config()
 
     # Handling stack component flavors
 

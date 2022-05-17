@@ -139,7 +139,7 @@ class PipelineView:
             run_wrapper = repo.zen_store.get_pipeline_run(
                 pipeline_name=self.name, run_name=run_name
             )
-            metadata_store_wrapper = run_wrapper.stack.get_component(
+            metadata_store_wrapper = run_wrapper.stack.get_component_wrapper(
                 StackComponentType.METADATA_STORE
             )
             if metadata_store_wrapper and (
