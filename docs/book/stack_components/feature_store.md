@@ -8,7 +8,7 @@ offers a centralized registry where features (and feature schemas) are stored
 for use within a team or wider organization.
 
 {% hint style="warning" %}
-**Base abstraction in progress**
+**Base abstraction in progress!**
 
 We are actively working on the base abstraction for the feature stores, which 
 will be available soon. As a result, their extension is possible at the moment.

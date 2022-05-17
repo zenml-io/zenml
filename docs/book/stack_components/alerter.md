@@ -7,7 +7,7 @@ This is useful to immediately get notified when failures happen,
 and also for general monitoring / reporting.
 
 {% hint style="warning" %}
-**Base abstraction in progress**
+**Base abstraction in progress!**
 
 We are actively working on the base abstraction for the alerters, which 
 will be available soon. As a result, their extension is possible at the moment.

@@ -9,7 +9,7 @@ results through ExperimentTracker stack components. This establishes a clear
 link between pipeline runs and experiments.
 
 {% hint style="warning" %}
-**Base abstraction in progress**
+**Base abstraction in progress!**
 
 We are actively working on the base abstraction for the experiment trackers, 
 which will be available soon. As a result, their extension is possible at 
