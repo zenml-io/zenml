@@ -11,20 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
 import os
 import random
 from abc import ABCMeta
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, cast
 from uuid import UUID
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REPOSITORY_DIRECTORY_NAME
 from zenml.enums import StackComponentType, StoreType
 from zenml.environment import Environment
@@ -34,28 +32,21 @@ from zenml.exceptions import (
 )
 from zenml.io import fileio, utils
 from zenml.logger import get_logger
-from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
-from zenml.zen_stores import (
-    BaseZenStore,
-    LocalZenStore,
-    RestZenStore,
-    SqlZenStore,
-)
-from zenml.zen_stores.models import (
-    ComponentWrapper,
-    Project,
-    StackWrapper,
-    User,
-    ZenStoreModel,
-)
+from zenml.utils.filesync_model import FileSyncModel
+
+if TYPE_CHECKING:
+    from zenml.config.profile_config import ProfileConfiguration
+    from zenml.post_execution import PipelineView
+    from zenml.zen_stores import BaseZenStore
+    from zenml.zen_stores.models import User, ZenStoreModel, Project
 
 logger = get_logger(__name__)
 
 
-class RepositoryConfiguration(BaseModel):
+class RepositoryConfiguration(FileSyncModel):
     """Pydantic object used for serializing repository configuration options.
 
     Attributes:
@@ -87,9 +78,12 @@ class LegacyRepositoryConfig(BaseModel):
     stacks: Dict[str, Dict[StackComponentType, Optional[str]]]
     stack_components: Dict[StackComponentType, Dict[str, str]]
 
-    def get_stack_data(self) -> ZenStoreModel:
+    def get_stack_data(self, config_file: str) -> "ZenStoreModel":
         """Extract stack data from Legacy Repository file."""
+        from zenml.zen_stores.models import ZenStoreModel
+
         return ZenStoreModel(
+            config_file=config_file,
             stacks={
                 name: {
                     component_type: value
@@ -166,7 +160,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def __init__(
         self,
         root: Optional[Path] = None,
-        profile: Optional[ProfileConfiguration] = None,
+        profile: Optional["ProfileConfiguration"] = None,
     ) -> None:
         """Initializes the global repository instance.
 
@@ -205,7 +199,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         """
 
         self._root: Optional[Path] = None
-        self._profile: Optional[ProfileConfiguration] = None
+        self._profile: Optional["ProfileConfiguration"] = None
         self.__config: Optional[RepositoryConfiguration] = None
 
         # The repository constructor is called with a custom profile only when
@@ -300,7 +294,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self._sanitize_config()
 
     def _set_active_profile(
-        self, profile: ProfileConfiguration, new_profile: bool = False
+        self, profile: "ProfileConfiguration", new_profile: bool = False
     ) -> None:
         """Set the supplied configuration profile as the active profile for
         this repository.
@@ -315,7 +309,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 configuration belongs to a brand-new profile
         """
         self._profile = profile
-        self.zen_store: BaseZenStore = self.create_store(
+        self.zen_store: "BaseZenStore" = self.create_store(
             profile, skip_default_registrations=not new_profile
         )
 
@@ -399,12 +393,10 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
             self.__config.active_stack_name = backup_stack_name
 
-        self._write_config()
-
     @staticmethod
     def _migrate_legacy_repository(
         config_file: str,
-    ) -> Optional[ProfileConfiguration]:
+    ) -> Optional["ProfileConfiguration"]:
         """Migrate a legacy repository configuration to the new format and
         create a new Profile out of it.
 
@@ -450,22 +442,25 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             f"This warning will not be shown again for this Repository."
         )
 
-        stack_data = legacy_config.get_stack_data()
+        stack_data = legacy_config.get_stack_data(config_file=config_file)
+
+        from zenml.config.profile_config import ProfileConfiguration
+        from zenml.zen_stores import LocalZenStore
+
         store = LocalZenStore()
         store.initialize(url=config_path, store_data=stack_data)
-        store._write_store()
         profile = ProfileConfiguration(
             name=profile_name,
             store_url=store.url,
             active_stack=legacy_config.active_stack_name,
         )
 
-        new_config = RepositoryConfiguration(
+        # Calling this will dump the new configuration to disk
+        RepositoryConfiguration(
+            config_file=config_file,
             active_profile_name=profile.name,
             active_stack_name=legacy_config.active_stack_name,
         )
-        new_config_dict = json.loads(new_config.json())
-        yaml_utils.write_yaml(config_file, new_config_dict)
         GlobalConfiguration().add_or_update_profile(profile)
 
         return profile
@@ -502,30 +497,19 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             # detect an old style repository configuration and migrate it to
             # the new format and create a profile out of it if necessary
             self._migrate_legacy_repository(config_path)
+        else:
+            logger.debug(
+                "No repository configuration file found, creating default "
+                "configuration."
+            )
 
-            config_dict = yaml_utils.read_yaml(config_path)
-            config = RepositoryConfiguration.parse_obj(config_dict)
-
-            return config
-
-        logger.debug(
-            "No repository configuration file found, creating default "
-            "configuration."
-        )
-        return RepositoryConfiguration()
-
-    def _write_config(self) -> None:
-        """Writes the repository configuration to disk, if the repository has
-        been initialized."""
-        config_path = self._config_path()
-        if not config_path or not self.__config:
-            return
-        config_dict = json.loads(self.__config.json())
-        yaml_utils.write_yaml(config_path, config_dict)
+        return RepositoryConfiguration(config_path)
 
     @staticmethod
-    def get_store_class(type: StoreType) -> Optional[Type[BaseZenStore]]:
+    def get_store_class(type: StoreType) -> Optional[Type["BaseZenStore"]]:
         """Returns the class of the given store type."""
+        from zenml.zen_stores import LocalZenStore, RestZenStore, SqlZenStore
+
         return {
             StoreType.LOCAL: LocalZenStore,
             StoreType.SQL: SqlZenStore,
@@ -534,8 +518,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @staticmethod
     def create_store(
-        profile: ProfileConfiguration, skip_default_registrations: bool = False
-    ) -> BaseZenStore:
+        profile: "ProfileConfiguration",
+        skip_default_registrations: bool = False,
+    ) -> "BaseZenStore":
         """Create the repository persistence back-end store from a configuration
         profile.
 
@@ -670,7 +655,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             global_cfg.activate_profile(profile_name)
 
     @property
-    def active_profile(self) -> ProfileConfiguration:
+    def active_profile(self) -> "ProfileConfiguration":
         """Return the profile set as active for the repository.
 
         Returns:
@@ -703,7 +688,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         return self.active_profile.name
 
     @property
-    def active_user(self) -> User:
+    def active_user(self) -> "User":
         """The active user.
 
         Raises:
@@ -795,7 +780,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self.zen_store.get_stack(name)  # raises KeyError
         if self.__config:
             self.__config.active_stack_name = name
-            self._write_config()
 
         # set the active stack globally in the active profile only if the
         # repository doesn't have a root configured (i.e. repository root hasn't
@@ -830,6 +814,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 registered and a different component with the same name
                 already exists.
         """
+        from zenml.zen_stores.models import StackWrapper
+
         stack.validate()
         metadata = self.zen_store.register_stack(StackWrapper.from_stack(stack))
         metadata["store_type"] = self.active_profile.store_type.value
@@ -844,6 +830,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Raises:
             KeyError: If no stack exists for the given name."""
+        from zenml.zen_stores.models import StackWrapper
+
         stack.validate()
         metadata = self.zen_store.update_stack(
             name, StackWrapper.from_stack(stack)
@@ -891,6 +879,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Raises:
             KeyError: If no such stack component exists."""
+        from zenml.zen_stores.models import ComponentWrapper
+
         self.zen_store.update_stack_component(
             name,
             component_type,
@@ -949,6 +939,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             StackComponentExistsError: If a stack component with the same type
                 and name already exists.
         """
+        from zenml.zen_stores.models import ComponentWrapper
+
         self.zen_store.register_stack_component(
             ComponentWrapper.from_component(component)
         )
@@ -988,7 +980,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 name,
             )
 
-    def set_active_project(self, project: Optional[Project] = None) -> None:
+    def set_active_project(self, project: Optional["Project"] = None) -> None:
         """Set the project for the local repository.
 
         If no object is passed, this will unset the active project for this
@@ -1014,10 +1006,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             self.__config.project_name = None
             self.__config.project_id = None
 
-        self._write_config()
-
     @property
-    def active_project(self) -> Optional[Project]:
+    def active_project(self) -> Optional["Project"]:
         """Get the currently active project of the local repository.
 
         Returns:
@@ -1043,7 +1033,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(
         self, stack_name: Optional[str] = None
-    ) -> List[PipelineView]:
+    ) -> List["PipelineView"]:
         """Fetches post-execution pipeline views.
 
         Args:
@@ -1071,7 +1061,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     @track(event=AnalyticsEvent.GET_PIPELINE)
     def get_pipeline(
         self, pipeline_name: str, stack_name: Optional[str] = None
-    ) -> Optional[PipelineView]:
+    ) -> Optional["PipelineView"]:
         """Fetches a post-execution pipeline view.
 
         Args:
@@ -1097,12 +1087,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
         metadata_store = self.get_stack(stack_name).metadata_store
         return metadata_store.get_pipeline(pipeline_name)
-
-        #
-        #
-        # from zenml.post_execution.pipeline_run import PipelineRunView
-        # runs = [PipelineRunView(pipeline_run_wrapper=run) for run in ]
-        # return PipelineView(name=pipeline_name, runs=runs)
 
     @staticmethod
     def is_repository_directory(path: Path) -> bool:

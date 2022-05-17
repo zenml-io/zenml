@@ -407,21 +407,31 @@ that should be used. For example, an AWS secret has predefined keys of
 `aws_session_token`). If you do not have a specific secret type you wish to use,
 ZenML will use the `arbitrary` type to store your key-value pairs.
 
-To register a secret, use the `register` command:
+To register a secret, use the `register` command and pass the key-value pairs
+as command line arguments:
 
 ```bash
-zenml secret register SECRET_NAME
+zenml secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
-If you wish to register a single secret non-interactively, you can
-pass in a key-value pair at the command line, as in the following example:
+Note that the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `register` command instead:
 
 ```shell
-zenml secret register SECRET_NAME -k KEY -v VALUE
+zenml secret register SECRET_NAME -i
 ```
 
-Note that the key and value will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `register` command instead.
+As an alternative to the interactive mode, also useful for values that
+are long or contain newline or special characters, you can also use the special
+`@` syntax to indicate to ZenML that the value needs to be read from a file:
+
+```bash
+zenml secret register SECRET_NAME --schema=aws \
+   --aws_access_key_id=1234567890 \
+   --aws_secret_access_key=abcdefghij \
+   --aws_session_token=@/path/to/token.txt
+```
+
 
 To list all the secrets available, use the `list` command:
 
@@ -438,18 +448,15 @@ zenml secret get SECRET_NAME
 To update a secret, use the `update` command:
 
 ```bash
-zenml secret update SECRET_NAME
+zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
-If you wish to update a single secret non-interactively, you can
-pass in a key-value pair at the command line, as in the following example:
+Note that the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `update` command instead:
 
 ```shell
-zenml secret update SECRET_NAME -k KEY -v NEW_VALUE
+zenml secret update SECRET_NAME -i
 ```
-
-Note that the key and value will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `update` command instead.
 
 Finally, to delete a secret, use the `delete` command:
 
@@ -463,7 +470,8 @@ Add a Feature Store to your Stack
 ZenML supports connecting to a Redis-backed Feast feature store as a stack
 component integration. To set up a feature store, use the following CLI command:
 
-```shell zenml feature-store register FEATURE_STORE_NAME --flavor=feast
+```shell
+zenml feature-store register FEATURE_STORE_NAME --flavor=feast
 --feast_repo=REPO_PATH --online_host HOST_NAME --online_port ONLINE_PORT_NUMBER
 ```
 
@@ -472,9 +480,6 @@ in your ZenML Stack.
 
 Interacting with Deployed Models
 --------------------------------
-
-Deployed models are
-
 
 If you want to simply see what models have been deployed within your stack, run
 the following command:
@@ -512,8 +517,10 @@ zenml served-models stop <UUID>
 
 If you want to completely remove a served model you can also irreversibly delete
  it using:
+
 ```bash
 zenml served-models delete <UUID>
+```
 
 Administering the Stack
 -----------------------
@@ -630,6 +637,15 @@ change the name of your stack component, use the following command:
 zenml STACK_COMPONENT rename STACK_COMPONENT_NAME NEW_STACK_COMPONENT_NAME
 ```
 
+If you wish to remove an attribute (or multiple attributes) from a stack
+component, use the following command:
+
+```shell
+zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME --ATTRIBUTE_NAME [--OTHER_ATTRIBUTE_NAME]
+```
+
+Note that you can only remove optional attributes.
+
 Managing users, teams, projects and roles
 -----------------------------------------
 
@@ -714,7 +730,7 @@ from zenml.cli.integration import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.served_models import *  # noqa
-from zenml.cli.service import *  # noqa
+from zenml.cli.server import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.user_management import *  # noqa

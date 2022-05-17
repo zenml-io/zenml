@@ -32,7 +32,7 @@ class BaseContainerRegistry(StackComponent):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.DEFAULT
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.DEFAULT.value
 
     @validator("uri")
     def strip_trailing_slash(cls, uri: str) -> str:

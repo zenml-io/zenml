@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import click
 
@@ -26,8 +26,10 @@ from zenml.cli.utils import (
 )
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
+
+if TYPE_CHECKING:
+    from zenml.model_deployers import BaseModelDeployer
 
 
 @cli.group(
@@ -39,14 +41,18 @@ def served_models(ctx: click.Context) -> None:
     """List and manage served models with the active model
     deployer.
     """
-    ctx.obj = Repository().active_stack.components.get(
-        StackComponentType.MODEL_DEPLOYER, None
+    repo = Repository()
+    active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+    model_deployer_wrapper = active_stack.get_component_wrapper(
+        StackComponentType.MODEL_DEPLOYER
     )
-    if ctx.obj is None:
+    if model_deployer_wrapper is None:
         error(
             "No active model deployer found. Please add a model_deployer to "
             "your stack."
         )
+        return
+    ctx.obj = model_deployer_wrapper.to_component()
 
 
 @served_models.command("list")

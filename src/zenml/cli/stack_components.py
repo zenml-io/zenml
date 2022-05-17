@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import time
 from importlib import import_module
-from typing import Any, Callable, List, Optional, Sequence, Type
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Type
 
 import click
 from rich.markdown import Markdown
@@ -21,16 +21,17 @@ from rich.markdown import Markdown
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.console import console
-from zenml.constants import MANDATORY_COMPONENT_PROPERTIES
+from zenml.constants import MANDATORY_COMPONENT_ATTRIBUTES
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
-from zenml.zen_stores.models.flavor_wrapper import validate_flavor_source
+from zenml.utils.source_utils import validate_flavor_source
+from zenml.zen_stores.models.component_wrapper import ComponentWrapper
 
 
-def _get_required_properties(
+def _get_required_attributes(
     component_class: Type[StackComponent],
 ) -> List[str]:
     """Gets the required properties for a stack component."""
@@ -38,18 +39,30 @@ def _get_required_properties(
         field_name
         for field_name, field in component_class.__fields__.items()
         if (field.required is True)
-        and field_name not in MANDATORY_COMPONENT_PROPERTIES
+        and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
     ]
 
 
-def _get_available_properties(
+def _get_available_attributes(
     component_class: Type[StackComponent],
 ) -> List[str]:
     """Gets the available non-mandatory properties for a stack component."""
     return [
         field_name
         for field_name, _ in component_class.__fields__.items()
-        if field_name not in MANDATORY_COMPONENT_PROPERTIES
+        if field_name not in MANDATORY_COMPONENT_ATTRIBUTES
+    ]
+
+
+def _get_optional_attributes(
+    component_class: Type[StackComponent],
+) -> List[str]:
+    """Gets the optional properties for a stack component."""
+    return [
+        field_name
+        for field_name, field in component_class.__fields__.items()
+        if field.required is False
+        and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
     ]
 
 
@@ -61,10 +74,10 @@ def _component_display_name(
     return name.replace("_", " ")
 
 
-def _get_stack_component(
+def _get_stack_component_wrapper(
     component_type: StackComponentType,
     component_name: Optional[str] = None,
-) -> Optional[StackComponent]:
+) -> Tuple[Optional[ComponentWrapper], bool]:
     """Gets a stack component for a given type and name.
 
     Args:
@@ -74,7 +87,8 @@ def _get_stack_component(
 
     Returns:
         A stack component of the given type and name, or None, if no stack
-        component is registered for the given name and type.
+        component is registered for the given name and type, and a boolean
+        indicating whether the component is active or not.
     """
 
     singular_display_name = _component_display_name(component_type)
@@ -85,26 +99,35 @@ def _get_stack_component(
     components = repo.zen_store.get_stack_components(component_type)
     if len(components) == 0:
         cli_utils.warning(f"No {plural_display_name} registered.")
-        return None
+        return None, False
+
+    active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+    active_component = active_stack.get_component_wrapper(component_type)
 
     if component_name:
         try:
-            return repo.get_stack_component(component_type, name=component_name)
+            return (
+                repo.zen_store.get_stack_component(
+                    component_type, name=component_name
+                ),
+                (
+                    active_component is not None
+                    and component_name == active_component.name
+                ),
+            )
         except KeyError:
             cli_utils.error(
                 f"No {singular_display_name} found for name '{component_name}'."
             )
+    elif active_component:
+        cli_utils.declare(
+            f"No component name given; using `{active_component.name}` "
+            f"from active stack."
+        )
+        return active_component, True
     else:
-        try:
-            component = repo.active_stack.components[component_type]
-            cli_utils.declare(
-                f"No component name given, using `{component.name}` "
-                f"from active stack."
-            )
-            return component
-        except KeyError:
-            cli_utils.error(f"No {singular_display_name} in active stack.")
-    return None
+        cli_utils.error(f"No {singular_display_name} in active stack.")
+    return None, False
 
 
 def generate_stack_component_get_command(
@@ -151,22 +174,14 @@ def generate_stack_component_describe_command(
         cli_utils.print_active_stack()
 
         singular_display_name = _component_display_name(component_type)
-        repo = Repository()
-        component = _get_stack_component(component_type, component_name=name)
-        if component is None:
+        component_wrapper, is_active = _get_stack_component_wrapper(
+            component_type, component_name=name
+        )
+        if component_wrapper is None:
             return
 
-        try:
-            active_component_name = repo.active_stack.components[
-                component_type
-            ].name
-            is_active = active_component_name == component.name
-        except KeyError:
-            # there is no component of this type in the active stack
-            is_active = False
-
         cli_utils.print_stack_component_configuration(
-            component, singular_display_name, is_active
+            component_wrapper, singular_display_name, is_active
         )
 
     return describe_stack_component_command
@@ -190,12 +205,11 @@ def generate_stack_component_list_command(
         if len(components) == 0:
             cli_utils.warning(f"No {display_name} registered.")
             return
-        try:
-            active_component_name = repo.active_stack.components[
-                component_type
-            ].name
-        except KeyError:
-            active_component_name = None
+        active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+        active_component_name = None
+        active_component = active_stack.get_component_wrapper(component_type)
+        if active_component:
+            active_component_name = active_component.name
 
         cli_utils.print_stack_component_list(
             components, active_component_name=active_component_name
@@ -347,13 +361,13 @@ def generate_stack_component_update_command(
             kwargs.append(name)
             name = None
 
-        current_component = _get_stack_component(
+        component_wrapper, _ = _get_stack_component_wrapper(
             component_type, component_name=name
         )
-        if current_component is None:
+        if component_wrapper is None:
             return
 
-        name = current_component.name
+        name = component_wrapper.name
         with console.status(f"Updating {display_name} '{name}'...\n"):
             repo = Repository()
 
@@ -362,40 +376,42 @@ def generate_stack_component_update_command(
             except AssertionError as e:
                 cli_utils.error(str(e))
                 return
-            for prop in MANDATORY_COMPONENT_PROPERTIES:
+            for prop in MANDATORY_COMPONENT_ATTRIBUTES:
                 if prop in parsed_args:
                     cli_utils.error(
                         f"Cannot update mandatory property '{prop}' of "
-                        f"'{name}' {current_component.TYPE}. "
+                        f"'{name}' {component_wrapper.type}. "
                     )
 
             component_class = repo.get_flavor(
-                name=current_component.FLAVOR,
+                name=component_wrapper.flavor,
                 component_type=component_type,
             )
 
-            available_properties = _get_available_properties(component_class)
+            available_properties = _get_available_attributes(component_class)
             for prop in parsed_args.keys():
                 if (prop not in available_properties) and (
                     len(available_properties) > 0
                 ):
                     cli_utils.error(
                         f"You cannot update the {display_name} "
-                        f"`{current_component.name}` with property "
+                        f"`{component_wrapper.name}` with property "
                         f"'{prop}'. You can only update the following "
                         f"properties: {available_properties}."
                     )
                 elif prop not in available_properties:
                     cli_utils.error(
                         f"You cannot update the {display_name} "
-                        f"`{current_component.name}` with property "
+                        f"`{component_wrapper.name}` with property "
                         f"'{prop}' as this {display_name} has no optional "
                         f"properties that can be configured."
                     )
                 else:
                     continue
 
-            updated_component = current_component.copy(update=parsed_args)
+            updated_component = component_wrapper.to_component().copy(
+                update=parsed_args
+            )
 
             repo.update_stack_component(
                 name, updated_component.TYPE, updated_component
@@ -403,6 +419,70 @@ def generate_stack_component_update_command(
             cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
 
     return update_stack_component_command
+
+
+def generate_stack_component_remove_attribute_command(
+    component_type: StackComponentType,
+) -> Callable[[str, List[str]], None]:
+    """Generates an `remove_attribute` command for the specific stack component type."""
+    display_name = _component_display_name(component_type)
+
+    @click.argument(
+        "name",
+        type=str,
+        required=True,
+    )
+    @click.argument("args", nargs=-1, type=click.UNPROCESSED)
+    def remove_attribute_stack_component_command(
+        name: str, args: List[str]
+    ) -> None:
+        """Removes one or more attributes from a stack component."""
+        cli_utils.print_active_profile()
+        with console.status(f"Updating {display_name} '{name}'...\n"):
+            repo = Repository()
+            current_component = repo.get_stack_component(component_type, name)
+            if current_component is None:
+                cli_utils.error(f"No {display_name} found for name '{name}'.")
+
+            try:
+                parsed_args = cli_utils.parse_unknown_component_attributes(args)
+            except AssertionError as e:
+                cli_utils.error(str(e))
+                return
+
+            optional_attributes = _get_optional_attributes(
+                current_component.__class__
+            )
+            required_attributes = _get_required_attributes(
+                current_component.__class__
+            )
+
+            for arg in parsed_args:
+                if (
+                    arg in required_attributes
+                    or arg in MANDATORY_COMPONENT_ATTRIBUTES
+                ):
+                    cli_utils.error(
+                        f"Cannot remove mandatory attribute '{arg}' of '{name}' {current_component.TYPE}. "
+                    )
+                elif arg not in optional_attributes:
+                    cli_utils.error(
+                        f"You cannot remove the attribute '{arg}' of "
+                        f"'{name}' {current_component.TYPE}. \n"
+                        f"You can only remove the following optional attributes: "
+                        f"'{', '.join(optional_attributes)}'."
+                    )
+
+            updated_component = current_component.copy(
+                update={arg: None for arg in parsed_args}
+            )
+
+            repo.update_stack_component(
+                name, updated_component.TYPE, updated_component
+            )
+            cli_utils.declare(f"Successfully updated {display_name} `{name}`.")
+
+    return remove_attribute_stack_component_command
 
 
 def generate_stack_component_rename_command(
@@ -490,9 +570,12 @@ def generate_stack_component_up_command(
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        component = _get_stack_component(component_type, component_name=name)
-        if component is None:
+        component_wrapper, _ = _get_stack_component_wrapper(
+            component_type, component_name=name
+        )
+        if component_wrapper is None:
             return
+        component = component_wrapper.to_component()
 
         display_name = _component_display_name(component_type)
 
@@ -544,7 +627,8 @@ def generate_stack_component_down_command(
         "-f",
         "old_force",
         is_flag=True,
-        help="DEPRECATED: Deprovisions local resources instead of suspending them. Use `-y/--yes` instead.",
+        help="DEPRECATED: Deprovisions local resources instead of suspending "
+        "them. Use `-y/--yes` instead.",
     )
     def down_stack_component_command(
         name: Optional[str] = None, force: bool = False, old_force: bool = False
@@ -553,15 +637,19 @@ def generate_stack_component_down_command(
         if old_force:
             force = old_force
             cli_utils.warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+                "The `--force` flag will soon be deprecated. Use `--yes` "
+                "or `-y` instead."
             )
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        component = _get_stack_component(component_type, component_name=name)
-        if component is None:
+        component_wrapper, _ = _get_stack_component_wrapper(
+            component_type, component_name=name
+        )
+        if component_wrapper is None:
             return
 
+        component = component_wrapper.to_component()
         display_name = _component_display_name(component_type)
 
         if not force:
@@ -619,10 +707,13 @@ def generate_stack_component_logs_command(
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
-        component = _get_stack_component(component_type, component_name=name)
-        if component is None:
+        component_wrapper, _ = _get_stack_component_wrapper(
+            component_type, component_name=name
+        )
+        if component_wrapper is None:
             return
 
+        component = component_wrapper.to_component()
         display_name = _component_display_name(component_type)
         log_file = component.log_file
 
@@ -758,6 +849,17 @@ def register_single_stack_component_cli_commands(
         context_settings=context_settings,
         help=f"Update a registered {singular_display_name}.",
     )(update_command)
+
+    # zenml stack-component remove-attribute
+    remove_attribute_command = (
+        generate_stack_component_remove_attribute_command(component_type)
+    )
+    context_settings = {"ignore_unknown_options": True}
+    command_group.command(
+        "remove-attribute",
+        context_settings=context_settings,
+        help=f"Remove attributes from a registered {singular_display_name}.",
+    )(remove_attribute_command)
 
     # zenml stack-component rename
     rename_command = generate_stack_component_rename_command(component_type)

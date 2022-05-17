@@ -34,7 +34,7 @@ def test_step_decorator_creates_class_in_same_module_as_decorated_function():
     creates the class in the same module as the decorated function."""
 
     @step
-    def some_step():
+    def some_step() -> None:
         pass
 
     assert some_step.__module__ == __name__
@@ -58,7 +58,7 @@ def test_define_step_with_multiple_configs():
         @step
         def some_step(
             first_config: BaseStepConfig, second_config: BaseStepConfig
-        ):
+        ) -> None:
             pass
 
 
@@ -68,7 +68,9 @@ def test_define_step_with_multiple_contexts():
     with pytest.raises(StepInterfaceError):
 
         @step
-        def some_step(first_context: StepContext, second_context: StepContext):
+        def some_step(
+            first_context: StepContext, second_context: StepContext
+        ) -> None:
             pass
 
 
@@ -77,7 +79,7 @@ def test_step_without_context_has_caching_enabled_by_default():
     default."""
 
     @step
-    def some_step():
+    def some_step() -> None:
         pass
 
     assert some_step().enable_cache is True
@@ -88,7 +90,7 @@ def test_step_with_context_has_caching_disabled_by_default():
     default."""
 
     @step
-    def some_step(context: StepContext):
+    def some_step(context: StepContext) -> None:
         pass
 
     assert some_step().enable_cache is False
@@ -99,7 +101,7 @@ def test_enable_caching_for_step_with_context():
     context."""
 
     @step(enable_cache=True)
-    def some_step(context: StepContext):
+    def some_step(context: StepContext) -> None:
         pass
 
     assert some_step().enable_cache is True
@@ -111,7 +113,17 @@ def test_define_step_without_input_annotation():
     with pytest.raises(StepInterfaceError):
 
         @step
-        def some_step(some_argument, some_other_argument: int):
+        def some_step(some_argument, some_other_argument: int) -> None:
+            pass
+
+
+def test_define_step_without_return_annotation():
+    """Tests that defining a step with a missing return annotation raises
+    a StepInterfaceError."""
+    with pytest.raises(StepInterfaceError):
+
+        @step
+        def some_step(some_argument: int, some_other_argument: int):
             pass
 
 
@@ -121,7 +133,7 @@ def test_define_step_with_variable_args():
     with pytest.raises(StepInterfaceError):
 
         @step
-        def some_step(*args: int):
+        def some_step(*args: int) -> None:
             pass
 
 
@@ -131,7 +143,7 @@ def test_define_step_with_variable_kwargs():
     with pytest.raises(StepInterfaceError):
 
         @step
-        def some_step(**kwargs: int):
+        def some_step(**kwargs: int) -> None:
             pass
 
 
@@ -140,7 +152,7 @@ def test_define_step_with_keyword_only_arguments():
     or a step."""
 
     @step
-    def some_step(some_argument: int, *, keyword_only_argument: int):
+    def some_step(some_argument: int, *, keyword_only_argument: int) -> None:
         pass
 
     assert "keyword_only_argument" in some_step.INPUT_SIGNATURE
@@ -246,7 +258,7 @@ def test_unrecognized_output_in_output_artifact_types():
     exist raises an exception."""
 
     @step(output_types={"non-existent": DataArtifact})
-    def some_step():
+    def some_step() -> None:
         pass
 
     with pytest.raises(StepInterfaceError):
@@ -258,11 +270,11 @@ def test_enabling_a_custom_step_operator_for_a_step():
     using the step decorator."""
 
     @step
-    def step_without_step_operator():
+    def step_without_step_operator() -> None:
         pass
 
     @step(custom_step_operator="some_step_operator")
-    def step_with_step_operator():
+    def step_with_step_operator() -> None:
         pass
 
     assert step_without_step_operator().custom_step_operator is None
@@ -275,11 +287,11 @@ def test_step_executor_operator():
     """Tests that the step returns the correct executor operator."""
 
     @step(custom_step_operator=None)
-    def step_without_step_operator():
+    def step_without_step_operator() -> None:
         pass
 
     @step(custom_step_operator="some_step_operator")
-    def step_with_step_operator():
+    def step_with_step_operator() -> None:
         pass
 
     assert (
@@ -293,7 +305,7 @@ def test_pipeline_parameter_name_is_empty_when_initializing_a_step():
     a step is initialized."""
 
     @step
-    def some_step():
+    def some_step() -> None:
         pass
 
     assert some_step().pipeline_parameter_name is None
@@ -304,7 +316,7 @@ def test_access_step_component_before_calling():
     a StepInterfaceError."""
 
     @step
-    def some_step():
+    def some_step() -> None:
         pass
 
     with pytest.raises(StepInterfaceError):
@@ -315,7 +327,7 @@ def test_access_step_component_after_calling():
     """Tests that a step component exists after the step was called."""
 
     @step
-    def some_step():
+    def some_step() -> None:
         pass
 
     step_instance = some_step()
@@ -432,7 +444,7 @@ def test_step_with_disabled_cache_has_random_string_as_execution_property():
     execution property to disable caching."""
 
     @step(enable_cache=False)
-    def some_step():
+    def some_step() -> None:
         pass
 
     step_instance_1 = some_step()
@@ -449,7 +461,7 @@ def test_step_source_execution_parameter_stays_the_same_if_step_is_not_modified(
     creating multiple steps from the same source code."""
 
     @step
-    def some_step():
+    def some_step() -> None:
         pass
 
     step_1 = some_step()
@@ -499,13 +511,13 @@ def test_step_source_execution_parameter_changes_when_function_body_changes():
     source execution parameter."""
 
     @step
-    def some_step():
+    def some_step() -> None:
         pass
 
     step_1 = some_step()
 
     @step
-    def some_step():
+    def some_step() -> None:
         # this is new
         pass
 
@@ -659,7 +671,7 @@ def test_step_uses_config_class_default_values_if_no_config_is_passed():
         some_parameter: int = 1
 
     @step
-    def some_step(config: ConfigWithDefaultValues):
+    def some_step(config: ConfigWithDefaultValues) -> None:
         pass
 
     # don't pass the config when initializing the step
@@ -677,7 +689,7 @@ def test_step_fails_if_config_parameter_value_is_missing():
         some_parameter: int
 
     @step
-    def some_step(config: ConfigWithoutDefaultValues):
+    def some_step(config: ConfigWithoutDefaultValues) -> None:
         pass
 
     # don't pass the config when initializing the step
@@ -695,7 +707,7 @@ def test_step_config_allows_none_as_default_value():
         some_parameter: Optional[int] = None
 
     @step
-    def some_step(config: ConfigWithNoneDefaultValue):
+    def some_step(config: ConfigWithNoneDefaultValue) -> None:
         pass
 
     # don't pass the config when initializing the step
@@ -709,7 +721,7 @@ def test_calling_a_step_twice_raises_an_exception():
     """Tests that calling once step instance twice raises an exception."""
 
     @step
-    def my_step():
+    def my_step() -> None:
         pass
 
     step_instance = my_step()
@@ -726,7 +738,7 @@ def test_step_sets_global_execution_status_on_environment(one_step_pipeline):
     True during step execution."""
 
     @step
-    def my_step():
+    def my_step() -> None:
         assert Environment().step_is_running is True
 
     assert Environment().step_is_running is False
@@ -741,7 +753,7 @@ def test_step_resets_global_execution_status_even_if_the_step_crashes(
     False after step execution even if the step crashes."""
 
     @step
-    def my_step():
+    def my_step() -> None:
         raise RuntimeError()
 
     assert Environment().step_is_running is False

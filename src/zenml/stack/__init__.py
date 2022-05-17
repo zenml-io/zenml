@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Stack
-
 The stack is essentially all the configuration for the infrastructure of your 
 MLOps platform.
 

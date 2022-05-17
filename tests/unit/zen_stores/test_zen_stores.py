@@ -27,8 +27,8 @@ from zenml.constants import (
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
     ENV_ZENML_PROFILE_CONFIGURATION,
     REPOSITORY_DIRECTORY_NAME,
-    ZEN_SERVICE_ENTRYPOINT,
-    ZEN_SERVICE_IP,
+    ZEN_SERVER_ENTRYPOINT,
+    ZEN_SERVER_IP,
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
@@ -94,16 +94,16 @@ def fresh_zen_store(
 
         proc = Process(
             target=uvicorn.run,
-            args=(ZEN_SERVICE_ENTRYPOINT,),
+            args=(ZEN_SERVER_ENTRYPOINT,),
             kwargs=dict(
-                host=ZEN_SERVICE_IP,
+                host=ZEN_SERVER_IP,
                 port=port,
                 log_level="info",
                 env_file=env_file,
             ),
             daemon=True,
         )
-        url = f"http://{ZEN_SERVICE_IP}:{port}"
+        url = f"http://{ZEN_SERVER_IP}:{port}"
         proc.start()
 
         # wait 10 seconds for server to start
@@ -117,7 +117,7 @@ def fresh_zen_store(
                 time.sleep(1)
         else:
             proc.kill()
-            raise RuntimeError("Failed to start ZenService server.")
+            raise RuntimeError("Failed to start ZenServer.")
 
         yield RestZenStore().initialize(url)
 
@@ -131,7 +131,7 @@ def fresh_zen_store(
             else:
                 break
         else:
-            raise RuntimeError("Failed to shutdown ZenService server.")
+            raise RuntimeError("Failed to shutdown ZenServer.")
     else:
         raise NotImplementedError(f"No ZenStore for {store_type}")
 

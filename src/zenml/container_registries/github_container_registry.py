@@ -30,4 +30,4 @@ class GitHubContainerRegistry(BaseContainerRegistry):
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITHUB
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITHUB.value

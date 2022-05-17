@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, Optional, Union
 
 from zenml import __version__
 from zenml.constants import IS_DEBUG_ENV, SEGMENT_KEY_DEV, SEGMENT_KEY_PROD
-from zenml.environment import Environment
+from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -75,21 +75,6 @@ def get_segment_key() -> str:
         return SEGMENT_KEY_DEV
     else:
         return SEGMENT_KEY_PROD
-
-
-def get_environment() -> str:
-    """Returns a string representing the execution environment of the pipeline.
-    Currently, one of `docker`, `paperspace`, 'colab', or `native`"""
-    if Environment.in_docker():
-        return "docker"
-    elif Environment.in_google_colab():
-        return "colab"
-    elif Environment.in_paperspace_gradient():
-        return "paperspace"
-    elif Environment.in_notebook():
-        return "notebook"
-    else:
-        return "native"
 
 
 def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:

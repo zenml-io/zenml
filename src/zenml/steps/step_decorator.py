@@ -51,7 +51,7 @@ def step(
     name: Optional[str] = None,
     enable_cache: bool = True,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
-    custom_step_operator: Optional[str] = None
+    custom_step_operator: Optional[str] = None,
 ) -> Callable[[F], Type[BaseStep]]:
     """Type annotations for step decorator in case of arguments."""
     ...
@@ -63,7 +63,7 @@ def step(
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
-    custom_step_operator: Optional[str] = None
+    custom_step_operator: Optional[str] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
     """Outer decorator function for the creation of a ZenML step
 

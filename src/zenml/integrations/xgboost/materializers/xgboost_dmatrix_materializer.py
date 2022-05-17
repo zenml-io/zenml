@@ -58,7 +58,11 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
         # Make a temporary phantom artifact
-        with tempfile.NamedTemporaryFile(mode="wb", delete=True) as f:
+        with tempfile.NamedTemporaryFile(mode="wb", delete=False) as f:
             matrix.save_binary(f.name)
             # Copy it into artifact store
             fileio.copy(f.name, filepath)
+
+        # Close and remove the temporary file
+        f.close()
+        fileio.remove(f.name)

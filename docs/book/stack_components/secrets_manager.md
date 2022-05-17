@@ -85,7 +85,7 @@ secrets manager API within your gcp project.
 The following flags are mandatory to create a GCP Secret Manager stack
 component:
 
-* `--flavor gcp_secret_manager`: This tells zenml to use the GCP Secret Manager
+* `--flavor gcp_secrets_manager`: This tells zenml to use the GCP Secret Manager
   Integration
 * `--project_id==YOUR_PROJECT_ID`: This is necessary to access the correct GCP
   project. The project_id of your GCP project space that contains the

@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Experiment Trackers
-
 Experiment trackers let you track your ML experiments by logging the parameters
 and allowing you to compare between runs. In the ZenML world, every pipeline
 run is considered an experiment, and ZenML facilitates the storage of experiment

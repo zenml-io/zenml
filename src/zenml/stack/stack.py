@@ -462,7 +462,7 @@ class Stack:
             pipeline=pipeline, runtime_configuration=runtime_configuration
         )
 
-        return_value = self.orchestrator.run_pipeline(
+        return_value = self.orchestrator.run(
             pipeline, stack=self, runtime_configuration=runtime_configuration
         )
 

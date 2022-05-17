@@ -53,12 +53,12 @@ class StackWrapper(BaseModel):
             name=self.name, components=stack_components
         )
 
-    def get_component(
+    def get_component_wrapper(
         self, component_type: StackComponentType
     ) -> Optional[ComponentWrapper]:
-        """Returns the stack component for the given type if it exists."""
-        for component in self.components:
-            if component.type == component_type:
-                return component
+        """Returns the component of the given type."""
+        for component_wrapper in self.components:
+            if component_wrapper.type == component_type:
+                return component_wrapper
 
         return None

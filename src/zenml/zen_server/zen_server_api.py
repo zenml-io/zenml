@@ -76,9 +76,9 @@ else:
 
 if profile.store_type == StoreType.REST:
     raise ValueError(
-        "Service cannot be started with REST store type. Make sure you "
+        "Server cannot be started with REST store type. Make sure you "
         "specify a profile with a non-networked persistence backend "
-        "when trying to start the Zen Service. (use command line flag "
+        "when trying to start the ZenServer. (use command line flag "
         "`--profile=$PROFILE_NAME` or set the env variable "
         f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
         "other than the currently active one)"
@@ -98,7 +98,7 @@ security = HTTPBasic()
 
 
 def authorize(credentials: HTTPBasicCredentials = Depends(security)) -> None:
-    """Authorizes any request to the ZenService.
+    """Authorizes any request to the ZenServer.
 
     Right now this method only checks if the username provided as part of http
     basic auth credentials is registered in the ZenStore.
@@ -121,7 +121,7 @@ authed = APIRouter(
 )
 
 # to run this file locally, execute:
-# uvicorn zenml.zen_service.zen_service_api:app --reload
+# uvicorn zenml.zen_server.zen_server_api:app --reload
 
 
 def error_detail(error: Exception) -> List[str]:

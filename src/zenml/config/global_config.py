@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import json
+import logging
 import os
 import uuid
 from typing import Any, Dict, Optional, cast
@@ -27,7 +28,7 @@ from zenml.config.profile_config import (
     ProfileConfiguration,
 )
 from zenml.io import fileio, utils
-from zenml.logger import get_logger
+from zenml.logger import disable_logging, get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -107,7 +108,9 @@ class GlobalConfiguration(
     profiles: Dict[str, ProfileConfiguration] = Field(default_factory=dict)
     _config_path: str
 
-    def __init__(self, config_path: Optional[str] = None) -> None:
+    def __init__(
+        self, config_path: Optional[str] = None, **kwargs: Any
+    ) -> None:
         """Initializes a GlobalConfiguration object using values from the config
         file.
 
@@ -134,6 +137,7 @@ class GlobalConfiguration(
         """
         self._config_path = config_path or self.default_config_directory()
         config_values = self._read_config()
+        config_values.update(**kwargs)
         super().__init__(**config_values)
 
         if not fileio.exists(self._config_file(config_path)):
@@ -351,8 +355,13 @@ class GlobalConfiguration(
         store = Repository.create_store(
             profile, skip_default_registrations=True
         )
-        # transfer the active stack to the new store
-        store.register_stack(repo.zen_store.get_stack(repo.active_stack_name))
+        # transfer the active stack to the new store. we disable logs for this
+        # call so there is no confusion about newly registered stacks/stack
+        # components
+        with disable_logging(logging.INFO):
+            store.register_stack(
+                repo.zen_store.get_stack(repo.active_stack_name)
+            )
 
         # if a custom load config path is specified, use it to replace the
         # current store local path in the profile URL

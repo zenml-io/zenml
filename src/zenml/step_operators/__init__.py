@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Step Operator
-
 While an orchestrator defines how and where your entire pipeline runs, a step 
 operator defines how and where an individual step runs. This can be useful in a 
 variety of scenarios. An example could be if one step within a pipeline should 

@@ -53,6 +53,7 @@ ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 ENV_ZENML_DEFAULT_STORE_TYPE = "ZENML_DEFAULT_STORE_TYPE"
 ENV_ZENML_PROFILE_NAME = "ZENML_PROFILE_NAME"
 ENV_ZENML_PROFILE_CONFIGURATION = "ZENML_PROFILE_CONFIGURATION"
+ENV_ZENML_SUPPRESS_LOGS = "ZENML_SUPPRESS_LOGS"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -116,6 +117,9 @@ LOCAL_STORES_DIRECTORY_NAME = "local_stores"
 
 USER_MAIN_MODULE: Optional[str] = None
 
+# Config file name
+CONFIG_FILE_NAME = "config.yaml"
+
 # Secrets Manager
 ZENML_SCHEMA_NAME = "zenml_schema_name"
 LOCAL_SECRETS_FILENAME = "secrets.yaml"
@@ -127,8 +131,8 @@ ENABLE_RICH_TRACEBACK = handle_bool_env_var(
 
 # Services
 DEFAULT_SERVICE_START_STOP_TIMEOUT = 10
-ZEN_SERVICE_ENTRYPOINT = "zenml.zen_service.zen_service_api:app"
-ZEN_SERVICE_IP = "127.0.0.1"
+ZEN_SERVER_ENTRYPOINT = "zenml.zen_server.zen_server_api:app"
+ZEN_SERVER_IP = "127.0.0.1"
 
 # API Endpoint paths:
 STACKS_EMPTY = "/stacks-empty"
@@ -143,5 +147,5 @@ FLAVORS = "/flavors"
 ROLE_ASSIGNMENTS = "/role_assignments"
 PIPELINE_RUNS = "/pipeline_runs"
 
-# mandatory stack component properties
-MANDATORY_COMPONENT_PROPERTIES = ["name", "uuid"]
+# mandatory stack component attributes
+MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]
