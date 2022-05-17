@@ -11,7 +11,7 @@ of these tasks, it can become increasingly difficult to establish a running
 production system in a reliable and modular manner, once all these solutions 
 are brought together.
 
-As an example, this is a problem which occurs quite often in the case of the 
+For instance, this is a problem which occurs quite often in the case of the 
 switch from a research setting to a production setting. Due to the lack of 
 standards, the time and resources invested in a small PoC-like project can 
 completely to waste, if the initial system can not be transferred to a 

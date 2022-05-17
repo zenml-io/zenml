@@ -118,7 +118,7 @@ class BaseArtifactStore(StackComponent):
         """Return an iterator that walks the contents of the given directory."""
 ```
 
-{% hint style="info" %}
+{% hint style="warning" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
 and get the complete docstrings, please check the source code on GitHub.

@@ -131,7 +131,7 @@ class BaseModelDeployer(StackComponent, ABC):
         """Abstract method to delete a model server."""
 ```
 
-{% hint style="info" %}
+{% hint style="warning" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
 and get the complete docstrings, please check the source code on GitHub.
