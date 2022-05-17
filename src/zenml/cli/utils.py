@@ -157,9 +157,7 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
             if key is None:
                 values.append(None)
             else:
-                value = str(dict_.get(key))
-                if value in {"", "None"}:
-                    value = " "
+                value = str(dict_.get(key) or " ")
                 # escape text when square brackets are used
                 if "[" in value:
                     value = escape(value)
@@ -208,7 +206,7 @@ def print_stack_component_list(
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
 
-    If a component is active(its name matches the `active_component_name`),
+    If a component is active (its name matches the `active_component_name`),
     it will be highlighted in a separate table column.
 
     Args:
