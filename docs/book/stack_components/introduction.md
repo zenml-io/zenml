@@ -88,7 +88,7 @@ stacks. If you would like to learn more, please do: "`zenml stack --help`"
 or visit our CLI docs.
 {% endhint %}
 
-## Stack Components
+## Abstraction of the Base Stack Components
 
 As **Stacks** represent the entire configuration of your infrastructure, **Stack
 Components** represent the configuration of individual layers within your 
@@ -171,14 +171,18 @@ implementation.
 
 ## Flavors
 
-Now, that we have taken a look at the base implementation of stack components,
-it is time to introduce the concept of **Flavors**. 
-
-In ZenML, a **Flavor** represents the specific implementation of a 
-**Stack Component**. In other words, the **Stack Components** set up the base 
-implementation, whereas **Flavors** 
+Now, that we have taken a look at the base abstraction of stack components,
+it is time to introduce the concept of **Flavors**. In ZenML, **Flavors** 
+represent specific implementations over the base abstractions 
+of **Stack Components**. As an example, we can take a look at the 
+`LocalArtifactStore`:
 
 ```python
+from typing import ClassVar, Set
+
+from zenml.artifact_stores import BaseArtifactStore
+
+
 class LocalArtifactStore(BaseArtifactStore):
     """Artifact Store for local artifacts."""
 
@@ -189,15 +193,48 @@ class LocalArtifactStore(BaseArtifactStore):
     ...
 ```
 
-integration vs built-in
+As you can see from the example below, the `LocalArtifactStore` inherits from 
+the corresponding base abstraction `BaseArtifactStore` and implements a 
+local version. While creating this class, it is critical to set `FLAVOR` 
+class variable, as we will use it as a reference when we create an instance 
+of this stack component.
+
+Out-of-the-box, ZenML comes with a wide variety of **flavors**. This 
+**flavors** are either built-in to the base ZenML package or enabled 
+through the installation of specific integrations. In order to see all 
+the available flavors for a specific type of stack component, you can use 
+the CLI as:
 
 ```bash
 zenml artifact-store flavor list
 ```
 
-```bash
-zenml artifact-store flavor register TODO
+Through the base abstractions, ZenML also enables you to create your own 
+flavors for any type of stack component. In order to achieve this, you can 
+use the corresponding base abstraction, and create your own implementation, 
+and register it through the CLI:
+
+```python
+from typing import ClassVar, Set
+
+from zenml.artifact_stores import BaseArtifactStore
+
+
+class MyCustomArtifactStore(BaseArtifactStore):
+    """Custom artifact store implementation."""
+
+    # Class configuration
+    FLAVOR: ClassVar[str] = "custom"
+    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"custom://"}
+
+    ...
 ```
+
+```bash
+zenml artifact-store flavor register path.to.MyCustomArtifacStore
+```
+
+Once you register a new flavor, you can see it in the CLI with:
 
 ```bash
 zenml artifact-store flavor list
