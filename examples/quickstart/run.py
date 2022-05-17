@@ -13,21 +13,25 @@
 #  permissions and limitations under the License.
 
 
-from pipelines.quickstart_pipeline.pipeline_definition import (
-    quickstart_pipeline,
+from pipelines import inference_pipeline, training_pipeline
+from steps import (
+    deployment_trigger,
+    evaluator,
+    inference_data_loader,
+    prediction_service_loader,
+    predictor,
+    skew_comparison,
+    svc_trainer_mlflow,
+    training_data_loader,
 )
-from steps.deployer.deployment_trigger import deployment_trigger
-from steps.drift_detector.evidently_reference_data_splitter import (
-    get_reference_data,
-)
-from steps.evaluator.sklearn_evaluator import evaluator
-from steps.importer.import_digits import importer
-from steps.trainer.sklearn_svc_trainer import svc_trainer_mlflow
 
 from zenml.integrations.dash.visualizers.pipeline_run_lineage_visualizer import (
     PipelineRunLineageVisualizer,
 )
-from zenml.integrations.evidently.steps import EvidentlyProfileStep
+from zenml.integrations.evidently.steps import (
+    EvidentlyProfileConfig,
+    EvidentlyProfileStep,
+)
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
@@ -35,42 +39,60 @@ from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
 from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
 from zenml.repository import Repository
 
-if __name__ == "__main__":
-    p = quickstart_pipeline(
-        importer=importer(),
+
+def main():
+
+    # configure drift detector
+    evidently_profile_config = EvidentlyProfileConfig(
+        column_mapping=None, profile_sections=["datadrift"]
+    )
+    drift_detector = EvidentlyProfileStep(config=evidently_profile_config)
+
+    # initialize and run training pipeline
+    training_pipeline(
+        training_data_loader=training_data_loader(),
+        skew_comparison=skew_comparison(),
         trainer=svc_trainer_mlflow(),
         evaluator=evaluator(),
-        get_reference_data=get_reference_data(),
-        drift_detector=EvidentlyProfileStep(),
         deployment_trigger=deployment_trigger(),
         model_deployer=mlflow_model_deployer_step(),
-    ).with_config("pipelines/quickstart_pipeline/config.yaml")
+    ).run(run_name="first_training_pipeline_run")
 
-    p.run()
+    # initialize and run inference pipeline
+    inference_pipeline(
+        inference_data_loader=inference_data_loader(),
+        prediction_service_loader=prediction_service_loader(),
+        predictor=predictor(),
+        training_data_loader=training_data_loader(),
+        skew_comparison=skew_comparison(),
+        drift_detector=drift_detector,
+    ).run(run_name="first_inference_pipeline_run")
 
+    # fetch latest runs for each pipeline
     repo = Repository()
-    pipelines = repo.get_pipelines()
-    my_pipeline = repo.get_pipeline(pipeline_name="quickstart_pipeline")
-    latest_run = my_pipeline.runs[-1]
+    train_run = repo.get_pipeline(pipeline_name="training_pipeline").runs[-1]
+    inference_run = repo.get_pipeline(pipeline_name="inference_pipeline").runs[
+        -1
+    ]
 
-    PipelineRunLineageVisualizer().visualize(latest_run)
+    # visualize training pipeline
+    PipelineRunLineageVisualizer().visualize(train_run)
 
-    outputs = latest_run.get_step(name="get_reference_data")
-    FacetStatisticsVisualizer().visualize(outputs)
+    # visualize inference pipeline
+    PipelineRunLineageVisualizer().visualize(inference_run)
 
-    drift_detection_step = latest_run.get_step(name="drift_detector")
+    # visualize train-test skew
+    train_test_skew_step = train_run.get_step(name="skew_comparison")
+    FacetStatisticsVisualizer().visualize(train_test_skew_step)
+
+    # visualize training-serving skew
+    training_serving_skew_step = inference_run.get_step(name="skew_comparison")
+    FacetStatisticsVisualizer().visualize(training_serving_skew_step)
+
+    # visualize data drift
+    drift_detection_step = inference_run.get_step(name="drift_detector")
     EvidentlyVisualizer().visualize(drift_detection_step)
 
-    model_deployer = repo.active_stack.model_deployer
-    services = model_deployer.find_model_server(
-        pipeline_name="quickstart_pipeline",
-        pipeline_step_name="mlflow_model_deployer_step",
-        running=True,
-    )
-    service = services[0]
-    service.check_status()
 
-    X_test = latest_run.steps[0].outputs["X_test"].read()
-    y_test = latest_run.steps[0].outputs["y_test"].read()
-    pred0 = service.predict(X_test[0:1])
-    print(f"Model predicted {pred0}, true label was {y_test[0]}")
+if __name__ == "__main__":
+    main()

@@ -20,12 +20,27 @@ The goal of this quickstart is to give you a small sample of what ZenML can do. 
 In order to run locally, install ZenML and pull this quickstart:
 
 ```shell
-# install ZenML
+# Install ZenML
 pip install zenml
 
-# pull this quickstart to zenml_examples/quickstart
+# Install zenml integrations
+zenml integration install dash sklearn mlflow evidently facets -y
+
+# Pull this quickstart to zenml_examples/quickstart
 zenml example pull quickstart
 cd zenml_examples/quickstart
+
+# Initialize ZenML
+zenml init
+
+# Create a new ZenML profile and set it as active
+zenml profile create quickstart
+zenml profile set quickstart
+
+# Add MLflow components to the default MLOps stack
+zenml experiment-tracker register mlflow_tracker --flavor=mlflow
+zenml model-deployer register mlflow_deployer --flavor=mlflow
+zenml stack update default -d mlflow_deployer -e mlflow_tracker
 ```
 
 ### :arrow_forward: Run the Code
