@@ -21,7 +21,11 @@ Before reading this chapter, make sure that you are familiar with the concept of
 
 ## Base Abstraction
 
+TODO: Intro to the base abstraction
+
 ```python
+from typing import ClassVar
+
 from zenml.enums import ContainerRegistryFlavor, StackComponentType
 from zenml.stack import StackComponent
 from zenml.utils import docker_utils
@@ -81,4 +85,4 @@ zenml container-registry flavor list
 
 ## Building your own container registry
 
-WIP
+TODO: write the custom container registry section

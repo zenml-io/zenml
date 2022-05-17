@@ -18,6 +18,8 @@ one of the flavors listed down below.
 
 ## List of available metadata stores
 
+TODO: Intro paragraph for available flavors
+
 |                     | Flavor               | Integration         |
 |---------------------|----------------------|---------------------|
 | SQLiteMetadataStore | sqlite                | `built-in`     |

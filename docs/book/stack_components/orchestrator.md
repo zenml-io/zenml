@@ -33,6 +33,9 @@ Putting all these considerations together, we end up with the following
 (simplified) implementation:
 
 ```python
+from abc import ABC, abstractmethod
+from typing import ClassVar, List, Any
+
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.enums import StackComponentType
@@ -41,7 +44,7 @@ from zenml.steps import BaseStep
 
 
 class BaseOrchestrator(StackComponent, ABC):
-    """Base class for all orchestrators. ..."""
+    """Base class for all ZenML orchestrators"""
 
     # --- Class variables ---
     TYPE: ClassVar[StackComponentType] = StackComponentType.ORCHESTRATOR
