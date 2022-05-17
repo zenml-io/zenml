@@ -7,8 +7,8 @@ description: Use ZenML in a Collaborative Setting with the ZenServer.
 Sometimes, you may need to exchange or collaborate on Stack configurations with
 other developers or even just have your Stacks available on multiple machines.
 While you can always zip up your Profile files or check [the local ZenStore](./profiles.md)
-files into version control, a more elegant solution is have some kind of service
-accessible from anywhere in your network and providing a REST API that can be
+files into version control, a more elegant solution is to have some kind of service
+accessible from anywhere in your network that provides a REST API that can be
 used to store and access your Stacks over the network.
 
 The ZenServer, short for ZenML Server, is a distributed client-server ZenML
@@ -31,7 +31,7 @@ options by visiting the relevant sections:
 {% hint style="info" %}
 The ZenServer is still undergoing heavy development. Some features are in Alpha
 state and may change in future releases. We are also working on providing more
-deployment and life-cycle management options for the ZenServer that will
+deployment and lifecycle management options for the ZenServer that will
 expand the currently supported deployment use-cases with improved scalability,
 security and robustness.
 {% endhint %}
@@ -79,11 +79,11 @@ ZenServer running at 'http://127.0.0.1:8000/'.
 
 The local ZenServer exposes a local REST API through which clients can access
 the same data available in your active Profile. You can also specify a different
-profile by passing the `--profile=$PROFILE_NAME` command line argument, or change
+profile by passing the `--profile=$PROFILE_NAME` command-line argument, or change
 the HTTP port and address on which the ZenServer is accepting requests using
 `--port=$PORT` and `--ip-address=$IP_ADDRESS`.The following example creates
 a new SQL profile named `zen-server` and starts a ZenServer with that profile
-that listens to the 8080 port on all interfaces. This is a typical use case
+that listens to port 8080 on all interfaces. This is a typical use case
 where you might want to expose the ZenServer to other machines in your network:
 
 ```

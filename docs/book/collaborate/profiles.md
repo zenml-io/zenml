@@ -416,7 +416,7 @@ the full range of configuration options, consult the
 
 #### Local SQLite Profile
 
-The simplest form of SQL based Profile uses a SQLite file located in
+The simplest form of SQL-based Profile uses a SQLite file located in
 [the global configuration directory](../developer-guide/repo-and-config.md):
 
 ```
@@ -518,9 +518,9 @@ $ zenml profile create --store-type sql --url "mysql://zenml:password@10.11.12.1
 ## Migrating Stacks from Legacy Repositories to ZenML Profiles
 
 Traditionally, Stack configurations were stored locally in the Repository root
-directory - i.e. the local .zen folder that is created by the `zenml init`
+directory - i.e. the local `.zen` folder that is created by the `zenml init`
 command. The ZenML 0.7.0 release moves Stacks outside of Repository root
-folders, into the [global configuration directory](../developer-guide/repo-and-config.md).
+folders into the [global configuration directory](../developer-guide/repo-and-config.md).
 The Profile concept was also introduced to replace the Repository as the
 concept that manages and stores the Stack configurations.
 
