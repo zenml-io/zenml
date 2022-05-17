@@ -272,6 +272,9 @@ In order to set one of your stack to be active, you can use:
 zenml stack set <name-of-your-stack>
 ```
 
+Once your stack is activated, you are ready to run the pipeline with the 
+selected stack.
+
 {% hint style="info" %}
 Our CLI features a wide variety of commands that let you easily manage/use your 
 stacks. If you would like to learn more, please do: "`zenml stack --help`"
@@ -280,9 +283,9 @@ or visit our CLI docs.
 
 ## Further configuration
 
-Configuration with secrets
-Configuration with runtime configs
+TODO: Configuration with secrets
+TODO: Configuration with runtime configs
 
 ## Provisioning
 
-Explanation about provision, deprovision, suspend and resume
+TODO: Explanation about provision, deprovision, suspend and resume
