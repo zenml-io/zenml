@@ -75,8 +75,6 @@ def up_server(
     from zenml.services import ServiceRegistry
     from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
 
-    print(type(ip_address))
-
     service_config = ZenServerConfig(
         root_runtime_path=GLOBAL_ZENML_SERVER_CONFIG_PATH,
         singleton=True,
