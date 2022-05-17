@@ -11,9 +11,9 @@ built-in tracking enables some powerful features - e.g. reproducibility.
 **Base abstraction in progress!**
 
 We are actively working on the base abstraction for the metadata stores, which 
-will be available soon. As a result, their extension is possible at the moment.
-When you are selecting a metadata store for your stack, you can use one of the 
-flavors listed down below.
+will be available soon. As a result, their extension is not possible at the 
+moment. When you are selecting a metadata store for your stack, you can use 
+one of the flavors listed down below.
 {% endhint %}
 
 ## List of available metadata stores

@@ -22,10 +22,6 @@ Before reading this chapter, make sure that you are familiar with the concept of
 ## Base Abstraction
 
 ```python
-import re
-from typing import ClassVar
-
-
 from zenml.enums import ContainerRegistryFlavor, StackComponentType
 from zenml.stack import StackComponent
 from zenml.utils import docker_utils

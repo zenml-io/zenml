@@ -12,7 +12,7 @@ link between pipeline runs and experiments.
 **Base abstraction in progress!**
 
 We are actively working on the base abstraction for the experiment trackers, 
-which will be available soon. As a result, their extension is possible at 
+which will be available soon. As a result, their extension is not possible at 
 the moment. If you would like to use an experiment tracker in your stack, 
 please check the list of already available alerters down below.
 {% endhint %}

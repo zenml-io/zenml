@@ -10,8 +10,8 @@ and also for general monitoring / reporting.
 **Base abstraction in progress!**
 
 We are actively working on the base abstraction for the alerters, which 
-will be available soon. As a result, their extension is possible at the moment.
-If you would like to use an alerter in your stack, please check the list 
+will be available soon. As a result, their extension is not possible at the 
+moment. If you would like to use an alerter in your stack, please check the list 
 of already available alerters down below.
 {% endhint %}
 

@@ -11,9 +11,9 @@ for use within a team or wider organization.
 **Base abstraction in progress!**
 
 We are actively working on the base abstraction for the feature stores, which 
-will be available soon. As a result, their extension is possible at the moment.
-If you would like to use a feature store in your stack, please check the list 
-of already available feature stores down below.
+will be available soon. As a result, their extension is not possible at the 
+moment. If you would like to use a feature store in your stack, please check 
+the list of already available feature stores down below.
 {% endhint %}
 
 ## List of available feature stores
