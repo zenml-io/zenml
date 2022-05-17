@@ -11,39 +11,40 @@ of these tasks, it can become increasingly difficult to establish a running
 production system in a reliable and modular manner, once all these solutions 
 are brought together.
 
-For instance, this is a problem which occurs quite often in the case of the 
-switch from a research setting to a production setting. Due to the lack of 
-standards, the time and resources invested in a small PoC-like project can 
-completely to waste, if the initial system can not be transferred to a 
-production-grade setting.
+This is a problem which is especially visible when switching from a research 
+setting to a production setting. Due to the lack of standards, the time and 
+resources invested in a small PoC-like project can completely to waste, 
+if the initial system can not be transferred to a production-grade setting.
 
-At ZenML, we believe that this is one of the most important and challenging 
-problems in the field of MLOps, and it can be solved with a set of 
+At **ZenML**, we believe that this is one of the most important and challenging 
+problems in the field of MLOps, and it can be solved with a set of standards and 
 well-structured abstractions. Owing to the nature of MLOps, it is critical 
 that these abstractions do not only cover concepts such as pipelines, steps and 
 materializers that we covered in the starter guide but also the infrastructure 
-elements that the pipelines are running on. 
+elements that the pipelines are running on.
 
-With that in mind, we will go through the three main concepts that our solution 
-is based on: Stacks, Stack Components and Flavors.
+Taking that into consideration, we will introduce you the three main concepts 
+that our ZenML is based on: **Stacks**, **Stack Components** and **Flavors**.
 
 ## Stacks
 
-The first concept that we will look into is the Stack. In ZenML, a Stack 
-represents essentially a collection of all the configuration for the 
-infrastructure of your MLOps platform. (TODO: One more motivational sentence)
+The first concept that we will look into is the **Stack**. In ZenML, a **Stack** 
+essentially represents a set of configurations for the infrastructure of your 
+MLOps platform.
 
-Structurally, each Stack consists of different Stack Components of varying types. 
-In the table below, you can find a short list of all the stack component types 
-that you can use within your stack:
+This is achieved by bringing together different types of **Stack Components**, 
+that are responsible for specific tasks within your ML workflow. We will 
+explore the concept **Stack Components** in more detail in the next section, 
+however, before we get there, you can find a short list of all the stack 
+component types that you can use within your stack in the table below:
 
 ### List of different types of components
 
 | Type of Stack Component | Required | Description                                                       |
 |-------------------------|----------|-------------------------------------------------------------------|
-| Orchestrator            | ✅        | Orchestrating the runs of your pipeline                           |
-| Artifact Store          | ✅        | Storage for the artifacts created by your pipelines               |
-| Metadata Store          | ✅        | Tracking the execution of your pipelines/steps                    |
+| **Orchestrator**            | ✅        | Orchestrating the runs of your pipeline                           |
+| **Artifact Store**          | ✅        | Storage for the artifacts created by your pipelines               |
+| **Metadata Store**          | ✅        | Tracking the execution of your pipelines/steps                    |
 | Container Registry      |          | Store for your containers                                         |
 | Secrets Manager         |          | Centralized location for the storage of your secrets              |
 | Step Operator           |          | Execution of individual steps in specialized runtime environments |
@@ -52,8 +53,8 @@ that you can use within your stack:
 | Experiment Tracker      |          | Tracking your ML experiments                                      |
 | Alerter                 |          | Sending alerts through specified channels                         |
 
-Establishing a stack requires you to define at least of an orchestrator, 
-an artifact store and a metadata store. The rest of the stack components are 
+Establishing a stack will require you to define at least of an orchestrator, 
+an artifact store, and a metadata store. The rest of the stack components are 
 optional, and you can use them as you see fit.
 
 ## Stack Components
