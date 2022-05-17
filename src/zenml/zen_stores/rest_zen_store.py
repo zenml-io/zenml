@@ -274,7 +274,7 @@ class RestZenStore(BaseZenStore):
         """
         return StackWrapper.parse_obj(self.get(f"{STACKS}/{name}"))
 
-    def _register_stack(self, stack: StackWrapper) -> Dict[str, str]:
+    def _register_stack(self, stack: StackWrapper) -> None:
         """Register a stack and its components.
 
         If any of the stacks' components aren't registered in the stack store
@@ -283,24 +283,15 @@ class RestZenStore(BaseZenStore):
         Args:
             stack: The stack to register.
 
-        Returns:
-            metadata dict for telemetry or logging.
-
         Raises:
             StackExistsError: If a stack with the same name already exists.
             StackComponentExistsError: If a component of the stack wasn't
                 registered and a different component with the same name
                 already exists.
         """
-        body = self.post(STACKS, stack)
-        if isinstance(body, dict):
-            return cast(Dict[str, str], body)
-        else:
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
+        self.post(STACKS, stack)
 
-    def _update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
+    def _update_stack(self, name: str, stack: StackWrapper) -> None:
         """Update a stack and its components.
 
         If any of the stack's components aren't registered in the stack store
@@ -310,21 +301,12 @@ class RestZenStore(BaseZenStore):
             name: The original name of the stack.
             stack: The new stack to use in the update.
 
-        Returns:
-            metadata dict for telemetry or logging.
-
         Raises:
             ValueError: If a dict is not returned from the API.
         """
-        body = self.put(f"{STACKS}/{name}", body=stack)
+        self.put(f"{STACKS}/{name}", body=stack)
         if name != stack.name:
             self.deregister_stack(name)
-        if isinstance(body, dict):
-            return cast(Dict[str, str], body)
-        else:
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str

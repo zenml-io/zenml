@@ -220,26 +220,24 @@ async def get_stack(name: str) -> StackWrapper:
 
 @authed.post(
     STACKS,
-    response_model=Dict[str, str],
     responses={409: error_response},
 )
 async def register_stack(stack: StackWrapper) -> Dict[str, str]:
     """Registers a stack."""
     try:
-        return zen_store.register_stack(stack)
+        zen_store.register_stack(stack)
     except (StackExistsError, StackComponentExistsError) as error:
         raise conflict(error) from error
 
 
 @authed.put(
     STACKS + "/{name}",
-    response_model=Dict[str, str],
     responses={404: error_response},
 )
 async def update_stack(stack: StackWrapper, name: str) -> Dict[str, str]:
     """Updates a stack."""
     try:
-        return zen_store.update_stack(name, stack)
+        zen_store.update_stack(name, stack)
     except DoesNotExistException as error:
         raise not_found(error) from error
 

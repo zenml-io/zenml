@@ -698,9 +698,6 @@ class BaseZenStore(ABC):
         Args:
             stack: The stack to register.
 
-        Returns:
-            metadata dict for telemetry or logging.
-
         Raises:
             StackExistsError: If a stack with the same name already exists.
             StackComponentExistsError: If a component of the stack wasn't
@@ -748,7 +745,7 @@ class BaseZenStore(ABC):
         self._save_stack(stack.name, stack_configuration)
         logger.info("Registered stack with name '%s'.", stack.name)
 
-    def _update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
+    def _update_stack(self, name: str, stack: StackWrapper) -> None:
         """Update a stack and its components.
 
         If any of the stack's components aren't registered in the stack store
@@ -864,7 +861,9 @@ class BaseZenStore(ABC):
         a local artifact store and a local SQLite metadata store.
         """
         stack = Stack.default_local_stack()
-        metadata = self._register_stack(StackWrapper.from_stack(stack))
+        sw = StackWrapper.from_stack(stack)
+        self._register_stack(sw)
+        metadata = {c.type.value: c.flavor for c in sw.components}
         metadata["store_type"] = self.type.value
         self._track_event(
             AnalyticsEvent.REGISTERED_DEFAULT_STACK, metadata=metadata
@@ -917,8 +916,8 @@ class BaseZenStore(ABC):
                 and name already exists.
         """
         analytics_metadata = {
-            "type": component.TYPE.value,
-            "flavor": component.FLAVOR,
+            "type": component.type.value,
+            "flavor": component.flavor,
         }
         self._track_event(
             AnalyticsEvent.REGISTERED_STACK_COMPONENT,
@@ -943,8 +942,8 @@ class BaseZenStore(ABC):
             KeyError: If no stack component exists with the given name.
         """
         analytics_metadata = {
-            "type": component.TYPE.value,
-            "flavor": component.FLAVOR,
+            "type": component.type.value,
+            "flavor": component.flavor,
         }
         self._track_event(
             AnalyticsEvent.UPDATED_STACK_COMPONENT,
@@ -962,7 +961,7 @@ class BaseZenStore(ABC):
             KeyError: If no stack exists for the given name.
         """
         # No tracking events, here for consistency
-        return self._delete_stack_component(name)
+        return self._deregister_stack(name)
 
     def create_user(self, user_name: str) -> User:
         """Creates a new user.
