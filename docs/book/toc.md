@@ -67,10 +67,10 @@
 
 ## Misc
 
-* [System Environmental Variables](reference/system-env.md)
-* [Usage Analytics](reference/usage-analytics.md)
-* [Contact](reference/contact.md)
-* [FAQ](reference/faq.md)
+* [System Environmental Variables](misc/system-env.md)
+* [Usage Analytics](misc/usage-analytics.md)
+* [Contact](misc/contact.md)
+* [FAQ](misc/faq.md)
 * [Roadmap](https://zenml.io/roadmap)
   
 ## Reference

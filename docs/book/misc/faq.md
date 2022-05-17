@@ -1,7 +1,5 @@
 # Frequency Asked Questions (FAQ)
 
-
-
 - Can I use tool X? (i.e. pytorch or whatever)
 - How does Y tool integrate with ZenML
 - How does ZenML compare to orchestrators?
