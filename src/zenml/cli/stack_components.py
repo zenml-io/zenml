@@ -344,9 +344,11 @@ def generate_stack_component_flavor_register_command(
         except EntityExistsError as e:
             cli_utils.error(str(e))
         else:
-            cli_utils.declare(f"Successfully registered new flavor "
-                              f"'{component_class.FLAVOR}' for stack component "
-                              f"'{component_class.TYPE}'.")
+            cli_utils.declare(
+                f"Successfully registered new flavor "
+                f"'{component_class.FLAVOR}' for stack component "
+                f"'{component_class.TYPE}'."
+            )
 
     return register_stack_component_flavor_command
 
