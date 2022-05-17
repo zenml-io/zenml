@@ -21,6 +21,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
@@ -42,6 +43,11 @@ from zenml.zen_stores.models.pipeline_models import (
     PipelineRunWrapper,
     PipelineWrapper,
 )
+
+# Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
+# warning
+SelectOfScalar.inherit_cache = True  # type: ignore
+Select.inherit_cache = True  # type: ignore
 
 logger = get_logger(__name__)
 

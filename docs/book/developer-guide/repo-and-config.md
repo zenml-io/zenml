@@ -11,11 +11,11 @@ referred to as the _.zen folder_.
 ## The Global Config
 
 Most of the information stored by ZenML on a machine, such as the global
-settings, the configured [ZenML Profiles](./profiles.md) and even the configured
-Stacks and Stack Components, is kept in a folder commonly referred to as the
-_ZenML Global Config Directory_ or the _ZenML Config Path_. The location of this
-folder depends on the operating system type and the current system user, but is
-usually located in the following locations:
+settings, the configured [ZenML Profiles](../collaborate/profiles.md) and even
+the configured Stacks and Stack Components, is kept in a folder commonly
+referred to as the _ZenML Global Config Directory_ or the _ZenML Config Path_.
+The location of this folder depends on the operating system type and the current
+system user, but is usually located in the following locations:
 
 * Linux: `~/.config/zenml`
 * Mac: `~/Library/Application Support/ZenML`
@@ -136,7 +136,8 @@ stores information about the Stacks, Stack Components, custom Stack Component
 flavors etc. that are configured under each Profile. Every Profile will have its
 own subdirectory here, unless the Profile is explicitly created with a custom
 configuration path. (See the `zenml profile` command and the section on
-[ZenML Profiles](./profiles.md) for more information about Profiles.)
+[ZenML Profiles](../collaborate/profiles.md) for more information about
+Profiles.)
 
 In addition to the above, you may also find the following files and folders under
 the _Global Config Directory_, depending on what you do with ZenML:
