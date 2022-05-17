@@ -40,19 +40,6 @@ Putting all these considerations together, we end up with the following
 implementation:
 
 ```python
-from abc import abstractmethod
-from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Iterable,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-)
-
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
@@ -130,6 +117,14 @@ class BaseArtifactStore(StackComponent):
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
         """Return an iterator that walks the contents of the given directory."""
 ```
+
+{% hint style="info" %}
+This is a slimmed-down version of the base implementation which aims to 
+highlight the abstraction layer. In order to see the full implementation 
+and get the complete docstrings, please check the source code on GitHub.
+{% endhint %}
+
+description: <!--- TODO: Short description about fileio --->
 
 ## List of available artifact stores
 

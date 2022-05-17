@@ -23,7 +23,7 @@ deliberately simple and generic interface:
    it inherits from the `StackComponent` class. This sets the `TYPE`
    variable to the specific `StackComponentType`.
 2. The `FLAVOR` class variable needs to be set in subclasses as it
-   is meant to indentify the implementation flavor of the particular
+   is meant to identify the implementation flavor of the particular
    step operator.
 3. Lastly, the base class features one `abstractmethod` called `launch()`. In 
    the implementation of every step operator flavor, the `launch()` method is 
