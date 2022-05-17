@@ -517,6 +517,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def create_store(
         profile: "ProfileConfiguration",
         skip_default_registrations: bool = False,
+        track_analytics: bool = True,
     ) -> "BaseZenStore":
         """Create the repository persistence back-end store from a configuration
         profile.
@@ -558,6 +559,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             store.initialize(
                 url=profile.store_url,
                 skip_default_registrations=skip_default_registrations,
+                track_analytics=track_analytics,
             )
             return store
 

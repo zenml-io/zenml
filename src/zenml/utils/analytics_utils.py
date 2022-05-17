@@ -42,8 +42,11 @@ class AnalyticsEvent(str, Enum):
 
     # Stack
     REGISTERED_STACK = "Stack registered"
+    REGISTERED_DEFAULT_STACK = "Default stack registered"
     SET_STACK = "Stack set"
     UPDATED_STACK = "Stack updated"
+    IMPORT_STACK = "Stack imported"
+    EXPORT_STACK = "Stack exported"
 
     # Stack Flavors
     REGISTERED_STACK_FLAVOR = "Stack flavor registered"

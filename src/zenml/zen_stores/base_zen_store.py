@@ -14,7 +14,7 @@
 import base64
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import yaml
 
@@ -46,6 +46,7 @@ class BaseZenStore(ABC):
         self,
         url: str,
         skip_default_registrations: bool = False,
+        track_analytics: bool = True,
         *args: Any,
         **kwargs: Any,
     ) -> "BaseZenStore":
@@ -55,6 +56,7 @@ class BaseZenStore(ABC):
             url: The URL of the store.
             skip_default_registrations: If `True`, the creation of the default
                 stack and user will be skipped.
+            track_analytics: If `False`, then we do not track events.
             *args: Additional arguments to pass to the concrete store
                 implementation.
             **kwargs: Additional keyword arguments to pass to the concrete
@@ -63,6 +65,7 @@ class BaseZenStore(ABC):
         Returns:
             The initialized concrete store instance.
         """
+        self._track_analytics = track_analytics
         if not skip_default_registrations:
             if self.is_empty:
                 logger.info("Registering default stack...")
@@ -874,7 +877,9 @@ class BaseZenStore(ABC):
         stack = Stack.default_local_stack()
         metadata = self.register_stack(StackWrapper.from_stack(stack))
         metadata["store_type"] = self.type.value
-        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+        self._track_event(
+            AnalyticsEvent.REGISTERED_DEFAULT_STACK, metadata=metadata
+        )
 
     def create_default_user(self) -> None:
         """Creates a default user."""
@@ -882,10 +887,18 @@ class BaseZenStore(ABC):
             self.get_user(user_name=DEFAULT_USERNAME)
         except KeyError:
             # Use private interface and send custom tracking event
-            track_event(AnalyticsEvent.CREATE_DEFAULT_USER)
+            self._track_event(AnalyticsEvent.CREATE_DEFAULT_USER)
             self._create_user(user_name=DEFAULT_USERNAME)
 
     # Common code (internal implementations, private):
+
+    def _track_event(
+        self,
+        event: Union[str, AnalyticsEvent],
+        metadata: Optional[Dict[str, Any]] = None,
+    ):
+        if self._track_analytics:
+            track_event(event, metadata)
 
     def _stack_from_dict(
         self, name: str, stack_configuration: Dict[StackComponentType, str]
@@ -918,7 +931,7 @@ class BaseZenStore(ABC):
             "type": component.TYPE.value,
             "flavor": component.FLAVOR,
         }
-        track_event(
+        self._track_event(
             AnalyticsEvent.REGISTERED_STACK_COMPONENT,
             metadata=analytics_metadata,
         )
@@ -944,7 +957,7 @@ class BaseZenStore(ABC):
             "type": component.TYPE.value,
             "flavor": component.FLAVOR,
         }
-        track_event(
+        self._track_event(
             AnalyticsEvent.UPDATED_STACK_COMPONENT,
             metadata=analytics_metadata,
         )
@@ -974,7 +987,7 @@ class BaseZenStore(ABC):
         Raises:
             EntityExistsError: If a user with the given name already exists.
         """
-        track_event(AnalyticsEvent.CREATED_USER)
+        self._track_event(AnalyticsEvent.CREATED_USER)
         return self._create_user(user_name)
 
     def delete_user(self, user_name: str) -> None:
@@ -986,7 +999,7 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: If no user with the given name exists.
         """
-        track_event(AnalyticsEvent.DELETED_USER)
+        self._track_event(AnalyticsEvent.DELETED_USER)
         self._delete_user(user_name)
 
     def get_user(self, user_name: str) -> User:
@@ -1016,7 +1029,7 @@ class BaseZenStore(ABC):
         Raises:
             EntityExistsError: If a team with the given name already exists.
         """
-        track_event(AnalyticsEvent.CREATED_TEAM)
+        self._track_event(AnalyticsEvent.CREATED_TEAM)
         self._create_team(team_name)
 
     def get_team(self, team_name: str) -> Team:
@@ -1043,7 +1056,7 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: If no team with the given name exists.
         """
-        track_event(AnalyticsEvent.DELETED_TEAM)
+        self._track_event(AnalyticsEvent.DELETED_TEAM)
         self._delete_team(team_name)
 
     def get_project(self, project_name: str) -> Project:
@@ -1076,7 +1089,7 @@ class BaseZenStore(ABC):
         Raises:
             EntityExistsError: If a project with the given name already exists.
         """
-        track_event(AnalyticsEvent.CREATED_PROJECT)
+        self._track_event(AnalyticsEvent.CREATED_PROJECT)
         self._create_project(project_name, description)
 
     def delete_project(self, project_name: str) -> None:
@@ -1088,7 +1101,7 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: If no project with the given name exists.
         """
-        track_event(AnalyticsEvent.DELETED_PROJECT)
+        self._track_event(AnalyticsEvent.DELETED_PROJECT)
         self._delete_project(project_name)
 
     def get_role(self, role_name: str) -> Role:
@@ -1118,7 +1131,7 @@ class BaseZenStore(ABC):
         Raises:
             EntityExistsError: If a role with the given name already exists.
         """
-        track_event(AnalyticsEvent.CREATED_ROLE)
+        self._track_event(AnalyticsEvent.CREATED_ROLE)
         self._create_role(role_name)
 
     def delete_role(self, role_name: str) -> None:
@@ -1130,7 +1143,7 @@ class BaseZenStore(ABC):
         Raises:
             KeyError: If no role with the given name exists.
         """
-        track_event(AnalyticsEvent.DELETED_ROLE)
+        self._track_event(AnalyticsEvent.DELETED_ROLE)
         self._delete_role(role_name)
 
     def create_flavor(
@@ -1153,5 +1166,5 @@ class BaseZenStore(ABC):
             EntityExistsError: If a flavor with the given name and type
                 already exists.
         """
-        track_event(AnalyticsEvent.CREATED_FLAVOR)
+        self._track_event(AnalyticsEvent.CREATED_FLAVOR)
         self._create_flavor(source, name, stack_component_type)
