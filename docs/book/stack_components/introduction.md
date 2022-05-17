@@ -29,9 +29,13 @@ is based on: Stacks, Stack Components and Flavors.
 
 ## Stacks
 
-In ZenML, this is where the concept of stacks comes into play. It
+The first concept that we will look into is the Stack. In ZenML, a Stack 
+represents essentially a collection of all the configuration for the 
+infrastructure of your MLOps platform. (TODO: One more motivational sentence)
 
-Short description of what stacks, stack components and flavors mean
+Structurally, each Stack consists of different Stack Components of varying types. 
+In the table below, you can find a short list of all the stack component types 
+that you can use within your stack:
 
 ### List of different types of components
 
@@ -48,11 +52,16 @@ Short description of what stacks, stack components and flavors mean
 | Experiment Tracker      |          | Tracking your ML experiments                                      |
 | Alerter                 |          | Sending alerts through specified channels                         |
 
-In order to establish a stack, you only need instances of an orchestrator, 
-an artifact store and a metadata store. 
+Establishing a stack requires you to define at least of an orchestrator, 
+an artifact store and a metadata store. The rest of the stack components are 
+optional, and you can use them as you see fit.
 
 ## Stack Components
 
+A Stack Component represents the abstraction interface that is created for a 
+specific task in your ML workflow.
+
+For instance,
 ### Using `pydantic`
 
 ```python
@@ -109,6 +118,15 @@ class LocalArtifactStore(BaseArtifactStore):
 ```
 
 provision, deprovision
+
+## CLI
+
+#### zenml stack list
+#### zenml stack register
+#### zenml stack-component list
+#### zenml stack-component register
+#### zenml stack-component flavor list
+#### zenml stack-component flavor register
 
 ## Configuration and usage
 
