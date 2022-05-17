@@ -104,6 +104,9 @@ Programmatically, each stack component is built on to
 from typing import ClassVar
 from pydantic import BaseModel
 
+from zenml.enums import StackComponentType
+
+
 class StackComponent(BaseModel, ABC):
     """Abstract StackComponent class for all components of a ZenML stack."""
 
@@ -129,7 +132,7 @@ You can already see how that comes into play here within the base
 a `StackComponent` needs to include a `name` and an auto-generated `uuid`. 
 These variables will be tracked when we serialize the stack component object.
 You can exclude an instance configuration parameter from the serialization 
-if the name of the parameter starts with an `_`.
+by giving it a name which starts with `_`.
 
 Moreover, you can use class variables by denoting them with the `ClassVar[..]`, 
 which are also excluded from the serialization. Each `StackComponent` 
@@ -168,6 +171,13 @@ implementation.
 
 ## Flavors
 
+Now, that we have taken a look at the base implementation of stack components,
+it is time to introduce the concept of **Flavors**. 
+
+In ZenML, a **Flavor** represents the specific implementation of a 
+**Stack Component**. In other words, the **Stack Components** set up the base 
+implementation, whereas **Flavors** 
+
 ```python
 class LocalArtifactStore(BaseArtifactStore):
     """Artifact Store for local artifacts."""
@@ -179,42 +189,11 @@ class LocalArtifactStore(BaseArtifactStore):
     ...
 ```
 
-provision, deprovision
-
-## CLI
-
-Our CLI is the main channel that lets our users interact with their stacks, 
-stack components and flavors.
-
-## Configuration and usage
-
-Configuration with instance parameters
-Configuration with secrets
-Configuration with runtime configs
-
-## Create your own flavors
+integration vs built-in
 
 ```bash
 zenml artifact-store flavor list
 ```
-```bash
-Running without an active repository root.
-Running with active profile: 'default' (global)
-┏━━━━━━━━┯━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ FLAVOR │ INTEGRATION │ READY-TO-USE │ SOURCE                                                        ┃
-┠────────┼─────────────┼──────────────┼───────────────────────────────────────────────────────────────┨
-┃ local  │ built-in    │ ✅           │ zenml.artifact_stores.local_artifact_store.LocalArtifactStore ┃
-┃ azure  │ azure       │ ✅           │ zenml.integrations.azure.artifact_stores.AzureArtifactStore   ┃
-┃  gcp   │ gcp         │ ✅           │ zenml.integrations.gcp.artifact_stores.GCSArtifactStore       ┃
-┃   s3   │ s3          │ ✅           │ zenml.integrations.s3.artifact_stores.S3ArtifactStore         ┃
-┗━━━━━━━━┷━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-```
-The flag 'READY-TO-USE' indicates whether you can directly create/use/manage a 
-stack component with that specific flavor. You can bring a flavor to a state 
-where it is 'READY-TO-USE' in two different ways. If the flavor belongs to a 
-ZenML integration, you can use `zenml integration install <name-of-the-integration>` 
-and if it doesn't, you can make sure that you are using ZenML in an 
-environment where ZenML can import the flavor through its source.
 
 ```bash
 zenml artifact-store flavor register TODO
@@ -223,4 +202,27 @@ zenml artifact-store flavor register TODO
 ```bash
 zenml artifact-store flavor list
 ```
+
+## Configuration and usage
+
+Configuration with instance parameters
+Configuration with secrets
+Configuration with runtime configs
+
+```bash
+zenml artifact-store register 
+```
+
+```bash
+zenml artifact-store list
+```
+
+{% hint style="info" %}
+Our CLI features a wide variety of commands that let you easily manage/use your 
+stack components/flavors. If you would like to learn more, please 
+do: "`zenml <stack-component-type> --help`" or visit our CLI docs.
+{% endhint %}
+
+## provision, deprovision
+
 
