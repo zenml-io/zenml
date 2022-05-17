@@ -153,6 +153,13 @@ please check the corresponding pages in the API docs linked below.
 | MLFlowModelDeployer  | mlflow  | mlflow  |
 | SeldonModelDeployer     | seldon     | seldon          |
 
+If you would like to see the available flavors for model deployers, you can 
+use the command:
+
+```shell
+zenml model-delployer flavor list
+```
+
 ## Building your own model deployers
 
 WIP

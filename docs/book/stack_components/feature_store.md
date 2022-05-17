@@ -25,3 +25,10 @@ integration of `feast`.
 |                     | Flavor | Integration |
 |---------------------|--------|-------------|
 | FeastFeatureStore  | feast  | feast  |
+
+If you would like to see the available flavors for feature stores, you can 
+use the command:
+
+```shell
+zenml feature-store flavor list
+```

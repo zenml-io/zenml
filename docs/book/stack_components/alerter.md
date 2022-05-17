@@ -23,3 +23,10 @@ can be used to post messages to a specified channel.
 |                     | Flavor | Integration |
 |---------------------|--------|-------------|
 | SlackAlerter  | slack  | slack  |
+
+If you would like to see the available flavors for alerters, you can 
+use the command:
+
+```shell
+zenml alerter flavor list
+```

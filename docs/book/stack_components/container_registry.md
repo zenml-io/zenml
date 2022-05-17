@@ -76,6 +76,13 @@ and get the complete docstrings, please check the source code on GitHub.
 | GitHubContainerRegistry  | github  | `built-in`        |
 | GitLabContainerRegistry  | gitlab  | `built-in`        |
 
+If you would like to see the available flavors for container registries, you can 
+use the command:
+
+```shell
+zenml container-registry flavor list
+```
+
 ## Building your own container registry
 
 WIP

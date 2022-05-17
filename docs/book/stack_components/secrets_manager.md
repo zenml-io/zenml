@@ -73,7 +73,7 @@ For production use cases, some more flavors can be found in specific
 | AWSSecretsManager   | aws                  | aws                 |
 | GCPSecretsManager   | gcp_secrets_manager  | gcp_secrets_manager |
 
-If you would like to see the available flavors for artifact stores, you can 
+If you would like to see the available flavors for secret managers, you can 
 use the command:
 
 ```shell

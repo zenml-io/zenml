@@ -24,4 +24,9 @@ flavors listed down below.
 | MySQLMetadataStore   | mysql                  | `built-in`    |
 | KubeflowMetadataStore   | kubeflow  | kubeflow |
 
+If you would like to see the available flavors for metadata stores, you can 
+use the command:
 
+```shell
+zenml metadata-store flavor list
+```
