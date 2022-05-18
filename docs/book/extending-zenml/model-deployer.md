@@ -137,7 +137,7 @@ class BaseModelDeployer(StackComponent, ABC):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the source code on GitHub.
+and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/model_deployers/#zenml.model_deployers.base_model_deployer.BaseModelDeployer).
 {% endhint %}
 
 

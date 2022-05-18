@@ -121,7 +121,7 @@ class BaseArtifactStore(StackComponent):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the source code on GitHub.
+and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore).
 {% endhint %}
 
 #### The effect on the `zenml.io.fileio`

@@ -67,6 +67,12 @@ class BaseSecretsManager(StackComponent, ABC):
         """Delete all existing secrets."""
 ```
 
+{% hint style="info" %}
+This is a slimmed-down version of the base implementation which aims to 
+highlight the abstraction layer. In order to see the full implementation 
+and get the complete docstrings, please check the [API docs](https://apidocs.zenml.io/0.7.3/api_docs/secrets_managers/#zenml.secrets_managers.base_secrets_manager.BaseSecretsManager).
+{% endhint %}
+
 ## List of available secrets managers
 
 Out of the box, ZenML comes with a `LocalSecretsManager` implementation, which 
