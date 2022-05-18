@@ -39,18 +39,18 @@ in the next section. However, before we get there, let's first take a look at
 the list of all the stack component types that you can use within your **stack** 
 in the table below:
 
-| Type of Stack Component       | Description                                                       |
-|-------------------------------|-------------------------------------------------------------------|
-| **Orchestrator (required)**   | Orchestrating the runs of your pipeline                           |
-| **Artifact Store (required)** | Storage for the artifacts created by your pipelines               |
-| **Metadata Store (required)** | Tracking the execution of your pipelines/steps                    |
-| Container Registry            | Store for your containers                                         |
-| Secrets Manager               | Centralized location for the storage of your secrets              |
-| Step Operator                 | Execution of individual steps in specialized runtime environments |
-| Model Deployer                | Services/platforms responsible for online model serving           |
-| Feature Store                 | Management of your data/features                                  |
-| Experiment Tracker            | Tracking your ML experiments                                      |
-| Alerter                       | Sending alerts through specified channels                         |
+| Type of Stack Component                           | Description                                                       |
+|---------------------------------------------------|-------------------------------------------------------------------|
+| [**Orchestrator (required)**](./orchestrator)     | Orchestrating the runs of your pipeline                           |
+| [**Artifact Store (required)**](./artifact-store) | Storage for the artifacts created by your pipelines               |
+| [**Metadata Store (required)**](./metadata-store) | Tracking the execution of your pipelines/steps                    |
+| [Container Registry](./container-registry)        | Store for your containers                                         |
+| [Secrets Manager](./secrets-manager)              | Centralized location for the storage of your secrets              |
+| [Step Operator](./step-operator)                  | Execution of individual steps in specialized runtime environments |
+| [Model Deployer](./model-deployer)                | Services/platforms responsible for online model serving           |
+| [Feature Store](./feature-store)                  | Management of your data/features                                  |
+| [Experiment Tracker](./experiment-tracker)        | Tracking your ML experiments                                      |
+| [Alerter](./alerter)                              | Sending alerts through specified channels                         |
 
 Keep in mind, that each pipeline run that you execute with ZenML will require 
 a **stack** and each **stack** will be required to include at least of an 
@@ -92,10 +92,10 @@ class StackComponent(BaseModel, ABC):
 ```
 
 There are a few things to unpack here. Let's talk about `pydantic` first. 
-`pydantic` is a library for data validation and settings management. Using 
-their `BaseModel` is helping us to configure and serialize these components 
-while allowing us to add a validation layer to each stack component 
-instance/implementation.
+`pydantic` is a library for [data validation and settings 
+management](https://pydantic-docs.helpmanual.io/). Using their `BaseModel` is 
+helping us to configure and serialize these components while allowing us to 
+add a validation layer to each stack component instance/implementation.
 
 You can already see how that comes into play here within the base 
 `StackComponent` implementation. As you can see, each instance of 
@@ -239,7 +239,7 @@ zenml artifact-store register NAME --flavor=local --path=/path/to/your/store
 {% hint style="info" %}
 Our CLI features a wide variety of commands that let you easily manage/use your 
 flavors. If you would like to learn more, please do: 
-"`zenml <stack-component-type> --help`" or visit our CLI docs.
+"`zenml <stack-component-type> --help`" or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
 {% endhint %}
 
 ## Bringing it together
@@ -276,7 +276,7 @@ selected stack.
 {% hint style="info" %}
 Our CLI features a wide variety of commands that let you easily manage/use your 
 stacks. If you would like to learn more, please do: "`zenml stack --help`"
-or visit our CLI docs.
+or visit [our CLI docs](https://apidocs.zenml.io/latest/cli/).
 {% endhint %}
 
 ## Runtime configuration
