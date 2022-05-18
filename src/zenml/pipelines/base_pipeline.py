@@ -127,12 +127,6 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.secrets = kwargs.pop(PARAM_SECRETS, [])
 
         self.name = self.__class__.__name__
-        logger.info("Creating run for pipeline: `%s`", self.name)
-        logger.info(
-            f'Cache {"enabled" if self.enable_cache else "disabled"} for '
-            f"pipeline `{self.name}`"
-        )
-
         self.__steps: Dict[str, BaseStep] = {}
         self._verify_arguments(*args, **kwargs)
 
@@ -381,6 +375,12 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 constants.ENV_ZENML_PREVENT_PIPELINE_EXECUTION,
             )
             return
+
+        logger.info("Creating run for pipeline: `%s`", self.name)
+        logger.info(
+            f'Cache {"enabled" if self.enable_cache else "disabled"} for '
+            f"pipeline `{self.name}`"
+        )
 
         # Activating the built-in integrations through lazy loading
         from zenml.integrations.registry import integration_registry

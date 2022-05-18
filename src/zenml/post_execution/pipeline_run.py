@@ -13,13 +13,15 @@
 #  permissions and limitations under the License.
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from ml_metadata import proto
 
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.post_execution.step import StepView
+from zenml.runtime_configuration import RuntimeConfiguration
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 if TYPE_CHECKING:
     from zenml.metadata_stores import BaseMetadataStore
@@ -40,10 +42,8 @@ class PipelineRunView:
         metadata_store: "BaseMetadataStore",
     ):
         """Initializes a post-execution pipeline run object.
-
         In most cases `PipelineRunView` objects should not be created manually
         but retrieved from a `PipelineView` object instead.
-
         Args:
             id_: The context id of this pipeline run.
             name: The name of this pipeline run.
@@ -58,10 +58,44 @@ class PipelineRunView:
         self._executions = executions
         self._steps: Dict[str, StepView] = OrderedDict()
 
+        # This might be set from the parent pipeline view in case this run
+        # is also tracked in the ZenStore
+        self._run_wrapper: Optional[PipelineRunWrapper] = None
+
     @property
     def name(self) -> str:
         """Returns the name of the pipeline run."""
         return self._name
+
+    @property
+    def zenml_version(self) -> Optional[str]:
+        """Version of ZenML that this pipeline run was performed with."""
+        if self._run_wrapper:
+            return self._run_wrapper.zenml_version
+        return None
+
+    @property
+    def git_sha(self) -> Optional[str]:
+        """Git commit SHA that this pipeline run was performed on.
+
+        This will only be set if the pipeline code is in a git repository and
+        there are no dirty files when running the pipeline."""
+        if self._run_wrapper:
+            return self._run_wrapper.git_sha
+        return None
+
+    @property
+    def runtime_configuration(self) -> Optional["RuntimeConfiguration"]:
+        """Runtime configuration that was used for this pipeline run.
+
+        This will only be set if the pipeline run was tracked in a ZenStore.
+        """
+        if self._run_wrapper:
+            return RuntimeConfiguration(
+                **self._run_wrapper.runtime_configuration
+            )
+
+        return None
 
     @property
     def status(self) -> ExecutionStatus:
@@ -116,6 +150,13 @@ class PipelineRunView:
             return
 
         self._steps = self._metadata_store.get_pipeline_run_steps(self)
+
+        if self._run_wrapper:
+            # If we have the run wrapper from the ZenStore, pass on the step
+            # wrapper so users can access additional information about the step.
+            for step_wrapper in self._run_wrapper.pipeline.steps:
+                if step_wrapper.name in self._steps:
+                    self._steps[step_wrapper.name]._step_wrapper = step_wrapper
 
     def __repr__(self) -> str:
         """Returns a string representation of this pipeline run."""

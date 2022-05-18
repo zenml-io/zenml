@@ -232,7 +232,7 @@ There are lot's more things you do in production that you might consider adding
 to your workflows:
 
 * Adding a step
-  to [automatically deploy the models](../../stack-components/model-deployer.md) to
+  to [automatically deploy the models](../../extending-zenml/model-deployer.md) to
   a REST endpoint.
 * Setting
   up [a drift detection and validation step](drift-detection.md)

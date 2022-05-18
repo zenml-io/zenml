@@ -11,13 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.container_registries import BaseContainerRegistry
-from zenml.enums import StackComponentType
+from typing import ClassVar
+
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
+)
+from zenml.enums import ContainerRegistryFlavor
 
 
-def test_base_container_registry_attributes():
-    """Tests that the basic attributes of the base container registry are set
-    correctly."""
-    container_registry = BaseContainerRegistry(name="", uri="")
-    assert container_registry.TYPE == StackComponentType.CONTAINER_REGISTRY
-    assert container_registry.FLAVOR == "default"
+class DefaultContainerRegistry(BaseContainerRegistry):
+    """Class for default ZenML container registries."""
+
+    # Class Configuration
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.DEFAULT.value

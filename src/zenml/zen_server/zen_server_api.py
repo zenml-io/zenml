@@ -24,13 +24,14 @@ from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
     ENV_ZENML_PROFILE_NAME,
     FLAVORS,
-    IS_EMPTY,
+    PIPELINE_RUNS,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
     STACK_COMPONENTS,
     STACK_CONFIGURATIONS,
     STACKS,
+    STACKS_EMPTY,
     TEAMS,
     USERS,
 )
@@ -53,6 +54,7 @@ from zenml.zen_stores.models import (
     Team,
     User,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 profile_name = os.environ.get(ENV_ZENML_PROFILE_NAME)
 
@@ -76,7 +78,7 @@ if profile.store_type == StoreType.REST:
         "other than the currently active one)"
     )
 zen_store: BaseZenStore = Repository.create_store(
-    profile, skip_default_registrations=True
+    profile, skip_default_registrations=True, skip_migration=True
 )
 
 
@@ -112,7 +114,6 @@ authed = APIRouter(
     dependencies=[Depends(authorize)], responses={401: error_response}
 )
 
-
 # to run this file locally, execute:
 # uvicorn zenml.zen_server.zen_server_api:app --reload
 
@@ -144,10 +145,10 @@ async def health() -> str:
     return "OK"
 
 
-@authed.get(IS_EMPTY, response_model=bool)
-async def is_empty() -> bool:
+@authed.get(STACKS_EMPTY, response_model=bool)
+async def stacks_empty() -> bool:
     """Returns whether stacks are registered or not."""
-    return zen_store.is_empty
+    return zen_store.stacks_empty
 
 
 @authed.get(
@@ -458,11 +459,15 @@ async def projects() -> List[Project]:
     return zen_store.projects
 
 
-@authed.get(PROJECTS + "/{name}", responses={404: error_response})
-async def get_project(name: str) -> Project:
-    """Gets a specific project."""
+@authed.get(
+    PROJECTS + "/{project_name}",
+    response_model=Project,
+    responses={404: error_response},
+)
+async def get_project(project_name: str) -> Project:
+    """Get a project for given name."""
     try:
-        return zen_store.get_project(project_name=name)
+        return zen_store.get_project(project_name)
     except KeyError as error:
         raise not_found(error) from error
 
@@ -573,6 +578,49 @@ async def revoke_role(data: Dict[str, Any]) -> None:
         )
     except KeyError as error:
         raise not_found(error) from error
+
+
+@authed.get(
+    PIPELINE_RUNS + "/{pipeline_name}", response_model=List[PipelineRunWrapper]
+)
+async def pipeline_runs(
+    pipeline_name: str, project_name: Optional[str] = None
+) -> List[PipelineRunWrapper]:
+    """Returns all runs for a pipeline."""
+    return zen_store.get_pipeline_runs(
+        pipeline_name=pipeline_name, project_name=project_name
+    )
+
+
+@authed.get(
+    PIPELINE_RUNS + "/{pipeline_name}/{run_name}",
+    response_model=PipelineRunWrapper,
+    responses={404: error_response},
+)
+async def pipeline_run(
+    pipeline_name: str, run_name: str, project_name: Optional[str] = None
+) -> PipelineRunWrapper:
+    """Returns a single pipeline run."""
+    try:
+        return zen_store.get_pipeline_run(
+            pipeline_name=pipeline_name,
+            run_name=run_name,
+            project_name=project_name,
+        )
+    except KeyError as error:
+        raise not_found(error) from error
+
+
+@authed.post(
+    PIPELINE_RUNS,
+    responses={409: error_response},
+)
+async def register_pipeline_run(pipeline_run: PipelineRunWrapper) -> None:
+    """Registers a pipeline run."""
+    try:
+        return zen_store.register_pipeline_run(pipeline_run)
+    except EntityExistsError as error:
+        raise conflict(error) from error
 
 
 @authed.get(FLAVORS, response_model=List[FlavorWrapper])
