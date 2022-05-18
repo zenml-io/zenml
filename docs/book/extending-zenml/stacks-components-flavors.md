@@ -39,7 +39,7 @@ in the next section. However, before we get there, let's first take a look at
 the list of all the stack component types that you can use within your **stack** 
 in the table below:
 
-| Type of Stack Component                           | Description                                                       |
+| **Type of Stack Component**                       | **Description**                                                   |
 |---------------------------------------------------|-------------------------------------------------------------------|
 | [**Orchestrator (required)**](./orchestrator)     | Orchestrating the runs of your pipeline                           |
 | [**Artifact Store (required)**](./artifact-store) | Storage for the artifacts created by your pipelines               |
