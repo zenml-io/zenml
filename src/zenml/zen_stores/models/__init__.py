@@ -22,11 +22,15 @@ from zenml.zen_stores.models.user_management_models import (
     User,
     get_active_user_id,
 )
-from zenml.zen_stores.models.zen_store_model import ZenStoreModel
+from zenml.zen_stores.models.zen_store_model import (
+    ZenStoreModel,
+    ZenStorePipelineModel,
+)
 
 __all__ = [
     "ComponentWrapper",
     "ZenStoreModel",
+    "ZenStorePipelineModel",
     "StackWrapper",
     "User",
     "Team",

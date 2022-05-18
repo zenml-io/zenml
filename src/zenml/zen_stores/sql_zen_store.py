@@ -1362,8 +1362,9 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if existing_run:
                 raise EntityExistsError(
-                    f"Pipeline run with name '{pipeline_run.name}' already "
-                    f"exists."
+                    f"Pipeline run with name '{pipeline_run.name}' already"
+                    "exists. Please make sure your pipeline run names are "
+                    "unique."
                 )
 
             sql_run = PipelineRunTable.from_pipeline_run_wrapper(pipeline_run)

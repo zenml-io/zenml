@@ -258,6 +258,7 @@ def set_project(project_name: str) -> None:
     try:
         active_project = Repository().zen_store.get_project(project_name)
         Repository().set_active_project(project=active_project)
+        cli_utils.declare(f"Set locally active project '{project_name}'.")
     except KeyError:
         cli_utils.error(
             f'Cannot set "`{project_name}`" as active project. No such '
@@ -277,6 +278,7 @@ def unset_project() -> None:
             "`zenml init` to initialize a ZenML repository."
         )
     Repository().set_active_project(None)
+    cli_utils.declare("Unset active project.")
 
 
 @project.command("delete")
@@ -294,10 +296,11 @@ def delete_project(project_name: str) -> None:
         f"Are you sure you want to delete project `{project_name}`?"
     )
 
-    if active_project:
+    if active_project and active_project.name == project_name:
         unset_project()
 
     Repository().zen_store.delete_project(project_name=project_name)
+    cli_utils.declare(f"Deleted project '{project_name}'.")
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)

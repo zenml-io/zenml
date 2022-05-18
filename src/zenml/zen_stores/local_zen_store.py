@@ -12,10 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import base64
+import itertools
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union, overload
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 from uuid import UUID
 
 from zenml.enums import StackComponentType, StoreType
@@ -32,17 +43,21 @@ from zenml.zen_stores.models import (
     Team,
     User,
     ZenStoreModel,
+    ZenStorePipelineModel,
 )
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 logger = get_logger(__name__)
 
-E = TypeVar("E", bound=Union[User, Team, Project, Role, FlavorWrapper])
+E = TypeVar(
+    "E",
+    bound=Union[User, Team, Project, Role, FlavorWrapper, PipelineRunWrapper],
+)
 
 
 @overload
 def _get_unique_entity(
-    entity_name: str, collection: List[E], ensure_exists: bool = True
+    entity_name: str, collection: Sequence[E], ensure_exists: bool = True
 ) -> E:
     """Type annotations in case of `ensure_exists=True`."""
     ...
@@ -50,14 +65,14 @@ def _get_unique_entity(
 
 @overload
 def _get_unique_entity(
-    entity_name: str, collection: List[E], ensure_exists: bool = False
+    entity_name: str, collection: Sequence[E], ensure_exists: bool = False
 ) -> Optional[E]:
     """Type annotations in case of `ensure_exists=False`."""
     ...
 
 
 def _get_unique_entity(
-    entity_name: str, collection: List[E], ensure_exists: bool = True
+    entity_name: str, collection: Sequence[E], ensure_exists: bool = True
 ) -> Optional[E]:
     """Gets an entity with a specific name from a collection.
 
@@ -122,6 +137,10 @@ class LocalZenStore(BaseZenStore):
             self.__store = store_data
         else:
             self.__store = ZenStoreModel(str(self.root / "stacks.yaml"))
+
+        self.__pipeline_store = ZenStorePipelineModel(
+            str(self.root / "pipeline_runs.yaml")
+        )
 
         super().initialize(url, *args, **kwargs)
         return self
@@ -925,7 +944,7 @@ class LocalZenStore(BaseZenStore):
             KeyError: If no pipeline run (or project) with the given name
                 exists.
         """
-        runs = self.__store.pipeline_runs[pipeline_name]
+        runs = self.__pipeline_store.pipeline_runs[pipeline_name]
 
         for run in runs:
             if run.name != run_name:
@@ -953,7 +972,7 @@ class LocalZenStore(BaseZenStore):
             project_name: Optional name of the project from which to get the
                 pipeline runs.
         """
-        runs = self.__store.pipeline_runs[pipeline_name]
+        runs = self.__pipeline_store.pipeline_runs[pipeline_name]
         if project_name:
             runs = [run for run in runs if run.project_name == project_name]
 
@@ -972,10 +991,25 @@ class LocalZenStore(BaseZenStore):
             EntityExistsError: If a pipeline run with the same name already
                 exists.
         """
-        self.__store.pipeline_runs[pipeline_run.pipeline.name].append(
+        all_runs = list(
+            itertools.chain.from_iterable(
+                self.__pipeline_store.pipeline_runs.values()
+            )
+        )
+        if _get_unique_entity(
+            entity_name=pipeline_run.name,
+            collection=all_runs,
+            ensure_exists=False,
+        ):
+            raise EntityExistsError(
+                f"Pipeline run with name '{pipeline_run.name}' already exists. "
+                "Please make sure your pipeline run names are unique."
+            )
+
+        self.__pipeline_store.pipeline_runs[pipeline_run.pipeline.name].append(
             pipeline_run
         )
-        self.__store.write_config()
+        self.__pipeline_store.write_config()
 
     # Handling stack component flavors
 

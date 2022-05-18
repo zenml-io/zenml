@@ -17,6 +17,7 @@ import shutil
 import time
 from contextlib import ExitStack as does_not_raise
 from multiprocessing import Process
+from uuid import uuid4
 
 import pytest
 import requests
@@ -55,6 +56,10 @@ from zenml.zen_stores import (
     SqlZenStore,
 )
 from zenml.zen_stores.models import ComponentWrapper, StackWrapper
+from zenml.zen_stores.models.pipeline_models import (
+    PipelineRunWrapper,
+    PipelineWrapper,
+)
 
 logger = get_logger(__name__)
 
@@ -702,3 +707,62 @@ def test_rename_non_core_stack_component_succeeds(
 
     assert stack_orchestrator is not None
     assert stack_orchestrator.name == new_name
+
+
+def test_pipeline_run_management(
+    fresh_zen_store, one_step_pipeline, empty_step
+):
+    """Test registering and fetching pipeline runs."""
+    stack = Stack.default_local_stack()
+    pipeline = one_step_pipeline(empty_step())
+
+    run = PipelineRunWrapper(
+        name="run_name",
+        pipeline=PipelineWrapper.from_pipeline(pipeline),
+        stack=StackWrapper.from_stack(stack),
+        runtime_configuration={},
+        user_id=uuid4(),
+        project_name="project",
+    )
+
+    fresh_zen_store.register_pipeline_run(run)
+
+    registered_runs = fresh_zen_store.get_pipeline_runs(
+        pipeline_name=pipeline.name
+    )
+    assert len(registered_runs) == 1
+    assert registered_runs[0] == run
+
+    assert (
+        fresh_zen_store.get_pipeline_run(
+            pipeline_name=pipeline.name, run_name=run.name
+        )
+        == run
+    )
+    assert (
+        fresh_zen_store.get_pipeline_run(
+            pipeline_name=pipeline.name,
+            run_name=run.name,
+            project_name=run.project_name,
+        )
+        == run
+    )
+
+    # Filtering for the wrong projects doesn't return any runs
+    assert not fresh_zen_store.get_pipeline_runs(
+        pipeline_name=pipeline.name, project_name="not_the_correct_project"
+    )
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_pipeline_run(
+            pipeline_name=pipeline.name,
+            run_name=run.name,
+            project_name="not_the_correct_project",
+        )
+
+    # registering a run with the same name fails
+    with pytest.raises(EntityExistsError):
+        fresh_zen_store.register_pipeline_run(run)
+
+    different_run = run.copy(update={"name": "different_run_name"})
+    with does_not_raise():
+        fresh_zen_store.register_pipeline_run(different_run)
