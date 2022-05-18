@@ -11,16 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import ClassVar
-
-from zenml.container_registries.base_container_registry import (
-    BaseContainerRegistry,
-)
-from zenml.enums import ContainerRegistryFlavor
+from zenml.container_registries import DefaultContainerRegistry
+from zenml.enums import StackComponentType
 
 
-class GitLabContainerRegistry(BaseContainerRegistry):
-    """Class for GitLab Container Registry."""
-
-    # Class Configuration
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITLAB.value
+def test_default_container_registry_attributes():
+    """Tests that the basic attributes of the base container registry are set
+    correctly."""
+    container_registry = DefaultContainerRegistry(name="", uri="")
+    assert container_registry.TYPE == StackComponentType.CONTAINER_REGISTRY
+    assert container_registry.FLAVOR == "default"

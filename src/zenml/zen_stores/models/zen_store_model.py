@@ -27,6 +27,36 @@ from zenml.zen_stores.models import (
     Team,
     User,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
+
+
+class ZenStorePipelineModel(FileSyncModel):
+    """Pydantic object used for serializing ZenStore pipelines and runs.
+
+    Attributes:
+        pipeline_runs: Maps pipeline names to runs of that pipeline.
+    """
+
+    pipeline_runs: DefaultDict[str, List[PipelineRunWrapper]] = Field(
+        default=defaultdict(list)
+    )
+
+    @validator("pipeline_runs")
+    def _construct_pipeline_runs_defaultdict(
+        cls, pipeline_runs: Dict[str, List[PipelineRunWrapper]]
+    ) -> DefaultDict[str, List[PipelineRunWrapper]]:
+        """Ensures that `pipeline_runs` is a defaultdict so runs
+        of a new pipeline can be added without issues."""
+        return defaultdict(list, pipeline_runs)
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them. We need to set this in order
+        # to have a mix of mutable and immutable attributes
+        validate_assignment = True
+        # Ignore extra attributes from configs of previous ZenML versions
+        extra = "ignore"
 
 
 class ZenStoreModel(FileSyncModel):

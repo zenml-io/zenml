@@ -18,7 +18,7 @@ import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.config.global_config import GlobalConfiguration
-from zenml.container_registries import BaseContainerRegistry
+from zenml.container_registries import DefaultContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.metadata_stores import SQLiteMetadataStore
@@ -70,7 +70,7 @@ def test_initializing_a_stack_from_components():
     assert stack.container_registry is None
 
     # check that it also works with optional container registry
-    container_registry = BaseContainerRegistry(name="", uri="")
+    container_registry = DefaultContainerRegistry(name="", uri="")
     components[StackComponentType.CONTAINER_REGISTRY] = container_registry
 
     stack = Stack.from_components(name="", components=components)
@@ -119,7 +119,7 @@ def test_stack_returns_all_its_components():
     assert stack.components == expected_components
 
     # check that it also works with optional container registry
-    container_registry = BaseContainerRegistry(name="", uri="")
+    container_registry = DefaultContainerRegistry(name="", uri="")
     stack = Stack(
         name="",
         orchestrator=orchestrator,
@@ -203,11 +203,14 @@ def test_stack_validation_succeeds_if_no_component_validator_fails(
 
 
 def test_stack_deployment(
-    stack_with_mock_components, one_step_pipeline, empty_step
+    stack_with_mock_components, one_step_pipeline, empty_step, mocker
 ):
     """Tests that when a pipeline is deployed on a stack, the stack calls
     preparation/cleanup methods on all of its components and calls the
     orchestrator to run the pipeline."""
+    # Mock the pipeline run registering which tries (and fails) to serialize
+    # our mock objects
+    mocker.patch.object(stack_with_mock_components, "_register_pipeline_run")
     pipeline_run_return_value = object()
     stack_with_mock_components.orchestrator.run.return_value = (
         pipeline_run_return_value

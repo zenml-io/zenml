@@ -14,6 +14,7 @@
 
 import base64
 import json
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 import yaml
@@ -21,7 +22,9 @@ from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.stack import StackComponent
+
+if TYPE_CHECKING:
+    from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
 
@@ -36,7 +39,7 @@ class ComponentWrapper(BaseModel):
     config: bytes  # b64 encoded yaml config
 
     @classmethod
-    def from_component(cls, component: StackComponent) -> "ComponentWrapper":
+    def from_component(cls, component: "StackComponent") -> "ComponentWrapper":
         """Creates a ComponentWrapper from an actual instance of a Stack
         Component.
 
@@ -53,7 +56,7 @@ class ComponentWrapper(BaseModel):
             ),
         )
 
-    def to_component(self) -> StackComponent:
+    def to_component(self) -> "StackComponent":
         """Converts the ComponentWrapper into an actual instance of a Stack
         Component."""
         from zenml.repository import Repository

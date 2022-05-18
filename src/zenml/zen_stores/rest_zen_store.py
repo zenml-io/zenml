@@ -20,13 +20,14 @@ from pydantic import BaseModel
 
 from zenml.constants import (
     FLAVORS,
-    IS_EMPTY,
+    PIPELINE_RUNS,
     PROJECTS,
     ROLE_ASSIGNMENTS,
     ROLES,
     STACK_COMPONENTS,
     STACK_CONFIGURATIONS,
     STACKS,
+    STACKS_EMPTY,
     TEAMS,
     USERS,
 )
@@ -49,6 +50,7 @@ from zenml.zen_stores.models import (
     Team,
     User,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 logger = get_logger(__name__)
 
@@ -78,10 +80,13 @@ class RestZenStore(BaseZenStore):
         if not self.is_valid_url(url.strip("/")):
             raise ValueError("Invalid URL for REST store: {url}")
         self._url = url.strip("/")
-        if "skip_default_stack" not in kwargs:
-            kwargs["skip_default_stack"] = True
         super().initialize(url, *args, **kwargs)
         return self
+
+    def _migrate_store(self) -> None:
+        """Migrates the store to the latest version."""
+        # Don't do anything here in the rest store, as the migration has to be
+        # done server-side.
 
     # Static methods:
 
@@ -135,13 +140,13 @@ class RestZenStore(BaseZenStore):
         return self._url
 
     @property
-    def is_empty(self) -> bool:
+    def stacks_empty(self) -> bool:
         """Check if the store is empty (no stacks are configured).
 
         The implementation of this method should check if the store is empty
         without having to load all the stacks from the persistent storage.
         """
-        empty = self.get(IS_EMPTY)
+        empty = self.get(STACKS_EMPTY)
         if not isinstance(empty, bool):
             raise ValueError(
                 f"Bad API Response. Expected boolean, got:\n{empty}"
@@ -391,13 +396,13 @@ class RestZenStore(BaseZenStore):
         return [User.parse_obj(user_dict) for user_dict in body]
 
     def get_user(self, user_name: str) -> User:
-        """Gets a specific user.
+        """Get a specific user by name.
 
         Args:
             user_name: Name of the user to get.
 
         Returns:
-            The requested user.
+            The requested user, if it was found.
 
         Raises:
             KeyError: If no user with the given name exists.
@@ -530,16 +535,16 @@ class RestZenStore(BaseZenStore):
         return [Project.parse_obj(project_dict) for project_dict in body]
 
     def get_project(self, project_name: str) -> Project:
-        """Gets a specific project.
+        """Get an existing project by name.
 
         Args:
             project_name: Name of the project to get.
 
         Returns:
-            The requested project.
+            The requested project if one was found.
 
         Raises:
-            KeyError: If no project with the given name exists.
+            KeyError: If there is no such project.
         """
         return Project.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
 
@@ -829,6 +834,69 @@ class RestZenStore(BaseZenStore):
             RoleAssignment.parse_obj(assignment_dict)
             for assignment_dict in body
         ]
+
+    # Pipelines and pipeline runs
+
+    def get_pipeline_run(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunWrapper:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+        path = f"{PIPELINE_RUNS}/{pipeline_name}/{run_name}"
+        if project_name:
+            path += f"?project_name={project_name}"
+
+        body = self.get(path)
+        return PipelineRunWrapper.parse_obj(body)
+
+    def get_pipeline_runs(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunWrapper]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+        """
+        path = f"{PIPELINE_RUNS}/{pipeline_name}"
+        if project_name:
+            path += f"?project_name={project_name}"
+
+        body = self.get(path)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [PipelineRunWrapper.parse_obj(dict_) for dict_ in body]
+
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunWrapper,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
+        """
+        self.post(PIPELINE_RUNS, body=pipeline_run)
 
     # Private interface shall not be implemented for REST store, instead the
     # API only provides all public methods, including the ones that would

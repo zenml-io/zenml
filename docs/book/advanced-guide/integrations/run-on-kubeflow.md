@@ -69,18 +69,18 @@ zenml integration install kubeflow
 
 ### Create a local Kubeflow Pipelines Stack
 
-A [Stack](../introduction/core-concepts.md#stack) is the configuration of the
+A [Stack](../../introduction/core-concepts.md#stack) is the configuration of the
 surrounding infrastructure where ZenML pipelines
 are run and managed. For now, a `Stack` consists of:
 
-* [A metadata store](../introduction/core-concepts.md#metadata-store): To store
+* [A metadata store](../../introduction/core-concepts.md#metadata-store): To store
   metadata like parameters and artifact URIs.
-* [An artifact store](../introduction/core-concepts.md#artifact-store): To store
+* [An artifact store](../../introduction/core-concepts.md#artifact-store): To store
   interim data which is returned from steps.
-* [An orchestrator](../introduction/core-concepts.md#orchestrator): A service
+* [An orchestrator](../../introduction/core-concepts.md#orchestrator): A service
   that actually kicks off and runs each step of the pipeline.
 * An
-  optional [container registry](../introduction/core-concepts.md#container-registry):
+  optional [container registry](../../introduction/core-concepts.md#container-registry):
   To store Docker images that are created to run your pipeline.
 
 When you did `zenml init` at the start of this guide, a default `local_stack`
@@ -101,7 +101,7 @@ Output:
 ┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━┛
 ```
 
-![Your local stack when you start.](../assets/localstack.png)
+![Your local stack when you start.](../../assets/localstack.png)
 
 Let's stick with the default metadata and artifact stores for now and create a
 stack with a Kubeflow orchestrator and a
@@ -130,7 +130,7 @@ Stack `local_kubeflow_stack` successfully registered!
 Active stack: local_kubeflow_stack
 ```
 
-![Your stack with a Kubeflow Pipelines Orchestrator](../assets/localstack-with-kubeflow-orchestrator.png)
+![Your stack with a Kubeflow Pipelines Orchestrator](../../assets/localstack-with-kubeflow-orchestrator.png)
 
 {% hint style="warning" %}
 
@@ -232,12 +232,12 @@ There are lot's more things you do in production that you might consider adding
 to your workflows:
 
 * Adding a step
-  to [automatically deploy the models](../stack_components/model_deployer.md) to
+  to [automatically deploy the models](../../extending-zenml/model-deployer.md) to
   a REST endpoint.
 * Setting
-  up [a drift detection and validation step](../advanced_guide/drift_detection.md)
+  up [a drift detection and validation step](drift-detection.md)
   to test models before deploying.
-* [Using a secrets manager](../advanced_guide/secrets.md) to store secret keys
+* [Using a secrets manager](secrets.md) to store secret keys
   for use in your pipelines.
 
 ZenML will help with all of these and more. Check out our other guides to learn
