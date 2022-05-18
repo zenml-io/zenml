@@ -34,7 +34,7 @@ from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackComponent
 from zenml.utils import yaml_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
@@ -520,6 +520,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def create_store(
         profile: "ProfileConfiguration",
         skip_default_registrations: bool = False,
+        track_analytics: bool = True,
         skip_migration: bool = False,
     ) -> "BaseZenStore":
         """Create the repository persistence back-end store from a configuration
@@ -533,6 +534,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 repository information.
             skip_default_registrations: If `True`, the creation of the default
                 stack and user in the store will be skipped.
+            track_analytics: Only send analytics if set to `True`.
             skip_migration: If `True`, no store migration will be performed.
 
         Returns:
@@ -564,6 +566,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             store.initialize(
                 url=profile.store_url,
                 skip_default_registrations=skip_default_registrations,
+                track_analytics=track_analytics,
                 skip_migration=skip_migration,
             )
             return store
@@ -821,9 +824,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         from zenml.zen_stores.models import StackWrapper
 
         stack.validate()
-        metadata = self.zen_store.register_stack(StackWrapper.from_stack(stack))
-        metadata["store_type"] = self.active_profile.store_type.value
-        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+        self.zen_store.register_stack(StackWrapper.from_stack(stack))
 
     def update_stack(self, name: str, stack: Stack) -> None:
         """Updates a stack and its components.
@@ -837,13 +838,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         from zenml.zen_stores.models import StackWrapper
 
         stack.validate()
-        metadata = self.zen_store.update_stack(
-            name, StackWrapper.from_stack(stack)
-        )
+        self.zen_store.update_stack(name, StackWrapper.from_stack(stack))
         if self.active_stack_name == name:
             self.activate_stack(stack.name)
-        metadata["store_type"] = self.active_profile.store_type.value
-        track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
 
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack.
@@ -889,14 +886,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             name,
             component_type,
             ComponentWrapper.from_component(component),
-        )
-        analytics_metadata = {
-            "type": component.TYPE.value,
-            "flavor": component.FLAVOR,
-        }
-        track_event(
-            AnalyticsEvent.UPDATED_STACK_COMPONENT,
-            metadata=analytics_metadata,
         )
 
     def get_stack_components(
@@ -950,15 +939,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         )
         if component.post_registration_message:
             logger.info(component.post_registration_message)
-
-        analytics_metadata = {
-            "type": component.TYPE.value,
-            "flavor": component.FLAVOR,
-        }
-        track_event(
-            AnalyticsEvent.REGISTERED_STACK_COMPONENT,
-            metadata=analytics_metadata,
-        )
 
     def deregister_stack_component(
         self, component_type: StackComponentType, name: str

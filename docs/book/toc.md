@@ -1,7 +1,7 @@
 # Table of contents
 
 * [Introduction](index.md)
-* [Quickstart](introduction/quickstart-guide.md)
+* [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Core Concepts](introduction/core-concepts.md)
 
 ## Developer Guide
@@ -16,7 +16,6 @@
   * [Step Fixture](developer-guide/step-fixtures.md)
   * [Fetching Historic Runs](developer-guide/fetching-historic-runs.md)
   * [Class Based API](developer-guide/class-based-api.md)
-* [Stacks](developer-guide/stacks.md)
 * [Repo & Config](developer-guide/repo-and-config.md)
 
 ## Advanced Guide
@@ -59,21 +58,26 @@
 * [Feature Stores](extending-zenml/feature-store.md)
 * [Alerters](extending-zenml/alerter.md)
 
-## Support
+## Resources
 
-* [Integration Examples](https://github.com/zenml-io/zenml/tree/main/examples)
-* [Tutorial Notebooks](https://github.com/zenml-io/zenbytes)
+* [Navigate ZenML Resources](resources/index.md)
+* [Integrations Usages](https://github.com/zenml-io/zenml/tree/main/examples)
+* [Learn MLOps with ZenML](https://github.com/zenml-io/zenbytes)
 * [ZenML in Practice](https://github.com/zenml-io/zenfiles)
 * [Learn more on Youtube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
-* [Join our Slack](https://zenml.io/slack-invite/)
+* [Slack Community](https://zenml.io/slack-invite/)
+
+## Misc
+
+* [Best Practices](misc/best-practices.md)
+* [System Environmental Variables](misc/system-env.md)
+* [Usage Analytics](misc/usage-analytics.md)
+* [🙋‍♀️ Contributing](misc/contributing.md)
+* [FAQ](misc/faq.md)
+* [Roadmap](https://zenml.io/roadmap)
 
 ## Reference
 
-* [Roadmap](reference/roadmap.md)
 * [Glossary](reference/glossary.md)
-*
-* [System Environmental Variables](reference/system-env.md)
 * [CLI Reference](https://apidocs.zenml.io/latest/cli/)
 * [API Reference](https://apidocs.zenml.io/latest/)
-* [Usage Analytics](reference/usage-analytics.md)
-* [Contact](reference/contact.md)

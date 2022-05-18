@@ -77,8 +77,13 @@ if profile.store_type == StoreType.REST:
         f"{ENV_ZENML_PROFILE_NAME} to specify the use of a profile "
         "other than the currently active one)"
     )
+# We initialize with track_analytics=False because we do not
+# want to track anything server side.
 zen_store: BaseZenStore = Repository.create_store(
-    profile, skip_default_registrations=True, skip_migration=True
+    profile,
+    skip_default_registrations=True,
+    track_analytics=False,
+    skip_migration=True,
 )
 
 
@@ -214,26 +219,24 @@ async def get_stack(name: str) -> StackWrapper:
 
 @authed.post(
     STACKS,
-    response_model=Dict[str, str],
     responses={409: error_response},
 )
-async def register_stack(stack: StackWrapper) -> Dict[str, str]:
+async def register_stack(stack: StackWrapper) -> None:
     """Registers a stack."""
     try:
-        return zen_store.register_stack(stack)
+        zen_store.register_stack(stack)
     except (StackExistsError, StackComponentExistsError) as error:
         raise conflict(error) from error
 
 
 @authed.put(
     STACKS + "/{name}",
-    response_model=Dict[str, str],
     responses={404: error_response},
 )
-async def update_stack(stack: StackWrapper, name: str) -> Dict[str, str]:
+async def update_stack(stack: StackWrapper, name: str) -> None:
     """Updates a stack."""
     try:
-        return zen_store.update_stack(name, stack)
+        zen_store.update_stack(name, stack)
     except DoesNotExistException as error:
         raise not_found(error) from error
 

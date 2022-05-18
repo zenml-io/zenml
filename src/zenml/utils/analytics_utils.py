@@ -42,8 +42,11 @@ class AnalyticsEvent(str, Enum):
 
     # Stack
     REGISTERED_STACK = "Stack registered"
+    REGISTERED_DEFAULT_STACK = "Default stack registered"
     SET_STACK = "Stack set"
     UPDATED_STACK = "Stack updated"
+    IMPORT_STACK = "Stack imported"
+    EXPORT_STACK = "Stack exported"
 
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
@@ -56,6 +59,26 @@ class AnalyticsEvent(str, Enum):
 
     # Integrations
     INSTALL_INTEGRATION = "Integration installed"
+
+    # Users
+    CREATED_USER = "User created"
+    CREATED_DEFAULT_USER = "Default user created"
+    DELETED_USER = "User deleted"
+
+    # Teams
+    CREATED_TEAM = "Team created"
+    DELETED_TEAM = "Team deleted"
+
+    # Projects
+    CREATED_PROJECT = "Project created"
+    DELETED_PROJECT = "Project deleted"
+
+    # Role
+    CREATED_ROLE = "Role created"
+    DELETED_ROLE = "Role deleted"
+
+    # Flavor
+    CREATED_FLAVOR = "Flavor created"
 
     # Test event
     EVENT_TEST = "Test event"
@@ -82,9 +105,15 @@ def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
     # TODO [ENG-857]: The identify_user function shares a lot of setup with
     #  track_event() - this duplicated code could be given its own function
     try:
-        import analytics
-
         from zenml.config.global_config import GlobalConfiguration
+
+        gc = GlobalConfiguration()
+
+        # That means user opted out of analytics
+        if not gc.analytics_opt_in:
+            return False
+
+        import analytics
 
         if analytics.write_key is None:
             analytics.write_key = get_segment_key()
@@ -95,8 +124,6 @@ def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
 
         # Set this to 1 to avoid backoff loop
         analytics.max_retries = 1
-
-        gc = GlobalConfiguration()
 
         logger.debug(
             f"Attempting to attach metadata to: User: {gc.user_id}, "

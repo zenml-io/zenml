@@ -188,7 +188,7 @@ class RestZenStore(BaseZenStore):
             for key, value in body.items()
         }
 
-    def register_stack_component(
+    def _register_stack_component(
         self,
         component: ComponentWrapper,
     ) -> None:
@@ -203,7 +203,7 @@ class RestZenStore(BaseZenStore):
         """
         self.post(STACK_COMPONENTS, body=component)
 
-    def update_stack_component(
+    def _update_stack_component(
         self,
         name: str,
         component_type: StackComponentType,
@@ -229,7 +229,7 @@ class RestZenStore(BaseZenStore):
                 f"Bad API Response. Expected dict, got {type(body)}"
             )
 
-    def deregister_stack(self, name: str) -> None:
+    def _deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
         Args:
@@ -279,7 +279,7 @@ class RestZenStore(BaseZenStore):
         """
         return StackWrapper.parse_obj(self.get(f"{STACKS}/{name}"))
 
-    def register_stack(self, stack: StackWrapper) -> Dict[str, str]:
+    def _register_stack(self, stack: StackWrapper) -> None:
         """Register a stack and its components.
 
         If any of the stacks' components aren't registered in the stack store
@@ -288,24 +288,15 @@ class RestZenStore(BaseZenStore):
         Args:
             stack: The stack to register.
 
-        Returns:
-            metadata dict for telemetry or logging.
-
         Raises:
             StackExistsError: If a stack with the same name already exists.
             StackComponentExistsError: If a component of the stack wasn't
                 registered and a different component with the same name
                 already exists.
         """
-        body = self.post(STACKS, stack)
-        if isinstance(body, dict):
-            return cast(Dict[str, str], body)
-        else:
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
+        self.post(STACKS, stack)
 
-    def update_stack(self, name: str, stack: StackWrapper) -> Dict[str, str]:
+    def _update_stack(self, name: str, stack: StackWrapper) -> None:
         """Update a stack and its components.
 
         If any of the stack's components aren't registered in the stack store
@@ -314,22 +305,10 @@ class RestZenStore(BaseZenStore):
         Args:
             name: The original name of the stack.
             stack: The new stack to use in the update.
-
-        Returns:
-            metadata dict for telemetry or logging.
-
-        Raises:
-            ValueError: If a dict is not returned from the API.
         """
-        body = self.put(f"{STACKS}/{name}", body=stack)
+        self.put(f"{STACKS}/{name}", body=stack)
         if name != stack.name:
             self.deregister_stack(name)
-        if isinstance(body, dict):
-            return cast(Dict[str, str], body)
-        else:
-            raise ValueError(
-                f"Bad API Response. Expected dict, got {type(body)}"
-            )
 
     def get_stack_component(
         self, component_type: StackComponentType, name: str
@@ -395,7 +374,7 @@ class RestZenStore(BaseZenStore):
             )
         return [User.parse_obj(user_dict) for user_dict in body]
 
-    def get_user(self, user_name: str) -> User:
+    def _get_user(self, user_name: str) -> User:
         """Get a specific user by name.
 
         Args:
@@ -409,7 +388,7 @@ class RestZenStore(BaseZenStore):
         """
         return User.parse_obj(self.get(f"{USERS}/{user_name}"))
 
-    def create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> User:
         """Creates a new user.
 
         Args:
@@ -424,7 +403,7 @@ class RestZenStore(BaseZenStore):
         user = User(name=user_name)
         return User.parse_obj(self.post(USERS, body=user))
 
-    def delete_user(self, user_name: str) -> None:
+    def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
 
         Args:
@@ -452,7 +431,7 @@ class RestZenStore(BaseZenStore):
             )
         return [Team.parse_obj(team_dict) for team_dict in body]
 
-    def get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> Team:
         """Gets a specific team.
 
         Args:
@@ -466,7 +445,7 @@ class RestZenStore(BaseZenStore):
         """
         return Team.parse_obj(self.get(f"{TEAMS}/{team_name}"))
 
-    def create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> Team:
         """Creates a new team.
 
         Args:
@@ -481,7 +460,7 @@ class RestZenStore(BaseZenStore):
         team = Team(name=team_name)
         return Team.parse_obj(self.post(TEAMS, body=team))
 
-    def delete_team(self, team_name: str) -> None:
+    def _delete_team(self, team_name: str) -> None:
         """Deletes a team.
 
         Args:
@@ -534,7 +513,7 @@ class RestZenStore(BaseZenStore):
             )
         return [Project.parse_obj(project_dict) for project_dict in body]
 
-    def get_project(self, project_name: str) -> Project:
+    def _get_project(self, project_name: str) -> Project:
         """Get an existing project by name.
 
         Args:
@@ -548,7 +527,7 @@ class RestZenStore(BaseZenStore):
         """
         return Project.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
 
-    def create_project(
+    def _create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
         """Creates a new project.
@@ -566,7 +545,7 @@ class RestZenStore(BaseZenStore):
         project = Project(name=project_name, description=description)
         return Project.parse_obj(self.post(PROJECTS, body=project))
 
-    def delete_project(self, project_name: str) -> None:
+    def _delete_project(self, project_name: str) -> None:
         """Deletes a project.
 
         Args:
@@ -614,7 +593,7 @@ class RestZenStore(BaseZenStore):
             for assignment_dict in body
         ]
 
-    def get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> Role:
         """Gets a specific role.
 
         Args:
@@ -628,7 +607,7 @@ class RestZenStore(BaseZenStore):
         """
         return Role.parse_obj(self.get(f"{ROLES}/{role_name}"))
 
-    def create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> Role:
         """Creates a new role.
 
         Args:
@@ -643,7 +622,7 @@ class RestZenStore(BaseZenStore):
         role = Role(name=role_name)
         return Role.parse_obj(self.post(ROLES, body=role))
 
-    def delete_role(self, role_name: str) -> None:
+    def _delete_role(self, role_name: str) -> None:
         """Deletes a role.
 
         Args:
@@ -944,7 +923,7 @@ class RestZenStore(BaseZenStore):
             )
         return [FlavorWrapper.parse_obj(flavor_dict) for flavor_dict in body]
 
-    def create_flavor(
+    def _create_flavor(
         self,
         source: str,
         name: str,

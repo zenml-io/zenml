@@ -47,6 +47,16 @@ can type something like this:
 This will give you information about how to register a metadata store.
 (See below for more on that).
 
+If you want to instead understand what the concept behind a group is, you 
+can use the `explain` sub-command. For example, to see more details behind 
+what a `metadata-store` is, you can type:
+
+```bash
+zenml metadata-store explain
+```
+
+This will give you an explanation of that concept in more detail.
+
 Beginning a Project
 -------------------
 

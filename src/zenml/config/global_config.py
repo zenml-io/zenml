@@ -352,8 +352,12 @@ class GlobalConfiguration(
         # ProfileConfiguration and the Repository classes to avoid triggering
         # the analytics and interact directly with the store creation
         config_copy.profiles[profile.name] = profile
+        # We dont need to track analytics here
         store = Repository.create_store(
-            profile, skip_default_registrations=True
+            profile,
+            skip_default_registrations=True,
+            track_analytics=False,
+            skip_migration=True,
         )
         # transfer the active stack to the new store. we disable logs for this
         # call so there is no confusion about newly registered stacks/stack

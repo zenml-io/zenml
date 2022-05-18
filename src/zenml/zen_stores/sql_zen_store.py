@@ -207,6 +207,7 @@ class SqlZenStore(BaseZenStore):
         # because SQLModel will raise an error if it is present
         sql_kwargs = kwargs.copy()
         sql_kwargs.pop("skip_default_registrations", False)
+        sql_kwargs.pop("track_analytics", False)
         sql_kwargs.pop("skip_migration", False)
         self.engine = create_engine(url, *args, **sql_kwargs)
         SQLModel.metadata.create_all(self.engine)
@@ -335,7 +336,7 @@ class SqlZenStore(BaseZenStore):
         """
         return {n: self.get_stack_configuration(n) for n in self.stack_names}
 
-    def register_stack_component(
+    def _register_stack_component(
         self,
         component: ComponentWrapper,
     ) -> None:
@@ -369,7 +370,7 @@ class SqlZenStore(BaseZenStore):
             session.add(new_component)
             session.commit()
 
-    def update_stack_component(
+    def _update_stack_component(
         self,
         name: str,
         component_type: StackComponentType,
@@ -435,7 +436,7 @@ class SqlZenStore(BaseZenStore):
         )
         return {component.type.value: component.flavor}
 
-    def deregister_stack(self, name: str) -> None:
+    def _deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
         Args:
@@ -601,7 +602,7 @@ class SqlZenStore(BaseZenStore):
                 for user in session.exec(select(UserTable)).all()
             ]
 
-    def get_user(self, user_name: str) -> User:
+    def _get_user(self, user_name: str) -> User:
         """Get a specific user by name.
 
         Args:
@@ -623,7 +624,7 @@ class SqlZenStore(BaseZenStore):
 
             return User(**user.dict())
 
-    def create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> User:
         """Creates a new user.
 
         Args:
@@ -649,7 +650,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
         return user
 
-    def delete_user(self, user_name: str) -> None:
+    def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
 
         Args:
@@ -692,7 +693,7 @@ class SqlZenStore(BaseZenStore):
                 for team in session.exec(select(TeamTable)).all()
             ]
 
-    def get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> Team:
         """Gets a specific team.
 
         Args:
@@ -714,7 +715,7 @@ class SqlZenStore(BaseZenStore):
 
             return Team(**team.dict())
 
-    def create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> Team:
         """Creates a new team.
 
         Args:
@@ -740,7 +741,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
         return team
 
-    def delete_team(self, team_name: str) -> None:
+    def _delete_team(self, team_name: str) -> None:
         """Deletes a team.
 
         Args:
@@ -833,7 +834,7 @@ class SqlZenStore(BaseZenStore):
                 for project in session.exec(select(ProjectTable)).all()
             ]
 
-    def get_project(self, project_name: str) -> Project:
+    def _get_project(self, project_name: str) -> Project:
         """Get an existing project by name.
 
         Args:
@@ -857,7 +858,7 @@ class SqlZenStore(BaseZenStore):
 
             return Project(**project.dict())
 
-    def create_project(
+    def _create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
         """Creates a new project.
@@ -886,7 +887,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
         return project
 
-    def delete_project(self, project_name: str) -> None:
+    def _delete_project(self, project_name: str) -> None:
         """Deletes a project.
 
         Args:
@@ -941,7 +942,7 @@ class SqlZenStore(BaseZenStore):
                 ).all()
             ]
 
-    def get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> Role:
         """Gets a specific role.
 
         Args:
@@ -963,7 +964,7 @@ class SqlZenStore(BaseZenStore):
 
             return Role(**role.dict())
 
-    def create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> Role:
         """Creates a new role.
 
         Args:
@@ -989,7 +990,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
         return role
 
-    def delete_role(self, role_name: str) -> None:
+    def _delete_role(self, role_name: str) -> None:
         """Deletes a role.
 
         Args:
@@ -1383,7 +1384,7 @@ class SqlZenStore(BaseZenStore):
                 for flavor in session.exec(select(ZenFlavor)).all()
             ]
 
-    def create_flavor(
+    def _create_flavor(
         self,
         source: str,
         name: str,
