@@ -8,7 +8,20 @@ ZenML consists of a number of components. We mostly follow industry naming
 conventions for the most part, so a lot should already be broadly
 comprehensible. This guide walks through the various pieces you'll encounter
 when using ZenML, starting with the most basic to things you'll only encounter
-when deploying your work to the cloud. Let's dive in!
+when deploying your work to the cloud. At the very highest level, the workflow
+is as follows:
+
+- You write your code to define what you want to happen in your machine learning
+  workflow
+- You configure a ZenML Stack which is the infrastructure and setup that will
+  run your machine learning code
+- You can easily switch between different Stacks (i.e. infrastructure
+  configurations) depending on your needs at any given moment.
+- You can use whatever you want as part of your Stacks as we're built as a
+  framework to be extensible
+
+Let's get back to basics, though, and dive into all the core concepts that
+you'll come across when using ZenML!
 
 ## Basics: Steps and Pipelines
 
