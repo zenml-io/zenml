@@ -166,13 +166,13 @@ class StackComponent(BaseModel, ABC):
     def provision(self) -> None:
         """Provisions resources to run the component."""
         raise NotImplementedError(
-            f"Provisioning local resources not implemented for {self}."
+            f"Provisioning resources not implemented for {self}."
         )
 
     def deprovision(self) -> None:
         """Deprovisions all resources of the component."""
         raise NotImplementedError(
-            f"Deprovisioning local resource not implemented for {self}."
+            f"Deprovisioning resource not implemented for {self}."
         )
 
     def resume(self) -> None:

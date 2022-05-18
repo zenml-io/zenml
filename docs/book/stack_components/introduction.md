@@ -279,11 +279,85 @@ stacks. If you would like to learn more, please do: "`zenml stack --help`"
 or visit our CLI docs.
 {% endhint %}
 
-## Further configuration
+## Runtime configuration
 
-TODO: Configuration with secrets
-TODO: Configuration with runtime configs
+On top of the configuration through the instance parameters, you can also 
+provide an additional runtime configuration to the stack components for your 
+pipeline run. In order to achieve this, you need to provide this configuration 
+parameters as key-value pairs when you run the pipeline:
 
-## Provisioning
+```python
+pipeline.run(runtime_param_1=3, another_param='luna')
+```
 
-TODO: Explanation about provision, deprovision, suspend and resume
+The provided parameters will be passed to the `prepare_pipeline_deployment`
+method of each stack components, and you can use this method as an entrypoint 
+to configure your stack components even further.
+
+## Managing the state
+
+Through a set of properties and methods, the base interface of the 
+`StackComponent` also allows you to control the state of your stack component:
+
+```python
+from abc import ABC
+from pydantic import BaseModel
+
+
+class StackComponent(BaseModel, ABC):
+    """Abstract class for all components of a ZenML stack."""
+    ...
+    
+    @property
+    def is_provisioned(self) -> bool:
+        """If the component provisioned resources to run."""
+        return True
+
+    @property
+    def is_running(self) -> bool:
+        """If the component is running."""
+        return True
+
+    def provision(self) -> None:
+        """Provisions resources to run the component."""
+
+    def deprovision(self) -> None:
+        """Deprovisions all resources of the component."""
+        
+    def resume(self) -> None:
+        """Resumes the provisioned resources of the component."""
+
+    def suspend(self) -> None:
+        """Suspends the provisioned resources of the component."""
+
+    ...
+```
+
+By default, each stack component is assumed to be in a provisioned and running 
+state. However, if you are dealing with a component, which require you to manage
+its state, you can overwrite these methods. Once your implementation is 
+complete, you can use either:
+
+```shell
+zenml stack up
+```
+
+or
+
+```shell
+zenml artifact-store up NAME
+```
+
+to provision and resume your stack component(s) and
+
+```shell
+zenml stack down 
+```
+
+or
+
+```shell
+zenml artifact-store down NAME
+```
+
+to suspend and deprovision it.

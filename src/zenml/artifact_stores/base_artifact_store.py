@@ -165,9 +165,9 @@ class BaseArtifactStore(StackComponent):
                 + textwrap.dedent(
                     """
                     When you are working with any classes which subclass from
-                    zenml.artifact_store.BaseArtifactStore please make sure 
-                    that your class has a ClassVar named `SUPPORTED_SCHEMES` 
-                    which should hold a set of supported file schemes such 
+                    zenml.artifact_store.BaseArtifactStore please make sure
+                    that your class has a ClassVar named `SUPPORTED_SCHEMES`
+                    which should hold a set of supported file schemes such
                     as {"s3://"} or {"gcs://"}.
 
                     Example:
