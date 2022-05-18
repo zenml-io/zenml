@@ -22,21 +22,21 @@
 ## Advanced Guide
 
 * [Advanced ZenML](advanced-guide/advanced-zenml/README.md)
-  * [Use zenml example run](advanced\_guide/zenml-example-cli.md)
-  * [Bypassing materialization](advanced\_guide/skip-materialization.md)
+  * [Use zenml example run](advanced-guide/advanced-zenml/zenml-example-cli.md)
+  * [Bypassing materialization](advanced-guide/advanced-zenml/skip-materialization.md)
 * [Integrations](advanced-guide/integrations/README.md)
-  * [Integrations with Popular Tools](advanced\_guide/integrations.md)
+  * [Integrations with Popular Tools](advanced-guide/integrations/integrations.md)
   * [Visualize your Data](advanced-guide/integrations/visualize-your-data.md)
-  * [Load your Data from Feature Stores](advanced\_guide/feature-store.md)
-  * [Perform Drift Detection](advanced\_guide/drift\_detection.md)
-  * [Track your Experiments](advanced\_guide/experiment\_tracking.md)
-  * [Run your Pipeline on Kubeflow](advanced\_guide/run\_on\_kubeflow.md)
-  * [Manage your Secrets](advanced\_guide/secrets.md)
+  * [Load your Data from Feature Stores](advanced-guide/integrations/feature-store.md)
+  * [Perform Drift Detection](advanced-guide/integrations/drift-detection.md)
+  * [Track your Experiments](advanced-guide/integrations/experiment-tracking.md)
+  * [Run your Pipeline on Kubeflow](advanced-guide/integrations/run-on-kubeflow.md)
+  * [Manage your Secrets](advanced-guide/integrations/secrets.md)
 * [Cloud](advanced-guide/cloud/README.md)
-  * [Manage External Services](advanced\_guide/services.md)
-  * [Execute Pipelines in the Cloud](advanced\_guide/guide-aws-gcp-azure.md)
-  * [Continuous Training and Deployment](advanced\_guide/continuous-training-and-deployment.md)
-  * [Run Steps on Specialized Hardware](advanced\_guide/step-operators.md)
+  * [Manage External Services](advanced-guide/cloud/services.md)
+  * [Execute Pipelines in the Cloud](advanced-guide/cloud/guide-aws-gcp-azure.md)
+  * [Continuous Training and Deployment](advanced-guide/cloud/continuous-training-and-deployment.md)
+  * [Run Steps on Specialized Hardware](advanced-guide/cloud/step-operators.md)
 
 ## Collaborate
 
@@ -47,17 +47,17 @@
 
 ## Extending ZenML
 
-* [Stacks, Components, Flavors](stack_components/introduction.md)
-* [Orchestrators](stack_components/orchestrator.md)
-* [Artifact Stores](stack_components/artifact_store.md)
-* [Metadata Stores](stack_components/metadata_store.md)
-* [Container Registries](stack_components/container_registry.md)
-* [Step Operators](stack_components/step_operator.md)
-* [Secret Managers](stack_components/secrets_manager.md)
-* [Model Deployers](stack_components/model_deployer.md)
-* [Experiment Trackers](stack_components/experiment_tracker.md)
-* [Feature Stores](stack_components/feature_store.md)
-* [Alerters](stack_components/alerter.md)
+* [Stacks, Components, Flavors](stack-components/introduction.md)
+* [Orchestrators](stack-components/orchestrator.md)
+* [Artifact Stores](stack-components/artifact_store.md)
+* [Metadata Stores](stack-components/metadata_store.md)
+* [Container Registries](stack-components/container_registry.md)
+* [Step Operators](stack-components/step_operator.md)
+* [Secret Managers](stack-components/secrets_manager.md)
+* [Model Deployers](stack-components/model_deployer.md)
+* [Experiment Trackers](stack-components/experiment_tracker.md)
+* [Feature Stores](stack-components/feature_store.md)
+* [Alerters](stack-components/alerter.md)
 
 ## Support
 

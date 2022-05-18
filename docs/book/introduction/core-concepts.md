@@ -98,10 +98,10 @@ abstraction. It can be part of a stack.
 A tool can implement many abstractions and therefore an integration can have
 different
 entrypoints for the user. We have a
-consistently [updated integrations page](../advanced_guide/integrations.md)
+consistently [updated integrations page](../advanced-guide/integrations/integrations.md)
 which shows all
 current integrations supported by the ZenML core
-team [here](../advanced_guide/integrations.md).
+team [here](../advanced-guide/integrations/integrations.md).
 However, as ZenML is a framework users are encouraged to use these as a
 guideline and implement
 their own integrations by extending the various ZenML abstractions.
