@@ -162,5 +162,17 @@ zenml model-deployer flavor list
 
 ## Building your own model deployers
 
-WIP
+If you want to create your own custom flavor for a model deployer, you can 
+follow the following steps:
 
+1. Create a class which inherits from the `BaseModelDeployer`.
+2. Define the `FLAVOR` class variable.
+3. Implement the `abstactmethod`s based on the API of your desired model 
+deployer.
+
+Once you are done with the implementation, you can register it through the CLI 
+as:
+
+```shell
+zenml model-deployer flavor register <THE-SOURCE-PATH-OF-YOUR-MODEL_DEPLOYER>
+```
