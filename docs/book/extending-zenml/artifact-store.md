@@ -8,7 +8,7 @@ artifacts get stored.
 
 {% hint style="warning" %}
 Before reading this chapter, make sure that you are familiar with the 
-concept of [stacks, stack components and their flavors](./introduction.md).  
+concept of [stacks, stack components and their flavors](./stacks-components-flavors.md).  
 {% endhint %}
 
 ## Base Abstraction

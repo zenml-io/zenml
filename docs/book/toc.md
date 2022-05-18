@@ -47,17 +47,17 @@
 
 ## Extending ZenML
 
-* [Stacks, Components, Flavors](stack-components/introduction.md)
-* [Orchestrators](stack-components/orchestrator.md)
-* [Artifact Stores](stack-components/artifact-store.md)
-* [Metadata Stores](stack-components/metadata-store.md)
-* [Container Registries](stack-components/container-registry.md)
-* [Step Operators](stack-components/step-operator.md)
-* [Secret Managers](stack-components/secrets-manager.md)
-* [Model Deployers](stack-components/model-deployer.md)
-* [Experiment Trackers](stack-components/experiment-tracker.md)
-* [Feature Stores](stack-components/feature-store.md)
-* [Alerters](stack-components/alerter.md)
+* [Stacks, Components, Flavors](extending-zenml/stacks-components-flavors.md)
+* [Orchestrators](extending-zenml/orchestrator.md)
+* [Artifact Stores](extending-zenml/artifact-store.md)
+* [Metadata Stores](extending-zenml/metadata-store.md)
+* [Container Registries](extending-zenml/container-registry.md)
+* [Step Operators](extending-zenml/step-operator.md)
+* [Secret Managers](extending-zenml/secrets-manager.md)
+* [Model Deployers](extending-zenml/model-deployer.md)
+* [Experiment Trackers](extending-zenml/experiment-tracker.md)
+* [Feature Stores](extending-zenml/feature-store.md)
+* [Alerters](extending-zenml/alerter.md)
 
 ## Support
 

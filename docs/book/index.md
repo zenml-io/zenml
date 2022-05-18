@@ -42,7 +42,7 @@ you.
 {% hint style="info" %}
 ZenML does not support your favorite tool? Don't you worry! ZenML is built to
 be Extensible. Find out how to get started within our section on 
-[Stack Components](stack-components).
+[Stack Components](extending-zenml).
 {% endhint %}
 
 ## Who is ZenML for?
