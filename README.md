@@ -296,6 +296,9 @@ pipeline = mnist_pipeline(
 pipeline.run()
 ```
 
+For a slightly more in-depth introduction to ZenML, taught through Jupyter
+notebooks, install `zenml` via pip as described above and type: `zenml go`.
+
 # 🍰 ZenBytes
 
 [ZenBytes](https://github.com/zenml-io/zenbytes) is a series of short practical
