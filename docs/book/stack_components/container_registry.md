@@ -66,15 +66,15 @@ and get the complete docstrings, please check the source code on GitHub.
 
 ## List of available container registry
 
-|                     | Flavor | Integration |
-|---------------------|--------|-------------|
-| BaseContainerRegistry | default | `built-in` |
-| DockerHubContainerRegistry  | dockerhub  | `built-in`  |
-| GCPContainerRegistry     | gcp     | `built-in`         |
-| AzureContainerRegistry    | azure    | `built-in`          |
-| AWSContainerRegistry    | aws    | aws          |
-| GitHubContainerRegistry  | github  | `built-in`        |
-| GitLabContainerRegistry  | gitlab  | `built-in`        |
+|                            | Flavor    | Integration    |
+|----------------------------|-----------|----------------|
+| BaseContainerRegistry      | default   | `built-in`     |
+| DockerHubContainerRegistry | dockerhub | `built-in`     |
+| GCPContainerRegistry       | gcp       | `built-in`     |
+| AzureContainerRegistry     | azure     | `built-in`     |
+| AWSContainerRegistry       | aws       | aws            |
+| GitHubContainerRegistry    | github    | `built-in`     |
+| GitLabContainerRegistry    | gitlab    | `built-in`     |
 
 If you would like to see the available flavors for container registries, you can 
 use the command:

@@ -2,8 +2,8 @@
 description: Setting up the storage for your artifacts
 ---
 
-In ZenML, the inputs and outputs which go through any step is treated as an
-artifact and as its name suggests, an `ArtifactStore` is a place where these
+In ZenML, all the inputs and outputs which go through a step are treated as 
+artifacts and as its name suggests, an `ArtifactStore` is a place where these
 artifacts get stored.
 
 {% hint style="warning" %}

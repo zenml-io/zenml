@@ -6,23 +6,23 @@ Machine learning in production is not just about designing and training models.
 It is a fractured space consisting of a wide variety of tasks ranging from 
 experiment tracking to orchestration, from model deployment to monitoring, 
 from drift detection to feature stores and much, much more than that. Even 
-though there are already some seemingly well-established solutions for some 
-of these tasks, it can become increasingly difficult to establish a running 
-production system in a reliable and modular manner, once all these solutions 
-are brought together.
+though there are already some seemingly well-established solutions for these 
+tasks, it can become increasingly difficult to establish a running production 
+system in a reliable and modular manner, once all these solutions are 
+brought together.
 
-This is a problem which is especially visible when switching from a research 
-setting to a production setting. For instance, due to the lack of standards, 
+This is a problem which is especially critical when switching from a research 
+setting to a production setting. For instance, due to a lack of standards, 
 the time and resources invested in a small PoC-like project can completely to 
 waste, if the initial system can not be transferred to a production-grade 
 setting.
 
 At **ZenML**, we believe that this is one of the most important and challenging 
 problems in the field of MLOps, and it can be solved with a set of standards and 
-well-structured abstractions. Owing to the nature of MLOps, it is critical 
+well-structured abstractions. Owing to the nature of MLOps, it is essential 
 that these abstractions do not only cover concepts such as pipelines, steps and 
-materializers that we covered in the starter guide but also the infrastructure 
-elements that the pipelines are running on.
+materializers which we covered in the previous guides but also the 
+infrastructure elements that the pipelines are running on.
 
 Taking this into consideration, we will introduce three major concepts 
 that ZenML is based on: **Stacks**, **Stack Components** and **Flavors**.
@@ -34,42 +34,40 @@ the infrastructure of your MLOps platform.
 
 This is achieved by bringing together different types of **stack components**, 
 that are responsible for specific tasks within your ML workflow. We will 
-at the base abstraction layer for the **stack components** in more detail 
+at the base abstraction for the **stack components** in more detail 
 in the next section. However, before we get there, let's first take a look at 
-the list of all the stack component types that you can use within your stack 
+the list of all the stack component types that you can use within your **stack** 
 in the table below:
 
-| Type of Stack Component | Description                                                       |
-|-------------------------|-------------------------------------------------------------------|
+| Type of Stack Component       | Description                                                       |
+|-------------------------------|-------------------------------------------------------------------|
 | **Orchestrator (required)**   | Orchestrating the runs of your pipeline                           |
 | **Artifact Store (required)** | Storage for the artifacts created by your pipelines               |
 | **Metadata Store (required)** | Tracking the execution of your pipelines/steps                    |
-| Container Registry      | Store for your containers                                         |
-| Secrets Manager         | Centralized location for the storage of your secrets              |
-| Step Operator           | Execution of individual steps in specialized runtime environments |
-| Model Deployer          | Services/platforms responsible for online model serving           |
-| Feature Store           | Management of your data/features                                  |
-| Experiment Tracker      | Tracking your ML experiments                                      |
-| Alerter                 | Sending alerts through specified channels                         |
+| Container Registry            | Store for your containers                                         |
+| Secrets Manager               | Centralized location for the storage of your secrets              |
+| Step Operator                 | Execution of individual steps in specialized runtime environments |
+| Model Deployer                | Services/platforms responsible for online model serving           |
+| Feature Store                 | Management of your data/features                                  |
+| Experiment Tracker            | Tracking your ML experiments                                      |
+| Alerter                       | Sending alerts through specified channels                         |
 
-Keep in mind, that each pipeline run that you execute with ZenML requires 
-a **stack** and each **stack** is required include at least of an orchestrator, 
-an artifact store, and a metadata store. The rest of the **stack components** 
-are optional, and you can use them as you see fit.
+Keep in mind, that each pipeline run that you execute with ZenML will require 
+a **stack** and each **stack** will be required to include at least of an 
+orchestrator, an artifact store, and a metadata store. The rest of the 
+**stack components** are optional, and you can use them as you see fit.
 
 ## Base abstractions
 
 As **stacks** represent the entire configuration of your infrastructure, **stack
 components** represent the configuration of individual layers within your 
-**stack** which conduct specific self-contained tasks. 
+**stack** which conduct specific self-contained tasks. For instance, each 
+ZenML **stack** features an artifact store which is responsible for storing 
+the artifacts generated by your pipelines, or an orchestrator which is 
+responsible for the execution of the steps within your pipeline.
 
-For instance, each ZenML **stack** features an artifact store which is 
-responsible for storing the artifacts generated by your pipelines, or 
-an orchestrator which is responsible for the execution of the steps within 
-your pipeline.
-
-Structurally, these **stack components** are built on top of base abstractions, 
-starting with the `StackComponent` class:
+Speaking from structural standpoint, these **stack components** are built on top 
+of base abstractions and in their core you will find the `StackComponent` class:
 
 ```python
 from abc import ABC
@@ -94,17 +92,17 @@ class StackComponent(BaseModel, ABC):
 ```
 
 There are a few things to unpack here. Let's talk about `pydantic` first. 
-`pydantic` is a library for data validation and settings management. 
-Using their `BaseModel` helps us to configure and serialize these components 
-as we track them while allowing us to add a validation and configuration layer 
-to each stack component instance/implementation.
+`pydantic` is a library for data validation and settings management. Using 
+their `BaseModel` is helping us to configure and serialize these components 
+while allowing us to add a validation layer to each stack component 
+instance/implementation.
 
 You can already see how that comes into play here within the base 
 `StackComponent` implementation. As you can see, each instance of 
 a `StackComponent` needs to include a `name` and an auto-generated `uuid`. 
 These variables will be tracked when we serialize the stack component object.
-You can exclude an instance configuration parameter from the serialization 
-by giving it a name which starts with `_`.
+(You can exclude an instance configuration parameter from the serialization 
+by giving it a name which starts with `_`.)
 
 Moreover, you can use class variables by denoting them with the `ClassVar[..]`, 
 which are also excluded from the serialization. Each `StackComponent` 
@@ -145,10 +143,10 @@ implementation.
 
 ## Flavors
 
-Now, that we have taken a look at the base abstraction of stack components,
-it is time to introduce the concept of **flavors**. In ZenML, **flavors** 
-represent specific implementations over the base abstractions 
-of **stack components**. As an example, we can take a look at the 
+Now, that we have taken a look at the base abstraction of **stack components**,
+it is time to introduce the concept of **flavors**. In ZenML, a **flavor** 
+represents an implementation of a specific type of **stack component** on top 
+of its base abstraction. As an example, we can take a look at the 
 `LocalArtifactStore`:
 
 ```python
@@ -167,9 +165,9 @@ class LocalArtifactStore(BaseArtifactStore):
     ...
 ```
 
-As you can see from the example below, the `LocalArtifactStore` inherits from 
+As you can see from the example above, the `LocalArtifactStore` inherits from 
 the corresponding base abstraction `BaseArtifactStore` and implements a 
-local version. While creating this class, it is critical to set `FLAVOR` 
+local version. While creating this class, it is critical to set the `FLAVOR` 
 class variable, as we will use it as a reference when we create an instance 
 of this stack component.
 
@@ -219,7 +217,7 @@ zenml artifact-store flavor list
 ## Stack components
 
 Following the flavors, we can take a look at how we can actually create, use 
-and manage actual stack components through the CLI. For this purpose, we can 
+and manage actual **stack components** through the CLI. For this purpose, we can 
 keep using the artifact stores as an example.
 
 First, you can start by listing the artifact store instances. If you are on a 

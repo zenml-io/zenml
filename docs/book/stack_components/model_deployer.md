@@ -148,10 +148,10 @@ and the `seldon` integrations, with model deployers as stack components. In
 order to get more information on how you can use these flavors in your stack, 
 please check the corresponding pages in the API docs linked below.
 
-|                     | Flavor | Integration |
-|---------------------|--------|-------------|
-| MLFlowModelDeployer  | mlflow  | mlflow  |
-| SeldonModelDeployer     | seldon     | seldon          |
+|                        | Flavor    | Integration |
+|------------------------|-----------|-------------|
+| MLFlowModelDeployer    | mlflow    | mlflow      |
+| SeldonModelDeployer    | seldon    | seldon      |
 
 If you would like to see the available flavors for model deployers, you can 
 use the command:
