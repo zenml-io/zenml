@@ -20,11 +20,11 @@ setup_stack () {
 }
 
 pre_run () {
-  zenml integration install sklearn mlflow evidently facets
+  zenml integration install dash sklearn mlflow evidently facets
 }
 
 pre_run_forced () {
-  zenml integration install sklearn mlflow evidently facets -f
+  zenml integration install dash sklearn mlflow evidently facets -f
 }
 
 post_run () {
