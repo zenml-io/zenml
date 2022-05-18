@@ -13,14 +13,12 @@
 #  permissions and limitations under the License.
 from typing import ClassVar
 
-from zenml.container_registries.base_container_registry import (
-    BaseContainerRegistry,
-)
 from zenml.enums import ContainerRegistryFlavor
+from zenml.stack import StackComponent
 
 
-class GitLabContainerRegistry(BaseContainerRegistry):
-    """Class for GitLab Container Registry."""
+class DefaultContainerRegistry(StackComponent):
+    """Class for default ZenML container registries."""
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITLAB.value
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.DEFAULT.value
