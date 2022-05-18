@@ -13,8 +13,6 @@ concept of [stacks, stack components and their flavors](./introduction.md).
 
 ## Base Abstraction
 
-TODO: Intro paragraph for the base abstraction
-
 ```python
 from abc import ABC, abstractmethod
 from typing import ClassVar, List
