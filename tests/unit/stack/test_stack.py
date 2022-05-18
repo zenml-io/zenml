@@ -203,11 +203,12 @@ def test_stack_validation_succeeds_if_no_component_validator_fails(
 
 
 def test_stack_deployment(
-    stack_with_mock_components, one_step_pipeline, empty_step
+    stack_with_mock_components, one_step_pipeline, empty_step, mocker
 ):
     """Tests that when a pipeline is deployed on a stack, the stack calls
     preparation/cleanup methods on all of its components and calls the
     orchestrator to run the pipeline."""
+    mocker.patch.object(stack_with_mock_components, "_register_pipeline_run")
     pipeline_run_return_value = object()
     stack_with_mock_components.orchestrator.run.return_value = (
         pipeline_run_return_value
