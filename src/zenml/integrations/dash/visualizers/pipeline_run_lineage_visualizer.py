@@ -110,7 +110,11 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
     }
 
     def visualize(
-        self, object: PipelineRunView, *args: Any, **kwargs: Any
+        self,
+        object: PipelineRunView,
+        magic: bool = False,
+        *args: Any,
+        **kwargs: Any,
     ) -> dash.Dash:
         """Method to visualize pipeline runs via the Dash library. The layout
         puts every layer of the dag in a column.
@@ -119,17 +123,23 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
             dbc.themes.BOOTSTRAP,
             dbc.icons.BOOTSTRAP,
         ]
-        if Environment.in_notebook:
-            # Only import jupyter_dash in this case
-            from jupyter_dash import JupyterDash  # noqa
+        if magic:
+            if Environment.in_notebook:
+                # Only import jupyter_dash in this case
+                from jupyter_dash import JupyterDash  # noqa
 
-            JupyterDash.infer_jupyter_proxy_config()
+                JupyterDash.infer_jupyter_proxy_config()
 
-            app = JupyterDash(
-                __name__,
-                external_stylesheets=external_stylesheets,
-            )
-            mode = "inline"
+                app = JupyterDash(
+                    __name__,
+                    external_stylesheets=external_stylesheets,
+                )
+                mode = "inline"
+            else:
+                # TODO [LOW]: Refactor this to raise a warning instead.
+                raise AssertionError(
+                    "Cannot set magic flag in non-notebook environments."
+                )
         else:
             app = dash.Dash(
                 __name__,
