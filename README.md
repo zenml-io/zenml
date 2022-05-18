@@ -137,7 +137,7 @@ and workflows, but if you need a special kind of monitoring tool added, for
 example, or a different orchestrator to run your pipelines, ZenML is built as a
 framework making it easy to extend and build out whatever you need.
 
-![ZenML is fully extensible](docs/book/assets/bad-video.mp4)
+![ZenML is fully extensible](docs/book/assets/extensibility.gif)
 
 ### 4. 🔍 Automated metadata tracking
 
