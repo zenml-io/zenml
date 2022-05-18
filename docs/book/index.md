@@ -6,20 +6,6 @@ description: Example Landing Page
 
 **ZenML** is an extensible, open-source MLOps framework to create
 production-ready machine learning pipelines. Built
-<<<<<<< HEAD
-for data scientists, it has a simple, flexible syntax, is **cloud-** and **
-tool-agnostic**, and has
-interfaces/abstractions that are catered towards ML workflows.
-
-At its core, **ZenML pipelines execute ML-specific workflows** from sourcing
-data to splitting, preprocessing,
-training, all the way to the evaluation of results and even serving. There are
-many built-in features to support
-common ML development tasks. ZenML is not here to replace the great tools that
-solve these individual problems.
-Rather, it **integrates natively with popular ML tooling** and gives standard
-abstraction to write your workflows.
-=======
 for data scientists, it has a simple, flexible syntax, is **cloud-** and 
 **tool-agnostic**, and has interfaces/abstractions that are catered towards 
 ML workflows.
@@ -31,18 +17,12 @@ common ML development tasks. ZenML is not here to replace the great tools that
 solve these individual problems.
 Rather, it **integrates natively with popular ML tooling** and gives standard
 abstraction to add the custom tool that you might already be using.
->>>>>>> origin/develop
 
 ## Using the Docs
 
 {% hint style="info" %}
-<<<<<<< HEAD
-Jump right into our [developer guide](developer-guide/getting-started/) that
-will take you from zero to hero in no time and explain the necessary
-=======
 Jump right into our [developer guide](developer-guide/getting-started/README.md) 
 that will take you from zero to hero in no time and explain the necessary
->>>>>>> origin/develop
 knowledge along the way.
 {% endhint %}
 
@@ -54,16 +34,6 @@ from the foundation up.
 
 {% hint style="info" %}
 Already ran your first pipelines and want to know about integrations and
-<<<<<<< HEAD
-production use cases? Our [Advanced Guides](broken-reference) are exactly what
-you need.
-{% endhint %}
-
-{% hint style="info" %}
-If you are someone that wants to learn by doing or watching,
-our [support](broken-reference) section is just right for you. You will find
-links to code examples, notebooks and YouTube videos.
-=======
 production use cases? Our 
 [Advanced Guides](advanced-guide/integrations/README.md) is the right place for
 you.
@@ -73,7 +43,6 @@ you.
 ZenML does not support your favorite tool? Don't you worry! ZenML is built to
 be Extensible. Find out how to get started within our section on 
 [Stack Components](stack-components).
->>>>>>> origin/develop
 {% endhint %}
 
 ## Who is ZenML for?
