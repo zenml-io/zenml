@@ -30,6 +30,9 @@ from zenml.container_registries.azure_container_registry import (
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
+from zenml.container_registries.default_container_registry import (
+    DefaultContainerRegistry,
+)
 from zenml.container_registries.dockerhub_container_registry import (
     DockerHubContainerRegistry,
 )
@@ -41,9 +44,6 @@ from zenml.container_registries.github_container_registry import (
 )
 from zenml.container_registries.gitlab_container_registry import (
     GitLabContainerRegistry,
-)
-from zenml.container_registries.default_container_registry import (
-    DefaultContainerRegistry,
 )
 
 __all__ = [

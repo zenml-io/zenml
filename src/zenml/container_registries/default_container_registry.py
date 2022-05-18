@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 from typing import ClassVar
 
-from zenml.enums import ContainerRegistryFlavor
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
+from zenml.enums import ContainerRegistryFlavor
 
 
 class DefaultContainerRegistry(BaseContainerRegistry):
