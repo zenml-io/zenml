@@ -233,8 +233,9 @@ def go() -> None:
     ipynb_files = [
         fi for fi in os.listdir(zenml_tutorial_path) if fi.endswith(".ipynb")
     ]
+    ipynb_files.sort()
     console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
-
+    input("Press ENTER to continue...")
     subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
 
 
@@ -249,7 +250,7 @@ def _prompt_email(gc: GlobalConfiguration) -> bool:
     console.print(zenml_go_email_prompt, width=80)
 
     email = click.prompt(
-        click.style("Email: ", fg="blue"), default="", show_default=False
+        click.style("Email", fg="blue"), default="", show_default=False
     )
     if email:
         if len(email) > 0 and email.count("@") != 1:
