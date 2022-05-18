@@ -1,30 +1,30 @@
 ---
-description: We answer the most frequently asked questions about ZenML here
+description: We answer the most frequently asked questions about ZenML here.
 ---
 
 # FAQ
 
-#### How does ZenML compare to orchestrators (Airflow, Kubeflow, Flyte, etc.)
+#### How does ZenML compare to orchestrators (Airflow, Kubeflow, Flyte, etc.)?
 
 An orchestrator in MLOps is the system component that is responsible for executing and managing the execution of a ML pipeline. ZenML pipelines can be run on multiple orchestration systems. There are [standard orchestrators](../extending-zenml/orchestrator.md) that ZenML supports out-of-the-box, but you are encourage to write your own [orchestrator](../extending-zenml/orchestrator.md) in order to gain more control as to exactly how your pipelines are executed!
 
-#### Can I use tool X? How does Y tool integrate with ZenML?
+#### Can I use tool X? How does tool Y integrate with ZenML?
 
-Take a look at our [examples](https://github.com/zenml-io/zenml/tree/main/examples) directory, which showcases detailed example for each integration ZenML supports out-of-the-box.
+Take a look at our [examples](https://github.com/zenml-io/zenml/tree/main/examples) directory, which showcases detailed examples for each integration that ZenML supports out-of-the-box.
 
-The ZenML team and community is constantly working to include more tools and integrations to the above list (check the [roadmap](https://zenml.io/roadmap) for more details). You can [upvote features](https://zenml.io/discussion) you'd like and add more ideas on the roadmap.
+The ZenML team and community is constantly working to include more tools and integrations to the above list (check out the [roadmap](https://zenml.io/roadmap) for more details). You can [upvote features](https://zenml.io/discussion) you'd like and add your ideas to the roadmap.
 
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
-Depends on the tool, and its MLOps category. We have a full guide on this over [here](../extending-zenml/)!
+This depends on the tool and its respective MLOps category. We have a full guide on this over [here](../extending-zenml/)!
 
 #### Why did you build ZenML?
 
-We built it because we scratched our own itch while deploying multiple ML models in production for the last 3 years. Our team struggled to find a simple yet production-ready solution whilst developing large scale ML pipelines, and built a solution for it that we are now proud to share with all of you!
+We built it because we scratched our own itch while deploying multiple machine learning models in production for the past three years. Our team struggled to find a simple yet production-ready solution whilst developing large-scale ML pipelines, and built a solution for it that we are now proud to share with all of you!
 
 #### How can I contribute?
 
-We would love to develop ZenML together with our community! Best way to get
+We would love to develop ZenML together with our community! The best way to get
 started is to select any issue from the [`good-first-issue`
 label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). If you
 would like to contribute, please review our [Contributing
@@ -41,7 +41,7 @@ in a practical manner with the ZenML framework. Other great resources are:
 
 #### Why should I use ZenML?
 
-ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML on our blog. By using ZenML in the early stages of your project, you get the following benefits:
+ZenML pipelines are designed to be written early on the development lifecycle. Data scientists can explore their pipelines as they develop towards production, switching stacks from local to cloud deployments with ease. You can read more about why we started building ZenML [on our blog](https://blog.zenml.io/). By using ZenML in the early stages of your project, you get the following benefits:
 
 * Extensible so you can build out the framework to suit your specific needs
 * Reproducibility of training and inference workflows
@@ -58,7 +58,7 @@ Plus, ZenML is and always will be an open-source effort, which lowers the risk o
 
 #### How can I speak with the community?
 
-First point of call should be [our Slack group](https://zenml.io/slack-invite/).
+The first point of call should be [our Slack group](https://zenml.io/slack-invite/).
 Ask your questions about bugs or specific use cases and someone from the core
 team will respond.
 
