@@ -530,7 +530,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 repository information.
             skip_default_registrations: If `True`, the creation of the default
                 stack and user in the store will be skipped.
-            track_analytics: If `False`, then do not send analytics.
+            track_analytics: Only send analytics if set to `True`.
 
         Returns:
             The initialized repository store.

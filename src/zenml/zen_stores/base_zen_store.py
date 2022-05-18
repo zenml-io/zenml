@@ -56,7 +56,7 @@ class BaseZenStore(ABC):
             url: The URL of the store.
             skip_default_registrations: If `True`, the creation of the default
                 stack and user will be skipped.
-            track_analytics: If `False`, then we do not track events.
+            track_analytics: Only send analytics if set to `True`.
             *args: Additional arguments to pass to the concrete store
                 implementation.
             **kwargs: Additional keyword arguments to pass to the concrete
