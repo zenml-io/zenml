@@ -963,7 +963,7 @@ class BaseZenStore(ABC):
         return StackWrapper(name=name, components=stack_components)
 
     # Public facing APIs
-    # TODO [HIGH]: Refactor these with the proxy pattern, as noted in
+    # TODO [ENG-894]: Refactor these with the proxy pattern, as noted in
     #  the [review comment](https://github.com/zenml-io/zenml/pull/589#discussion_r875003334)
 
     def register_stack_component(

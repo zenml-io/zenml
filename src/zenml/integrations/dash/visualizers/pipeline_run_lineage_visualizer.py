@@ -136,7 +136,7 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                 )
                 mode = "inline"
             else:
-                # TODO [LOW]: Refactor this to raise a warning instead.
+                # TODO [ENG-895]: Refactor this to raise a warning instead.
                 raise AssertionError(
                     "Cannot set magic flag in non-notebook environments."
                 )

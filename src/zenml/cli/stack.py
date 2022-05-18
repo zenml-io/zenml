@@ -756,7 +756,7 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
     track_event(AnalyticsEvent.EXPORT_STACK)
 
     # Get configuration of given stack
-    # TODO [LOW]: code duplicate with describe_stack()
+    # TODO [ENG-893]: code duplicate with describe_stack()
     repo = Repository()
 
     stack_configurations = repo.stack_configurations
