@@ -13,6 +13,8 @@ ZenML has a deep focus on integrations, and navigating the landscape of tools th
 can be daunting. The [examples](https://github.com/zenml-io/zenml/tree/main/examples) on GitHub are the best way 
 to see each integration in action. Go here if you like to learn through tutorials, or are interested in particular integrations.
 
+[Click here to go to examples](https://github.com/zenml-io/zenml/tree/main/examples)
+
 ## ZenBytes: Learn MLOps with ZenML
 
 [ZenBytes](https://github.com/zenml-io/zenbytes) is a series of short practical
@@ -44,3 +46,9 @@ repository of ZenML.
 The ZenML [YouTube Channel](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw) features a growing set of videos that take you through the entire framework. Go here if you are a visual learner, and follow along some of the tutorials.
 
 [Click here to go to YouTube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
+
+## Slack Channel: Get help from the community 
+
+The ZenML [Slack Channel](https://zenml.io/slack-invite) is the main gathering point for the community. Not only is it the best place to get in touch with the core team of ZenML, it is also a great way to discuss new ideas and share your own ZenML projects with the community. If you have a question, there is a high chance someone else might have already answered it on Slack!
+
+[Click here to go to Slack](https://zenml.io/slack-invite)
