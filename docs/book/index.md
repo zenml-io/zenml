@@ -49,3 +49,8 @@ section on [Stack Components](stack-components).
 
 Share not only your code but also your ZenML stacks with your team. Find out how
 in our section on [collaboration](collaborate). 
+
+## **Resources** - Learn ZenML with tutorials, examples, and guides
+
+The ZenML team and community has put together many more resources other than the 
+documentation to learn about the framework. Learn more in our section on [resources](resources).

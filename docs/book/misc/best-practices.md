@@ -1,8 +1,6 @@
 ---
-description: Recommendations and Tips from the ZenML team.
+description: Best Practices, Recommendations, and Tips from the ZenML team.
 ---
-
-# Best Practices
 
 ## Recommended Repository Structure
 
@@ -89,12 +87,18 @@ This will set the zenml project root for the project and ...
 
 #### Put your runners in the root of the repository
 
-#### enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
-#### include a .dockerignore in the zenml repository to exclude files and folders from the container images built by ZenML for containerized environments, like Kubeflow and some step operators
-#### use get\_pipeline\_run(RUN\_NAME) instead of indexing (\[-1]) into the full list of pipeline runs
+#### Enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
+
+#### Include a .dockerignore in the zenml repository to exclude files and folders from the container images built by ZenML for containerized environments, like Kubeflow and some step operators
+
+#### Use get\_pipeline\_run(RUN\_NAME) instead of indexing (\[-1]) into the full list of pipeline runs
+
 #### Explicitly disable caching when loading data from fs or external APIs
+
 #### Have your imports relative to your .zen directory OR have your imports relative to the root of your repository in cases when you dont have a .zen directory (=> which means to have the runner at the root of your repository)
+
 #### Do not overlap `required_integrations` and `requirements`
+
 #### Explicity set `enable_cache` at the `@pipeline` level.
 
 ## Tips

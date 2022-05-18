@@ -4,13 +4,15 @@ description: We answer the most frequently asked questions about ZenML here
 
 # FAQ
 
-#### Can I use tool X?
-
-#### How does Y tool integrate with ZenML
-
 #### How does ZenML compare to orchestrators?
 
-#### How do you compare to tool Y?
+An orchestrator in MLOps is the system component that is responsible for executing and managing the execution of a ML pipeline. ZenML pipelines can be run on multiple orchestration systems. There are many standard orchestrators 
+
+#### Can I use tool X?
+
+#### How does Y tool integrate with ZenML?
+
+Take a look at our [examples]()
 
 #### How can I make ZenML work with my custom tool? or how can I extend or build on ZenML?
 
