@@ -13,6 +13,20 @@ concept of [stacks, stack components and their flavors](./introduction.md).
 
 ## Base Abstraction
 
+The secret manager acts as the one-stop shop for all of the secrets your 
+pipeline or stack components might need access to. 
+
+1. As it is the base class for a specific type of StackComponent,
+    it inherits from the StackComponent class. This sets the `TYPE`
+    variable to the Secrets manager . The `FLAVOR` class variable needs to be 
+    set in the specific subclass.
+2. The BaseSecretsManager implements the interface for a set of crud
+    operations as `abstractmethod`s: `register_secret`, `get_secret`, 
+    `get_all_secret_keys`, `update_secret`, `delete_secret`, 
+    `delete_all_secrets`. In the implementation of every 
+   `SecretsManager` flavor, it is required to define these methods with respect 
+    to the flavor at hand.
+
 ```python
 from abc import ABC, abstractmethod
 from typing import ClassVar, List
@@ -60,7 +74,7 @@ is a simple implementation for a local setup. This secrets manager simply saves
 secrets into a local yaml file with base64 encoding. This implementation is
 not intended for production use.
 
-For production use cases, some more flavors can be found in specific 
+For production use cases some more flavors can be found in specific 
 `integrations` modules, such as the `GCPSecretsManager` in the 
 `gcp_secrets_manager` integration and the `AWSSecretsManager` in the 
 `aws` integration.
@@ -95,3 +109,56 @@ as:
 zenml secrets-manager flavor register <THE-SOURCE-PATH-OF-YOUR-SECRETS-MANAGER>
 ```
 
+# Some additional implementation details
+
+Different providers in the space of secrets manager have different definitions 
+of what constitutes a secret. While some providers consider a single key value 
+pair a secret: `'secret_name': 'secret_value'`, other providers have a slightly 
+different definition. For them, a secret is a collection of key value pairs:
+`{'some_username': 'user_name_1', 'some_pwd': '1234'}`.
+
+ZenML falls into the second category. The implementation of the different 
+methods should reflect this convention. In case the specific implementation 
+interfaces with a secrets manager that uses the other definition of a secret, 
+working with tags can be helpful. See the `GCPSecretsManager` for inspiration.
+
+## SecretSchemas
+
+One way the ZenML expands on the notion of secrets as dictionaries, is the 
+secret schema. A secret schema allows the user to create and use a specific 
+template. A schema could for example require the combination of a username,
+password and token. All schemas must sub-class from the `BaseSecretSchema`.
+
+1. All Secret Schemas will need to have a defined `TYPE`.
+2. The required and optional keys of the secret need to be defined as class
+    variables.
+
+```python
+class BaseSecretSchema(BaseModel, ABC):
+    name: str
+    TYPE: ClassVar[str]
+
+    @property
+    def content(self) -> Dict[str, Any]:
+        ...
+```
+
+One such schema could look like this.
+
+```python
+from typing import ClassVar, Optional
+
+from zenml.secret import register_secret_schema_class
+from zenml.secret.base_secret import BaseSecretSchema
+
+EXAMPLE_SECRET_SCHEMA_TYPE = "example"
+
+@register_secret_schema_class
+class ExampleSecretSchema(BaseSecretSchema):
+
+    TYPE: ClassVar[str] = EXAMPLE_SECRET_SCHEMA_TYPE
+
+    username: str
+    password: str
+    token: Optional[str]
+```
