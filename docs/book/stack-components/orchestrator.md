@@ -78,11 +78,11 @@ Moreover, additional orchestrators can be found in specific `integrations`
 modules, such as the `AirflowOrchestrator` in the `airflow` integration and the
 `KubeflowOrchestrator` in the `kubeflow` integration.
 
-|                       | Flavor    | Integration |
-|-----------------------|-----------|-------------|
-| LocalOrchestrator     | local     | `built-in`  |
-| AirflowOrchestrator   | airflow   | airflow     |
-| KubeflowOrchestrator  | kubeflow  | kubeflow    |
+|                                                                                                                                                                     | Flavor    | Integration |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------|
+| [LocalOrchestrator](https://apidocs.zenml.io/latest/api_docs/orchestrators/#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator)                         | local     | `built-in`  |
+| [AirflowOrchestrator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator)     | airflow   | airflow     |
+| [KubeflowOrchestrator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator) | kubeflow  | kubeflow    |
 
 If you would like to see the available flavors for artifact stores, you can
 use the command:

@@ -66,11 +66,11 @@ class BaseStepOperator(StackComponent, ABC):
 You can find step operator implementations for the three big cloud providers in 
 the `azureml`, `sagemaker` and `vertex` integrations.
 
-|                       | Flavor    | Integration |
-|-----------------------|-----------|-------------|
-| AzureMLStepOperator   | azureml   | azureml     |
-| SagemakerStepOperator | sagemaker | sagemaker   |
-| VertexStepOperator    | vertex    | vertex      |
+|                                                                                                                                                                           | Flavor    | Integration |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|-------------|
+| [AzureMLStepOperator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.azureml.step_operators.azureml_step_operator.AzureMLStepOperator)         | azureml   | azureml     |
+| [SagemakerStepOperator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.sagemaker.step_operators.sagemaker_step_operator.SagemakerStepOperator) | sagemaker | sagemaker   |
+| [VertexStepOperator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.vertex.step_operators.vertex_step_operator.VertexStepOperator)             | vertex    | vertex      |
 
 If you would like to see the available flavors for step operators, you can 
 use the command:

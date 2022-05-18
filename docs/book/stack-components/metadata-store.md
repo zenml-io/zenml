@@ -26,11 +26,11 @@ in general, we suggest to use the `mysql` flavor for most use-cases.
 * `kubeflow`: Kubeflow boasts an internal metadata store, which ZenML can leverage. This flavor of metadata store is only to be used in combination with the `KubeflowOrchestrator`.
 * `mysql`: To be used for most other production settings, including with the `KubeflowOrchestrator` or other orchestrators that do not support an internal metadata store.
 
-|                       | Flavor         | Integration  |
-|-----------------------|----------------|--------------|
-| SQLiteMetadataStore   | sqlite         | `built-in`   |
-| MySQLMetadataStore    | mysql          | `built-in`   |
-| KubeflowMetadataStore | kubeflow       | kubeflow     |
+|                                                                                                                                                                           | Flavor         | Integration  |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|--------------|
+| [SQLiteMetadataStore](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.sqlite_metadata_store.SQLiteMetadataStore)                          | sqlite         | `built-in`   |
+| [MySQLMetadataStore](https://apidocs.zenml.io/latest/api_docs/metadata_stores/#zenml.metadata_stores.mysql_metadata_store.MySQLMetadataStore)                             | mysql          | `built-in`   |
+| [KubeflowMetadataStore](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.metadata_stores.kubeflow_metadata_store.KubeflowMetadataStore) | kubeflow       | kubeflow     |
 
 If you would like to see the available flavors for metadata stores, you can 
 use the command:
