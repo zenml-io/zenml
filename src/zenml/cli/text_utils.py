@@ -17,7 +17,7 @@ from rich.markdown import Markdown
 
 zenml_go_welcome_message = Markdown(
     """
-# ⛩ Welcome to ZenML!
+# ⛩  Welcome to ZenML!
 """
 )
 
