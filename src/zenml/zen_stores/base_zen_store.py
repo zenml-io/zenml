@@ -33,6 +33,7 @@ from zenml.zen_stores.models import (
     Team,
     User,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 logger = get_logger(__name__)
 
@@ -47,6 +48,7 @@ class BaseZenStore(ABC):
         url: str,
         skip_default_registrations: bool = False,
         track_analytics: bool = True,
+        skip_migration: bool = False,
         *args: Any,
         **kwargs: Any,
     ) -> "BaseZenStore":
@@ -57,6 +59,7 @@ class BaseZenStore(ABC):
             skip_default_registrations: If `True`, the creation of the default
                 stack and user will be skipped.
             track_analytics: Only send analytics if set to `True`.
+            skip_migration: If `True`, no migration will be performed.
             *args: Additional arguments to pass to the concrete store
                 implementation.
             **kwargs: Additional keyword arguments to pass to the concrete
@@ -67,12 +70,21 @@ class BaseZenStore(ABC):
         """
         self._track_analytics = track_analytics
         if not skip_default_registrations:
-            if self.is_empty:
+            if self.stacks_empty:
                 logger.info("Registering default stack...")
                 self.register_default_stack()
             self.create_default_user()
 
+        if not skip_migration:
+            self._migrate_store()
+
         return self
+
+    def _migrate_store(self) -> None:
+        """Migrates the store to the latest version."""
+        # Older versions of ZenML didn't have users in the zen store, so we
+        # create the default user if it doesn't exists
+        self.create_default_user()
 
     # Static methods:
 
@@ -120,7 +132,7 @@ class BaseZenStore(ABC):
 
     @property
     @abstractmethod
-    def is_empty(self) -> bool:
+    def stacks_empty(self) -> bool:
         """Check if the store is empty (no stacks are configured).
 
         The implementation of this method should check if the store is empty
@@ -269,13 +281,13 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def _get_user(self, user_name: str) -> User:
-        """Gets a specific user.
+        """Get a specific user by name.
 
         Args:
             user_name: Name of the user to get.
 
         Returns:
-            The requested user.
+            The requested user, if it was found.
 
         Raises:
             KeyError: If no user with the given name exists.
@@ -389,16 +401,16 @@ class BaseZenStore(ABC):
 
     @abstractmethod
     def _get_project(self, project_name: str) -> Project:
-        """Gets a specific project.
+        """Get an existing project by name.
 
         Args:
             project_name: Name of the project to get.
 
         Returns:
-            The requested project.
+            The requested project if one was found.
 
         Raises:
-            KeyError: If no project with the given name exists.
+            KeyError: If there is no such project.
         """
 
     @abstractmethod
@@ -597,6 +609,55 @@ class BaseZenStore(ABC):
 
         Raises:
             KeyError: If no team or project with the given names exists.
+        """
+
+    # Pipelines and pipeline runs
+
+    @abstractmethod
+    def get_pipeline_run(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunWrapper:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+
+    @abstractmethod
+    def get_pipeline_runs(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunWrapper]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+        """
+
+    @abstractmethod
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunWrapper,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
         """
 
     # Stack component flavors

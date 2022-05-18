@@ -150,12 +150,12 @@ class StackComponent(BaseModel, ABC):
 
     @property
     def is_provisioned(self) -> bool:
-        """If the component provisioned resources to run locally."""
+        """If the component provisioned resources to run."""
         return True
 
     @property
     def is_running(self) -> bool:
-        """If the component is running locally."""
+        """If the component is running."""
         return True
 
     @property
@@ -164,25 +164,25 @@ class StackComponent(BaseModel, ABC):
         return not self.is_running
 
     def provision(self) -> None:
-        """Provisions resources to run the component locally."""
+        """Provisions resources to run the component."""
         raise NotImplementedError(
-            f"Provisioning local resources not implemented for {self}."
+            f"Provisioning resources not implemented for {self}."
         )
 
     def deprovision(self) -> None:
-        """Deprovisions all local resources of the component."""
+        """Deprovisions all resources of the component."""
         raise NotImplementedError(
-            f"Deprovisioning local resource not implemented for {self}."
+            f"Deprovisioning resource not implemented for {self}."
         )
 
     def resume(self) -> None:
-        """Resumes the provisioned local resources of the component."""
+        """Resumes the provisioned resources of the component."""
         raise NotImplementedError(
             f"Resuming provisioned resources not implemented for {self}."
         )
 
     def suspend(self) -> None:
-        """Suspends the provisioned local resources of the component."""
+        """Suspends the provisioned resources of the component."""
         raise NotImplementedError(
             f"Suspending provisioned resources not implemented for {self}."
         )

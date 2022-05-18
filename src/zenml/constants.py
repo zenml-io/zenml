@@ -136,7 +136,7 @@ ZEN_SERVER_ENTRYPOINT = "zenml.zen_server.zen_server_api:app"
 
 
 # API Endpoint paths:
-IS_EMPTY = "/empty"
+STACKS_EMPTY = "/stacks-empty"
 STACKS = "/stacks"
 STACK_COMPONENTS = "/components"
 STACK_CONFIGURATIONS = "/stack-configurations"
@@ -146,6 +146,7 @@ PROJECTS = "/projects"
 ROLES = "/roles"
 FLAVORS = "/flavors"
 ROLE_ASSIGNMENTS = "/role_assignments"
+PIPELINE_RUNS = "/pipeline_runs"
 
 # mandatory stack component attributes
 MANDATORY_COMPONENT_ATTRIBUTES = ["name", "uuid"]

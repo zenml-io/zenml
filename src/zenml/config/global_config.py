@@ -357,6 +357,7 @@ class GlobalConfiguration(
             profile,
             skip_default_registrations=True,
             track_analytics=False,
+            skip_migration=True,
         )
         # transfer the active stack to the new store. we disable logs for this
         # call so there is no confusion about newly registered stacks/stack

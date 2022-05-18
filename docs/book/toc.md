@@ -1,7 +1,7 @@
 # Table of contents
 
 * [Introduction](index.md)
-* [Quickstart](introduction/quickstart-guide.md)
+* [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Core Concepts](introduction/core-concepts.md)
 
 ## Developer Guide
@@ -46,19 +46,21 @@
 
 ## Extending ZenML
 
-* [Artifact Store](stack-components/artifact-store.md)
-* [Metadata Store](stack-components/metadata-store.md)
-* [Orchestrator](stack-components/orchestrator.md)
-* [Container Registry](stack-components/container-registry.md)
-* [Step Operator](stack-components/step-operator.md)
-* [Secret Manager](stack-components/secrets-manager.md)
-* [Model Deployer](stack-components/model-deployer.md)
-* [Experiment Tracker](stack-components/experiment-tracker.md)
-* [Feature Store](stack-components/feature-store.md)
+* [Stacks, Components, Flavors](extending-zenml/stacks-components-flavors.md)
+* [Orchestrators](extending-zenml/orchestrator.md)
+* [Artifact Stores](extending-zenml/artifact-store.md)
+* [Metadata Stores](extending-zenml/metadata-store.md)
+* [Container Registries](extending-zenml/container-registry.md)
+* [Step Operators](extending-zenml/step-operator.md)
+* [Secret Managers](extending-zenml/secrets-manager.md)
+* [Model Deployers](extending-zenml/model-deployer.md)
+* [Experiment Trackers](extending-zenml/experiment-tracker.md)
+* [Feature Stores](extending-zenml/feature-store.md)
+* [Alerters](extending-zenml/alerter.md)
 
-## Support
+## Resources
 
-* [Best Practices](support/best-practices.md)
+* [Navigate ZenML Resources](resources/index.md)
 * [Integrations Usages](https://github.com/zenml-io/zenml/tree/main/examples)
 * [Learn MLOps with ZenML](https://github.com/zenml-io/zenbytes)
 * [ZenML in Practice](https://github.com/zenml-io/zenfiles)
@@ -67,6 +69,7 @@
 
 ## Misc
 
+* [Best Practices](misc/best-practices.md)
 * [System Environmental Variables](misc/system-env.md)
 * [Usage Analytics](misc/usage-analytics.md)
 * [🙋‍♀️ Contributing](misc/contributing.md)

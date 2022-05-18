@@ -16,7 +16,7 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.container_registries import BaseContainerRegistry
+from zenml.container_registries import DefaultContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
@@ -44,7 +44,7 @@ def test_kubeflow_orchestrator_stack_validation(mocker):
     orchestrator = KubeflowOrchestrator(name="")
     metadata_store = SQLiteMetadataStore(name="", uri="./metadata.db")
     artifact_store = LocalArtifactStore(name="", path=".")
-    container_registry = BaseContainerRegistry(name="", uri="localhost:5000")
+    container_registry = DefaultContainerRegistry(name="", uri="localhost:5000")
 
     with pytest.raises(StackValidationError):
         # missing container registry
