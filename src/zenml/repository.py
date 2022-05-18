@@ -520,6 +520,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def create_store(
         profile: "ProfileConfiguration",
         skip_default_registrations: bool = False,
+        skip_migration: bool = False,
     ) -> "BaseZenStore":
         """Create the repository persistence back-end store from a configuration
         profile.
@@ -532,6 +533,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 repository information.
             skip_default_registrations: If `True`, the creation of the default
                 stack and user in the store will be skipped.
+            skip_migration: If `True`, no store migration will be performed.
 
         Returns:
             The initialized repository store.
@@ -555,12 +557,14 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         if profile.store_type == StoreType.REST:
             skip_default_registrations = True
+            skip_migration = True
 
         if store_class.is_valid_url(profile.store_url):
             store = store_class()
             store.initialize(
                 url=profile.store_url,
                 skip_default_registrations=skip_default_registrations,
+                skip_migration=skip_migration,
             )
             return store
 

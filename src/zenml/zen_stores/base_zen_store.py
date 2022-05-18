@@ -47,6 +47,7 @@ class BaseZenStore(ABC):
         self,
         url: str,
         skip_default_registrations: bool = False,
+        skip_migration: bool = False,
         *args: Any,
         **kwargs: Any,
     ) -> "BaseZenStore":
@@ -56,6 +57,7 @@ class BaseZenStore(ABC):
             url: The URL of the store.
             skip_default_registrations: If `True`, the creation of the default
                 stack and user will be skipped.
+            skip_migration: If `True`, no migration will be performed.
             *args: Additional arguments to pass to the concrete store
                 implementation.
             **kwargs: Additional keyword arguments to pass to the concrete
@@ -70,7 +72,16 @@ class BaseZenStore(ABC):
                 self.register_default_stack()
             self.create_default_user()
 
+        if not skip_migration:
+            self._migrate_store()
+
         return self
+
+    def _migrate_store(self) -> None:
+        """Migrates the store to the latest version."""
+        # Older versions of ZenML didn't have users in the zen store, so we
+        # create the default user if it doesn't exists
+        self.create_default_user()
 
     # Static methods:
 

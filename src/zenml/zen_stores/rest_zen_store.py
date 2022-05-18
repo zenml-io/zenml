@@ -80,10 +80,13 @@ class RestZenStore(BaseZenStore):
         if not self.is_valid_url(url.strip("/")):
             raise ValueError("Invalid URL for REST store: {url}")
         self._url = url.strip("/")
-        if "skip_default_stack" not in kwargs:
-            kwargs["skip_default_stack"] = True
         super().initialize(url, *args, **kwargs)
         return self
+
+    def _migrate_store(self) -> None:
+        """Migrates the store to the latest version."""
+        # Don't do anything here in the rest store, as the migration has to be
+        # done server-side.
 
     # Static methods:
 

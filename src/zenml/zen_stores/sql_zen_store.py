@@ -211,6 +211,7 @@ class SqlZenStore(BaseZenStore):
         # because SQLModel will raise an error if it is present
         sql_kwargs = kwargs.copy()
         sql_kwargs.pop("skip_default_registrations", False)
+        sql_kwargs.pop("skip_migration", False)
         self.engine = create_engine(url, *args, **sql_kwargs)
         SQLModel.metadata.create_all(self.engine)
         with Session(self.engine) as session:

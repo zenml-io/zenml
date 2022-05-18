@@ -78,7 +78,7 @@ if profile.store_type == StoreType.REST:
         "other than the currently active one)"
     )
 zen_store: BaseZenStore = Repository.create_store(
-    profile, skip_default_registrations=True
+    profile, skip_default_registrations=True, skip_migration=True
 )
 
 
