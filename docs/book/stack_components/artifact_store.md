@@ -124,7 +124,16 @@ highlight the abstraction layer. In order to see the full implementation
 and get the complete docstrings, please check the source code on GitHub.
 {% endhint %}
 
-TODO: Short description about fileio
+#### The effect on the `zenml.io.fileio`
+
+If you created an instance of an artifact store, added it to your stack and 
+activated the stack, it will create a filesystem each time you run a ZenML 
+pipeline and make it available to the `zenml.io.fileio` module. 
+
+Which means, when you utilize a method such as `fileio.open(...)` with a 
+filepath which starts with one of the `SUPPORTED_SCHEMES` within 
+your steps or materializers, it will be able to use the `open(...)` method 
+that you defined within your artifact store.
 
 ## List of available artifact stores
 
