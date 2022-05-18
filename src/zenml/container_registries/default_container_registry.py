@@ -14,10 +14,12 @@
 from typing import ClassVar
 
 from zenml.enums import ContainerRegistryFlavor
-from zenml.stack import StackComponent
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
+)
 
 
-class DefaultContainerRegistry(StackComponent):
+class DefaultContainerRegistry(BaseContainerRegistry):
     """Class for default ZenML container registries."""
 
     # Class Configuration

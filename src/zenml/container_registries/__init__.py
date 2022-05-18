@@ -42,9 +42,13 @@ from zenml.container_registries.github_container_registry import (
 from zenml.container_registries.gitlab_container_registry import (
     GitLabContainerRegistry,
 )
+from zenml.container_registries.default_container_registry import (
+    DefaultContainerRegistry,
+)
 
 __all__ = [
     "BaseContainerRegistry",
+    "DefaultContainerRegistry",
     "AzureContainerRegistry",
     "DockerHubContainerRegistry",
     "GCPContainerRegistry",
