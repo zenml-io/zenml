@@ -1,4 +1,4 @@
-# Feature Sores
+# Feature Stores
 
 Feature stores allow data teams to serve data via an offline store and an online
 low-latency store where data is kept in
