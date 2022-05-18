@@ -208,6 +208,8 @@ def test_stack_deployment(
     """Tests that when a pipeline is deployed on a stack, the stack calls
     preparation/cleanup methods on all of its components and calls the
     orchestrator to run the pipeline."""
+    # Mock the pipeline run registering which tries (and fails) to serialize
+    # our mock objects
     mocker.patch.object(stack_with_mock_components, "_register_pipeline_run")
     pipeline_run_return_value = object()
     stack_with_mock_components.orchestrator.run.return_value = (

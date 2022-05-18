@@ -23,12 +23,6 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-def get_active_user_id() -> UUID:
-    from zenml.repository import Repository
-
-    return Repository().active_user.id
-
-
 # This probably makes more sense to be a resource?
 class Operation(BaseModel):
     """Pydantic object representing an operation that requires permission.

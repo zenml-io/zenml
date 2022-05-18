@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 
 from typing import Optional, Tuple
-from uuid import UUID
 
 import click
 
@@ -189,11 +188,12 @@ def list_projects() -> None:
 
     if projects:
         active_project = Repository().active_project
-        active: Optional[UUID] = active_project.id if active_project else None
+        active_project_id = active_project.id if active_project else None
+
         cli_utils.print_pydantic_models(
             projects,
-            columns=("name", "description", "creation_date", "default_stack"),
-            is_active=None if active is None else (lambda p: p.id == active),
+            columns=("name", "description", "creation_date"),
+            is_active=(lambda p: p.id == active_project_id),
         )
     else:
         cli_utils.declare("No projects registered.")

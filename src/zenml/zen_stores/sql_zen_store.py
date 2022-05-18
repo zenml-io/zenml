@@ -37,7 +37,6 @@ from zenml.zen_stores.models import (
     StackWrapper,
     Team,
     User,
-    get_active_user_id,
 )
 from zenml.zen_stores.models.pipeline_models import (
     PipelineRunWrapper,
@@ -110,9 +109,6 @@ class TeamTable(Team, SQLModel, table=True):
 class ProjectTable(Project, SQLModel, table=True):
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     creation_date: datetime = Field(default_factory=datetime.now)
-    created_by: UUID = Field(
-        default_factory=get_active_user_id, foreign_key="usertable.id"
-    )
 
 
 class RoleTable(SQLModel, table=True):

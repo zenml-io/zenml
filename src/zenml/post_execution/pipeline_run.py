@@ -68,6 +68,13 @@ class PipelineRunView:
         return self._name
 
     @property
+    def zenml_version(self) -> Optional[str]:
+        """Version of ZenML that this pipeline run was performed with."""
+        if self._run_wrapper:
+            return self._run_wrapper.zenml_version
+        return None
+
+    @property
     def git_sha(self) -> Optional[str]:
         """Git commit SHA that this pipeline run was performed on.
 
