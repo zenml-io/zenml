@@ -14,7 +14,14 @@ jobs:
   publish-python-package:
     needs: lint-code
     uses: ./.github/workflows/publish_to_pypi.yml
+    secrets:
+      PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
+      PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
 
   publish-docker-image:
     needs: publish-python-package
     uses: ./.github/workflows/publish_docker_image.yml
+    secrets:
+      GCP_CLOUDBUILD_EMAIL: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
+      GCP_CLOUDBUILD_KEY: ${{ secrets.GCP_CLOUDBUILD_KEY }}
+      GCP_CLOUDBUILD_PROJECT: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
