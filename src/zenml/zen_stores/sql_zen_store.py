@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import datetime as dt
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -33,8 +34,13 @@ from zenml.zen_stores.models import (
     Project,
     Role,
     RoleAssignment,
+    StackWrapper,
     Team,
     User,
+)
+from zenml.zen_stores.models.pipeline_models import (
+    PipelineRunWrapper,
+    PipelineWrapper,
 )
 
 # Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
@@ -126,6 +132,50 @@ class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
     )
 
 
+class PipelineRunTable(SQLModel, table=True):
+    name: str = Field(primary_key=True)
+    zenml_version: str
+    git_sha: Optional[str]
+
+    pipeline_name: str
+    pipeline: str
+    stack: str
+    runtime_configuration: str
+
+    user_id: UUID = Field(foreign_key="usertable.id")
+    project_name: Optional[str] = Field(
+        default=None, foreign_key="projecttable.name"
+    )
+
+    @classmethod
+    def from_pipeline_run_wrapper(
+        cls, wrapper: PipelineRunWrapper
+    ) -> "PipelineRunTable":
+        return PipelineRunTable(
+            name=wrapper.name,
+            zenml_version=wrapper.zenml_version,
+            git_sha=wrapper.git_sha,
+            pipeline_name=wrapper.pipeline.name,
+            pipeline=wrapper.pipeline.json(),
+            stack=wrapper.stack.json(),
+            runtime_configuration=json.dumps(wrapper.runtime_configuration),
+            user_id=wrapper.user_id,
+            project_name=wrapper.project_name,
+        )
+
+    def to_pipeline_run_wrapper(self) -> PipelineRunWrapper:
+        return PipelineRunWrapper(
+            name=self.name,
+            zenml_version=self.zenml_version,
+            git_sha=self.git_sha,
+            pipeline=PipelineWrapper.parse_raw(self.pipeline),
+            stack=StackWrapper.parse_raw(self.stack),
+            runtime_configuration=json.loads(self.runtime_configuration),
+            user_id=self.user_id,
+            project_name=self.project_name,
+        )
+
+
 class SqlZenStore(BaseZenStore):
     """Repository Implementation that uses SQL database backend"""
 
@@ -157,6 +207,7 @@ class SqlZenStore(BaseZenStore):
         # because SQLModel will raise an error if it is present
         sql_kwargs = kwargs.copy()
         sql_kwargs.pop("skip_default_registrations", False)
+        sql_kwargs.pop("skip_migration", False)
         self.engine = create_engine(url, *args, **sql_kwargs)
         SQLModel.metadata.create_all(self.engine)
         with Session(self.engine) as session:
@@ -226,7 +277,7 @@ class SqlZenStore(BaseZenStore):
         return True
 
     @property
-    def is_empty(self) -> bool:
+    def stacks_empty(self) -> bool:
         """Check if the zen store is empty."""
         with Session(self.engine) as session:
             return session.exec(select(ZenStack)).first() is None
@@ -551,13 +602,13 @@ class SqlZenStore(BaseZenStore):
             ]
 
     def get_user(self, user_name: str) -> User:
-        """Gets a specific user.
+        """Get a specific user by name.
 
         Args:
             user_name: Name of the user to get.
 
         Returns:
-            The requested user.
+            The requested user, if it was found.
 
         Raises:
             KeyError: If no user with the given name exists.
@@ -592,8 +643,9 @@ class SqlZenStore(BaseZenStore):
                 raise EntityExistsError(
                     f"User with name '{user_name}' already exists."
                 )
-            user = UserTable(name=user_name)
-            session.add(user)
+            sql_user = UserTable(name=user_name)
+            user = User(**sql_user.dict())
+            session.add(sql_user)
             session.commit()
         return user
 
@@ -782,16 +834,16 @@ class SqlZenStore(BaseZenStore):
             ]
 
     def get_project(self, project_name: str) -> Project:
-        """Gets a specific project.
+        """Get an existing project by name.
 
         Args:
             project_name: Name of the project to get.
 
         Returns:
-            The requested project.
+            The requested project if one was found.
 
         Raises:
-            KeyError: If no project with the given name exists.
+            KeyError: If there is no such project.
         """
         with Session(self.engine) as session:
             try:
@@ -1220,6 +1272,101 @@ class SqlZenStore(BaseZenStore):
                 RoleAssignment(**assignment.dict())
                 for assignment in session.exec(statement).all()
             ]
+
+    # Pipelines and pipeline runs
+
+    def get_pipeline_run(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunWrapper:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                statement = (
+                    select(PipelineRunTable)
+                    .where(PipelineRunTable.name == run_name)
+                    .where(PipelineRunTable.pipeline_name == pipeline_name)
+                )
+
+                if project_name:
+                    statement = statement.where(
+                        PipelineRunTable.project_name == project_name
+                    )
+
+                run = session.exec(statement).one()
+                return run.to_pipeline_run_wrapper()
+            except NoResultFound as error:
+                raise KeyError from error
+
+    def get_pipeline_runs(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunWrapper]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+        """
+        with Session(self.engine) as session:
+            try:
+                statement = select(PipelineRunTable).where(
+                    PipelineRunTable.pipeline_name == pipeline_name
+                )
+
+                if project_name:
+                    statement = statement.where(
+                        PipelineRunTable.project_name == project_name
+                    )
+                return [
+                    run.to_pipeline_run_wrapper()
+                    for run in session.exec(statement).all()
+                ]
+            except NoResultFound as error:
+                raise KeyError from error
+
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunWrapper,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
+        """
+        with Session(self.engine) as session:
+            existing_run = session.exec(
+                select(PipelineRunTable).where(
+                    PipelineRunTable.name == pipeline_run.name
+                )
+            ).first()
+            if existing_run:
+                raise EntityExistsError(
+                    f"Pipeline run with name '{pipeline_run.name}' already"
+                    "exists. Please make sure your pipeline run names are "
+                    "unique."
+                )
+
+            sql_run = PipelineRunTable.from_pipeline_run_wrapper(pipeline_run)
+            session.add(sql_run)
+            session.commit()
 
     # Handling stack component flavors
 
