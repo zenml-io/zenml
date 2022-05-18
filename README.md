@@ -43,8 +43,6 @@ Join our <a href="https://zenml.io/slack-invite" target="_blank">
 
 <br>
 
-![Before and after ZenML](docs/book/assets/sam-side-by-side-full-text.png)
-
 # 🤖 Why use ZenML?
 
 ZenML pipelines are designed to be written early on the development lifecycle.
@@ -54,12 +52,12 @@ about why we started building ZenML [on our
 blog](https://blog.zenml.io/why-zenml/). By using ZenML in the early stages of
 your project, you get the following benefits:
 
+- **Extensible** so you can build out the framework to suit your specific needs
 - **Reproducibility** of training and inference workflows
 - A **simple and clear** way to represent the steps of your pipeline in code
 - **Batteries-included integrations**: bring all your favorite tools together
 - Easy switch between local and cloud stacks
 - Painless **deployment and configuration** of infrastructure
-- **Extensible** so you can build out the framework to suit your specific needs
 
 # 📖 Learn More
 
@@ -108,13 +106,14 @@ can run it anywhere. We decouple your code from the environment and
 infrastructure on which this code runs.
 
 Switching from local experiments to cloud-based pipelines doesn't need to be
-complicated. ZenML supports running pipelines on Kubernetes clusters in the
-cloud through our [Kubeflow](https://www.kubeflow.org/) integration. Switching
-from your local stack to a cloud stack is easy to do with our CLI tool.
+complicated. ZenML supports running pipelines wherever you want, for example by
+using Kubeflow, one of our built-in integrations, or any orchestrator of your
+choice. Switching from your local stack to a cloud stack is easy to do with our
+CLI tool.
 
 ![You can run your pipelines locally or in the cloud](docs/book/assets/core_concepts/concepts-3.png)
 
-### 2. 🪆 Your whole MLOps stack in one place
+### 2. 🪆 All your MLOps stacks in one place
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with [powerful
@@ -123,15 +122,12 @@ stacks](https://docs.zenml.io/core-concepts). There are lots of moving parts for
 all the MLOps tooling and infrastructure you require for ML in production and
 ZenML aims to bring it all together under one roof.
 
-We currently support [Airflow](https://airflow.apache.org/) and
-[Kubeflow](https://www.kubeflow.org/) as third-party orchestrators for your ML
-pipeline code. ZenML steps can be built from any of the other tools you usually
-use in your ML workflows, from
-[`scikit-learn`](https://scikit-learn.org/stable/) to
-[`PyTorch`](https://pytorch.org/) or
-[`TensorFlow`](https://www.tensorflow.org/).
+We already support common use cases and integrations to standard ML tools via
+our stack components, from orchestrators like Airflow and Kubeflow to model
+deployment via MLflow or Seldon Core, to custom infrastructure for training your
+models in the cloud and so on.
 
-![ZenML is the glue](docs/book/assets/zenml-is-the-glue.jpeg)
+![ZenML is the glue](docs/book/assets/stack-list.png)
 
 ### 3. 🛠 Extensibility
 
@@ -141,7 +137,7 @@ and workflows, but if you need a special kind of monitoring tool added, for
 example, or a different orchestrator to run your pipelines, ZenML is built as a
 framework making it easy to extend and build out whatever you need.
 
-![THIS NEEDS REPLACING WITH CORRECT ASSET](docs/book/assets/bad-video.mp4)
+![ZenML is fully extensible](docs/book/assets/bad-video.mp4)
 
 ### 4. 🔍 Automated metadata tracking
 
@@ -156,13 +152,14 @@ This also enables caching of the data that powers your pipelines which helps you
 iterate quickly through ML experiments. (Read [our
 blogpost](https://blog.zenml.io/caching-ml-pipelines/) to learn more!)
 
-![Built-in MLflow tracking](docs/book/assets/mlflow-screenshot.png)
+![Visualize your pipeline steps](docs/book/assets/dag-visualizer.png)
 
 ### 5. 👭 Collaborate with your team
 
 ZenML is built to support teams working together. The underlying infrastructure
 on which your ML workflows run can be shared, as can the data, assets and
-artifacts that you need to enable your work. The ZenML Server handles all the
+artifacts that you need to enable your work. ZenML Profiles offer an easy way to
+manage and switch between your stacks. The ZenML Server handles all the
 interaction and sharing and you can host it wherever you'd like.
 
 # 🤸 Getting Started
@@ -265,8 +262,17 @@ pipeline = mnist_pipeline(
 pipeline.run()
 ```
 
+### Get a guided tour with `zenml go`
+
 For a slightly more in-depth introduction to ZenML, taught through Jupyter
-notebooks, install `zenml` via pip as described above and type: `zenml go`.
+notebooks, install `zenml` via pip as described above and type:
+
+```shell
+zenml go
+```
+
+This will spin up a Jupyter notebook that showcases the above example plus more
+on how to use and extend ZenML.
 
 # 🍰 ZenBytes
 
