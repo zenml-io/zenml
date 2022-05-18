@@ -223,7 +223,7 @@ def _prompt_email(gc: GlobalConfiguration) -> None:
     console.print(zenml_go_email_prompt, width=80)
 
     email = click.prompt(
-        click.style("Email: ", fg="blue"), default="", show_default=False
+        click.style("Email", fg="blue"), default="", show_default=False
     )
     if email:
         if len(email) > 0 and email.count("@") != 1:
