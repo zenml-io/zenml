@@ -18,13 +18,18 @@ one of the flavors listed down below.
 
 ## List of available metadata stores
 
-In its current version, ZenML features three metadata store flavors, namely the `sqlite`, 
-`kubeflow`, and `mysql` flavors. These flavors are to be used in different contexts, but 
-in general, we suggest to use the `mysql` flavor for most use-cases.
+In its current version, ZenML features three metadata store flavors, namely 
+the `sqlite`, `kubeflow`, and `mysql` flavors. These flavors are to be used 
+in different contexts, but in general, we suggest to use the `mysql` flavor 
+for most use-cases.
 
 * `sqlite`: This is the default store. Only use this for running ZenML locally.
-* `kubeflow`: Kubeflow boasts an internal metadata store, which ZenML can leverage. This flavor of metadata store is only to be used in combination with the `KubeflowOrchestrator`.
-* `mysql`: To be used for most other production settings, including with the `KubeflowOrchestrator` or other orchestrators that do not support an internal metadata store.
+* `kubeflow`: Kubeflow boasts an internal metadata store, which ZenML can 
+leverage. This flavor of metadata store is only to be used in combination 
+with the `KubeflowOrchestrator`.
+* `mysql`: To be used for most other production settings, including with 
+the `KubeflowOrchestrator` or other orchestrators that do not support an 
+internal metadata store.
 
 |                                                                                                                                                                           | Flavor         | Integration  |
 |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|--------------|
