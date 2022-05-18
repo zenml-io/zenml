@@ -2,16 +2,7 @@ name: Publish Docker image
 
 on:
   workflow_call:
-    secrets:
-      GCP_CLOUDBUILD_EMAIL:
-        description: 'needed for gcp cloudbuild login'
-        required: true
-      GCP_CLOUDBUILD_KEY:
-        description: 'needed for gcp cloudbuild login'
-        required: true
-      GCP_CLOUDBUILD_PROJECT:
-        description: 'needed for gcp cloudbuild login'
-        required: true
+
 jobs:
   publish_to_pypi:
     name: Publish Docker 🐋 image 🖼️ to Dockerhub

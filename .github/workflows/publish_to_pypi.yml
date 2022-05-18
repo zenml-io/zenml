@@ -2,13 +2,6 @@ name: Publish Pypi package
 
 on:
   workflow_call:
-    secrets:
-      PYPI_USERNAME:
-        description: 'needed for pypi login'
-        required: true
-      PYPI_PASSWORD:
-        description: 'needed for pypi login'
-        required: true
 
 jobs:
   publish_to_pypi:
