@@ -9,7 +9,7 @@ for many different ZenML abstractions.
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with powerful integrations on multiple
-[MLOps stacks](../introduction/core-concepts.md). There are lots of moving parts
+[MLOps stacks](../../introduction/core-concepts.md). There are lots of moving parts
 for all the MLOps tooling and infrastructure you require for ML in production
 and ZenML aims to bring it all together under one roof.
 
@@ -27,7 +27,7 @@ a deployed model on Kubernetes using [Seldon Core](https://www.seldon.io/).
 All of this allows you to write your code now and add the right tool for the job
 as soon as the need arises.
 
-![ZenML is the glue](../assets/zenml-is-the-glue.jpeg)
+![ZenML is the glue](../../assets/zenml-is-the-glue.jpeg)
 
 These are the third-party integrations that ZenML currently supports:
 
@@ -76,5 +76,5 @@ These are the third-party integrations that ZenML currently supports:
 There are many tools in the ML / MLOps field. We have made an initial
 prioritization of which tools to support with integrations, but we also welcome
 community contributions. Check our
-[Contributing Guide](../../../CONTRIBUTING.md) for more details on how best to
+[Contributing Guide](../../../../CONTRIBUTING.md) for more details on how best to
 contribute.

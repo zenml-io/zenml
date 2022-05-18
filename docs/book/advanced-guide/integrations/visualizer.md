@@ -7,7 +7,7 @@ description: An image speaks a thousand words.
 ## What is a visualizer?
 
 Sometimes it makes sense in
-the [post-execution workflow](../developer-guide/post-execution-workflow.md) to
+the [post-execution workflow](../../developer-guide/post-execution-workflow.md) to
 actually visualize step
 outputs. ZenML has a standard, extensible interface for all visualizers:
 
