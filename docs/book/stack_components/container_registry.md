@@ -14,36 +14,37 @@ you create that bundle up your pipeline code. You could also use a remote
 container registry like the Elastic Container Registry at AWS in a 
 more production setting.
 
-{% hint style="warning" %} 
+{% hint style="warning" %}
 Before reading this chapter, make sure that you are familiar with the concept of 
 [stacks, stack components and their flavors](./introduction.md).  
 {% endhint %}
 
 ## Base Abstraction
 
-TODO: Intro to the base abstraction
+In the current version of ZenML, container registries have a rather simple base 
+abstraction. In essence, each container registry features a `uri` as an 
+instance configuration and a non-abstract `prepare_image_push` method for 
+validation.
 
 ```python
 from typing import ClassVar
 
-from zenml.enums import ContainerRegistryFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 from zenml.utils import docker_utils
 
 
 class BaseContainerRegistry(StackComponent):
     """Base class for all ZenML container registries."""
-
+    
     # Instance configuration
     uri: str
 
     # Class variables
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.DEFAULT.value
 
     def prepare_image_push(self, image_name: str) -> None:
-        """Method that subclasses can overwrite to do any necessary checks or
-        preparations before an image gets pushed."""
+        """Conduct necessary checks/preparations before an image gets pushed."""
 
     def push_image(self, image_name: str) -> None:
         """Pushes a docker image."""
@@ -55,7 +56,6 @@ class BaseContainerRegistry(StackComponent):
 
         self.prepare_image_push(image_name)
         docker_utils.push_docker_image(image_name)
-
 ```
 
 {% hint style="info" %}
@@ -66,15 +66,15 @@ and get the complete docstrings, please check the source code on GitHub.
 
 ## List of available container registry
 
+Out-of-the-box, ZenML comes with several options for container registries:
+
 |                            | Flavor    | Integration    |
 |----------------------------|-----------|----------------|
-| BaseContainerRegistry      | default   | `built-in`     |
+| DefaultContainerRegistry   | default   | `built-in`     |
 | DockerHubContainerRegistry | dockerhub | `built-in`     |
 | GCPContainerRegistry       | gcp       | `built-in`     |
 | AzureContainerRegistry     | azure     | `built-in`     |
 | AWSContainerRegistry       | aws       | aws            |
-| GitHubContainerRegistry    | github    | `built-in`     |
-| GitLabContainerRegistry    | gitlab    | `built-in`     |
 
 If you would like to see the available flavors for container registries, you can 
 use the command:
@@ -85,4 +85,20 @@ zenml container-registry flavor list
 
 ## Building your own container registry
 
-TODO: write the custom container registry section
+If you want to create your own custom flavor for a container registry, you can 
+follow the following steps:
+
+1. Create a class which inherits from the `BaseContainerRegistry`.
+2. Define the `FLAVOR` class variable.
+3. If you need to execute any checks/validation before the image gets pushed, 
+you can define these operations in the `prepare_image_push` method. As an 
+example, you can check the `AWSContainerRegistry`.
+4. Once the `prepare_image_push` gets completed, the `push_image` method will 
+come into play and utilize a `DockerClient` object to push the image.
+
+Once you are done with the implementation, you can register it through the CLI 
+as:
+
+```shell
+zenml container-registry flavor register <THE-SOURCE-PATH-OF-YOUR-REGISTRY>
+```

@@ -291,7 +291,7 @@ pipeline.run(runtime_param_1=3, another_param='luna')
 ```
 
 The provided parameters will be passed to the `prepare_pipeline_deployment`
-method of each stack components, and you can use this method as an entrypoint 
+method of each stack component, and you can use this method as an entrypoint 
 to configure your stack components even further.
 
 ## Managing the state
