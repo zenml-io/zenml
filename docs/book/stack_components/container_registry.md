@@ -66,7 +66,7 @@ and get the complete docstrings, please check the source code on GitHub.
 
 ## List of available container registry
 
-Out-of-the-box, ZenML comes with several options for container registries:
+Out-of-the-box, ZenML comes with several flavors for container registries:
 
 |                            | Flavor    | Integration    |
 |----------------------------|-----------|----------------|
