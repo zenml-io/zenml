@@ -61,18 +61,18 @@ class ProfileConfiguration(BaseModel):
 
     Attributes:
         name: Name of the profile.
+        active_user: Name of the active user.
         store_url: URL pointing to the ZenML store backend.
         store_type: Type of the store backend.
         active_stack: Optional name of the active stack.
-        active_user: Name of the active user.
         _config: global configuration to which this profile belongs.
     """
 
     name: str
+    active_user: str
     store_url: Optional[str]
     store_type: StoreType = Field(default_factory=get_default_store_type)
     active_stack: Optional[str]
-    active_user: str
     _config: Optional["GlobalConfiguration"]
 
     def __init__(
@@ -184,6 +184,11 @@ class ProfileConfiguration(BaseModel):
         if not attributes.get("active_user"):
             raise RuntimeError(
                 f"Active user missing for profile '{attributes['name']}'."
+            )
+
+        if store_type == StoreType.REST and attributes.get("store_url") is None:
+            raise RuntimeError(
+                f"Store URL missing for profile '{attributes['name']}'."
             )
 
         return attributes
