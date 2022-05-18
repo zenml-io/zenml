@@ -99,6 +99,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
             https://hub.docker.com/r/zenmldocker/zenml/
         kubeflow_pipelines_ui_port: A local port to which the KFP UI will be
             forwarded.
+        kubeflow_hostname: The hostname to use to talk to the Kubeflow Pipelines
+            API. If not set, the hostname will be derived from the Kubernetes
+            API proxy.
         kubernetes_context: Optional name of a kubernetes context to run
             pipelines in. If not set, the current active context will be used.
             You can find the active context by running `kubectl config
@@ -115,6 +118,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     custom_docker_base_image_name: Optional[str] = None
     kubeflow_pipelines_ui_port: int = DEFAULT_KFP_UI_PORT
+    kubeflow_hostname: Optional[str] = None
     kubernetes_context: Optional[str] = None
     synchronous: bool = False
     skip_local_validations: bool = False
@@ -605,9 +609,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 step_name_to_container_op[step.name] = container_op
 
         # Get a filepath to use to save the finished yaml to
+        assert runtime_configuration.run_name
         fileio.makedirs(self.pipeline_directory)
         pipeline_file_path = os.path.join(
-            self.pipeline_directory, f"{pipeline.name}.yaml"
+            self.pipeline_directory, f"{runtime_configuration.run_name}.yaml"
         )
 
         # write the argo pipeline yaml
@@ -648,7 +653,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
 
             # upload the pipeline to Kubeflow and start it
-            client = kfp.Client(kube_context=self.kubernetes_context)
+            client = kfp.Client(
+                host=self.kubeflow_hostname,
+                kube_context=self.kubernetes_context,
+            )
             if runtime_configuration.schedule:
                 try:
                     experiment = client.get_experiment(pipeline_name)
