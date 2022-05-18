@@ -14,6 +14,8 @@ This quickstart aims to give you a small illustration of what ZenML can do. To d
 - Track model hyperparameters and metrics in an experiment tracking tool,
 - Measure and visualize train-test skew, training-serving skew, and data drift.
 
+**New to MLOps?** Then you might want to start with our [**ZenBytes**](https://github.com/zenml-io/zenbytes) lesson series instead, where we cover each MLOps concept in much more detail. This quickstart assumes you are already familiar with basic MLOps issues and just want to learn how to approach them with ZenML.
+
 ## :computer: Run Locally
 
 ### :page_facing_up: Prerequisites 
