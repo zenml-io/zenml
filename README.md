@@ -111,7 +111,8 @@ using Kubeflow, one of our built-in integrations, or any orchestrator of your
 choice. Switching from your local stack to a cloud stack is easy to do with our
 CLI tool.
 
-![You can run your pipelines locally or in the cloud](docs/book/assets/core_concepts/concepts-3.png)
+![You can run your pipelines locally or in the
+cloud](docs/book/assets/core_concepts/concepts-3.png)
 
 ### 2. 🪆 All your MLOps stacks in one place
 
@@ -125,7 +126,9 @@ ZenML aims to bring it all together under one roof.
 We already support common use cases and integrations to standard ML tools via
 our stack components, from orchestrators like Airflow and Kubeflow to model
 deployment via MLflow or Seldon Core, to custom infrastructure for training your
-models in the cloud and so on.
+models in the cloud and so on. If you want to learn more about our integrations,
+check out [our Examples](https://github.com/zenml-io/zenml/tree/main/examples)
+to see how they work.
 
 ![ZenML is the glue](docs/book/assets/stack-list.png)
 
