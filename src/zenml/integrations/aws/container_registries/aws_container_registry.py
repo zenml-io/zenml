@@ -21,7 +21,6 @@ from pydantic import validator
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
-from zenml.enums import StackComponentType
 from zenml.integrations.aws import AWS_CONTAINER_REGISTRY_FLAVOR
 from zenml.logger import get_logger
 
@@ -29,14 +28,9 @@ logger = get_logger(__name__)
 
 
 class AWSContainerRegistry(BaseContainerRegistry):
-    """Class for AWS Container Registry.
-
-    Attributes:
-        uri: The URI of the container registry.
-    """
+    """Class for AWS Container Registry."""
 
     # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
     FLAVOR: ClassVar[str] = AWS_CONTAINER_REGISTRY_FLAVOR
 
     @validator("uri")
