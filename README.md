@@ -101,19 +101,20 @@ your project, you get the following benefits:
 
 # 🎮 Features
 
-### 1. 🗃 Use Caching across (Pipelines As) Experiments
+### 1. 💪 Write local, run anywhere
 
-ZenML makes sure for every pipeline you can trust that:
+You only need to write your core machine learning workflow code once, but you
+can run it anywhere. We decouple your code from the environment and
+infrastructure on which this code runs.
 
-- Code is versioned
-- Data is versioned
-- Models are versioned
-- Configurations are versioned
+Switching from local experiments to cloud-based pipelines doesn't need to be
+complicated. ZenML supports running pipelines on Kubernetes clusters in the
+cloud through our [Kubeflow](https://www.kubeflow.org/) integration. Switching
+from your local stack to a cloud stack is easy to do with our CLI tool.
 
-You can utilize caching to help iterate quickly through ML experiments. (Read
-[our blogpost](https://blog.zenml.io/caching-ml-pipelines/) to learn more!)
+![You can run your pipelines locally or in the cloud](docs/book/assets/core_concepts/concepts-3.png)
 
-### 2. ♻️ Leverage Powerful Integrations
+### 2. 🪆 Your whole MLOps stack in one place
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with [powerful
@@ -132,69 +133,37 @@ use in your ML workflows, from
 
 ![ZenML is the glue](docs/book/assets/zenml-is-the-glue.jpeg)
 
-### 3. ☁️ Scale to the Cloud
+### 3. 🛠 Extensibility
 
-Switching from local experiments to cloud-based pipelines doesn't need to be
-complicated. ZenML supports running pipelines on Kubernetes clusters in the
-cloud through our [Kubeflow](https://www.kubeflow.org/) integration. Switching
-from your local stack to a cloud stack is easy to do with our CLI tool.
+ZenML's Stack Components are built to support most machine learning use cases.
+We offer a batteries-included initial installation that should serve many needs
+and workflows, but if you need a special kind of monitoring tool added, for
+example, or a different orchestrator to run your pipelines, ZenML is built as a
+framework making it easy to extend and build out whatever you need.
 
-### 4. 🧩 Visualize the Steps of your Pipeline
+![THIS NEEDS REPLACING WITH CORRECT ASSET](docs/book/assets/bad-video.mp4)
 
-It’s not uncommon for pipelines to be made up of many steps, and those steps can
-interact and intersect with one another in often complex patterns. We’ve built a
-way for you to inspect what’s going on with your ZenML pipeline:
+### 4. 🔍 Automated metadata tracking
 
-![Here's what the pipeline lineage tracking visualizer looks
-like](https://blog.zenml.io/assets/posts/release_0_5_4/zenml_lineage.gif)
+ZenML tracks metadata for all the pipelines you run. This ensures that:
 
-### 5. 📊 Visualize Statistics
+- Code is versioned
+- Data is versioned
+- Models are versioned
+- Configurations are versioned
 
-Now you can use awesome third-party libraries to visualize ZenML steps and
-artifacts. We support the facets visualization for statistics out of the box, to
-find data drift between your training and test sets.
+This also enables caching of the data that powers your pipelines which helps you
+iterate quickly through ML experiments. (Read [our
+blogpost](https://blog.zenml.io/caching-ml-pipelines/) to learn more!)
 
-We use the built-in FacetStatisticsVisualizer using the [Facets
-Overview](https://pypi.org/project/facets-overview/) integration.
+![Built-in MLflow tracking](docs/book/assets/mlflow-screenshot.png)
 
-![Here’s what the statistics visualizer looks
-like](https://blog.zenml.io/assets/posts/release_0_5_3/stats.gif)
+### 5. 👭 Collaborate with your team
 
-### 6. 🧐 Introspect your Pipeline Results
-
-Once you've run your experiment, you need a way of seeing what was produced and
-how it was produced. We offer a flexible interface to support [post-execution
-workflows](https://docs.zenml.io/v/docs/guides/post-execution-workflow). This
-allows you to access any of the artifacts produced by pipeline steps as well as
-any associated metadata.
-
-```python
-pipeline = repo.get_pipeline(pipeline_name=..., stack_key=...) # access a pipeline by name and/or stack key
-runs = pipeline.runs  # all runs of a pipeline chronologically ordered
-run = runs[-1]  # latest run
-steps = run.steps  # all steps of a pipeline
-step = steps[0] 
-output = step.output
-df = output.read(materializer_class=PandasMaterializer)
-df.head()
-```
-
-### 7. 🛠 Configure Pipeline Runs with YAML Code
-
-Not everyone wants to keep their configuration of pipeline runs in the same
-place as the active code defining steps. You can define the particular
-customization of runs with YAML code if that's your jam!
-
-
-```yaml
-steps:
-  step_name:
-    parameters:
-      parameter_name: parameter_value
-      some_other_parameter_name: 2
-  some_other_step_name:
-    ...
-```
+ZenML is built to support teams working together. The underlying infrastructure
+on which your ML workflows run can be shared, as can the data, assets and
+artifacts that you need to enable your work. The ZenML Server handles all the
+interaction and sharing and you can host it wherever you'd like.
 
 # 🤸 Getting Started
 
