@@ -44,3 +44,8 @@ ZenML does not natively support your favorite tool? Don't you worry! ZenML is
 built from the ground up with extensibility in mind. Find out how to integrate 
 other tools or proprietary on-prem solutions for you and your team in our 
 section on [Stack Components](stack-components). 
+
+## **Collaborating** - Work together with your team
+
+Share not only your code but also your ZenML stacks with your team. Find out how
+in our section on [collaboration](collaborate). 
