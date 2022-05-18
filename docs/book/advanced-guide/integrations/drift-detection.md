@@ -68,7 +68,7 @@ For the full context of this code, please visit our `drift_detection` example [h
 
 We even allow you to use the Evidently visualization tool easily to display data drift diagrams in your browser or within a Jupyter notebook:
 
-![Evidently drift visualization UI](../../../examples/evidently\_drift\_detection/assets/drift\_visualization.png)
+![Evidently drift visualization UI](../../assets/evidently/drift_visualization.png)
 
 Simple code like this would allow you to access the Evidently visualizer based on the completed pipeline run:
 
