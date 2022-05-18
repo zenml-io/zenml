@@ -202,7 +202,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.stacks.copy()
 
-    def register_stack_component(
+    def _register_stack_component(
         self,
         component: ComponentWrapper,
     ) -> None:
@@ -244,7 +244,7 @@ class LocalZenStore(BaseZenStore):
             component.name,
         )
 
-    def update_stack_component(
+    def _update_stack_component(
         self,
         name: str,
         component_type: StackComponentType,
@@ -302,7 +302,7 @@ class LocalZenStore(BaseZenStore):
         )
         return {component.type.value: component.flavor}
 
-    def deregister_stack(self, name: str) -> None:
+    def _deregister_stack(self, name: str) -> None:
         """Remove a stack from storage.
 
         Args:
@@ -404,7 +404,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.users
 
-    def get_user(self, user_name: str) -> User:
+    def _get_user(self, user_name: str) -> User:
         """Gets a specific user.
 
         Args:
@@ -418,7 +418,7 @@ class LocalZenStore(BaseZenStore):
         """
         return _get_unique_entity(user_name, collection=self.__store.users)
 
-    def create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> User:
         """Creates a new user.
 
         Args:
@@ -442,7 +442,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.write_config()
         return user
 
-    def delete_user(self, user_name: str) -> None:
+    def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
 
         Args:
@@ -473,7 +473,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.teams
 
-    def get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> Team:
         """Gets a specific team.
 
         Args:
@@ -487,7 +487,7 @@ class LocalZenStore(BaseZenStore):
         """
         return _get_unique_entity(team_name, collection=self.__store.teams)
 
-    def create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> Team:
         """Creates a new team.
 
         Args:
@@ -511,7 +511,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.write_config()
         return team
 
-    def delete_team(self, team_name: str) -> None:
+    def _delete_team(self, team_name: str) -> None:
         """Deletes a team.
 
         Args:
@@ -570,7 +570,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.projects
 
-    def get_project(self, project_name: str) -> Project:
+    def _get_project(self, project_name: str) -> Project:
         """Gets a specific project.
 
         Args:
@@ -586,7 +586,7 @@ class LocalZenStore(BaseZenStore):
             project_name, collection=self.__store.projects
         )
 
-    def create_project(
+    def _create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
         """Creates a new project.
@@ -613,7 +613,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.write_config()
         return project
 
-    def delete_project(self, project_name: str) -> None:
+    def _delete_project(self, project_name: str) -> None:
         """Deletes a project.
 
         Args:
@@ -653,7 +653,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.role_assignments
 
-    def get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> Role:
         """Gets a specific role.
 
         Args:
@@ -667,7 +667,7 @@ class LocalZenStore(BaseZenStore):
         """
         return _get_unique_entity(role_name, collection=self.__store.roles)
 
-    def create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> Role:
         """Creates a new role.
 
         Args:
@@ -691,7 +691,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.write_config()
         return role
 
-    def delete_role(self, role_name: str) -> None:
+    def _delete_role(self, role_name: str) -> None:
         """Deletes a role.
 
         Args:
@@ -915,7 +915,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.stack_component_flavors
 
-    def create_flavor(
+    def _create_flavor(
         self,
         source: str,
         name: str,

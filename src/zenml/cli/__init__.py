@@ -55,7 +55,7 @@ what a `metadata-store` is, you can type:
 zenml metadata-store explain
 ```
 
-This will give you an explanation of that concept in more detail/
+This will give you an explanation of that concept in more detail.
 
 Beginning a Project
 -------------------
