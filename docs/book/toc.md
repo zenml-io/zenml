@@ -49,14 +49,14 @@
 
 * [Stacks, Components, Flavors](stack-components/introduction.md)
 * [Orchestrators](stack-components/orchestrator.md)
-* [Artifact Stores](stack-components/artifact_store.md)
-* [Metadata Stores](stack-components/metadata_store.md)
-* [Container Registries](stack-components/container_registry.md)
-* [Step Operators](stack-components/step_operator.md)
-* [Secret Managers](stack-components/secrets_manager.md)
-* [Model Deployers](stack-components/model_deployer.md)
-* [Experiment Trackers](stack-components/experiment_tracker.md)
-* [Feature Stores](stack-components/feature_store.md)
+* [Artifact Stores](stack-components/artifact-store.md)
+* [Metadata Stores](stack-components/metadata-store.md)
+* [Container Registries](stack-components/container-registry.md)
+* [Step Operators](stack-components/step-operator.md)
+* [Secret Managers](stack-components/secrets-manager.md)
+* [Model Deployers](stack-components/model-deployer.md)
+* [Experiment Trackers](stack-components/experiment-tracker.md)
+* [Feature Stores](stack-components/feature-store.md)
 * [Alerters](stack-components/alerter.md)
 
 ## Support
