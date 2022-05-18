@@ -53,4 +53,4 @@ in our section on [collaboration](collaborate).
 ## **Resources** - Learn ZenML with tutorials, examples, and guides
 
 The ZenML team and community has put together many more resources other than the 
-documentation to learn about the framework. Learn more in our section on [resources](resources).
+documentation to learn about the framework. Learn more in our section on [resources](resources/index.md).
