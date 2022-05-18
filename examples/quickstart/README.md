@@ -17,18 +17,31 @@ This quickstart aims to give you a small illustration of what ZenML can do. To d
 ## :computer: Run Locally
 
 ### :page_facing_up: Prerequisites 
-To run locally, install ZenML and the required integrations, pull this quickstart, and set up your ZenML stack:
+To run locally, install ZenML and pull this quickstart:
 
 ```shell
 # Install ZenML
 pip install zenml
 
-# Install zenml integrations
-zenml integration install dash sklearn mlflow evidently facets -y
-
 # Pull this quickstart to zenml_examples/quickstart
 zenml example pull quickstart
 cd zenml_examples/quickstart
+```
+
+### :arrow_forward: Run Locally
+Now we're ready to start. You have two options for running the quickstart locally:
+
+#### Option 1 (*Recommended*) - Interactively explore the quickstart using Jupyter Notebook:
+```bash
+pip install notebook
+jupyter notebook
+# open notebooks/quickstart.ipynb
+```
+
+#### Option 2 - Execute the whole ML pipeline from a Python script:
+```bash
+# Install required zenml integrations
+zenml integration install dash sklearn mlflow evidently facets -y
 
 # Initialize ZenML
 zenml init
@@ -37,24 +50,12 @@ zenml init
 zenml profile create quickstart
 zenml profile set quickstart
 
-# Add MLflow components to the default MLOps stack
+# Register required ZenML stack
 zenml experiment-tracker register mlflow_tracker --flavor=mlflow
 zenml model-deployer register mlflow_deployer --flavor=mlflow
 zenml stack update default -d mlflow_deployer -e mlflow_tracker
-```
 
-### :arrow_forward: Run the Code
-Now we're ready to start. You have two options for running the quickstart locally:
-
-Option 1 - Interactively explore the quickstart using Jupyter Notebook:
-```bash
-pip install notebook
-jupyter notebook
-# open notebooks/quickstart.ipynb
-```
-
-Option 2 - Execute the whole ML pipeline from a Python script:
-```shell
+# Run the quickstart script
 python run.py
 ```
 
