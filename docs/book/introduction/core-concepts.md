@@ -127,7 +127,7 @@ There are lots of different ways to use ZenML which will depend on your precise
 use case. The following concepts and stack components are things you'll possibly
 encounter further down the road while using ZenML.
 
-- Materializers - ZenML stores the data inputs and outputs to your steps in the
+- **Materializers** - ZenML stores the data inputs and outputs to your steps in the
   Artifact Store as we saw above. In order to store the data, it needs to
   serialize everything in a format that can fit into the Artifact Store. ZenML
   handles serialization (and deserialization) of the most common artifacts, but
@@ -135,19 +135,17 @@ encounter further down the road while using ZenML.
   your own custom materializer. This isn't hard, but you should be aware that
   it's something you might need do to. The ZenML CLI will let you know with a
   clear error message when you need to do this.
-- Profiles - Profiles are groupings of stacks. You might want to keep all your
+- **Profiles** - Profiles are groupings of stacks. You might want to keep all your
   AWS stacks separate from your GCP stacks, for example, or your work
   infrastructure use separate from that which you use for your personal
   projects. Profiles allow you to separate these out, and switching between them
   is easy.
-- Service - A service is a longer-lived entity that extends the capabilities of
+- **Service** - A service is a longer-lived entity that extends the capabilities of
   ZenML beyond the run of a pipeline. For example, a service could be a
   prediction service that loads models for inference in a production setting.
-- ZenServer - ZenML is building out functionality to host a shared server that
+- **ZenServer** - ZenML is building out functionality to host a shared server that
   allows teams to collaborate and share stacks, data stores and more.
 
 There's a lot more detail to digest when it comes to ZenML, but with the above
 you should be sufficiently armed to understand how the framework works and where
-you might want to extend it. We'd recommend you check out [the Developer
-Guide](LINKLINKLINK) as your next port of call...
-
+you might want to extend it.
