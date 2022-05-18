@@ -24,10 +24,10 @@ experiment trackers as stack components, namely the `MLFlowExperimentTracker`
 and the `WandbExperimentTracker`. In order to get more information about these 
 experiment trackers, please visit the API docs linked down below.
 
-|                           | Flavor   | Integration |
-|---------------------------|----------|-------------|
-| MLFlowExperimentTracker   | mlflow   | mlflow      |
-| WandbExperimentTracker    | wandb    | wandb       |
+|                                                                                                                                                                                   | Flavor   | Integration |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|-------------|
+| [MLFlowExperimentTracker](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker.MLFlowExperimentTracker) | mlflow   | mlflow      |
+| [WandbExperimentTracker](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker.WandbExperimentTracker)     | wandb    | wandb       |
 
 If you would like to see the available flavors for experiment trackers, you can 
 use the command:

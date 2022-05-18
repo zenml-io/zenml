@@ -144,12 +144,12 @@ Moreover, additional artifact stores can be found in specific `integration`
 modules, such as the `GCPArtifactStore` in the `gcp` integration and the
 `AzureArtifactStore` in the `azure` integration.
 
-|                     | Flavor | Integration |
-|---------------------|--------|-------------|
-| LocalArtifactStore  | local  | `built-in`  |
-| S3ArtifactStore     | s3     | s3          |
-| GCPArtifactStore    | gcp    | gcp         |
-| AzureArtifactStore  | azure  | azure       |
+|                                                                                                                                                               | Flavor | Integration |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|-------------|
+| [LocalArtifactStore](https://apidocs.zenml.io/latest/api_docs/artifact_stores/#zenml.artifact_stores.local_artifact_store.LocalArtifactStore)                 | local  | `built-in`  |
+| [S3ArtifactStore](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.s3.artifact_stores.s3_artifact_store.S3ArtifactStore)             | s3     | s3          |
+| [GCPArtifactStore](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.artifact_stores.gcp_artifact_store.GCPArtifactStore)         | gcp    | gcp         |
+| [AzureArtifactStore](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.azure.artifact_stores.azure_artifact_store.AzureArtifactStore) | azure  | azure       |
 
 If you would like to see the available flavors for artifact stores, you can 
 use the command:
