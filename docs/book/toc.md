@@ -1,7 +1,7 @@
 # Table of contents
 
 * [Introduction](index.md)
-* [Quickstart](introduction/quickstart-guide.md)
+* [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Core Concepts](introduction/core-concepts.md)
 
 ## Developer Guide
@@ -58,9 +58,9 @@
 * [Feature Stores](extending-zenml/feature-store.md)
 * [Alerters](extending-zenml/alerter.md)
 
-## Support
+## Resources
 
-* [Best Practices](support/best-practices.md)
+* [Navigate ZenML Resources](resources/index.md)
 * [Integrations Usages](https://github.com/zenml-io/zenml/tree/main/examples)
 * [Learn MLOps with ZenML](https://github.com/zenml-io/zenbytes)
 * [ZenML in Practice](https://github.com/zenml-io/zenfiles)
@@ -69,6 +69,7 @@
 
 ## Misc
 
+* [Best Practices](misc/best-practices.md)
 * [System Environmental Variables](misc/system-env.md)
 * [Usage Analytics](misc/usage-analytics.md)
 * [🙋‍♀️ Contributing](misc/contributing.md)
