@@ -6,51 +6,96 @@ description: Recommendations and Tips from the ZenML team.
 
 ## Recommended Repository Structure
 
-![](../.gitbook/assets/image.png)
-
 ```
-├── pipelines
-│   ├── controller
-│   │   ├── **/*.css
-│   ├── views
-│   ├── model
-│   ├── index.js
-├── steps
-│   ├── css
-│   │   ├── **/*.css
-│   ├── images
-│   ├── js
-│   ├── index.html
-├── steps
-│   ├── css
-│   │   ├── **/*.css
-│   ├── images
-│   ├── js
-│   ├── index.html
+├── notebooks                   <- All notebooks in one place
+│   ├── *.ipynb         
+├── pipelines                   <- All pipelines in one place
+│   ├── training_pipeline
+│   │   ├── .dockerignore
+│   │   ├── config.yaml
+│   │   ├── Dockerfile
+│   │   ├── training_pipeline.py
+│   │   ├── requirements.txt
+│   ├── deployment_pipeline
+│   │   ├── ...
+├── steps                       <- All steps in one place
+│   ├── loader_step
+│   │   ├── loader_step.py
+│   ├── training_step
+│   │   ├── ...
+├── .dockerignore 
+├── .gitignore
+├── config.yaml
 ├── Dockerfile
-├── .Dockerignore
-├── gitignore
-└── .zen
+├── README.md
+├── requirements.txt
+├── run.py
+└── setup.sh
 ```
 
 ## Best Practices and Tips
 
-* Pass requirements to pipeline even if using default orchestrator
-* Nest `p.run()` in `if __name__ == "__main__"`
-* Don't share metadata stores across artifact stores
-* Never call the pipeline instance `pipeline` or a step instance `step`
-* Use profiles to manage stacks
-* Use unique pipeline names across projects, especially if used with the same metadata store
-* Check which integrations are required for registering a stack component by running zenml flavor list and install the integration(s) if missing with zenml integration install
-* Initialize the zenml repository in the root of the source code tree of a project, even if it's optional
-* Put your runners in the root of the repository
-* enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
-* include a .dockerignore in the zenml repository to exclude files and folders from the container images built by ZenML for containerized environments, like Kubeflow and some step operators
-* use get\_pipeline\_run(RUN\_NAME) instead of indexing (\[-1]) into the full list of pipeline runs
-* Explicitly disable caching when loading data from fs or external APIs
-* Have your imports relative to your .zen directory OR have your imports relative to the root of your repository in cases when you dont have a .zen directory (=> which means to have the runner at the root of your repository)
-* Do not overlap `required_integrations` and `requirements`
-* Explicity set `enable_cache` at the `@pipeline` level.
+#### Pass requirements to your pipelines through the decorator:
+
+```python
+from zenml.integrations.constants import TENSORFLOW
+from zenml.pipelines import pipeline
+
+@pipeline(required_integrations=[TENSORFLOW])
+def training_pipeline():
+    ...
+```
+
+Writing your pipeline like this makes sure you can change out the orchestrator
+at any point without running into dependency issues.
+
+#### Nest `pipeline_instance.run()` in `if __name__ == "__main__"`
+
+```python
+pipeline_instance = training_pipeline(...)
+
+if __name__ == "__main__":
+    pipeline_instance.run()
+```
+
+This ensures that loading the pipeline from elsewhere does not also run it.
+
+#### Don't use the same metadata stores across  multiple artifact stores
+
+You might run into issues as the metadata store will point at artifacts in
+inactive artifact stores.
+
+#### Never call the pipeline instance `pipeline` or a step instance `step`
+
+This will overwrite the imported `pipeline` and `step` decorators.
+
+#### Use profiles to manage stacks
+
+
+#### Use unique pipeline names across projects, especially if used with the same metadata store
+
+Pipeline names are their unique identifiers, as such using the same name for
+different pipelines will create a mixed history of runs between the two 
+pipelines.
+
+#### Check which integrations are required for registering a stack component 
+
+You can do so by running zenml flavor list and installing the integration(s) 
+if missing with zenml integration install.
+
+#### Initialize the zenml repository in the root of the source code tree of a project, even if it's optional
+
+This will set the zenml project root for the project and ...
+
+#### Put your runners in the root of the repository
+
+#### enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
+#### include a .dockerignore in the zenml repository to exclude files and folders from the container images built by ZenML for containerized environments, like Kubeflow and some step operators
+#### use get\_pipeline\_run(RUN\_NAME) instead of indexing (\[-1]) into the full list of pipeline runs
+#### Explicitly disable caching when loading data from fs or external APIs
+#### Have your imports relative to your .zen directory OR have your imports relative to the root of your repository in cases when you dont have a .zen directory (=> which means to have the runner at the root of your repository)
+#### Do not overlap `required_integrations` and `requirements`
+#### Explicity set `enable_cache` at the `@pipeline` level.
 
 ## Tips
 
