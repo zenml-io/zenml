@@ -1,5 +1,5 @@
 ---
-description: Sending alerts through specified channels
+description: Sending alerts through specified channels.
 ---
 
 Alerters allow you to send alerts from within your pipeline. This is especially 

@@ -1,5 +1,5 @@
 ---
-description: Managing of your data/features 
+description: Managing of your data/features.
 ---
 
 Feature stores allow data teams to serve data via an offline store, and an 

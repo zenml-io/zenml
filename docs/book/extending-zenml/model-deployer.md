@@ -25,9 +25,9 @@ concept of [stacks, stack components and their flavors](./stacks-components-flav
 In ZenML, the base abstraction of the model deployer is built on top of three 
 major criteria:
 
-1. It needs to contain all the stack related configuration attributes required 
+1. It needs to contain all the stack-related configuration attributes required 
    to interact with the remote model serving tool, service or platform (e.g.
-   hostnames, URLs, references to credentials, other client related
+   hostnames, URLs, references to credentials, other client-related
    configuration parameters).
     
 2. It needs to implement the continuous deployment logic necessary to deploy 
@@ -37,14 +37,14 @@ major criteria:
    This functionality can be consumed directly from ZenML pipeline steps, but
    it can also be used outside the pipeline to deploy ad-hoc models. It is
    also usually coupled with a standard model deployer step, implemented by
-   each integration, that hides the details of the deployment process away from
+   each integration, that hides the details of the deployment process from
    the user.
     
 3. It needs to act as a ZenML BaseService registry, where every BaseService 
    instance is used as an internal representation of a remote model server (see 
    the `find_model_server` abstract method). To achieve this, it must be able to
    re-create the configuration of a BaseService from information that is
-   persisted externally, alongside or even part of the remote model server
+   persisted externally, alongside or even as part of the remote model server
    configuration itself. For example, for model servers that are implemented as
    Kubernetes resources, the BaseService instances can be serialized and saved
    as Kubernetes resource annotations. This allows the model deployer to keep
@@ -89,7 +89,7 @@ class BaseModelDeployer(StackComponent, ABC):
     def get_model_server_info(
         service: BaseService,
     ) -> Dict[str, Optional[str]]:
-        """Give implementation specific way to extract relevant model server
+        """Give implementation-specific way to extract relevant model server
         properties for the user."""
 
     @abstractmethod
@@ -104,7 +104,7 @@ class BaseModelDeployer(StackComponent, ABC):
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
     ) -> List[BaseService]:
-        """Abstract method to find one or more a model servers that match the
+        """Abstract method to find one or more model servers that match the
         given criteria."""
 
     @abstractmethod

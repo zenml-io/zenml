@@ -1,5 +1,5 @@
 ---
-description: Tracking your ML experiments  
+description: Tracking your ML experiments.
 ---
 
 Experiment trackers let you track your ML experiments by logging the parameters
@@ -14,7 +14,7 @@ link between pipeline runs and experiments.
 We are actively working on the base abstraction for the experiment trackers, 
 which will be available soon. As a result, their extension is not possible at 
 the moment. If you would like to use an experiment tracker in your stack, 
-please check the list of already available alerters down below.
+please check the list of already-implemented experiment trackers down below.
 {% endhint %}
 
 ## List of available experiment trackers

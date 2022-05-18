@@ -1,5 +1,5 @@
 ---
-description: Tracking the execution of your pipelines/steps
+description: Tracking the execution of your pipelines/steps.
 ---
 
 The configuration of each pipeline, step and produced artifacts are all tracked
@@ -21,7 +21,7 @@ one of the flavors listed down below.
 In its current version, ZenML features three metadata store flavors, namely 
 the `sqlite`, `kubeflow`, and `mysql` flavors. These flavors are to be used 
 in different contexts, but in general, we suggest to use the `mysql` flavor 
-for most use-cases.
+for most use cases.
 
 * `sqlite`: This is the default store. Only use this for running ZenML locally.
 * `kubeflow`: Kubeflow boasts an internal metadata store, which ZenML can 

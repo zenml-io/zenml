@@ -24,9 +24,9 @@ namely the `BaseArtifactStore`:
 2. As ZenML only supports filesystem-based artifact stores, it features an 
     instance configuration parameter called `path`, which will indicate the 
     root path of the artifact store. When creating an instance of any flavor of 
-    an `ArtifactStore`, the users will have to define this parameter.
+    an `ArtifactStore`, users will have to define this parameter.
 3. Moreover, there is an empty class variable called `SUPPORTED_SCHEMES` that 
-    needs to be defined by every flavor implementation. It indicates the 
+    needs to be defined in every flavor implementation. It indicates the 
     supported filepath schemes for the corresponding implementation.
     For instance, for the Azure artifact store, this set will be defined as
     `{"abfs://", "az://"}`.
@@ -130,7 +130,7 @@ If you created an instance of an artifact store, added it to your stack and
 activated the stack, it will create a filesystem each time you run a ZenML 
 pipeline and make it available to the `zenml.io.fileio` module. 
 
-Which means, when you utilize a method such as `fileio.open(...)` with a 
+This means that when you utilize a method such as `fileio.open(...)` with a 
 filepath which starts with one of the `SUPPORTED_SCHEMES` within 
 your steps or materializers, it will be able to use the `open(...)` method 
 that you defined within your artifact store.

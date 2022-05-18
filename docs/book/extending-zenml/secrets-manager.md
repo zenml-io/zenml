@@ -1,9 +1,9 @@
 ---
-description: Using secrets across your ZenML pipeline
+description: Using secrets across your ZenML pipeline.
 ---
 
 Most projects involving either cloud infrastructure or of a certain complexity
-will involve secrets of some kind. ZenML provides you a Secret Manager as 
+will involve secrets of some kind. ZenML provides you a Secrets Manager as 
 stack component to help manage and use these secrets for your pipeline runs.
 
 {% hint style="warning" %}
@@ -13,14 +13,14 @@ concept of [stacks, stack components and their flavors](./stacks-components-flav
 
 ## Base Abstraction
 
-The secret manager acts as the one-stop shop for all of the secrets your 
-pipeline or stack components might need access to. 
+The secret manager acts as the one-stop shop for all the secrets to which your 
+pipeline or stack components might need access. 
 
-1. As it is the base class for a specific type of StackComponent,
+1. As it is the base class for a specific type of `StackComponent`,
     it inherits from the StackComponent class. This sets the `TYPE`
-    variable to the Secrets manager . The `FLAVOR` class variable needs to be 
+    variable to the secrets manager . The `FLAVOR` class variable needs to be 
     set in the specific subclass.
-2. The BaseSecretsManager implements the interface for a set of crud
+2. The `BaseSecretsManager` implements the interface for a set of CRUD
     operations as `abstractmethod`s: `register_secret`, `get_secret`, 
     `get_all_secret_keys`, `update_secret`, `delete_secret`, 
     `delete_all_secrets`. In the implementation of every 
@@ -75,7 +75,7 @@ and get the complete docstrings, please check the [API docs](https://apidocs.zen
 
 ## List of available secrets managers
 
-Out of the box, ZenML comes with a `LocalSecretsManager` implementation, which 
+Out-of-the-box, ZenML comes with a `LocalSecretsManager` implementation, which 
 is a simple implementation for a local setup. This secrets manager simply saves 
 secrets into a local yaml file with base64 encoding. This implementation is
 not intended for production use.
@@ -118,9 +118,9 @@ zenml secrets-manager flavor register <THE-SOURCE-PATH-OF-YOUR-SECRETS-MANAGER>
 # Some additional implementation details
 
 Different providers in the space of secrets manager have different definitions 
-of what constitutes a secret. While some providers consider a single key value 
-pair a secret: `'secret_name': 'secret_value'`, other providers have a slightly 
-different definition. For them, a secret is a collection of key value pairs:
+of what constitutes a secret. While some providers consider a single key-value 
+pair a secret: (`'secret_name': 'secret_value'`), other providers have a slightly 
+different definition. For them, a secret is a collection of key-value pairs:
 `{'some_username': 'user_name_1', 'some_pwd': '1234'}`.
 
 ZenML falls into the second category. The implementation of the different 
@@ -130,9 +130,9 @@ working with tags can be helpful. See the `GCPSecretsManager` for inspiration.
 
 ## SecretSchemas
 
-One way the ZenML expands on the notion of secrets as dictionaries, is the 
+One way the ZenML expands on the notion of secrets as dictionaries is the 
 secret schema. A secret schema allows the user to create and use a specific 
-template. A schema could for example require the combination of a username,
+template. A schema could, for example, require the combination of a username,
 password and token. All schemas must sub-class from the `BaseSecretSchema`.
 
 1. All Secret Schemas will need to have a defined `TYPE`.

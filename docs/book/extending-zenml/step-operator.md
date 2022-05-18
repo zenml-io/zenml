@@ -1,5 +1,5 @@
 ---
-description: Running individual steps in specialized environments
+description: Running individual steps in specialized environments.
 ---
 
 Step operators allow you to run individual steps in a custom environment
@@ -93,7 +93,7 @@ If you want to create a custom step operator, you can follow these steps:
 2. Define the `FLAVOR` class variable.
 3. Implement the abstract `launch()` method. This method has two main 
    responsibilities:
-      * Preparing a suitable execution environment (e.g. a docker image): The 
+      * Preparing a suitable execution environment (e.g. a Docker image): The 
    general environment is highly dependent on the concrete step operator 
    implementation, but for ZenML to be able to run the step it requires you to 
    install some `pip` dependencies. The list of requirements needed to 

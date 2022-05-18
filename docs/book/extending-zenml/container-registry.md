@@ -1,5 +1,5 @@
 ---
-description: Setting up the storage for your containers 
+description: Setting up the storage for your containers.
 ---
 
 A container registry is a store for (Docker) containers. A ZenML workflow 
@@ -11,8 +11,8 @@ registry) and used as the basis for the deployed 'run'.
 For instance, when you are running a local container-based stack, you would 
 therefore have a local container registry which stores the container images 
 you create that bundle up your pipeline code. You could also use a remote 
-container registry like the Elastic Container Registry at AWS in a 
-more production setting.
+container registry like the Elastic Container Registry at AWS in a  production 
+setting.
 
 {% hint style="warning" %}
 Before reading this chapter, make sure that you are familiar with the concept of 
@@ -66,7 +66,7 @@ and get the complete docstrings, please check the [API docs](https://apidocs.zen
 
 ## List of available container registry
 
-Out-of-the-box, ZenML comes with several flavors for container registries:
+ZenML comes built-in with several flavors for container registries:
 
 |                            | Flavor    | Integration    |
 |----------------------------|-----------|----------------|

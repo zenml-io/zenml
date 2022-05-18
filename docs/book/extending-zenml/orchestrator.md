@@ -15,14 +15,15 @@ concept of [stacks, stack components and their flavors](./stacks-components-flav
 ## Base Implementation
 
 ZenML aims to enable orchestration with any orchestration tool. This is where
-the `BaseOrchestrator` comes into play. It abstracts many of the ZenML specific
-details away from the actual implementation and exposes a simplified interface:
+the `BaseOrchestrator` comes into play. It abstracts away many of the ZenML 
+specific details from the actual implementation and exposes a simplified 
+interface:
 
-1. As it is the base class for a specific type of StackComponent,
-   it inherits from the StackComponent class. This sets the TYPE
-   variable to the specific StackComponentType.
-2. The FLAVOR class variable needs to be set in the particular sub-class as it
-   is meant to indentify the implementation flavor of the particular
+1. As it is the base class for a specific type of `StackComponent`,
+   it inherits from the `StackComponent` class. This sets the `TYPE`
+   variable to the specific `StackComponentType`.
+2. The `FLAVOR` class variable needs to be set in the particular sub-class as it
+   is meant to identify the implementation flavor of the particular
    orchestrator.
 3. Lastly, the base class features one `abstractmethod`:
    `prepare_or_run_pipeline`. In the implementation of every
@@ -123,7 +124,7 @@ for step in sorted_steps:
 ```
 
 The orchestrator basically iterates through each step and directly executes
-the step. within the same python process. Obviously all kind of additional
+the step within the same Python process. Obviously all kind of additional
 configuration could be added around this.
 
 ## Python Operator based Orchestration
@@ -133,18 +134,18 @@ The `airflow` orchestrator has a slightly more complex implementation of the
 executing a step, a `PythonOperator` is created which contains a
 `_step_callable`. This `_step_callable` will ultimately execute the
 `self.run_step(...)` method of the orchestrator. The PythonOperators are
-assembled into an AirflowDag which is returned. Through some airflow magic,
-this dag is loaded by the connected instance of airflow and orchestration of
-this dag is performed either directly or on a set schedule.
+assembled into an AirflowDag which is returned. Through some Airflow magic,
+this DAG is loaded by the connected instance of Airflow and orchestration of
+this DAG is performed either directly or on a set schedule.
 
-## Container based Orchestration
+## Container-based Orchestration
 
-The `kubeflow` orchestrator is a great example of container based orchestration.
+The `kubeflow` orchestrator is a great example of container-based orchestration.
 In an implementation-specific method called `prepare_pipeline_deployment()`
-a docker image containing the complete project context is built.
+a Docker image containing the complete project context is built.
 
-Within `prepare_or_run_pipeline()` a yaml file is created as an intermediary
-representation of the pipeline and uploaded to the kubeflow instance.
+Within `prepare_or_run_pipeline()` a yaml file is created as an intermediate
+representation of the pipeline and uploaded to the Kubeflow instance.
 To create this yaml file a callable is defined within which a `dsl.ContainerOp`
 is created for each step. This ContainerOp contains the container entrypoint
 command and arguments that will make the image run just the one step.
@@ -153,7 +154,7 @@ The ContainerOps are assembled according to their interdependencies inside a
 
 ## Base Implementation of the Step Entrypoint Configuration
 
-Within the base docker images that is used for container based orchestration
+Within the base Docker images that are used for container-based orchestration
 the `src.zenml.entrypoints.step_entrypoint.py` is the default entrypoint to run
 a specific step. It does so by loading an orchestrator specific
 `StepEntrypointConfiguration` object. This object is then used to parse all
@@ -163,16 +164,16 @@ Under the hood this will eventually also call the orchestrators `run_step()`
 method.
 
 The `StepEntrypointConfiguration` is the base class that already implements
-most of the required functionality. Let's dive right into it.
+most of the required functionality. Let's dive right into it:
 
 1. The `DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND` is the default
-   entrypoint command for the docker container.
+   entrypoint command for the Docker container.
 2. Some arguments are mandatory for the step entrypoint. These are set as
    constants at the top of the file and used as the minimum required arguments.
 3. The `run()` method uses the parsed arguments to set up all required
    prerequisites before ultimately executing the step.
 
-Here is a schematic view of what the `StepEntrypointConfiguration` looks like.
+Here is a schematic view of what the `StepEntrypointConfiguration` looks like:
 
 ```python
 from abc import ABC, abstractmethod
