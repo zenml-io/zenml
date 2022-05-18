@@ -2,11 +2,11 @@
     <img src="https://zenml.io/assets/social/github.svg">
 </div>
 
-# ⏲️ Join the ZenML team for a full-day hackathon
+# ⏲️ Join the ZenML team on the MLOps Day
 
-We are hosting a full-day hackathon to showcase the latest ZenML features!
+We are hosting a MLOps day where we'll be building a vendor-agnostic MLOps pipeline from scratch.
 
-Sign up [here](https://www.eventbrite.com/myevent?eid=336331515617) to join the entire ZenML team in showcasing the latest release, answering the community's questions, and live-hacking new features!
+Sign up [here](https://www.eventbrite.com/myevent?eid=336331515617) to join the entire ZenML team in showcasing the latest release, answering the community's questions, and live-coding vendor agnostic MLOps features with the ZenML framework!
 
 # 👀 What is ZenML?
 
