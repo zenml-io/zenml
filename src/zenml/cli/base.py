@@ -208,8 +208,9 @@ def go() -> None:
     ipynb_files = [
         fi for fi in os.listdir(zenml_tutorial_path) if fi.endswith(".ipynb")
     ]
+    ipynb_files.sort()
     console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
-
+    input("Press ENTER to continue...")
     subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
 
 
