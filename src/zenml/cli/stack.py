@@ -31,6 +31,7 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.repository import Repository
 from zenml.stack import Stack
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 
@@ -752,9 +753,10 @@ def _get_component_as_dict(
 @click.argument("filename", type=str, required=False)
 def export_stack(stack_name: str, filename: Optional[str]) -> None:
     """Export a stack to YAML."""
+    track_event(AnalyticsEvent.EXPORT_STACK)
 
     # Get configuration of given stack
-    # TODO: code duplicate with describe_stack()
+    # TODO [ENG-893]: code duplicate with describe_stack()
     repo = Repository()
 
     stack_configurations = repo.stack_configurations
@@ -842,6 +844,7 @@ def import_stack(
     ctx: click.Context, stack_name: str, filename: Optional[str]
 ) -> None:
     """Import a stack from YAML."""
+    track_event(AnalyticsEvent.IMPORT_STACK)
 
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:

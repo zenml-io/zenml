@@ -41,7 +41,7 @@ class FlavorRegistry:
         from zenml.artifact_stores import LocalArtifactStore
         from zenml.container_registries import (
             AzureContainerRegistry,
-            BaseContainerRegistry,
+            DefaultContainerRegistry,
             DockerHubContainerRegistry,
             GCPContainerRegistry,
             GitHubContainerRegistry,
@@ -59,7 +59,7 @@ class FlavorRegistry:
             SQLiteMetadataStore,
             MySQLMetadataStore,
             LocalArtifactStore,
-            BaseContainerRegistry,
+            DefaultContainerRegistry,
             AzureContainerRegistry,
             DockerHubContainerRegistry,
             GCPContainerRegistry,

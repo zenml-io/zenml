@@ -14,7 +14,9 @@ jobs:
   publish-python-package:
     needs: lint-code
     uses: ./.github/workflows/publish_to_pypi.yml
+    secrets: inherit
 
   publish-docker-image:
     needs: publish-python-package
     uses: ./.github/workflows/publish_docker_image.yml
+    secrets: inherit

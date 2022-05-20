@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import os
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -25,17 +26,21 @@ from zenml.console import console
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
-from zenml.io.utils import get_global_config_directory
+from zenml.io.utils import copy_dir, get_global_config_directory
 from zenml.logger import get_logger
 from zenml.repository import Repository
-from zenml.utils.analytics_utils import identify_user
+from zenml.utils.analytics_utils import (
+    AnalyticsEvent,
+    identify_user,
+    track_event,
+)
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
 # exists, we are on the latest Windows Terminal that supports emojis
 _SHOW_EMOJIS = not os.name == "nt" or os.environ.get("WT_SESSION")
 
-TUTORIAL_REPO = "https://github.com/zenml-io/zenbytes"
+TUTORIAL_REPO = "https://github.com/zenml-io/zenml"
 
 
 @cli.command("init", help="Initialize a ZenML repository.")
@@ -163,6 +168,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
                 user_id=gc.user_id,
                 analytics_opt_in=gc.analytics_opt_in,
                 version=gc.version,
+                user_metadata=gc.user_metadata,
             )
             fresh_gc._add_and_activate_default_profile()
             declare(f"Reinitialized ZenML global config at {Path.cwd()}.")
@@ -181,11 +187,17 @@ def go() -> None:
     )
     from zenml.config.global_config import GlobalConfiguration
 
+    gc = GlobalConfiguration()
+    metadata = {}
+
     console.print(zenml_go_welcome_message, width=80)
 
-    gc = GlobalConfiguration()
     if not gc.user_metadata:
-        _prompt_email(gc)
+        gave_email = _prompt_email(gc)
+        metadata = {"gave_email": gave_email}
+
+    # Add telemetry
+    track_event(AnalyticsEvent.RUN_ZENML_GO, metadata=metadata)
 
     console.print(zenml_go_privacy_message, width=80)
 
@@ -200,21 +212,36 @@ def go() -> None:
                 "your machine to let you dive right into our code. However, "
                 "this machine has no installation of Git. Feel free to install "
                 "git and rerun this command. Alternatively you can also "
-                f"download the repo manually here: {TUTORIAL_REPO}."
+                f"download the repo manually here: {TUTORIAL_REPO}. The tutorial "
+                "is in the 'examples/quickstart/notebooks' directory."
             )
             raise GitNotFoundError(e)
-        Repo.clone_from(TUTORIAL_REPO, zenml_tutorial_path)
+
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmp_cloned_dir = os.path.join(tmpdirname, "zenml_repo")
+            with console.status(
+                "Cloning tutorial. This sometimes takes a minute..."
+            ):
+                Repo.clone_from(TUTORIAL_REPO, tmp_cloned_dir)
+            example_dir = os.path.join(tmp_cloned_dir, "examples/quickstart")
+            copy_dir(example_dir, zenml_tutorial_path)
+    else:
+        logger.warning(
+            f"{zenml_tutorial_path} already exists! Continuing without cloning."
+        )
 
     ipynb_files = [
         fi for fi in os.listdir(zenml_tutorial_path) if fi.endswith(".ipynb")
     ]
+    ipynb_files.sort()
     console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
-
+    input("Press ENTER to continue...")
     subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
 
 
-def _prompt_email(gc: GlobalConfiguration) -> None:
-    """Ask the user to give their email address"""
+def _prompt_email(gc: GlobalConfiguration) -> bool:
+    """Ask the user to give their email address. Returns
+    True if email is given, else False."""
     from zenml.cli.text_utils import (
         zenml_go_email_prompt,
         zenml_go_thank_you_message,
@@ -223,7 +250,7 @@ def _prompt_email(gc: GlobalConfiguration) -> None:
     console.print(zenml_go_email_prompt, width=80)
 
     email = click.prompt(
-        click.style("Email: ", fg="blue"), default="", show_default=False
+        click.style("Email", fg="blue"), default="", show_default=False
     )
     if email:
         if len(email) > 0 and email.count("@") != 1:
@@ -234,3 +261,5 @@ def _prompt_email(gc: GlobalConfiguration) -> None:
 
             gc.user_metadata = {"email": email}
             identify_user({"email": email})
+        return True
+    return False

@@ -17,6 +17,7 @@ from abc import ABCMeta
 from collections import defaultdict
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
 
@@ -33,14 +34,14 @@ from zenml.io import fileio, utils
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackComponent
 from zenml.utils import yaml_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
+from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.profile_config import ProfileConfiguration
     from zenml.post_execution import PipelineView
     from zenml.zen_stores import BaseZenStore
-    from zenml.zen_stores.models import User, ZenStoreModel
+    from zenml.zen_stores.models import Project, User, ZenStoreModel
 
 logger = get_logger(__name__)
 
@@ -55,6 +56,8 @@ class RepositoryConfiguration(FileSyncModel):
 
     active_profile_name: Optional[str]
     active_stack_name: Optional[str]
+    project_name: Optional[str] = None
+    project_id: Optional[UUID] = None
 
     class Config:
         """Pydantic configuration class."""
@@ -517,6 +520,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def create_store(
         profile: "ProfileConfiguration",
         skip_default_registrations: bool = False,
+        track_analytics: bool = True,
+        skip_migration: bool = False,
     ) -> "BaseZenStore":
         """Create the repository persistence back-end store from a configuration
         profile.
@@ -529,6 +534,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 repository information.
             skip_default_registrations: If `True`, the creation of the default
                 stack and user in the store will be skipped.
+            track_analytics: Only send analytics if set to `True`.
+            skip_migration: If `True`, no store migration will be performed.
 
         Returns:
             The initialized repository store.
@@ -552,12 +559,15 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         if profile.store_type == StoreType.REST:
             skip_default_registrations = True
+            skip_migration = True
 
         if store_class.is_valid_url(profile.store_url):
             store = store_class()
             store.initialize(
                 url=profile.store_url,
                 skip_default_registrations=skip_default_registrations,
+                track_analytics=track_analytics,
+                skip_migration=skip_migration,
             )
             return store
 
@@ -695,7 +705,14 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @property
     def active_user_name(self) -> str:
-        """Name of the active user."""
+        """Get the active user name set in the profile.
+
+        Returns:
+            The name of the active user.
+
+        Raises:
+            RuntimeError: If no profile is set as active, or no user configured.
+        """
         return self.active_profile.active_user
 
     @property
@@ -807,9 +824,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         from zenml.zen_stores.models import StackWrapper
 
         stack.validate()
-        metadata = self.zen_store.register_stack(StackWrapper.from_stack(stack))
-        metadata["store_type"] = self.active_profile.store_type.value
-        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+        self.zen_store.register_stack(StackWrapper.from_stack(stack))
 
     def update_stack(self, name: str, stack: Stack) -> None:
         """Updates a stack and its components.
@@ -823,13 +838,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         from zenml.zen_stores.models import StackWrapper
 
         stack.validate()
-        metadata = self.zen_store.update_stack(
-            name, StackWrapper.from_stack(stack)
-        )
+        self.zen_store.update_stack(name, StackWrapper.from_stack(stack))
         if self.active_stack_name == name:
             self.activate_stack(stack.name)
-        metadata["store_type"] = self.active_profile.store_type.value
-        track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
 
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack.
@@ -875,14 +886,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             name,
             component_type,
             ComponentWrapper.from_component(component),
-        )
-        analytics_metadata = {
-            "type": component.TYPE.value,
-            "flavor": component.FLAVOR,
-        }
-        track_event(
-            AnalyticsEvent.UPDATED_STACK_COMPONENT,
-            metadata=analytics_metadata,
         )
 
     def get_stack_components(
@@ -937,15 +940,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         if component.post_registration_message:
             logger.info(component.post_registration_message)
 
-        analytics_metadata = {
-            "type": component.TYPE.value,
-            "flavor": component.FLAVOR,
-        }
-        track_event(
-            AnalyticsEvent.REGISTERED_STACK_COMPONENT,
-            metadata=analytics_metadata,
-        )
-
     def deregister_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> None:
@@ -969,6 +963,56 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 component_type.value,
                 name,
             )
+
+    def set_active_project(self, project: Optional["Project"] = None) -> None:
+        """Set the project for the local repository.
+
+        If no object is passed, this will unset the active project for this
+        repository.
+
+        Args:
+            project: The project to set as active.
+
+        Raises:
+            RuntimeError: if not in an initialized repository directory.
+        """
+        if not self.__config:
+            raise RuntimeError(
+                "Must be in a local ZenML repository to set an active project. "
+                "Make sure you are in the right directory, or first run "
+                "`zenml init` to initialize a ZenML repository."
+            )
+
+        if project:
+            self.__config.project_name = project.name
+            self.__config.project_id = project.id
+        else:
+            self.__config.project_name = None
+            self.__config.project_id = None
+
+    @property
+    def active_project(self) -> Optional["Project"]:
+        """Get the currently active project of the local repository.
+
+        Returns:
+             Project, if one is set that matches the id in the store.
+        """
+        if not self.__config:
+            return None
+
+        project_name = self.__config.project_name
+        if not project_name:
+            return None
+
+        project = self.zen_store.get_project(project_name)
+        if self.__config.project_id != project.id:
+            logger.warning(
+                "Local project id and store project id do not match. Treating "
+                "project as unset. Make sure this project was registered with "
+                f"this store under the name `{project_name}`."
+            )
+            return None
+        return project
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(

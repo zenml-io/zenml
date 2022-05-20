@@ -21,6 +21,7 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 
 from zenml.enums import ExecutionStatus
+from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineRunView
 from zenml.visualizers import BasePipelineRunVisualizer
@@ -109,19 +110,42 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
     }
 
     def visualize(
-        self, object: PipelineRunView, *args: Any, **kwargs: Any
+        self,
+        object: PipelineRunView,
+        magic: bool = False,
+        *args: Any,
+        **kwargs: Any,
     ) -> dash.Dash:
         """Method to visualize pipeline runs via the Dash library. The layout
         puts every layer of the dag in a column.
         """
+        external_stylesheets = [
+            dbc.themes.BOOTSTRAP,
+            dbc.icons.BOOTSTRAP,
+        ]
+        if magic:
+            if Environment.in_notebook:
+                # Only import jupyter_dash in this case
+                from jupyter_dash import JupyterDash  # noqa
 
-        app = dash.Dash(
-            __name__,
-            external_stylesheets=[
-                dbc.themes.BOOTSTRAP,
-                dbc.icons.BOOTSTRAP,
-            ],
-        )
+                JupyterDash.infer_jupyter_proxy_config()
+
+                app = JupyterDash(
+                    __name__,
+                    external_stylesheets=external_stylesheets,
+                )
+                mode = "inline"
+            else:
+                # TODO [ENG-895]: Refactor this to raise a warning instead.
+                raise AssertionError(
+                    "Cannot set magic flag in non-notebook environments."
+                )
+        else:
+            app = dash.Dash(
+                __name__,
+                external_stylesheets=external_stylesheets,
+            )
+            mode = None
         nodes, edges, first_step_id = [], [], None
         first_step_id = None
         for step in object.steps:
@@ -338,5 +362,7 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
             logger.debug(n_clicks, "clicked in reset button.")
             return [1, edges + nodes]
 
+        if mode is not None:
+            app.run_server(mode=mode)
         app.run_server()
         return app

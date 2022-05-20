@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.7.3"
+version = "0.8.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -237,6 +237,7 @@ module = [
     "scipy.*",
     "boto3.*",
     "botocore.*",
+    "jupyter_dash.*",
 ]
 ignore_missing_imports = true
 

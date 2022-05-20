@@ -12,10 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import base64
+import itertools
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union, overload
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 from uuid import UUID
 
 from zenml.enums import StackComponentType, StoreType
@@ -32,16 +43,21 @@ from zenml.zen_stores.models import (
     Team,
     User,
     ZenStoreModel,
+    ZenStorePipelineModel,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 logger = get_logger(__name__)
 
-E = TypeVar("E", bound=Union[User, Team, Project, Role, FlavorWrapper])
+E = TypeVar(
+    "E",
+    bound=Union[User, Team, Project, Role, FlavorWrapper, PipelineRunWrapper],
+)
 
 
 @overload
 def _get_unique_entity(
-    entity_name: str, collection: List[E], ensure_exists: bool = True
+    entity_name: str, collection: Sequence[E], ensure_exists: bool = True
 ) -> E:
     """Type annotations in case of `ensure_exists=True`."""
     ...
@@ -49,14 +65,14 @@ def _get_unique_entity(
 
 @overload
 def _get_unique_entity(
-    entity_name: str, collection: List[E], ensure_exists: bool = False
+    entity_name: str, collection: Sequence[E], ensure_exists: bool = False
 ) -> Optional[E]:
     """Type annotations in case of `ensure_exists=False`."""
     ...
 
 
 def _get_unique_entity(
-    entity_name: str, collection: List[E], ensure_exists: bool = True
+    entity_name: str, collection: Sequence[E], ensure_exists: bool = True
 ) -> Optional[E]:
     """Gets an entity with a specific name from a collection.
 
@@ -122,6 +138,10 @@ class LocalZenStore(BaseZenStore):
         else:
             self.__store = ZenStoreModel(str(self.root / "stacks.yaml"))
 
+        self.__pipeline_store = ZenStorePipelineModel(
+            str(self.root / "pipeline_runs.yaml")
+        )
+
         super().initialize(url, *args, **kwargs)
         return self
 
@@ -166,7 +186,7 @@ class LocalZenStore(BaseZenStore):
         return not scheme or scheme.group() == "file://"
 
     @property
-    def is_empty(self) -> bool:
+    def stacks_empty(self) -> bool:
         """Check if the zen store is empty."""
         return len(self.__store.stacks) == 0
 
@@ -202,7 +222,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.stacks.copy()
 
-    def register_stack_component(
+    def _register_stack_component(
         self,
         component: ComponentWrapper,
     ) -> None:
@@ -244,7 +264,7 @@ class LocalZenStore(BaseZenStore):
             component.name,
         )
 
-    def update_stack_component(
+    def _update_stack_component(
         self,
         name: str,
         component_type: StackComponentType,
@@ -302,7 +322,7 @@ class LocalZenStore(BaseZenStore):
         )
         return {component.type.value: component.flavor}
 
-    def deregister_stack(self, name: str) -> None:
+    def _deregister_stack(self, name: str) -> None:
         """Remove a stack from storage.
 
         Args:
@@ -404,21 +424,21 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.users
 
-    def get_user(self, user_name: str) -> User:
-        """Gets a specific user.
+    def _get_user(self, user_name: str) -> User:
+        """Get a specific user by name.
 
         Args:
             user_name: Name of the user to get.
 
         Returns:
-            The requested user.
+            The requested user, if it was found.
 
         Raises:
             KeyError: If no user with the given name exists.
         """
         return _get_unique_entity(user_name, collection=self.__store.users)
 
-    def create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> User:
         """Creates a new user.
 
         Args:
@@ -442,7 +462,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.write_config()
         return user
 
-    def delete_user(self, user_name: str) -> None:
+    def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
 
         Args:
@@ -473,7 +493,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.teams
 
-    def get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> Team:
         """Gets a specific team.
 
         Args:
@@ -487,7 +507,7 @@ class LocalZenStore(BaseZenStore):
         """
         return _get_unique_entity(team_name, collection=self.__store.teams)
 
-    def create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> Team:
         """Creates a new team.
 
         Args:
@@ -511,7 +531,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.write_config()
         return team
 
-    def delete_team(self, team_name: str) -> None:
+    def _delete_team(self, team_name: str) -> None:
         """Deletes a team.
 
         Args:
@@ -570,23 +590,23 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.projects
 
-    def get_project(self, project_name: str) -> Project:
-        """Gets a specific project.
+    def _get_project(self, project_name: str) -> Project:
+        """Get an existing project by name.
 
         Args:
             project_name: Name of the project to get.
 
         Returns:
-            The requested project.
+            The requested project if one was found.
 
         Raises:
-            KeyError: If no project with the given name exists.
+            KeyError: If there is no such project.
         """
         return _get_unique_entity(
             project_name, collection=self.__store.projects
         )
 
-    def create_project(
+    def _create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
         """Creates a new project.
@@ -613,7 +633,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.write_config()
         return project
 
-    def delete_project(self, project_name: str) -> None:
+    def _delete_project(self, project_name: str) -> None:
         """Deletes a project.
 
         Args:
@@ -653,7 +673,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.role_assignments
 
-    def get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> Role:
         """Gets a specific role.
 
         Args:
@@ -667,7 +687,7 @@ class LocalZenStore(BaseZenStore):
         """
         return _get_unique_entity(role_name, collection=self.__store.roles)
 
-    def create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> Role:
         """Creates a new role.
 
         Args:
@@ -691,7 +711,7 @@ class LocalZenStore(BaseZenStore):
         self.__store.write_config()
         return role
 
-    def delete_role(self, role_name: str) -> None:
+    def _delete_role(self, role_name: str) -> None:
         """Deletes a role.
 
         Args:
@@ -904,6 +924,93 @@ class LocalZenStore(BaseZenStore):
             team_id=team.id, project_id=project_id
         )
 
+    # Pipelines and pipeline runs
+
+    def get_pipeline_run(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunWrapper:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+        runs = self.__pipeline_store.pipeline_runs[pipeline_name]
+
+        for run in runs:
+            if run.name != run_name:
+                continue
+            if project_name and run.project_name != project_name:
+                continue
+
+            return run
+
+        project_message = (
+            f" in project {project_name}." if project_name else "."
+        )
+        raise KeyError(
+            f"No pipeline run '{run_name}' found for pipeline "
+            f"'{pipeline_name}'{project_message}"
+        )
+
+    def get_pipeline_runs(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunWrapper]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+        """
+        runs = self.__pipeline_store.pipeline_runs[pipeline_name]
+        if project_name:
+            runs = [run for run in runs if run.project_name == project_name]
+
+        return runs
+
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunWrapper,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
+        """
+        all_runs = list(
+            itertools.chain.from_iterable(
+                self.__pipeline_store.pipeline_runs.values()
+            )
+        )
+        if _get_unique_entity(
+            entity_name=pipeline_run.name,
+            collection=all_runs,
+            ensure_exists=False,
+        ):
+            raise EntityExistsError(
+                f"Pipeline run with name '{pipeline_run.name}' already exists. "
+                "Please make sure your pipeline run names are unique."
+            )
+
+        self.__pipeline_store.pipeline_runs[pipeline_run.pipeline.name].append(
+            pipeline_run
+        )
+        self.__pipeline_store.write_config()
+
     # Handling stack component flavors
 
     @property
@@ -915,7 +1022,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.stack_component_flavors
 
-    def create_flavor(
+    def _create_flavor(
         self,
         source: str,
         name: str,

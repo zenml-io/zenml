@@ -4,440 +4,148 @@ description: A good place to start before diving further into the docs.
 
 # Core Concepts
 
-**ZenML** consists of the following key components:
+ZenML consists of a number of components. We mostly follow industry naming
+conventions for the most part, so a lot should already be broadly
+comprehensible. This guide walks through the various pieces you'll encounter
+when using ZenML, starting with the most basic to things you'll only encounter
+when deploying your work to the cloud. At the very highest level, the workflow
+is as follows:
 
-![ZenML Architectural Overview](../assets/architecture.png)
+- You write your code to define what you want to happen in your machine learning
+  workflow
+- You configure a ZenML Stack which is the infrastructure and setup that will
+  run your machine learning code
+- You can easily switch between different Stacks (i.e. infrastructure
+  configurations) depending on your needs at any given moment.
+- You can use whatever you want as part of your Stacks as we're built as a
+  framework to be extensible
 
-On a high level, data passes through a **[pipeline](#pipeline)**
-via **[steps](#step)** as an **[artifact](#artifact)**
-and is persisted in an **[artifact store](#artifact-store)**. Every step reads
-its predecessor's output artifacts, and
-its **[step configuration](#step-configuration)** and writes output artifacts to
-the artifact store.
-**[Materializers](#materializers)** define how this reading and writing is
-performed.
+Let's get back to basics, though, and dive into all the core concepts that
+you'll come across when using ZenML!
 
-Pipelines and steps are defined in code, but the underlying infrastructure on
-which they run is configured via
-**[stacks](#stack)**. A stack is the configuration for all the infrastructure
-that one is using in the ML lifecycle. It
-can consist of many components. For example, as the lifecycle manager of the
-pipeline the
-**[orchestrator](#orchestrator)** is an important component of any stack.
+## Basics: Steps and Pipelines
 
-The **[metadata store](#metadata-store)** keeps track of all the metadata
-regarding a pipeline run. It enables you to
-fetch steps and their output artifacts in a post-execution workflow via
-the **[repository](#repository)**.
+At its core, ZenML follows a pipeline-based workflow for your data projects.
+Pipelines consist of a series of steps, organized in whatever order makes sense
+for your particular use case.
 
-## Artifact
+![The most basic ZenML pipeline](../assets/core_concepts/concepts-1.png)
 
-Artifacts are the data that power your experimentation and model training. It is
-actually steps that produce
-artifacts, which are then stored in the artifact store. Input artifacts are
-written in the signature of a step like so:
+Here you can see three steps, each running one after another. Your set of steps
+might have dependencies between them, with one step using the output of a
+previous step and thus waiting until it is able to start its work.
 
-```python
-import torch
+Pipelines and steps are defined in code using handy decorators to designate
+functions as being one or the other. This is where the core business logic and
+value of your work lives and you will spend most of your time defining these two
+things. (Your code lives inside a Repository, which is the main abstraction
+within which your project-specific pipelines should live.)
 
+When it comes time to run your pipeline, ZenML offers an abstraction to handle
+all the decisions around how your pipeline gets run.
 
-# Some code
-def my_step(first_artifact: int, second_artifact: torch.nn.Module) -> int:
-    # first_artifact is an integer
-    # second_artifact is a torch.nn.Module
+## Stacks, Components and Stores
 
-    return 1
-```
+A Stack represents the infrastructure needed to run your pipeline as well as
+some of the extra requirements needed for ML pipelines. ZenML comes with a
+default stack that runs locally, as seen in the following diagram:
 
-Artifacts can be serialized and deserialized (i.e. written and read from the
-Artifact Store) in different ways
-like `TFRecord`s or saved model pickles, depending on what the step produces.The
-serialization and deserialization
-logic of artifacts is defined by [Materializers](#materializers). The location
-of the artifacts is defined by the stacks
-[Artifact Store](#artifact-store).
+![ZenML pipelines run on stacks](../assets/core_concepts/concepts-2.png)
 
-## Artifact Store
+A Stack is the configuration of the underlying infrastructure and choices around
+how your pipeline will be run. There are three Stack Components which are
+required in any stack:
 
-An artifact store is a place where artifacts are stored. These artifacts may
-have been produced by the pipeline
-steps, or they may be the data first ingested into a pipeline via an ingestion
-step. An artifact store will store all
-intermediary pipeline step results, which in turn will be tracked in the
-metadata store.
+- An Orchestrator
 
-The most basic artifact store would be your local filesystem, but you can
-quickly switch this out for a cloud-based
-artifact store.
-
-## Container Registry
-
-Some [orchestrators](#orchestrator) will require you to containerize
-the [steps](#step) of your [pipeline](#pipeline).
-A container registry is a store for these (Docker) containers. A ZenML workflow
-involving a container registry will
-containerize your code and store the resulting container in the registry. To do
-this the ZenML base image will be
-downloaded (from a cloud container registry) and used as the basis for the
-containerized 'run'. The kubeflow pipelines
-[orchestrator](#orchestrator) is one such orchestrator.
-
-When you are running a local container-based stack, you will have a local
-container registry which stores the container
-images and makes them accessible behind a local port. You could also use a
-remote container registry like the
-[Elastic Container Registry](https://aws.amazon.com/ecr/) at AWS in a setting
-closer to production.
-
-## Integrations
-
-Since production scenarios often look complex, **ZenML** is built with
-integrations in mind.
-An integration is a third-party tool or platform that implements a ZenML
-abstraction. It can be part of a stack.
-A tool can implement many abstractions and therefore an integration can have
-different
-entrypoints for the user. We have a
-consistently [updated integrations page](../advanced_guide/integrations.md)
-which shows all
-current integrations supported by the ZenML core
-team [here](../advanced_guide/integrations.md).
-However, as ZenML is a framework users are encouraged to use these as a
-guideline and implement
-their own integrations by extending the various ZenML abstractions.
-
-## Materializers
-
-A materializer defines how artifacts are persisted between steps. It is used to
-serialize/deserialize a ZenML artifact
-into/from a specific format. They are most often used to handle the input or
-output of ZenML steps, and can be extended
-by building on the `BaseMaterializer` class. We care about this because steps
-are not just isolated pieces of work;
-they are linked together and the outputs of one step might well be the inputs of
-the next.
-
-We have some built-in ways to serialize and deserialize the data flowing between
-steps. Of course, if you are
-using some library or tool which doesn't work with our built-in options, you can
-write
-[your own custom materializer](https://docs.zenml.io/guides/functional-api/materialize-artifacts)
-to ensure that your
-data can
-be passed from step to step in this way. We use our
-[`fileio` utilities](https://apidocs.zenml.io/api_reference/zenml.io.fileio.html)
-to do the disk operations
-without needing to be concerned with whether we're operating on a local or cloud
-machine.
-
-## Metadata
-
-Metadata are the pieces of information tracked about the pipelines, experiments
-and configurations that you are running
-with ZenML. Metadata are stored inside the metadata store.
-
-## Metadata Store
-
-The configuration of each pipeline, step and produced artifacts are all tracked
-within the metadata store.
-The metadata store is an SQL database, and can be `sqlite` or `mysql`.
-
-ZenML puts a lot of emphasis on guaranteed tracking of inputs across pipeline
-steps. The strict, fully automated, and
-deeply built-in tracking enables some powerful features - e.g. reproducibility.
-
-## Model Deployer
-
-Model Deployers integrate with external tools, services or platforms responsible
-for online model serving. Online serving is the process of hosting and loading
-machine-learning models as part of a managed web service and providing access to
-the models through an API endpoint like HTTP or GRPC. Once deployed, you can
-send inference requests to the model through the web service's API and receive
-fast, low-latency responses.
-
-Configuring a Model Deployer as part of your ZenML Stack enables you to
-implement continuous model deployment pipelines that train models and
-continuously deploy them to a model prediction web service. The Model Deployer
-also acts as a registry for models that are served with ZenML. You can use the
-Model Deployer to list all models that are currently deployed for online
-inference, to query specific models served during a particular pipeline run
-or step, or to suspend, resume or delete a model server.
-
-## Orchestrator
-
-An orchestrator manages the running of each step of the pipeline, administering
-the actual pipeline runs. The
-orchestrator is especially important, as it defines **where** the actual
-pipeline job runs. Think of it as the
-`root` of any pipeline job, that controls how and where each individual step
-within a pipeline is executed. Therefore,
-the orchestrator can be used to great effect to scale jobs in production.
-
-## Pipeline
-
-Pipelines are designed as simple functions. They are created by using decorators
-appropriate to the specific use case
-you have. The moment it is `run`, a pipeline is compiled and passed directly to
-the orchestrator, to be run in the
-orchestrator environment.
-
-Within your repository, you will have one or more pipelines as part of your
-workflow. A ZenML
-pipeline is a sequence of tasks that execute in a specific order and yield
-artifacts. The artifacts are stored
-within the artifact store and indexed via the metadata store. Each individual
-task within a pipeline is known as a
-step.
-
-```python
-@pipeline
-def mnist_pipeline(
-        importer,
-        normalizer: normalizer,
-        trainer,
-        evaluator,
-):
-    # Link all the steps artifacts together
-    X_train, y_train, X_test, y_test = importer()
-    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
-    model = trainer(X_train=X_trained_normed, y_train=y_train)
-    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
-
-
-# Initialize the pipeline
-p = mnist_pipeline(
-    importer=importer_mnist(),
-    normalizer=normalizer(),
-    trainer=trainer(config=TrainerConfig(epochs=1)),
-    evaluator=evaluator(),
-)
-
-# Run the pipeline
-p.run()
-```
-
-Pipelines consist of many steps that define what actually happens to the data
-flowing through
-the pipelines.
-
-## Profiles
-
-Profiles are configuration contexts stored on the machine where ZenML is used to
-run pipelines.
-They can be used to manage multiple individual ZenML global configurations on
-the same machine. Profiles control
-where the ZenML [Stacks](../advanced_guide/deploy-to-production.md) are stored.
-
-A `default` Profile is created automatically and set as the active Profile the
-first time ZenML runs. It is
-sufficient for most use cases that require configuring Stacks used to run ZenML
-pipelines. However, if you need to
-maintain multiple sets of Stacks independently of each other, you can create
-additional Profiles and switch between
-them when needed.
-
-Profiles are also a way to customize the storage backend where the information
-about Stacks is persisted.
-
-## Repository
-
-Every ZenML project starts inside a ZenML repository and, it is at the core of
-all ZenML activity. Every action that
-can be executed within ZenML must take place within such a repository.
-
-In order to create a ZenML repository, do the following after having installed
-ZenML:
-
-```
-zenml init
-```
-
-The initialization creates a local `.zen` folder where various information about
-your local configuration lives,
-e.g., the Profile and the
-active [Stack](../advanced_guide/deploy-to-production.md) that you are using to
-run
-pipelines.
-
-## Secrets
-
-A ZenML Secret is a grouping of key-value pairs. These are accessed and
-administered via the ZenML Secret Manager (a stack component).
-
-Secrets are distinguished by having different schemas. An AWS SecretSchema, for
-example, has key-value pairs for `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
-as well as an optional `AWS_SESSION_TOKEN`. If you don't specify a schema at the
-point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a
-kind of default schema where things that aren't attached to a grouping can be
-stored.
-
-## Secrets Manager
-
-Most projects involving either cloud infrastructure or of a certain complexity
-will involve secrets of some kind. You use secrets, for example, when connecting
-to AWS, which requires an `access_key_id` and a `secret_access_key` which it
-(usually) stores in your `~/.aws/credentials` file.
-
-You might find you need to access those secrets from within your Kubernetes
-cluster as it runs individual steps, or you might just want a centralized
-location for the storage of secrets across your project. ZenML offers a local
-secrets manager and an integration with the managed [AWS Secrets
-Manager](https://aws.amazon.com/secrets-manager).
-
-## Service
-
-A service is a longer-lived entity that extends the capabilities of ZenML beyond
-the run of a pipeline. For example, a service could be a prediction service that
-loads models for inference in a production setting.
-
-## Stack
-
-The stack is essentially all the configuration for the infrastructure of your
-MLOps platform.
-
-A stack is made up of multiple components. Some examples are:
+This is the workhorse that runs all the steps of your pipeline. Given that
+pipelines can be set up with complex combinations of steps with various
+asynchronous dependencies between them, a special component is needed to decide
+what steps to run when, and how to pass data between the steps. ZenML comes with
+a built-in local orchestrator but we also support more fully-featured options
+like Airflow and Kubeflow.
 
 - An Artifact Store
+
+All the data that passes through your pipelines is stored in the Artifact Store.
+These artifacts may have been produced by the pipeline steps, or they may be the
+data first ingested into a pipeline via an ingestion step. An artifact store
+will store all intermediary pipeline step results, which in turn will be tracked
+in the metadata store. The fact that all your data inputs / outputs are tracked
+and versioned here in the artifact store allows for extremely useful features
+like data caching which speed up your pace of experimentation.
+
 - A Metadata Store
-- An Orchestrator
-- A Step Operator
-- A Container Registry
 
-You have to registry each individual component separately with unique names.
-Then you can put together a stack as
-follows:
+A Metadata Store keeps track of all the bits of extraneous data regarding a
+pipeline run. It allows you to fetch specific steps from your pipeline run and
+their output artifacts in a post-execution workflow.
 
-```bash
-zenml stack register STACK_NAME \
-    -m METADATA_STORE_NAME \
-    -a ARTIFACT_STORE_NAME \
-    -o ORCHESTRATOR_NAME \
-    -s STEP_OPERATOR_NAME \
-    -c CONTAINER_REGISTRY_NAME \
-    ...
-```
+When you start working with ZenML, you'll likely spend most of your initial time
+here at this stage, working with the default stack provided to you on
+initialization. ZenML functions as a way of managing the pipeline workflows that
+you define, data gets cached and you are able to access your previous
+experiments through the metadata store.
 
-When users want to run pipelines on remote architecture, all they need to do is
-swap out a `local` stack with a
-cloud-based stack, which they can configure. After a stack has been set as
-active, just running a pipeline will run that
-pipeline on the that stack.
+At a certain point, however, you'll want to do something that requires a bit
+more compute power - perhaps requiring GPUs for model training - or some custom
+functionality at which point you'll want to add some extra components to your
+stack.
 
-## Step
+## Cloud Training, Deployment, Monitoring...
 
-A step is a single piece or stage of a ZenML pipeline. Think of each step as
-being one of the nodes of the DAG.
-Steps are responsible for one aspect of processing or interacting with the data
-/ artifacts in the pipeline. ZenML
-implements a basic `step` interface:
+When you are ready to switch out your infrastructure and the components used as
+part of your machine learning workflow, it's as simple as a four word CLI
+command that switches out your stack. The code defining your steps and pipelines
+stays the same, but it gets run in whatever cloud infrastructure you've set up
+in your custom stack; all you change is the stack you're using and your pipeline
+code gets run someplace different.
 
-```python
-from zenml.steps import step
+![Running your pipeline in the cloud](../assets/core_concepts/concepts-3.png)
 
+Running workflows in the cloud often requires certain custom behaviors, so ZenML
+offers a number of extra Stack Components that handle these common use cases.
+For example, it's common to want to deploy models so we have a Model Deployer
+component. Similarly, you might want to use popular tools like Weights & Biases
+or MLflow to track your experiments, so we have an Experiment Tracker stack
+component. Any additional software needed for these components can be added and
+installed by using ZenML's Integration installer.
 
-@step  # this is where the magic happens
-def simplest_step_ever(basic_param_1: int, basic_param_2: str) -> int:
-    return basic_param_1 + int(basic_param_2)
-```
+It is this modular and configurable nature of the ZenML stack that offers you
+ways to get productive quickly. If we don't support some specific tool you want
+to use, our stack components are easily extensible so this shouldn't be a
+barrier for you.
 
-There are only a few considerations for the parameters and return types.
+All the stack components configured as part of the stack carry their
+configuration parameters so whether it's an AWS Sagemaker cluster you need to
+run your training on or an Google Cloud container registry you need to connect
+to, ZenML handles the connections between these various parts on your behalf.
 
-- All parameters passed into the signature must
-  be [typed](https://docs.python.org/3/library/typing.html). Similarly,
-  if you're returning something, it must be also be typed with the return
-  operator (`->`)
-- ZenML uses [Pydantic](https://pydantic-docs.helpmanual.io/usage/types/) for
-  type checking and serialization
-  under-the-hood, so
-  all [Pydantic types](https://pydantic-docs.helpmanual.io/usage/types/) are
-  supported \[full list available soon].
+## Bits and Pieces
 
-While this is just a function with a decorator, it is not super useful. ZenML
-steps really get powerful when you put them together with data artifacts. Read
-about more of that
-[here](https://docs.zenml.io/v/docs/guides/functional-api/materialize-artifacts)!
+There are lots of different ways to use ZenML which will depend on your precise
+use case. The following concepts and stack components are things you'll possibly
+encounter further down the road while using ZenML.
 
-## Step Configuration
+- **Materializers** - ZenML stores the data inputs and outputs to your steps in the
+  Artifact Store as we saw above. In order to store the data, it needs to
+  serialize everything in a format that can fit into the Artifact Store. ZenML
+  handles serialization (and deserialization) of the most common artifacts, but
+  if you try to do something we haven't already thought of you'll need to write
+  your own custom materializer. This isn't hard, but you should be aware that
+  it's something you might need do to. The ZenML CLI will let you know with a
+  clear error message when you need to do this.
+- **Profiles** - Profiles are groupings of stacks. You might want to keep all your
+  AWS stacks separate from your GCP stacks, for example, or your work
+  infrastructure use separate from that which you use for your personal
+  projects. Profiles allow you to separate these out, and switching between them
+  is easy.
+- **Service** - A service is a longer-lived entity that extends the capabilities of
+  ZenML beyond the run of a pipeline. For example, a service could be a
+  prediction service that loads models for inference in a production setting.
+- **ZenServer** - ZenML is building out functionality to host a shared server that
+  allows teams to collaborate and share stacks, data stores and more.
 
-When we think about steps as functions, we know they receive input in the form
-of artifacts. We also know that
-they produce output (also in the form of artifacts, stored in the artifact
-store). But steps also take parameters.
-The parameters that you pass into the steps are also (helpfully!) stored in the
-metadata store. This helps freeze the
-iterations of your experimentation workflow in time, so you can return to them
-exactly as you ran them. Parameters can
-be passed in as a subclass of `BaseStepConfig` like so:
-
-```python
-from zenml.steps import BaseStepConfig
-
-
-class MyStepConfig(BaseStepConfig):
-    basic_param_1: int = 1
-    basic_param_2: str = 2
-
-
-@step
-def my_step(params: MyStepConfig):
-    # user params here
-    pass
-```
-
-## Step Operator
-
-The step operator defers the execution of individual steps in a pipeline to
-specialized runtime environments that are
-optimized for Machine Learning workloads. This is helpful when there is a
-requirement for specialized cloud backends ✨
-for different steps. One example could be using powerful GPU instances for
-training jobs or distributed compute for
-ingestion streams.
-
-While an orchestrator defines how and where your entire pipeline runs, a step
-operator defines how and where an
-individual
-step runs. This can be useful in a variety of scenarios. An example could be if
-one step within a pipeline should run on
-a
-separate environment equipped with a GPU (like a trainer step).
-
-A concrete example is as follows. Let's say we want to run training as a
-custom [AWS Sagemaker](https://aws.amazon.com/pm/sagemaker/)
-job.
-
-This operator can be registered as follows:
-
-```bash
-zenml step-operator register sagemaker \
-    --flavor=sagemaker
-    ...
-```
-
-```python
-@step(custom_step_operator="sagemaker")
-def trainer(...) -> ...:
-    """Train a model"""
-    # This will run on Sagemaker with a GPU configured above.
-```
-
-## Visualizers
-
-Visualizers contain logic to create visualizations within the ZenML ecosystem.
-
-**Tying Things All Together**
-
-ZenML's core abstractions are either close to or replicate completely the
-commonly-found abstractions found in the
-industry for pipeline-style workflows. As a data science team, it perhaps isn't
-natural to think of your work from
-within this 'pipeline' abstraction, but we think you'll see the benefits if you
-try it out with some examples.
-Check out our [Developer Guide](../developer-guide) to see how ZenML can improve
-your current workflow!
-
-
-This page is changing rapidly, therefore we need help to maintain it. If you
-see a concept here that is outdated,
-please reach out to us directly on our [Slack](https://zenml.io/slack-invite) in
-the `#general` channel!
+There's a lot more detail to digest when it comes to ZenML, but with the above
+you should be sufficiently armed to understand how the framework works and where
+you might want to extend it.
