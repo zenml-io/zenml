@@ -107,7 +107,7 @@ your project, you get the following benefits:
 
 ### 1. 💪 Write local, run anywhere
 
-<details><summary>View Details</summary>
+<details>
 
 You only need to write your core machine learning workflow code once, but you
 can run it anywhere. We decouple your code from the environment and
@@ -316,7 +316,7 @@ zenml go
 This will spin up a Jupyter notebook that showcases the above example plus more
 on how to use and extend ZenML.
 
-### 👭 Collaborate with your team
+# 👭 Collaborate with your team
 
 ZenML is built to support teams working together. The underlying infrastructure
 on which your ML workflows run can be shared, as can the data, assets and
