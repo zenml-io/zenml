@@ -317,10 +317,7 @@ community. The team oversees feedback via various channels, and you can directly
 influence the roadmap as follows:
 
 - Vote on your most wanted feature on our [Discussion
-  board](https://zenml.io/discussion).
-- Create a [Feature
-  Request](https://github.com/zenml-io/zenml/issues/new/choose) in the [GitHub
-  board](https://github.com/zenml-io/zenml/issues).
+  board](https://zenml.io/discussion). You can also request for new features here.
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 
 # 🙋‍♀️ Contributing & Community
