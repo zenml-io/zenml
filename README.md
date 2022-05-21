@@ -377,6 +377,8 @@ Guide](CONTRIBUTING.md) for all relevant details.
 
 <details><summary>See Contributer Analytics</summary>
 
+<br>
+
 ![Repobeats analytics
 image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f96dd.svg
 "Repobeats analytics image")
