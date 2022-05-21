@@ -105,9 +105,9 @@ your project, you get the following benefits:
 
 # 🎮 Features
 
-<details>
-
 ### 1. 💪 Write local, run anywhere
+
+<details>
 
 You only need to write your core machine learning workflow code once, but you
 can run it anywhere. We decouple your code from the environment and
@@ -124,9 +124,9 @@ cloud](docs/book/assets/core_concepts/concepts-3.png)
 
 </details>
 
-<details>
-
 ### 2. 🌈 All your MLOps stacks in one place
+
+<details>
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with [powerful
@@ -146,9 +146,9 @@ to see how they work.
 
 </details>
 
-<details>
-
 ### 3. 🛠 Extensibility
+
+<details>
 
 ZenML's Stack Components are built to support most machine learning use cases.
 We offer a batteries-included initial installation that should serve many needs
@@ -160,9 +160,9 @@ framework making it easy to extend and build out whatever you need.
 
 </details>
 
-<details>
-
 ### 4. 🔍 Automated metadata tracking
+
+<details>
 
 ZenML tracks metadata for all the pipelines you run. This ensures that:
 
@@ -179,9 +179,9 @@ blogpost](https://blog.zenml.io/caching-ml-pipelines/) to learn more!)
 
 </details>
 
-<details>
-
 ### 5. ➿ Continuous Training and Continuous Deployment (CT/CD)
+
+<details>
 
 Continuous Training (CT) refers to the paradigm where a team deploys training pipelines 
 that run automatically to train models on new (fresh) data. Continuous Deployment (CD) 
