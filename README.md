@@ -107,7 +107,7 @@ your project, you get the following benefits:
 
 ### 1. 💪 Write local, run anywhere
 
-<details>
+<details><summary>View Details</summary>
 
 You only need to write your core machine learning workflow code once, but you
 can run it anywhere. We decouple your code from the environment and
