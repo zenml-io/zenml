@@ -105,6 +105,8 @@ your project, you get the following benefits:
 
 # 🎮 Features
 
+<details>
+
 ### 1. 💪 Write local, run anywhere
 
 You only need to write your core machine learning workflow code once, but you
@@ -119,6 +121,10 @@ CLI tool.
 
 ![You can run your pipelines locally or in the
 cloud](docs/book/assets/core_concepts/concepts-3.png)
+
+</details>
+
+<details>
 
 ### 2. 🌈 All your MLOps stacks in one place
 
@@ -138,6 +144,10 @@ to see how they work.
 
 ![ZenML is the glue](docs/book/assets/stack-list.png)
 
+</details>
+
+<details>
+
 ### 3. 🛠 Extensibility
 
 ZenML's Stack Components are built to support most machine learning use cases.
@@ -147,6 +157,10 @@ example, or a different orchestrator to run your pipelines, ZenML is built as a
 framework making it easy to extend and build out whatever you need.
 
 ![ZenML is fully extensible](docs/book/assets/extensibility.gif)
+
+</details>
+
+<details>
 
 ### 4. 🔍 Automated metadata tracking
 
@@ -163,6 +177,9 @@ blogpost](https://blog.zenml.io/caching-ml-pipelines/) to learn more!)
 
 ![Visualize your pipeline steps](docs/book/assets/dag-visualizer.png)
 
+</details>
+
+<details>
 
 ### 5. ➿ Continuous Training and Continuous Deployment (CT/CD)
 
@@ -184,6 +201,8 @@ zenml served-models list
 ```
 
 Read more about CT/CD in ZenML [here](https://blog.zenml.io/ci-ct-cd-with-zenml/).
+
+</details>
 
 # 🤸 Getting Started
 
