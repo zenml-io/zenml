@@ -375,8 +375,6 @@ label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). If you
 would like to contribute, please review our [Contributing
 Guide](CONTRIBUTING.md) for all relevant details.
 
-<br>
-
 <details><summary>See Contributer Analytics</summary>
 
 ![Repobeats analytics
