@@ -120,7 +120,7 @@ CLI tool.
 ![You can run your pipelines locally or in the
 cloud](docs/book/assets/core_concepts/concepts-3.png)
 
-### 2. 🪆 All your MLOps stacks in one place
+### 2. 🌈 All your MLOps stacks in one place
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with [powerful
@@ -163,13 +163,27 @@ blogpost](https://blog.zenml.io/caching-ml-pipelines/) to learn more!)
 
 ![Visualize your pipeline steps](docs/book/assets/dag-visualizer.png)
 
-### 5. 👭 Collaborate with your team
 
-ZenML is built to support teams working together. The underlying infrastructure
-on which your ML workflows run can be shared, as can the data, assets and
-artifacts that you need to enable your work. ZenML Profiles offer an easy way to
-manage and switch between your stacks. The ZenML Server handles all the
-interaction and sharing and you can host it wherever you'd like.
+### 5. ➿ Continuous Training and Continuous Deployment (CT/CD)
+
+Continuous Training (CT) refers to the paradigm where a team deploys training pipelines 
+that run automatically to train models on new (fresh) data. Continuous Deployment (CD) 
+refers to the paradigm where newly trained models are automatically deployed to a prediction 
+service/server
+
+ZenML enabled CT/CD by enabling the model preparation and model training with model deployment. 
+With the built-in functionalities like Schedules, Model Deployers and Services you can 
+create end-to-end ML workflows with Continuous Training and Deployment that deploys your 
+model in a local environment with MLFlow integration or even in a production-grade environment 
+like Kubernetes with our Seldon Core integration. You can also listed served models with the CLI:
+
+![CI/CD/CT in ZenML](docs/book/assets/ct_cd_zenml.gif)
+
+```
+zenml served-models list
+```
+
+Read more about CT/CD in ZenML [here](https://blog.zenml.io/ci-ct-cd-with-zenml/).
 
 # 🤸 Getting Started
 
@@ -283,6 +297,20 @@ zenml go
 This will spin up a Jupyter notebook that showcases the above example plus more
 on how to use and extend ZenML.
 
+### 👭 Collaborate with your team
+
+ZenML is built to support teams working together. The underlying infrastructure
+on which your ML workflows run can be shared, as can the data, assets and
+artifacts that you need to enable your work. ZenML Profiles offer an easy way to
+manage and switch between your stacks. The ZenML Server handles all the
+interaction and sharing and you can host it wherever you'd like.
+
+```
+zenml server up
+```
+
+Read more about collaboration in ZenML [here](https://docs.zenml.io/collaborate/collaborate).
+
 # 🍰 ZenBytes
 
 [ZenBytes](https://github.com/zenml-io/zenbytes) is a series of short practical
@@ -317,10 +345,7 @@ community. The team oversees feedback via various channels, and you can directly
 influence the roadmap as follows:
 
 - Vote on your most wanted feature on our [Discussion
-  board](https://zenml.io/discussion).
-- Create a [Feature
-  Request](https://github.com/zenml-io/zenml/issues/new/choose) in the [GitHub
-  board](https://github.com/zenml-io/zenml/issues).
+  board](https://zenml.io/discussion). You can also request for new features here.
 - Start a thread in our [Slack channel](https://zenml.io/slack-invite).
 
 # 🙋‍♀️ Contributing & Community
