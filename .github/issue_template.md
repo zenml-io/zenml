@@ -1,6 +1,7 @@
 ---
 name: General
 labels: general
+about: I have a general issue I would like to write about
 ---
 
 ## Checks
