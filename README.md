@@ -304,7 +304,7 @@ pipeline = mnist_pipeline(
 pipeline.run()
 ```
 
-### Get a guided tour with `zenml go`
+# :racehorse: Get a guided tour with `zenml go`
 
 For a slightly more in-depth introduction to ZenML, taught through Jupyter
 notebooks, install `zenml` via pip as described above and type:
