@@ -103,7 +103,13 @@ def resolve_type_annotation(obj: Any) -> Any:
     Example: if the input object is `typing.Dict`, this method will return the
     concrete class `dict`.
     """
-    return typing.get_origin(obj) or obj
+    if sys.version_info[:3] >= (3, 8, 0):
+        return typing.get_origin(obj) or obj
+
+    if isinstance(obj, typing._GenericAlias):  # type: ignore[attr-defined]
+        return obj.__origin__
+    else:
+        return obj
 
 
 def generate_component_spec_class(
