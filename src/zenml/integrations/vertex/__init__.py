@@ -31,7 +31,7 @@ class VertexIntegration(Integration):
     """Definition of Vertex AI integration for ZenML."""
 
     NAME = VERTEX
-    REQUIREMENTS = ["google-cloud-aiplatform>=1.11.0"]
+    REQUIREMENTS = ["google-cloud-aiplatform>=1.11.0", "kfp==1.8.9"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
