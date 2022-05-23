@@ -49,8 +49,7 @@ set up properly.
 
 ```shell
 zenml secrets-manager register aws_secrets_manager --flavor aws
-zenml stack register secrets_stack -m default -o default -a default -x aws_secrets_manager
-zenml stack set secrets_stack
+zenml stack register secrets_stack -m default -o default -a default -x aws_secrets_manager --set
 ```
 
 In case you run into issues here, feel free to use a local secret manager. Just
