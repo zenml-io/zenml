@@ -25,6 +25,7 @@ from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import PipelineRunView
 from zenml.visualizers import BasePipelineRunVisualizer
+from zenml.cli.utils import warning
 
 logger = get_logger(__name__)
 
@@ -137,9 +138,10 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                 mode = "inline"
             else:
                 # TODO [ENG-895]: Refactor this to raise a warning instead.
-                raise AssertionError(
-                    "Cannot set magic flag in non-notebook environments."
+                warning(
+                    text="Cannot set magic flag in non-notebook environments."
                 )
+
         else:
             app = dash.Dash(
                 __name__,
