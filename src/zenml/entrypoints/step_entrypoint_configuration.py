@@ -510,6 +510,10 @@ class StepEntrypointConfiguration(ABC):
         # Get some common values that will be used throughout the remainder of
         # this method
         pipeline_name = pb2_pipeline.pipeline_info.id
+        if "@" in step_source:
+            # Get rid of potential ZenML version pins if the source looks like
+            # this `zenml.some_module.SomeClass@zenml_0.9.9`
+            step_source, _ = step_source.split("@", 1)
         step_module, step_name = step_source.rsplit(".", 1)
 
         # Allow subclasses to run custom code before user code is imported and
