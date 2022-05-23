@@ -185,7 +185,7 @@ You can delete the local Kubernetes cluster and all associated resources by
 calling:
 
 ```bash
-zenml stack down
+zenml stack down --yes
 ```
 
 ## ☁️ Run the same pipeline on Kubeflow Pipelines deployed to GCP
@@ -252,3 +252,10 @@ python run.py
 
 That's it! If everything went as planned this pipeline should now be running in the cloud, and we are one step 
 closer to a production pipeline!
+
+### 🧽 Clean up
+Once you're done experimenting, you can stop the port forwarding by calling:
+
+```bash
+zenml stack down --yes
+```

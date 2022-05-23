@@ -32,7 +32,8 @@ zenml integration install pytorch -f
 pip install -r requirements.txt  # for torchvision
 
 # pull example
-cd zenml/examples/pytorch
+zenml example pull pytorch
+cd zenml_examples/pytorch
 
 # initialize
 zenml init
