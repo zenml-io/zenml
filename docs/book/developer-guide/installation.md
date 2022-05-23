@@ -10,7 +10,7 @@ description: How to install ZenML
 Your first step is to install **ZenML**, which comes bundled as a good old `pip` package.
 
 {% hint style="warning" %}
-Please note that we only support Python >= 3.7 <3.9, so please adjust your Python environment accordingly.
+Please note that we only support Python >= 3.7 <3.10, so please adjust your Python environment accordingly.
 {% endhint %}
 
 ## Virtual Environment
