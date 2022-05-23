@@ -56,10 +56,7 @@ def init(path: Optional[Path]) -> None:
     """Initialize ZenML on given path.
 
     Args:
-      path: Path to the repository.
-
-    Raises:
-        InitializationException: If the repo is already initialized.
+        path: Path to the repository.
     """
     if path is None:
         path = Path.cwd()
@@ -134,8 +131,8 @@ def clean(yes: bool = False, local: bool = False) -> None:
     This is a destructive operation, primarily intended for use in development.
 
     Args:
-      yes (flag; default value = False): If you don't want a confirmation prompt.
-      local (flag; default value = False): If you want to delete local files associated with the active stack.
+        yes: If you don't want a confirmation prompt.
+        local: If you want to delete local files associated with the active stack.
     """
     if local:
         _delete_local_files(force_delete=yes)
@@ -182,7 +179,11 @@ def clean(yes: bool = False, local: bool = False) -> None:
 
 @cli.command("go")
 def go() -> None:
-    """Quickly explore ZenML with this walkthrough."""
+    """Quickly explore ZenML with this walkthrough.
+
+    Raises:
+        GitNotFoundError: If git is not installed.
+    """
     from zenml.cli.text_utils import (
         zenml_go_notebook_tutorial_message,
         zenml_go_privacy_message,
