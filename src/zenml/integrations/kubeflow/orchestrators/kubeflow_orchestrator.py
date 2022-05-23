@@ -762,13 +762,13 @@ class KubeflowOrchestrator(BaseOrchestrator):
     ) -> None:
         """Logs manual steps needed to setup the Kubeflow local orchestrator."""
         if not self.is_local:
-            # Make sure we're not telling users to deploy kubeflow on their
+            # Make sure we're not telling users to deploy Kubeflow on their
             # remote clusters
             logger.warning(
-                "This kubeflow orchestrator is configured to use a non-local "
-                f"kubernetes context {self.kubernetes_context}. Manually "
-                f"deploying kubeflow pipelines is only possible for local "
-                f"kubeflow orchestrators."
+                "This Kubeflow orchestrator is configured to use a non-local "
+                f"Kubernetes context {self.kubernetes_context}. Manually "
+                f"deploying Kubeflow Pipelines is only possible for local "
+                f"Kubeflow orchestrators."
             )
             return
 
