@@ -123,10 +123,8 @@ zenml stack register local_kubeflow_stack \
     -m default \
     -a default \
     -o local_kubeflow_orchestrator \
-    -c local_registry
-
-# Activate the newly created stack
-zenml stack set local_kubeflow_stack
+    -c local_registry \
+    --set
 ```
 
 ### 🏁 Start up Kubeflow Pipelines locally
@@ -223,7 +221,7 @@ When running the upcoming commands, make sure to replace `<PATH_TO_YOUR_CONTAINE
 # In order to create the GCP artifact store, we need to install one additional ZenML integration:
 zenml integration install gcp
 
-# Create the stack and its components
+# Create and activate the stack and its components
 zenml container-registry register gcr_registry --flavor=gcp --uri=<PATH_TO_YOUR_CONTAINER_REGISTRY>
 zenml metadata-store register kubeflow_metadata_store --flavor=kubeflow
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
@@ -232,10 +230,8 @@ zenml stack register gcp_kubeflow_stack \
     -m kubeflow_metadata_store \
     -a gcp_artifact_store \
     -o gcp_kubeflow_orchestrator \
-    -c gcr_registry
-    
-# Activate the newly created stack
-zenml stack set gcp_kubeflow_stack
+    -c gcr_registry \
+    --set
 
 # Forward the Kubeflow pipelines UI and metadata store so we can access them locally
 zenml stack up

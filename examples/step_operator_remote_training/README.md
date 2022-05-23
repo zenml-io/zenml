@@ -73,16 +73,14 @@ zenml step-operator register sagemaker \
 # register the container registry
 zenml container-registry register ecr_registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 
-# register the sagemaker stack
+# register and activate the sagemaker stack
 zenml stack register sagemaker_stack \
     -m default \
     -o default \
     -c ecr_registry \
     -a s3_store \
-    -s sagemaker
-
-# activate the stack
-zenml stack set sagemaker_stack
+    -s sagemaker \
+    --set
 ```
 
 ### 🪟 Microsoft AzureML
@@ -124,9 +122,8 @@ zenml stack register azureml_stack \
     -m default \
     -o default \
     -a azure_store \
-    -s azureml
-    
-zenml stack set azureml_stack
+    -s azureml \
+    --set
 ```
 
 ### 📐 GCP Vertex AI
@@ -166,16 +163,14 @@ zenml step-operator register vertex \
 # register the container registry
 zenml container-registry register gcr_registry --flavor=gcp --uri=gcr.io/<PROJECT-ID>
 
-# register the sagemaker stack
+# register and activate the vertex ai stack
 zenml stack register vertex_training_stack \
     -m default \
     -o default \
     -c gcr_registry \
     -a gcp_store \
-    -s vertex
-
-# activate the stack
-zenml stack set vertex_training_stack
+    -s vertex \
+    --set
 ```
 
 ### ▶️ Run the Code

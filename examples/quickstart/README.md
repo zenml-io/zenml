@@ -2,9 +2,8 @@
 
 Build your first ML pipelines with ZenML.
 
-You can use Google Colab to see ZenML in action, no signup / installation required!
-
-<a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+## :question: Coming from `zenml go` ?
+Then open [notebooks/quickstart.ipynb](notebooks/quickstart.ipynb) to get started.
 
 ## :earth_americas: Overview
 
@@ -14,7 +13,12 @@ This quickstart aims to give you a small illustration of what ZenML can do. To d
 - Track model hyperparameters and metrics in an experiment tracking tool
 - Measure and visualize train-test skew, training-serving skew, and data drift
 
-**New to MLOps?** You might want to start with our [**ZenBytes**](https://github.com/zenml-io/zenbytes) lesson series instead where we cover each MLOps concept in much more detail. This series assumes you are already familiar with basic MLOps issues and just want to learn how to approach them with ZenML.
+**New to MLOps?** You might want to start with our [**ZenBytes**](https://github.com/zenml-io/zenbytes) lesson series instead where we cover each MLOps concept in much more detail. This quickstart assumes you are already familiar with basic MLOps concepts and just want to learn how to approach them with ZenML.
+
+## :cloud: Run on Colab
+You can use Google Colab to see ZenML in action, no signup / installation required!
+
+<a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 ## :computer: Run Locally
 
