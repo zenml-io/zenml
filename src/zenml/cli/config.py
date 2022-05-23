@@ -18,7 +18,7 @@ import click
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import (
@@ -26,7 +26,7 @@ from zenml.config.profile_config import (
     get_default_store_type,
 )
 from zenml.console import console
-from zenml.enums import LoggingLevels, StoreType
+from zenml.enums import CliCategories, LoggingLevels, StoreType
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 # Analytics
-@cli.group()
+@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def analytics() -> None:
     """Analytics for opt-in and opt-out."""
 
@@ -68,7 +68,7 @@ def opt_out() -> None:
 
 
 # Logging
-@cli.group()
+@cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
 def logging() -> None:
     """Configuration of logging for ZenML pipelines."""
 
@@ -92,7 +92,7 @@ def set_logging_verbosity(verbosity: str) -> None:
 
 
 # Profiles
-@cli.group()
+@cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 def profile() -> None:
     """Configuration of ZenML profiles."""
 
@@ -107,7 +107,8 @@ def profile() -> None:
     "--url",
     "-u",
     "url",
-    help="The store URL to use for the profile.",
+    help="The store URL to use for the profile. This is required if you're "
+    "creating a profile with REST storage.",
     required=False,
     type=str,
 )
@@ -117,13 +118,13 @@ def profile() -> None:
     "store_type",
     help="The store type to use for the profile.",
     required=False,
-    type=click.Choice(list(StoreType)),
+    type=click.Choice(list(StoreType), case_sensitive=False),
     default=get_default_store_type(),
 )
 @click.option(
     "--user",
     "user_name",
-    help="The username that is used to authenticate with the ZenService. This "
+    help="The username that is used to authenticate with the ZenServer. This "
     "is required if you're creating a profile with REST storage.",
     required=False,
     type=str,
@@ -141,16 +142,18 @@ def create_profile_command(
     cfg = GlobalConfiguration()
 
     if cfg.get_profile(name):
-        cli_utils.error(f"Profile {name} already exists.")
+        cli_utils.error(f"Profile '{name}' already exists.")
         return
-    cfg.add_or_update_profile(
-        ProfileConfiguration(
+    try:
+        profile = ProfileConfiguration(
             name=name,
             store_url=url,
             store_type=store_type,
             active_user=user_name,
         )
-    )
+    except RuntimeError as err:
+        cli_utils.error(f"Failed to create profile: {err.args[0]}")
+    cfg.add_or_update_profile(profile)
     cli_utils.declare(f"Profile '{name}' successfully created.")
 
 
@@ -172,12 +175,15 @@ def list_profiles_command() -> None:
     profile_dicts = []
     for profile_name, profile in profiles.items():
         is_active = profile_name == repo.active_profile_name
+        active_stack = profile.active_stack
+        if is_active:
+            active_stack = repo.active_stack_name
         profile_config = {
             "ACTIVE": ":point_right:" if is_active else "",
             "PROFILE NAME": profile_name,
             "STORE TYPE": profile.store_type.value,
             "URL": profile.store_url,
-            "ACTIVE STACK": repo.active_stack_name,
+            "ACTIVE STACK": active_stack,
         }
         profile_dicts.append(profile_config)
 

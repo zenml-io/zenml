@@ -24,15 +24,13 @@ from zenml.environment import Environment
 from zenml.experiment_trackers.base_experiment_tracker import (
     BaseExperimentTracker,
 )
-from zenml.integrations.constants import MLFLOW
+from zenml.integrations.mlflow import MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.stack import StackValidator
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 
 logger = get_logger(__name__)
+
 
 MLFLOW_TRACKING_USERNAME = "MLFLOW_TRACKING_USERNAME"
 MLFLOW_TRACKING_PASSWORD = "MLFLOW_TRACKING_PASSWORD"
@@ -40,7 +38,6 @@ MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
 MLFLOW_TRACKING_INSECURE_TLS = "MLFLOW_TRACKING_INSECURE_TLS"
 
 
-@register_stack_component_class
 class MLFlowExperimentTracker(BaseExperimentTracker):
     """Stores Mlflow configuration options.
 
@@ -83,7 +80,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     tracking_insecure_tls: bool = False
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = MLFLOW
+    FLAVOR: ClassVar[str] = MLFLOW_MODEL_EXPERIMENT_TRACKER_FLAVOR
 
     @validator("tracking_uri")
     def _ensure_valid_tracking_uri(
@@ -103,7 +100,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 )
         return tracking_uri
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def _ensure_authentication_if_necessary(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:

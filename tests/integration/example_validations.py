@@ -90,7 +90,7 @@ def mlflow_tracking_setup(repository: Repository) -> None:
     # install the mlflow integration so we can import the stack component
     import subprocess
 
-    subprocess.check_call(["zenml", "integration", "install", "mlflow", "-f"])
+    subprocess.check_call(["zenml", "integration", "install", "mlflow", "-y"])
 
     from zenml.integrations.mlflow.experiment_trackers import (
         MLFlowExperimentTracker,

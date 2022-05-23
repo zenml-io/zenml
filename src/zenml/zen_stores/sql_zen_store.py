@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import datetime as dt
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -20,6 +21,7 @@ from uuid import UUID, uuid4
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import ArgumentError, NoResultFound
 from sqlmodel import Field, Session, SQLModel, create_engine, select
+from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
@@ -27,13 +29,24 @@ from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
+    ComponentWrapper,
+    FlavorWrapper,
     Project,
     Role,
     RoleAssignment,
-    StackComponentWrapper,
+    StackWrapper,
     Team,
     User,
 )
+from zenml.zen_stores.models.pipeline_models import (
+    PipelineRunWrapper,
+    PipelineWrapper,
+)
+
+# Enable SQL compilation caching to remove the https://sqlalche.me/e/14/cprf
+# warning
+SelectOfScalar.inherit_cache = True  # type: ignore
+Select.inherit_cache = True  # type: ignore
 
 logger = get_logger(__name__)
 
@@ -64,6 +77,13 @@ class ZenStackComponent(SQLModel, table=True):
     name: str = Field(primary_key=True)
     component_flavor: str
     configuration: bytes  # e.g. base64 encoded json string
+
+
+class ZenFlavor(SQLModel, table=True):
+    type: StackComponentType = Field(primary_key=True)
+    name: str = Field(primary_key=True)
+    source: str
+    integration: Optional[str]
 
 
 class ZenStackDefinition(SQLModel, table=True):
@@ -112,6 +132,50 @@ class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
     )
 
 
+class PipelineRunTable(SQLModel, table=True):
+    name: str = Field(primary_key=True)
+    zenml_version: str
+    git_sha: Optional[str]
+
+    pipeline_name: str
+    pipeline: str
+    stack: str
+    runtime_configuration: str
+
+    user_id: UUID = Field(foreign_key="usertable.id")
+    project_name: Optional[str] = Field(
+        default=None, foreign_key="projecttable.name"
+    )
+
+    @classmethod
+    def from_pipeline_run_wrapper(
+        cls, wrapper: PipelineRunWrapper
+    ) -> "PipelineRunTable":
+        return PipelineRunTable(
+            name=wrapper.name,
+            zenml_version=wrapper.zenml_version,
+            git_sha=wrapper.git_sha,
+            pipeline_name=wrapper.pipeline.name,
+            pipeline=wrapper.pipeline.json(),
+            stack=wrapper.stack.json(),
+            runtime_configuration=json.dumps(wrapper.runtime_configuration),
+            user_id=wrapper.user_id,
+            project_name=wrapper.project_name,
+        )
+
+    def to_pipeline_run_wrapper(self) -> PipelineRunWrapper:
+        return PipelineRunWrapper(
+            name=self.name,
+            zenml_version=self.zenml_version,
+            git_sha=self.git_sha,
+            pipeline=PipelineWrapper.parse_raw(self.pipeline),
+            stack=StackWrapper.parse_raw(self.stack),
+            runtime_configuration=json.loads(self.runtime_configuration),
+            user_id=self.user_id,
+            project_name=self.project_name,
+        )
+
+
 class SqlZenStore(BaseZenStore):
     """Repository Implementation that uses SQL database backend"""
 
@@ -143,8 +207,9 @@ class SqlZenStore(BaseZenStore):
         # because SQLModel will raise an error if it is present
         sql_kwargs = kwargs.copy()
         sql_kwargs.pop("skip_default_registrations", False)
+        sql_kwargs.pop("track_analytics", False)
+        sql_kwargs.pop("skip_migration", False)
         self.engine = create_engine(url, *args, **sql_kwargs)
-        self.engine = create_engine(url, *args, **kwargs)
         SQLModel.metadata.create_all(self.engine)
         with Session(self.engine) as session:
             if not session.exec(select(ZenUser)).first():
@@ -213,7 +278,7 @@ class SqlZenStore(BaseZenStore):
         return True
 
     @property
-    def is_empty(self) -> bool:
+    def stacks_empty(self) -> bool:
         """Check if the zen store is empty."""
         with Session(self.engine) as session:
             return session.exec(select(ZenStack)).first() is None
@@ -271,9 +336,9 @@ class SqlZenStore(BaseZenStore):
         """
         return {n: self.get_stack_configuration(n) for n in self.stack_names}
 
-    def register_stack_component(
+    def _register_stack_component(
         self,
-        component: StackComponentWrapper,
+        component: ComponentWrapper,
     ) -> None:
         """Register a stack component.
 
@@ -305,11 +370,11 @@ class SqlZenStore(BaseZenStore):
             session.add(new_component)
             session.commit()
 
-    def update_stack_component(
+    def _update_stack_component(
         self,
         name: str,
         component_type: StackComponentType,
-        component: StackComponentWrapper,
+        component: ComponentWrapper,
     ) -> Dict[str, str]:
         """Update a stack component.
 
@@ -330,9 +395,9 @@ class SqlZenStore(BaseZenStore):
 
             if not updated_component:
                 raise KeyError(
-                    f"Unable to update stack component (type: {component.type}) "
-                    f"with name '{component.name}': No existing stack component "
-                    f"found with this name."
+                    f"Unable to update stack component (type: "
+                    f"{component.type}) with name '{component.name}': No "
+                    f"existing stack component found with this name."
                 )
 
             new_name_component = session.exec(
@@ -371,7 +436,7 @@ class SqlZenStore(BaseZenStore):
         )
         return {component.type.value: component.flavor}
 
-    def deregister_stack(self, name: str) -> None:
+    def _deregister_stack(self, name: str) -> None:
         """Delete a stack from storage.
 
         Args:
@@ -417,6 +482,15 @@ class SqlZenStore(BaseZenStore):
             if stack is None:
                 stack = ZenStack(name=name, created_by=1)
                 session.add(stack)
+            else:
+                # clear the existing stack definitions for a stack
+                # that is about to be updated
+                query = select(ZenStackDefinition).where(
+                    ZenStackDefinition.stack_name == name
+                )
+                for result in session.exec(query).all():
+                    session.delete(result)
+
             for ctype, cname in stack_configuration.items():
                 statement = (
                     select(ZenStackDefinition)
@@ -528,14 +602,14 @@ class SqlZenStore(BaseZenStore):
                 for user in session.exec(select(UserTable)).all()
             ]
 
-    def get_user(self, user_name: str) -> User:
-        """Gets a specific user.
+    def _get_user(self, user_name: str) -> User:
+        """Get a specific user by name.
 
         Args:
             user_name: Name of the user to get.
 
         Returns:
-            The requested user.
+            The requested user, if it was found.
 
         Raises:
             KeyError: If no user with the given name exists.
@@ -550,7 +624,7 @@ class SqlZenStore(BaseZenStore):
 
             return User(**user.dict())
 
-    def create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> User:
         """Creates a new user.
 
         Args:
@@ -570,12 +644,13 @@ class SqlZenStore(BaseZenStore):
                 raise EntityExistsError(
                     f"User with name '{user_name}' already exists."
                 )
-            user = UserTable(name=user_name)
-            session.add(user)
+            sql_user = UserTable(name=user_name)
+            user = User(**sql_user.dict())
+            session.add(sql_user)
             session.commit()
         return user
 
-    def delete_user(self, user_name: str) -> None:
+    def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
 
         Args:
@@ -618,7 +693,7 @@ class SqlZenStore(BaseZenStore):
                 for team in session.exec(select(TeamTable)).all()
             ]
 
-    def get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> Team:
         """Gets a specific team.
 
         Args:
@@ -640,7 +715,7 @@ class SqlZenStore(BaseZenStore):
 
             return Team(**team.dict())
 
-    def create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> Team:
         """Creates a new team.
 
         Args:
@@ -666,7 +741,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
         return team
 
-    def delete_team(self, team_name: str) -> None:
+    def _delete_team(self, team_name: str) -> None:
         """Deletes a team.
 
         Args:
@@ -759,17 +834,17 @@ class SqlZenStore(BaseZenStore):
                 for project in session.exec(select(ProjectTable)).all()
             ]
 
-    def get_project(self, project_name: str) -> Project:
-        """Gets a specific project.
+    def _get_project(self, project_name: str) -> Project:
+        """Get an existing project by name.
 
         Args:
             project_name: Name of the project to get.
 
         Returns:
-            The requested project.
+            The requested project if one was found.
 
         Raises:
-            KeyError: If no project with the given name exists.
+            KeyError: If there is no such project.
         """
         with Session(self.engine) as session:
             try:
@@ -783,7 +858,7 @@ class SqlZenStore(BaseZenStore):
 
             return Project(**project.dict())
 
-    def create_project(
+    def _create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
         """Creates a new project.
@@ -812,7 +887,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
         return project
 
-    def delete_project(self, project_name: str) -> None:
+    def _delete_project(self, project_name: str) -> None:
         """Deletes a project.
 
         Args:
@@ -867,7 +942,7 @@ class SqlZenStore(BaseZenStore):
                 ).all()
             ]
 
-    def get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> Role:
         """Gets a specific role.
 
         Args:
@@ -889,7 +964,7 @@ class SqlZenStore(BaseZenStore):
 
             return Role(**role.dict())
 
-    def create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> Role:
         """Creates a new role.
 
         Args:
@@ -915,7 +990,7 @@ class SqlZenStore(BaseZenStore):
             session.commit()
         return role
 
-    def delete_role(self, role_name: str) -> None:
+    def _delete_role(self, role_name: str) -> None:
         """Deletes a role.
 
         Args:
@@ -1198,6 +1273,219 @@ class SqlZenStore(BaseZenStore):
                 RoleAssignment(**assignment.dict())
                 for assignment in session.exec(statement).all()
             ]
+
+    # Pipelines and pipeline runs
+
+    def get_pipeline_run(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunWrapper:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+        with Session(self.engine) as session:
+            try:
+                statement = (
+                    select(PipelineRunTable)
+                    .where(PipelineRunTable.name == run_name)
+                    .where(PipelineRunTable.pipeline_name == pipeline_name)
+                )
+
+                if project_name:
+                    statement = statement.where(
+                        PipelineRunTable.project_name == project_name
+                    )
+
+                run = session.exec(statement).one()
+                return run.to_pipeline_run_wrapper()
+            except NoResultFound as error:
+                raise KeyError from error
+
+    def get_pipeline_runs(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunWrapper]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+        """
+        with Session(self.engine) as session:
+            try:
+                statement = select(PipelineRunTable).where(
+                    PipelineRunTable.pipeline_name == pipeline_name
+                )
+
+                if project_name:
+                    statement = statement.where(
+                        PipelineRunTable.project_name == project_name
+                    )
+                return [
+                    run.to_pipeline_run_wrapper()
+                    for run in session.exec(statement).all()
+                ]
+            except NoResultFound as error:
+                raise KeyError from error
+
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunWrapper,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
+        """
+        with Session(self.engine) as session:
+            existing_run = session.exec(
+                select(PipelineRunTable).where(
+                    PipelineRunTable.name == pipeline_run.name
+                )
+            ).first()
+            if existing_run:
+                raise EntityExistsError(
+                    f"Pipeline run with name '{pipeline_run.name}' already"
+                    "exists. Please make sure your pipeline run names are "
+                    "unique."
+                )
+
+            sql_run = PipelineRunTable.from_pipeline_run_wrapper(pipeline_run)
+            session.add(sql_run)
+            session.commit()
+
+    # Handling stack component flavors
+
+    @property
+    def flavors(self) -> List[FlavorWrapper]:
+        """All registered flavors.
+
+        Returns:
+            A list of all registered flavors.
+        """
+        with Session(self.engine) as session:
+            return [
+                FlavorWrapper(**flavor.dict())
+                for flavor in session.exec(select(ZenFlavor)).all()
+            ]
+
+    def _create_flavor(
+        self,
+        source: str,
+        name: str,
+        stack_component_type: StackComponentType,
+    ) -> FlavorWrapper:
+        """Creates a new flavor.
+
+        Args:
+            source: the source path to the implemented flavor.
+            name: the name of the flavor.
+            stack_component_type: the corresponding StackComponentType.
+            integration: the name of the integration.
+
+        Returns:
+             The newly created flavor.
+
+        Raises:
+            EntityExistsError: If a flavor with the given name and type
+                already exists.
+        """
+        with Session(self.engine) as session:
+            existing_flavor = session.exec(
+                select(ZenFlavor).where(
+                    ZenFlavor.name == name,
+                    ZenFlavor.type == stack_component_type,
+                )
+            ).first()
+            if existing_flavor:
+                raise EntityExistsError(
+                    f"A {stack_component_type} with '{name}' flavor already "
+                    f"exists."
+                )
+            sql_flavor = ZenFlavor(
+                name=name,
+                source=source,
+                type=stack_component_type,
+            )
+            flavor_wrapper = FlavorWrapper(**sql_flavor.dict())
+            session.add(sql_flavor)
+            session.commit()
+        return flavor_wrapper
+
+    def get_flavors_by_type(
+        self, component_type: StackComponentType
+    ) -> List[FlavorWrapper]:
+        """Fetch all flavor defined for a specific stack component type.
+
+        Args:
+            component_type: The type of the stack component.
+
+        Returns:
+            List of all the flavors for the given stack component type.
+        """
+        with Session(self.engine) as session:
+            flavors = session.exec(
+                select(ZenFlavor).where(ZenFlavor.type == component_type)
+            ).all()
+        return [
+            FlavorWrapper(
+                name=f.name,
+                source=f.source,
+                type=f.type,
+                integration=f.integration,
+            )
+            for f in flavors
+        ]
+
+    def get_flavor_by_name_and_type(
+        self,
+        flavor_name: str,
+        component_type: StackComponentType,
+    ) -> FlavorWrapper:
+        """Fetch a flavor by a given name and type.
+
+        Args:
+            flavor_name: The name of the flavor.
+            component_type: Optional, the type of the component.
+
+        Returns:
+            Flavor instance if it exists
+
+        Raises:
+            KeyError: If no flavor exists with the given name and type
+                or there are more than one instances
+        """
+        with Session(self.engine) as session:
+            try:
+                flavor = session.exec(
+                    select(ZenFlavor).where(
+                        ZenFlavor.name == flavor_name,
+                        ZenFlavor.type == component_type,
+                    )
+                ).one()
+                return FlavorWrapper(
+                    name=flavor.name,
+                    source=flavor.source,
+                    type=flavor.type,
+                    integration=flavor.integration,
+                )
+            except NoResultFound as error:
+                raise KeyError from error
 
     # Implementation-specific internal methods:
 

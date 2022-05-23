@@ -17,8 +17,9 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import time
 from abc import abstractmethod
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Generator, List, Optional, Tuple
 
 import psutil
 from pydantic import Field
@@ -48,10 +49,15 @@ class LocalDaemonServiceConfig(ServiceConfig):
             daemon output will be redirected to a logfile.
         root_runtime_path: the root path where the service daemon will store
             service configuration files
+        singleton: set to True to store the service daemon configuration files
+            directly in the `root_runtime_path` directory instead of creating
+            a subdirectory for each service instance. Only has effect if the
+            `root_runtime_path` is also set.
     """
 
     silent_daemon: bool = False
     root_runtime_path: Optional[str] = None
+    singleton: bool = False
 
 
 class LocalDaemonServiceStatus(ServiceStatus):
@@ -206,6 +212,20 @@ class LocalDaemonService(BaseService):
     # TODO [ENG-705]: allow multiple endpoints per service
     endpoint: Optional[LocalDaemonServiceEndpoint] = None
 
+    def get_service_status_message(self) -> str:
+        """Get a message providing information about the current operational
+        state of the service."""
+        msg = super().get_service_status_message()
+        pid = self.status.pid
+        if pid:
+            msg += f"  Daemon PID: `{self.status.pid}`\n"
+        if self.status.log_file:
+            msg += (
+                f"For more information on the service status, please see the "
+                f"following log file: {self.status.log_file}\n"
+            )
+        return msg
+
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the the current operational state of the daemon process.
 
@@ -251,13 +271,14 @@ class LocalDaemonService(BaseService):
         if not self.status.runtime_path or not os.path.exists(
             self.status.runtime_path
         ):
-            # runtime_path points to zenml local stores with uuid to make it
-            # easy to track from other locations.
             if self.config.root_runtime_path:
-                self.status.runtime_path = os.path.join(
-                    self.config.root_runtime_path,
-                    str(self.uuid),
-                )
+                if self.config.singleton:
+                    self.status.runtime_path = self.config.root_runtime_path
+                else:
+                    self.status.runtime_path = os.path.join(
+                        self.config.root_runtime_path,
+                        str(self.uuid),
+                    )
                 create_dir_recursive_if_not_exists(self.status.runtime_path)
             else:
                 self.status.runtime_path = tempfile.mkdtemp(
@@ -327,7 +348,7 @@ class LocalDaemonService(BaseService):
             )
         else:
             logger.error(
-                "Daemon process for service '%s' failed to start",
+                "Daemon process for service '%s' failed to start.",
                 self,
             )
 
@@ -365,6 +386,45 @@ class LocalDaemonService(BaseService):
 
     def deprovision(self, force: bool = False) -> None:
         self._stop_daemon(force)
+
+    def get_logs(
+        self, follow: bool = False, tail: Optional[int] = None
+    ) -> Generator[str, bool, None]:
+        """Retrieve the service logs.
+
+        Args:
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that can be acccessed to get the service logs.
+        """
+        if not self.status.log_file or not os.path.exists(self.status.log_file):
+            return
+
+        with open(self.status.log_file, "r") as f:
+            if tail:
+                # TODO[ENG-864]: implement a more efficient tailing mechanism that
+                #   doesn't read the entire file
+                lines = f.readlines()[-tail:]
+                for line in lines:
+                    yield line.rstrip("\n")
+                if not follow:
+                    return
+            line = ""
+            while True:
+                partial_line = f.readline()
+                if partial_line:
+                    line += partial_line
+                    if line.endswith("\n"):
+                        stop = yield line.rstrip("\n")
+                        if stop:
+                            break
+                        line = ""
+                elif follow:
+                    time.sleep(1)
+                else:
+                    break
 
     @abstractmethod
     def run(self) -> None:

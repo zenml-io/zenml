@@ -61,7 +61,7 @@ class VertexOrchestrator(KubeflowOrchestrator):
 
     FLAVOR: ClassVar[str] = "vertex"
 
-    def run_pipeline(
+    def run(
         self,
         pipeline: "BasePipeline",
         stack: "Stack",

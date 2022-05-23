@@ -31,16 +31,13 @@ from azureml.core.conda_dependencies import CondaDependencies
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.environment import Environment as ZenMLEnvironment
+from zenml.integrations.azureml import AZUREML_STEP_OPERATOR_FLAVOR
 from zenml.io import fileio
-from zenml.stack.stack_component_class_registry import (
-    register_stack_component_class,
-)
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.docker_utils import CONTAINER_ZENML_CONFIG_DIR
 from zenml.utils.source_utils import get_source_root_path
 
 
-@register_stack_component_class
 class AzureMLStepOperator(BaseStepOperator):
     """Step operator to run a step on AzureML.
 
@@ -81,7 +78,7 @@ class AzureMLStepOperator(BaseStepOperator):
     service_principal_password: Optional[str] = None
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = "azureml"
+    FLAVOR: ClassVar[str] = AZUREML_STEP_OPERATOR_FLAVOR
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:
         if (
@@ -190,7 +187,7 @@ class AzureMLStepOperator(BaseStepOperator):
             # active profile contents into the build context, to have
             # the configured stacks accessible from within the Azure ML
             # environment.
-            GlobalConfiguration().copy_config_with_active_profile(
+            GlobalConfiguration().copy_active_configuration(
                 config_path,
                 load_config_path=f"./{CONTAINER_ZENML_CONFIG_DIR}",
             )

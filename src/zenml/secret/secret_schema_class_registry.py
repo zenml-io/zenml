@@ -14,6 +14,7 @@
 from typing import ClassVar, Dict, Type, TypeVar
 
 from zenml.logger import get_logger
+from zenml.metadata_stores.mysql_secret_schema import MYSQLSecretSchema
 from zenml.secret import BaseSecretSchema
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 
@@ -88,7 +89,7 @@ class SecretSchemaClassRegistry:
             except KeyError:
                 raise KeyError(
                     f"No SecretSchema class found for schema flavor "
-                    f"{secret_schema}. Registered flavors are: "
+                    f"`{secret_schema}`. Registered flavors are: "
                     f"{set(available_schemas)}. If your secret schema "
                     f"class is part of a ZenML integration, make "
                     f"sure the corresponding integration is installed by "
@@ -113,3 +114,4 @@ def register_secret_schema_class(cls: Type[C]) -> Type[C]:
 
 
 SecretSchemaClassRegistry.register_class(ArbitrarySecretSchema)
+SecretSchemaClassRegistry.register_class(MYSQLSecretSchema)

@@ -20,7 +20,6 @@ from pydantic import BaseModel, Field, root_validator
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
-from zenml.integrations.utils import get_requirements_for_module
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -64,6 +63,8 @@ class StackComponent(BaseModel, ABC):
     @property
     def requirements(self) -> Set[str]:
         """Set of PyPI requirements for the component."""
+        from zenml.integrations.utils import get_requirements_for_module
+
         return set(get_requirements_for_module(self.__module__))
 
     @property
@@ -131,6 +132,12 @@ class StackComponent(BaseModel, ABC):
         """Cleans up resources after the step run is finished."""
 
     @property
+    def post_registration_message(self) -> Optional[str]:
+        """Optional message that will be printed after the stack component is
+        registered."""
+        return None
+
+    @property
     def validator(self) -> Optional["StackValidator"]:
         """The optional validator of the stack component.
 
@@ -143,12 +150,12 @@ class StackComponent(BaseModel, ABC):
 
     @property
     def is_provisioned(self) -> bool:
-        """If the component provisioned resources to run locally."""
+        """If the component provisioned resources to run."""
         return True
 
     @property
     def is_running(self) -> bool:
-        """If the component is running locally."""
+        """If the component is running."""
         return True
 
     @property
@@ -157,25 +164,25 @@ class StackComponent(BaseModel, ABC):
         return not self.is_running
 
     def provision(self) -> None:
-        """Provisions resources to run the component locally."""
+        """Provisions resources to run the component."""
         raise NotImplementedError(
-            f"Provisioning local resources not implemented for {self}."
+            f"Provisioning resources not implemented for {self}."
         )
 
     def deprovision(self) -> None:
-        """Deprovisions all local resources of the component."""
+        """Deprovisions all resources of the component."""
         raise NotImplementedError(
-            f"Deprovisioning local resource not implemented for {self}."
+            f"Deprovisioning resource not implemented for {self}."
         )
 
     def resume(self) -> None:
-        """Resumes the provisioned local resources of the component."""
+        """Resumes the provisioned resources of the component."""
         raise NotImplementedError(
             f"Resuming provisioned resources not implemented for {self}."
         )
 
     def suspend(self) -> None:
-        """Suspends the provisioned local resources of the component."""
+        """Suspends the provisioned resources of the component."""
         raise NotImplementedError(
             f"Suspending provisioned resources not implemented for {self}."
         )
@@ -194,7 +201,7 @@ class StackComponent(BaseModel, ABC):
         """String representation of the stack component."""
         return self.__repr__()
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def _ensure_stack_component_complete(cls, values: Dict[str, Any]) -> Any:
         try:
             stack_component_type = getattr(cls, "TYPE")
@@ -206,10 +213,11 @@ class StackComponent(BaseModel, ABC):
                     When you are working with any classes which subclass from
                     `zenml.stack.StackComponent` please make sure that your
                     class has a ClassVar named `TYPE` and its value is set to a
-                    `StackComponentType` from `from zenml.enums import StackComponentType`.
+                    `StackComponentType` from `from zenml.enums import
+                    StackComponentType`.
 
-                    In most of the cases, this is already done for you within the
-                    implementation of the base concept.
+                    In most of the cases, this is already done for you within
+                    the implementation of the base concept.
 
                     Example:
 

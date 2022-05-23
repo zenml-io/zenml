@@ -41,19 +41,10 @@ def test_global_config_returns_value_from_environment_variable(
 ):
     """Tests that global config attributes can be overwritten by environment
     variables."""
-    if fileio.exists(GlobalConfiguration()._config_file()):
-        fileio.remove(GlobalConfiguration()._config_file())
-
-    GlobalConfiguration()._reset_instance()
     config = GlobalConfiguration()
 
-    # delete the environment variable that is set at the beginning of all tests
-    mocker.patch.dict(os.environ, values={}, clear=True)
+    os.environ["ZENML_ANALYTICS_OPT_IN"] = "true"
     assert config.analytics_opt_in is True
 
-    # make sure the environment variable is set, then the global config should
-    # return the corresponding value
-    mocker.patch.dict(
-        os.environ, values={"ZENML_ANALYTICS_OPT_IN": "false"}, clear=True
-    )
+    os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
     assert config.analytics_opt_in is False

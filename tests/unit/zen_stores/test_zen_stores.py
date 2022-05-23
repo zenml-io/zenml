@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import base64
 import os
 import platform
 import shutil
@@ -22,15 +21,16 @@ from multiprocessing import Process
 import pytest
 import requests
 import uvicorn
-import yaml
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.config.profile_config import ProfileConfiguration
 from zenml.constants import (
+    DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
     DEFAULT_SERVICE_START_STOP_TIMEOUT,
-    ENV_ZENML_PROFILE_CONFIGURATION,
+    ENV_ZENML_CONFIG_PATH,
+    ENV_ZENML_PROFILE_NAME,
     REPOSITORY_DIRECTORY_NAME,
-    ZEN_SERVICE_ENTRYPOINT,
-    ZEN_SERVICE_IP,
+    ZEN_SERVER_ENTRYPOINT,
 )
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import (
@@ -47,10 +47,6 @@ from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
 )
 from zenml.stack import Stack
-from zenml.stack.stack_component import StackComponent
-from zenml.stack.stack_component_class_registry import (
-    StackComponentClassRegistry,
-)
 from zenml.utils.networking_utils import scan_for_available_port
 from zenml.zen_stores import (
     BaseZenStore,
@@ -58,23 +54,19 @@ from zenml.zen_stores import (
     RestZenStore,
     SqlZenStore,
 )
-from zenml.zen_stores.models import StackComponentWrapper, StackWrapper
+from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
+from zenml.zen_stores.models import ComponentWrapper, StackWrapper
+from zenml.zen_stores.models.pipeline_models import (
+    PipelineRunWrapper,
+    PipelineWrapper,
+)
 
 logger = get_logger(__name__)
 
-not_windows = platform.system() != "Windows"
-store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * not_windows
-
-
-def get_component_from_wrapper(
-    wrapper: StackComponentWrapper,
-) -> StackComponent:
-    """Instantiate a StackComponent from the Configuration."""
-    component_class = StackComponentClassRegistry.get_class(
-        component_type=wrapper.type, component_flavor=wrapper.flavor
-    )
-    component_config = yaml.safe_load(base64.b64decode(wrapper.config).decode())
-    return component_class.parse_obj(component_config)
+test_rest = (
+    platform.system() != "Windows" and "ZENML_SKIP_TEST_REST" not in os.environ
+)
+store_types = [StoreType.LOCAL, StoreType.SQL] + [StoreType.REST] * test_rest
 
 
 @pytest.fixture(params=store_types)
@@ -84,6 +76,8 @@ def fresh_zen_store(
     store_type = request.param
     tmp_path = tmp_path_factory.mktemp(f"{store_type.value}_zen_store")
     os.mkdir(tmp_path / REPOSITORY_DIRECTORY_NAME)
+
+    global_cfg = GlobalConfiguration()
 
     if store_type == StoreType.LOCAL:
         yield LocalZenStore().initialize(str(tmp_path))
@@ -97,28 +91,31 @@ def fresh_zen_store(
             store_url=backing_zen_store.url,
             store_type=backing_zen_store.type,
         )
+        global_cfg.add_or_update_profile(store_profile)
         # use environment file to pass profile into the zen service process
         env_file = str(tmp_path / "environ.env")
         with open(env_file, "w") as f:
+            f.write(f"{ENV_ZENML_PROFILE_NAME}='{store_profile.name}'\n")
             f.write(
-                f"{ENV_ZENML_PROFILE_CONFIGURATION}='{store_profile.json()}'"
+                f"{ENV_ZENML_CONFIG_PATH}='{global_cfg.config_directory}'\n"
             )
+
         port = scan_for_available_port(start=8003, stop=9000)
         if not port:
             raise RuntimeError("No available port found.")
 
         proc = Process(
             target=uvicorn.run,
-            args=(ZEN_SERVICE_ENTRYPOINT,),
+            args=(ZEN_SERVER_ENTRYPOINT,),
             kwargs=dict(
-                host=ZEN_SERVICE_IP,
+                host=DEFAULT_LOCAL_SERVICE_IP_ADDRESS,
                 port=port,
                 log_level="info",
                 env_file=env_file,
             ),
             daemon=True,
         )
-        url = f"http://{ZEN_SERVICE_IP}:{port}"
+        url = f"http://{DEFAULT_LOCAL_SERVICE_IP_ADDRESS}:{port}"
         proc.start()
 
         # wait 10 seconds for server to start
@@ -132,8 +129,7 @@ def fresh_zen_store(
                 time.sleep(1)
         else:
             proc.kill()
-            raise RuntimeError("Failed to start ZenService server.")
-
+            raise RuntimeError("Failed to start ZenServer.")
         yield RestZenStore().initialize(url)
 
         # make sure there's still a server and tear down
@@ -146,7 +142,9 @@ def fresh_zen_store(
             else:
                 break
         else:
-            raise RuntimeError("Failed to shutdown ZenService server.")
+            raise RuntimeError("Failed to shutdown ZenServer.")
+
+        global_cfg.delete_profile(store_profile.name)
     else:
         raise NotImplementedError(f"No ZenStore for {store_type}")
 
@@ -222,7 +220,7 @@ def test_register_deregister_components(fresh_zen_store):
     # can't add another orchestrator of same name
     with pytest.raises(StackComponentExistsError):
         zen_store.register_stack_component(
-            StackComponentWrapper.from_component(
+            ComponentWrapper.from_component(
                 LocalOrchestrator(
                     name="default",
                 )
@@ -231,7 +229,7 @@ def test_register_deregister_components(fresh_zen_store):
 
     # but can add one if it has a different name
     zen_store.register_stack_component(
-        StackComponentWrapper.from_component(
+        ComponentWrapper.from_component(
             LocalOrchestrator(
                 name="local_orchestrator_part_2_the_remix",
             )
@@ -264,8 +262,15 @@ def test_user_management(fresh_zen_store):
     # starts with a default user
     assert len(fresh_zen_store.users) == 1
 
-    fresh_zen_store.create_user("aria")
+    assert fresh_zen_store.users[0].name == "default"
+    default_user = fresh_zen_store.get_user("default")
+    assert default_user.id == fresh_zen_store.users[0].id
+
+    created_user_id = fresh_zen_store.create_user("aria").id
     assert len(fresh_zen_store.users) == 2
+
+    retrieved_user_id = fresh_zen_store.get_user("aria").id
+    assert created_user_id == retrieved_user_id
 
     with pytest.raises(EntityExistsError):
         # usernames need to be unique
@@ -339,19 +344,21 @@ def test_team_management(fresh_zen_store):
 
 def test_project_management(fresh_zen_store):
     """Tests project creation and deletion."""
-    fresh_zen_store.create_project("secret_project")
+    project = fresh_zen_store.create_project("secret_project")
     assert len(fresh_zen_store.projects) == 1
+    assert fresh_zen_store.projects[0].name == "secret_project"
+    assert fresh_zen_store.projects[0].id == project.id
 
     with pytest.raises(EntityExistsError):
         # project names need to be unique
         fresh_zen_store.create_project("secret_project")
     assert len(fresh_zen_store.projects) == 1
 
-    assert (
-        fresh_zen_store.get_project("secret_project").name == "secret_project"
-    )
     with pytest.raises(KeyError):
         fresh_zen_store.get_user("integrate_airflow")
+    retrieved = fresh_zen_store.get_project("secret_project")
+    assert retrieved.name == "secret_project"
+    assert retrieved.id == project.id
 
     fresh_zen_store.delete_project("secret_project")
     assert len(fresh_zen_store.projects) == 0
@@ -435,6 +442,44 @@ def test_role_management(fresh_zen_store):
     )
 
 
+def test_flavor_management(fresh_zen_store):
+    """Test the management of stack component flavors"""
+    # Check for non-existing flavors
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_flavor_by_name_and_type(
+            flavor_name="non_existing_flavor",
+            component_type=StackComponentType.ARTIFACT_STORE,
+        )
+
+    # Check whether the registration of new flavors is working as intended
+    fresh_zen_store.create_flavor(
+        name="test",
+        source="test_artifact_store.TestArtifactStore",
+        stack_component_type=StackComponentType.ARTIFACT_STORE,
+    )
+
+    # Duplicated registration should fail with an EntityExistsError
+    with pytest.raises(EntityExistsError):
+        fresh_zen_store.create_flavor(
+            name="test",
+            source="test_artifact_store.TestArtifactStore",
+            stack_component_type=StackComponentType.ARTIFACT_STORE,
+        )
+
+    # Ensure that the get_flavors_by_type is working as intended
+    new_artifact_store_flavors = fresh_zen_store.get_flavors_by_type(
+        StackComponentType.ARTIFACT_STORE
+    )
+    assert new_artifact_store_flavors
+
+    # Ensure that the newly registered flavor can be accessed.
+    new_artifact_store_flavor = fresh_zen_store.get_flavor_by_name_and_type(
+        flavor_name="test",
+        component_type=StackComponentType.ARTIFACT_STORE,
+    )
+    assert new_artifact_store_flavor
+
+
 def test_update_stack_with_new_component(fresh_zen_store):
     """Test updating a stack with a new component"""
     new_orchestrator = LocalOrchestrator(name="new_orchestrator")
@@ -442,16 +487,12 @@ def test_update_stack_with_new_component(fresh_zen_store):
     updated_stack = Stack(
         name="default",
         orchestrator=new_orchestrator,
-        metadata_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.METADATA_STORE, "default"
-            )
-        ),
-        artifact_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.ARTIFACT_STORE, "default"
-            )
-        ),
+        metadata_store=fresh_zen_store.get_stack_component(
+            StackComponentType.METADATA_STORE, "default"
+        ).to_component(),
+        artifact_store=fresh_zen_store.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, "default"
+        ).to_component(),
     )
     try:
         fresh_zen_store.update_stack(
@@ -469,14 +510,14 @@ def test_update_stack_with_new_component(fresh_zen_store):
         == 2
     )
     assert new_orchestrator in [
-        get_component_from_wrapper(component)
-        for component in fresh_zen_store.get_stack_components(
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack_components(
             StackComponentType.ORCHESTRATOR
         )
     ]
     assert new_orchestrator in [
-        get_component_from_wrapper(component)
-        for component in fresh_zen_store.get_stack("default").components
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack("default").components
     ]
 
 
@@ -488,21 +529,15 @@ def test_update_stack_when_component_not_part_of_stack(
 
     updated_stack = Stack(
         name="default",
-        orchestrator=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.ORCHESTRATOR, "default"
-            )
-        ),
-        metadata_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.METADATA_STORE, "default"
-            )
-        ),
-        artifact_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.ARTIFACT_STORE, "default"
-            )
-        ),
+        orchestrator=fresh_zen_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, "default"
+        ).to_component(),
+        metadata_store=fresh_zen_store.get_stack_component(
+            StackComponentType.METADATA_STORE, "default"
+        ).to_component(),
+        artifact_store=fresh_zen_store.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, "default"
+        ).to_component(),
         secrets_manager=local_secrets_manager,
     )
 
@@ -520,14 +555,14 @@ def test_update_stack_when_component_not_part_of_stack(
         == 1
     )
     assert local_secrets_manager in [
-        get_component_from_wrapper(component)
-        for component in fresh_zen_store.get_stack_components(
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack_components(
             StackComponentType.SECRETS_MANAGER
         )
     ]
     assert local_secrets_manager in [
-        get_component_from_wrapper(component)
-        for component in fresh_zen_store.get_stack("default").components
+        wrapper.to_component()
+        for wrapper in fresh_zen_store.get_stack("default").components
     ]
 
 
@@ -537,21 +572,15 @@ def test_update_non_existent_stack_raises_error(
     """Test updating a non-existent stack raises an error."""
     stack = Stack(
         name="aria_is_a_cat_not_a_stack",
-        orchestrator=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.ORCHESTRATOR, "default"
-            )
-        ),
-        metadata_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.METADATA_STORE, "default"
-            )
-        ),
-        artifact_store=get_component_from_wrapper(
-            fresh_zen_store.get_stack_component(
-                StackComponentType.ARTIFACT_STORE, "default"
-            )
-        ),
+        orchestrator=fresh_zen_store.get_stack_component(
+            StackComponentType.ORCHESTRATOR, "default"
+        ).to_component(),
+        metadata_store=fresh_zen_store.get_stack_component(
+            StackComponentType.METADATA_STORE, "default"
+        ).to_component(),
+        artifact_store=fresh_zen_store.get_stack_component(
+            StackComponentType.ARTIFACT_STORE, "default"
+        ).to_component(),
     )
 
     with pytest.raises(KeyError):
@@ -570,7 +599,7 @@ def test_update_non_existent_stack_component_raises_error(
         fresh_zen_store.update_stack_component(
             local_secrets_manager.name,
             StackComponentType.SECRETS_MANAGER,
-            StackComponentWrapper.from_component(local_secrets_manager),
+            ComponentWrapper.from_component(local_secrets_manager),
         )
 
 
@@ -578,12 +607,12 @@ def test_update_real_component_succeeds(
     fresh_zen_store,
 ):
     """Test updating a real component succeeds."""
-    kubeflow_orchestrator = StackComponentWrapper.from_component(
+    kubeflow_orchestrator = ComponentWrapper.from_component(
         KubeflowOrchestrator(name="arias_orchestrator")
     )
     fresh_zen_store.register_stack_component(kubeflow_orchestrator)
 
-    updated_kubeflow_orchestrator = StackComponentWrapper.from_component(
+    updated_kubeflow_orchestrator = ComponentWrapper.from_component(
         KubeflowOrchestrator(
             name="arias_orchestrator",
             custom_docker_base_image_name="aria/arias_base_image",
@@ -595,11 +624,10 @@ def test_update_real_component_succeeds(
         updated_kubeflow_orchestrator,
     )
 
-    orchestrator_component = get_component_from_wrapper(
-        fresh_zen_store.get_stack_component(
-            StackComponentType.ORCHESTRATOR, "arias_orchestrator"
-        )
-    )
+    orchestrator_component = fresh_zen_store.get_stack_component(
+        StackComponentType.ORCHESTRATOR, "arias_orchestrator"
+    ).to_component()
+
     assert (
         orchestrator_component.custom_docker_base_image_name
         == "aria/arias_base_image"
@@ -614,7 +642,7 @@ def test_rename_nonexistent_stack_component_fails(
         fresh_zen_store.update_stack_component(
             "not_a_secrets_manager",
             StackComponentType.SECRETS_MANAGER,
-            StackComponentWrapper.from_component(
+            ComponentWrapper.from_component(
                 LocalSecretsManager(name="local_secrets_manager")
             ),
         )
@@ -626,7 +654,7 @@ def test_rename_core_stack_component_succeeds(
     """Test renaming a core stack component succeeds."""
     old_name = "default"
     new_name = "arias_orchestrator"
-    renamed_orchestrator = StackComponentWrapper.from_component(
+    renamed_orchestrator = ComponentWrapper.from_component(
         LocalOrchestrator(name=new_name)
     )
     fresh_zen_store.update_stack_component(
@@ -654,12 +682,12 @@ def test_rename_non_core_stack_component_succeeds(
     old_name = "original_kubeflow"
     new_name = "arias_kubeflow"
 
-    kubeflow_orchestrator = StackComponentWrapper.from_component(
+    kubeflow_orchestrator = ComponentWrapper.from_component(
         KubeflowOrchestrator(name=old_name)
     )
     fresh_zen_store.register_stack_component(kubeflow_orchestrator)
 
-    renamed_kubeflow_orchestrator = StackComponentWrapper.from_component(
+    renamed_kubeflow_orchestrator = ComponentWrapper.from_component(
         KubeflowOrchestrator(name=new_name)
     )
     fresh_zen_store.update_stack_component(
@@ -673,11 +701,69 @@ def test_rename_non_core_stack_component_succeeds(
             StackComponentType.ORCHESTRATOR, old_name
         )
 
-    stack_orchestrator = get_component_from_wrapper(
-        fresh_zen_store.get_stack_component(
-            StackComponentType.ORCHESTRATOR, new_name
-        )
-    )
+    stack_orchestrator = fresh_zen_store.get_stack_component(
+        StackComponentType.ORCHESTRATOR, new_name
+    ).to_component()
 
     assert stack_orchestrator is not None
     assert stack_orchestrator.name == new_name
+
+
+def test_pipeline_run_management(
+    fresh_zen_store, one_step_pipeline, empty_step
+):
+    """Test registering and fetching pipeline runs."""
+    stack = Stack.default_local_stack()
+    pipeline = one_step_pipeline(empty_step())
+
+    default_user = fresh_zen_store.get_user(DEFAULT_USERNAME)
+    run = PipelineRunWrapper(
+        name="run_name",
+        pipeline=PipelineWrapper.from_pipeline(pipeline),
+        stack=StackWrapper.from_stack(stack),
+        runtime_configuration={},
+        user_id=default_user.id,
+        project_name="project",
+    )
+
+    fresh_zen_store.register_pipeline_run(run)
+
+    registered_runs = fresh_zen_store.get_pipeline_runs(
+        pipeline_name=pipeline.name
+    )
+    assert len(registered_runs) == 1
+    assert registered_runs[0] == run
+
+    assert (
+        fresh_zen_store.get_pipeline_run(
+            pipeline_name=pipeline.name, run_name=run.name
+        )
+        == run
+    )
+    assert (
+        fresh_zen_store.get_pipeline_run(
+            pipeline_name=pipeline.name,
+            run_name=run.name,
+            project_name=run.project_name,
+        )
+        == run
+    )
+
+    # Filtering for the wrong projects doesn't return any runs
+    assert not fresh_zen_store.get_pipeline_runs(
+        pipeline_name=pipeline.name, project_name="not_the_correct_project"
+    )
+    with pytest.raises(KeyError):
+        fresh_zen_store.get_pipeline_run(
+            pipeline_name=pipeline.name,
+            run_name=run.name,
+            project_name="not_the_correct_project",
+        )
+
+    # registering a run with the same name fails
+    with pytest.raises(EntityExistsError):
+        fresh_zen_store.register_pipeline_run(run)
+
+    different_run = run.copy(update={"name": "different_run_name"})
+    with does_not_raise():
+        fresh_zen_store.register_pipeline_run(different_run)

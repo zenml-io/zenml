@@ -1,63 +1,92 @@
-# Get up and running quickly
-Our goal here is to help you to get the first practical experience with our tool and give you a brief overview 
-on some basic functionalities of ZenML. We'll create a training pipeline for the 
-[MNIST](http://yann.lecun.com/exdb/mnist/) dataset.
+# :running: Get up and running quickly
 
-If you want to run this notebook in an interactive environment, feel free to run it in a 
-[Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) 
-or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) directly.
+Build your first ML pipelines with ZenML.
 
-## Overview
-Here we train a simple sklearn classifier on the MNIST dataset.
+You can use Google Colab to see ZenML in action, no signup / installation required!
 
-## Run it locally
+<a href="https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/notebooks/quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
-### Pre-requisites
-In order to run this example, you need to install and initialize ZenML:
+## :earth_americas: Overview
+
+This quickstart aims to give you a small illustration of what ZenML can do. To do so, we will:
+- Train a model on the MNIST digits dataset, evaluate it, deploy it, and embed it in an inference pipeline
+- Automatically version, track, and cache data, models, and other artifacts
+- Track model hyperparameters and metrics in an experiment tracking tool
+- Measure and visualize train-test skew, training-serving skew, and data drift
+
+**New to MLOps?** You might want to start with our [**ZenBytes**](https://github.com/zenml-io/zenbytes) lesson series instead where we cover each MLOps concept in much more detail. This series assumes you are already familiar with basic MLOps issues and just want to learn how to approach them with ZenML.
+
+## :computer: Run Locally
+
+### :page_facing_up: Prerequisites 
+To run locally, install ZenML and pull this quickstart:
 
 ```shell
-# install CLI
+# Install ZenML
 pip install zenml
 
-# install ZenML integrations
-zenml integration install sklearn
-
-# pull example
+# Pull this quickstart to zenml_examples/quickstart
 zenml example pull quickstart
 cd zenml_examples/quickstart
-
-# initialize
-zenml init
 ```
 
-### Run the project
-Now we're ready. Execute:
+### :arrow_forward: Run Locally
+Now we're ready to start. You have two options for running the quickstart locally:
 
-```shell
-python quickstart.py
-```
-
-Or just a jupyter notebook
+#### Option 1 (*Recommended*) - Interactively explore the quickstart using Jupyter Notebook:
 ```bash
-jupyter notebook  # jupyter must be installed
+pip install notebook
+jupyter notebook
+# open notebooks/quickstart.ipynb
 ```
 
-Or check out a [Google Colab version](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) 
-to test it out immediately.
+#### Option 2 - Execute the whole ML pipeline from a Python script:
+```bash
+# Install required zenml integrations
+zenml integration install dash sklearn mlflow evidently facets -y
 
-### Clean up
-In order to clean up, delete the remaining zenml references.
+# Initialize ZenML
+zenml init
+
+# Create a new ZenML profile and set it as active
+zenml profile create quickstart
+zenml profile set quickstart
+
+# Register required ZenML stack
+zenml experiment-tracker register mlflow_tracker --flavor=mlflow
+zenml model-deployer register mlflow_deployer --flavor=mlflow
+zenml stack update default -d mlflow_deployer -e mlflow_tracker
+
+# Run the quickstart script
+python run.py
+```
+
+### :sponge: Clean up
+
+To clean up, simply delete the examples folder we downloaded earlier:
 
 ```shell
 rm -rf zenml_examples
 ```
 
-## SuperQuick `quickstart` run
+## :bulb: Learn More
 
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
+If you want to learn more about ZenML, 
+then the [:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) 
+are the perfect place to get started.
 
-```shell
-zenml example run quickstart
-```
+Already have an MLOps stack in mind?
+ZenML most likely has
+[**:link: Integrations**](https://docs.zenml.io/features/integrations) 
+for whatever tools you plan to use. Check out the
+[**:pray: ZenML Examples**](https://github.com/zenml-io/zenml/tree/main/examples)
+to see how to use a specific tool with ZenML.
+
+If you would like to learn more about the various MLOps concepts, check out
+[**:teacher: ZenBytes**](https://github.com/zenml-io/zenbytes),
+our series of short practical MLOps lessons.
+
+Also, make sure to join our <a href="https://zenml.io/slack-invite" target="_blank">
+    <img width="15" src="https://cdn3.iconfinder.com/data/icons/logos-and-brands-adobe/512/306_Slack-512.png" alt="Slack"/>
+    <b>Slack Community</b> 
+</a> to become part of the ZenML family!

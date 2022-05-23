@@ -20,6 +20,7 @@ from pydantic import root_validator
 
 from zenml.cli.utils import error
 from zenml.constants import LOCAL_SECRETS_FILENAME, LOCAL_STORES_DIRECTORY_NAME
+from zenml.exceptions import SecretExistsError
 from zenml.io.fileio import remove
 from zenml.io.utils import (
     create_file_if_not_exists,
@@ -43,7 +44,7 @@ class LocalSecretsManager(BaseSecretsManager):
     # Class configuration
     FLAVOR: ClassVar[str] = "local"
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def set_secrets_file(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Sets the secrets_file attribute value according to the component
         UUID."""
@@ -111,7 +112,7 @@ class LocalSecretsManager(BaseSecretsManager):
         self._create_secrets_file__if_not_exists()
 
         if self._verify_secret_key_exists(secret_name=secret.name):
-            raise KeyError(f"Secret `{secret.name}` already exists.")
+            raise SecretExistsError(f"Secret `{secret.name}` already exists.")
         encoded_secret = encode_secret(secret)
 
         secrets_store_items = self._get_all_secrets()
@@ -205,6 +206,6 @@ class LocalSecretsManager(BaseSecretsManager):
         if not force:
             raise ValueError(
                 "This operation will delete all secrets. "
-                "To confirm, please pass `--force`."
+                "To confirm, please pass `--yes`."
             )
         remove(self.secrets_file)

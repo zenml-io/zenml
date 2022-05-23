@@ -26,6 +26,9 @@ from zenml.integrations.evidently import EvidentlyIntegration  # noqa
 from zenml.integrations.facets import FacetsIntegration  # noqa
 from zenml.integrations.feast import FeastIntegration  # noqa
 from zenml.integrations.gcp import GcpIntegration  # noqa
+from zenml.integrations.gcp_secrets_manager import (  # noqa
+    GcpSecretManagerIntegration,
+)
 from zenml.integrations.graphviz import GraphvizIntegration  # noqa
 from zenml.integrations.great_expectations import (  # noqa
     GreatExpectationsIntegration,
@@ -42,6 +45,7 @@ from zenml.integrations.pytorch_lightning import (  # noqa
 )
 from zenml.integrations.s3 import S3Integration  # noqa
 from zenml.integrations.sagemaker import SagemakerIntegration  # noqa
+from zenml.integrations.scipy import ScipyIntegration  # noqa
 from zenml.integrations.seldon import SeldonIntegration  # noqa
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa

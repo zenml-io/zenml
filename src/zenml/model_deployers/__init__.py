@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Model Deployers
-
 Model deployers are stack components responsible for online model serving.
 Online serving is the process of hosting and loading machine-learning models as
 part of a managed web service and providing access to the models through an API

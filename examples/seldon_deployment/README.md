@@ -1,4 +1,4 @@
-# ZenML continuous model deployment with Seldon Core
+# 🚀 ZenML continuous model deployment with Seldon Core
 
 [Seldon Core](https://github.com/SeldonIO/seldon-core) is a production grade
 open source model serving platform. It packs a wide range of features built
@@ -19,7 +19,7 @@ a ZenML MLOps stack that features Seldon Core as a model deployer component
 makes for a seamless transition from running experiments locally to deploying
 models in production.
 
-## Overview
+## 🗺 Overview
 
 The example uses the
 [Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset to
@@ -39,8 +39,9 @@ The example consists of two individual pipelines:
   by the continuous deployment pipeline to get online predictions based on live
   data
 
-You can control which pipeline to run by passing the `--deploy` and/or the
-`--predict` flag to the `run.py` launcher.
+You can control which pipeline to run by passing the `--config deploy` or the 
+`--config predict` option to the `run.py` launcher. The default is 
+`--config deploy_and_predict` which does both.
 
 In the deployment pipeline, ZenML's Seldon Core integration is used to serve
 the trained model directly from the Artifact Store where it is automatically
@@ -63,9 +64,9 @@ The inference pipeline simulates loading data from a dynamic external source,
 then uses that data to perform online predictions using the running Seldon
 Core prediction server.
 
-## Running the example
+# 🖥 Run it locally
 
-### Pre-requisites
+### 📄 Prerequisites 
 
 For the ZenML Seldon Core deployer to work, three basic things are required:
 
@@ -180,7 +181,7 @@ You should see something like this as the prediction response:
 {"data":{"names":["t:0","t:1","t:2"],"ndarray":[[0.0006985194531162835,0.00366803903943666,0.995633441507447]]},"meta":{"requestPath":{"classifier":"seldonio/sklearnserver:1.13.1"}}}
 ```
 
-### Setting up the ZenML Stack
+### 🥞 Setting up the ZenML Stack
 
 Before you run the example, a ZenML Stack needs to be set up with all the proper
 components. Two different examples of stacks featuring AWS infrastructure
@@ -229,14 +230,14 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -
 
 Configuring the stack can be done like this:
 
-```
+```shell
 zenml integration install s3 seldon
-zenml model-deployer register seldon_eks --type=seldon \
+zenml model-deployer register seldon_eks --flavor=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
   --base_url=http://$INGRESS_HOST \
   --secret=s3-store
-zenml artifact-store register aws --type s3 --path s3://mybucket
-zenml secrets-manager register local -t local
+zenml artifact-store register aws --flavor=s3 --path s3://mybucket
+zenml secrets-manager register local --flavor=local
 zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks -x local
 zenml stack set local_with_aws_storage
 ```
@@ -291,18 +292,18 @@ export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway \
 
 Configuring the stack can be done like this:
 
-```
+```shell
 zenml integration install s3 aws kubeflow seldon
 
-zenml artifact-store register aws --type=s3 --path=s3://mybucket
-zenml model-deployer register seldon_aws --type=seldon \
+zenml artifact-store register aws --flavor=s3 --path=s3://mybucket
+zenml model-deployer register seldon_aws --flavor=seldon \
   --kubernetes_context=zenml-eks --kubernetes_namespace=kubeflow \
   --base_url=http://$INGRESS_HOST \
   --secret=s3-store
-zenml container-registry register aws --type=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
-zenml metadata-store register aws --type=kubeflow
-zenml orchestrator register aws --type=kubeflow --kubernetes_context=zenml-eks --synchronous=True
-zenml secrets-manager register aws -t aws
+zenml container-registry register aws --flavor=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
+zenml metadata-store register aws --flavor=kubeflow
+zenml orchestrator register aws --flavor=kubeflow --kubernetes_context=zenml-eks --synchronous=True
+zenml secrets-manager register aws --flavor=aws
 zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws -x aws
 zenml stack set aws
 ```
@@ -358,36 +359,25 @@ save any explicit AWS credentials in the ZenML secret. You just have to set the
 as is:
 
 ```bash
-$ zenml secret register -s seldon_s3 s3-store
-You have supplied a secret_set_schema with predefined keys. You can fill these
-out sequentially now. Just press ENTER to skip optional secrets that you do not
-want to set
-Secret value for rclone_config_s3_type:
-Secret value for rclone_config_s3_provider:
-Secret value for rclone_config_s3_env_auth: True
-Secret value for rclone_config_s3_access_key_id:
-Secret value for rclone_config_s3_secret_access_key:
-Secret value for rclone_config_s3_session_token:
-Secret value for rclone_config_s3_region:
-Secret value for rclone_config_s3_endpoint:
+$ zenml secret register -s seldon_s3 s3-store --rclone_config_s3_env_auth=True
 The following secret will be registered.
-┏━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ SECRET_NAME │ SECRET_KEY                │ SECRET_VALUE ┃
-┠─────────────┼───────────────────────────┼──────────────┨
-┃ seldon_aws  │ rclone_config_s3_type     │ ***          ┃
-┃ seldon_aws  │ rclone_config_s3_provider │ ***          ┃
-┃ seldon_aws  │ rclone_config_s3_env_auth │ ***          ┃
-┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃        SECRET_KEY         │ SECRET_VALUE ┃
+┠───────────────────────────┼──────────────┨
+┃   rclone_config_s3_type   │ ***          ┃
+┃ rclone_config_s3_provider │ ***          ┃
+┃ rclone_config_s3_env_auth │ ***          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 
 $ zenml secret get s3-store
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-┏━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ SECRET_NAME │ SECRET_KEY                │ SECRET_VALUE ┃
-┠─────────────┼───────────────────────────┼──────────────┨
-┃ seldon_aws  │ rclone_config_s3_type     │ s3           ┃
-┃ seldon_aws  │ rclone_config_s3_provider │ aws          ┃
-┃ seldon_aws  │ rclone_config_s3_env_auth │ True         ┃
-┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃        SECRET_KEY         │ SECRET_VALUE ┃
+┠───────────────────────────┼──────────────┨
+┃   rclone_config_s3_type   │ s3           ┃
+┃ rclone_config_s3_provider │ aws          ┃
+┃ rclone_config_s3_env_auth │ True         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
 
 ##### AWS Authentication with Explicit Credentials
@@ -397,59 +387,56 @@ configure it, you will need to set up credentials explicitly in the ZenML secret
 e.g.:
 
 ```bash
-$ zenml secret register -s seldon_s3 s3-store
-You have supplied a secret_set_schema with predefined keys. You can fill these
-out sequentially now. Just press ENTER to skip optional secrets that you do not
-want to set
-Secret value for rclone_config_s3_type:
-Secret value for rclone_config_s3_provider:
-Secret value for rclone_config_s3_env_auth: False
-Secret value for rclone_config_s3_access_key_id: ASAK2NSJVO4HDQC7Z25F
-Secret value for rclone_config_s3_secret_access_key: AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+
-Secret value for rclone_config_s3_session_token: AFdfsaSf2SDFfdaWAsfCacs...ASDFsfdfs23sc==
-Secret value for rclone_config_s3_region: us-east-1
-Secret value for rclone_config_s3_endpoint:
+$ zenml secret register -s seldon_s3 s3-store \
+    --rclone_config_s3_env_auth=False \
+    --rclone_config_s3_access_key_id='ASAK2NSJVO4HDQC7Z25F' \ --rclone_config_s3_secret_access_key='AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+' \
+    --rclone_config_s3_session_token=@./aws_session_token.txt \
+    --rclone_config_s3_region=us-east-1
+Expanding argument value rclone_config_s3_session_token to contents of file ./aws_session_token.txt.
 The following secret will be registered.
-┏━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ SECRET_NAME │ SECRET_KEY                         │ SECRET_VALUE ┃
-┠─────────────┼────────────────────────────────────┼──────────────┨
-┃  s3-store   │ rclone_config_s3_type              │ ***          ┃
-┃  s3-store   │ rclone_config_s3_provider          │ ***          ┃
-┃  s3-store   │ rclone_config_s3_env_auth          │ ***          ┃
-┃  s3-store   │ rclone_config_s3_access_key_id     │ ***          ┃
-┃  s3-store   │ rclone_config_s3_secret_access_key │ ***          ┃
-┃  s3-store   │ rclone_config_s3_session_token     │ ***          ┃
-┃  s3-store   │ rclone_config_s3_region            │ ***          ┃
-┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃             SECRET_KEY             │ SECRET_VALUE ┃
+┠────────────────────────────────────┼──────────────┨
+┃       rclone_config_s3_type        │ ***          ┃
+┃     rclone_config_s3_provider      │ ***          ┃
+┃     rclone_config_s3_env_auth      │ ***          ┃
+┃   rclone_config_s3_access_key_id   │ ***          ┃
+┃ rclone_config_s3_secret_access_key │ ***          ┃
+┃   rclone_config_s3_session_token   │ ***          ┃
+┃      rclone_config_s3_region       │ ***          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 
 $ zenml secret get s3-store
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-┏━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ SECRET_NAME │ SECRET_KEY                    │ SECRET_VALUE                  ┃
-┠─────────────┼───────────────────────────────┼───────────────────────────────┨
-┃  s3-store   │ rclone_config_s3_type         │ s3                            ┃
-┃  s3-store   │ rclone_config_s3_provider     │ aws                           ┃
-┃  s3-store   │ rclone_config_s3_env_auth     │ False                         ┃
-┃  s3-store   │ rclone_config_s3_access_key_… │ ASAK2NSJVO4HDQC7Z25F          ┃
-┃  s3-store   │ rclone_config_s3_secret_acce… │ AhkFSfhjj23fSDFfjklsdfj34hkl… ┃
-┃  s3-store   │ rclone_config_s3_session_tok… │ AFdfsaSf2SDFfdaWAsfCacssDsfA… ┃
-┃  s3-store   │ rclone_config_s3_region       │ us-east-1                     ┃
-┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             SECRET_KEY             │ SECRET_VALUE                           ┃
+┠────────────────────────────────────┼────────────────────────────────────────┨
+┃       rclone_config_s3_type        │ s3                                     ┃
+┃     rclone_config_s3_provider      │ aws                                    ┃
+┃     rclone_config_s3_env_auth      │ False                                  ┃
+┃   rclone_config_s3_access_key_id   │ ASAK2NSJVO4HDQC7Z25F                   ┃
+┃ rclone_config_s3_secret_access_key │ AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscs… ┃
+┃   rclone_config_s3_session_token   │ FwoGZXIvYXdzEG4aDHogqi7YRrJyVJUVfSKpA… ┃
+┃                                    │                                        ┃
+┃      rclone_config_s3_region       │ us-east-1                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-### Run the project
+### 🏃️Run the code
 To run the continuous deployment pipeline:
 
 ```shell
-python run.py --deploy
+python run.py --config deploy
 ```
 
 Example output when run with the local orchestrator stack:
 
+```shell
+examples/seldon_deployment$ python run.py --config deploy --min-accuracy 0.80 --model-flavor sklearn
 ```
-zenml/seldon_deployment$ python run.py --deploy --min-accuracy 0.80 --model-flavor sklearn
 
+```shell
 2022-04-06 15:40:28.903233: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
 2022-04-06 15:40:28.903253: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
 Creating run for pipeline: `continuous_deployment_pipeline`
@@ -490,7 +477,7 @@ Re-running the example with different hyperparameter values will re-train
 the model and update the deployment server to serve the new model:
 
 ```shell
-python run.py --deploy --epochs=10 --lr=0.1
+python run.py --config deploy --epochs=10 --lr=0.1
 ```
 
 If the input hyperparameter argument values are not changed, the pipeline
@@ -503,13 +490,16 @@ The inference pipeline will use the currently running Seldon Core deployment
 server to perform an online prediction. To run the inference pipeline:
 
 ```shell
-python run.py --predict
+python run.py --config predict
 ```
 
 Example output when run with the local orchestrator stack:
 
+```shell
+examples/seldon_deployment$ python run.py --config predict --model-flavor sklearn
 ```
-zenml/seldon_deployment$ python run.py --predict --model-flavor sklearn
+
+```shell
 2022-04-06 15:48:02.346731: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
 2022-04-06 15:48:02.346762: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
 Creating run for pipeline: `inference_pipeline`
@@ -543,7 +533,7 @@ training and the Seldon Core model server implementation, the `--model-flavor`
 command line argument can be used:
 
 ```
-python run.py --deploy --predict --model-flavor sklearn --penalty=l2
+python run.py --model-flavor sklearn --penalty=l2
 ```
 
 The `zenml served-models list` CLI command can be run to list the active model servers:
@@ -605,7 +595,7 @@ CLI command:
 $ zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
 ```
 
-### Clean up
+### 🧽 Clean up
 
 To stop any prediction servers running in the background, use the `zenml model-server list`
 and `zenml model-server delete <uuid>` CLI commands.:
@@ -619,3 +609,10 @@ Then delete the remaining ZenML references.
 ```shell
 rm -rf zenml_examples
 ```
+
+# 📜 Learn more
+
+Our docs regarding the seldon deployment integration can be found [here](TODO: Link to docs).
+
+If you want to learn more about deployment in zenml in general or about how to build your own deployer steps in zenml
+check out our [docs](TODO: Link to docs)

@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import click
 
-from zenml.cli.cli import cli
+from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     declare,
     error,
@@ -24,25 +24,35 @@ from zenml.cli.utils import (
     print_served_model_configuration,
     warning,
 )
-from zenml.enums import StackComponentType
-from zenml.model_deployers import BaseModelDeployer
+from zenml.console import console
+from zenml.enums import CliCategories, StackComponentType
 from zenml.repository import Repository
 
+if TYPE_CHECKING:
+    from zenml.model_deployers import BaseModelDeployer
 
-@cli.group()
+
+@cli.group(
+    cls=TagGroup,
+    tag=CliCategories.MODEL_DEPLOYMENT,
+)
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
-    """List and manage served models that are deployed using the active model
+    """List and manage served models with the active model
     deployer.
     """
-    ctx.obj = Repository().active_stack.components.get(
-        StackComponentType.MODEL_DEPLOYER, None
+    repo = Repository()
+    active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+    model_deployer_wrapper = active_stack.get_component_wrapper(
+        StackComponentType.MODEL_DEPLOYER
     )
-    if ctx.obj is None:
+    if model_deployer_wrapper is None:
         error(
             "No active model deployer found. Please add a model_deployer to "
             "your stack."
         )
+        return
+    ctx.obj = model_deployer_wrapper.to_component()
 
 
 @served_models.command("list")
@@ -198,11 +208,22 @@ def start_model_service(
     "become inactive (default: 300s).",
 )
 @click.option(
-    "--force",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the model server to stop. This will bypass any graceful "
     "shutdown processes and try to force the model server to stop immediately, "
     "if possible.",
+)
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the model server to stop. This will bypass any graceful "
+    "shutdown processes and try to force the model server to stop immediately, "
+    "if possible. Use `-y/--yes` instead.",
 )
 @click.pass_obj
 def stop_model_service(
@@ -210,9 +231,14 @@ def stop_model_service(
     served_model_uuid: str,
     timeout: int,
     force: bool,
+    old_force: bool,
 ) -> None:
     """Stop a specified model server."""
-
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -239,11 +265,22 @@ def stop_model_service(
     "waiting for it to release all allocated resources.",
 )
 @click.option(
-    "--force",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the model server to stop and delete. This will bypass any "
     "graceful shutdown processes and try to force the model server to stop and "
     "delete immediately, if possible.",
+)
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the model server to stop and delete. This will bypass any "
+    "graceful shutdown processes and try to force the model server to stop and "
+    "delete immediately, if possible. Use `-y/--yes` instead.",
 )
 @click.pass_obj
 def delete_model_service(
@@ -251,9 +288,14 @@ def delete_model_service(
     served_model_uuid: str,
     timeout: int,
     force: bool,
+    old_force: bool,
 ) -> None:
     """Delete a specified model server."""
-
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -266,3 +308,51 @@ def delete_model_service(
 
     warning(f"No model with uuid: '{served_model_uuid}' could be found.")
     return
+
+
+@served_models.command("logs")
+@click.argument("served_model_uuid", type=click.STRING)
+@click.option(
+    "--follow",
+    "-f",
+    is_flag=True,
+    help="Continue to output new log data as it becomes available.",
+)
+@click.option(
+    "--tail",
+    "-t",
+    type=click.INT,
+    default=None,
+    help="Only show the last NUM lines of log output.",
+)
+@click.option(
+    "--raw",
+    "-r",
+    is_flag=True,
+    help="Show raw log contents (don't pretty-print logs).",
+)
+@click.pass_obj
+def get_model_service_logs(
+    model_deployer: "BaseModelDeployer",
+    served_model_uuid: str,
+    follow: bool,
+    tail: Optional[int],
+    raw: bool,
+) -> None:
+    """Display the logs for a model server."""
+
+    served_models = model_deployer.find_model_server(
+        service_uuid=uuid.UUID(served_model_uuid)
+    )
+    if not served_models:
+        warning(f"No model with uuid: '{served_model_uuid}' could be found.")
+        return
+
+    for line in model_deployer.get_model_server_logs(
+        served_models[0].uuid, follow=follow, tail=tail
+    ):
+        # don't pretty-print log lines that are already pretty-printed
+        if raw or line.startswith("\x1b["):
+            print(line)
+        else:
+            console.print(line)

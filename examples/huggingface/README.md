@@ -29,27 +29,24 @@ the [`imdb`](https://huggingface.co/datasets/imdb) dataset.
 - Load dataset: Load sequence-classification dataset in this case it is the `imdb` dataset
 
 ```python
-    from datasets import load_dataset
+from datasets import load_dataset
 
 datasets = load_dataset("imdb")
 print(datasets['train'][0])
+```
 
+This is what an example entry would look like:
+```json
 {
-    'label': 0,  # Sentiment label i.e. 0->Negative 1->Positive
-    'text': 'I rented I AM CURIOUS-YELLOW from my video store because of
-    all the controversy that surrounded it when it was first released in
-                                                             1967. I also heard that at first it was seized
-    by U.S.customs if it
-    ever tried to enter this country, therefore being a fan of films
-    considered controversial I really had to see this
-for myself.....'
+"label": 0,  # Sentiment label i.e. 0->Negative 1->Positive
+"text": "I rented I AM CURIOUS-YELLOW from my video store because of all the controversy that surrounded it when it was first released in 1967. I also heard that at first it was seized by U.S.customs if it ever tried to enter this country, therefore being a fan of films considered controversial I really had to see this for myself.....",
 }
 ```
 
 - Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face transformers.
 
 ```python
-    from transformers import AutoTokenizer
+from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 ```
@@ -69,30 +66,31 @@ Part of speech tagging etc. In this example, we will train a NER model using the
 - Load dataset: Load token-classification dataset in this case it is `conll2003` dataset
 
 ```python
-    from datasets import load_dataset
+from datasets import load_dataset
 
 datasets = load_dataset("conll2003")
 print(datasets['train'][0])
-
-{'chunk_tags': [11, 21, 11, 12, 21, 22, 11, 12, 0],
- 'id': '0',
- 'ner_tags': [3, 0, 7, 0, 0, 0, 7, 0, 0],  # list of token classification labels
- 'pos_tags': [22, 42, 16, 21, 35, 37, 16, 21, 7],
- 'tokens': ['EU',
-            'rejects',
-            'German',
-            'call',
-            'to',
-            'boycott',
-            'British',
-            'lamb',
-            '.']}
+```
+```json
+{"chunk_tags": [11, 21, 11, 12, 21, 22, 11, 12, 0],
+ "id": "0",
+ "ner_tags": [3, 0, 7, 0, 0, 0, 7, 0, 0],  # list of token classification labels
+ "pos_tags": [22, 42, 16, 21, 35, 37, 16, 21, 7],
+ "tokens": ["EU",
+            "rejects",
+            "German",
+            "call",
+            "to",
+            "boycott",
+            "British",
+            "lamb",
+            "."]}
 ```
 
 - Load pre-trained tokenizer: Load pre-trained tokenizer from Hugging Face transformers.
 
 ```python
-    from transformers import AutoTokenizer
+from transformers import AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 ```
@@ -105,6 +103,16 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 # 🖥 Run it locally
 
+## ⏩ SuperQuick `huggingface` run
+
+If you're really in a hurry and just want to see this example pipeline run
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run huggingface
+```
+
 ### 📄 Prerequisites
 
 ```shell
@@ -112,7 +120,7 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow huggingface -f
+zenml integration install tensorflow huggingface -y
 
 # pull example
 cd zenml/examples/huggingface
@@ -123,20 +131,24 @@ zenml init
 
 ### ▶️ Run the Code
 
-Now we're ready. Execute:
+Now we're ready. Execute one of the below lines to run the respective nlp tasks.
 
 ```shell
 # sequence-classification
 python run_pipeline.py --nlp_task=sequence-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=imdb --text_column=text --label_column=label
+```
 
+```shell
 # token-classification
 python run_pipeline.py --nlp_task=token-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=conll2003 --text_column=tokens --label_column=ner_tags
 ```
 
+By default, these will run on a very small subset of their datasets in order to quickly see the complete pipeline in 
+action. If you want to train on the full datasets, just pass `--full_set` as a flag. 
+
 ### 🧪 Test pipeline
 
 ```python
-
 from zenml.repository import Repository
 from transformers import pipeline
 
