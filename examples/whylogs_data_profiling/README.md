@@ -129,8 +129,8 @@ zenml integration install whylogs
 zenml integration install sklearn
 
 # pull example
-zenml example pull whylogs
-cd zenml_examples/whylogs
+zenml example pull whylogs_data_profiling
+cd zenml_examples/whylogs_data_profiling
 
 # Initialize ZenML repo
 zenml init

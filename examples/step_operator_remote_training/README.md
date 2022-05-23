@@ -23,7 +23,7 @@ In order to run this example, you need to install and initialize ZenML and the n
 pip install zenml
 
 # install ZenML integrations
-zenml integration install aws s3 sagemaker sklearn vertex gcp azure azureml
+zenml integration install sklearn
 
 # pull example
 zenml example pull step_operator_remote_training
@@ -35,7 +35,7 @@ zenml init
 
 Each type of step operator has their own pre-requisites. 
 
-Before running this example, you must set up the individual cloud providers in a certain way. The complete guide can be found in the [docs](https://docs.zenml.io/features/step-operators).
+Before running this example, you must set up the individual cloud providers in a certain way. The complete guide can be found in the [docs](https://docs.zenml.io/advanced-guide/cloud/step-operators).
 
 Please jump to the section of 
 the step operator you would like to run on:
@@ -51,16 +51,19 @@ executions.
 artifacts of your pipeline.
 * The **Sagemaker step operator** which will be utilized to run the training step on Sagemaker.
 
-To configure resources for the step operators, please follow [this guide](https://docs.zenml.io/features/step-operators) and then proceed with the following steps:
+To configure resources for the step operators, please follow [this guide](https://docs.zenml.io/advanced-guide/cloud/step-operators) and then proceed with the following steps:
 
 ```bash
-zenml artifact-store register s3-store \
-    --flavor=s3
+# install ZenML integrations
+zenml integration install aws s3 sagemaker
+
+zenml artifact-store register s3_store \
+    --flavor=s3 \
     --path=<S3_BUCKET_PATH>
 
 # create the sagemaker step operator
 zenml step-operator register sagemaker \
-    --flavor=sagemaker
+    --flavor=sagemaker \
     --role=<SAGEMAKER_ROLE> \
     --instance_type=<SAGEMAKER_INSTANCE_TYPE>
     --base_image=<CUSTOM_BASE_IMAGE>
@@ -68,14 +71,14 @@ zenml step-operator register sagemaker \
     --experiment_name=<SAGEMAKER_EXPERIMENT_NAME>
 
 # register the container registry
-zenml container-registry register ecr_registry --flavor=default --uri=<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+zenml container-registry register ecr_registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 
 # register and activate the sagemaker stack
 zenml stack register sagemaker_stack \
     -m default \
     -o default \
     -c ecr_registry \
-    -a s3-store \
+    -a s3_store \
     -s sagemaker \
     --set
 ```
@@ -97,9 +100,12 @@ executions.
 artifacts of your pipeline.
 * The **azureml step operator** which will be utilized to run the training step on Azure.
 
-To configure resources for the step operators, please follow [this guide](https://docs.zenml.io/features/step-operators) and then proceed with the following steps:
+To configure resources for the step operators, please follow [this guide](https://docs.zenml.io/advanced-guide/cloud/step-operators) and then proceed with the following steps:
 
 ```bash
+# install ZenML integrations
+zenml integration install azure azureml
+
 zenml artifact-store register azure_store \
     --flavor=azure \
     --path=<AZURE_BLOB_CONTAINER_PATH>
@@ -136,31 +142,33 @@ artifacts of your pipeline.
 * The **Vertex AI step operator** which will be utilized to run the training step 
 on GCP.
 
-To configure resources for the step operators, please follow [this guide](https://docs.zenml.io/features/step-operators) and then proceed with the following steps:
+To configure resources for the step operators, please follow [this guide](https://docs.zenml.io/advanced-guide/cloud/step-operators) and then proceed with the following steps:
 
 ```bash
-zenml artifact-store register gcp-store \
-    --flavor=gcp
-    --path=<GCS_BUCKET_PATH>
+# install ZenML integrations
+zenml integration install gcp vertex
+
+zenml artifact-store register gcp_store \
+    --flavor=gcp \
+    --path=<GCP_BUCKET_PATH>
 
 # create the vertex step operator
 zenml step-operator register vertex \
     --flavor=vertex \
-    --project=zenml-core \
-    --region=eu-west1 \
-    --machine_type=n1-standard-4 \
+    --project=<PROJECT_NAME> \
+    --region=<REGION> \
+    --machine_type=<MACHINE_TYPE> \
     --base_image=<CUSTOM_BASE_IMAGE>
-    --accelerator_type=...
 
 # register the container registry
-zenml container-registry register gcr_registry --flavor=default --uri=gcr.io/<PROJECT-ID>/<IMAGE>
+zenml container-registry register gcr_registry --flavor=gcp --uri=gcr.io/<PROJECT-ID>
 
 # register and activate the vertex ai stack
 zenml stack register vertex_training_stack \
     -m default \
     -o default \
     -c gcr_registry \
-    -a gcs-store \
+    -a gcp_store \
     -s vertex \
     --set
 ```
@@ -169,7 +177,7 @@ zenml stack register vertex_training_stack \
 Now we're ready. Execute:
 
 ```shell
-python run.py --step_operator <STEP_OPERATOR_TYPE>  # can be sagemaker, vertex, azureml
+python run.py
 ```
 
 ### 🧽 Clean up
@@ -181,7 +189,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the step_operator integrations can be found [here](TODO: Link to docs).
+Our docs regarding the step operator integrations can be found [here](https://docs.zenml.io/advanced-guide/cloud/step-operators).
 
-If you want to learn more about step_operators in general or about how to build your own step_operator in zenml
-check out our [docs](TODO: Link to docs)
+If you want to learn more about step operators in general or about how to build your own step operator in zenml
+check out our [docs](https://docs.zenml.io/extending-zenml/step-operator)
