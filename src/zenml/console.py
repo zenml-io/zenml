@@ -14,15 +14,18 @@
 
 
 from rich.console import Console
+from rich.style import Style
 from rich.theme import Theme
 
-zenml_custom_theme = Theme(
-    {
-        "info": "dim cyan",
-        "warning": "magenta",
-        "danger": "bold red",
-        "title": "bold cyan underline",
-        "error": "red",
-    }
-)
+zenml_style_defaults = {
+    "info": Style(color="cyan", dim=True),
+    "warning": Style(color="yellow"),
+    "danger": Style(color="red", bold=True),
+    "title": Style(color="cyan", bold=True, underline=True),
+    "error": Style(color="red"),
+}
+
+zenml_custom_theme = Theme(zenml_style_defaults)
+
 console = Console(theme=zenml_custom_theme, markup=True)
+error_console = Console(stderr=True, theme=zenml_custom_theme)

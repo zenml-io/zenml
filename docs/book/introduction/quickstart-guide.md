@@ -1,14 +1,15 @@
 ---
-description: A simple example to get started with ZenML
+description: A simple example to get started with ZenML.
 ---
 
 # Quickstart
 
-Our goal here is to help you to get the first practical experience with ZenML and give you a brief overview on 
-some basic functionalities of ZenML. We'll create a training pipeline for the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset.
+Our goal here is to help you to get the first practical experience with ZenML and give you a brief overview on
+some basic functionalities of ZenML. We'll create a training pipeline for the [MNIST](http://yann.lecun.com/exdb/mnist/)
+dataset.
 
-If you want to run this notebook in an interactive environment, feel free to run it in a 
-[Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) 
+If you want to run this example in an interactive environment, feel free to run it in a
+[Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb)
 or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) directly.
 
 ## Install and initialize
@@ -25,25 +26,28 @@ Once the installation is completed, you can go ahead and create your first ZenML
 zenml init
 ```
 
-We are building a [sklearn model](https://scikit-learn.org/stable/) in this example, so we need to install that integration:
+We are building a [sklearn model](https://scikit-learn.org/stable/) in this example, so we need to install that
+integration:
 
 ```shell
-zenml integration install sklearn -f
+zenml integration install sklearn -y
 ```
 
 {% hint style="success" %}
-We are just using sklearn for the purposes of illustration; ZenML works with any ML library such as PyTorch, Tensorflow, 
-HuggingFace, PyTorch Lightning, etc. See our [full list of integrations](../features/integrations.md) for a complete overview.
+We are just using sklearn for the purposes of illustration; ZenML works with any ML library such as PyTorch, Tensorflow,
+HuggingFace, PyTorch Lightning, etc. See our [full list of integrations](../advanced-guide/integrations/integrations.md) for a
+complete overview.
 {% endhint %}
 
-
-Now, the setup is completed. For the next steps, just make sure that you are executing the code within your 
+Now, the setup is completed. For the next steps, just make sure that you are executing the code within your
 ZenML repository.
 
 ## Run your first pipeline
 
-In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is 
-decorated with `@step`. The pipeline in turn is decorated with the `@pipeline` decorator.
+In the code that follows, you can see that we are defining the various steps of our pipeline. Each step is
+decorated with `@step`. The pipeline in turn is decorated with the `@pipeline`
+decorator. (If you're not very familiar with Python decorators, check out [this
+useful introduction](http://devopspy.com/python/python-decorators-dummies/).)
 
 {% hint style="success" %}
 Note that type hints are used for inputs and outputs of each step. The routing of step outputs
@@ -75,8 +79,8 @@ def importer() -> Output(
 
 @step
 def trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
 ) -> ClassifierMixin:
     """Train a simple sklearn classifier for the digits dataset."""
     model = get_digits_model()
@@ -86,9 +90,9 @@ def trainer(
 
 @step
 def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: ClassifierMixin,
+        X_test: np.ndarray,
+        y_test: np.ndarray,
+        model: ClassifierMixin,
 ) -> float:
     """Calculate the accuracy on the test set"""
     test_acc = model.score(X_test, y_test)
@@ -98,9 +102,9 @@ def evaluator(
 
 @pipeline
 def mnist_pipeline(
-    importer,
-    trainer,
-    evaluator,
+        importer,
+        trainer,
+        evaluator,
 ):
     """Links all the steps together in a pipeline"""
     X_train, X_test, y_train, y_test = importer()
@@ -120,14 +124,14 @@ pipeline.run()
 This code block should work 'as is'. Copy paste it into your IDE and run it!
 {% endhint %}
 
-If you had a hiccup or you have some suggestions/questions regarding our framework, you can always check 
-[our Github](https://github.com/zenml-io/zenml) or even better join us on 
+If you had a hiccup or you have some suggestions/questions regarding our framework, you can always check
+[our Github](https://github.com/zenml-io/zenml) or even better join us on
 [our Slack channel](https://zenml.io/slack-invite).
 
 ## Wait, how is this useful?
 
-The above code looks like it is yet another standard pipeline framework that added to your work, but there is a lot 
-going on under the hood that is mighty helpful:
+The code above looks like it is yet another standard pipeline framework, but there is a lot more going on under the hood
+that is super helpful:
 
 - All data is versioned and tracked as it flows through the steps.
 - All parameters and return values are tracked by a central metadata store that you can later query.
@@ -135,24 +139,23 @@ going on under the hood that is mighty helpful:
 
 With just a little more work, one can:
 
-- Deploy this pipeline [in production on the cloud](../features/cloud-pipelines) with a production ready orchestrator like Kubeflow.
-- Useful metadata like [statistics, schemas and drifts](../guides/common-usecases/visualizers.md) can be inferred from the model and data flowing through these steps.
-- Models trained this way can be set up to be easily deployed, run batch inference on, or set up in continuous 
-training loops with automatic deployments.
+- Run this pipeline [in production on the cloud](../guides/Use%20Cases/guide-aws-gcp-azure.md) with a production
+  ready orchestrator like Kubeflow.
+- Access important metadata like [statistics, schemas and drifts](../guides/basics/visualizers.md) which is inferred from
+the model and data which flows through these steps.
+- Easily [deploy models](../advanced-guide/cloud/continuous-training-and-deployment.md) that are trained within a ZenML 
+pipeline and even set up continuous training loops including automatic deployments.
 
-Best of all: We let you and your infra/ops team decide what the underlying tools are to achieve all this.
+Best of all: We let you and your infrastructure / ops team decide what the underlying tools are to achieve all this.
 
 ## Next Steps?
 
-Normally at this point in a quickstart, you'd like to learn more about what the product has to offer (if the docs 
-have succeeded in making you feel so). There are essentially two choices you can make:
+Normally at this point in a quickstart, you'd like to learn more about what the product has to offer. There are a few 
+places you can go from here.
 
-- If your work involves a use-case that is fairly 'standard' training/inference/deployment, start with 
-the [Class-based API](../guides/class-based-api/) guide.
-- If you have a more complex workflow that requires more control over your pipelines, start with 
-the [Functional API](../guides/functional-api/) guide.
+* If you are someone that loves to learn by doing. Check out our [ZenBytes](https://github.com/zenml-io/zenbytes): small
+  tutorials in a notebook environment.
+* If you are more of a bookworm, feel free to jump straight into our 
+[Developer Guide](../developer-guide/installation.md) to learn the concepts step-by-step.
 
-If you're not sure, pick any one of the above. They are the easiest way to learn how ZenML enables MLOps.
-
-However, for those of you who don't want to read guides, then feel free to start perusing the docs with 
-the [Core Concepts](core-concepts.md) before the guides. See you there!
+If you're not sure, pick any one of the above or use the table of contents on the left to find the right topic for you.

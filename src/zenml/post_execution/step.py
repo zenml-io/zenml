@@ -12,10 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from zenml.enums import ExecutionStatus
 from zenml.post_execution.artifact import ArtifactView
+from zenml.zen_stores.models.pipeline_models import StepWrapper
 
 if TYPE_CHECKING:
     from zenml.metadata_stores import BaseMetadataStore
@@ -58,6 +59,10 @@ class StepView:
 
         self._inputs: Dict[str, ArtifactView] = {}
         self._outputs: Dict[str, ArtifactView] = {}
+
+        # This might be set from the parent pipeline run view in case the run
+        # is also tracked in the ZenStore
+        self._step_wrapper: Optional[StepWrapper] = None
 
     @property
     def id(self) -> int:
@@ -119,6 +124,13 @@ class StepView:
         return self._name
 
     @property
+    def docstring(self) -> Optional[str]:
+        """Docstring of the step function or class."""
+        if self._step_wrapper:
+            return self._step_wrapper.docstring
+        return None
+
+    @property
     def parameters(self) -> Dict[str, Any]:
         """The parameters used to run this step."""
         return self._parameters
@@ -132,6 +144,11 @@ class StepView:
     def is_cached(self) -> bool:
         """Returns whether the step is cached or not."""
         return self.status == ExecutionStatus.CACHED
+
+    @property
+    def is_completed(self) -> bool:
+        """Returns whether the step is cached or not."""
+        return self.status == ExecutionStatus.COMPLETED
 
     @property
     def inputs(self) -> Dict[str, ArtifactView]:

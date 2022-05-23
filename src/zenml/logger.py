@@ -16,8 +16,9 @@ import logging
 import os
 import re
 import sys
+from contextlib import contextmanager
 from logging.handlers import TimedRotatingFileHandler
-from typing import Any, Dict
+from typing import Any, Dict, Iterator
 
 from absl import logging as absl_logging
 from rich.traceback import install as rich_tb_install
@@ -26,7 +27,9 @@ from zenml.constants import (
     ABSL_LOGGING_VERBOSITY,
     APP_NAME,
     ENABLE_RICH_TRACEBACK,
+    ENV_ZENML_SUPPRESS_LOGS,
     ZENML_LOGGING_VERBOSITY,
+    handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels
 
@@ -37,8 +40,8 @@ class CustomFormatter(logging.Formatter):
     grey: str = "\x1b[38;21m"
     pink: str = "\x1b[35m"
     green: str = "\x1b[32m"
-    yellow: str = "\x1b[33;21m"
-    red: str = "\x1b[31;21m"
+    yellow: str = "\x1b[33m"
+    red: str = "\x1b[31m"
     bold_red: str = "\x1b[31;1m"
     purple: str = "\x1b[1;35m"
     reset: str = "\x1b[0m"
@@ -68,7 +71,7 @@ class CustomFormatter(logging.Formatter):
             A string formatted according to specifications.
         """
         log_fmt = (
-            self.COLORS[LoggingLevels[ZENML_LOGGING_VERBOSITY]]
+            self.COLORS[LoggingLevels(record.levelno)]
             + self.format_template
             + self.reset
         )
@@ -78,12 +81,10 @@ class CustomFormatter(logging.Formatter):
         for quoted in quoted_groups:
             formatted_message = formatted_message.replace(
                 "`" + quoted + "`",
-                "`"
-                + self.reset
+                self.reset
                 + self.yellow
                 + quoted
-                + "`"
-                + self.COLORS.get(LoggingLevels[ZENML_LOGGING_VERBOSITY]),
+                + self.COLORS.get(LoggingLevels(record.levelno)),
             )
         return formatted_message
 
@@ -165,17 +166,57 @@ def init_logging() -> None:
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     set_root_verbosity()
 
-    # Mute apache_beam
-    muted_logger_names = [
-        "apache_beam",
-        "rdbms_metadata_access_object",
-        "apache_beam.io.gcp.bigquery",
-        "backoff",
-        "segment",
-    ]
-    for logger_name in muted_logger_names:
-        logging.getLogger(logger_name).setLevel(logging.WARNING)
-        logging.getLogger(logger_name).disabled = True
+    # Enable logs if environment variable SUPRESS_ZENML_LOGS is not set to True
+    supress_zenml_logs: bool = handle_bool_env_var(
+        ENV_ZENML_SUPPRESS_LOGS, True
+    )
+    if supress_zenml_logs:
+        # supress logger info messages
+        supressed_logger_names = [
+            "urllib3",
+            "azure.core.pipeline.policies.http_logging_policy",
+            "grpc",
+            "requests",
+            "kfp",
+            "tensorflow",
+        ]
+        for logger_name in supressed_logger_names:
+            logging.getLogger(logger_name).setLevel(logging.WARNING)
+
+        # disable logger messages
+        disabled_logger_names = [
+            "apache_beam",
+            "rdbms_metadata_access_object",
+            "apache_beam.io.gcp.bigquery",
+            "backoff",
+            "segment",
+        ]
+        for logger_name in disabled_logger_names:
+            logging.getLogger(logger_name).setLevel(logging.WARNING)
+            logging.getLogger(logger_name).disabled = True
 
     # set absl logging
     absl_logging.set_verbosity(ABSL_LOGGING_VERBOSITY)
+
+
+@contextmanager
+def disable_logging(log_level: int) -> Iterator[None]:
+    """Contextmanager that temporarily disables logs below a threshold level.
+
+    Use it like this:
+    ```python
+    with disable_logging(log_level=logging.INFO):
+        # do something that shouldn't show DEBUG/INFO logs
+        ...
+    ```
+
+    Args:
+        log_level: All logs below this level will be disabled for the duration
+            of this contextmanager.
+    """
+    old_level = logging.root.manager.disable
+    try:
+        logging.disable(log_level)
+        yield
+    finally:
+        logging.disable(old_level)

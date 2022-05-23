@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Metadata Store
-
 The configuration of each pipeline, step, backend, and produced artifacts are
 all tracked within the metadata store. The metadata store is an SQL database,
 and can be `sqlite` or `mysql`.

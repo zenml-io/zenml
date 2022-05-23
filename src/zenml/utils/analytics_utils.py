@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, Optional, Union
 
 from zenml import __version__
 from zenml.constants import IS_DEBUG_ENV, SEGMENT_KEY_DEV, SEGMENT_KEY_PROD
-from zenml.environment import Environment
+from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -38,21 +38,47 @@ class AnalyticsEvent(str, Enum):
 
     # Components
     REGISTERED_STACK_COMPONENT = "Stack component registered"
+    UPDATED_STACK_COMPONENT = "Stack component updated"
 
     # Stack
     REGISTERED_STACK = "Stack registered"
+    REGISTERED_DEFAULT_STACK = "Default stack registered"
     SET_STACK = "Stack set"
+    UPDATED_STACK = "Stack updated"
+    IMPORT_STACK = "Stack imported"
+    EXPORT_STACK = "Stack exported"
 
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
     OPT_OUT_ANALYTICS = "Analytics opt-out"
 
     # Examples
+    RUN_ZENML_GO = "ZenML go"
     RUN_EXAMPLE = "Example run"
     PULL_EXAMPLE = "Example pull"
 
     # Integrations
     INSTALL_INTEGRATION = "Integration installed"
+
+    # Users
+    CREATED_USER = "User created"
+    CREATED_DEFAULT_USER = "Default user created"
+    DELETED_USER = "User deleted"
+
+    # Teams
+    CREATED_TEAM = "Team created"
+    DELETED_TEAM = "Team deleted"
+
+    # Projects
+    CREATED_PROJECT = "Project created"
+    DELETED_PROJECT = "Project deleted"
+
+    # Role
+    CREATED_ROLE = "Role created"
+    DELETED_ROLE = "Role deleted"
+
+    # Flavor
+    CREATED_FLAVOR = "Flavor created"
 
     # Test event
     EVENT_TEST = "Test event"
@@ -70,23 +96,55 @@ def get_segment_key() -> str:
         return SEGMENT_KEY_PROD
 
 
-def get_environment() -> str:
-    """Returns a string representing the execution environment of the pipeline.
-    Currently, one of `docker`, `paperspace`, 'colab', or `native`"""
-    if Environment.in_docker():
-        return "docker"
-    elif Environment.in_google_colab():
-        return "colab"
-    elif Environment.in_paperspace_gradient():
-        return "paperspace"
-    elif Environment.in_notebook():
-        return "notebook"
-    else:
-        return "native"
+def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
+    """Attach metadata to user directly
+
+    Args:
+        metadata: Dict of metadata to attach to the user.
+    """
+    # TODO [ENG-857]: The identify_user function shares a lot of setup with
+    #  track_event() - this duplicated code could be given its own function
+    try:
+        from zenml.config.global_config import GlobalConfiguration
+
+        gc = GlobalConfiguration()
+
+        # That means user opted out of analytics
+        if not gc.analytics_opt_in:
+            return False
+
+        import analytics
+
+        if analytics.write_key is None:
+            analytics.write_key = get_segment_key()
+
+        assert (
+            analytics.write_key is not None
+        ), "Analytics key not set but trying to make telemetry call."
+
+        # Set this to 1 to avoid backoff loop
+        analytics.max_retries = 1
+
+        logger.debug(
+            f"Attempting to attach metadata to: User: {gc.user_id}, "
+            f"Metadata: {user_metadata}"
+        )
+
+        if user_metadata is None:
+            return False
+
+        analytics.identify(str(gc.user_id), traits=user_metadata)
+        logger.debug(f"User data sent: User: {gc.user_id},{user_metadata}")
+        return True
+    except Exception as e:
+        # We should never fail main thread
+        logger.error(f"User data update failed due to: {e}")
+        return False
 
 
 def track_event(
-    event: Union[str, AnalyticsEvent], metadata: Optional[Dict[str, Any]] = None
+    event: Union[str, AnalyticsEvent],
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> bool:
     """
     Track segment event if user opted-in.
@@ -177,7 +235,8 @@ def parametrized(
 
 @parametrized
 def track(
-    func: Callable[..., Any], event: Optional[Union[str, AnalyticsEvent]] = None
+    func: Callable[..., Any],
+    event: Optional[Union[str, AnalyticsEvent]] = None,
 ) -> Callable[..., Any]:
     """Decorator to track event.
 

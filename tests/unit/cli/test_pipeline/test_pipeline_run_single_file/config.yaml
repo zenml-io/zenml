@@ -1,0 +1,10 @@
+name: some_pipe
+steps:
+  step_1:
+    materializers:
+      output_1:
+        name: SomeMaterializer
+    parameters:
+      some_option: 3
+    source:
+      name: some_step

@@ -1,0 +1,22 @@
+# This is a basic workflow to help you get started with Actions
+name: Release Package & Docker Image
+
+# Controls when the action will run. Triggers the workflow on push of a tag
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  lint-code:
+    uses: ./.github/workflows/lint.yml
+
+  publish-python-package:
+    needs: lint-code
+    uses: ./.github/workflows/publish_to_pypi.yml
+    secrets: inherit
+
+  publish-docker-image:
+    needs: publish-python-package
+    uses: ./.github/workflows/publish_docker_image.yml
+    secrets: inherit

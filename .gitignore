@@ -154,14 +154,7 @@ __pycache__
 # scratchpad
 scratchpad/
 
-# VS Code gunk
-.vscode/
-
-# pyenv local version file
-.python-version
-
 # zen
-*.yaml
 *.csv
 temp/*
 local_test/
@@ -174,9 +167,16 @@ zenml_examples/
 # GitHub Folder YAML files not to be ignored
 !.github/ISSUE_TEMPLATE/**
 
-# Prettier
-.prettierignore
+# VS Code gunk
+.vscode/
 
-# mutmut / hammet incidental files
-.hammett-db
-.mutmut-cache
+# pyenv local version file
+.python-version
+
+# wandb
+**wandb/
+!src/zenml/integrations/wandb
+
+
+# some examples have yamls; don't ignore them
+!examples/**/*.yaml

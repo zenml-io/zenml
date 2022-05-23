@@ -9,20 +9,30 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import networking_utils, yaml_utils
 
-KFP_VERSION = "1.7.1"
+KFP_VERSION = "1.8.1"
 # Name of the K3S image to use for the local K3D cluster.
-# The version (e.g. v1.21.9) refers to a specific kubernetes release and is
+# The version (e.g. v1.23.5) refers to a specific kubernetes release and is
 # fixed as KFP doesn't support the newest releases immediately.
-K3S_IMAGE_NAME = "rancher/k3s:v1.21.9-k3s1"
+K3S_IMAGE_NAME = "rancher/k3s:v1.23.5-k3s1"
 
 logger = get_logger(__name__)
 
 
-def check_prerequisites() -> bool:
+def check_prerequisites(
+    skip_k3d: bool = False, skip_kubectl: bool = False
+) -> bool:
     """Checks whether all prerequisites for a local kubeflow pipelines
-    deployment are installed."""
-    k3d_installed = shutil.which("k3d") is not None
-    kubectl_installed = shutil.which("kubectl") is not None
+    deployment are installed.
+
+    Args:
+        skip_k3d: Whether to skip the check for the k3d command.
+        skip_kubectl: Whether to skip the check for the kubectl command.
+
+    Returns:
+        Whether all prerequisites are installed.
+    """
+    k3d_installed = skip_k3d or shutil.which("k3d") is not None
+    kubectl_installed = skip_kubectl or shutil.which("kubectl") is not None
     logger.debug(
         "Local kubeflow deployment prerequisites: K3D - %s, Kubectl - %s",
         k3d_installed,
@@ -142,7 +152,8 @@ def kubeflow_pipelines_ready(kubernetes_context: str) -> bool:
                 "condition=ready",
                 "--timeout=0s",
                 "pods",
-                "--all",
+                "-l",
+                "application-crd-id=kubeflow-pipelines",
             ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -198,7 +209,7 @@ def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
             kubernetes_context,
             "apply",
             "-k",
-            f"github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}&timeout=1m",
+            f"github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}&timeout=5m",
         ]
     )
     subprocess.check_call(
@@ -220,7 +231,7 @@ def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
             kubernetes_context,
             "apply",
             "-k",
-            f"github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}&timeout=1m",
+            f"github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}&timeout=5m",
         ]
     )
 
@@ -352,7 +363,10 @@ def add_hostpath_to_kubeflow_pipelines(
 
 
 def start_kfp_ui_daemon(
-    pid_file_path: str, log_file_path: str, port: int
+    pid_file_path: str,
+    log_file_path: str,
+    port: int,
+    kubernetes_context: str,
 ) -> None:
     """Starts a daemon process that forwards ports so the Kubeflow Pipelines
     UI is accessible in the browser.
@@ -362,9 +376,13 @@ def start_kfp_ui_daemon(
             be written.
         log_file_path: Path to a file where the daemon logs should be written.
         port: Port on which the UI should be accessible.
+        kubernetes_context: The kubernetes context for the cluster where
+            Kubeflow Pipelines is running.
     """
     command = [
         "kubectl",
+        "--context",
+        kubernetes_context,
         "--namespace",
         "kubeflow",
         "port-forward",
@@ -418,7 +436,7 @@ def stop_kfp_ui_daemon(pid_file_path: str) -> None:
     Args:
         pid_file_path: Path to the file with the daemons process ID.
     """
-    if fileio.file_exists(pid_file_path):
+    if fileio.exists(pid_file_path):
         if sys.platform == "win32":
             # Daemon functionality is not supported on Windows, so the PID
             # file won't exist. This if clause exists just for mypy to not
@@ -429,3 +447,4 @@ def stop_kfp_ui_daemon(pid_file_path: str) -> None:
 
             daemon.stop_daemon(pid_file_path)
             fileio.remove(pid_file_path)
+            logger.info("Stopped Kubeflow Pipelines UI daemon.")

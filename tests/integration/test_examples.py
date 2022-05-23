@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 import logging
 import os
+import platform
 import shutil
-import sys
 from pathlib import Path
-from typing import Callable, NamedTuple, TypeVar
+from typing import Callable, NamedTuple, Optional
 
 import pytest
 
@@ -24,11 +24,10 @@ from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.repository import Repository
 
 from .example_validations import (
-    caching_example_validation,
     drift_detection_example_validation,
     generate_basic_validation_function,
-    mlflow_deployment_example_validation,
     mlflow_tracking_example_validation,
+    mlflow_tracking_setup,
     whylogs_example_validation,
 )
 
@@ -50,19 +49,14 @@ def copy_example_files(example_dir: str, dst_dir: str) -> None:
 def example_runner(examples_dir):
     """Get the executable that runs examples.
 
-    By default returns the path to an executable .sh file in the
+    By default, returns the path to an executable .sh file in the
     repository, but can also prefix that with the path to a shell
     / interpreter when the file is not executable on its own. The
-    latter option is needed for windows compatibility.
+    latter option is needed for Windows compatibility.
     """
     return (
         [os.environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in os.environ else []
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
-
-
-ExampleValidationFunction = TypeVar(
-    "ExampleValidationFunction", bound=Callable[[Repository], None]
-)
 
 
 class ExampleIntegrationTestConfiguration(NamedTuple):
@@ -72,118 +66,76 @@ class ExampleIntegrationTestConfiguration(NamedTuple):
         name: The name (=directory name) of the example
         validation_function: A function that validates that this example ran
             correctly.
+        setup_function: Optional function that performs any additional setup
+            (e.g. modifying the stack) before the example is run.
+        skip_on_windows: If `True`, this example will not run on windows.
     """
 
     name: str
-    validation_function: ExampleValidationFunction
+    validation_function: Callable[[Repository], None]
+    setup_function: Optional[Callable[[Repository], None]] = None
+    skip_on_windows: bool = False
 
 
 examples = [
     ExampleIntegrationTestConfiguration(
-        name="quickstart",
+        name="airflow_orchestration",
         validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline", step_count=3
+            pipeline_name="airflow_example_pipeline", step_count=3
         ),
     ),
     ExampleIntegrationTestConfiguration(
-        name="not_so_quickstart",
+        name="evidently_drift_detection",
+        validation_function=drift_detection_example_validation,
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="facets_visualize_statistics",
         validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline", step_count=4, run_count=3
+            pipeline_name="boston_housing_pipeline", step_count=3
         ),
     ),
     ExampleIntegrationTestConfiguration(
-        name="caching", validation_function=caching_example_validation
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="custom_materializer",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="pipe", step_count=2
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="fetch_historical_runs",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline", step_count=3
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="kubeflow",
+        name="kubeflow_pipelines_orchestration",
         validation_function=generate_basic_validation_function(
             pipeline_name="mnist_pipeline", step_count=4
         ),
     ),
-    ExampleIntegrationTestConfiguration(
-        name="drift_detection",
-        validation_function=drift_detection_example_validation,
-    ),
+    # TODO [ENG-858]: Create Integration tests for lightgbm
+    # TODO [ENG-859]: Create Integration tests for MLFlow Deployment
     ExampleIntegrationTestConfiguration(
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
+        setup_function=mlflow_tracking_setup,
+        skip_on_windows=True,
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="neural_prophet",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="neural_prophet_pipeline", step_count=3
+        ),
     ),
     # TODO [ENG-708]: Enable running the whylogs example on kubeflow
     ExampleIntegrationTestConfiguration(
-        name="whylogs", validation_function=whylogs_example_validation
+        name="whylogs_data_profiling",
+        validation_function=whylogs_example_validation,
     ),
     ExampleIntegrationTestConfiguration(
-        name="statistics",
+        name="xgboost",
         validation_function=generate_basic_validation_function(
-            pipeline_name="boston_housing_pipeline",
-            step_count=3,
+            pipeline_name="xgboost_pipeline", step_count=3
         ),
+        skip_on_windows=True,
     ),
+    # TODO [ENG-860]: Investigate why xgboost test doesn't work on windows
+    # TODO [ENG-861]: Investigate why huggingface test throws pip error on
+    #  dill<0.3.2,>=0.3.1.1, but you have dill 0.3.4
     ExampleIntegrationTestConfiguration(
-        name="lineage",
+        name="pytorch",
         validation_function=generate_basic_validation_function(
-            pipeline_name="boston_housing_pipeline",
-            step_count=4,
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="dag_visualizer",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="boston_housing_pipeline",
-            step_count=3,
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="standard_interfaces",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="TrainingPipeline",
-            step_count=6,
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="airflow_local",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline",
-            step_count=4,
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="class_based_api",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="TrainingPipeline",
-            step_count=6,
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="functional_api",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline",
-            step_count=4,
+            pipeline_name="fashion_mnist_pipeline", step_count=3
         ),
     ),
 ]
-
-# flake8: noqa: C901
-if sys.platform != "win32":
-    # daemon functionality is currently not supported on Windows."
-    examples.append(
-        ExampleIntegrationTestConfiguration(
-            name="mlflow_deployment",
-            validation_function=mlflow_deployment_example_validation,
-        )
-    )
 
 
 @pytest.mark.parametrize(
@@ -210,6 +162,12 @@ def test_run_example(
         virtualenv: Either a separate cloned environment for each test, or an
                     empty string.
     """
+    if example_configuration.skip_on_windows and platform.system() == "Windows":
+        logging.info(
+            f"Skipping example {example_configuration.name} on windows."
+        )
+        return
+
     # run the fixture given by repo_fixture_name
     repo = request.getfixturevalue(repo_fixture_name)
 
@@ -222,6 +180,10 @@ def test_run_example(
     copy_example_files(
         str(examples_directory / example_configuration.name), str(tmp_path)
     )
+
+    # allow any additional setup that the example might need
+    if example_configuration.setup_function:
+        example_configuration.setup_function(repo)
 
     # Run the example
     example = LocalExample(name=example_configuration.name, path=tmp_path)

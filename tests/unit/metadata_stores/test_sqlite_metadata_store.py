@@ -14,7 +14,7 @@
 import pydantic
 import pytest
 
-from zenml.enums import MetadataStoreFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.metadata_stores import SQLiteMetadataStore
 
 
@@ -22,10 +22,8 @@ def test_sqlite_metadata_store_attributes():
     """Tests that the basic attributes of the sqlite metadata store are set
     correctly."""
     metadata_store = SQLiteMetadataStore(name="", uri="")
-    assert metadata_store.supports_local_execution is True
-    assert metadata_store.supports_remote_execution is False
-    assert metadata_store.type == StackComponentType.METADATA_STORE
-    assert metadata_store.flavor == MetadataStoreFlavor.SQLITE
+    assert metadata_store.TYPE == StackComponentType.METADATA_STORE
+    assert metadata_store.FLAVOR == "sqlite"
 
 
 def test_sqlite_metadata_store_only_supports_local_uris():

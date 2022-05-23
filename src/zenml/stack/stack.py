@@ -28,8 +28,8 @@ from typing import (
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
-from zenml.exceptions import ProvisioningError
-from zenml.io import fileio
+from zenml.exceptions import ProvisioningError, StackValidationError
+from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
@@ -40,9 +40,15 @@ from zenml.utils import string_utils
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
+    from zenml.experiment_trackers.base_experiment_tracker import (
+        BaseExperimentTracker,
+    )
+    from zenml.feature_stores import BaseFeatureStore
     from zenml.metadata_stores import BaseMetadataStore
+    from zenml.model_deployers import BaseModelDeployer
     from zenml.orchestrators import BaseOrchestrator
     from zenml.pipelines import BasePipeline
+    from zenml.secrets_managers import BaseSecretsManager
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
 
@@ -68,7 +74,11 @@ class Stack:
         metadata_store: "BaseMetadataStore",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
+        secrets_manager: Optional["BaseSecretsManager"] = None,
         step_operator: Optional["BaseStepOperator"] = None,
+        feature_store: Optional["BaseFeatureStore"] = None,
+        model_deployer: Optional["BaseModelDeployer"] = None,
+        experiment_tracker: Optional["BaseExperimentTracker"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -81,8 +91,10 @@ class Stack:
         self._artifact_store = artifact_store
         self._container_registry = container_registry
         self._step_operator = step_operator
-
-        self.validate()
+        self._secrets_manager = secrets_manager
+        self._feature_store = feature_store
+        self._model_deployer = model_deployer
+        self._experiment_tracker = experiment_tracker
 
     @classmethod
     def from_components(
@@ -103,8 +115,12 @@ class Stack:
         """
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
+        from zenml.experiment_trackers import BaseExperimentTracker
+        from zenml.feature_stores import BaseFeatureStore
         from zenml.metadata_stores import BaseMetadataStore
+        from zenml.model_deployers import BaseModelDeployer
         from zenml.orchestrators import BaseOrchestrator
+        from zenml.secrets_managers import BaseSecretsManager
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
@@ -137,11 +153,37 @@ class Stack:
         ):
             _raise_type_error(container_registry, BaseContainerRegistry)
 
+        secrets_manager = components.get(StackComponentType.SECRETS_MANAGER)
+        if secrets_manager is not None and not isinstance(
+            secrets_manager, BaseSecretsManager
+        ):
+            _raise_type_error(secrets_manager, BaseSecretsManager)
+
         step_operator = components.get(StackComponentType.STEP_OPERATOR)
         if step_operator is not None and not isinstance(
             step_operator, BaseStepOperator
         ):
             _raise_type_error(step_operator, BaseStepOperator)
+
+        feature_store = components.get(StackComponentType.FEATURE_STORE)
+        if feature_store is not None and not isinstance(
+            feature_store, BaseFeatureStore
+        ):
+            _raise_type_error(feature_store, BaseFeatureStore)
+
+        model_deployer = components.get(StackComponentType.MODEL_DEPLOYER)
+        if model_deployer is not None and not isinstance(
+            model_deployer, BaseModelDeployer
+        ):
+            _raise_type_error(model_deployer, BaseModelDeployer)
+
+        experiment_tracker = components.get(
+            StackComponentType.EXPERIMENT_TRACKER
+        )
+        if experiment_tracker is not None and not isinstance(
+            experiment_tracker, BaseExperimentTracker
+        ):
+            _raise_type_error(experiment_tracker, BaseExperimentTracker)
 
         return Stack(
             name=name,
@@ -149,7 +191,11 @@ class Stack:
             metadata_store=metadata_store,
             artifact_store=artifact_store,
             container_registry=container_registry,
+            secrets_manager=secrets_manager,
             step_operator=step_operator,
+            feature_store=feature_store,
+            model_deployer=model_deployer,
+            experiment_tracker=experiment_tracker,
         )
 
     @classmethod
@@ -167,7 +213,7 @@ class Stack:
             "local_stores",
             str(artifact_store_uuid),
         )
-        fileio.create_dir_recursive_if_not_exists(artifact_store_path)
+        utils.create_dir_recursive_if_not_exists(artifact_store_path)
         artifact_store = LocalArtifactStore(
             name="default",
             uuid=artifact_store_uuid,
@@ -190,13 +236,17 @@ class Stack:
     def components(self) -> Dict[StackComponentType, "StackComponent"]:
         """All components of the stack."""
         return {
-            component.type: component
+            component.TYPE: component
             for component in [
                 self.orchestrator,
                 self.metadata_store,
                 self.artifact_store,
                 self.container_registry,
+                self.secrets_manager,
                 self.step_operator,
+                self.feature_store,
+                self.model_deployer,
+                self.experiment_tracker,
             ]
             if component is not None
         }
@@ -227,9 +277,29 @@ class Stack:
         return self._container_registry
 
     @property
+    def secrets_manager(self) -> Optional["BaseSecretsManager"]:
+        """The secrets manager of the stack."""
+        return self._secrets_manager
+
+    @property
     def step_operator(self) -> Optional["BaseStepOperator"]:
         """The step operator of the stack."""
         return self._step_operator
+
+    @property
+    def feature_store(self) -> Optional["BaseFeatureStore"]:
+        """The feature store of the stack."""
+        return self._feature_store
+
+    @property
+    def model_deployer(self) -> Optional["BaseModelDeployer"]:
+        """The model deployer of the stack."""
+        return self._model_deployer
+
+    @property
+    def experiment_tracker(self) -> Optional["BaseExperimentTracker"]:
+        """The experiment tracker of the stack."""
+        return self._experiment_tracker
 
     @property
     def runtime_options(self) -> Dict[str, Any]:
@@ -280,7 +350,7 @@ class Stack:
         requirements = [
             component.requirements
             for component in self.components.values()
-            if component.type not in exclude_components
+            if component.TYPE not in exclude_components
         ]
         return set.union(*requirements) if requirements else set()
 
@@ -302,6 +372,32 @@ class Stack:
             if component.validator:
                 component.validator.validate(stack=self)
 
+    def _register_pipeline_run(
+        self,
+        pipeline: "BasePipeline",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> None:
+        """Registers a pipeline run in the ZenStore."""
+        from zenml.repository import Repository
+        from zenml.zen_stores.models import StackWrapper
+        from zenml.zen_stores.models.pipeline_models import (
+            PipelineRunWrapper,
+            PipelineWrapper,
+        )
+
+        repo = Repository()
+        active_project = repo.active_project
+        pipeline_run_wrapper = PipelineRunWrapper(
+            name=runtime_configuration.run_name,
+            pipeline=PipelineWrapper.from_pipeline(pipeline),
+            stack=StackWrapper.from_stack(self),
+            runtime_configuration=runtime_configuration,
+            user_id=repo.active_user.id,
+            project_name=active_project.name if active_project else None,
+        )
+
+        Repository().zen_store.register_pipeline_run(pipeline_run_wrapper)
+
     def deploy_pipeline(
         self,
         pipeline: "BasePipeline",
@@ -317,6 +413,17 @@ class Stack:
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
         """
+        self.validate()
+
+        for component in self.components.values():
+            if not component.is_running:
+                raise StackValidationError(
+                    f"The '{component.name}' {component.TYPE} stack component "
+                    f"is not currently running. Please run the following "
+                    f"command to provision and start the component:\n\n"
+                    f"    `zenml stack up`\n"
+                )
+
         for component in self.components.values():
             component.prepare_pipeline_deployment(
                 pipeline=pipeline,
@@ -341,9 +448,28 @@ class Stack:
         )
         start_time = time.time()
 
-        return_value = self.orchestrator.run_pipeline(
+        original_cache_boolean = pipeline.enable_cache
+        if "enable_cache" in runtime_configuration:
+            logger.info(
+                "Runtime configuration overwriting the pipeline cache settings"
+                " to enable_cache=`%s` for this pipeline run. The default "
+                "caching strategy is retained for future pipeline runs.",
+                runtime_configuration["enable_cache"],
+            )
+            pipeline.enable_cache = runtime_configuration.get("enable_cache")
+
+        self._register_pipeline_run(
+            pipeline=pipeline, runtime_configuration=runtime_configuration
+        )
+
+        return_value = self.orchestrator.run(
             pipeline, stack=self, runtime_configuration=runtime_configuration
         )
+
+        # Put pipeline level cache policy back to make sure the next runs
+        #  default to that policy again in case the runtime configuration
+        #  is not set explicitly
+        pipeline.enable_cache = original_cache_boolean
 
         run_duration = time.time() - start_time
         logger.info(
@@ -356,6 +482,16 @@ class Stack:
             component.cleanup_pipeline_run()
 
         return return_value
+
+    def prepare_step_run(self) -> None:
+        """Prepares running a step."""
+        for component in self.components.values():
+            component.prepare_step_run()
+
+    def cleanup_step_run(self) -> None:
+        """Cleans up resources after the step run is finished."""
+        for component in self.components.values():
+            component.cleanup_step_run()
 
     @property
     def is_provisioned(self) -> bool:
@@ -427,7 +563,7 @@ class Stack:
             "Suspending provisioned resources for stack '%s'.", self.name
         )
         for component in self.components.values():
-            if component.is_running:
+            if not component.is_suspended:
                 try:
                     component.suspend()
                     logger.info("Suspended resources for %s.", component)

@@ -14,10 +14,12 @@
 import os
 import platform
 from importlib.util import find_spec
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
 
 import distro
 
+from zenml import __version__
 from zenml.logger import get_logger
 from zenml.utils.singleton import SingletonMetaClass
 
@@ -25,6 +27,39 @@ if TYPE_CHECKING:
     from zenml.steps import StepEnvironment
 
 logger = get_logger(__name__)
+
+
+def get_environment() -> str:
+    """Returns a string representing the execution environment of the pipeline.
+    Currently, one of `docker`, `paperspace`, 'colab', or `native`"""
+    if Environment.in_docker():
+        return "docker"
+    elif Environment.in_google_colab():
+        return "colab"
+    elif Environment.in_paperspace_gradient():
+        return "paperspace"
+    elif Environment.in_notebook():
+        return "notebook"
+    else:
+        return "native"
+
+
+def get_system_details() -> str:
+    """Returns OS, python and ZenML information."""
+    from zenml.integrations.registry import integration_registry
+
+    info = {
+        "ZenML version": __version__,
+        "Install path": Path(__file__).resolve().parent,
+        "Python version": Environment.python_version(),
+        "Platform information": Environment.get_system_info(),
+        "Environment": get_environment(),
+        "Integrations": integration_registry.get_installed_integrations(),
+    }
+    return "\n".join(
+        "{:>10} {}".format(k + ":", str(v).replace("\n", " "))
+        for k, v in info.items()
+    )
 
 
 class Environment(metaclass=SingletonMetaClass):
@@ -102,7 +137,13 @@ class Environment(metaclass=SingletonMetaClass):
     @staticmethod
     def in_google_colab() -> bool:
         """If the current Python process is running in a Google Colab."""
-        return "COLAB_GPU" in os.environ
+        try:
+            import google.colab  # noqa
+
+            return True
+
+        except ModuleNotFoundError:
+            return False
 
     @staticmethod
     def in_notebook() -> bool:

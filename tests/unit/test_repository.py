@@ -27,7 +27,7 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
-from zenml.io import fileio
+from zenml.io import fileio, utils
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.repository import Repository
@@ -77,7 +77,7 @@ def test_initializing_repo_creates_directory_and_uses_default_stack(
     """Tests that repo initialization creates a .zen directory and uses the
     default local stack."""
     Repository.initialize(tmp_path)
-    assert fileio.file_exists(str(tmp_path / ".zen"))
+    assert fileio.exists(str(tmp_path / ".zen"))
 
     repo = Repository()
     # switch to the new repo root
@@ -112,7 +112,7 @@ def test_finding_repository_directory_with_explicit_path(tmp_path, clean_repo):
     """Tests that a repository can be found using an explicit path, an
     environment variable and the current working directory."""
     subdirectory_path = tmp_path / "some_other_directory"
-    fileio.create_dir_recursive_if_not_exists(str(subdirectory_path))
+    utils.create_dir_recursive_if_not_exists(str(subdirectory_path))
     os.chdir(str(subdirectory_path))
 
     # no repo exists and explicit path passed
@@ -166,7 +166,7 @@ def test_finding_repository_directory_with_explicit_path(tmp_path, clean_repo):
 def test_repo_without_configuration_file_falls_back_to_empty_config(tmp_path):
     """Tests that the repo uses an empty configuration if the config file was
     deleted."""
-    fileio.create_dir_recursive_if_not_exists(str(tmp_path / ".zen"))
+    utils.create_dir_recursive_if_not_exists(str(tmp_path / ".zen"))
     repo = Repository(tmp_path)
 
     assert len(repo.stacks) == 1
@@ -233,7 +233,9 @@ def test_registering_a_stack_with_existing_name(clean_repo):
         clean_repo.register_stack(stack)
 
 
-def test_registering_a_new_stack_with_already_registered_components(clean_repo):
+def test_registering_a_new_stack_with_already_registered_components(
+    clean_repo,
+):
     """Tests that registering a new stack with already registered components
     registers the stacks and does NOT register the components."""
     stack = clean_repo.active_stack
@@ -265,6 +267,42 @@ def test_registering_a_new_stack_with_already_registered_components(clean_repo):
     )
 
 
+def test_updating_a_stack_with_new_components(clean_repo):
+    """Tests that updating a new stack with already registered components
+    updates the stack with the new or altered components passed in."""
+    current_stack = clean_repo.active_stack
+    old_orchestrator = current_stack.orchestrator
+    new_orchestrator = LocalOrchestrator(name="new_orchestrator")
+    updated_stack = Stack(
+        name=current_stack.name,
+        orchestrator=new_orchestrator,
+        metadata_store=current_stack.metadata_store,
+        artifact_store=current_stack.artifact_store,
+    )
+
+    with does_not_raise():
+        clean_repo.update_stack(updated_stack.name, updated_stack)
+
+    assert old_orchestrator != clean_repo.active_stack.orchestrator
+    assert new_orchestrator == clean_repo.active_stack.orchestrator
+
+
+def test_renaming_stack_with_update_method_succeeds(clean_repo):
+    """Tests that renaming a stack with the update method succeeds."""
+    current_stack = clean_repo.active_stack
+    new_stack_name = "new_stack_name"
+    updated_stack = Stack(
+        name=new_stack_name,
+        orchestrator=current_stack.orchestrator,
+        metadata_store=current_stack.metadata_store,
+        artifact_store=current_stack.artifact_store,
+    )
+
+    with does_not_raise():
+        clean_repo.update_stack(current_stack.name, updated_stack)
+    assert new_stack_name == clean_repo.active_stack_name
+
+
 def test_registering_a_stack_registers_unregistered_components(clean_repo):
     """Tests that registering a stack with an unregistered component registers
     the component."""
@@ -278,22 +316,13 @@ def test_registering_a_stack_registers_unregistered_components(clean_repo):
         artifact_store=registered_stack.artifact_store,
     )
 
-    registered_orchestrators = clean_repo.get_stack_components(
-        StackComponentType.ORCHESTRATOR
-    )
-
     with does_not_raise():
         clean_repo.register_stack(new_stack)
 
-    updated_registered_orchestrators = clean_repo.get_stack_components(
-        StackComponentType.ORCHESTRATOR
-    )
-
-    assert (
-        len(updated_registered_orchestrators)
-        == len(registered_orchestrators) + 1
-    )
-    assert any(c == new_orchestrator for c in updated_registered_orchestrators)
+        clean_repo.get_stack_component(
+            component_type=StackComponentType.ORCHESTRATOR,
+            name="new_orchestrator_name",
+        )
 
     # if one of the components has a name that is already registered, but it's
     # not the exact registered component then the stack registration should fail
@@ -330,7 +359,7 @@ def test_getting_a_stack_component(clean_repo):
 
     with does_not_raise():
         registered_component = clean_repo.get_stack_component(
-            component_type=component.type, name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
     assert component == registered_component
@@ -344,24 +373,6 @@ def test_getting_a_nonexisting_stack_component(clean_repo):
             component_type=StackComponentType.ORCHESTRATOR,
             name="definitely_not_a_registered_orchestrator",
         )
-
-
-def test_getting_all_stack_components_of_a_type(clean_repo):
-    """Tests that getting all components of a certain type includes newly
-    registered components."""
-    components = clean_repo.get_stack_components(
-        StackComponentType.ORCHESTRATOR
-    )
-
-    new_orchestrator = LocalOrchestrator(name="new_orchestrator")
-    clean_repo.register_stack_component(new_orchestrator)
-
-    new_components = clean_repo.get_stack_components(
-        StackComponentType.ORCHESTRATOR
-    )
-
-    assert len(new_components) == len(components) + 1
-    assert any(c == new_orchestrator for c in new_components)
 
 
 def test_registering_a_stack_component_with_existing_name(clean_repo):
@@ -381,7 +392,8 @@ def test_registering_a_new_stack_component(clean_repo):
 
     with does_not_raise():
         registered_artifact_store = new_repo.get_stack_component(
-            component_type=new_artifact_store.type, name=new_artifact_store.name
+            component_type=new_artifact_store.TYPE,
+            name=new_artifact_store.name,
         )
 
     assert registered_artifact_store == new_artifact_store
@@ -393,19 +405,19 @@ def test_deregistering_a_stack_component(clean_repo):
     clean_repo.register_stack_component(component)
 
     clean_repo.deregister_stack_component(
-        component_type=component.type, name=component.name
+        component_type=component.TYPE, name=component.name
     )
 
     with pytest.raises(KeyError):
         clean_repo.get_stack_component(
-            component_type=component.type, name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
     new_repo = Repository(clean_repo.root)
 
     with pytest.raises(KeyError):
         new_repo.get_stack_component(
-            component_type=component.type, name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
 
@@ -418,7 +430,7 @@ def test_deregistering_a_stack_component_that_is_part_of_a_registered_stack(
 
     with pytest.raises(ValueError):
         clean_repo.deregister_stack_component(
-            component_type=component.type, name=component.name
+            component_type=component.TYPE, name=component.name
         )
 
 

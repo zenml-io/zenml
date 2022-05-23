@@ -13,14 +13,12 @@
 #  permissions and limitations under the License.
 
 import json
-import time
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, List, cast
 
 import tfx.orchestration.pipeline as tfx_pipeline
-from tfx.orchestration.portable import data_types, launcher
+from tfx.orchestration.portable import data_types
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
-from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.steps import BaseStep
@@ -28,7 +26,6 @@ from zenml.steps.utils import (
     INTERNAL_EXECUTION_PARAMETER_PREFIX,
     PARAM_PIPELINE_PARAMETER_NAME,
 )
-from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -107,55 +104,6 @@ def get_cache_status(
             pipeline.get_run(pipeline_run_name).get_step(step_name).is_cached
         )
     return status
-
-
-def execute_step(
-    tfx_launcher: launcher.Launcher,
-) -> Optional[data_types.ExecutionInfo]:
-    """Executes a tfx component.
-
-    Args:
-        tfx_launcher: A tfx launcher to execute the component.
-
-    Returns:
-        Optional execution info returned by the launcher.
-    """
-    step_name_param = (
-        INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
-    )
-    pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
-    start_time = time.time()
-    logger.info(f"Step `{pipeline_step_name}` has started.")
-    try:
-        execution_info = tfx_launcher.launch()
-        if execution_info and get_cache_status(execution_info):
-            if execution_info.exec_properties:
-                pipeline_run_id = execution_info.pipeline_run_id
-                step_name = json.loads(
-                    execution_info.exec_properties[step_name_param]
-                )
-                logger.info(
-                    f"Using cached version of `{pipeline_step_name}` [`{step_name}`] "
-                    f"from pipeline_run_id `{pipeline_run_id}`.",
-                )
-            else:
-                logger.error(
-                    f"No execution properties found for step `{pipeline_step_name}`."
-                )
-    except RuntimeError as e:
-        if "execution has already succeeded" in str(e):
-            # Hacky workaround to catch the error that a pipeline run with
-            # this name already exists. Raise an error with a more descriptive
-            # message instead.
-            raise DuplicateRunNameError()
-        else:
-            raise
-
-    run_duration = time.time() - start_time
-    logger.info(
-        f"Step `{pipeline_step_name}` has finished in {string_utils.get_human_readable_time(run_duration)}."
-    )
-    return execution_info
 
 
 def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:

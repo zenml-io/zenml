@@ -60,8 +60,7 @@ def daemonize(
         time.sleep(period)
         print("Done sleeping, flying away.")
 
-    if not sleeping_daemon(period=30):
-        exit(0)
+    sleeping_daemon(period=30)
 
     print("I'm the daemon's parent!.")
     time.sleep(10) # just to prove that the daemon is running in parallel
@@ -83,14 +82,8 @@ def daemonize(
     """
 
     def inner_decorator(_func: F) -> F:
-        def daemon(*args: Any, **kwargs: Any) -> int:
-            """Standard daemonization of a process.
-
-            Returns:
-                The PID of the daemon process is returned to the parent
-                process and a zero value is returned to the child process.
-
-            """
+        def daemon(*args: Any, **kwargs: Any) -> None:
+            """Standard daemonization of a process."""
             # flake8: noqa: C901
             if sys.platform == "win32":
                 logger.error(
@@ -105,8 +98,6 @@ def daemonize(
                     *args,
                     **kwargs,
                 )
-
-            return 0
 
         return cast(F, daemon)
 
@@ -152,7 +143,7 @@ else:
         log_file: Optional[str] = None,
         working_directory: str = "/",
         **kwargs: Any,
-    ) -> int:
+    ) -> None:
         """Runs a function as a daemon process.
 
         Args:
@@ -165,9 +156,6 @@ else:
                 defaults to the root directory.
             args: Positional arguments to pass to the daemon function.
             kwargs: Keyword arguments to pass to the daemon function.
-        Returns:
-            The PID of the daemon process is returned to the parent process. A
-            zero value is returned to the child process.
         Raises:
             FileExistsError: If the PID file already exists.
         """
@@ -179,10 +167,19 @@ else:
 
         # check if PID file exists
         if pid_file and os.path.exists(pid_file):
-            raise FileExistsError(
-                f"The PID file '{pid_file}' already exists, either the daemon "
-                f"process is already running or something went wrong."
+            pid = get_daemon_pid_if_running(pid_file)
+            if pid:
+                raise FileExistsError(
+                    f"The PID file '{pid_file}' already exists and a daemon "
+                    f"process with the same PID '{pid}' is already running."
+                    f"Please remove the PID file or kill the daemon process "
+                    f"before starting a new daemon."
+                )
+            logger.warning(
+                f"Removing left over PID file '{pid_file}' from a previous "
+                f"daemon process that didn't shut down correctly."
             )
+            os.remove(pid_file)
 
         # first fork
         try:
@@ -190,7 +187,7 @@ else:
             if pid > 0:
                 # this is the process that called `run_as_daemon` so we
                 # simply return so it can keep running
-                return pid
+                return
         except OSError as e:
             logger.error("Unable to fork (error code: %d)", e.errno)
             sys.exit(1)
@@ -217,7 +214,11 @@ else:
             devnull = os.devnull
 
         devnull_fd = os.open(devnull, os.O_RDWR)
-        log_fd = os.open(log_file, os.O_CREAT | os.O_RDWR) if log_file else None
+        log_fd = (
+            os.open(log_file, os.O_CREAT | os.O_RDWR | os.O_APPEND)
+            if log_file
+            else None
+        )
         out_fd = log_fd or devnull_fd
 
         os.dup2(devnull_fd, sys.stdin.fileno())
@@ -246,7 +247,7 @@ else:
 
         # finally run the actual daemon code
         daemon_function(*args, **kwargs)
-        return 0
+        sys.exit(0)
 
     def stop_daemon(pid_file: str) -> None:
         """Stops a daemon process.
@@ -264,7 +265,7 @@ else:
 
         if psutil.pid_exists(pid):
             process = psutil.Process(pid)
-            process.kill()
+            process.terminate()
         else:
             logger.warning("PID from '%s' does not exist.", pid_file)
 

@@ -21,8 +21,7 @@ from pipeline import (
     tf_trainer,
 )
 
-from zenml.environment import Environment
-from zenml.integrations.mlflow.mlflow_environment import MLFLOW_ENVIRONMENT_NAME
+from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 
 if __name__ == "__main__":
 
@@ -45,11 +44,11 @@ if __name__ == "__main__":
     )
 
     run_2.run()
-    mlflow_env = Environment()[MLFLOW_ENVIRONMENT_NAME]
+
     print(
         "Now run \n "
-        f"    mlflow ui --backend-store-uri {mlflow_env.tracking_uri}\n"
-        "To inspect your experiment runs within the mlflow ui.\n"
+        f"    mlflow ui --backend-store-uri {get_tracking_uri()}\n"
+        "To inspect your experiment runs within the mlflow UI.\n"
         "You can find your runs tracked within the `mlflow_example_pipeline`"
         "experiment. Here you'll also be able to compare the two runs.)"
     )

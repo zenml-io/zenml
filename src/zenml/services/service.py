@@ -14,7 +14,7 @@
 
 import time
 from abc import abstractmethod
-from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
+from typing import Any, ClassVar, Dict, Generator, Optional, Tuple, Type, cast
 from uuid import UUID, uuid4
 
 from pydantic import Field
@@ -40,12 +40,16 @@ class ServiceConfig(BaseTypedModel):
     Attributes:
         name: name for the service instance
         description: description of the service
+        pipeline_name: name of the pipeline that spun up the service
+        pipeline_run_id: ID of the pipeline run that spun up the service
+        pipeline_step_name: name of the pipeline step that spun up the service
     """
 
-    # TODO [ENG-702]: add pipeline metadata (name, run id, step etc) to the base
-    #   service configuration
     name: str = ""
     description: str = ""
+    pipeline_name: str = ""
+    pipeline_run_id: str = ""
+    pipeline_step_name: str = ""
 
 
 class BaseServiceMeta(BaseTypedModelMeta):
@@ -170,8 +174,25 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             service status).
         """
 
+    @abstractmethod
+    def get_logs(
+        self, follow: bool = False, tail: Optional[int] = None
+    ) -> Generator[str, bool, None]:
+        """Retrieve the service logs.
+
+        This method should be overridden by subclasses that implement
+        concrete service tracking functionality.
+
+        Args:
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that can be acccessed to get the service logs.
+        """
+
     def update_status(self) -> None:
-        """Check the the current operational state of the external service
+        """Check the current operational state of the external service
         and update the local operational status information to reflect it.
 
         This method should be overridden by subclasses that implement
@@ -197,20 +218,36 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         if self.endpoint:
             self.endpoint.update_status()
 
-    def poll_service_status(self, timeout: int = 0) -> None:
+    def get_service_status_message(self) -> str:
+        """Get a message providing information about the current operational
+        state of the service."""
+        return (
+            f"  Administrative state: `{self.admin_state.value}`\n"
+            f"  Operational state: `{self.status.state.value}`\n"
+            f"  Last status message: '{self.status.last_error}'\n"
+        )
+
+    def poll_service_status(self, timeout: int = 0) -> bool:
         """Poll the external service status until the service operational
-        state matches the administrative state or the timeout is reached.
+        state matches the administrative state, the service enters a failed
+        state, or the timeout is reached.
 
         Args:
             timeout: maximum time to wait for the service operational state
             to match the administrative state, in seconds
+
+        Returns:
+            True if the service operational state matches the administrative
+            state, False otherwise.
         """
         time_remaining = timeout
         while True:
             if self.admin_state == ServiceState.ACTIVE and self.is_running:
-                return
+                return True
             if self.admin_state == ServiceState.INACTIVE and self.is_stopped:
-                return
+                return True
+            if self.is_failed:
+                return False
             if time_remaining <= 0:
                 break
             time.sleep(1)
@@ -219,8 +256,11 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         if timeout > 0:
             logger.error(
                 f"Timed out waiting for service {self} to become "
-                f"{self.admin_state.value}: {self.status.last_error}"
+                f"{self.admin_state.value}:\n"
+                + self.get_service_status_message()
             )
+
+        return False
 
     @property
     def is_running(self) -> bool:
@@ -251,6 +291,19 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         self.update_status()
         return self.status.state == ServiceState.INACTIVE
 
+    @property
+    def is_failed(self) -> bool:
+        """Check if the service is currently failed.
+
+        This method will actively poll the external service to get its status
+        and will return the result.
+
+        Returns:
+            True if the service is in a failure state, otherwise False.
+        """
+        self.update_status()
+        return self.status.state == ServiceState.ERROR
+
     def provision(self) -> None:
         """Provisions resources to run the service."""
         raise NotImplementedError(
@@ -262,6 +315,14 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         raise NotImplementedError(
             f"Deprovisioning resources not implemented for {self}."
         )
+
+    def update(self, config: ServiceConfig) -> None:
+        """Update the service configuration.
+
+        Args:
+            config: the new service configuration.
+        """
+        self.config = config
 
     def start(self, timeout: int = 0) -> None:
         """Start the service and optionally wait for it to become active.
@@ -278,9 +339,11 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             self.admin_state = ServiceState.ACTIVE
             self.provision()
             if timeout > 0:
-                self.poll_service_status(timeout)
-                if not self.is_running:
-                    raise RuntimeError(f"Failed to start service {self}.")
+                if not self.poll_service_status(timeout):
+                    raise RuntimeError(
+                        f"Failed to start service {self}\n"
+                        + self.get_service_status_message()
+                    )
 
     def stop(self, timeout: int = 0, force: bool = False) -> None:
         """Stop the service and optionally wait for it to shutdown.
@@ -299,7 +362,11 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             if timeout > 0:
                 self.poll_service_status(timeout)
                 if not self.is_stopped:
-                    raise RuntimeError(f"Failed to stop service {self}.")
+                    raise RuntimeError(
+                        f"Failed to stop service {self}. Last state: "
+                        f"'{self.status.state.value}'. Last error: "
+                        f"'{self.status.last_error}'"
+                    )
 
     def __repr__(self) -> str:
         """String representation of the service."""

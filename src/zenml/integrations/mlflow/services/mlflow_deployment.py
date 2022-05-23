@@ -1,8 +1,9 @@
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
-import requests  # type: ignore [import]
+import requests
 from mlflow.pyfunc.backend import PyFuncBackend  # type: ignore [import]
+from mlflow.version import VERSION as MLFLOW_VERSION  # type: ignore [import]
 
 from zenml.logger import get_logger
 from zenml.services import (
@@ -32,10 +33,10 @@ class MLFlowDeploymentEndpointConfig(LocalDaemonServiceEndpointConfig):
     """MLflow daemon service endpoint configuration.
 
     Attributes:
-        prediction_uri_path: URI subpath for prediction requests
+        prediction_url_path: URI subpath for prediction requests
     """
 
-    prediction_uri_path: str
+    prediction_url_path: str
 
 
 class MLFlowDeploymentEndpoint(LocalDaemonServiceEndpoint):
@@ -50,11 +51,11 @@ class MLFlowDeploymentEndpoint(LocalDaemonServiceEndpoint):
     monitor: HTTPEndpointHealthMonitor
 
     @property
-    def prediction_uri(self) -> Optional[str]:
+    def prediction_url(self) -> Optional[str]:
         uri = self.status.uri
         if not uri:
             return None
-        return f"{uri}{self.config.prediction_uri_path}"
+        return f"{uri}{self.config.prediction_url_path}"
 
 
 class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
@@ -109,18 +110,18 @@ class MLFlowDeploymentService(LocalDaemonService):
             and "endpoint" not in attrs
         ):
             if config.mlserver:
-                prediction_uri_path = MLSERVER_PREDICTION_URL_PATH
+                prediction_url_path = MLSERVER_PREDICTION_URL_PATH
                 healthcheck_uri_path = MLSERVER_HEALTHCHECK_URL_PATH
                 use_head_request = False
             else:
-                prediction_uri_path = MLFLOW_PREDICTION_URL_PATH
+                prediction_url_path = MLFLOW_PREDICTION_URL_PATH
                 healthcheck_uri_path = MLFLOW_HEALTHCHECK_URL_PATH
                 use_head_request = True
 
             endpoint = MLFlowDeploymentEndpoint(
                 config=MLFlowDeploymentEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
-                    prediction_uri_path=prediction_uri_path,
+                    prediction_url_path=prediction_url_path,
                 ),
                 monitor=HTTPEndpointHealthMonitor(
                     config=HTTPEndpointHealthMonitorConfig(
@@ -141,6 +142,12 @@ class MLFlowDeploymentService(LocalDaemonService):
         self.endpoint.prepare_for_start()
 
         try:
+            serve_kwargs: Dict[str, Any] = {}
+            # MLflow version 1.26 introduces an additional mandatory
+            # `timeout` argument to the `PyFuncBackend.serve` function
+            if int(MLFLOW_VERSION.split(".")[1]) >= 26:
+                serve_kwargs["timeout"] = None
+
             backend = PyFuncBackend(
                 config={},
                 no_conda=True,
@@ -152,6 +159,7 @@ class MLFlowDeploymentService(LocalDaemonService):
                 port=self.endpoint.status.port,
                 host="localhost",
                 enable_mlserver=self.config.mlserver,
+                **serve_kwargs,
             )
         except KeyboardInterrupt:
             logger.info(
@@ -159,7 +167,7 @@ class MLFlowDeploymentService(LocalDaemonService):
             )
 
     @property
-    def prediction_uri(self) -> Optional[str]:
+    def prediction_url(self) -> Optional[str]:
         """Get the URI where the prediction service is answering requests.
 
         Returns:
@@ -168,7 +176,7 @@ class MLFlowDeploymentService(LocalDaemonService):
         """
         if not self.is_running:
             return None
-        return self.endpoint.prediction_uri
+        return self.endpoint.prediction_url
 
     def predict(self, request: "NDArray[Any]") -> "NDArray[Any]":
         """Make a prediction using the service.
@@ -185,9 +193,12 @@ class MLFlowDeploymentService(LocalDaemonService):
                 "Please start the service before making predictions."
             )
 
-        response = requests.post(
-            self.endpoint.prediction_uri,
-            json={"instances": request.tolist()},
-        )
+        if self.endpoint.prediction_url is not None:
+            response = requests.post(
+                self.endpoint.prediction_url,
+                json={"instances": request.tolist()},
+            )
+        else:
+            raise ValueError("No endpoint known for prediction.")
         response.raise_for_status()
         return np.array(response.json())

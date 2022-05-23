@@ -67,7 +67,7 @@ def _read_executor_output(
     Raises:
         RuntimeError: If no output is written to the given path.
     """
-    if fileio.file_exists(output_path):
+    if fileio.exists(output_path):
         with fileio.open(output_path, "rb") as f:
             return execution_result_pb2.ExecutorOutput.FromString(f.read())
     else:

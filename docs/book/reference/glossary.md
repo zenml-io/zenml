@@ -58,7 +58,7 @@ dependencies between the different stages are managed.
 An integration is a third-party tool or platform that implements a ZenML abstraction. 
 A tool can implement many abstractions and therefore an integration can have different 
 entrypoints for the user. We have a consistently updated integrations page which shows all 
-current integrations supported by the ZenML core team [here](../features/integrations.md). 
+current integrations supported by the ZenML core team [here](../advanced-guide/integrations/integrations.md). 
 However, as ZenML is a framework users are encouraged to use these as a guideline and implement 
 their own integrations by extending the various ZenML abstractions.
 
@@ -127,8 +127,50 @@ all ZenML activity. Every action that can be executed within ZenML must take
 place within such a repository. ZenML repositories are denoted by a local `.zen`
 folder in your project root where various information about your local
 configuration lives, e.g., the active
-[Stack](../guides/functional-api/deploy-to-production.md) that you are using to
+[Stack](../advanced_guide/deploy-to-production.md) that you are using to
 run pipelines, is stored.
+
+## Runner Scripts
+
+A runner script is a Python file, usually called `run.py` and located at the root of a 
+ZenML repository, which has the code to actually create a pipeline run. The code usually 
+looks like this:
+
+```python
+from pipelines.my_pipeline import my_pipeline
+from steps.step_1 import step_1
+
+if __name__ == "__main__":
+    p = my_pipeline(
+        step_1=step_1(),
+    )
+    p.run()
+```
+
+## Secret
+
+A ZenML Secret is a grouping of key-value pairs. These are accessed and
+administered via the ZenML Secret Manager (a stack component).
+
+Secrets are distinguished by having different schemas. An AWS SecretSchema, for
+example, has key-value pairs for `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+as well as an optional `AWS_SESSION_TOKEN`. If you don't specify a schema at the
+point of registration, ZenML will set the schema as `ArbitrarySecretSchema`, a
+kind of default schema where things that aren't attached to a grouping can be
+stored.
+
+## Secrets Manager
+
+Most projects involving either cloud infrastructure or of a certain complexity
+will involve secrets of some kind. You use secrets, for example, when connecting
+to AWS, which requires an `access_key_id` and a `secret_access_key` which it
+(usually) stores in your `~/.aws/credentials` file.
+
+You might find you need to access those secrets from within your Kubernetes
+cluster as it runs individual steps, or you might just want a centralized
+location for the storage of secrets across your project. ZenML offers a local
+secrets manager and an integration with the managed [AWS Secrets
+Manager](https://aws.amazon.com/secrets-manager).
 
 ## Stack
 

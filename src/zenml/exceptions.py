@@ -125,6 +125,16 @@ class ArtifactInterfaceError(ZenMLBaseException):
     in an unsupported way."""
 
 
+class StackComponentInterfaceError(ZenMLBaseException):
+    """Raises exception when interacting with the stack components
+    in an unsupported way."""
+
+
+class ArtifactStoreInterfaceError(ZenMLBaseException):
+    """Raises exception when interacting with the Artifact Store interface
+    in an unsupported way."""
+
+
 class PipelineConfigurationError(ZenMLBaseException):
     """Raises exceptions when a pipeline configuration contains
     invalid values."""
@@ -192,6 +202,16 @@ class StackComponentExistsError(ZenMLBaseException):
     already exists."""
 
 
+class EntityExistsError(ZenMLBaseException):
+    """Raised when trying to register a user-management entity with a name that
+    already exists."""
+
+
+class SecretExistsError(ZenMLBaseException):
+    """Raised when trying to register a secret with a name that
+    already exists."""
+
+
 class StackValidationError(ZenMLBaseException):
     """Raised when a stack configuration is not valid."""
 
@@ -204,3 +224,7 @@ class ProvisioningError(ZenMLBaseException):
 class GitNotFoundError(ImportError):
     """Raised when ZenML CLI is used to interact with examples on a machine
     with no git installation"""
+
+
+class DuplicatedConfigurationError(ZenMLBaseException):
+    """Raised when a configuration parameter is set twice"""

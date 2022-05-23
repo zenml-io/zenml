@@ -23,9 +23,9 @@ class Schedule(BaseModel):
 
     Attributes:
         start_time: Datetime object to indicate when to start the schedule.
-        end_time: Datetime object to indicate when to start the schedule.
-        interval_second: Integer indicating the seconds between two recurring
-            runs in for a periodic schedule.
+        end_time: Datetime object to indicate when to end the schedule.
+        interval_second: Datetime timedelta indicating the seconds between two
+            recurring runs for a periodic schedule.
         catchup: Whether the recurring run should catch up if behind schedule.
             For example, if the recurring run is paused for a while and
             re-enabled afterwards. If catchup=True, the scheduler will catch
@@ -37,7 +37,7 @@ class Schedule(BaseModel):
 
     start_time: datetime.datetime
     end_time: Optional[datetime.datetime] = None
-    interval_second: int
+    interval_second: datetime.timedelta
     catchup: bool = False
 
     @property

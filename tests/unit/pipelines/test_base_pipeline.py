@@ -35,7 +35,7 @@ def create_pipeline_with_config_value(config_value: int):
         value: int
 
     @step
-    def step_with_config(config: Config):
+    def step_with_config(config: Config) -> None:
         pass
 
     @pipeline
@@ -165,6 +165,24 @@ def test_initialize_pipeline_with_wrong_kwarg_type(
         unconnected_two_step_pipeline(step_1=1, step_2=empty_step())
 
 
+def test_initialize_pipeline_with_missing_arg_step_brackets(
+    unconnected_two_step_pipeline, generate_empty_steps
+):
+    """Test that pipeline initialization fails with missing arg brackets."""
+    with pytest.raises(PipelineInterfaceError):
+        empty_step_1, empty_step_2 = generate_empty_steps(2)
+        unconnected_two_step_pipeline(empty_step_1, empty_step_2)
+
+
+def test_initialize_pipeline_with_missing_kwarg_step_brackets(
+    unconnected_two_step_pipeline, generate_empty_steps
+):
+    """Test that pipeline initialization fails with missing kwarg brackets."""
+    with pytest.raises(PipelineInterfaceError):
+        empty_step_1, empty_step_2 = generate_empty_steps(2)
+        unconnected_two_step_pipeline(step_1=empty_step_1, step_2=empty_step_2)
+
+
 def test_setting_step_parameter_with_config_object():
     """Test whether step parameters can be set using a config object."""
     config_value = 0
@@ -266,8 +284,8 @@ def test_pipeline_requirements(tmp_path):
     requirements file."""
     from zenml.integrations.sklearn import SklearnIntegration
 
-    requirements_file = tmp_path / "requirements.txt"
-    requirements_file.write_text("any_requirement")
+    requirements = tmp_path / "requirements.txt"
+    requirements.write_text("any_requirement")
 
     @pipeline(required_integrations=[SklearnIntegration.NAME])
     def my_pipeline():
@@ -275,7 +293,7 @@ def test_pipeline_requirements(tmp_path):
 
     assert my_pipeline().requirements == set(SklearnIntegration.REQUIREMENTS)
 
-    @pipeline(requirements_file=str(requirements_file))
+    @pipeline(requirements=str(requirements))
     def my_pipeline():
         pass
 
@@ -283,7 +301,41 @@ def test_pipeline_requirements(tmp_path):
 
     @pipeline(
         required_integrations=[SklearnIntegration.NAME],
-        requirements_file=str(requirements_file),
+        requirements=str(requirements),
+    )
+    def my_pipeline():
+        pass
+
+    assert my_pipeline().requirements == {
+        "any_requirement",
+        *SklearnIntegration.REQUIREMENTS,
+    }
+
+
+def test_pipeline_requirements_takes_list(tmp_path):
+    """Tests that the pipeline requirements are a combination of the
+    requirements of integrations and requirements of the specified
+    requirements file."""
+    from zenml.integrations.sklearn import SklearnIntegration
+
+    requirements = tmp_path / "requirements.txt"
+    requirements.write_text("any_requirement")
+
+    @pipeline(required_integrations=[SklearnIntegration.NAME])
+    def my_pipeline():
+        pass
+
+    assert my_pipeline().requirements == set(SklearnIntegration.REQUIREMENTS)
+
+    @pipeline(requirements=["any_requirement"])
+    def my_pipeline():
+        pass
+
+    assert my_pipeline().requirements == {"any_requirement"}
+
+    @pipeline(
+        required_integrations=[SklearnIntegration.NAME],
+        requirements=["any_requirement"],
     )
     def my_pipeline():
         pass
@@ -301,7 +353,7 @@ def test_pipeline_run_fails_when_required_step_operator_is_missing(
     operator fails if the active stack does not contain this step operator."""
 
     @step(custom_step_operator="azureml")
-    def step_that_requires_step_operator():
+    def step_that_requires_step_operator() -> None:
         pass
 
     assert not Repository().active_stack.step_operator

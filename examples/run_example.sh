@@ -11,7 +11,7 @@ Script description here.
 Available options:
 
 -h, --help        When you use -h, this function is called and then script is exited
--f, --force       Force the run including the removal of the old .zen folder and all old runs
+-y, --yes       Force the run including the removal of the old .zen folder and all old runs
 --no-stack-setup  Don't setup a specific ZenML stack for this example.
 -e, --executable  The python file that contains the code to run this example.
 EOF
@@ -48,7 +48,7 @@ main() {
   zenml_init
 
   if [ -f "setup.sh" ]; then
-    msg "This example requires some additional setup."
+    msg "This example requires some additional setup, setting up now..."
     source "./setup.sh"
     if [ -n "$FORCE" ]; then
       if [[ $(type -t pre_run_forced) == function ]]; then
@@ -96,7 +96,7 @@ parse_params() {
   while :; do
     case "${1-}" in
     -h | --help) usage ;;
-    -f | --force) FORCE="true";;
+    -y | --yes) FORCE="true";;
     --no-stack-setup) SETUP_STACK="";;
     -e | --executable)
       executable="${2-}"

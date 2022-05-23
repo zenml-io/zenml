@@ -12,14 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import json
+import logging
 import os
-import shutil
 import uuid
 from typing import Any, Dict, Optional, cast
 
 from pydantic import BaseModel, Field, ValidationError, validator
 from pydantic.main import ModelMetaclass
-from semver import VersionInfo  # type: ignore [import]
+from semver import VersionInfo  # type: ignore[import]
 
 from zenml import __version__
 from zenml.config.base_config import BaseConfiguration
@@ -27,9 +27,8 @@ from zenml.config.profile_config import (
     DEFAULT_PROFILE_NAME,
     ProfileConfiguration,
 )
-from zenml.io import fileio
-from zenml.io.utils import get_global_config_directory
-from zenml.logger import get_logger
+from zenml.io import fileio, utils
+from zenml.logger import disable_logging, get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -102,14 +101,18 @@ class GlobalConfiguration(
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
+    user_metadata: Optional[Dict[str, str]]
     analytics_opt_in: bool = True
     version: Optional[str]
     activated_profile: Optional[str]
     profiles: Dict[str, ProfileConfiguration] = Field(default_factory=dict)
     _config_path: str
 
-    def __init__(self, config_path: Optional[str] = None) -> None:
-        """Initializes a GlobalConfiguration object using values from the config file.
+    def __init__(
+        self, config_path: Optional[str] = None, **kwargs: Any
+    ) -> None:
+        """Initializes a GlobalConfiguration object using values from the config
+        file.
 
         GlobalConfiguration is a singleton class: only one instance can exist.
         Calling this constructor multiple times will always yield the same
@@ -134,11 +137,10 @@ class GlobalConfiguration(
         """
         self._config_path = config_path or self.default_config_directory()
         config_values = self._read_config()
+        config_values.update(**kwargs)
         super().__init__(**config_values)
 
-        if not fileio.file_exists(self._config_file(config_path)):
-            # if the config file hasn't been written to disk, write it now to
-            # make sure to persist the unique user id
+        if not fileio.exists(self._config_file(config_path)):
             self._write_config()
 
     @classmethod
@@ -160,7 +162,7 @@ class GlobalConfiguration(
         This method is only meant for internal use and testing purposes.
 
         Args:
-            repo: The GlobalConfiguration instance to set as the global
+            config: The GlobalConfiguration instance to set as the global
                 singleton. If None, the global GlobalConfiguration singleton is
                 reset to an empty value.
         """
@@ -221,14 +223,25 @@ class GlobalConfiguration(
         else:
             config_version = VersionInfo.parse(self.version)
             if self.version > curr_version:
-                raise RuntimeError(
+                logger.error(
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
-                    "Please update ZenML to at least match the global "
-                    "configuration version to avoid loss of information.",
+                    "This may happen if you recently downgraded ZenML to an "
+                    "earlier version, or if you have already used a more recent "
+                    "ZenML version on the same machine."
+                    "It is highly recommended that you update ZenML to at least "
+                    "match the global configuration version, otherwise you may "
+                    "run into unexpected issues such as model schema "
+                    "validation failures or even loss of information. As an "
+                    "alternative, if you run into incompatibility issues but "
+                    "do not want to update ZenML, you can use the `zenml clean` "
+                    "command to wipe your global configuration, profiles and "
+                    "stacks and restore ZenML to a clean and valid state.",
                     config_version,
                     curr_version,
                 )
+                return
+
             if config_version == curr_version:
                 return
 
@@ -254,12 +267,12 @@ class GlobalConfiguration(
         )
 
         config_values = {}
-        if fileio.file_exists(self._config_file()):
+        if fileio.exists(self._config_file()):
             config_values = cast(
                 Dict[str, Any],
                 yaml_utils.read_yaml(self._config_file()),
             )
-        elif fileio.file_exists(legacy_config_file):
+        elif fileio.exists(legacy_config_file):
             config_values = cast(
                 Dict[str, Any], yaml_utils.read_json(legacy_config_file)
             )
@@ -277,8 +290,8 @@ class GlobalConfiguration(
         yaml_dict = json.loads(self.json())
         logger.debug(f"Writing config to {config_file}")
 
-        if not fileio.file_exists(config_file):
-            fileio.create_dir_recursive_if_not_exists(
+        if not fileio.exists(config_file):
+            utils.create_dir_recursive_if_not_exists(
                 config_path or self.config_directory
             )
 
@@ -287,7 +300,7 @@ class GlobalConfiguration(
     @staticmethod
     def default_config_directory() -> str:
         """Path to the default global configuration directory."""
-        return get_global_config_directory()
+        return utils.get_global_config_directory()
 
     def _config_file(self, config_path: Optional[str] = None) -> str:
         """Path to the file where global configuration options are stored.
@@ -298,22 +311,28 @@ class GlobalConfiguration(
         """
         return os.path.join(config_path or self._config_path, "config.yaml")
 
-    def copy_config_with_active_profile(
+    def copy_active_configuration(
         self,
         config_path: str,
         load_config_path: Optional[str] = None,
     ) -> "GlobalConfiguration":
-        """Create a copy of the global config and the active repository profile
-        using a different config path.
+        """Create a copy of the global config, the active repository profile
+        and the active stack using a different configuration path.
+
+        This method is used to extract the active slice of the current state
+        (consisting only of the global configuration, the active profile and the
+        active stack) and store it in a different configuration path, where it
+        can be loaded in the context of a new environment, such as a container
+        image.
 
         Args:
-            config_path: path where the global config copy should be saved
-            load_config_path: path that will be used to load the global config
-                copy. This can be set to a value different than `config_path`
-                if the global config copy will be loaded from a different
+            config_path: path where the active configuration copy should be saved
+            load_config_path: path that will be used to load the configuration
+                copy. This can be set to a value different from `config_path`
+                if the configuration copy will be loaded from a different
                 path, e.g. when the global config copy is copied to a
                 container image. This will be reflected in the paths and URLs
-                encoded in the copied profile.
+                encoded in the profile copy.
         """
         from zenml.repository import Repository
 
@@ -321,49 +340,40 @@ class GlobalConfiguration(
 
         config_copy = GlobalConfiguration(config_path=config_path)
         config_copy.profiles = {}
-        profile = Repository().active_profile
 
-        profile_copy = config_copy.add_or_update_profile(profile)
-        profile_copy.active_stack = Repository().active_stack_name
-        config_copy.activate_profile(profile.name)
-
-        if not profile.store_type or not profile.store_url:
-            # should not happen, but just in case
-            raise RuntimeError(
-                f"No store type or URL set for profile " f"`{profile.name}`."
-            )
-
-        # if the profile stores its state locally inside a local directory,
-        # we need to copy that as well
-        store_class = Repository.get_store_class(profile.store_type)
-        if not store_class:
-            raise RuntimeError(
-                f"No store implementation found for store type "
-                f"`{profile.store_type}`."
-            )
-
-        profile_path = store_class.get_path_from_url(profile.store_url)
-        dst_profile_url = store_class.get_local_url(
-            profile_copy.config_directory
+        repo = Repository()
+        profile = ProfileConfiguration(
+            name=repo.active_profile_name,
+            active_stack=repo.active_stack_name,
         )
-        dst_profile_path = store_class.get_path_from_url(dst_profile_url)
-        if profile_path and dst_profile_path:
-            if profile_path.is_dir():
-                shutil.copytree(
-                    profile_path,
-                    dst_profile_path,
-                )
-            else:
-                fileio.create_dir_recursive_if_not_exists(
-                    str(dst_profile_path.parent)
-                )
-                shutil.copyfile(profile_path, dst_profile_path)
 
-            if load_config_path:
-                dst_profile_url = dst_profile_url.replace(
-                    config_path, load_config_path
-                )
-            profile_copy.store_url = dst_profile_url
+        profile._config = config_copy
+        # circumvent the profile initialization done in the
+        # ProfileConfiguration and the Repository classes to avoid triggering
+        # the analytics and interact directly with the store creation
+        config_copy.profiles[profile.name] = profile
+        # We dont need to track analytics here
+        store = Repository.create_store(
+            profile,
+            skip_default_registrations=True,
+            track_analytics=False,
+            skip_migration=True,
+        )
+        # transfer the active stack to the new store. we disable logs for this
+        # call so there is no confusion about newly registered stacks/stack
+        # components
+        with disable_logging(logging.INFO):
+            store.register_stack(
+                repo.zen_store.get_stack(repo.active_stack_name)
+            )
+
+        # if a custom load config path is specified, use it to replace the
+        # current store local path in the profile URL
+        if load_config_path:
+            profile.store_url = store.url.replace(
+                str(config_copy.config_directory), load_config_path
+            )
+
         config_copy._write_config()
         return config_copy
 
@@ -379,6 +389,9 @@ class GlobalConfiguration(
 
         Args:
             profile: profile configuration
+
+        Returns:
+            the profile configuration added to the global configuration
         """
         profile = profile.copy()
         profile._config = self
@@ -517,7 +530,8 @@ class GlobalConfiguration(
         """
         if not self.active_profile:
             return None
-        return self.active_profile.active_stack
+
+        return self.active_profile.get_active_stack()
 
     class Config:
         """Pydantic configuration class."""

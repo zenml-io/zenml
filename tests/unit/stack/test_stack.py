@@ -18,7 +18,7 @@ import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.config.global_config import GlobalConfiguration
-from zenml.container_registries import BaseContainerRegistry
+from zenml.container_registries import DefaultContainerRegistry
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.metadata_stores import SQLiteMetadataStore
@@ -70,7 +70,7 @@ def test_initializing_a_stack_from_components():
     assert stack.container_registry is None
 
     # check that it also works with optional container registry
-    container_registry = BaseContainerRegistry(name="", uri="")
+    container_registry = DefaultContainerRegistry(name="", uri="")
     components[StackComponentType.CONTAINER_REGISTRY] = container_registry
 
     stack = Stack.from_components(name="", components=components)
@@ -80,7 +80,7 @@ def test_initializing_a_stack_from_components():
 def test_initializing_a_stack_with_missing_components():
     """Tests that initializing a stack with missing components fails."""
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components={})
+        Stack.from_components(name="", components={}).validate()
 
 
 def test_initializing_a_stack_with_wrong_components():
@@ -95,14 +95,7 @@ def test_initializing_a_stack_with_wrong_components():
     }
 
     with pytest.raises(TypeError):
-        Stack.from_components(name="", components=components)
-
-
-def test_stack_validates_when_initialized(mocker):
-    """Tests that a stack is validated when it's initialized."""
-    mocker.patch.object(Stack, "validate")
-    Stack.default_local_stack()
-    Stack.validate.assert_called_once()
+        Stack.from_components(name="", components=components).validate()
 
 
 def test_stack_returns_all_its_components():
@@ -126,7 +119,7 @@ def test_stack_returns_all_its_components():
     assert stack.components == expected_components
 
     # check that it also works with optional container registry
-    container_registry = BaseContainerRegistry(name="", uri="")
+    container_registry = DefaultContainerRegistry(name="", uri="")
     stack = Stack(
         name="",
         orchestrator=orchestrator,
@@ -210,13 +203,16 @@ def test_stack_validation_succeeds_if_no_component_validator_fails(
 
 
 def test_stack_deployment(
-    stack_with_mock_components, one_step_pipeline, empty_step
+    stack_with_mock_components, one_step_pipeline, empty_step, mocker
 ):
     """Tests that when a pipeline is deployed on a stack, the stack calls
     preparation/cleanup methods on all of its components and calls the
     orchestrator to run the pipeline."""
+    # Mock the pipeline run registering which tries (and fails) to serialize
+    # our mock objects
+    mocker.patch.object(stack_with_mock_components, "_register_pipeline_run")
     pipeline_run_return_value = object()
-    stack_with_mock_components.orchestrator.run_pipeline.return_value = (
+    stack_with_mock_components.orchestrator.run.return_value = (
         pipeline_run_return_value
     )
 
@@ -232,7 +228,7 @@ def test_stack_deployment(
         component.prepare_pipeline_run.assert_called_once()
         component.cleanup_pipeline_run.assert_called_once()
 
-    stack_with_mock_components.orchestrator.run_pipeline.assert_called_once_with(
+    stack_with_mock_components.orchestrator.run.assert_called_once_with(
         pipeline,
         stack=stack_with_mock_components,
         runtime_configuration=runtime_config,
@@ -398,7 +394,7 @@ def test_stack_forwards_suspending_to_all_running_components(
     """Tests that stack suspending calls `component.suspend()` on any
     component that is running."""
     for component in stack_with_mock_components.components.values():
-        component.is_running = True
+        component.is_suspended = False
 
     stack_with_mock_components.suspend()
 
@@ -406,7 +402,7 @@ def test_stack_forwards_suspending_to_all_running_components(
         component.suspend.assert_called_once()
 
     _, any_component = stack_with_mock_components.components.popitem()
-    any_component.is_running = False
+    any_component.is_suspended = True
 
     stack_with_mock_components.suspend()
 
