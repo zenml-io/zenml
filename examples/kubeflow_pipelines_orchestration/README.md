@@ -221,7 +221,7 @@ When running the upcoming commands, make sure to replace `$PATH_TO_YOUR_CONTAINE
 # In order to create the GCP artifact store, we need to install one additional ZenML integration:
 zenml integration install gcp
 
-# Create and activatethe stack and its components
+# Create and activate the stack and its components
 zenml container-registry register gcp_registry --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
 zenml metadata-store register kubeflow_metadata_store --flavor=kubeflow
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path=$PATH_TO_YOUR_GCP_BUCKET
