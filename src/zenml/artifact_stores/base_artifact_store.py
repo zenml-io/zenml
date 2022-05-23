@@ -25,7 +25,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""The `BaseArtifactStore` offers an interface for extending the ZenML artifact store."""
 import textwrap
 from abc import abstractmethod
 from typing import (
@@ -52,14 +52,19 @@ PathType = Union[bytes, str]
 
 
 def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
-    """Utility decorator used for catching a `FileNotFoundError` and
-    converting it to a `NotFoundError` in order to deal with the TFX exception
-    handling."""
+    """Utility decorator used for catching a `FileNotFoundError`.
+
+    Error is converted to a `NotFoundError` in order to deal with the TFX
+    exception handling.
+    """
 
     def inner_function(*args: Any, **kwargs: Any) -> Any:
-        """Inner function for the decorator. It attempts to run the function
+        """Inner function for the decorator.
+
+        It attempts to run the function
         wrapped by the decorator and catches the FileNotFoundError if it is
-        thrown. In that case, the tfx.NotFoundError is raised instead."""
+        thrown. In that case, the tfx.NotFoundError is raised instead.
+        """
         try:
             return _func(*args, **kwargs)
         except FileNotFoundError as e:
@@ -70,6 +75,7 @@ def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
 
 class BaseArtifactStore(StackComponent):
     """Base class for all ZenML artifact stores.
+
     Attributes:
         path: The root path of the artifact store.
     """
@@ -144,15 +150,17 @@ class BaseArtifactStore(StackComponent):
 
     # --- Internal interface ---
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initiate the Pydantic object and register the corresponding
-        filesystem."""
+        """Initiate the Pydantic object and register the corresponding filesystem."""
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
 
     @root_validator(skip_on_failure=True)
     def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
-        """Validator function for the Artifact Stores. Checks whether
-        supported schemes are defined and the given path is supported"""
+        """Validator function for the Artifact Stores.
+
+        Checks whether supported schemes are defined and the given path is
+        supported.
+        """
         try:
             getattr(cls, "SUPPORTED_SCHEMES")
         except AttributeError:
@@ -191,7 +199,7 @@ class BaseArtifactStore(StackComponent):
         return values
 
     def _register(self, priority: int = 5) -> None:
-        """Create and register a filesystem within the TFX registry"""
+        """Create and register a filesystem within the TFX registry."""
         from tfx.dsl.io.filesystem import Filesystem
         from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
 
