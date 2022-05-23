@@ -236,7 +236,7 @@ class GlobalConfiguration(
                     config_version,
                     curr_version,
                 )
-                # TODO [HIGH]: Give more detailed instruction on how to resolve
+                # TODO [ENG-899]: Give more detailed instruction on how to resolve
                 #  version mismatch.
                 return
 
