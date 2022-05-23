@@ -761,19 +761,29 @@ class KubeflowOrchestrator(BaseOrchestrator):
         self, container_registry_name: str, container_registry_path: str
     ) -> None:
         """Logs manual steps needed to setup the Kubeflow local orchestrator."""
+        if not self.is_local:
+            # Make sure we're not telling users to deploy Kubeflow on their
+            # remote clusters
+            logger.warning(
+                "This Kubeflow orchestrator is configured to use a non-local "
+                f"Kubernetes context {self.kubernetes_context}. Manually "
+                f"deploying Kubeflow Pipelines is only possible for local "
+                f"Kubeflow orchestrators."
+            )
+            return
+
         global_config_dir_path = zenml.io.utils.get_global_config_directory()
         kubeflow_commands = [
-            f"> k3d cluster create CLUSTER_NAME --image {local_deployment_utils.K3S_IMAGE_NAME} --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}\n",
-            f"> kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}&timeout=1m",
-            "> kubectl --context CLUSTER_NAME wait --timeout=60s --for condition=established crd/applications.app.k8s.io",
-            f"> kubectl --context CLUSTER_NAME apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}&timeout=1m",
-            f"> kubectl --namespace kubeflow port-forward svc/ml-pipeline-ui {self.kubeflow_pipelines_ui_port}:80",
+            f"> k3d cluster create {self._k3d_cluster_name} --image {local_deployment_utils.K3S_IMAGE_NAME} --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}\n",
+            f"> kubectl --context {self.kubernetes_context} apply -k github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}&timeout=5m",
+            f"> kubectl --context {self.kubernetes_context} wait --timeout=60s --for condition=established crd/applications.app.k8s.io",
+            f"> kubectl --context {self.kubernetes_context} apply -k github.com/kubeflow/pipelines/manifests/kustomize/env/platform-agnostic-pns?ref={KFP_VERSION}&timeout=5m",
+            f"> kubectl --context {self.kubernetes_context} --namespace kubeflow port-forward svc/ml-pipeline-ui {self.kubeflow_pipelines_ui_port}:80",
         ]
 
-        logger.error("Unable to spin up local Kubeflow Pipelines deployment.")
         logger.info(
             "If you wish to spin up this Kubeflow local orchestrator manually, "
-            "please enter the following commands (substituting where appropriate):\n"
+            "please enter the following commands:\n"
         )
         logger.info("\n".join(kubeflow_commands))
 
@@ -917,6 +927,10 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
         except Exception as e:
             logger.error(e)
+            logger.error(
+                "Unable to spin up local Kubeflow Pipelines deployment."
+            )
+
             self.list_manual_setup_steps(
                 container_registry_name, self._k3d_registry_config_path
             )
