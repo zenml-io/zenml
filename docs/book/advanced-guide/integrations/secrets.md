@@ -44,8 +44,8 @@ zenml stack register STACK_NAME \
     -m METADATA_STORE_NAME \
     -a ARTIFACT_STORE_NAME \
     -o ORCHESTRATOR_NAME \
-    -x SECRETS_MANAGER_NAME
-zenml stack set STACK_NAME
+    -x SECRETS_MANAGER_NAME \
+    --set
 ```
 
 ## Interacting with the Secrets Manager

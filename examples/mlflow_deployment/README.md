@@ -207,8 +207,8 @@ zenml stack register local_mlflow_stack \
   -a default \
   -o default \
   -d mlflow_deployer \
-  -e mlflow_tracker
-zenml stack set local_mlflow_stack
+  -e mlflow_tracker \
+  --set
 ```
 
 ### ▶️ Run the Code

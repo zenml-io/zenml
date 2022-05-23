@@ -67,10 +67,8 @@ zenml stack register wandb_stack \
     -m default \
     -a default \
     -o default \
-    -e wandb_tracker
-    
-# Activate the newly created stack
-zenml stack set wandb_stack
+    -e wandb_tracker \
+    --set
 ```
 
 ### ▶ Run the project
