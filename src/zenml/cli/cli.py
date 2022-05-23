@@ -41,7 +41,14 @@ class TagGroup(click.Group):
         ] = None,
         **kwargs: Dict[str, Any],
     ) -> None:
-        """Initialize the Tag group."""
+        """Initialize the Tag group.
+
+        Args:
+            name: The name of the group.
+            tag: The tag of the group.
+            commands: The commands of the group.
+            kwargs: Additional keyword arguments.
+        """
         super(TagGroup, self).__init__(name, commands, **kwargs)
         self.tag = tag or CliCategories.OTHER_COMMANDS
 
@@ -61,6 +68,12 @@ class ZenMLCLI(click.Group):
         """Formats the help into a string and returns it.
 
         Calls :meth:`format_help` internally.
+
+        Args:
+            ctx: The click context.
+
+        Returns:
+            The formatted help string.
         """
         formatter = ctx.make_formatter()
         self.format_help(ctx, formatter)
@@ -76,6 +89,10 @@ class ZenMLCLI(click.Group):
         This custom format_commands method is used to retrieve the commands and
         groups of commands with a tag. In order to call the new custom format
         method, the command must be added to the ZenML CLI class.
+
+        Args:
+            ctx: The click context.
+            formatter: The click formatter.
         """
         commands: List[Tuple[CliCategories, str, Union[Command, TagGroup]]] = []
         for subcommand in self.list_commands(ctx):
