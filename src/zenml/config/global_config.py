@@ -232,15 +232,12 @@ class GlobalConfiguration(
                     "It is highly recommended that you update ZenML to at "
                     "least match the global configuration version, otherwise "
                     "you may run into unexpected issues such as model schema "
-                    "validation failures or even loss of information. As an "
-                    "alternative, if you run into incompatibility issues but "
-                    "do not want to update ZenML, you can use the "
-                    "`zenml clean` command to completely wipe your global "
-                    "configuration, profiles and stacks and restore ZenML to a"
-                    " clean and valid state.",
+                    "validation failures or even loss of information.",
                     config_version,
                     curr_version,
                 )
+                # TODO [HIGH]: Give more detailed instruction on how to resolve
+                #  version mismatch.
                 return
 
             if config_version == curr_version:
