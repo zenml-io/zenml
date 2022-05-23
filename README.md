@@ -107,8 +107,6 @@ your project, you get the following benefits:
 
 ### 1. 💪 Write local, run anywhere
 
-<details>
-
 You only need to write your core machine learning workflow code once, but you
 can run it anywhere. We decouple your code from the environment and
 infrastructure on which this code runs.
@@ -122,11 +120,7 @@ CLI tool.
 ![You can run your pipelines locally or in the
 cloud](docs/book/assets/core_concepts/concepts-3.png)
 
-</details>
-
 ### 2. 🌈 All your MLOps stacks in one place
-
-<details>
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with [powerful
@@ -144,11 +138,7 @@ to see how they work.
 
 ![ZenML is the glue](docs/book/assets/stack-list.png)
 
-</details>
-
 ### 3. 🛠 Extensibility
-
-<details>
 
 ZenML's Stack Components are built to support most machine learning use cases.
 We offer a batteries-included initial installation that should serve many needs
@@ -158,11 +148,7 @@ framework making it easy to extend and build out whatever you need.
 
 ![ZenML is fully extensible](docs/book/assets/extensibility.gif)
 
-</details>
-
 ### 4. 🔍 Automated metadata tracking
-
-<details>
 
 ZenML tracks metadata for all the pipelines you run. This ensures that:
 
@@ -177,11 +163,7 @@ blogpost](https://blog.zenml.io/caching-ml-pipelines/) to learn more!)
 
 ![Visualize your pipeline steps](docs/book/assets/dag-visualizer.png)
 
-</details>
-
 ### 5. ➿ Continuous Training and Continuous Deployment (CT/CD)
-
-<details>
 
 Continuous Training (CT) refers to the paradigm where a team deploys training pipelines 
 that run automatically to train models on new (fresh) data. Continuous Deployment (CD) 
@@ -201,8 +183,6 @@ zenml served-models list
 ```
 
 Read more about CT/CD in ZenML [here](https://blog.zenml.io/ci-ct-cd-with-zenml/).
-
-</details>
 
 # 🤸 Getting Started
 
@@ -375,15 +355,12 @@ label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). If you
 would like to contribute, please review our [Contributing
 Guide](CONTRIBUTING.md) for all relevant details.
 
-<details><summary>See Contributer Analytics</summary>
-
 <br>
 
 ![Repobeats analytics
 image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f96dd.svg
 "Repobeats analytics image")
 
-</details>
 
 # 🆘 Where to get help
 
