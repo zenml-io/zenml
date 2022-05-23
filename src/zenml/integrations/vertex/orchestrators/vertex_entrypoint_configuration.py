@@ -12,8 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from kfp.v2 import dsl
+
 from zenml.entrypoints import StepEntrypointConfiguration
 
 
 class VertexEntrypointConfiguration(StepEntrypointConfiguration):
-    """Entrypoint configuration"""
+    """Entrypoint configuration for running steps on Vertex AI Pipelines."""
+
+    def get_run_name(self, pipeline_name: str) -> str:
+        return dsl.PIPELINE_JOB_ID_PLACEHOLDER
