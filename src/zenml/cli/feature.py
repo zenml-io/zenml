@@ -12,6 +12,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to interact with features accessed via a registered Feature Store."""
 
 # TODO [ENG-795]: Generalize these commands to all feature stores.
 

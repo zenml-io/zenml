@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Core CLI functionality."""
 
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -25,8 +26,8 @@ from zenml.logger import set_root_verbosity
 
 
 class TagGroup(click.Group):
-    """
-    Override the default click Group to add a tag.
+    """Override the default click Group to add a tag.
+
     The tag is used to group commands and groups of
     commands in the help output.
     """
@@ -40,23 +41,19 @@ class TagGroup(click.Group):
         ] = None,
         **kwargs: Dict[str, Any],
     ) -> None:
+        """Initialize the Tag group."""
         super(TagGroup, self).__init__(name, commands, **kwargs)
         self.tag = tag or CliCategories.OTHER_COMMANDS
 
 
 class ZenContext(click.Context):
-    """
-    Override the default click Context to add the new Formatter.
-    """
+    """Override the default click Context to add the new Formatter."""
 
     formatter_class = ZenFormatter
 
 
 class ZenMLCLI(click.Group):
-    """
-    Override the default click Group to create a custom
-    format command help output.
-    """
+    """Override the default click Group to create a custom format command help output."""
 
     context_class = ZenContext
 
@@ -74,12 +71,11 @@ class ZenMLCLI(click.Group):
     def format_commands(
         self, ctx: click.Context, formatter: formatting.HelpFormatter
     ) -> None:
-        """
-        Extra format methods for multi methods that adds all the commands
-        after the options.
-        This custom format commands is used to retrive the commands and
+        """Extra format methods for multi methods that adds all the commands after the options.
+
+        This custom format_commands method is used to retrieve the commands and
         groups of commands with a tag. In order to call the new custom format
-        method, the command must be added to the ZenMLCLI class.
+        method, the command must be added to the ZenML CLI class.
         """
         commands: List[Tuple[CliCategories, str, Union[Command, TagGroup]]] = []
         for subcommand in self.list_commands(ctx):
@@ -127,7 +123,7 @@ class ZenMLCLI(click.Group):
 @click.group(cls=ZenMLCLI)
 @click.version_option(__version__, "--version", "-v")
 def cli() -> None:
-    """ZenML"""
+    """CLI base command for ZenML."""
     set_root_verbosity()
 
 
