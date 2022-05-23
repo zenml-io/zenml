@@ -31,12 +31,21 @@ Contributions are made to this repo via Issues and Pull Requests (PRs). A few ge
 - Search for existing Issues and PRs before creating your own.
 - We work hard to make sure issues are handled on time, but it could take a while to investigate the root cause depending on the impact.
 
-A friendly ping in the comment thread to the submitter or a contributor can help draw
-  attention if your issue is blocking.
+A friendly ping in the comment thread to the submitter or a contributor can help
+draw attention if your issue is blocking.
 
-The best way to start is to check
-the [`good-first-issue` label](https://github.com/zenml-io/zenml/labels/good%20first%20issue) on the issue board. These
-The core team creates these issues as necessary smaller tasks that you can work on to get deeper into ZenML internals.
+The best way to start is to check the
+[`good-first-issue`](https://github.com/zenml-io/zenml/labels/good%20first%20issue)
+label on the issue board. The core team creates these issues as necessary
+smaller tasks that you can work on to get deeper into ZenML internals. These
+should generally require relatively simple changes, probably affecting just one
+or two files which we think are ideal for people new to ZenML.
+
+The next step after that would be to look at the
+[`good-second-issue`](https://github.com/zenml-io/zenml/labels/good%20second%20issue)
+label on the issue board. These are a bit more complex, might involve more
+files, but should still be well defined and achievable to people relatively new
+to ZenML.
 
 ### ⁉️ Issues
 
