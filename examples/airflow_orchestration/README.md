@@ -53,8 +53,8 @@ zenml orchestrator register airflow_orchestrator --flavor=airflow
 zenml stack register airflow_stack \
     -m default \
     -a default \
-    -o airflow_orchestrator
-zenml stack set airflow_stack
+    -o airflow_orchestrator \
+    --set
 ```
 
 ### 🏁️ Starting up Airflow
