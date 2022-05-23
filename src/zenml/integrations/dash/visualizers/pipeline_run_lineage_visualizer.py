@@ -136,9 +136,8 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                 )
                 mode = "inline"
             else:
-                # TODO [ENG-895]: Refactor this to raise a warning instead.
-                raise AssertionError(
-                    "Cannot set magic flag in non-notebook environments."
+                warning(
+                    text="Cannot set magic flag in non-notebook environments."
                 )
         else:
             app = dash.Dash(
