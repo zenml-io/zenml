@@ -14,13 +14,13 @@ steps:
     args: ['-c', 'docker build --build-arg ZENML_VERSION=$TAG_NAME -t $$USERNAME/zenml:$TAG_NAME -t $$USERNAME/zenml:latest -f docker/base.Dockerfile .']
     secretEnv: ['USERNAME']
 
-  # build CUDA image
-  - name : 'gcr.io/cloud-builders/docker'
-    id: 'build-cuda'
-    waitFor: [ 'docker-login' ]
-    entrypoint: 'bash'
-    args: ['-c', 'docker build --build-arg ZENML_VERSION=$TAG_NAME -t $$USERNAME/zenml:$TAG_NAME-cuda -t $$USERNAME/zenml:latest-cuda -f docker/cuda.Dockerfile .']
-    secretEnv: ['USERNAME']
+#  # build CUDA image
+#  - name : 'gcr.io/cloud-builders/docker'
+#    id: 'build-cuda'
+#    waitFor: [ 'docker-login' ]
+#    entrypoint: 'bash'
+#    args: ['-c', 'docker build --build-arg ZENML_VERSION=$TAG_NAME -t $$USERNAME/zenml:$TAG_NAME-cuda -t $$USERNAME/zenml:latest-cuda -f docker/cuda.Dockerfile .']
+#    secretEnv: ['USERNAME']
 
   # push the images
   - name: 'gcr.io/cloud-builders/docker'
