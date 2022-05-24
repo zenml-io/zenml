@@ -60,7 +60,7 @@
 	* [ZenML in Practice](https://github.com/zenml-io/zenfiles)
 	* [Learn more on Youtube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
 	* [Slack Community](https://zenml.io/slack-invite/)
-* [Resources](resources/index.md)
+* [Resources]()
   * [Best Practices](resources/best-practices.md)
   * [System Environmental Variables](resources/system-env.md)
   * [Usage Analytics](resources/usage-analytics.md)
