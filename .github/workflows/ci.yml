@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   poetry-install:
-    if: ! github.event.pull_request.draft
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/poetry-install.yml
     secrets: inherit
 
