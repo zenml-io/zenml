@@ -298,6 +298,7 @@ class VertexOrchestrator(BaseOrchestrator):
         # We have to replace the hyphens in the pipeline name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
         # requires this format.
+        assert runtime_configuration.run_name
         job_id = _clean_pipeline_name(runtime_configuration.run_name)
 
         # Instantiate the Vertex AI Pipelines job

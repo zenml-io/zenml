@@ -46,4 +46,5 @@ class VertexEntrypointConfiguration(StepEntrypointConfiguration):
 
     def get_run_name(self, pipeline_name: str) -> str:
         """Returns the Vertex AI Pipeline job id."""
-        return self.entrypoint_args[VERTEX_JOB_ID_OPTION]
+        job_id: str = self.entrypoint_args[VERTEX_JOB_ID_OPTION]
+        return job_id
