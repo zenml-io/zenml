@@ -3,7 +3,9 @@ name: Publish API Docs
 
 # Controls when the action will run.
 on:
-  workflow_call:
+  push:
+    branches:
+      - 'release/**'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -19,9 +21,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Get the version from the github tag ref
+    - name: Get the version from the github branch name
       id: get_version
-      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      run: |
+        BRANCH='${{github.ref_name}}'
+        echo ::set-output name=VERSION::${BRANCH#release/}
 
     - name: Set up Python
       uses: actions/setup-python@v2
@@ -34,11 +38,10 @@ jobs:
     - run: npm install
     - run: npm install html-minifier -g
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
+    - name: Setup environment with Poetry
+      uses: ./.github/actions/setup_environment
       with:
-        virtualenvs-create: true
-        virtualenvs-in-project: true
+        cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
 
     - name: Install Dependencies
       run: |
