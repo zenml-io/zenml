@@ -118,6 +118,13 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "--set",
+    "set_stack",
+    is_flag=True,
+    help="Immediately set this stack as active.",
+    type=click.BOOL,
+)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
@@ -129,6 +136,7 @@ def register_stack(
     feature_store_name: Optional[str] = None,
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
+    set_stack: bool = False,
 ) -> None:
     """Register a stack."""
     cli_utils.print_active_profile()
@@ -200,6 +208,9 @@ def register_stack(
         )
         repo.register_stack(stack_)
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
+
+    if set_stack:
+        set_active_stack(stack_name=stack_name)
 
 
 @stack.command("update", context_settings=dict(ignore_unknown_options=True))
@@ -644,18 +655,30 @@ def delete_stack(
     is_flag=True,
     help="Set the active stack globally.",
 )
-def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
+def set_active_stack_command(
+    stack_name: str, global_profile: bool = False
+) -> None:
     """Sets a stack as active.
 
     If the '--global' flag is set, the global active stack will be set,
     otherwise the repository active stack takes precedence.
     """
+    set_active_stack(stack_name, global_profile)
+
+
+def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
+    """Sets a stack as active.
+
+    If the '--global' flag is set, the global active stack will be set,
+    otherwise the repository active stack takes precedence.
+
+    Args:
+        stack_name: Unique name of the stack
+        global_profile: If the stack should be created on the global profile
+    """
     cli_utils.print_active_profile()
-
     scope = " global" if global_profile else ""
-
     repo = Repository()
-
     with console.status(
         f"Setting the{scope} active stack to '{stack_name}'..."
     ):
