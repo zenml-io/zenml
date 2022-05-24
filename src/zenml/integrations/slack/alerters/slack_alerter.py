@@ -58,12 +58,13 @@ class SlackAlerter(BaseAlerter):
         Returns:
             True if operation succeeded, else False
         """
-        if not isinstance(config, SlackAlerterConfig):
+        if not isinstance(config, BaseAlerterStepConfig):
             raise RuntimeError(
-                "The config object must be of type `SlackAlerterConfig`."
+                "The config object must be of type `BaseAlerterStepConfig`."
             )
         if (
-            hasattr(config, "slack_channel_id")
+            isinstance(config, SlackAlerterConfig)
+            and hasattr(config, "slack_channel_id")
             and config.slack_channel_id is not None
         ):
             slack_channel_id = config.slack_channel_id
