@@ -68,15 +68,14 @@ class SlackAlerter(BaseAlerter):
             and config.slack_channel_id is not None
         ):
             slack_channel_id = config.slack_channel_id
+        elif self.default_slack_channel_id is not None:
+            slack_channel_id = self.default_slack_channel_id
         else:
-            if self.default_slack_channel_id is not None:
-                slack_channel_id = self.default_slack_channel_id
-            else:
-                raise ValueError(
-                    "Neither the `SlackAlerterConfig.slack_channel_id` in the runtime "
-                    "configuration, nor the `default_slack_channel_id` in the alerter "
-                    "stack component is specified. Please specify at least one."
-                )
+            raise ValueError(
+                "Neither the `SlackAlerterConfig.slack_channel_id` in the runtime "
+                "configuration, nor the `default_slack_channel_id` in the alerter "
+                "stack component is specified. Please specify at least one."
+            )
 
         client = WebClient(token=self.slack_token)
         try:

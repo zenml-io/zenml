@@ -51,7 +51,7 @@ zenml init
 
 # create and enter a new ZenML profile
 zenml profile create slack_example
-zeml profile set slack_example
+zenml profile set slack_example
 
 # register slack alerter
 zenml alerter register slack_alerter -f slack --slack_token=<SLACK_TOKEN> --default_slack_channel_id=<SLACK_CHANNEL_ID>
