@@ -43,6 +43,7 @@
 * [Model Deployers](extending-zenml/model-deployer.md)
 * [Experiment Trackers](extending-zenml/experiment-tracker.md)
 * [Feature Stores](extending-zenml/feature-store.md)
+* [Alerters](extending-zenml/alerter.md)
 
 ## Collaborate
 
