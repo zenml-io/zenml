@@ -230,13 +230,18 @@ def go() -> None:
             f"{zenml_tutorial_path} already exists! Continuing without cloning."
         )
 
-    ipynb_files = [
-        fi for fi in os.listdir(zenml_tutorial_path) if fi.endswith(".ipynb")
-    ]
+    # get list of all .ipynb files in zenml_tutorial_path
+    ipynb_files = []
+    for dirpath, _, filenames in os.walk(zenml_tutorial_path):
+        for filename in filenames:
+            if filename.endswith(".ipynb"):
+                ipynb_files.append(os.path.join(dirpath, filename))
+
     ipynb_files.sort()
     console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
     input("Press ENTER to continue...")
-    subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
+    notebook_path = os.path.join(zenml_tutorial_path, "notebooks")
+    subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
 
 
 def _prompt_email(gc: GlobalConfiguration) -> bool:
