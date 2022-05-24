@@ -57,8 +57,7 @@ set up properly.
 
 ```shell
 zenml secrets-manager register aws_secrets_manager -t aws
-zenml stack register secrets_stack -m default -o default -a default -x aws_secrets_manager
-zenml stack set aws_secrets_stack
+zenml stack register secrets_stack -m default -o default -a default -x aws_secrets_manager --set
 ```
 
 ### 🥞 Set up your stack for GCP
@@ -71,8 +70,7 @@ secrets manager API within your gcp project.
 
 ```shell
 zenml secrets-manager register gcp_secrets_manager -t gcp_secrets_manager
-zenml stack register secrets_stack -m default -o default -a default -x gcp_secrets_manager
-zenml stack set gcp_secrets_stack
+zenml stack register secrets_stack -m default -o default -a default -x gcp_secrets_manager --set
 ```
 
 ### Or stay on a local stack

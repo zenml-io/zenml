@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 
 import os
+import tempfile
 from typing import Any, Type
 
 import pandas as pd
 
 from zenml.artifacts import DataArtifact, SchemaArtifact, StatisticsArtifact
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "df.parquet.gzip"
@@ -37,9 +39,22 @@ class PandasMaterializer(BaseMaterializer):
     def handle_input(self, data_type: Type[Any]) -> pd.DataFrame:
         """Reads pd.Dataframe from a parquet file."""
         super().handle_input(data_type)
-        return pd.read_parquet(
-            os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        )
+        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+
+        # Create a temporary folder
+        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
+        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+
+        # Copy from artifact store to temporary file
+        fileio.copy(filepath, temp_file)
+
+        # Load the model from the temporary file
+        df = pd.read_parquet(temp_file)
+
+        # Cleanup and return
+        fileio.rmtree(temp_dir)
+
+        return df
 
     def handle_return(self, df: pd.DataFrame) -> None:
         """Writes a pandas dataframe to the specified filename.
@@ -49,4 +64,14 @@ class PandasMaterializer(BaseMaterializer):
         """
         super().handle_return(df)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        df.to_parquet(filepath, compression=COMPRESSION_TYPE)
+
+        # Create a temporary file to store the model
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".gzip", delete=False
+        ) as f:
+            df.to_parquet(f.name, compression=COMPRESSION_TYPE)
+            fileio.copy(f.name, filepath)
+
+        # Close and remove the temporary file
+        f.close()
+        fileio.remove(f.name)

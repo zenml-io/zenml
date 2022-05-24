@@ -238,8 +238,7 @@ zenml model-deployer register seldon_eks --flavor=seldon \
   --secret=s3-store
 zenml artifact-store register aws --flavor=s3 --path s3://mybucket
 zenml secrets-manager register local --flavor=local
-zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks -x local
-zenml stack set local_with_aws_storage
+zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks -x local --set
 ```
 
 As the last step in setting up the stack, we need to configure a ZenML secret
@@ -304,8 +303,7 @@ zenml container-registry register aws --flavor=default --uri=715803424590.dkr.ec
 zenml metadata-store register aws --flavor=kubeflow
 zenml orchestrator register aws --flavor=kubeflow --kubernetes_context=zenml-eks --synchronous=True
 zenml secrets-manager register aws --flavor=aws
-zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws -x aws
-zenml stack set aws
+zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws -x aws --set
 ```
 
 ZenML will manage the Seldon Core deployments inside the same `kubeflow`
@@ -359,36 +357,25 @@ save any explicit AWS credentials in the ZenML secret. You just have to set the
 as is:
 
 ```bash
-$ zenml secret register -s seldon_s3 s3-store
-You have supplied a secret_set_schema with predefined keys. You can fill these
-out sequentially now. Just press ENTER to skip optional secrets that you do not
-want to set
-Secret value for rclone_config_s3_type:
-Secret value for rclone_config_s3_provider:
-Secret value for rclone_config_s3_env_auth: True
-Secret value for rclone_config_s3_access_key_id:
-Secret value for rclone_config_s3_secret_access_key:
-Secret value for rclone_config_s3_session_token:
-Secret value for rclone_config_s3_region:
-Secret value for rclone_config_s3_endpoint:
+$ zenml secret register -s seldon_s3 s3-store --rclone_config_s3_env_auth=True
 The following secret will be registered.
-┏━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ SECRET_NAME │ SECRET_KEY                │ SECRET_VALUE ┃
-┠─────────────┼───────────────────────────┼──────────────┨
-┃ seldon_aws  │ rclone_config_s3_type     │ ***          ┃
-┃ seldon_aws  │ rclone_config_s3_provider │ ***          ┃
-┃ seldon_aws  │ rclone_config_s3_env_auth │ ***          ┃
-┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃        SECRET_KEY         │ SECRET_VALUE ┃
+┠───────────────────────────┼──────────────┨
+┃   rclone_config_s3_type   │ ***          ┃
+┃ rclone_config_s3_provider │ ***          ┃
+┃ rclone_config_s3_env_auth │ ***          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 
 $ zenml secret get s3-store
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-┏━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ SECRET_NAME │ SECRET_KEY                │ SECRET_VALUE ┃
-┠─────────────┼───────────────────────────┼──────────────┨
-┃ seldon_aws  │ rclone_config_s3_type     │ s3           ┃
-┃ seldon_aws  │ rclone_config_s3_provider │ aws          ┃
-┃ seldon_aws  │ rclone_config_s3_env_auth │ True         ┃
-┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃        SECRET_KEY         │ SECRET_VALUE ┃
+┠───────────────────────────┼──────────────┨
+┃   rclone_config_s3_type   │ s3           ┃
+┃ rclone_config_s3_provider │ aws          ┃
+┃ rclone_config_s3_env_auth │ True         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 ```
 
 ##### AWS Authentication with Explicit Credentials
@@ -398,45 +385,40 @@ configure it, you will need to set up credentials explicitly in the ZenML secret
 e.g.:
 
 ```bash
-$ zenml secret register -s seldon_s3 s3-store
-You have supplied a secret_set_schema with predefined keys. You can fill these
-out sequentially now. Just press ENTER to skip optional secrets that you do not
-want to set
-Secret value for rclone_config_s3_type:
-Secret value for rclone_config_s3_provider:
-Secret value for rclone_config_s3_env_auth: False
-Secret value for rclone_config_s3_access_key_id: ASAK2NSJVO4HDQC7Z25F
-Secret value for rclone_config_s3_secret_access_key: AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+
-Secret value for rclone_config_s3_session_token: AFdfsaSf2SDFfdaWAsfCacs...ASDFsfdfs23sc==
-Secret value for rclone_config_s3_region: us-east-1
-Secret value for rclone_config_s3_endpoint:
+$ zenml secret register -s seldon_s3 s3-store \
+    --rclone_config_s3_env_auth=False \
+    --rclone_config_s3_access_key_id='ASAK2NSJVO4HDQC7Z25F' \ --rclone_config_s3_secret_access_key='AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+' \
+    --rclone_config_s3_session_token=@./aws_session_token.txt \
+    --rclone_config_s3_region=us-east-1
+Expanding argument value rclone_config_s3_session_token to contents of file ./aws_session_token.txt.
 The following secret will be registered.
-┏━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
-┃ SECRET_NAME │ SECRET_KEY                         │ SECRET_VALUE ┃
-┠─────────────┼────────────────────────────────────┼──────────────┨
-┃  s3-store   │ rclone_config_s3_type              │ ***          ┃
-┃  s3-store   │ rclone_config_s3_provider          │ ***          ┃
-┃  s3-store   │ rclone_config_s3_env_auth          │ ***          ┃
-┃  s3-store   │ rclone_config_s3_access_key_id     │ ***          ┃
-┃  s3-store   │ rclone_config_s3_secret_access_key │ ***          ┃
-┃  s3-store   │ rclone_config_s3_session_token     │ ***          ┃
-┃  s3-store   │ rclone_config_s3_region            │ ***          ┃
-┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃             SECRET_KEY             │ SECRET_VALUE ┃
+┠────────────────────────────────────┼──────────────┨
+┃       rclone_config_s3_type        │ ***          ┃
+┃     rclone_config_s3_provider      │ ***          ┃
+┃     rclone_config_s3_env_auth      │ ***          ┃
+┃   rclone_config_s3_access_key_id   │ ***          ┃
+┃ rclone_config_s3_secret_access_key │ ***          ┃
+┃   rclone_config_s3_session_token   │ ***          ┃
+┃      rclone_config_s3_region       │ ***          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
 
 $ zenml secret get s3-store
 INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
-┏━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ SECRET_NAME │ SECRET_KEY                    │ SECRET_VALUE                  ┃
-┠─────────────┼───────────────────────────────┼───────────────────────────────┨
-┃  s3-store   │ rclone_config_s3_type         │ s3                            ┃
-┃  s3-store   │ rclone_config_s3_provider     │ aws                           ┃
-┃  s3-store   │ rclone_config_s3_env_auth     │ False                         ┃
-┃  s3-store   │ rclone_config_s3_access_key_… │ ASAK2NSJVO4HDQC7Z25F          ┃
-┃  s3-store   │ rclone_config_s3_secret_acce… │ AhkFSfhjj23fSDFfjklsdfj34hkl… ┃
-┃  s3-store   │ rclone_config_s3_session_tok… │ AFdfsaSf2SDFfdaWAsfCacssDsfA… ┃
-┃  s3-store   │ rclone_config_s3_region       │ us-east-1                     ┃
-┗━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             SECRET_KEY             │ SECRET_VALUE                           ┃
+┠────────────────────────────────────┼────────────────────────────────────────┨
+┃       rclone_config_s3_type        │ s3                                     ┃
+┃     rclone_config_s3_provider      │ aws                                    ┃
+┃     rclone_config_s3_env_auth      │ False                                  ┃
+┃   rclone_config_s3_access_key_id   │ ASAK2NSJVO4HDQC7Z25F                   ┃
+┃ rclone_config_s3_secret_access_key │ AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscs… ┃
+┃   rclone_config_s3_session_token   │ FwoGZXIvYXdzEG4aDHogqi7YRrJyVJUVfSKpA… ┃
+┃                                    │                                        ┃
+┃      rclone_config_s3_region       │ us-east-1                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
 ### 🏃️Run the code

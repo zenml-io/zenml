@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Container Registry
-
 A container registry is a store for (Docker) containers. A ZenML workflow
 involving a container registry would automatically containerize your code to
 be transported across stacks running remotely. As part of the deployment to
@@ -32,6 +30,9 @@ from zenml.container_registries.azure_container_registry import (
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
+from zenml.container_registries.default_container_registry import (
+    DefaultContainerRegistry,
+)
 from zenml.container_registries.dockerhub_container_registry import (
     DockerHubContainerRegistry,
 )
@@ -47,6 +48,7 @@ from zenml.container_registries.gitlab_container_registry import (
 
 __all__ = [
     "BaseContainerRegistry",
+    "DefaultContainerRegistry",
     "AzureContainerRegistry",
     "DockerHubContainerRegistry",
     "GCPContainerRegistry",

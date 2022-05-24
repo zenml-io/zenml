@@ -54,5 +54,10 @@ class BaseSecretSchema(BaseModel, ABC):
             if schema_key not in ignored_keys
         ]
 
+    class Config:
+        """Pydantic configuration class."""
 
-# TODO [ENG-723]: Validate that Secret contents conform to schema
+        # validate attribute assignments
+        validate_assignment = True
+        # report extra attributes as validation failures
+        extra = "forbid"

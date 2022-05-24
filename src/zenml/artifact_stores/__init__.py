@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Artifact Stores
-
 In ZenML, the inputs and outputs which go through any step is treated as an
 artifact and as its name suggests, an `ArtifactStore` is a place where these
 artifacts get stored.

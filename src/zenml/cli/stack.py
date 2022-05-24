@@ -31,6 +31,7 @@ from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import ProvisioningError
 from zenml.repository import Repository
 from zenml.stack import Stack
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 
@@ -125,6 +126,13 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "--set",
+    "set_stack",
+    is_flag=True,
+    help="Immediately set this stack as active.",
+    type=click.BOOL,
+)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
@@ -137,6 +145,7 @@ def register_stack(
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
+    set_stack: bool = False,
 ) -> None:
     """Register a stack."""
     cli_utils.print_active_profile()
@@ -216,6 +225,9 @@ def register_stack(
         )
         repo.register_stack(stack_)
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
+
+    if set_stack:
+        set_active_stack(stack_name=stack_name)
 
 
 @stack.command("update", context_settings=dict(ignore_unknown_options=True))
@@ -539,12 +551,15 @@ def rename_stack(
             )
         stack_components = current_stack.components
 
-        registered_stacks = {stack.name for stack in repo.stacks}
-        if new_stack_name in registered_stacks:
+        try:
+            repo.zen_store.get_stack(new_stack_name)
             cli_utils.error(
                 f"Stack `{new_stack_name}` already exists. Please choose a "
                 f"different name.",
             )
+        except KeyError:
+            pass
+
         new_stack_ = Stack.from_components(
             name=new_stack_name, components=stack_components
         )
@@ -631,7 +646,8 @@ def delete_stack(
     if old_force:
         yes = old_force
         cli_utils.warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+            "The `--force` flag will soon be deprecated. Use `--yes` or "
+            "`-y` instead."
         )
     cli_utils.print_active_profile()
     confirmation = yes or cli_utils.confirmation(
@@ -673,18 +689,30 @@ def delete_stack(
     is_flag=True,
     help="Set the active stack globally.",
 )
-def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
+def set_active_stack_command(
+    stack_name: str, global_profile: bool = False
+) -> None:
     """Sets a stack as active.
 
     If the '--global' flag is set, the global active stack will be set,
     otherwise the repository active stack takes precedence.
     """
+    set_active_stack(stack_name, global_profile)
+
+
+def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
+    """Sets a stack as active.
+
+    If the '--global' flag is set, the global active stack will be set,
+    otherwise the repository active stack takes precedence.
+
+    Args:
+        stack_name: Unique name of the stack
+        global_profile: If the stack should be created on the global profile
+    """
     cli_utils.print_active_profile()
-
     scope = " global" if global_profile else ""
-
     repo = Repository()
-
     with console.status(
         f"Setting the{scope} active stack to '{stack_name}'..."
     ):
@@ -735,14 +763,16 @@ def up_stack() -> None:
     "-f",
     "old_force",
     is_flag=True,
-    help="DEPRECATED: Deprovisions local resources instead of suspending them. Use `-y/--yes` instead.",
+    help="DEPRECATED: Deprovisions local resources instead of suspending "
+    "them. Use `-y/--yes` instead.",
 )
 def down_stack(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the active stack deployment."""
     if old_force:
         force = old_force
         cli_utils.warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+            "The `--force` flag will soon be deprecated. Use `--yes` "
+            "or `-y` instead."
         )
     cli_utils.print_active_profile()
 
@@ -780,9 +810,10 @@ def _get_component_as_dict(
 @click.argument("filename", type=str, required=False)
 def export_stack(stack_name: str, filename: Optional[str]) -> None:
     """Export a stack to YAML."""
+    track_event(AnalyticsEvent.EXPORT_STACK)
 
     # Get configuration of given stack
-    # TODO: code duplicate with describe_stack()
+    # TODO [ENG-893]: code duplicate with describe_stack()
     repo = Repository()
 
     stack_configurations = repo.stack_configurations
@@ -870,6 +901,7 @@ def import_stack(
     ctx: click.Context, stack_name: str, filename: Optional[str]
 ) -> None:
     """Import a stack from YAML."""
+    track_event(AnalyticsEvent.IMPORT_STACK)
 
     # handle 'zenml stack import file.yaml' calls
     if stack_name.endswith(".yaml") and filename is None:
@@ -879,7 +911,8 @@ def import_stack(
 
     # standard 'zenml stack import stack_name [file.yaml]' calls
     else:
-        # if filename is not given, assume default export name "<stack_name>.yaml"
+        # if filename is not given, assume default export name
+        # "<stack_name>.yaml"
         if filename is None:
             filename = stack_name + ".yaml"
         data = read_yaml(filename)
@@ -889,8 +922,9 @@ def import_stack(
     if data["zenml_version"] != zenml.__version__:
         cli_utils.error(
             f"Cannot import stacks from other ZenML versions. "
-            f"The stack was created using ZenML version {data['zenml_version']}, "
-            f"you have version {zenml.__version__} installed."
+            f"The stack was created using ZenML version "
+            f"{data['zenml_version']}, you have version "
+            f"{zenml.__version__} installed."
         )
 
     # ask user for new stack_name if current one already exists

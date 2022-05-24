@@ -92,7 +92,7 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
             magic: Whether to magically materialize facet in a notebook.
         """
         if magic:
-            if not Environment.in_notebook():
+            if not Environment.in_notebook() or Environment.in_google_colab():
                 raise EnvironmentError(
                     "The magic functions are only usable in a Jupyter notebook."
                 )

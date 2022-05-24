@@ -56,7 +56,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW_MODEL_DEPLOYER_FLAVOR
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def set_service_path(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Sets the service_path attribute value according to the component
         UUID."""

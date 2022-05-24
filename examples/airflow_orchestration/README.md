@@ -36,7 +36,7 @@ Airflow.
 pip install zenml
 
 # install ZenML integrations
-zenml integration install airflow sklearn
+zenml integration install airflow
 
 # pull example
 zenml example pull airflow_orchestration
@@ -53,8 +53,8 @@ zenml orchestrator register airflow_orchestrator --flavor=airflow
 zenml stack register airflow_stack \
     -m default \
     -a default \
-    -o airflow_orchestrator
-zenml stack set airflow_stack
+    -o airflow_orchestrator \
+    --set
 ```
 
 ### 🏁️ Starting up Airflow
@@ -91,7 +91,7 @@ To schedule the DAG to run every 3 minutes for the next 9 minutes, simply open `
 end of the file.
 
 After a few seconds, you should be able to see the executed dag
-[here](http://0.0.0.0:8080/tree?dag_id=mnist_pipeline)
+[here](http://0.0.0.0:8080/tree?dag_id=airflow_example_pipeline)
 
 ### 🧽 Clean up
 

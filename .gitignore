@@ -155,7 +155,6 @@ __pycache__
 scratchpad/
 
 # zen
-*.yaml
 *.csv
 temp/*
 local_test/
@@ -177,3 +176,7 @@ zenml_examples/
 # wandb
 **wandb/
 !src/zenml/integrations/wandb
+
+
+# some examples have yamls; don't ignore them
+!examples/**/*.yaml

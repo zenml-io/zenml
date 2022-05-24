@@ -1,3 +1,97 @@
+# 0.8.0
+
+## 🧘‍♀️ Extensibility is our middle name
+
+* The ability to register custom stack component flavors (and renaming types to
+  flavor (Registering custom stack component flavors by @bcdurak in
+  https://github.com/zenml-io/zenml/pull/541)
+* The ability to easily extend orchestrators
+* Documentation for stacks, stack components and flavors by @bcdurak in
+  https://github.com/zenml-io/zenml/pull/607
+* Allow configuration of s3fs by @schustmi in
+  https://github.com/zenml-io/zenml/pull/532
+* Ability to use SSL to connect to MySQL clients (That allows for connecting to
+  Cloud based MYSQL deployments)
+* New MySQL metadata stores by @bcdurak in
+  https://github.com/zenml-io/zenml/pull/580!
+* Docs and messaging change
+* Make Orchestrators more extensible and simplify the interface by @AlexejPenner
+  in https://github.com/zenml-io/zenml/pull/581
+* S3 Compatible Artifact Store and materializers file handling by @safoinme in
+  https://github.com/zenml-io/zenml/pull/598
+
+## Manage your stacks
+
+* Update stack and stack components via the CLI by @strickvl in
+  https://github.com/zenml-io/zenml/pull/497
+* Add `stack delete` confirmation prompt by @strickvl in
+  https://github.com/zenml-io/zenml/pull/548
+* Add `zenml stack export` and `zenml stack import` commands by @fa9r in
+  https://github.com/zenml-io/zenml/pull/560
+
+## Collaboration
+
+* User management by @schustmi in https://github.com/zenml-io/zenml/pull/500
+
+## CLI improvements
+
+* CLI speed improvement by @bcdurak in
+  https://github.com/zenml-io/zenml/pull/567
+* Ensure `rich` CLI displays full text and wraps table text by @strickvl in
+  https://github.com/zenml-io/zenml/pull/577
+* Add CLI command to remove stack component attribute by @strickvl in
+  https://github.com/zenml-io/zenml/pull/590
+* Beautify CLI by grouping commands list into tags by @safoinme in
+  https://github.com/zenml-io/zenml/pull/546
+
+## New integrations:
+
+* Add PyTorch example by @htahir1 in https://github.com/zenml-io/zenml/pull/559
+* Added GCP as secret manager by @AlexejPenner in
+  https://github.com/zenml-io/zenml/pull/556
+
+## Documentation / ZenBytes etc
+
+* ZenBytes update (and ZenFiles)
+* Beautification of Examples by @AlexejPenner in
+  https://github.com/zenml-io/zenml/pull/491
+* Document global configuration and repository by @stefannica in
+  https://github.com/zenml-io/zenml/pull/579
+* ZenML Collaboration docs by @stefannica in
+  https://github.com/zenml-io/zenml/pull/597
+
+## ➕ Other Updates, Additions and Fixes
+
+* Experiment tracker stack components by @htahir1 in
+  https://github.com/zenml-io/zenml/pull/530
+* Secret Manager improvements and Seldon Core secret passing by @stefannica in
+  https://github.com/zenml-io/zenml/pull/529
+* Pipeline run tracking by @schustmi in
+  https://github.com/zenml-io/zenml/pull/601
+* Stream model deployer logs through CLI by @stefannica in
+  https://github.com/zenml-io/zenml/pull/557
+* Fix various usability bugs by @stefannica in
+  https://github.com/zenml-io/zenml/pull/561
+* Replace `-f` and `--force` with `-y` and `--yes` by @strickvl in
+  https://github.com/zenml-io/zenml/pull/566
+* Make it easier to submit issues by @htahir1 in
+  https://github.com/zenml-io/zenml/pull/571
+* Sync the repository and local store with the disk configuration files and
+  other fixes by @stefannica in https://github.com/zenml-io/zenml/pull/588
+* Add ability to give in-line pip requirements for pipeline by @strickvl in
+  https://github.com/zenml-io/zenml/pull/583
+* Fix evidently visualizer on Colab by @fa9r in
+  https://github.com/zenml-io/zenml/pull/592
+
+## 🙌 Community Contributions
+
+* @Ankur3107 made their first contribution in
+  https://github.com/zenml-io/zenml/pull/467
+* @MateusGheorghe made their first contribution in
+  https://github.com/zenml-io/zenml/pull/523
+* Added support for scipy sparse matrices by @avramdj in
+  https://github.com/zenml-io/zenml/pull/534
+
 # 0.7.3
 
 ## 📊 Experiment Tracking Components

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import json
+import logging
 import os
 import uuid
 from typing import Any, Dict, Optional, cast
@@ -27,7 +28,7 @@ from zenml.config.profile_config import (
     ProfileConfiguration,
 )
 from zenml.io import fileio, utils
-from zenml.logger import get_logger
+from zenml.logger import disable_logging, get_logger
 from zenml.utils import yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -226,19 +227,17 @@ class GlobalConfiguration(
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
                     "This may happen if you recently downgraded ZenML to an "
-                    "earlier version, or if you have already used a more recent "
-                    "ZenML version on the same machine."
-                    "It is highly recommended that you update ZenML to at least "
-                    "match the global configuration version, otherwise you may "
-                    "run into unexpected issues such as model schema "
-                    "validation failures or even loss of information. As an "
-                    "alternative, if you run into incompatibility issues but "
-                    "do not want to update ZenML, you can use the `zenml clean` "
-                    "command to wipe your global configuration, profiles and "
-                    "stacks and restore ZenML to a clean and valid state.",
+                    "earlier version, or if you have already used a more "
+                    "recent ZenML version on the same machine. "
+                    "It is highly recommended that you update ZenML to at "
+                    "least match the global configuration version, otherwise "
+                    "you may run into unexpected issues such as model schema "
+                    "validation failures or even loss of information.",
                     config_version,
                     curr_version,
                 )
+                # TODO [ENG-899]: Give more detailed instruction on how to resolve
+                #  version mismatch.
                 return
 
             if config_version == curr_version:
@@ -351,11 +350,20 @@ class GlobalConfiguration(
         # ProfileConfiguration and the Repository classes to avoid triggering
         # the analytics and interact directly with the store creation
         config_copy.profiles[profile.name] = profile
+        # We dont need to track analytics here
         store = Repository.create_store(
-            profile, skip_default_registrations=True
+            profile,
+            skip_default_registrations=True,
+            track_analytics=False,
+            skip_migration=True,
         )
-        # transfer the active stack to the new store
-        store.register_stack(repo.zen_store.get_stack(repo.active_stack_name))
+        # transfer the active stack to the new store. we disable logs for this
+        # call so there is no confusion about newly registered stacks/stack
+        # components
+        with disable_logging(logging.INFO):
+            store.register_stack(
+                repo.zen_store.get_stack(repo.active_stack_name)
+            )
 
         # if a custom load config path is specified, use it to replace the
         # current store local path in the profile URL
@@ -520,7 +528,8 @@ class GlobalConfiguration(
         """
         if not self.active_profile:
             return None
-        return self.active_profile.active_stack
+
+        return self.active_profile.get_active_stack()
 
     class Config:
         """Pydantic configuration class."""
