@@ -30,7 +30,9 @@ def test_vertex_orchestrator_attributes() -> None:
     """Tests that the basic attributes of the vertex orchestrator are set
     correctly."""
     orchestrator = VertexOrchestrator(
-        name="", region="europe-west4", pipeline_root="gs://my-bucket/pipeline"
+        name="",
+        location="europe-west4",
+        pipeline_root="gs://my-bucket/pipeline",
     )
 
     assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
@@ -42,7 +44,9 @@ def test_vertex_orchestrator_stack_validation() -> None:
     container registry and that all stack components used are not local."""
 
     orchestrator = VertexOrchestrator(
-        name="", region="europe-west4", pipeline_root="gs://my-bucket/pipeline"
+        name="",
+        location="europe-west4",
+        pipeline_root="gs://my-bucket/pipeline",
     )
     local_metadata_store = SQLiteMetadataStore(name="", uri="./metadata.db")
     local_artifact_store = LocalArtifactStore(name="", path=".")

@@ -81,20 +81,36 @@ class VertexOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines on Vertex AI.
 
     Attributes:
-        region: the name of GCP region where the pipeline job will be executed.
-            Vertex AI Pipelines is available in the following regions: https://cloud.google.com/vertex-ai/docs/general/locations#feature-availability
+        custom_docker_base_image_name: Name of the Docker image that should be
+            used as the base for the image that will be used to execute each of
+            the steps. If no custom base image is given, a basic image of the active
+            ZenML version will be used. **Note**: This image needs to have ZenML
+            installed, otherwise the pipeline execution will fail. For that reason,
+            might want to extend the ZenML Docker images found here:
+            https://hub.docker.com/r/zenmldocker/zenml/
         project: GCP project name. If `None`, the project will be inferred from
             the environment.
-        customer_managed_encryption_key:
-        base_image:
+        location: Name of GCP region where the pipeline job will be executed.
+            Vertex AI Pipelines is available in the following regions:
+            https://cloud.google.com/vertex-ai/docs/general/locations#feature-availability
+        pipeline_root: a Google Cloud Storage path that will be used by the Vertex
+            AI Pipelines.
+        encryption_spec_key_name: The Cloud KMS resource identifier of the customer
+            managed encryption key used to protect the job. Has the form:
+            `projects/my-project/locations/my-region/keyRings/my-kr/cryptoKeys/my-key`.
+            The key needs to be in the same region as where the compute resource
+            is created.
+        synchronous: If `True`, running a pipeline using this orchestrator will
+            block until all steps finished running on Vertex AI Pipelines service.
     """
 
-    region: str
-    pipeline_root: str
+    custom_docker_base_image_name: Optional[str] = None
     project: Optional[str] = None
-    customer_managed_encryption_key: Optional[str] = None
-
-    base_image: Optional[str] = None
+    location: str
+    pipeline_root: str
+    labels: Dict[str, str] = {}
+    encryption_spec_key_name: Optional[str] = None
+    synchronous: bool = False
 
     FLAVOR: ClassVar[str] = VERTEX_ORCHESTRATOR_FLAVOR
 
@@ -179,7 +195,7 @@ class VertexOrchestrator(BaseOrchestrator):
             image_name=image_name,
             dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
-            base_image=self.base_image,
+            base_image=self.custom_docker_base_image_name,
         )
         container_registry.push_image(image_name)
 
@@ -211,7 +227,7 @@ class VertexOrchestrator(BaseOrchestrator):
         This callable is then compiled into a JSON file that is used as the intermediary
         representation of the Kubeflow pipeline.
 
-        This file then is submited to the Vertex AI Pipelines service for execution.
+        This file then is submitted to the Vertex AI Pipelines service for execution.
         """
 
         image_name = self.get_docker_image_name(pipeline.name)
@@ -244,7 +260,8 @@ class VertexOrchestrator(BaseOrchestrator):
                     **{VERTEX_JOB_ID_OPTION: dslv2.PIPELINE_JOB_ID_PLACEHOLDER},
                 )
 
-                # Create the `ContainerOp` for the step
+                # Create the `ContainerOp` for the step. Using the `dsl.ContainerOp`
+                # class directly is deprecated when using the Kubeflow SDK v2.
                 container_op = kfp.components.load_component_from_text(
                     f"""
                     name: {step.name}
@@ -327,11 +344,11 @@ class VertexOrchestrator(BaseOrchestrator):
             pipeline_root=self.pipeline_root,
             parameter_values=None,
             enable_caching=enable_cache,
-            encryption_spec_key_name=self.customer_managed_encryption_key,
-            labels=None,
+            encryption_spec_key_name=self.encryption_spec_key_name,
+            labels=self.labels,
             credentials=None,
             project=self.project,
-            location=self.region,
+            location=self.location,
         )
 
         logger.info(
@@ -345,5 +362,12 @@ class VertexOrchestrator(BaseOrchestrator):
             logger.info(
                 "View the Vertex AI Pipelines job at %s", run._dashboard_uri()
             )
+
+            if self.synchronous:
+                logger.info(
+                    "Waiting for the Vertex AI Pipelines job to finish..."
+                )
+                run.wait()
+
         except google_exceptions.ClientError as e:
             logger.warning("Failed to create the Vertex AI Pipeline job: %s", e)
