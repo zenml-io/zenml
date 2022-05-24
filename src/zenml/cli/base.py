@@ -19,6 +19,7 @@ from typing import Optional
 
 import click
 
+from zenml import __version__ as zenml_version
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
@@ -222,7 +223,11 @@ def go() -> None:
             with console.status(
                 "Cloning tutorial. This sometimes takes a minute..."
             ):
-                Repo.clone_from(TUTORIAL_REPO, tmp_cloned_dir)
+                Repo.clone_from(
+                    TUTORIAL_REPO,
+                    tmp_cloned_dir,
+                    branch=f"release/{zenml_version}",
+                )
             example_dir = os.path.join(tmp_cloned_dir, "examples/quickstart")
             copy_dir(example_dir, zenml_tutorial_path)
     else:
