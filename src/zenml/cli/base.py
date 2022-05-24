@@ -230,11 +230,8 @@ def go() -> None:
             f"{zenml_tutorial_path} already exists! Continuing without cloning."
         )
 
-    notebook_dir = os.path.join(zenml_tutorial_path, "notebooks")
     ipynb_files = [
-        f"notebooks/{fi}"
-        for fi in os.listdir(notebook_dir)
-        if fi.endswith(".ipynb")
+        fi for fi in os.listdir(zenml_tutorial_path) if fi.endswith(".ipynb")
     ]
     ipynb_files.sort()
     console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
