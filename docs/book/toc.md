@@ -33,7 +33,7 @@
 
 ## Extending ZenML
 
-* [Start Here](extending-zenml/start-here.md)
+* [Start Here](extending-zenml/getting-started.md)
 * [Orchestrators](extending-zenml/orchestrator.md)
 * [Artifact Stores](extending-zenml/artifact-store.md)
 * [Metadata Stores](extending-zenml/metadata-store.md)
