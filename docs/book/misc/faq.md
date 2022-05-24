@@ -34,6 +34,18 @@ out [our documentation on how to get
 started](../extending-zenml/stacks-components-flavors) with extending ZenML to
 learn more!
 
+#### How do I install on an M1 Mac
+
+If you have an M1 Mac machine and you are encountering an error while trying to
+install ZenML, please try to setup brew and pyenv with Rosetta 2 and then 
+install ZenML. The issue arises because some of the dependencies aren’t fully
+compatible with the vanilla ARM64 Architecture. The following links may be 
+helpful.
+
+[Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
+[Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
+
+
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
 This depends on the tool and its respective MLOps category. We have a full guide
