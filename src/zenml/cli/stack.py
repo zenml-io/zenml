@@ -118,6 +118,21 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "-al",
+    "--alerter",
+    "alerter_name",
+    help="Name of the alerter for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "--set",
+    "set_stack",
+    is_flag=True,
+    help="Immediately set this stack as active.",
+    type=click.BOOL,
+)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
@@ -129,6 +144,8 @@ def register_stack(
     feature_store_name: Optional[str] = None,
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
+    alerter_name: Optional[str] = None,
+    set_stack: bool = False,
 ) -> None:
     """Register a stack."""
     cli_utils.print_active_profile()
@@ -195,11 +212,22 @@ def register_stack(
                 name=experiment_tracker_name,
             )
 
+        if alerter_name:
+            stack_components[
+                StackComponentType.ALERTER
+            ] = repo.get_stack_component(
+                StackComponentType.ALERTER,
+                name=alerter_name,
+            )
+
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
         repo.register_stack(stack_)
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
+
+    if set_stack:
+        set_active_stack(stack_name=stack_name)
 
 
 @stack.command("update", context_settings=dict(ignore_unknown_options=True))
@@ -262,7 +290,7 @@ def register_stack(
 )
 @click.option(
     "-d",
-    "--model-deployer",
+    "--model_deployer",
     "model_deployer_name",
     help="Name of the new model deployer for this stack.",
     type=str,
@@ -273,6 +301,14 @@ def register_stack(
     "--experiment_tracker",
     "experiment_tracker_name",
     help="Name of the new experiment tracker for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
+    "-al",
+    "--alerter",
+    "alerter_name",
+    help="Name of the new alerter for this stack.",
     type=str,
     required=False,
 )
@@ -287,6 +323,7 @@ def update_stack(
     feature_store_name: Optional[str] = None,
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
+    alerter_name: Optional[str] = None,
 ) -> None:
     """Update a stack."""
     cli_utils.print_active_profile()
@@ -373,6 +410,14 @@ def update_stack(
             ] = repo.get_stack_component(
                 StackComponentType.EXPERIMENT_TRACKER,
                 name=experiment_tracker_name,
+            )
+
+        if alerter_name:
+            stack_components[
+                StackComponentType.ALERTER
+            ] = repo.get_stack_component(
+                StackComponentType.ALERTER,
+                name=alerter_name,
             )
 
         stack_ = Stack.from_components(
@@ -644,18 +689,30 @@ def delete_stack(
     is_flag=True,
     help="Set the active stack globally.",
 )
-def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
+def set_active_stack_command(
+    stack_name: str, global_profile: bool = False
+) -> None:
     """Sets a stack as active.
 
     If the '--global' flag is set, the global active stack will be set,
     otherwise the repository active stack takes precedence.
     """
+    set_active_stack(stack_name, global_profile)
+
+
+def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
+    """Sets a stack as active.
+
+    If the '--global' flag is set, the global active stack will be set,
+    otherwise the repository active stack takes precedence.
+
+    Args:
+        stack_name: Unique name of the stack
+        global_profile: If the stack should be created on the global profile
+    """
     cli_utils.print_active_profile()
-
     scope = " global" if global_profile else ""
-
     repo = Repository()
-
     with console.status(
         f"Setting the{scope} active stack to '{stack_name}'..."
     ):

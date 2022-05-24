@@ -45,6 +45,7 @@ from zenml.integrations.sagemaker import SagemakerIntegration  # noqa
 from zenml.integrations.scipy import ScipyIntegration  # noqa
 from zenml.integrations.seldon import SeldonIntegration  # noqa
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
+from zenml.integrations.slack import SlackIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
 from zenml.integrations.vertex import VertexIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa

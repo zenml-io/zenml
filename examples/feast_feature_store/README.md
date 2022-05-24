@@ -104,11 +104,8 @@ part of your current working stack:
 # register the feature store stack component
 zenml feature-store register feast_store --flavor=feast --feast_repo="./feast_feature_repo"
 
-# register the sagemaker stack
-zenml stack register fs_stack -m default -o default -a default -f feast_store
-
-# activate the stack
-zenml stack set fs_stack
+# register and activate the feature store stack
+zenml stack register fs_stack -m default -o default -a default -f feast_store --set
 
 # view the current active stack
 zenml stack describe
@@ -150,5 +147,7 @@ and you can `kill` the process from the terminal.
 # 📜 Learn more
 
 Our docs regarding the Feast feature store integration can be
-found [here](https://docs.zenml.io/features/feature-store)
-.
+found [here](https://docs.zenml.io/advanced-guide/integrations/feature-store).
+
+If you want to learn more about feature stores in general or about how to build your own feature store in zenml
+check out our [docs](https://docs.zenml.io/extending-zenml/feature-store).

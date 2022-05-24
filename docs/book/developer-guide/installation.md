@@ -10,7 +10,7 @@ description: How to install ZenML
 Your first step is to install **ZenML**, which comes bundled as a good old `pip` package.
 
 {% hint style="warning" %}
-Please note that we only support Python >= 3.7 <3.9, so please adjust your Python environment accordingly.
+Please note that we only support Python >= 3.7 <3.10, so please adjust your Python environment accordingly.
 {% endhint %}
 
 ## Virtual Environment
@@ -59,36 +59,3 @@ If you would like to learn more about the current release, please visit our
 ```
 docker run -it zenmldocker/zenml /bin/bash
 ```
-
-## Enabling auto-completion on the CLI
-
-
-{% hint style="warning" %}
-The following commands will only work if you have zenml installed in your global python env. If you are using 
-virtual environments, you'll have to manually export the environment variable whenever you are using that env.
-{% endhint %}
-
-{% tabs %}
-{% tab title="Bash" %}
-For Bash, add this to `~/.bashrc`:
-```bash
-eval "$(_ZENML_COMPLETE=source_bash zenml)"
-```
-{% endtab %}
-
-{% tab title="Zsh" %}
-For Zsh, add this to `~/.zshrc`:
-
-```bash
-eval "$(_ZENML_COMPLETE=source_zsh zenml)"
-```
-{% endtab %}
-
-{% tab title="Fish" %}
-For Fish, add this to `~/.config/fish/completions/foo-bar.fish`:
-
-```bash
-eval (env _ZENML_COMPLETE=source_fish zenml)
-```
-{% endtab %}
-{% endtabs %}

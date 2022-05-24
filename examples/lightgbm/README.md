@@ -25,6 +25,10 @@ If you're really in a hurry and just want to see this example pipeline run
 without wanting to fiddle around with all the individual installation and
 configuration steps, just run the following:
 
+```shell
+zenml example run lightgbm
+```
+
 ## 👣 Step-by-Step
 
 ### 📄 Prerequisites
@@ -36,7 +40,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install lightgbm -y
+zenml integration install lightgbm
 
 # pull example
 zenml example pull lightgbm
@@ -60,8 +64,4 @@ In order to clean up, delete the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
-```
-
-```shell
-zenml example run lightgbm
 ```

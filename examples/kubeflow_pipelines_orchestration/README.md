@@ -49,8 +49,8 @@ pip install notebook  # if you want to run the example on the notebook
 zenml integration install kubeflow tensorflow
 
 # Pull the kubeflow example
-zenml example pull kubeflow
-cd zenml_examples/kubeflow
+zenml example pull kubeflow_pipelines_orchestrator
+cd zenml_examples/kubeflow_pipelines_orchestrator
 
 # Initialize a ZenML repository
 zenml init
@@ -105,7 +105,7 @@ python run.py --stop-tensorboard
 ### 🥞 Create a local Kubeflow Pipelines Stack
 
 Now with all the installation and initialization out of the way, all that's left
-to do is configuring our ZenML [stack](https://docs.zenml.io/core-concepts). For
+to do is configuring our ZenML [stack](https://docs.zenml.io/core-concepts#stacks-components-and-stores). For
 this example, the stack we create consists of the following four parts:
 * The **local artifact store** stores step outputs on your hard disk. 
 * The **local metadata store** stores metadata like the pipeline name and step
@@ -118,15 +118,13 @@ in Kubeflow Pipelines.
 ```bash
 # Make sure to create the local registry on port 5000 for it to work 
 zenml container-registry register local_registry --flavor=default --uri=localhost:5000 
-zenml orchestrator register kubeflow_orchestrator --flavor=kubeflow
+zenml orchestrator register local_kubeflow_orchestrator --flavor=kubeflow
 zenml stack register local_kubeflow_stack \
     -m default \
     -a default \
-    -o kubeflow_orchestrator \
-    -c local_registry
-
-# Activate the newly created stack
-zenml stack set local_kubeflow_stack
+    -o local_kubeflow_orchestrator \
+    -c local_registry \
+    --set
 ```
 
 ### 🏁 Start up Kubeflow Pipelines locally
@@ -185,7 +183,7 @@ You can delete the local Kubernetes cluster and all associated resources by
 calling:
 
 ```bash
-zenml stack down
+zenml stack down --yes
 ```
 
 ## ☁️ Run the same pipeline on Kubeflow Pipelines deployed to GCP
@@ -205,8 +203,6 @@ Kubernetes Engine cluster.
 to access the GCP container registry.
 * Kubectl can [access](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) your GCP 
 Kubernetes cluster.
-* The [current context](https://kubernetes.io/docs/reference/kubectl/cheatsheet/#kubectl-context-and-configuration) 
-configured in Kubectl points to your GCP cluster. 
 
 ### 🥞 Create a GCP Kubeflow Pipelines stack
 
@@ -214,27 +210,31 @@ To run our pipeline on Kubeflow Pipelines deployed to GCP, we will create a new 
 * The **artifact store** stores step outputs in a GCP Bucket. 
 * The **metadata store** stores metadata inside the Kubeflow Pipelines internal MySQL database.
 * The docker images that are created to run your pipeline are stored in GCP **container registry**.
-* The **Kubeflow orchestrator** is the same as in the local Kubeflow Pipelines example.
+* The **Kubeflow orchestrator** is responsible for running your ZenML pipeline in Kubeflow Pipelines. 
+  We need to configure it with the right kubernetes context so ZenML can run pipelines in your GCP cluster. 
 
-When running the upcoming commands, make sure to replace `$PATH_TO_YOUR_CONTAINER_REGISTRY` and 
-`$PATH_TO_YOUR_GCP_BUCKET` with the actual URI's of your container registry and bucket.
+When running the upcoming commands, make sure to replace `<PATH_TO_YOUR_CONTAINER_REGISTRY>` and 
+`<PATH_TO_YOUR_GCP_BUCKET>` with the actual URI's of your container registry and bucket. You will also need to replace
+`<NAME_OF_GCP_KUBERNETES_CONTEXT>` with the kubernetes context pointing to your gcp cluster.
 
 ```bash
 # In order to create the GCP artifact store, we need to install one additional ZenML integration:
 zenml integration install gcp
 
-# Create the stack and its components
-zenml container-registry register gcp_registry --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
+# Create and activate the stack and its components
+zenml container-registry register gcr_registry --flavor=gcp --uri=<PATH_TO_YOUR_CONTAINER_REGISTRY>
 zenml metadata-store register kubeflow_metadata_store --flavor=kubeflow
-zenml artifact-store register gcp_artifact_store --flavor=gcp --path=$PATH_TO_YOUR_GCP_BUCKET
+zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
+zenml orchestrator register gcp_kubeflow_orchestrator --flavor=kubeflow --kubernetes_context=<NAME_OF_GCP_KUBERNETES_CONTEXT>
 zenml stack register gcp_kubeflow_stack \
     -m kubeflow_metadata_store \
     -a gcp_artifact_store \
-    -o kubeflow_orchestrator \
-    -c gcp_registry
-    
-# Activate the newly created stack
-zenml stack set gcp_kubeflow_stack
+    -o gcp_kubeflow_orchestrator \
+    -c gcr_registry \
+    --set
+
+# Forward the Kubeflow pipelines UI and metadata store so we can access them locally
+zenml stack up
 ```
 
 ### ▶️ Run the pipeline
@@ -248,3 +248,18 @@ python run.py
 
 That's it! If everything went as planned this pipeline should now be running in the cloud, and we are one step 
 closer to a production pipeline!
+
+### 🧽 Clean up
+Once you're done experimenting, you can stop the port forwarding and delete the example files by calling:
+
+```bash
+zenml stack down --yes
+rm -rf zenml_examples
+```
+
+# 📜 Learn more
+
+Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/advanced-guide/cloud/guide-aws-gcp-azure).
+
+If you want to learn more about orchestrators in general or about how to build your own orchestrators in zenml
+check out our [docs](https://docs.zenml.io/extending-zenml/orchestrator).

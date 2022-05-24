@@ -1,7 +1,7 @@
 ---
 name: General
-about: A general issue which does not fall into any other category.
 labels: general
+about: I have a general issue I would like to write about
 ---
 
 ## Checks

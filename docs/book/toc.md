@@ -56,7 +56,6 @@
 * [Model Deployers](extending-zenml/model-deployer.md)
 * [Experiment Trackers](extending-zenml/experiment-tracker.md)
 * [Feature Stores](extending-zenml/feature-store.md)
-* [Alerters](extending-zenml/alerter.md)
 
 ## Resources
 
@@ -72,7 +71,7 @@
 * [Best Practices](misc/best-practices.md)
 * [System Environmental Variables](misc/system-env.md)
 * [Usage Analytics](misc/usage-analytics.md)
-* [🙋‍♀️ Contributing](misc/contributing.md)
+* [Contributing](misc/contributing.md)
 * [FAQ](misc/faq.md)
 * [Roadmap](https://zenml.io/roadmap)
 

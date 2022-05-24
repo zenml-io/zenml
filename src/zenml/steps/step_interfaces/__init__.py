@@ -11,6 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.steps.step_interfaces.base_alerter_step import (
+    BaseAlerterStep,
+    BaseAlerterStepConfig,
+)
 from zenml.steps.step_interfaces.base_analyzer_step import (
     BaseAnalyzerConfig,
     BaseAnalyzerStep,
@@ -55,4 +59,6 @@ __all__ = [
     "BaseSplitStepConfig",
     "BaseTrainerStep",
     "BaseTrainerConfig",
+    "BaseAlerterStep",
+    "BaseAlerterStepConfig",
 ]
