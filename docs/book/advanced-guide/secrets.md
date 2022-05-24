@@ -77,6 +77,51 @@ zenml secret register SECRET_NAME --attr_from_literal=value \
    --attr_from_file=@path/to/file.txt ...
 ```
 
+## Secret Schemas
+
+The concept of secret schemas exists to support strongly typed secrets that
+validate which keys can be configured for a given secret and which values
+are allowed for those keys.
+
+Secret schemas are available as builtin schemas, or loaded when an integration
+is installed. Custom schemas can also be defined by sub-classing the
+`zenml.secret.BaseSecretSchema` class. For example, the following is the builtin
+schema defined for the MySQL Metadata Store secrets:
+
+```python
+from typing import ClassVar, Optional
+
+from zenml.secret.base_secret import BaseSecretSchema
+
+MYSQL_METADATA_STORE_SCHEMA_TYPE = "mysql"
+
+class MYSQLSecretSchema(BaseSecretSchema):
+    TYPE: ClassVar[str] = MYSQL_METADATA_STORE_SCHEMA_TYPE
+
+    user: Optional[str]
+    password: Optional[str]
+    ssl_ca: Optional[str]
+    ssl_cert: Optional[str]
+    ssl_key: Optional[str]
+    ssl_verify_server_cert: Optional[bool] = False
+```
+
+To register a secret regulated by a schema, the `--schema` argument must be
+passed to the `zenml secret register` command:
+
+```shell
+zenml secret register mysql_secret --schema=mysql --user=user --password=password
+--ssl_ca=./ca.pem
+```
+
+The keys and values passed to the CLI are validated using regular Pydantic
+rules:
+
+* optional attributes don't need to be passed to the CLI and will be set to their
+default value
+* required attributes must be passed to the CLI or an error will be raised
+* all values must respect the indicated data type or be a valid string
+representation of that data type
 
 ## Using Secrets in a Kubeflow environment
 
