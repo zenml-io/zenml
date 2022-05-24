@@ -76,7 +76,7 @@ ExampleIntegration.check_installation() # this checks if the requirements are in
 Have a look at the MLFlow [Integration](mlflow/__init__.py) 
 as an example for how it is done.
 
-## 4. Create the implementation(s)
+### 4. Create the implementation(s)
 
 Each Integration can have implementations for multiple zenml components. 
 Generally the outside repo structure 
