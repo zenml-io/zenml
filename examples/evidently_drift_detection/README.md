@@ -78,12 +78,11 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install evidently
-zenml integration install sklearn
+zenml integration install evidently sklearn
 
 # pull example
-zenml example pull drift_detection
-cd zenml_examples/drift_detection
+zenml example pull evidently_drift_detection
+cd zenml_examples/evidently_drift_detection
 
 # Initialize ZenML repo
 zenml init
@@ -105,7 +104,4 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the evidently integration can be found [here](TODO: Link to docs).
-
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
-check out our [docs](TODO: Link to docs)
+Our docs regarding the evidently integration can be found [here](https://docs.zenml.io/advanced-guide/integrations/drift-detection).

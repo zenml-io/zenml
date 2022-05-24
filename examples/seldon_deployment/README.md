@@ -238,8 +238,7 @@ zenml model-deployer register seldon_eks --flavor=seldon \
   --secret=s3-store
 zenml artifact-store register aws --flavor=s3 --path s3://mybucket
 zenml secrets-manager register local --flavor=local
-zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks -x local
-zenml stack set local_with_aws_storage
+zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks -x local --set
 ```
 
 As the last step in setting up the stack, we need to configure a ZenML secret
@@ -304,8 +303,7 @@ zenml container-registry register aws --flavor=default --uri=715803424590.dkr.ec
 zenml metadata-store register aws --flavor=kubeflow
 zenml orchestrator register aws --flavor=kubeflow --kubernetes_context=zenml-eks --synchronous=True
 zenml secrets-manager register aws --flavor=aws
-zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws -x aws
-zenml stack set aws
+zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws -x aws --set
 ```
 
 ZenML will manage the Seldon Core deployments inside the same `kubeflow`
