@@ -17,7 +17,6 @@ import shutil
 import time
 from contextlib import ExitStack as does_not_raise
 from multiprocessing import Process
-from uuid import uuid4
 
 import pytest
 import requests
@@ -55,6 +54,7 @@ from zenml.zen_stores import (
     RestZenStore,
     SqlZenStore,
 )
+from zenml.zen_stores.base_zen_store import DEFAULT_USERNAME
 from zenml.zen_stores.models import ComponentWrapper, StackWrapper
 from zenml.zen_stores.models.pipeline_models import (
     PipelineRunWrapper,
@@ -716,12 +716,13 @@ def test_pipeline_run_management(
     stack = Stack.default_local_stack()
     pipeline = one_step_pipeline(empty_step())
 
+    default_user = fresh_zen_store.get_user(DEFAULT_USERNAME)
     run = PipelineRunWrapper(
         name="run_name",
         pipeline=PipelineWrapper.from_pipeline(pipeline),
         stack=StackWrapper.from_stack(stack),
         runtime_configuration={},
-        user_id=uuid4(),
+        user_id=default_user.id,
         project_name="project",
     )
 
