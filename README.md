@@ -11,8 +11,7 @@ Sign up [here](https://www.eventbrite.com/e/zenml-mlops-day-join-us-in-building-
 # 👀 What is ZenML?
 
 **ZenML** is an extensible, open-source MLOps framework for creating 
-portable, production-ready MLOps pipelines. Built 
-for data scientists, ML Engineers, and MLOps Developers to collaborate, 
+portable, production-ready MLOps pipelines. Built to enable collaboration among data scientists, ML Engineers, and MLOps Developers,
 it has a simple, flexible syntax, is **cloud-** and 
 **tool-agnostic**, and has interfaces/abstractions that are catered towards 
 ML workflows. 
