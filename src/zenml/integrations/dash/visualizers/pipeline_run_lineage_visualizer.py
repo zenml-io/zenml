@@ -137,7 +137,7 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                 )
                 mode = "inline"
             else:
-                warnings(
+                warning(
                     "Cannot set magic flag in non-notebook environments."
                 )
         else:
