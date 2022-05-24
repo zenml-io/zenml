@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import ClassVar, Optional
+from typing import Any, ClassVar, Optional
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -71,3 +71,6 @@ class SlackAlerter(BaseAlerter):
             response = error.response["error"]
             logger.error(f"SlackAlerter.post() failed: {response}")
             return False
+
+    def ask(message: str, config: Optional[SlackAlertConfig]) -> Any:
+        raise NotImplementedError
