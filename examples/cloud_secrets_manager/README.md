@@ -56,7 +56,7 @@ to make sure everything is
 set up properly.
 
 ```shell
-zenml secrets-manager register aws_secrets_manager -t aws
+zenml secrets-manager register aws_secrets_manager --flavor=aws
 zenml stack register secrets_stack -m default -o default -a default -x aws_secrets_manager --set
 ```
 
@@ -69,15 +69,15 @@ started. Once everything is set up on your machine, make sure to enable the
 secrets manager API within your gcp project.
 
 ```shell
-zenml secrets-manager register gcp_secrets_manager -t gcp_secrets_manager
+zenml secrets-manager register gcp_secrets_manager --flavor=gcp_secrets_manager
 zenml stack register secrets_stack -m default -o default -a default -x gcp_secrets_manager --set
 ```
 
 ### Or stay on a local stack
 
-In case you run into issues with either of the glouds, feel free to use a local 
-secret manager. Just replace `-t aws`/`-t gcp_secret_manager` with `-t local` to
-use a local file based version of a secret manager. Be aware that this is not 
+In case you run into issues with either of the clouds, feel free to use a local 
+secret manager. Just replace `--flavor=aws`/`--flavor=gcp_secret_manager` with `--flavor=local` to
+use a file based version of a secret manager. Be aware that this is not 
 a recommended location to store sensitive information.
 
 
@@ -115,10 +115,10 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the aws secret manager and secrets in general can be found
-[here](https://docs.zenml.io/features/secrets).
+If you want to learn more about secret managers in general or about how to build your own secret manager in zenml
+check out our [docs](https://docs.zenml.io/extending-zenml/secrets-manager).
 
 We also have extensive CLI docs for the
-[secret manager](https://apidocs.zenml.io/0.7.1/cli/#zenml.cli--setting-up-a-secrets-manager)
+[secret manager](https://apidocs.zenml.io/latest/cli/#zenml.cli--setting-up-a-secrets-manager)
 and the
-[secrets](https://apidocs.zenml.io/0.7.1/cli/#zenml.cli--using-secrets).
+[secrets](https://apidocs.zenml.io/latest/cli/#zenml.cli--using-secrets).

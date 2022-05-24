@@ -16,11 +16,9 @@ setup_stack () {
 }
 
 pre_run () {
-  zenml integration install tensorflow
-  zenml integration install mlflow
+  zenml integration install tensorflow mlflow
 }
 
 pre_run_forced () {
-  zenml integration install tensorflow -y
-  zenml integration install mlflow -y
+  zenml integration install tensorflow mlflow -y
 }

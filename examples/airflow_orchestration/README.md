@@ -71,12 +71,12 @@ password for the Airflow webserver to the console.
 
 {% hint style="warning" %} If you can't find the password on the console, you
 can navigate to the
-`APP_DIR / airflow / airflow_root / STACK_UUID / standalone_admin_password.txt`
+`<APP_DIR>/zenml/airflow_root/<ORCHESTRATOR_UUID>/standalone_admin_password.txt`
 file. The username will always be `admin`.
 
-- APP_DIR will depend on your os. See which path corresponds to your OS
+- APP_DIR will depend on your OS. See which path corresponds to your OS
   [here](https://click.palletsprojects.com/en/8.0.x/api/#click.get_app_dir).
-- STACK_UUID will be the unique id of the airflow_stack. There will be only one
+- ORCHESTRATOR_UUID will be the unique id of the airflow orchestrator. There will be only one
   folder here, so you can just navigate to the one that is present.
   {% endhint %}
 
@@ -108,4 +108,4 @@ rm -rf zenml_examples
 Our docs regarding the Airflow orchestrator integration can be found [here](TODO: Link to docs).
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in zenml
-check out our [docs](TODO: Link to docs)
+check out our [docs](https://docs.zenml.io/extending-zenml/orchestrator).

@@ -17,9 +17,9 @@ import os
 import uuid
 from typing import Any, Dict, Optional, cast
 
+from packaging import version
 from pydantic import BaseModel, Field, ValidationError, validator
 from pydantic.main import ModelMetaclass
-from semver import VersionInfo  # type: ignore[import]
 
 from zenml import __version__
 from zenml.config.base_config import BaseConfiguration
@@ -174,7 +174,12 @@ class GlobalConfiguration(
         if v is None:
             return v
 
-        VersionInfo.parse(v)
+        if not isinstance(version.parse(v), version.Version):
+            # If the version parsing fails, it returns a `LegacyVersion` instead.
+            # Check to make sure it's an actual `Version` object which represents
+            # a valid version.
+            raise RuntimeError(f"Invalid version in global configuration: {v}.")
+
         return v
 
     def __setattr__(self, key: str, value: Any) -> None:
@@ -214,15 +219,15 @@ class GlobalConfiguration(
     def _migrate_config(self) -> None:
         """Migrates the global config to the latest version."""
 
-        curr_version = VersionInfo.parse(__version__)
+        curr_version = version.parse(__version__)
         if self.version is None:
             logger.info(
                 "Initializing the ZenML global configuration version to %s",
                 curr_version,
             )
         else:
-            config_version = VersionInfo.parse(self.version)
-            if self.version > curr_version:
+            config_version = version.parse(self.version)
+            if config_version > curr_version:
                 logger.error(
                     "The ZenML global configuration version (%s) is higher "
                     "than the version of ZenML currently being used (%s). "
