@@ -194,10 +194,20 @@ the most relevant places for contributors are highlighted with a `<-` arrow:
 └── test              <- Don't forget to write unit tests for your code
 ```
 
+## 👷 Creating a new Integration
+
 In case you want to create an entirely new integration that you would like to 
-see supported by ZenML check out the 
-[Integrations README](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations)
+see supported by ZenML there are a few steps that you should follow:
+
+1. Create the actual integration. Check out the 
+[Integrations README](src/zenml/integrations/README.md)
 for detailed step-by-step instructions.
+2. Create an example of how to use the integration. Check out the 
+[Examples README](examples/README.md) 
+to find out what to do.
+3. All integrations deserve to be documented. Make sure to pay a visit to the
+[Integrations Page](docs/book/advanced-guide/integrations/integrations.md)
+in the docs and add the integration. 
 
 ## 🆘 Getting Help
 
