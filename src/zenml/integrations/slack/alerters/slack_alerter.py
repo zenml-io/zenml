@@ -19,10 +19,18 @@ from slack_sdk.errors import SlackApiError
 
 from zenml.alerter.base_alerter import BaseAlerter
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
-from zenml.integrations.slack.steps.slack_alerter_step import SlackAlertConfig
 from zenml.logger import get_logger
+from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
 
 logger = get_logger(__name__)
+
+
+class SlackAlerterConfig(BaseAlerterStepConfig):
+    """Slack alerter config"""
+
+    slack_channel_id: Optional[
+        str
+    ] = None  # The ID of the Slack channel to use for communication.
 
 
 class SlackAlerter(BaseAlerter):
@@ -38,7 +46,7 @@ class SlackAlerter(BaseAlerter):
     # Class Configuration
     FLAVOR: ClassVar[str] = SLACK_ALERTER_FLAVOR
 
-    def post(self, message: str, config: Optional[SlackAlertConfig]) -> bool:
+    def post(self, message: str, config: Optional[SlackAlerterConfig]) -> bool:
         """Post a message to a Slack channel.
 
         Args:
@@ -48,18 +56,26 @@ class SlackAlerter(BaseAlerter):
         Returns:
             True if operation succeeded, else False
         """
-        if config.slack_channel_id is not None:
+        if not isinstance(config, BaseAlerterStepConfig):
+            raise RuntimeError(
+                "The config object must be of type `BaseAlerterStepConfig`."
+            )
+        if (
+            hasattr(config, "slack_channel_id")
+            and config.slack_channel_id is not None
+        ):
             slack_channel_id = config.slack_channel_id
         else:
             if self.default_slack_channel_id is not None:
                 slack_channel_id = self.default_slack_channel_id
             else:
                 raise ValueError(
-                    "Neither the `SlackAlertConfig.slack_channel_id` in the runtime "
+                    "Neither the `SlackAlerterConfig.slack_channel_id` in the runtime "
                     "configuration, nor the `default_slack_channel_id` in the alerter "
                     "stack component is specified. Please specify at least one."
                 )
 
+        print(self.slack_token)
         client = WebClient(token=self.slack_token)
         try:
             response = client.chat_postMessage(
@@ -72,5 +88,5 @@ class SlackAlerter(BaseAlerter):
             logger.error(f"SlackAlerter.post() failed: {response}")
             return False
 
-    def ask(message: str, config: Optional[SlackAlertConfig]) -> Any:
+    def ask(message: str, config: Optional[SlackAlerterConfig]) -> Any:
         raise NotImplementedError

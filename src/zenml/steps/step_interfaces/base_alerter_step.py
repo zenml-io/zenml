@@ -17,7 +17,7 @@ from zenml.steps import BaseStep, BaseStepConfig, StepContext
 
 
 class BaseAlerterStepConfig(BaseStepConfig):
-    """TBD"""
+    """Step config definition for all alerters."""
 
 
 class BaseAlerterStep(BaseStep):

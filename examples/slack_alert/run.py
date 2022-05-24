@@ -16,8 +16,8 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
+from zenml.alerter.alerter_step import alerter_step
 from zenml.integrations.sklearn.helpers.digits import get_digits
-from zenml.integrations.slack.steps.slack_alerter_step import slack_alerter_step
 from zenml.pipelines import pipeline
 from zenml.steps import Output, step
 
@@ -64,13 +64,13 @@ def test_acc_formatter(test_acc: float) -> str:
 
 
 @pipeline
-def slack_pipeline(importer, trainer, evaluator, formatter, alertor):
+def slack_pipeline(importer, trainer, evaluator, formatter, alerter):
     """Train and evaluate a model and post the test accuracy to slack."""
     X_train, X_test, y_train, y_test = importer()
     model = trainer(X_train=X_train, y_train=y_train)
     test_acc = evaluator(X_test=X_test, y_test=y_test, model=model)
     message = formatter(test_acc)
-    alertor(message)
+    alerter(message)
 
 
 if __name__ == "__main__":
@@ -79,5 +79,5 @@ if __name__ == "__main__":
         trainer=svc_trainer(),
         evaluator=evaluator(),
         formatter=test_acc_formatter(),
-        alertor=slack_alerter_step(),
+        alerter=alerter_step(),
     ).run()

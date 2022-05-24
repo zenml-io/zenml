@@ -13,22 +13,16 @@
 #  permissions and limitations under the License.
 
 
-from zenml.integrations.slack.alerters.slack_alerter import SlackAlerter
 from zenml.steps import StepContext, step
 from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
 
 
-class SlackAlertConfig(BaseAlerterStepConfig):
-    """Config for the slack alerter standard step."""
-
-    slack_channel_id: str  # The ID of the Slack channel to use for communication.
-
-
 @step
-def slack_alerter_step(
-    config: SlackAlertConfig, context: StepContext, message: str
+def alerter_step(
+    config: BaseAlerterStepConfig, context: StepContext, message: str
 ) -> bool:
-    """Post a given message to Slack.
+    """Post a given message to the registered alerter component of the
+    active stack.
 
     Args:
         config: Runtime configuration for the slack alerter.
@@ -41,11 +35,11 @@ def slack_alerter_step(
     Raises:
         ValueError if active stack has no slack alerter.
     """
-    if not isinstance(context.stack.alerter, SlackAlerter):
+    if context.stack.alerter is None:
         raise ValueError(
-            "The active stack needs to have a Slack alerter component registered "
-            "to be able to use `slack_alerter_step`. "
-            "You can create a new stack with a Slack alerter component or update "
+            "The active stack needs to have an alerter component registered "
+            "to be able to use `alerter_step`. "
+            "You can create a new stack with e.g. a Slack alerter component or update "
             "your existing stack to add this component, e.g.:\n\n"
             "  'zenml alerter register slack_alerter --type=slack' ...\n"
             "  'zenml stack register stack-name -al slack_alerter ...'\n"

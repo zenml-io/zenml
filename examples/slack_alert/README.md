@@ -50,7 +50,7 @@ cd zenml_examples/slack_alert
 zenml init
 
 # register slack alerter
-zenml alerter register slack_alerter -f slack --slack_token=<SLACK_TOKEN> --slack_channel_id=<SLACK_CHANNEL_ID>
+zenml alerter register slack_alerter -f slack --slack_token=<SLACK_TOKEN> --default_slack_channel_id=<SLACK_CHANNEL_ID>
 
 # register new stack with slack alerter and set it active
 zenml stack register slack_stack -o default -m default -a default -al slack_alerter
@@ -64,6 +64,10 @@ Now we're ready. Execute:
 ```shell
 python run.py
 ```
+
+You should see the following output in your slack channel:
+
+![TSlack Message Posted](assets/slack-message.png)
 
 ### 🧽 Clean up
 
