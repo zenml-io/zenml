@@ -50,23 +50,21 @@
 * [Share with Profiles](collaborate/profiles.md)
 * [ZenServer](collaborate/zenml-server.md)
 
-## Resources
+## Links & Resources
 
-* [ZenML Resources](resources/index.md)
+* [ZenML Links](resources/index.md)
 	* [Integrations Examples](https://github.com/zenml-io/zenml/tree/main/examples)
 	* [Learn MLOps with ZenBytes](https://github.com/zenml-io/zenbytes)
 	* [ZenML in Practice](https://github.com/zenml-io/zenfiles)
 	* [Learn more on Youtube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
 	* [Slack Community](https://zenml.io/slack-invite/)
-
-## Misc
-
-* [Best Practices](misc/best-practices.md)
-* [System Environmental Variables](misc/system-env.md)
-* [Usage Analytics](misc/usage-analytics.md)
-* [Contributing](misc/contributing.md)
-* [FAQ](misc/faq.md)
-* [Roadmap](https://zenml.io/roadmap)
+* [Resources](resources/index.md)
+  * [Best Practices](misc/best-practices.md)
+  * [System Environmental Variables](misc/system-env.md)
+  * [Usage Analytics](misc/usage-analytics.md)
+  * [Contributing](misc/contributing.md)
+  * [FAQ](misc/faq.md)
+  * [Roadmap](https://zenml.io/roadmap)
 
 ## Reference
 
