@@ -20,18 +20,22 @@ concurrency:
 jobs:
   poetry-install:
     uses: ./.github/workflows/poetry-install.yml
+    secrets: inherit
 
   lint-code:
     needs: poetry-install
     uses: ./.github/workflows/lint.yml
+    secrets: inherit
 
   unit-test:
     needs: poetry-install
     uses: ./.github/workflows/unit-test.yml
+    secrets: inherit
 
   integration-test:
     needs: poetry-install
     uses: ./.github/workflows/integration-test.yml
+    secrets: inherit
 
   check_comments:
     runs-on: ubuntu-latest
@@ -55,3 +59,4 @@ jobs:
     # Run this one automatically if 'LTKF! is in the PR comments
     if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
     uses: ./.github/workflows/kubeflow.yml
+    secrets: inherit
