@@ -120,7 +120,7 @@ zenml example run huggingface
 pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow huggingface -y
+zenml integration install tensorflow huggingface
 
 # pull example
 zenml example pull huggingface

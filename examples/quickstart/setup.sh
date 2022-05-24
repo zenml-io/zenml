@@ -24,7 +24,7 @@ pre_run () {
 }
 
 pre_run_forced () {
-  zenml integration install dash sklearn mlflow evidently facets -f
+  zenml integration install dash sklearn mlflow evidently facets -y
 }
 
 post_run () {
