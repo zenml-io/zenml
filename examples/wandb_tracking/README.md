@@ -133,5 +133,6 @@ rm -rf zenml_examples
 
 Our docs regarding the wandb integration can be found [here](TODO: Link to docs).
 
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
-check out our [docs](TODO: Link to docs)
+If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in zenml
+check out our [docs](https://docs.zenml.io/extending-zenml/experiment-tracker)
+
