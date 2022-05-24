@@ -105,7 +105,7 @@ python run.py --stop-tensorboard
 ### 🥞 Create a local Kubeflow Pipelines Stack
 
 Now with all the installation and initialization out of the way, all that's left
-to do is configuring our ZenML [stack](https://docs.zenml.io/core-concepts). For
+to do is configuring our ZenML [stack](https://docs.zenml.io/core-concepts#stacks-components-and-stores). For
 this example, the stack we create consists of the following four parts:
 * The **local artifact store** stores step outputs on your hard disk. 
 * The **local metadata store** stores metadata like the pipeline name and step
@@ -250,8 +250,16 @@ That's it! If everything went as planned this pipeline should now be running in 
 closer to a production pipeline!
 
 ### 🧽 Clean up
-Once you're done experimenting, you can stop the port forwarding by calling:
+Once you're done experimenting, you can stop the port forwarding and delete the example files by calling:
 
 ```bash
 zenml stack down --yes
+rm -rf zenml_examples
 ```
+
+# 📜 Learn more
+
+Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/advanced-guide/cloud/guide-aws-gcp-azure).
+
+If you want to learn more about orchestrators in general or about how to build your own orchestrators in zenml
+check out our [docs](https://docs.zenml.io/extending-zenml/orchestrator).

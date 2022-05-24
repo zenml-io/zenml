@@ -65,7 +65,3 @@ In order to clean up, delete the remaining ZenML references.
 ```shell
 rm -rf zenml_examples
 ```
-
-```shell
-zenml example run lightgbm
-```
