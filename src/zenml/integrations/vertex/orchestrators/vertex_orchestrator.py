@@ -29,7 +29,7 @@
 #  permissions and limitations under the License.
 
 import os
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 
 import kfp
 from google.api_core import exceptions as google_exceptions
@@ -100,10 +100,28 @@ class VertexOrchestrator(BaseOrchestrator):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a container registry."""
+        """Validates that the stack contains a container registry and that the
+        artifact store and metadata store used are not local."""
+
+        def _validate_stack_requirements(stack: "Stack") -> Tuple[bool, str]:
+            """Validates that all the stack components are not local."""
+            for stack_comp in stack.components.values():
+                local_path = stack_comp.local_path
+                if not local_path:
+                    continue
+                return False, (
+                    f"The '{stack_comp.name}' {stack_comp.TYPE.value} is a local "
+                    f"stack component. The Vertex AI Pipelines orchestrator requires "
+                    f"that all the components in the stack used to execute the "
+                    f"pipeline have to be not local, because there is no way for "
+                    f"Vertex to connect to your local machine. You should use a "
+                    f"flavor of {stack_comp.TYPE.value} other than '{stack_comp.FLAVOR}'."
+                )
+            return True, ""
 
         return StackValidator(
-            required_components={StackComponentType.CONTAINER_REGISTRY}
+            required_components={StackComponentType.CONTAINER_REGISTRY},
+            custom_validation_function=_validate_stack_requirements,
         )
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
@@ -207,7 +225,7 @@ class VertexOrchestrator(BaseOrchestrator):
             Additionally, this gives each `ContainerOp` information about its
             direct downstream steps.
 
-            If this callable is passed to the `compoile()` method of a `KFPV2Compiler`
+            If this callable is passed to the `compile()` method of `KFPV2Compiler`
             all `dsl.ContainerOp` instances will be automatically added to a singular
             `dsl.Pipeline` instance.
             """
@@ -324,6 +342,8 @@ class VertexOrchestrator(BaseOrchestrator):
         # Submit the job to Vertex AI Pipelines service.
         try:
             run.submit()
-            logger.info("View the Vertex AI Pipelines job at %s", run.get_url())
+            logger.info(
+                "View the Vertex AI Pipelines job at %s", run._dashboard_uri()
+            )
         except google_exceptions.ClientError as e:
             logger.warning("Failed to create the Vertex AI Pipeline job: %s", e)
