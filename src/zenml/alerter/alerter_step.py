@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 
+from zenml.exceptions import DoesNotExistException
 from zenml.steps import StepContext, step
 from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
 
@@ -35,13 +36,20 @@ def alerter_step(
     Raises:
         ValueError if active stack has no slack alerter.
     """
-    if context.stack.alerter is None:
+
+    # TODO: duplicate code with examples/feast_feature_store/run.py
+    if not context.stack:
+        raise DoesNotExistException(
+            "No active stack is available. "
+            "Please make sure that you have registered and set a stack."
+        )
+    if not context.stack.alerter:
         raise ValueError(
             "The active stack needs to have an alerter component registered "
             "to be able to use `alerter_step`. "
             "You can create a new stack with e.g. a Slack alerter component or update "
             "your existing stack to add this component, e.g.:\n\n"
-            "  'zenml alerter register slack_alerter --type=slack' ...\n"
+            "  'zenml alerter register slack_alerter --flavor=slack' ...\n"
             "  'zenml stack register stack-name -al slack_alerter ...'\n"
         )
 

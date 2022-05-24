@@ -46,7 +46,9 @@ class SlackAlerter(BaseAlerter):
     # Class Configuration
     FLAVOR: ClassVar[str] = SLACK_ALERTER_FLAVOR
 
-    def post(self, message: str, config: Optional[SlackAlerterConfig]) -> bool:
+    def post(
+        self, message: str, config: Optional[BaseAlerterStepConfig]
+    ) -> bool:
         """Post a message to a Slack channel.
 
         Args:
@@ -56,9 +58,9 @@ class SlackAlerter(BaseAlerter):
         Returns:
             True if operation succeeded, else False
         """
-        if not isinstance(config, BaseAlerterStepConfig):
+        if not isinstance(config, SlackAlerterConfig):
             raise RuntimeError(
-                "The config object must be of type `BaseAlerterStepConfig`."
+                "The config object must be of type `SlackAlerterConfig`."
             )
         if (
             hasattr(config, "slack_channel_id")
@@ -87,5 +89,5 @@ class SlackAlerter(BaseAlerter):
             logger.error(f"SlackAlerter.post() failed: {response}")
             return False
 
-    def ask(message: str, config: Optional[SlackAlerterConfig]) -> Any:
+    def ask(self, message: str, config: Optional[BaseAlerterStepConfig]) -> Any:
         raise NotImplementedError
