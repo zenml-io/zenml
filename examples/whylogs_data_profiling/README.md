@@ -125,8 +125,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install whylogs
-zenml integration install sklearn
+zenml integration install whylogs sklearn
 
 # pull example
 zenml example pull whylogs_data_profiling
