@@ -32,17 +32,18 @@ import os
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
 import kfp
+from google.api_core import exceptions as google_exceptions
 from google.cloud import aiplatform
 from kfp import dsl
-from kfp.compiler import Compiler as KFPCompiler
+from kfp.v2 import dsl as dslv2
 from kfp.v2.compiler import Compiler as KFPV2Compiler
 
 from zenml.enums import StackComponentType
-from zenml.integrations.kubeflow.orchestrators.kubeflow_entrypoint_configuration import (
-    METADATA_UI_PATH_OPTION,
-    KubeflowEntrypointConfiguration,
-)
 from zenml.integrations.vertex import VERTEX_ORCHESTRATOR_FLAVOR
+from zenml.integrations.vertex.orchestrators.vertex_entrypoint_configuration import (
+    VERTEX_JOB_ID_OPTION,
+    VertexEntrypointConfiguration,
+)
 from zenml.io import fileio
 from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
@@ -51,7 +52,6 @@ from zenml.repository import Repository
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils.docker_utils import get_image_digest
 from zenml.utils.source_utils import get_source_root_path
-import re
 
 if TYPE_CHECKING:
     from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
@@ -122,7 +122,7 @@ class VertexOrchestrator(BaseOrchestrator):
     def root_directory(self) -> str:
         """Returns path to the root directory for all files concerning this orchestrator."""
         return os.path.join(
-            get_global_config_directory(), "kubeflow", str(self.uuid)
+            get_global_config_directory(), "vertex", str(self.uuid)
         )
 
     @property
@@ -200,27 +200,33 @@ class VertexOrchestrator(BaseOrchestrator):
         image_name = get_image_digest(image_name) or image_name
 
         def _construct_kfp_pipeline() -> None:
+            """Create a `ContainerOp` for each step which contains the name
+            of the Docker image and configures the entrypoint of the Docker
+            image to run the step.
+
+            Additionally, this gives each `ContainerOp` information about its
+            direct downstream steps.
+
+            If this callable is passed to the `compoile()` method of a `KFPV2Compiler`
+            all `dsl.ContainerOp` instances will be automatically added to a singular
+            `dsl.Pipeline` instance.
+            """
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
 
             for step in sorted_steps:
                 # The command will be needed to eventually call the python step
                 # within the docker container
-                command = (
-                    KubeflowEntrypointConfiguration.get_entrypoint_command()
-                )
+                command = VertexEntrypointConfiguration.get_entrypoint_command()
 
                 # The arguments are passed to configure the entrypoint of the
                 # docker container when the step is called.
-                metadata_ui_path = "/outputs/mlpipeline-ui-metadata.json"
-                arguments = (
-                    KubeflowEntrypointConfiguration.get_entrypoint_arguments(
-                        step=step,
-                        pb2_pipeline=pb2_pipeline,
-                        **{METADATA_UI_PATH_OPTION: metadata_ui_path},
-                    )
+                arguments = VertexEntrypointConfiguration.get_entrypoint_arguments(
+                    step=step,
+                    pb2_pipeline=pb2_pipeline,
+                    **{VERTEX_JOB_ID_OPTION: dslv2.PIPELINE_JOB_ID_PLACEHOLDER},
                 )
 
-                # Create the container op for the step
+                # Create the `ContainerOp` for the step
                 container_op = kfp.components.load_component_from_text(
                     f"""
                     name: {step.name}
@@ -230,6 +236,7 @@ class VertexOrchestrator(BaseOrchestrator):
                             command: {command + arguments}"""
                 )()
 
+                # Set upstream tasks as a dependency of the current step
                 upstream_step_names = self.get_upstream_step_names(
                     step=step, pb2_pipeline=pb2_pipeline
                 )
@@ -309,9 +316,13 @@ class VertexOrchestrator(BaseOrchestrator):
         )
 
         logger.info(
-            "Submitting pipeline job '%s' to Vertex AI Pipelines service",
+            "Submitting pipeline job with job_id `%s` to Vertex AI Pipelines service.",
             job_id,
         )
 
         # Submit the job to Vertex AI Pipelines service.
-        run.submit()
+        try:
+            run.submit()
+            logger.info("View the Vertex AI Pipelines job at %s", run.get_url())
+        except google_exceptions.ClientError as e:
+            logger.warning("Failed to create the Vertex AI Pipeline job: %s", e)
