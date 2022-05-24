@@ -24,12 +24,12 @@
 * [Integrations](advanced-guide/integrations.md)
 * [Execute Pipelines in the Cloud](advanced-guide/guide-aws-gcp-azure.md)
 * [Continuous Training and Deployment](advanced-guide/continuous-training-and-deployment.md)
+* [Manage your Secrets](advanced-guide/secrets.md)
 * [Run Steps on Specialized Hardware](advanced-guide/step-operators.md)
 * [Load your Data from Feature Stores](advanced-guide/feature-store.md)
 * [Perform Drift Detection](advanced-guide/drift-detection.md)
-* [Track your Experiments](advanced-guide/experiment-tracking.md)
-* [Manage your Secrets](advanced-guide/secrets.md)
 * [Manage External Services](advanced-guide/services.md)
+* [Track your Experiments](advanced-guide/experiment-tracking.md)
 
 ## Extending ZenML
 
