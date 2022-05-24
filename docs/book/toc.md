@@ -71,7 +71,7 @@
 * [Best Practices](misc/best-practices.md)
 * [System Environmental Variables](misc/system-env.md)
 * [Usage Analytics](misc/usage-analytics.md)
-* [🙋‍♀️ Contributing](misc/contributing.md)
+* [Contributing](misc/contributing.md)
 * [FAQ](misc/faq.md)
 * [Roadmap](https://zenml.io/roadmap)
 
