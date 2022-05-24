@@ -14,34 +14,34 @@
 
 
 from zenml.integrations.slack.alerters.slack_alerter import SlackAlerter
-from zenml.repository import Repository
-from zenml.steps import step
+from zenml.steps import StepContext, step
 from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
 
 
 class SlackAlertConfig(BaseAlerterStepConfig):
-    """TBD"""
+    """Config for the slack alerter standard step."""
+
+    slack_channel_id: str  # The ID of the Slack channel to use for communication.
 
 
 @step
-def slack_alerter_step(message: str) -> bool:
+def slack_alerter_step(
+    config: SlackAlertConfig, context: StepContext, message: str
+) -> bool:
     """Post a given message to Slack.
 
     Args:
-        message: message to be posted
+        config: Runtime configuration for the slack alerter.
+        context: StepContext of the ZenML repository.
+        message: Message to be posted.
 
     Returns:
-        True if operation succeeded, else False
+        True if operation succeeded, else False.
 
     Raises:
-        ValueError if active stack has no slack alerter
+        ValueError if active stack has no slack alerter.
     """
-
-    alerter = Repository(  # type: ignore[call-arg]
-        skip_repository_check=True
-    ).active_stack.alerter
-
-    if not isinstance(alerter, SlackAlerter):
+    if not isinstance(context.stack.alerter, SlackAlerter):
         raise ValueError(
             "The active stack needs to have a Slack alerter component registered "
             "to be able to use `slack_alerter_step`. "
@@ -51,4 +51,4 @@ def slack_alerter_step(message: str) -> bool:
             "  'zenml stack register stack-name -al slack_alerter ...'\n"
         )
 
-    return alerter.post(message)
+    return context.stack.alerter.post(message, config)

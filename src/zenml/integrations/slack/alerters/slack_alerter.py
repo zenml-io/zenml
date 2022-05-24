@@ -12,13 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import ClassVar
+from typing import ClassVar, Optional
 
-from slack_sdk import WebClient  # type: ignore[attr-defined]
+from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 from zenml.alerter.base_alerter import BaseAlerter
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
+from zenml.integrations.slack.steps.slack_alerter_step import SlackAlertConfig
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -29,32 +30,44 @@ class SlackAlerter(BaseAlerter):
 
     Attributes:
         slack_token: The Slack token tied to the Slack account to be used.
-        slack_channel_id: The ID of the Slack channel to use for communication.
     """
 
     slack_token: str
-    slack_channel_id: str
+    default_slack_channel_id: Optional[str] = None
 
     # Class Configuration
     FLAVOR: ClassVar[str] = SLACK_ALERTER_FLAVOR
 
-    def post(self, message: str) -> bool:
+    def post(self, message: str, config: Optional[SlackAlertConfig]) -> bool:
         """Post a message to a Slack channel.
 
         Args:
-            message: message to be posted
+            message: Message to be posted.
+            config: Optional runtime configuration.
 
         Returns:
             True if operation succeeded, else False
         """
+        if config.slack_channel_id is not None:
+            slack_channel_id = config.slack_channel_id
+        else:
+            if self.default_slack_channel_id is not None:
+                slack_channel_id = self.default_slack_channel_id
+            else:
+                raise ValueError(
+                    "Neither the `SlackAlertConfig.slack_channel_id` in the runtime "
+                    "configuration, nor the `default_slack_channel_id` in the alerter "
+                    "stack component is specified. Please specify at least one."
+                )
+
         client = WebClient(token=self.slack_token)
         try:
             response = client.chat_postMessage(
-                channel=self.slack_channel_id,
+                channel=slack_channel_id,
                 text=message,
             )
             return True
         except SlackApiError as error:
             response = error.response["error"]
             logger.error(f"SlackAlerter.post() failed: {response}")
-            raise error
+            return False
