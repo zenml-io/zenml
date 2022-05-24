@@ -45,9 +45,9 @@ jobs:
 
     - name: Install Dependencies
       run: |
-      source $VENV
-          zenml integration install -y --ignore-integration feast
-          pip install click~=8.0.3
+        source $VENV
+        zenml integration install -y --ignore-integration feast
+        pip install click~=8.0.3
 
     - name: Setup git user
       run: |
