@@ -288,15 +288,15 @@ new stack with these components that you have just created.
 
 2. Register the metadata store component
 
- * if you decided to use the Kubeflow metadata service, you can configure a
-  `kubeflow` flavor metadata-store:
+   * if you decided to use the Kubeflow metadata service, you can configure a
+     `kubeflow` flavor metadata-store:
 
     ```powershell
     zenml metadata-store register cloud_metadata_store --flavor=kubeflow
     ```
- * otherwise, configure a `mysql` flavor metadata-store. You will also need a
- secrets manager component to store the MySQL credentials and a secret (named
- `mysql_secret` in the example) to be registered after the stack (step 5.).
+   * otherwise, configure a `mysql` flavor metadata-store. You will also need a
+     secrets manager component to store the MySQL credentials and a secret (named
+     `mysql_secret` in the example) to be registered after the stack (step 5.).
 
     ```powershell
     zenml metadata-store register cloud_metadata_store --flavor=mysql --secret=mysql_secret
@@ -330,24 +330,16 @@ a `kubeflow` flavor metadata-store).
     --ssl_key=@/path/to/downloaded/client-key
     ```
 
-{% hint style="info" %}
-
-* The user and password are those set up during the creation of the managed
-  SQL database service.
-* The SSL certificates are the ones downloaded during the creation of the managed
-  SQL database service.
-* The `--ssl_cert` and `--ssl_key` parameters are only required if you set up
-  client certificates for the MySQL service.
-
-{% endhint %}
-
-
 6. Do a pipeline run and check your Kubeflow UI to see it running there! 🚀
 
 {% hint style="info" %}
 
 * The **secrets manager** is only required if you're using a **metadata store**
   backed by a managed cloud database service.
+* The **metadata store** secret user, password and SSL certificates are the ones
+  set up and downloaded during the creation of the managed SQL database service.
+* The `--ssl_cert` and `--ssl_key` parameters for the `mysql_secret` are only
+  required if you set up client certificates for the MySQL service.
 * You can choose any name for your stack components apart from the ones used in
   the script above.
   {% endhint %}
