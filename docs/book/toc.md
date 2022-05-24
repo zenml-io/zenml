@@ -3,7 +3,7 @@
 * [Introduction](index.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Core Concepts](introduction/core-concepts.md)
-* [Examples](advanced-guide/advanced-zenml/zenml-example-cli.md)
+* [Examples](introduction/zenml-example-cli.md)
 
 ## Developer Guide
 
@@ -20,20 +20,20 @@
 
 ## Advanced Guide
 
-* [Stacks, Components, Flavors](extending-zenml/stacks-components-flavors.md)
-* [Integrations](advanced-guide/integrations/integrations.md)
-* [Execute Pipelines in the Cloud](advanced-guide/cloud/guide-aws-gcp-azure.md)
-* [Continuous Training and Deployment](advanced-guide/cloud/continuous-training-and-deployment.md)
-* [Run Steps on Specialized Hardware](advanced-guide/cloud/step-operators.md)
-* [Load your Data from Feature Stores](advanced-guide/integrations/feature-store.md)
-* [Perform Drift Detection](advanced-guide/integrations/drift-detection.md)
-* [Track your Experiments](advanced-guide/integrations/experiment-tracking.md)
-* [Manage your Secrets](advanced-guide/integrations/secrets.md)
-* [Manage External Services](advanced-guide/cloud/services.md)
+* [Stacks, Components, Flavors](advanced-guide/stacks-components-flavors.md)
+* [Integrations](advanced-guide/integrations.md)
+* [Execute Pipelines in the Cloud](advanced-guide/guide-aws-gcp-azure.md)
+* [Continuous Training and Deployment](advanced-guide/continuous-training-and-deployment.md)
+* [Run Steps on Specialized Hardware](advanced-guide/step-operators.md)
+* [Load your Data from Feature Stores](advanced-guide/feature-store.md)
+* [Perform Drift Detection](advanced-guide/drift-detection.md)
+* [Track your Experiments](advanced-guide/experiment-tracking.md)
+* [Manage your Secrets](advanced-guide/secrets.md)
+* [Manage External Services](advanced-guide/services.md)
 
 ## Extending ZenML
 
-* [Start Here](extending-zenml/getting-started.md)
+* [Getting Started](extending-zenml/getting-started.md)
 * [Orchestrators](extending-zenml/orchestrator.md)
 * [Artifact Stores](extending-zenml/artifact-store.md)
 * [Metadata Stores](extending-zenml/metadata-store.md)
