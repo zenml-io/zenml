@@ -170,7 +170,7 @@ The code within the repository is structured in the following way -
 the most relevant places for contributors are highlighted with a `<-` arrow:
 
 ```
-├── .github           -- Definition of the GH action definitions
+├── .github           -- Definition of the GH action workflows
 ├── docker            -- Dockerfiles used to build ZenML docker images
 ├── docs              <- The ZenML docs, CLI docs and API docs live here
 │   ├── book          <- In case you make user facing changes, update docs here
@@ -191,7 +191,7 @@ the most relevant places for contributors are highlighted with a `<-` arrow:
 │   ├── steps               <- Steps and their decorators are defined here
 │   ├── utils               <- Collection on useful utils
 │   ├── zen_server          -- Code for running the Zen Server
-│   └── zen_stores          -- Code for sharing stacks
+│   └── zen_stores          -- Code for storing stacks in multiple settings
 └── test              <- Don't forget to write unit tests for your code
 ```
 
