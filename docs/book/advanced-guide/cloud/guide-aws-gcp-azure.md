@@ -202,6 +202,78 @@ connect to your Kubeflow Pipelines deployment.
   {% endtab %}
   {% endtabs %}
 
+### Metadata Store
+
+{% hint style="info" %}
+
+The **metadata store** requires a SQL compatible database service to store
+information about pipelines, pipeline runs, steps and artifacts. If you want to
+avoid using a managed cloud SQL database service, ZenML has the option to reuse
+the gRPC metadata service installed and used internally by the Kubeflow
+Pipelines deployment. This is not recommended for production use.
+
+To use the Kubeflow Pipelines metadata service, use a metadata store of flavor
+`kubeflow` in your stack configuration and ignore this section. 
+
+{% endhint %}
+
+{% hint style="info" %}
+
+If you decide to use a SQL **metadata store** backed by a managed cloud SQL
+database service, you will also need a matching **secrets manager** to store the
+SSL credentials (i.e. certificates) required to connect to it.
+
+{% endhint %}
+
+{% tabs %}
+{% tab title="AWS" %}
+
+* [Set up](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.html)
+  an Amazon RDS database instance with a username and a password.
+* Find the endpoint (DNS name) and TCP port number for your DB instance.
+  You will need them to register with ZenML. The endpoint should be in the format
+  `INSTANCE-NAME.ID.REGION.rds.amazonaws.com`.
+* You may also have to explicitly reconfigure the VPC security group rules to allow
+  access to the database from outside the cloud as well as from the EKS cluster
+  (if they do not share the same VPC).
+* It is strongly recommended to also [enable SSL access to your RDS database instance](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html).
+  This is done differently depending on the type of RDS service you use. For
+  example, [for a MySQL RDS service](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_MySQL.html#MySQL.Concepts.SSLSupport),
+  you have to connect to the database using the `mysql` client and require SSL
+  for the access for the user you created at the first step. You will also need
+  the AWS server certificate associated with the AWS region where the RDS instance
+  is running, as covered in the AWS documentation. Download the certificate as a
+  file and have it ready for use during the ZenML stack registration.
+
+{% endtab %}
+
+{% tab title="GCP" %}
+
+* Set up a [Google Cloud SQL database instance](https://cloud.google.com/sql).
+  You should enable a public IP address for the database instance, if you want to
+  access it from outside the GCP cloud e.g. to have access to the pipeline metadata
+  from your local host. In the authorized networks section of the database instance,
+  you should add a CIDR that covers all IP addresses that will access the database
+  (e.g. the GKE cluster, your local host). If you don't know what these are, you
+  should use a CIDR value of 0.0.0.0/0 that allows all IP addresses, but make sure
+  to enable SSL access to the database.
+* Find the public IP address and TCP port number for your DB instance.
+  You will need them to register with ZenML.
+* It is strongly recommended to enable SSL encryption for your database instance
+  and allow only SSL connections. Also create a client certificate and key pair
+  that you will use to connect ZenML to the database. You should have three
+  files saved to your machine: a server certificate, a client certificate and a
+  client key. You will need all three during the ZenML stack registration.
+  {% endtab %}
+
+{% tab title="Azure" %}
+
+The Azure SQL metadata service is not yet supported because ZenML doesn't yet
+support a matching Azure secrets manager.
+
+{% endtab %}
+{% endtabs %}
+
 ## Integrating with ZenML
 
 To run our pipeline on Kubeflow Pipelines deployed to cloud, we will create a
@@ -214,30 +286,68 @@ new stack with these components that you have just created.
     zenml integration install kubeflow
     ```
 
-2. Register the stack components
+2. Register the metadata store component
+
+ * if you decided to use the Kubeflow metadata service, you can configure a
+  `kubeflow` flavor metadata-store:
+
+    ```powershell
+    zenml metadata-store register cloud_metadata_store --flavor=kubeflow
+    ```
+ * otherwise, configure a `mysql` flavor metadata-store. You will also need a
+ secrets manager component to store the MySQL credentials and a secret (named
+ `mysql_secret` in the example) to be registered after the stack (step 5.).
+
+    ```powershell
+    zenml metadata-store register cloud_metadata_store --flavor=mysql --secret=mysql_secret
+    ```
+
+3. Register the other stack components and the stack itself
 
     ```powershell
     zenml container-registry register cloud_registry --flavor=<aws/gcp/azure> --uri=$PATH_TO_YOUR_CONTAINER_REGISTRY
     zenml orchestrator register cloud_orchestrator --flavor=kubeflow --custom_docker_base_image_name=YOUR_IMAGE
-    zenml metadata-store register kubeflow_metadata_store --flavor=kubeflow
     zenml artifact-store register cloud_artifact_store --flavor=<s3/gcp/azure> --path=$PATH_TO_YOUR_BUCKET
+    zenml secrets-manager register cloud_secrets_manager --flavor=<aws/gcp-secrets-manager> 
 
     # Register the cloud stack
-    zenml stack register cloud_kubeflow_stack -m kubeflow_metadata_store -a cloud_artifact_store -o cloud_orchestrator -c cloud_registry
+    zenml stack register cloud_kubeflow_stack -m cloud_metadata_store -a cloud_artifact_store -o cloud_orchestrator -c cloud_registry -x cloud_secrets_manager
     ```
 
-3. Activate the newly created stack.
+4. Activate the newly created stack.
 
     ```powershell
     zenml stack set cloud_kubeflow_stack
     ```
 
-4. Do a pipeline run and check your Kubeflow UI to see it running there! 🚀
+
+5. Create the secret for the `mysql` metadata store (not necessary if you used
+a `kubeflow` flavor metadata-store).
+
+    ```powershell
+    zenml secret register mysql_secret --schema=mysql --user <user> --password <password>
+    --ssl_ca=@/path/to/downloaded/server-cert --ssl_cert=@/path/to/downloaded/client-cert
+    --ssl_key=@/path/to/downloaded/client-key
+    ```
 
 {% hint style="info" %}
 
-* The **metadata store** stores metadata inside the Kubeflow Pipelines internal
-  MySQL database.
+* The user and password are those set up during the creation of the managed
+  SQL database service.
+* The SSL certificates are the ones downloaded during the creation of the managed
+  SQL database service.
+* The `--ssl_cert` and `--ssl_key` parameters are only required if you set up
+  client certificates for the MySQL service.
+
+{% endhint %}
+
+
+6. Do a pipeline run and check your Kubeflow UI to see it running there! 🚀
+
+{% hint style="info" %}
+
+* The **secrets manager** is only required if you're using a **metadata store**
+  backed by a managed cloud database service.
 * You can choose any name for your stack components apart from the ones used in
   the script above.
   {% endhint %}
