@@ -4,7 +4,12 @@ description: Guard against data drift with our Evidently integration.
 
 # Perform Drift Detection
 
-Data drift is something you often want to guard against in your pipelines. Machine learning pipelines are built on top of data inputs, so it is worth checking for drift if you have a model that was trained on a certain distribution of data.
+Data drift is something you often want to guard against in your pipelines.
+Machine learning pipelines are built on top of data inputs, so it is worth
+checking for drift if you have a model that was trained on a certain
+distribution of data. What follows is an example of how we use one drift
+detection tool that ZenML has currently integrated with. This takes the form of
+a standard step that you can use to make the relevant calculations.
 
 ## 🗺 Overview
 
