@@ -10,16 +10,17 @@ Sign up [here](https://www.eventbrite.com/e/zenml-mlops-day-join-us-in-building-
 
 # 👀 What is ZenML?
 
-**ZenML** is an extensible, open-source MLOps framework to create
-production-ready machine learning pipelines. Built for data scientists, it has a
-simple, flexible syntax, is cloud- and tool-agnostic, and has
-interfaces/abstractions that are catered towards ML workflows.
+**ZenML** is an extensible, open-source MLOps framework for creating 
+portable, production-ready MLOps pipelines. Built to enable collaboration among data scientists, ML Engineers, and MLOps Developers,
+it has a simple, flexible syntax, is **cloud-** and 
+**tool-agnostic**, and has interfaces/abstractions that are thoughtfully designed for 
+ML workflows. 
 
 At its core, **ZenML pipelines execute ML-specific workflows** from sourcing
-data to splitting, preprocessing, training, all the way to the evaluation of
-results and even serving. There are many built-in batteries to support common ML
-development tasks. ZenML is not here to replace the great tools that solve these
-individual problems. Rather, it offers an **extensible framework** and a
+data to splitting, preprocessing, training, all the way to serving and monitoring 
+ML models in production. There are many built-in features to support
+common ML development tasks. ZenML is not here to replace the great tools that
+solve these individual problems. Rather, it offers an **extensible framework** and a
 standard abstraction to write and build your workflows.
 
 🎉 **Version 0.8.0 out now!** [Check out the release notes
@@ -188,7 +189,7 @@ Read more about CT/CD in ZenML [here](https://blog.zenml.io/ci-ct-cd-with-zenml/
 
 ## 💾 Install ZenML
 
-*Requirements*: ZenML supports Python 3.7 and 3.8.
+*Requirements*: ZenML supports Python 3.7, 3.8, and 3.9.
 
 ZenML is available for easy installation into your environment via PyPI:
 
@@ -210,6 +211,15 @@ command to get started in a bash environment:
 ```shell
 docker run -it zenmldocker/zenml /bin/bash
 ```
+
+### 🐛 Known installation issues for M1 Mac Users
+
+If you have a M1 Mac machine and you are encountering an error while trying to install ZenML, 
+please try to setup `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
+aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you @Reid Falconer) :
+
+- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
+- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
 
 ## 🚅 Quickstart
 
