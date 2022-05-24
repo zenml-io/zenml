@@ -1,8 +1,8 @@
-# Implementing a new Integration
+# Implementing a New Integration
 
 When implementing a new integration for a stack component 
-(or materializer/visualizer) there a quite a few steps that are necessary.
-Here's a small guide
+(or materializer/visualizer) there are quite a few steps to complete.
+Here's a small guide to get you going:
 
 
 ### 1. Create `src/zenml/integrations/<name-of-integration>`
@@ -34,9 +34,9 @@ def custom_pipeline():
 
 ### 3. Create integration in `src/zenml/integrations/<name-of-integration>/__init__.py`
 
-For creating an integration you first need to subclass the Integration class, 
+To create an integration you first need to subclass the `Integration` class, 
 set some important attributes (`NAME` and `REQUIREMENTS`) and overwrite the 
-`flavors` classmethod.
+`flavors` class method.
 
 ```python
 from typing import List
@@ -46,7 +46,7 @@ from zenml.integrations.constants import <EXAMPLE_INTEGRATION>
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-# This is the flavor that can will used when registering this stack component
+# This is the flavor that will be used when registering this stack component
 #  `zenml <type-of-stack-component> register ... -f example-orchestrator-flavor`
 EXAMPLE_ORCHESTRATOR_FLAVOR = <"example-orchestrator-flavor">
 
@@ -78,8 +78,8 @@ as an example for how it is done.
 
 ### 4. Create the implementation(s)
 
-Each Integration can have implementations for multiple zenml components. 
-Generally the outside repo structure 
+Each Integration can have implementations for multiple ZenML components. 
+Generally the outer repository structure 
 `src/zenml/<stack-component>/<base-component-impl.py` is reflected inside the 
 integration folder: `integrations/<name-of-integration>/<stack-component>/<custom-component-impl.py`
 
