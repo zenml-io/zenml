@@ -88,7 +88,7 @@ extensibility of the different components [here](https://docs.zenml.io/extending
 integrations that are already implemented, for example the 
 [mlflow experiment tracker](mlflow/experiment_trackers/mlflow_experiment_tracker.py)
 
-## 5. Import in all the right places
+### 5. Import in all the right places
 The Integration itself must be imported within the integrations 
 [`__init__.py`](__init__.py)
 
