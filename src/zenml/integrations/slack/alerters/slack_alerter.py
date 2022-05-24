@@ -75,7 +75,6 @@ class SlackAlerter(BaseAlerter):
                     "stack component is specified. Please specify at least one."
                 )
 
-        print(self.slack_token)
         client = WebClient(token=self.slack_token)
         try:
             response = client.chat_postMessage(
