@@ -111,17 +111,18 @@ passed to the `zenml secret register` command:
 
 ```shell
 zenml secret register mysql_secret --schema=mysql --user=user --password=password
---ssl_ca=./ca.pem
+--ssl_ca=@./ca.pem --ssl_verify_server_cert=true
 ```
 
 The keys and values passed to the CLI are validated using regular Pydantic
 rules:
 
 * optional attributes don't need to be passed to the CLI and will be set to their
-default value
+default value if omitted
 * required attributes must be passed to the CLI or an error will be raised
-* all values must respect the indicated data type or be a valid string
-representation of that data type
+* all values must be a valid string representation of the data type indicated
+in the schema (i.e. that can be converted to the type indicated) or an error
+will be raised
 
 ## Using Secrets in a Kubeflow environment
 
