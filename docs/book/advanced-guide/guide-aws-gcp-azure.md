@@ -219,7 +219,7 @@ To use the Kubeflow Pipelines metadata service, use a metadata store of flavor
 
 {% hint style="info" %}
 
-If you decide to use a SQL **metadata store** backed by a managed cloud SQL
+If you decide to use an SQL **metadata store** backed by a managed cloud SQL
 database service, you will also need a matching **secrets manager** to store the
 SSL credentials (i.e. certificates) required to connect to it.
 

@@ -39,11 +39,11 @@ Once the installation is completed, you can check whether the installation was s
 ### Known installation issues for M1 Mac Users
 
 If you have a M1 Mac machine and you are encountering an error while trying to install ZenML, 
-please try to setup brew and pyenv with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
-aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you @Reid Falconer) :
+please try to setup `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
+aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you Reid Falconer!):
 
-[Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
-[Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
+- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
+- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
 
 
 ## Bash
