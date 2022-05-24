@@ -10,13 +10,13 @@
 * [Installation](developer-guide/installation.md)
 * [Steps & Pipelines](developer-guide/steps-and-pipelines.md)
 * [Runtime Configuration](developer-guide/runtime-configuration.md)
-* [Post Execution Workflow](developer-guide/post-execution-workflow.md)
+* [Post-Execution Workflow](developer-guide/post-execution-workflow.md)
 * [Materializer](developer-guide/materializer.md)
 * [Caching](developer-guide/caching.md)
 * [Step Fixture](developer-guide/step-fixtures.md)
 * [Fetching Historic Runs](developer-guide/fetching-historic-runs.md)
 * [Class Based API](developer-guide/class-based-api.md)
-
+* [Repo & Config](developer-guide/repo-and-config.md)
 
 ## Advanced Guide
 
@@ -28,7 +28,7 @@
 * [Load your Data from Feature Stores](advanced-guide/integrations/feature-store.md)
 * [Perform Drift Detection](advanced-guide/integrations/drift-detection.md)
 * [Track your Experiments](advanced-guide/integrations/experiment-tracking.md)
-* [Manage your Secrets](advanced-guide/integrations/secrets.md)  # this is missing how to use schemas
+* [Manage your Secrets](advanced-guide/integrations/secrets.md)
 * [Manage External Services](advanced-guide/cloud/services.md)
 
 ## Extending ZenML
