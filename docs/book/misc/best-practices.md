@@ -51,7 +51,7 @@ at any point without running into dependency issues.
 ### Do not overlap `required_integrations` and `requirements`
 
 Setting requirements twice can lead to unexpected behaviour as you will end up
-with one of the two defined package versions, which might lead to issues.
+with *only* one of the two defined package versions, which might cause problems.
 
 ### Nest `pipeline_instance.run()` in `if __name__ == "__main__"`
 
@@ -88,9 +88,9 @@ def second_pipeline():
 
 ### Explicitly set `enable_cache` at the `@pipeline` level
 
-Caching is enabled by default for ZenML Pipelines. It is good to be explicit
-though so that it is clear when looking at the code if caching is enabled or
-disabled for a given pipeline.
+Caching is enabled by default for ZenML Pipelines. It is good to be explicit,
+ though, so that it is clear when looking at the code if caching is enabled or
+disabled for any given pipeline.
 
 ### Explicitly disable caching when loading data from filesystem or external APIs
 
@@ -106,17 +106,17 @@ Cache is implicitly disabled for steps that have a
 because it is assumed that you might use the step context to retrieve artifacts
 from the artifact store that are unrelated to the current step. However, if that
 is not the case, and your step logic doesn't invalidate the caching behavior, it
-would be better to explicitly enable cache for your step
+would be better to explicitly enable the cache for your step.
 
 ### Don't use the same metadata stores across multiple artifact stores
 
 You might run into issues as the metadata store will point to artifacts in
 inactive artifact stores.
 
-### Use profiles to manage stacks
+### Use Profiles to manage Stacks
 
-Using profiles allows you to separate your zenml stack collections and work
-locally within independant ZenML instances. See our
+Using Profiles allows you to separate your ZenML stacks and work
+locally within independent ZenML instances. See our
 [docs](../collaborate/profiles.md) on profiles to learn more.
 
 ### Use unique pipeline names across projects, especially if used with the same metadata store
@@ -127,28 +127,28 @@ pipelines.
 
 ### Check which integrations are required for registering a stack component
 
-You can do so by running `zenml flavor list` and installing the integration(s)
-if missing with `zenml integration install`.
+You can do so by running `zenml flavor list` and installing the missing integration(s) 
+with `zenml integration install`.
 
 ### Initialize the ZenML repository in the root of the source code tree of a project, even if it's optional
 
-This will set the zenml project root for the project and create a local profile.
+This will set the ZenML project root for the project and create a local profile.
 The advantage is that you create and maintain your active stack on a project
 level.
 
 ### Include a `.dockerignore` in the ZenML repository to exclude files and folders from the container images built by ZenML for containerized environments
 
-Containerized Orchestrators and Step-Operators load your complete project files 
-into a docker image for execution. To speed up the process and reduce docker 
-image sized exclude all unnecessary files (like data, virtual environments, 
-git repos, etc.) within the .dockerignore.
+Containerized Orchestrators and Step Operators load your complete project files 
+into a Docker image for execution. To speed up the process and reduce Docker 
+image sizes, exclude all unnecessary files (like data, virtual environments, 
+git repos, etc.) within the `.dockerignore`.
 
 ### Use `get_pipeline_run(RUN_NAME)` instead of indexing (`[-1]`) to retrieve previous pipeline runs
 
 When using the [post execution workflow](../developer-guide/post-execution-workflow.md)
-it is tempting to access the pipeline views directly by their index, however,
-the pipelines within your Repository are sorted by time of first run, so the 
-pipeline at [-1] might not be the one you are expecting.
+it is tempting to access the pipeline views directly by their index, but
+the pipelines within your `Repository` are sorted by time of first run, so the 
+pipeline at `[-1]` might not be the one you are expecting.
 
 ```python
 from zenml.repository import Repository
@@ -162,7 +162,7 @@ repo = Repository()
 repo.get_pipelines()
 >>> [PipelineView('first_pipeline'), PipelineView('second_pipeline')]
 
-# This is recommended explicit way to retrieve your specific pipeline
+# This is the recommended explicit way to retrieve your specific pipeline
 repo.get_pipeline(pipeline_name="first_pipeline")
 ```
 
@@ -171,12 +171,12 @@ repo.get_pipeline(pipeline_name="first_pipeline")
 ZenML uses the `.zen` repository root to resolve the class path of your 
 functions and classes in a way that is portable across different types of 
 environments such as containers. If a repository is not present, the location 
-of the main python module is used as an implicit repository root
+of the main Python module is used as an implicit repository root.
 
 ### Put your runners in the root of the repository
 
 Putting your pipeline runners in the root of the repository ensures that all
-imports that are defined relative to project root resolve for the pipeline runner.
+imports that are defined relative to the project root resolve for the pipeline runner.
 
 ## Tips
 
