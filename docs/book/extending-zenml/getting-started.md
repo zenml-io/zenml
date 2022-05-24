@@ -28,7 +28,7 @@ stack component, please check the links below:
 
 
 {% hint style="info" %}
-Keep in mind that ZenML is an open source project. We appreciate and thrive on 
+Keep in mind that ZenML is an open-source project. We appreciate and thrive on 
 the contribution from our community. If you would like to contribute your 
 custom implementations back our repository, you can find the guide on 
 [GitHub](https://github.com/zenml-io/zenml/blob/develop/CONTRIBUTING.md).

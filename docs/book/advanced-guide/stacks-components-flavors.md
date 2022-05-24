@@ -61,7 +61,7 @@ class StackComponent(BaseModel, ABC):
     ...
 ```
 
-There are a few things to unpack here. Let's talk about `pydantic` first. `pydantic` is a library for [data validation and settings management](https://pydantic-docs.helpmanual.io/). Using their `BaseModel` is helping us to configure and serialize these components while allowing us to add a validation layer to each stack component instance/implementation.
+There are a few things to unpack here. Let's talk about Pydantic first. Pydantic is a library for [data validation and settings management](https://pydantic-docs.helpmanual.io/). Using their `BaseModel` is helping us to configure and serialize these components while allowing us to add a validation layer to each stack component instance/implementation.
 
 You can already see how that comes into play here within the base `StackComponent` implementation. As you can see, each instance of a `StackComponent` needs to include a `name` and an auto-generated `uuid`. These variables will be tracked when we serialize the stack component object. (You can exclude an instance configuration parameter from the serialization by giving it a name which starts with `_`.)
 
