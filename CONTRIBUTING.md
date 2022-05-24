@@ -162,7 +162,6 @@ risk! It's better to discuss privately and give us a chance to find a solution
 first, to limit the potential impact
 as much as possible.
 
-h2: ## Coding Conventions
 
 ## Coding Conventions
 
