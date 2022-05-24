@@ -73,6 +73,9 @@ class ExampleIntegration(Integration):
 ExampleIntegration.check_installation() # this checks if the requirements are installed
 ```
 
+Have a look at the MLFlow [Integration](mlflow/__init__.py) 
+as an example for how it is done.
+
 ## 4. Create the implementation(s)
 
 Each Integration can have implementations for multiple zenml components. 
@@ -82,11 +85,12 @@ integration folder: `integrations/<name-of-integration>/<stack-component>/<custo
 
 Here you'll be able to extend and build out the implementation. See the docs on 
 extensibility of the different components [here](https://docs.zenml.io/extending-zenml) or get inspired by the many 
-integrations that are already implemented.
+integrations that are already implemented, for example the 
+[mlflow experiment tracker](mlflow/experiment_trackers/mlflow_experiment_tracker.py)
 
 ## 5. Import in all the right places
-The Integration itself must be imported within the 
-`src/zenml/integrations/__init__.py`.
+The Integration itself must be imported within the integrations 
+[`__init__.py`](__init__.py)
 
 The Implementation of the Stack Component, Materializer or Visualizer needs to 
 be imported within `src/zenml/integrations/<name-of-integration>/<specifc-component>/__init__.py`
