@@ -81,7 +81,7 @@ examples on how:
 
 - **[airflow_orchestration](airflow_orchestration/README.md)**: Running
   pipelines with Airflow locally.
-- **[kubeflow_pipeline_orchestration](kubeflow_pipeline_orchestration/README.md)**:
+- **[kubeflow_pipelines_orchestration](kubeflow_pipelines_orchestration/README.md)**:
   Shows how to orchestrate a pipeline
   using a local Kubeflow stack.
 
