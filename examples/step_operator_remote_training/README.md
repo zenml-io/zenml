@@ -191,5 +191,5 @@ rm -rf zenml_examples
 
 Our docs regarding the step operator integrations can be found [here](https://docs.zenml.io/advanced-guide/step-operators).
 
-If you want to learn more about step operators in general or about how to build your own step operator in zenml
-check out our [docs](https://docs.zenml.io/extending-zenml/step-operator)
+If you want to learn more about step operators in general or about how to build your own step operator in ZenML
+check out our [docs](https://docs.zenml.io/extending-zenml/step-operator).
