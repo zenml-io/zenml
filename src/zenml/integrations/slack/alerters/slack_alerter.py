@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from multiprocessing.sharedctypes import Value
+import os
 from typing import Any, ClassVar, Optional
 
 from slack_sdk import WebClient
@@ -46,6 +48,27 @@ class SlackAlerter(BaseAlerter):
     # Class Configuration
     FLAVOR: ClassVar[str] = SLACK_ALERTER_FLAVOR
 
+
+    def _get_channel_id(self, config: Optional[BaseAlerterStepConfig]):
+        if not isinstance(config, BaseAlerterStepConfig):
+            raise RuntimeError(
+                "The config object must be of type `BaseAlerterStepConfig`."
+            )
+        if (
+            isinstance(config, SlackAlerterConfig)
+            and hasattr(config, "slack_channel_id")
+            and config.slack_channel_id is not None
+        ):
+            return config.slack_channel_id
+        if self.default_slack_channel_id is not None:
+            return self.default_slack_channel_id
+        raise ValueError(
+            "Neither the `SlackAlerterConfig.slack_channel_id` in the runtime "
+            "configuration, nor the `default_slack_channel_id` in the alerter "
+            "stack component is specified. Please specify at least one."
+        )
+
+
     def post(
         self, message: str, config: Optional[BaseAlerterStepConfig]
     ) -> bool:
@@ -58,25 +81,7 @@ class SlackAlerter(BaseAlerter):
         Returns:
             True if operation succeeded, else False
         """
-        if not isinstance(config, BaseAlerterStepConfig):
-            raise RuntimeError(
-                "The config object must be of type `BaseAlerterStepConfig`."
-            )
-        if (
-            isinstance(config, SlackAlerterConfig)
-            and hasattr(config, "slack_channel_id")
-            and config.slack_channel_id is not None
-        ):
-            slack_channel_id = config.slack_channel_id
-        elif self.default_slack_channel_id is not None:
-            slack_channel_id = self.default_slack_channel_id
-        else:
-            raise ValueError(
-                "Neither the `SlackAlerterConfig.slack_channel_id` in the runtime "
-                "configuration, nor the `default_slack_channel_id` in the alerter "
-                "stack component is specified. Please specify at least one."
-            )
-
+        slack_channel_id = self._get_channel_id(config=config)
         client = WebClient(token=self.slack_token)
         try:
             response = client.chat_postMessage(
@@ -89,5 +94,38 @@ class SlackAlerter(BaseAlerter):
             logger.error(f"SlackAlerter.post() failed: {response}")
             return False
 
-    def ask(self, message: str, config: Optional[BaseAlerterStepConfig]) -> Any:
-        raise NotImplementedError
+    def ask(self, message: str, config: Optional[BaseAlerterStepConfig]) -> bool:
+        """
+        Post a message to a Slack channel and wait for approvement.
+        This can be useful, e.g. to easily get a human in the loop when 
+        deploying models.
+
+        Args:
+            message: Initial message to be posted.
+            config: Optional runtime configuration.
+
+        Returns:
+            True if a user approved the operation, else False
+        """
+        from slack_sdk.rtm_v2 import RTMClient
+        rtm = RTMClient(token=self.slack_token)
+        slack_channel_id = self._get_channel_id(config=config)
+
+        #@rtm.on("hello")
+        #def post_initial_message(client: RTMClient, event: dict):
+        #    pass
+            
+        approved = False
+
+        @rtm.on("message")
+        def handle(client: RTMClient, event: dict):
+            if event['channel'] == slack_channel_id:
+                if event["text"] == "LGTM":
+                    # thread_ts = event['ts']
+                    print(f"User {event['user']} approved on slack.")
+                    approved = True
+                    print(client.__dict__)
+                    rtm.stop()
+
+        rtm.start()
+        return approved
