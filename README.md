@@ -10,19 +10,20 @@ Sign up [here](https://www.eventbrite.com/e/zenml-mlops-day-join-us-in-building-
 
 # 👀 What is ZenML?
 
-**ZenML** is an extensible, open-source MLOps framework to create
-production-ready machine learning pipelines. Built for data scientists, it has a
-simple, flexible syntax, is cloud- and tool-agnostic, and has
-interfaces/abstractions that are catered towards ML workflows.
+**ZenML** is an extensible, open-source MLOps framework for creating 
+portable, production-ready MLOps pipelines. Built to enable collaboration among data scientists, ML Engineers, and MLOps Developers,
+it has a simple, flexible syntax, is **cloud-** and 
+**tool-agnostic**, and has interfaces/abstractions that are thoughtfully designed for 
+ML workflows. 
 
 At its core, **ZenML pipelines execute ML-specific workflows** from sourcing
-data to splitting, preprocessing, training, all the way to the evaluation of
-results and even serving. There are many built-in batteries to support common ML
-development tasks. ZenML is not here to replace the great tools that solve these
-individual problems. Rather, it offers an **extensible framework** and a
+data to splitting, preprocessing, training, all the way to serving and monitoring 
+ML models in production. There are many built-in features to support
+common ML development tasks. ZenML is not here to replace the great tools that
+solve these individual problems. Rather, it offers an **extensible framework** and a
 standard abstraction to write and build your workflows.
 
-🎉 **Version 0.8.0 out now!** [Check out the release notes
+🎉 **Version 0.8.1 out now!** [Check out the release notes
 here](https://github.com/zenml-io/zenml/releases).
 
 [![PyPI - Python
@@ -72,7 +73,7 @@ your project, you get the following benefits:
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
 | 🗃 **[Functional API Guide]** | Build production ML pipelines with simple functions. |
-| 🚀 **[New in v0.8.0]** | New features, bug fixes. |
+| 🚀 **[New in v0.8.1]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
 | 📒 **[API Reference]** | The detailed reference for ZenML's API. |
@@ -89,7 +90,7 @@ your project, you get the following benefits:
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
 [Functional API Guide]: https://docs.zenml.io/v/docs/guides/functional-api
-[New in v0.8.0]: https://github.com/zenml-io/zenml/releases
+[New in v0.8.1]: https://github.com/zenml-io/zenml/releases
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
 [API Reference]: https://apidocs.zenml.io/
@@ -188,7 +189,7 @@ Read more about CT/CD in ZenML [here](https://blog.zenml.io/ci-ct-cd-with-zenml/
 
 ## 💾 Install ZenML
 
-*Requirements*: ZenML supports Python 3.7 and 3.8.
+*Requirements*: ZenML supports Python 3.7, 3.8, and 3.9.
 
 ZenML is available for easy installation into your environment via PyPI:
 
@@ -210,6 +211,15 @@ command to get started in a bash environment:
 ```shell
 docker run -it zenmldocker/zenml /bin/bash
 ```
+
+### 🐛 Known installation issues for M1 Mac Users
+
+If you have a M1 Mac machine and you are encountering an error while trying to install ZenML, 
+please try to setup `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
+aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you @Reid Falconer) :
+
+- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
+- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
 
 ## 🚅 Quickstart
 
