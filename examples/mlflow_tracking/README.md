@@ -131,7 +131,5 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 
 # 📜 Learn more
 
-Our docs regarding the mlflow tracking integration can be found [here](TODO: Link to docs).
-
 If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in zenml
 check out our [docs](https://docs.zenml.io/extending-zenml/experiment-tracker)

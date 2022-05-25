@@ -259,7 +259,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/advanced-guide/cloud/guide-aws-gcp-azure).
+Our docs regarding the Kubeflow orchestrator integration can be found [here](https://docs.zenml.io/advanced-guide/guide-aws-gcp-azure).
 
 If you want to learn more about orchestrators in general or about how to build your own orchestrators in zenml
 check out our [docs](https://docs.zenml.io/extending-zenml/orchestrator).
