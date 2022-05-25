@@ -1,3 +1,37 @@
+# 0.8.1
+
+ZenML 0.8.1 is here and it comes with support for Python 3.9 🎉. It also includes major updates to our 
+documentation, fixes some broken links in our examples and improves the `zenml go` command which helps 
+you get started with ZenML.
+
+## What's Changed
+* Hotfix/fix failing release by @AlexejPenner in https://github.com/zenml-io/zenml/pull/611
+* Remove autocomplete + alerter from documentation by @strickvl in https://github.com/zenml-io/zenml/pull/612
+* Support Python 3.9 by @htahir1 in https://github.com/zenml-io/zenml/pull/605
+* Revert README by @htahir1 in https://github.com/zenml-io/zenml/pull/624
+* Don't build cuda image on release by @schustmi in https://github.com/zenml-io/zenml/pull/623
+* Update quickstart for `zenml go` by @fa9r in https://github.com/zenml-io/zenml/pull/625
+* Improve kubeflow manual setup logs by @schustmi in https://github.com/zenml-io/zenml/pull/622
+* Added missing space to error message by @AlexejPenner in https://github.com/zenml-io/zenml/pull/614
+* Added --set flag to register stack command by @AlexejPenner in https://github.com/zenml-io/zenml/pull/613
+* Fixes for multiple examples by @schustmi in https://github.com/zenml-io/zenml/pull/626
+* Bring back the `served_model` format to the keras materializer by @stefannica in https://github.com/zenml-io/zenml/pull/629
+* Fix broken example links by @schustmi in https://github.com/zenml-io/zenml/pull/630
+* FAQ edits by @strickvl in https://github.com/zenml-io/zenml/pull/634
+* Fix version parsing by @schustmi in https://github.com/zenml-io/zenml/pull/633
+* Completed Best Practices Page by @AlexejPenner in https://github.com/zenml-io/zenml/pull/635
+* Comments on Issues should no longer trigger gh actions by @AlexejPenner in https://github.com/zenml-io/zenml/pull/636
+* Revise `CONTRIBUTING.md` by @strickvl in https://github.com/zenml-io/zenml/pull/615
+* Alerter Component for Slack Integration by @fa9r in https://github.com/zenml-io/zenml/pull/586
+* Update `zenml go` to open quickstart/notebooks. by @fa9r in https://github.com/zenml-io/zenml/pull/631
+* Update examples by @schustmi in https://github.com/zenml-io/zenml/pull/638
+* More detailed instructions on creating an integration by @AlexejPenner in https://github.com/zenml-io/zenml/pull/639
+* Added publish api docs to release workflow by @AlexejPenner in https://github.com/zenml-io/zenml/pull/641
+* Added *.md to ignore paths by @AlexejPenner in https://github.com/zenml-io/zenml/pull/637
+* Update README and Docs with new messaging and fix broken links by @htahir1 in https://github.com/zenml-io/zenml/pull/632
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.8.0...0.8.1
+
 # 0.8.0
 
 ## 🧘‍♀️ Extensibility is our middle name

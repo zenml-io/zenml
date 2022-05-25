@@ -47,7 +47,7 @@ jupyter notebook
 #### Option 2 - Execute the whole ML pipeline from a Python script:
 ```bash
 # Install required zenml integrations
-zenml integration install dash sklearn mlflow evidently facets -y
+zenml integration install dash sklearn mlflow evidently facets
 
 # Initialize ZenML
 zenml init
