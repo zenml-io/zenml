@@ -1,48 +1,8 @@
-import numpy as np
-from sklearn.base import ClassifierMixin
-from sklearn.svm import SVC
+from steps import evaluator, importer, svc_trainer
 
-from zenml.alerter.alerter_step import alerter_step
-from zenml.exceptions import DoesNotExistException
-from zenml.integrations.sklearn.helpers.digits import get_digits
+from zenml.alerter.alerter_step import alerter_ask_step
 from zenml.pipelines import pipeline
-from zenml.steps import Output, StepContext, step
-from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
-
-
-@step
-def importer() -> Output(
-    X_train=np.ndarray,
-    X_test=np.ndarray,
-    y_train=np.ndarray,
-    y_test=np.ndarray,
-):
-    """Load the digits dataset as numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
-    return X_train, X_test, y_train, y_test
-
-
-@step
-def svc_trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
-    model = SVC(gamma=0.001)
-    model.fit(X_train, y_train)
-    return model
-
-
-@step
-def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: ClassifierMixin,
-) -> float:
-    """Calculate the test set accuracy of an sklearn model."""
-    test_acc = model.score(X_test, y_test)
-    print(f"Test accuracy: {test_acc}")
-    return test_acc
+from zenml.steps import step
 
 
 @step
@@ -61,51 +21,11 @@ def slack_pipeline(importer, trainer, evaluator, formatter, alerter):
     alerter(message)
 
 
-@step
-def alerter_step(
-    config: BaseAlerterStepConfig, context: StepContext, message: str
-) -> bool:
-    """Post a given message to the registered alerter component of the
-    active stack.
-
-    Args:
-        config: Runtime configuration for the slack alerter.
-        context: StepContext of the ZenML repository.
-        message: Message to be posted.
-
-    Returns:
-        True if operation succeeded, else False.
-
-    Raises:
-        ValueError if active stack has no slack alerter.
-    """
-
-    # TODO: duplicate code with examples/feast_feature_store/run.py
-    if not context.stack:
-        raise DoesNotExistException(
-            "No active stack is available. "
-            "Please make sure that you have registered and set a stack."
-        )
-    if not context.stack.alerter:
-        raise ValueError(
-            "The active stack needs to have an alerter component registered "
-            "to be able to use `alerter_step`. "
-            "You can create a new stack with e.g. a Slack alerter component or update "
-            "your existing stack to add this component, e.g.:\n\n"
-            "  'zenml alerter register slack_alerter --flavor=slack' ...\n"
-            "  'zenml stack register stack-name -al slack_alerter ...'\n"
-        )
-
-    response = context.stack.alerter.ask(message, config)
-    print(response)
-    return response
-
-
 if __name__ == "__main__":
     slack_pipeline(
         importer=importer(),
         trainer=svc_trainer(),
         evaluator=evaluator(),
         formatter=test_acc_formatter(),
-        alerter=alerter_step(),
+        alerter=alerter_ask_step(),
     ).run()

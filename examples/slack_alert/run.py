@@ -12,49 +12,11 @@
 #  permissions and limitations under the License.
 
 
-import numpy as np
-from sklearn.base import ClassifierMixin
-from sklearn.svm import SVC
+from steps import evaluator, importer, svc_trainer
 
-from zenml.alerter.alerter_step import alerter_step
-from zenml.integrations.sklearn.helpers.digits import get_digits
+from zenml.alerter.alerter_step import alerter_post_step
 from zenml.pipelines import pipeline
-from zenml.steps import Output, step
-
-
-@step
-def importer() -> Output(
-    X_train=np.ndarray,
-    X_test=np.ndarray,
-    y_train=np.ndarray,
-    y_test=np.ndarray,
-):
-    """Load the digits dataset as numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
-    return X_train, X_test, y_train, y_test
-
-
-@step
-def svc_trainer(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-) -> ClassifierMixin:
-    """Train a sklearn SVC classifier."""
-    model = SVC(gamma=0.001)
-    model.fit(X_train, y_train)
-    return model
-
-
-@step
-def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: ClassifierMixin,
-) -> float:
-    """Calculate the test set accuracy of an sklearn model."""
-    test_acc = model.score(X_test, y_test)
-    print(f"Test accuracy: {test_acc}")
-    return test_acc
+from zenml.steps import step
 
 
 @step
@@ -79,5 +41,5 @@ if __name__ == "__main__":
         trainer=svc_trainer(),
         evaluator=evaluator(),
         formatter=test_acc_formatter(),
-        alerter=alerter_step(),
+        alerter=alerter_post_step(),
     ).run()

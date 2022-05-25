@@ -131,7 +131,7 @@ class SlackAlerter(BaseAlerter):
                     rtm.stop()
 
                 # disapprove request (return False) if someone posts "stop"
-                elif event["text"] in ("decline, reject, stop"):
+                elif event["text"] in ("decline", "reject", "stop"):
                     print(f"User {event['user']} disapproved on slack.")
                     rtm.stop()
 
