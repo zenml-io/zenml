@@ -12,12 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from multiprocessing.sharedctypes import Value
-import os
-from typing import Any, ClassVar, Optional
+from typing import ClassVar, Optional
 
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+from slack_sdk.rtm import RTMClient
 
 from zenml.alerter.base_alerter import BaseAlerter
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
@@ -48,7 +47,6 @@ class SlackAlerter(BaseAlerter):
     # Class Configuration
     FLAVOR: ClassVar[str] = SLACK_ALERTER_FLAVOR
 
-
     def _get_channel_id(self, config: Optional[BaseAlerterStepConfig]):
         if not isinstance(config, BaseAlerterStepConfig):
             raise RuntimeError(
@@ -67,7 +65,6 @@ class SlackAlerter(BaseAlerter):
             "configuration, nor the `default_slack_channel_id` in the alerter "
             "stack component is specified. Please specify at least one."
         )
-
 
     def post(
         self, message: str, config: Optional[BaseAlerterStepConfig]
@@ -94,10 +91,12 @@ class SlackAlerter(BaseAlerter):
             logger.error(f"SlackAlerter.post() failed: {response}")
             return False
 
-    def ask(self, message: str, config: Optional[BaseAlerterStepConfig]) -> bool:
+    def ask(
+        self, message: str, config: Optional[BaseAlerterStepConfig]
+    ) -> bool:
         """
         Post a message to a Slack channel and wait for approvement.
-        This can be useful, e.g. to easily get a human in the loop when 
+        This can be useful, e.g. to easily get a human in the loop when
         deploying models.
 
         Args:
@@ -107,25 +106,36 @@ class SlackAlerter(BaseAlerter):
         Returns:
             True if a user approved the operation, else False
         """
-        from slack_sdk.rtm_v2 import RTMClient
         rtm = RTMClient(token=self.slack_token)
         slack_channel_id = self._get_channel_id(config=config)
 
-        #@rtm.on("hello")
-        #def post_initial_message(client: RTMClient, event: dict):
-        #    pass
-            
-        approved = False
+        approved = False  # will be modified by handle()
 
-        @rtm.on("message")
-        def handle(client: RTMClient, event: dict):
-            if event['channel'] == slack_channel_id:
-                if event["text"] == "LGTM":
-                    # thread_ts = event['ts']
+        # post the initial message
+        @RTMClient.run_on(event="hello")
+        def post_initial_message(**payload):
+            web_client = payload["web_client"]
+            web_client.chat_postMessage(channel=slack_channel_id, text=message)
+
+        # wait and listen for messages
+        @RTMClient.run_on(event="message")
+        def handle(**payload):
+            event = payload["data"]
+            if event["channel"] == slack_channel_id:
+
+                # approve request (return True) if someone posts "LGTM"
+                if event["text"] in ("ok", "approve", "LGTM"):
                     print(f"User {event['user']} approved on slack.")
+                    nonlocal approved
                     approved = True
-                    print(client.__dict__)
                     rtm.stop()
 
+                # disapprove request (return False) if someone posts "stop"
+                elif event["text"] in ("decline, reject, stop"):
+                    print(f"User {event['user']} disapproved on slack.")
+                    rtm.stop()
+
+        # start another thread until rtm.stop() is called in handle()
         rtm.start()
+
         return approved

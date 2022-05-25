@@ -1,16 +1,13 @@
-from zenml.exceptions import DoesNotExistException
-from zenml.steps import StepContext, step
-from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
-
-
 import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.svm import SVC
 
 from zenml.alerter.alerter_step import alerter_step
+from zenml.exceptions import DoesNotExistException
 from zenml.integrations.sklearn.helpers.digits import get_digits
 from zenml.pipelines import pipeline
-from zenml.steps import Output, step
+from zenml.steps import Output, StepContext, step
+from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
 
 
 @step
@@ -100,8 +97,8 @@ def alerter_step(
         )
 
     response = context.stack.alerter.ask(message, config)
-    print(response.body)
-    return True
+    print(response)
+    return response
 
 
 if __name__ == "__main__":
