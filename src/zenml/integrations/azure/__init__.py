@@ -24,13 +24,18 @@ from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
 AZURE_ARTIFACT_STORE_FLAVOR = "azure"
+AZURE_SECRETS_MANAGER_FLAVOR = "azure_secrets_manager"
 
 
 class AzureIntegration(Integration):
     """Definition of Azure integration for ZenML."""
 
     NAME = AZURE
-    REQUIREMENTS = ["adlfs==2021.10.0", "azure-keyvault-keys", "azure-identity"]
+    REQUIREMENTS = [
+        "adlfs==2021.10.0",
+        "azure-keyvault-keys",
+        "azure-identity",
+    ]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
@@ -41,7 +46,13 @@ class AzureIntegration(Integration):
                 source="zenml.integrations.azure.artifact_stores.AzureArtifactStore",
                 type=StackComponentType.ARTIFACT_STORE,
                 integration=cls.NAME,
-            )
+            ),
+            FlavorWrapper(
+                name=AZURE_SECRETS_MANAGER_FLAVOR,
+                source="zenml.integrations.azure.secrets_managers.AzureSecretsManager",
+                type=StackComponentType.SECRETS_MANAGER,
+                integration=cls.NAME,
+            ),
         ]
 
 

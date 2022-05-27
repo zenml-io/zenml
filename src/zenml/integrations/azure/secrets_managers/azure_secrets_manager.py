@@ -3,6 +3,7 @@ from typing import Any, ClassVar, Dict, List
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
+from zenml.exceptions import SecretExistsError
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -35,7 +36,7 @@ def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
         The cleaned key
     """
     if combined_key_name.startswith(f"{group_name}-"):
-        return combined_key_name[len(f"{group_name}-"):]
+        return combined_key_name[len(f"{group_name}-") :]
     else:
         raise RuntimeError(
             f"Key-name `{combined_key_name}` does not have the "
@@ -72,10 +73,10 @@ class AzureSecretsManager(BaseSecretsManager):
             secret: the secret to register"""
         self._ensure_client_connected(self.key_vault_name)
 
-        # if secret.name in self.get_all_secret_keys():
-        #     raise SecretExistsError(
-        #         f"A Secret with the name {secret.name} already exists."
-        #     )
+        if secret.name in self.get_all_secret_keys():
+            raise SecretExistsError(
+                f"A Secret with the name '{secret.name}' already exists."
+            )
 
         adjusted_content = prepend_group_name_to_keys(secret)
 
