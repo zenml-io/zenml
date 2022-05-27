@@ -81,11 +81,11 @@ zenml secret register SECRET_NAME --attr_from_literal=value \
 
 ### In a ZenML Step
 
-You can access the secret manager directly from within your steps through the 
-`StepContext`. This allows you to use your secrets for querying API's from 
+You can access the secrets manager directly from within your steps through the 
+`StepContext`. This allows you to use your secrets for querying APIs from 
 within your step without hard-coding your access keys. Don't forget to 
 make the appropriate decision regarding caching as it will be disabled by 
-default when the StepContext is passed into the step.
+default when the `StepContext` is passed into the step.
 
 ```python
 from zenml.steps import step, StepContext
