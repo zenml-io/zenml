@@ -1,27 +1,27 @@
-import re
-from datetime import datetime
 from typing import ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
+from kserve import (  # type: ignore[import]
+    KServeClient,
+    V1beta1InferenceService,
+    constants,
+    utils,
+)
 from kubernetes import client
 
-from kserve import KServeClient
-
-from zenml.integrations.kserve.services import (
+from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
     KServeDeploymentService,
 )
-
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.repository import Repository
-from zenml.secrets_managers import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 
 logger = get_logger(__name__)
 
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
-KSERVE_MODEL_DEPLOYER_FLAVOR = "kserve"
 
 
 class KServeModelDeployer(BaseModelDeployer):
@@ -33,6 +33,15 @@ class KServeModelDeployer(BaseModelDeployer):
             configuration is used. Depending on where the Kserve model deployer
             is being used, this can be either a locally active context or an
             in-cluster Kubernetes configuration (if running inside a pod).
+        kubernetes_namespace: the Kubernetes namespace where the KServe
+            inference service CRDs are provisioned and managed by ZenML. If not
+            specified, the namespace set in the current configuration is used.
+            Depending on where the KServe model deployer is being used, this can
+            be either the current namespace configured in the locally active
+            context or the namespace in the context of which the pod is running
+            (if running inside a pod).
+        base_url: the base URL of the Kubernetes ingress used to expose the
+            KServe inference services.
     """
 
     # Class Configuration
@@ -40,9 +49,26 @@ class KServeModelDeployer(BaseModelDeployer):
 
     kubernetes_context: Optional[str]
     kubernetes_namespace: Optional[str]
+    base_url: str
 
     # private attributes
     _client: Optional[KServeClient] = None
+
+    @staticmethod
+    def get_model_server_info(  # type: ignore[override]
+        service_instance: KServeDeploymentService,
+    ) -> Dict[str, Optional[str]]:
+        """Return implementation specific information on the model server
+
+        Args:
+            service_instance: KServe deployment service object
+        """
+        return {
+            "PREDICTION_URL": service_instance.prediction_url,
+            "MODEL_URI": service_instance.config.model_uri,
+            "MODEL_NAME": service_instance.config.model_name,
+            "KSERVE_INFERENCE_SERVICE": service_instance.crd_name,
+        }
 
     @staticmethod
     def get_active_model_deployer() -> "KServeModelDeployer":
@@ -134,12 +160,10 @@ class KServeModelDeployer(BaseModelDeployer):
                 server is provisioned, without waiting for it to fully start.
 
         Returns:
-            The ZenML Kserve  deployment service object that can be used to
+            The ZenML Kserve deployment service object that can be used to
             interact with the remote Kserve server.
 
         Raises:
-            KserveClientError: if a Kserve client error is encountered
-                while provisioning the Kserve deployment server.
             RuntimeError: if `timeout` is set to a positive value that is
                 exceeded while waiting for the Kserve deployment server
                 to start, or if an operational failure is encountered before
@@ -186,35 +210,39 @@ class KServeModelDeployer(BaseModelDeployer):
         service.start(timeout=timeout)
         return service
 
-    @staticmethod
-    def get_model_server_info(
-        service: KServeDeploymentService,
-    ) -> Dict[str, Optional[str]]:
-        """Give implementation specific way to extract relevant model server
-        properties for the user
-
-        Args:
-            service: Integration-specific service instance
-        """
-        return {
-            "PREDICTION_URL": "TBD",
-            "MODEL_URI": service.config.model_uri,
-            "MODEL_NAME": service.config.model_name,
-            "KSERVE_INFERENCE_SERVICE": service.crd_name,
-        }
-
-    def get_kserve_deployments(self, labels):
+    def get_kserve_deployments(
+        self, labels: Dict[str, str]
+    ) -> List[V1beta1InferenceService]:
         labels = labels or {}
-        # always filter results to only include Seldon deployments managed
-        # by ZenML
         label_selector = (
             ",".join(f"{k}={v}" for k, v in labels.items()) if labels else None
         )
-        deployments = self.kserve_client.get(
-            namespace=self.kubernetes_namespace, label_selector=label_selector
+
+        namespace = (
+            self.kubernetes_namespace or utils.get_default_target_namespace()
         )
-        print(deployments, label_selector)
-        return deployments["items"]
+
+        try:
+            response = (
+                self.kserve_client.api_instance.list_namespaced_custom_object(
+                    constants.KSERVE_GROUP,
+                    constants.KSERVE_V1BETA1_VERSION,
+                    namespace,
+                    constants.KSERVE_PLURAL,
+                    label_selector=label_selector,
+                )
+            )
+        except client.rest.ApiException as e:
+            raise RuntimeError(
+                "Exception when retrieving KServe inference services\
+                %s\n"
+                % e
+            )
+
+        # TODO[CRITICAL]: de-serialize each item into a complete
+        #   V1beta1InferenceService object recursively using the openapi
+        #   schema (this doesn't work right now)
+        return [V1beta1InferenceService(**item) for item in response["items"]]
 
     def find_model_server(
         self,
@@ -284,7 +312,7 @@ class KServeModelDeployer(BaseModelDeployer):
         for deployment in deployments:
             # recreate the KServe deployment service object from the KServe
             # deployment resource
-            service = KServeDeploymentConfig.create_from_deployment(
+            service = KServeDeploymentService.create_from_deployment(
                 deployment=deployment
             )
             if running and not service.is_running:

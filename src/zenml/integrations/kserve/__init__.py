@@ -31,6 +31,7 @@ class KServeIntegration(Integration):
     NAME = KSERVE
     REQUIREMENTS = [
         "kserve>=0.8.0",
+        "kubernetes==18.20.0",
     ]
 
     @classmethod

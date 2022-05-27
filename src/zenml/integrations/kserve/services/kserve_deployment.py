@@ -1,36 +1,50 @@
+import os
 import re
-
-from typing import Any, Dict, Generator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 from uuid import UUID
-from pydantic import Field, ValidationError
-from zenml.services import (
-    BaseService,
-    ServiceState,
-    ServiceType,
-    ServiceConfig,
-    ServiceStatus,
-)
-from zenml import __version__
 
-from kubernetes import client as k8s_client
-from kserve import (
+from kserve import (  # type: ignore[import]
     KServeClient,
-    constants,
-    utils,
     V1beta1InferenceService,
     V1beta1InferenceServiceSpec,
+    V1beta1PredictorExtensionSpec,
     V1beta1PredictorSpec,
-    V1beta1TFServingSpec,
-    V1beta1ModelSpec,
+    constants,
 )
+from kubernetes import client as k8s_client
+from pydantic import Field, ValidationError
+
+from zenml import __version__
+from zenml.services import (
+    BaseService,
+    ServiceConfig,
+    ServiceState,
+    ServiceStatus,
+    ServiceType,
+)
+
+if TYPE_CHECKING:
+    from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
+        KServeModelDeployer,
+    )
 
 
 class KServeDeploymentConfig(ServiceConfig):
-    """ """
+    """KServe deployment service configuration.
+
+    Attributes:
+        model_uri: URI of the model (or models) to serve.
+        model_name: the name of the model. Multiple versions of the same model
+            should use the same model name.
+        predictor: the KServe predictor used to serve the model.
+        replicas: number of replicas to use for the prediction service.
+        resources: the Kubernetes resources to allocate for the prediction service.
+    """
 
     model_uri: str = ""
     model_name: str = "default"
     predictor: str
+    replicas: int = 1
     resources: Dict[str, Any]
 
     @staticmethod
@@ -39,6 +53,7 @@ class KServeDeploymentConfig(ServiceConfig):
 
         See: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
         """
+        # TODO[MEDIUM]: Move k8s label sanitization to a common module.
         for key, value in labels.items():
             # Kubernetes labels must be alphanumeric, no longer than
             # 63 characters, and must begin and end with an alphanumeric
@@ -48,7 +63,19 @@ class KServeDeploymentConfig(ServiceConfig):
             )
 
     def get_kubernetes_labels(self) -> Dict[str, str]:
-        labels = {}
+        """Generate the labels for the KServe inference service CRD from the
+        service configuration.
+
+        These labels are attached to the KServe inference service CRD
+        and may be used as label selectors in lookup operations.
+
+        Returns:
+            The labels for the KServe inference service CRD.
+        """
+        # The convention used to differentiate between KServe CRD instances
+        # that are managed by ZenML and those that are not is to set the `app`
+        # label value to `zenml`.
+        labels = {"app": "zenml"}
         if self.pipeline_name:
             labels["zenml.pipeline_name"] = self.pipeline_name
         if self.pipeline_run_id:
@@ -65,6 +92,19 @@ class KServeDeploymentConfig(ServiceConfig):
         return labels
 
     def get_kubernetes_annotations(self) -> Dict[str, str]:
+        """Generate the annotations for the KServe inference service CRD from
+        the service configuration.
+
+        The annotations are used to store additional information about the
+        KServe ZenML service associated with the deployment that is
+        not available in the labels. One annotation particularly important
+        is the serialized Service configuration itself, which is used to
+        recreate the service configuration from a remote KServe inference
+        service CRD.
+
+        Returns:
+            The annotations for the KServe inference service CRD.
+        """
         annotations = {
             "zenml.service_config": self.json(),
             "zenml.version": __version__,
@@ -75,6 +115,21 @@ class KServeDeploymentConfig(ServiceConfig):
     def create_from_deployment(
         cls, deployment: V1beta1InferenceService
     ) -> "KServeDeploymentConfig":
+        """Recreate the configuration of a KServe ZenML Service from a deployed
+        KServe inference service instance.
+
+        Args:
+            deployment: the KServe inference service CRD.
+
+        Returns:
+            The KServe ZenML service configuration corresponding to the given
+            KServe inference service CRD.
+
+        Raises:
+            ValueError: if the given deployment resource does not contain
+                the expected annotations or it contains an invalid or
+                incompatible KServe ZenML service configuration.
+        """
         config_data = deployment.metadata.annotations.get(
             "zenml.service_config"
         )
@@ -88,13 +143,19 @@ class KServeDeploymentConfig(ServiceConfig):
         except ValidationError as e:
             raise ValueError(
                 f"The loaded KServe Inference Service resource contains an "
-                f"invalid or incompatible ZenML service configuration: "
+                f"invalid or incompatible KServe ZenML service configuration: "
                 f"{config_data}"
             ) from e
         return service_config
 
 
 class KServeDeploymentService(BaseService):
+    """A ZenML service that represents a KServe inference service CRD.
+
+    Attributes:
+        config: service configuration.
+        status: service status.
+    """
 
     SERVICE_TYPE = ServiceType(
         name="kserve-deployment",
@@ -108,16 +169,43 @@ class KServeDeploymentService(BaseService):
     )
     status: ServiceStatus = Field(default_factory=ServiceStatus)
 
-    @property
-    def model_deployer(self) -> "KServeModelDeployer":
-        from kserve_deployment.model_deployer import (
+    def _get_model_deployer(self) -> "KServeModelDeployer":
+        """Get the active KServe model deployer.
+
+        Returns:
+            The active KServeModelDeployer.
+
+        Raises:
+            TypeError: if a KServe model deployer is not present in the
+            active stack.
+        """
+        from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
             KServeModelDeployer,
         )
 
         return KServeModelDeployer.get_active_model_deployer()
 
+    def _get_client(self) -> KServeClient:
+        """Get the KServe client from the active KServe model deployer.
+
+        Returns:
+            The KServe client.
+        """
+        return self._get_model_deployer().kserve_client
+
+    def _get_namespace(self) -> Optional[str]:
+        """Get the Kubernetes namespace from the active KServe model deployer.
+
+        Returns:
+            The Kubernetes namespace, or None, if the default namespace is
+            used.
+        """
+        return self._get_model_deployer().kubernetes_namespace
+
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the external service.
+        """Check the the current operational state of the external KServe
+        inference service and translate it into a `ServiceState` value and
+        a printable message.
 
         This method should be overridden by subclasses that implement
         concrete service tracking functionality.
@@ -128,17 +216,17 @@ class KServeDeploymentService(BaseService):
             description of the error if one is encountered while checking the
             service status).
         """
-        model_deployer = self.model_deployer
+        client = self._get_client()
+        namespace = self._get_namespace()
 
-        client = KServeClient(context=model_deployer.kubernetes_context)
         name = self.crd_name
         try:
-            deployment = client.get(
-                name=name, namespace=model_deployer.kubernetes_namespace
-            )
+            deployment = client.get(name=name, namespace=namespace)
         except RuntimeError:
             return (ServiceState.INACTIVE, "")
 
+        # TODO[HIGH]: Implement better operational status checking that also
+        #   cover errors
         if "status" not in deployment:
             return (ServiceState.INACTIVE, "No operational status available")
         status = "Unknown"
@@ -155,80 +243,27 @@ class KServeDeploymentService(BaseService):
             f"Inference service '{name}' still starting up",
         )
 
-    def get_logs(
-        self, follow: bool = False, tail: Optional[int] = None
-    ) -> Generator[str, bool, None]:
-        """Retrieve the service logs.
-
-        This method should be overridden by subclasses that implement
-        concrete service tracking functionality.
-
-        Args:
-            follow: if True, the logs will be streamed as they are written
-            tail: only retrieve the last NUM lines of log output.
-
-        Returns:
-            A generator that can be acccessed to get the service logs.
-        """
-
     @property
     def crd_name(self) -> str:
+        """Get the name of the KServe inference service CRD that uniquely
+        corresponds to this service instance
+
+        Returns:
+            The name of the KServe inference service CRD.
+        """
         return f"zenml-{str(self.uuid)[:8]}"
 
     def _get_kubernetes_labels(self) -> Dict[str, str]:
+        """Generate the labels for the KServe inference service CRD from the
+        service configuration.
+
+        Returns:
+            The labels for the KServe inference service.
+        """
         labels = self.config.get_kubernetes_labels()
         labels["zenml.service_uuid"] = str(self.uuid)
         KServeDeploymentConfig.sanitize_labels(labels)
         return labels
-
-    def provision(self) -> None:
-
-        model_deployer = self.model_deployer
-
-        api_version = constants.KSERVE_GROUP + "/" + "v1beta1"
-
-        name = self.crd_name
-
-        isvc = V1beta1InferenceService(
-            api_version=api_version,
-            kind=constants.KSERVE_KIND,
-            metadata=k8s_client.V1ObjectMeta(
-                name=name,
-                namespace=model_deployer.kubernetes_namespace,
-                labels=self._get_kubernetes_labels(),
-                annotations=self.config.get_kubernetes_annotations(),
-            ),
-            spec=V1beta1InferenceServiceSpec(
-                predictor=V1beta1PredictorSpec(
-                    # TODO: use the configuration predictor attr
-                    tensorflow=(
-                        V1beta1TFServingSpec(
-                            storage_uri=self.config.model_uri,
-                            resources=self.config.resources,
-                        )
-                    ),
-                ),
-            ),
-        )
-
-        client = KServeClient(context=model_deployer.kubernetes_context)
-
-        try:
-            client.get(name=name, namespace=model_deployer.kubernetes_namespace)
-            # update the existing deployment
-            client.replace(
-                name, isvc, namespace=model_deployer.kubernetes_namespace
-            )
-        except RuntimeError:
-            client.create(isvc)
-
-    def deprovision(self, force: bool = False) -> None:
-        """Deprovisions all resources used by the service."""
-        model_deployer = self.model_deployer
-
-        name = self.crd_name
-        client = KServeClient(context=model_deployer.kubernetes_context)
-        client.delete(name=name, namespace=model_deployer.kubernetes_namespace)
 
     @classmethod
     def create_from_deployment(
@@ -244,3 +279,86 @@ class KServeDeploymentService(BaseService):
         service = cls(uuid=UUID(uuid), config=config)
         service.update_status()
         return service
+
+    def provision(self) -> None:
+
+        client = self._get_client()
+        namespace = self._get_namespace()
+
+        api_version = constants.KSERVE_GROUP + "/" + "v1beta1"
+        name = self.crd_name
+
+        # All supported model specs seem to have the same fields
+        # so we can use any one of them (see https://kserve.github.io/website/0.8/reference/api/#serving.kserve.io/v1beta1.PredictorExtensionSpec)
+        predictor_kwargs = {
+            self.config.predictor: V1beta1PredictorExtensionSpec(
+                storage_uri=self.config.model_uri,
+                resources=self.config.resources,
+            )
+        }
+
+        isvc = V1beta1InferenceService(
+            api_version=api_version,
+            kind=constants.KSERVE_KIND,
+            metadata=k8s_client.V1ObjectMeta(
+                name=name,
+                namespace=namespace,
+                labels=self._get_kubernetes_labels(),
+                annotations=self.config.get_kubernetes_annotations(),
+            ),
+            spec=V1beta1InferenceServiceSpec(
+                predictor=V1beta1PredictorSpec(**predictor_kwargs)
+            ),
+        )
+
+        # TODO[HIGH]: better error handling when provisioning KServe instances
+        try:
+            client.get(name=name, namespace=namespace)
+            # update the existing deployment
+            client.replace(name, isvc, namespace=namespace)
+        except RuntimeError:
+            client.create(isvc)
+
+    def deprovision(self, force: bool = False) -> None:
+        """Deprovisions all resources used by the service."""
+        client = self._get_client()
+        namespace = self._get_namespace()
+        name = self.crd_name
+
+        # TODO[HIGH]: catch errors if deleting a KServe instance that is no
+        #   longer available
+        client.delete(name=name, namespace=namespace)
+
+    def get_logs(
+        self, follow: bool = False, tail: Optional[int] = None
+    ) -> Generator[str, bool, None]:
+        """Retrieve the logs from the remote KServe inference service instance.
+
+        Args:
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that can be accessed to get the service logs.
+        """
+        # TODO[HIGH]: Implement KServe log retrieval
+
+    @property
+    def prediction_url(self) -> Optional[str]:
+        """The prediction URI exposed by the prediction service.
+
+        Returns:
+            The prediction URI exposed by the prediction service, or None if
+            the service is not yet ready.
+        """
+        if not self.is_running:
+            return None
+
+        # TODO[HIGH]: return correct KServe prediction URLs
+        model_deployer = self._get_model_deployer()
+        return os.path.join(
+            model_deployer.base_url,
+            model_deployer.kubernetes_namespace or "",
+            self.crd_name,
+            "api/v0.1/predictions",
+        )

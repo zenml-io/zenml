@@ -73,7 +73,7 @@ class SeldonModelDeployer(BaseModelDeployer):
     def get_model_server_info(  # type: ignore[override]
         service_instance: "SeldonDeploymentService",
     ) -> Dict[str, Optional[str]]:
-        """ "Return implementation specific information that might be relevant
+        """Return implementation specific information that might be relevant
         to the user.
 
         Args:
