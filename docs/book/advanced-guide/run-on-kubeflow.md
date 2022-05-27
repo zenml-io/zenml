@@ -4,7 +4,7 @@ description: Deploy pipelines to production.
 
 # Run your Pipeline on Kubeflow
 
-[Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) is a pipeline orchestrator built for machine learning workflows. When developing ML models, you probably develop [your pipelines](../developer-guide/getting\_started.md#pipeline) on your local machine initially as this allows for quicker iteration and debugging. However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting and deploy the pipeline to a more robust environment.
+[Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) is a pipeline orchestrator built for machine learning workflows. When developing ML models, you probably develop [your pipelines](../extending-zenml/getting\_started.md#pipeline) on your local machine initially as this allows for quicker iteration and debugging. However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting and deploy the pipeline to a more robust environment.
 
 You can watch a tutorial video of an example that uses a Kubeflow Pipelines stack [here](https://www.youtube.com/watch?v=b5TXRYkdL3w):
 
@@ -160,7 +160,7 @@ zenml stack down -y
 
 ### Run the same pipeline on Kubeflow Pipelines deployed to the cloud
 
-You can now run the same pipeline in Kubeflow Pipelines deployed to a cluster on the cloud. Refer to the Cloud Pipelines Deployment Guide [here](../features/guide-aws-gcp-azure.md) to know more and follow along!
+You can now run the same pipeline in Kubeflow Pipelines deployed to a cluster on the cloud. Refer to the Cloud Pipelines Deployment Guide [here](../advanced-guide/guide-aws-gcp-azure.md) to know more and follow along!
 
 ## Conclusion
 

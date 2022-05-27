@@ -58,7 +58,7 @@ dependencies between the different stages are managed.
 An integration is a third-party tool or platform that implements a ZenML abstraction. 
 A tool can implement many abstractions and therefore an integration can have different 
 entrypoints for the user. We have a consistently updated integrations page which shows all 
-current integrations supported by the ZenML core team [here](../advanced-guide/integrations/integrations.md). 
+current integrations supported by the ZenML core team [here](../advanced-guide/integrations.md). 
 However, as ZenML is a framework users are encouraged to use these as a guideline and implement 
 their own integrations by extending the various ZenML abstractions.
 
@@ -127,7 +127,7 @@ all ZenML activity. Every action that can be executed within ZenML must take
 place within such a repository. ZenML repositories are denoted by a local `.zen`
 folder in your project root where various information about your local
 configuration lives, e.g., the active
-[Stack](../advanced_guide/deploy-to-production.md) that you are using to
+[Stack](../advanced-guide/stacks-components-flavors.md) that you are using to
 run pipelines, is stored.
 
 ## Runner Scripts
