@@ -17,7 +17,10 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 
 from zenml.artifact_stores import LocalArtifactStore
-from zenml.container_registries import DefaultContainerRegistry
+from zenml.container_registries import (
+    DefaultContainerRegistry,
+    GCPContainerRegistry,
+)
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
@@ -62,7 +65,12 @@ def test_vertex_orchestrator_stack_validation() -> None:
         name="gcp_artifact_store", path="gs://my-bucket/artifacts"
     )
 
-    container_registry = DefaultContainerRegistry(name="", uri="localhost:5000")
+    local_container_registry = DefaultContainerRegistry(
+        name="", uri="localhost:5000"
+    )
+    gcp_container_registry = GCPContainerRegistry(
+        name="", uri="gcr.io/my-project"
+    )
 
     with pytest.raises(StackValidationError):
         # any stack component is local
@@ -71,7 +79,7 @@ def test_vertex_orchestrator_stack_validation() -> None:
             orchestrator=orchestrator,
             metadata_store=local_metadata_store,
             artifact_store=local_artifact_store,
-            container_registry=container_registry,
+            container_registry=gcp_container_registry,
         ).validate()
 
     with pytest.raises(StackValidationError):
@@ -83,6 +91,16 @@ def test_vertex_orchestrator_stack_validation() -> None:
             artifact_store=gcp_artifact_store,
         ).validate()
 
+    with pytest.raises(StackValidationError):
+        # container registry is local
+        Stack(
+            name="",
+            orchestrator=orchestrator,
+            metadata_store=mysql_metadata_store,
+            artifact_store=gcp_artifact_store,
+            container_registry=local_container_registry,
+        ).validate()
+
     with does_not_raise():
         # valid stack with container registry
         Stack(
@@ -90,5 +108,5 @@ def test_vertex_orchestrator_stack_validation() -> None:
             orchestrator=orchestrator,
             metadata_store=mysql_metadata_store,
             artifact_store=gcp_artifact_store,
-            container_registry=container_registry,
+            container_registry=gcp_container_registry,
         ).validate()
