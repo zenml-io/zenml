@@ -485,7 +485,7 @@ def example() -> None:
     """Access all ZenML examples."""
 
 
-@example.command(help="List the available examples.")
+@example.command(name="list", help="List the available examples.")
 @pass_git_examples_handler
 def list_examples(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
