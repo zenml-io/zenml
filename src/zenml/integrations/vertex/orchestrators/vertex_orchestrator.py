@@ -336,6 +336,13 @@ class VertexOrchestrator(BaseOrchestrator):
         assert runtime_configuration.run_name
         job_id = _clean_pipeline_name(runtime_configuration.run_name)
 
+        # Warn the user that the scheduling is not available using the Vertex Orchestrator
+        if runtime_configuration.schedule:
+            logger.warning(
+                "Pipeline scheduling configuration was provided, but Vertex AI Pipelines "
+                "do not have capabilities for scheduling yet."
+            )
+
         # Instantiate the Vertex AI Pipelines job
         run = aiplatform.PipelineJob(
             display_name=pipeline_name,
