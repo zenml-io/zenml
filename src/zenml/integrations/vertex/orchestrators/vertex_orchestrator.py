@@ -124,7 +124,7 @@ class VertexOrchestrator(BaseOrchestrator):
 
             # Validate that the container registry is not local.
             container_registry = stack.container_registry
-            if container_registry.is_local:
+            if container_registry and container_registry.is_local:
                 return False, (
                     f"The Vertex orchestrator does not support local container registries. "
                     f"You should replace the component '{container_registry.name}' "
