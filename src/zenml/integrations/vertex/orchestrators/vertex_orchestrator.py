@@ -121,6 +121,17 @@ class VertexOrchestrator(BaseOrchestrator):
 
         def _validate_stack_requirements(stack: "Stack") -> Tuple[bool, str]:
             """Validates that all the stack components are not local."""
+
+            # Validate that the container registry is not local.
+            container_registry = stack.container_registry
+            if container_registry.is_local:
+                return False, (
+                    f"The Vertex orchestrator does not support local container registries. "
+                    f"You should replace the component '{container_registry.name}' "
+                    f"{container_registry.TYPE.value} to a remote one."
+                )
+
+            # Validate that the rest of the components are not local.
             for stack_comp in stack.components.values():
                 local_path = stack_comp.local_path
                 if not local_path:
