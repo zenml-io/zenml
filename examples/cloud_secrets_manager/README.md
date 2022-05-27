@@ -66,10 +66,12 @@ To get going with gcp make sure to have gcloud set up locally with a user or
 ideally a service account with permissions to access the secret manager. 
 [This](https://cloud.google.com/sdk/docs/install-sdk) guide should help you get 
 started. Once everything is set up on your machine, make sure to enable the 
-secrets manager API within your gcp project.
+secrets manager API within your GCP project. You will need to create a project
+and get the `project_id` which will need to be specified when you register the
+secrets manager.
 
 ```shell
-zenml secrets-manager register gcp_secrets_manager --flavor=gcp_secrets_manager
+zenml secrets-manager register gcp_secrets_manager --flavor=gcp_secrets_manager --project_id=PROJECT_ID
 zenml stack register secrets_stack -m default -o default -a default -x gcp_secrets_manager --set
 ```
 
