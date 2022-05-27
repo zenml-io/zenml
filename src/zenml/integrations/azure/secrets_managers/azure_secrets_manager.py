@@ -72,6 +72,12 @@ class AzureSecretsManager(BaseSecretsManager):
             secret: the secret to register"""
         self._ensure_client_connected(self.key_vault_name)
 
+        if "_" in secret.name:
+            raise ValueError(
+                f"The secret name `{secret.name}` contains an underscore. "
+                f"This will cause issues with Azure. Please try again."
+            )
+
         if secret.name in self.get_all_secret_keys():
             raise SecretExistsError(
                 f"A Secret with the name '{secret.name}' already exists."
@@ -178,7 +184,7 @@ class AzureSecretsManager(BaseSecretsManager):
             secret_name: the name of the secret to delete"""
         self._ensure_client_connected(self.key_vault_name)
 
-        # Go through all GCP secrets and delete the ones with the secret_name
+        # Go through all Azure secrets and delete the ones with the secret_name
         #  as label.
         for secret_property in self.CLIENT.list_properties_of_secrets():
             response = self.CLIENT.get_secret(secret_property.name)
