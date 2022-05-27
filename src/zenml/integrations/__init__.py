@@ -32,6 +32,7 @@ from zenml.integrations.gcp_secrets_manager import (  # noqa
 from zenml.integrations.graphviz import GraphvizIntegration  # noqa
 from zenml.integrations.huggingface import HuggingfaceIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa
+from zenml.integrations.kserve import KServeIntegration  # noqa
 from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
