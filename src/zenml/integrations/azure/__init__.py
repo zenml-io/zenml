@@ -30,7 +30,7 @@ class AzureIntegration(Integration):
     """Definition of Azure integration for ZenML."""
 
     NAME = AZURE
-    REQUIREMENTS = ["adlfs==2021.10.0"]
+    REQUIREMENTS = ["adlfs==2021.10.0", "azure-keyvault-keys", "azure-identity"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
