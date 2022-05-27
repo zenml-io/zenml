@@ -50,6 +50,8 @@ zenml stack register STACK_NAME \
 
 ## Interacting with the Secrets Manager
 
+### In the CLI
+
 A full guide on using the CLI interface to register, access, update and delete
 secrets is available [here](https://apidocs.zenml.io/latest/cli/).
 
@@ -75,6 +77,32 @@ that the value needs to be read from a file:
 ```bash
 zenml secret register SECRET_NAME --attr_from_literal=value \
    --attr_from_file=@path/to/file.txt ...
+```
+
+### In a ZenML Step
+
+You can access the secret manager directly from within your steps through the 
+`StepContext`. This allows you to use your secrets for querying API's from 
+within your step without hard-coding your access keys. Don't forget to 
+make the appropriate decision regarding caching as it will be disabled by 
+default when the StepContext is passed into the step.
+
+```python
+from zenml.steps import step, StepContext
+
+
+@step(enable_cache=True)
+def secret_loader(
+    context: StepContext,
+) -> None:
+    """Load the example secret from the secret manager."""
+    # Load Secret from active secret manager. This will fail if no secret
+    #  manager is active or if that secret does not exist
+    retrieved_secret = context.stack.secrets_manager.get_secret(<SECRET_NAME>)
+
+    # retrieved_secret.content will contain a dictionary with all Key-Value
+    #  pairs within your secret.
+    return
 ```
 
 ## Secret Schemas
