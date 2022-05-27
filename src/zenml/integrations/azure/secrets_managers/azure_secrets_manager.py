@@ -22,7 +22,6 @@ def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict[str, str]:
     Args:
         secret: The ZenML Secret schema
     """
-    print(secret)
     return {f"{secret.name}-{k}": v for k, v in secret.content.items()}
 
 
@@ -156,19 +155,19 @@ class AzureSecretsManager(BaseSecretsManager):
         secrets.
         Args:
             secret: the secret to update"""
-        # self._ensure_client_connected()
+        self._ensure_client_connected(self.key_vault_name)
 
-        # adjusted_content = prepend_group_name_to_keys(secret)
+        adjusted_content = prepend_group_name_to_keys(secret)
 
-        # for k, v in adjusted_content.items():
-        #     # Create the secret, this only creates an empty secret with the
-        #     #  supplied name.
-        #     version_parent = self.CLIENT.secret_path(self.project_id, k)
-        #     payload = {"data": str(v).encode()}
-
-        #     self.CLIENT.add_secret_version(
-        #         request={"parent": version_parent, "payload": payload}
-        # )
+        for k, v in adjusted_content.items():
+            self.CLIENT.set_secret(k, v)
+            self.CLIENT.update_secret_properties(
+                k,
+                tags={
+                    ZENML_GROUP_KEY: secret.name,
+                    ZENML_SCHEMA_NAME: secret.TYPE,
+                },
+            )
 
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret. by name. In Azure a secret is a single k-v
@@ -177,36 +176,30 @@ class AzureSecretsManager(BaseSecretsManager):
         with the secret_name as label.
         Args:
             secret_name: the name of the secret to delete"""
-        # self._ensure_client_connected()
+        self._ensure_client_connected(self.key_vault_name)
 
-        # # Go through all Azure secrets and delete the ones with the secret_name
-        # #  as label.
-        # for secret in self.CLIENT.list_secrets(
-        #     request={"parent": self.parent_name}
-        # ):
-        #     if (
-        #         ZENML_GROUP_KEY in secret.labels
-        #         and secret_name == secret.labels[ZENML_GROUP_KEY]
-        #     ):
-        # self.CLIENT.delete_secret(request={"name": secret.name})
+        # Go through all GCP secrets and delete the ones with the secret_name
+        #  as label.
+        for secret_property in self.CLIENT.list_properties_of_secrets():
+            response = self.CLIENT.get_secret(secret_property.name)
+            tags = response.properties.tags
+            if tags and tags.get(ZENML_GROUP_KEY) == secret_name:
+                self.CLIENT.begin_delete_secret(secret_property.name).result()
 
     def delete_all_secrets(self, force: bool = False) -> None:
         """Delete all existing secrets.
         Args:
             force: whether to force delete all secrets"""
-        # self._ensure_client_connected()
+        self._ensure_client_connected(self.key_vault_name)
 
-        # # List all secrets.
-        # for secret in self.CLIENT.list_secrets(
-        #     request={"parent": self.parent_name}
-        # ):
-        #     if (
-        #         ZENML_GROUP_KEY in secret.labels
-        #         or ZENML_SCHEMA_NAME in secret.labels
-        #     ):
-        #         logger.info(
-        #             "Deleted key-value pair {`%s`, `***`} from secret " "`%s`",
-        #             secret.name.split("/")[-1],
-        #             secret.labels[ZENML_GROUP_KEY],
-        #         )
-        #         self.CLIENT.delete_secret(request={"name": secret.name})
+        # List all secrets.
+        for secret_property in self.CLIENT.list_properties_of_secrets():
+            response = self.CLIENT.get_secret(secret_property.name)
+            tags = response.properties.tags
+            if tags and (ZENML_GROUP_KEY in tags or ZENML_SCHEMA_NAME in tags):
+                logger.info(
+                    "Deleted key-value pair {`%s`, `***`} from secret " "`%s`",
+                    secret_property.name,
+                    tags.get(ZENML_GROUP_KEY),
+                )
+                self.CLIENT.begin_delete_secret(secret_property.name).result()
