@@ -2,16 +2,23 @@
 
 This example showcases how to use the ZenML `Slack` integration to send alerts
 to one of your Slack channels as part of your ML pipelines.
-The integration includes an `alerter` component, as well as a standard step
-that takes a string as input and post it to slack according to the alerter
-configuration.
+The integration includes an `alerter` component with two methods:
+- `post()` takes a string as input, posts it to a slack channel according to
+  the alerter configuration, and returns whether the operation was successful.
+- `ask()` also posts a given message to a slack channel, but waits for user
+  feedback, and only returns `True` if a user explicity approved the operation.
 
-This is very useful in practice so you can get notified immediately when 
-failures happen, and also for general monitoring / reporting.
+These functionalities are very useful in practice:
+- `post()` allows you to get notified immediately when failures happen 
+  (e.g., model performance degradation, data drift, ...)
+- `ask()` allows you to integrate a human-in-the-loop into your pipeline before
+  executing critical steps.
 
-The following is a very simple example where we build a pipeline that trains 
-and evaluates an sklearn SVC model on the digits datasets and posts the test 
-accuracy to Slack.
+The following are two very simple examples where we build a pipeline that trains 
+and evaluates an sklearn SVC model on the digits datasets, and:
+- `run_post.py` posts the evaluation result (test accuracy) to Slack.
+- `run_ask.py` posts the evaluation result (test accuracy) to Slack, 
+  then deploys then with MLflow if the user approved it in Slack.
 
 ## 🖥 Run it locally
 
@@ -54,24 +61,44 @@ zenml profile create slack_example
 zenml profile set slack_example
 
 # register slack alerter
-zenml alerter register slack_alerter -f slack --slack_token=<SLACK_TOKEN> --default_slack_channel_id=<SLACK_CHANNEL_ID>
+zenml alerter register slack_alerter --flavor=slack --slack_token=<SLACK_TOKEN> --default_slack_channel_id=<SLACK_CHANNEL_ID>
 
 # register new stack with slack alerter and set it active
-zenml stack register slack_stack -o default -m default -a default -al slack_alerter
+zenml stack register slack_stack -o default -m default -a default -al slack_alerter 
 zenml stack set slack_stack
+
+# (only for run_ask.py) add mlflow
+zenml integration install mlflow -y
+zenml model-deployer register mlflow --flavor=mlflow
+zenml experiment-tracker register mlflow --flavor=mlflow
+zenml stack update slack_stack -d mlflow -e mlflow
 ```
 
 ### ▶️ Run the Code
 
-Now we're ready. Execute:
+Now we're ready. Execute on of the following:
+
+#### `post()` example
 
 ```shell
-python run.py
+python run_post.py
 ```
 
 You should see the following output in your slack channel:
 
-![TSlack Message Posted](assets/slack-message.png)
+![Post Slack Message](assets/slack-message-post.png)
+
+#### `ask()` example
+
+```shell
+python run_ask.py
+```
+
+You should see the following output in your slack channel:
+
+![Ask Slack Message](assets/slack-message-ask.png)
+
+Respond with "approve" to deploy the model (or "reject" to abort)
 
 ### 🧽 Clean up
 
