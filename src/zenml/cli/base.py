@@ -271,5 +271,5 @@ def _prompt_email(gc: GlobalConfiguration) -> bool:
 
             gc.user_metadata = {"email": email}
             identify_user({"email": email})
-        return True
+            return True
     return False

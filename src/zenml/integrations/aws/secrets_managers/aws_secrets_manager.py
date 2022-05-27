@@ -16,6 +16,7 @@ from typing import Any, ClassVar, Dict, List
 
 import boto3
 
+from zenml.exceptions import SecretExistsError
 from zenml.integrations.aws import AWS_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
@@ -71,9 +72,13 @@ class AWSSecretsManager(BaseSecretsManager):
         self._ensure_client_connected(self.region_name)
         secret_value = jsonify_secret_contents(secret)
 
+        if secret.name in self.get_all_secret_keys():
+            raise SecretExistsError(
+                f"A Secret with the name {secret.name} already exists"
+            )
+
         kwargs = {"Name": secret.name, "SecretString": secret_value}
-        # TODO [ENG-872]: Catch error if secret name already exists and use
-        #  SecretExistsError instead.
+
         self.CLIENT.create_secret(**kwargs)
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
