@@ -238,6 +238,7 @@ module = [
     "boto3.*",
     "botocore.*",
     "jupyter_dash.*",
+    "slack_sdk.*",
 ]
 ignore_missing_imports = true
 

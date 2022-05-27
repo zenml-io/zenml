@@ -13,12 +13,13 @@
 #  permissions and limitations under the License.
 
 
+from zenml.alerter.base_alerter import BaseAlerter
 from zenml.exceptions import DoesNotExistException
 from zenml.steps import StepContext, step
 from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
 
 
-def _check_alerter_registered(context: StepContext):
+def _get_active_alerter(context: StepContext) -> BaseAlerter:
     """
     Raise an error if the active stack has no alerter registered.
     """
@@ -37,6 +38,7 @@ def _check_alerter_registered(context: StepContext):
             "  'zenml alerter register slack_alerter --flavor=slack' ...\n"
             "  'zenml stack register stack-name -al slack_alerter ...'\n"
         )
+    return context.stack.alerter
 
 
 @step
@@ -57,8 +59,8 @@ def alerter_post_step(
     Raises:
         DoesNotExistException if active stack has no slack alerter.
     """
-    _check_alerter_registered(context)
-    return context.stack.alerter.post(message, config)
+    alerter = _get_active_alerter(context)
+    return alerter.post(message, config)
 
 
 @step
@@ -81,5 +83,5 @@ def alerter_ask_step(
     Raises:
         ValueDoesNotExistExceptionError if active stack has no slack alerter.
     """
-    _check_alerter_registered(context)
-    return context.stack.alerter.ask(message, config)
+    alerter = _get_active_alerter(context)
+    return alerter.ask(message, config)
