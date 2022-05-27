@@ -34,8 +34,8 @@ def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
     Returns:
         The cleaned key
     """
-    if combined_key_name.startswith(group_name + "-"):
-        return combined_key_name[len(group_name + "-"):]
+    if combined_key_name.startswith(f"{group_name}-"):
+        return combined_key_name[len(f"{group_name}-"):]
     else:
         raise RuntimeError(
             f"Key-name `{combined_key_name}` does not have the "
