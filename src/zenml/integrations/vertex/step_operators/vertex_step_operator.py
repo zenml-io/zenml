@@ -18,8 +18,6 @@ google_cloud_ai_platform/training_clients.py"""
 import time
 from typing import ClassVar, List, Optional, Tuple
 
-from google.auth import credentials as auth_credentials
-from google.auth import default, load_credentials_from_file
 from google.cloud import aiplatform
 from pydantic import validator as property_validator
 
@@ -33,15 +31,15 @@ from zenml.integrations.vertex.constants import (
     VERTEX_JOB_STATES_COMPLETED,
     VERTEX_JOB_STATES_FAILED,
 )
+from zenml.integrations.vertex.google_credentials_mixin import (
+    GoogleCredentialsMixin,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path
-from zenml.integrations.vertex.google_credentials_mixin import (
-    GoogleCredentialsMixin,
-)
 
 logger = get_logger(__name__)
 
@@ -73,6 +71,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
     accelerator_count: int = 0
     machine_type: str = "n1-standard-4"
     base_image: Optional[str] = None
+    service_account_path: Optional[str] = None
 
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set

@@ -40,6 +40,9 @@ from kfp.v2.compiler import Compiler as KFPV2Compiler
 
 from zenml.enums import StackComponentType
 from zenml.integrations.vertex import VERTEX_ORCHESTRATOR_FLAVOR
+from zenml.integrations.vertex.google_credentials_mixin import (
+    GoogleCredentialsMixin,
+)
 from zenml.integrations.vertex.orchestrators.vertex_entrypoint_configuration import (
     VERTEX_JOB_ID_OPTION,
     VertexEntrypointConfiguration,
@@ -52,9 +55,6 @@ from zenml.repository import Repository
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils.docker_utils import get_image_digest
 from zenml.utils.source_utils import get_source_root_path
-from zenml.integrations.vertex.google_credentials_mixin import (
-    GoogleCredentialsMixin,
-)
 
 if TYPE_CHECKING:
     from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
@@ -109,6 +109,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         network: the full name of the Compute Engine Network to which the job should
             be peered. For example, `projects/12345/global/networks/myVPC`
             If not provided, the job will not be peered with any network.
+        service_account_path: path to service account file that will be used to create the
+            Vertex AI Pipelines job. If not provided, falls back to default credentials.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Vertex AI Pipelines service.
     """
@@ -121,6 +123,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
     network: Optional[str] = None
+    service_account_path: Optional[str] = None
     synchronous: bool = False
 
     FLAVOR: ClassVar[str] = VERTEX_ORCHESTRATOR_FLAVOR
