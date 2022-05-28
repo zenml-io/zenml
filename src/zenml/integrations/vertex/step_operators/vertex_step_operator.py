@@ -39,11 +39,14 @@ from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import docker_utils
 from zenml.utils.source_utils import get_source_root_path
+from zenml.integrations.vertex.google_credentials_mixin import (
+    GoogleCredentialsMixin,
+)
 
 logger = get_logger(__name__)
 
 
-class VertexStepOperator(BaseStepOperator):
+class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
     """Step operator to run a step on Vertex AI.
 
     This class defines code that can set up a Vertex AI environment and run the
@@ -74,10 +77,6 @@ class VertexStepOperator(BaseStepOperator):
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set
     encryption_spec_key_name: Optional[str] = None
-
-    # path to google service account
-    # environment default credentials used if not set
-    service_account_path: Optional[str] = None
 
     # Class configuration
     FLAVOR: ClassVar[str] = VERTEX_STEP_OPERATOR_FLAVOR
@@ -112,17 +111,6 @@ class VertexStepOperator(BaseStepOperator):
             raise ValueError(
                 f"Accelerator must be one of the following: {accepted_vals}"
             )
-
-    def _get_authentication(
-        self,
-    ) -> Tuple[Optional[auth_credentials.Credentials], Optional[str]]:
-        if self.service_account_path:
-            credentials, project_id = load_credentials_from_file(
-                self.service_account_path
-            )
-        else:
-            credentials, project_id = default()
-        return credentials, project_id
 
     def _build_and_push_docker_image(
         self,
@@ -174,8 +162,10 @@ class VertexStepOperator(BaseStepOperator):
         if self.project:
             if self.project != project_id:
                 logger.warning(
-                    f"Authenticated with project {project_id}, but this "
-                    f"operator is configured to use project {self.project}."
+                    "Authenticated with project `%s`, but this orchestrator is "
+                    "configured to use the project `%s`.",
+                    project_id,
+                    self.project,
                 )
         else:
             self.project = project_id

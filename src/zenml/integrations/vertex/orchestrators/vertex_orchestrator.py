@@ -52,6 +52,9 @@ from zenml.repository import Repository
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils.docker_utils import get_image_digest
 from zenml.utils.source_utils import get_source_root_path
+from zenml.integrations.vertex.google_credentials_mixin import (
+    GoogleCredentialsMixin,
+)
 
 if TYPE_CHECKING:
     from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
@@ -77,7 +80,7 @@ def _clean_pipeline_name(pipeline_name: str) -> str:
     return pipeline_name.replace("_", "-").lower()
 
 
-class VertexOrchestrator(BaseOrchestrator):
+class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     """Orchestrator responsible for running pipelines on Vertex AI.
 
     Attributes:
@@ -354,6 +357,20 @@ class VertexOrchestrator(BaseOrchestrator):
                 "do not have capabilities for scheduling yet."
             )
 
+        # Get the credentials that would be used to create the Vertex AI Pipelines
+        # job.
+        credentials, project_id = self._get_authentication()
+        if self.project:
+            if self.project != project_id:
+                logger.warning(
+                    "Authenticated with project `%s`, but this orchestrator is "
+                    "configured to use the project `%s`.",
+                    project_id,
+                    self.project,
+                )
+        else:
+            self.project = project_id
+
         # Instantiate the Vertex AI Pipelines job
         run = aiplatform.PipelineJob(
             display_name=pipeline_name,
@@ -364,7 +381,7 @@ class VertexOrchestrator(BaseOrchestrator):
             enable_caching=enable_cache,
             encryption_spec_key_name=self.encryption_spec_key_name,
             labels=self.labels,
-            credentials=None,
+            credentials=credentials,
             project=self.project,
             location=self.location,
         )
