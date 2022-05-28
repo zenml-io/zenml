@@ -103,6 +103,12 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             `projects/my-project/locations/my-region/keyRings/my-kr/cryptoKeys/my-key`.
             The key needs to be in the same region as where the compute resource
             is created.
+        workload_service_account: the service account for workload run-as account.
+            Users submitting jobs must have act-as permission on this run-as account.
+            If not provided, the default service account will be used.
+        network: the full name of the Compute Engine Network to which the job should
+            be peered. For example, `projects/12345/global/networks/myVPC`
+            If not provided, the job will not be peered with any network.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Vertex AI Pipelines service.
     """
@@ -113,6 +119,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     pipeline_root: str
     labels: Dict[str, str] = {}
     encryption_spec_key_name: Optional[str] = None
+    workload_service_account: Optional[str] = None
+    network: Optional[str] = None
     synchronous: bool = False
 
     FLAVOR: ClassVar[str] = VERTEX_ORCHESTRATOR_FLAVOR
@@ -360,16 +368,17 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         # Get the credentials that would be used to create the Vertex AI Pipelines
         # job.
         credentials, project_id = self._get_authentication()
-        if self.project:
-            if self.project != project_id:
-                logger.warning(
-                    "Authenticated with project `%s`, but this orchestrator is "
-                    "configured to use the project `%s`.",
-                    project_id,
-                    self.project,
-                )
-        else:
-            self.project = project_id
+        if self.project and self.project != project_id:
+            logger.warning(
+                "Authenticated with project `%s`, but this orchestrator is "
+                "configured to use the project `%s`.",
+                project_id,
+                self.project,
+            )
+
+        # If the project was set in the configuration, use it. Otherwise, use
+        # the project that was used to authenticate.
+        project_id = self.project if self.project else project_id
 
         # Instantiate the Vertex AI Pipelines job
         run = aiplatform.PipelineJob(
@@ -393,7 +402,23 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
         # Submit the job to Vertex AI Pipelines service.
         try:
-            run.submit()
+            if self.workload_service_account:
+                logger.info(
+                    "The Vertex AI Pipelines job workload will be executed using `%s` "
+                    "service account.",
+                    self.workload_service_account,
+                )
+
+            if self.network:
+                logger.info(
+                    "The Vertex AI Pipelines job will be peered with `%s` network.",
+                    self.network,
+                )
+
+            run.submit(
+                service_account=self.workload_service_account,
+                network=self.network,
+            )
             logger.info(
                 "View the Vertex AI Pipelines job at %s", run._dashboard_uri()
             )
@@ -405,4 +430,11 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 run.wait()
 
         except google_exceptions.ClientError as e:
-            logger.warning("Failed to create the Vertex AI Pipeline job: %s", e)
+            logger.warning(
+                "Failed to create the Vertex AI Pipelines job: %s", e
+            )
+
+        except RuntimeError as e:
+            logger.error(
+                "The Vertex AI Pipelines job execution has failed: %s", e
+            )
