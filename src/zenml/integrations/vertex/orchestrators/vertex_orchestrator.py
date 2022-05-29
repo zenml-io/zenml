@@ -39,6 +39,7 @@ from kfp.v2 import dsl as dslv2
 from kfp.v2.compiler import Compiler as KFPV2Compiler
 
 from zenml.enums import StackComponentType
+from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.vertex import VERTEX_ORCHESTRATOR_FLAVOR
 from zenml.integrations.vertex.google_credentials_mixin import (
     GoogleCredentialsMixin,
@@ -96,8 +97,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         location: Name of GCP region where the pipeline job will be executed.
             Vertex AI Pipelines is available in the following regions:
             https://cloud.google.com/vertex-ai/docs/general/locations#feature-availability
-        pipeline_root: a Google Cloud Storage path that will be used by the Vertex
-            AI Pipelines.
+        pipeline_root: a Cloud Storage URI that will be used by the Vertex AI Pipelines.
+            If not provided but the artifact store in the stack used to execute
+            the pipeline is a `zenml.integrations.gcp.artifact_stores.GCPArtifactStore`,
+            then a subdirectory of the artifact store will be used.
         encryption_spec_key_name: The Cloud KMS resource identifier of the customer
             managed encryption key used to protect the job. Has the form:
             `projects/my-project/locations/my-region/keyRings/my-kr/cryptoKeys/my-key`.
@@ -116,12 +119,14 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     custom_docker_base_image_name: Optional[str] = None
     project: Optional[str] = None
     location: str
-    pipeline_root: str
+    pipeline_root: Optional[str] = None
     labels: Dict[str, str] = {}
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
     network: Optional[str] = None
     synchronous: bool = False
+
+    _pipeline_root: str
 
     FLAVOR: ClassVar[str] = VERTEX_ORCHESTRATOR_FLAVOR
 
@@ -250,8 +255,49 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         representation of the Kubeflow pipeline.
 
         This file then is submitted to the Vertex AI Pipelines service for execution.
+
+        Args:
+            sorted_steps: List of sorted steps.
+            pipeline: Zenml Pipeline instance.
+            pb2_pipeline: Protobuf Pipeline instance.
+            stack: The stack the pipeline was run on.
+            runtime_configuration: The Runtime configuration of the current run.
+
+        Raises:
+            ValueError: If the attribute `pipeline_root` is not set and it can be
+                not generated using the path of the artifact store in the stack
+                because it is not a `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
 
+        # If the `pipeline_root` has not been defined in the orchestrator configuration,
+        # try to create it from the artifact store if it is a `GCPArtifactStore`.
+        # Otherwise, raise an error and suggest the user to set it manually.
+        if not self.pipeline_root:
+            artifact_store = stack.artifact_store
+            if not artifact_store.FLAVOR == GCP_ARTIFACT_STORE_FLAVOR:
+                raise ValueError(
+                    f"The attribute `pipeline_root` has not been set and it cannot "
+                    f"be generated using the path of the artifact store because it "
+                    f"is not a `zenml.integrations.gcp.artifact_store.GCPArtifactStore`."
+                    f"To solve this issue, set the `pipeline_root` attribute manually "
+                    f"executing the following command: "
+                    f'`zenml orchestrator update {stack.orchestrator.name} --pipeline_root="<Cloud Storage URI>"`.'
+                )
+
+            # The artifact store is a `GCPArtifactStore` so its path can be used
+            # to generate the `pipeline_root` attribute.
+            self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{pipeline.name}/{runtime_configuration.run_name}"
+            logger.info(
+                "The attribute `pipeline_root` has not been set in the orchestrator "
+                "configuration. One has been generated automatically based on the "
+                "path of the `GCPArtifactStore` artifact store in the stack used "
+                "to execute the pipeline. The generated `pipeline_root` is `%s`.",
+                self._pipeline_root,
+            )
+        else:
+            self._pipeline_root = self.pipeline_root
+
+        # Build the Docker image that will be used to run the steps of the pipeline.
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
@@ -317,7 +363,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         # to generate a JSON representation of the pipeline that can be later
         # upload to Vertex AI Pipelines service.
         logger.debug(
-            "Compiling pipeline using Kubeflow SDK V2 compiler and saving it to %s",
+            "Compiling pipeline using Kubeflow SDK V2 compiler and saving it to `%s`",
             pipeline_file_path,
         )
         KFPV2Compiler().compile(
@@ -385,7 +431,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             display_name=pipeline_name,
             template_path=pipeline_file_path,
             job_id=job_id,
-            pipeline_root=self.pipeline_root,
+            pipeline_root=self._pipeline_root,
             parameter_values=None,
             enable_caching=enable_cache,
             encryption_spec_key_name=self.encryption_spec_key_name,
