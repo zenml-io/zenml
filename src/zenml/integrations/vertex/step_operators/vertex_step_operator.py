@@ -60,9 +60,6 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         machine_type: [Optional] Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
         base_image: [Optional] Base image for building the custom job container.
         encryption_spec_key_name: [Optional]: Encryption spec key name.
-        service_account_path: [Optional]: Path to service account file
-            specifying credentials of the GCP user. If not provided, falls back
-            to Default Credentials.
     """
 
     region: str
@@ -71,7 +68,6 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
     accelerator_count: int = 0
     machine_type: str = "n1-standard-4"
     base_image: Optional[str] = None
-    service_account_path: Optional[str] = None
 
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set

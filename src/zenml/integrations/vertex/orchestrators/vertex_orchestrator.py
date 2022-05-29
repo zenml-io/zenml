@@ -109,8 +109,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         network: the full name of the Compute Engine Network to which the job should
             be peered. For example, `projects/12345/global/networks/myVPC`
             If not provided, the job will not be peered with any network.
-        service_account_path: path to service account file that will be used to create the
-            Vertex AI Pipelines job. If not provided, falls back to default credentials.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Vertex AI Pipelines service.
     """
@@ -123,7 +121,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
     network: Optional[str] = None
-    service_account_path: Optional[str] = None
     synchronous: bool = False
 
     FLAVOR: ClassVar[str] = VERTEX_ORCHESTRATOR_FLAVOR

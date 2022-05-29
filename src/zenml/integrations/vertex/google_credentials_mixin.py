@@ -16,12 +16,13 @@
 from typing import TYPE_CHECKING, Optional, Tuple
 
 from google.auth import default, load_credentials_from_file
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from google.auth.credentials import Credentials
 
 
-class GoogleCredentialsMixin:
+class GoogleCredentialsMixin(BaseModel):
     """Mixin for Google Cloud Platform credentials.
 
     Attributes:
