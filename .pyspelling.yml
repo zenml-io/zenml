@@ -1,0 +1,6 @@
+matrix:
+  - name: python
+    pipeline:
+      - pyspelling.filters.markdown:
+    sources:
+      - "CONTRIBUTING.md"
