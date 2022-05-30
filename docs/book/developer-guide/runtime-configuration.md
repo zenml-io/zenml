@@ -43,7 +43,7 @@ first_pipeline(step_1=my_first_step(),
                ).run()
 ```
 
-This functionality is based on [Step Fixtures](#step-fixtures) which you will
+This functionality is based on [Step Fixtures](./step-fixtures.md) which you will
 learn more about below.
 
 ### Setting step parameters using a config file
@@ -111,7 +111,7 @@ name: <name_of_your_pipeline>
 
 In case you defined your pipeline using decorators this name is the name of the
 decorated function. If you used the
-[Class Based API](#class-based-api), it will be the name of your class.
+[Class Based API](./class-based-api.md), it will be the name of your class.
 
 ```python
 from zenml.pipelines import pipeline, BasePipeline
@@ -149,7 +149,7 @@ In total the step functions can be supplied with 3 arguments here:
 {% hint style="info" %}
 Materializers are responsible for reading and writing. You can learn more about
 Materializers in the
-[materializer section](materializer.md).
+[materializer section](./materializer.md).
 {% endhint %}
 
 ```yaml
