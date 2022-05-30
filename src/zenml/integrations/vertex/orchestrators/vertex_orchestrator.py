@@ -160,6 +160,23 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     f"Vertex to connect to your local machine. You should use a "
                     f"flavor of {stack_comp.TYPE.value} other than '{stack_comp.FLAVOR}'."
                 )
+
+            # If the `pipeline_root` has not been defined in the orchestrator
+            # configuration, and the artifact store is not a GCP artifact store,
+            # then raise an error.
+            if (
+                not self.pipeline_root
+                and stack.artifact_store.FLAVOR != GCP_ARTIFACT_STORE_FLAVOR
+            ):
+                return False, (
+                    f"The attribute `pipeline_root` has not been set and it cannot "
+                    f"be generated using the path of the artifact store because "
+                    f"it is not a `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. "
+                    f"To solve this issue, set the `pipeline_root` attribute manually "
+                    f"executing the following command: "
+                    f'`zenml orchestrator update {stack.orchestrator.name} --pipeline_root="<Cloud Storage URI>"`.'
+                )
+
             return True, ""
 
         return StackValidator(
@@ -271,21 +288,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
         # If the `pipeline_root` has not been defined in the orchestrator configuration,
         # try to create it from the artifact store if it is a `GCPArtifactStore`.
-        # Otherwise, raise an error and suggest the user to set it manually.
         if not self.pipeline_root:
             artifact_store = stack.artifact_store
-            if not artifact_store.FLAVOR == GCP_ARTIFACT_STORE_FLAVOR:
-                raise ValueError(
-                    f"The attribute `pipeline_root` has not been set and it cannot "
-                    f"be generated using the path of the artifact store because it "
-                    f"is not a `zenml.integrations.gcp.artifact_store.GCPArtifactStore`."
-                    f"To solve this issue, set the `pipeline_root` attribute manually "
-                    f"executing the following command: "
-                    f'`zenml orchestrator update {stack.orchestrator.name} --pipeline_root="<Cloud Storage URI>"`.'
-                )
-
-            # The artifact store is a `GCPArtifactStore` so its path can be used
-            # to generate the `pipeline_root` attribute.
             self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{pipeline.name}/{runtime_configuration.run_name}"
             logger.info(
                 "The attribute `pipeline_root` has not been set in the orchestrator "
