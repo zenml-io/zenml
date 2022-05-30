@@ -27,7 +27,6 @@ from zenml.console import console
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
-from zenml.io.utils import copy_dir, get_global_config_directory
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import (
@@ -35,6 +34,7 @@ from zenml.utils.analytics_utils import (
     identify_user,
     track_event,
 )
+from zenml.utils.io_utils import copy_dir, get_global_config_directory
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it

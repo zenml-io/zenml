@@ -45,7 +45,7 @@ from kubernetes import config as k8s_config
 from pydantic import root_validator
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
-import zenml.io.utils
+import zenml.utils.io_utils
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
@@ -63,7 +63,6 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
 )
 from zenml.io import fileio
-from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
@@ -71,6 +70,7 @@ from zenml.stack import Stack, StackValidator
 from zenml.steps import BaseStep
 from zenml.utils import networking_utils
 from zenml.utils.docker_utils import get_image_digest
+from zenml.utils.io_utils import get_global_config_directory
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
@@ -340,7 +340,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns path to the root directory for all files concerning
         this orchestrator."""
         return os.path.join(
-            zenml.io.utils.get_global_config_directory(),
+            zenml.utils.io_utils.get_global_config_directory(),
             "kubeflow",
             str(self.uuid),
         )
@@ -772,7 +772,9 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
             return
 
-        global_config_dir_path = zenml.io.utils.get_global_config_directory()
+        global_config_dir_path = (
+            zenml.utils.io_utils.get_global_config_directory()
+        )
         kubeflow_commands = [
             f"> k3d cluster create {self._k3d_cluster_name} --image {local_deployment_utils.K3S_IMAGE_NAME} --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}\n",
             f"> kubectl --context {self.kubernetes_context} apply -k github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}&timeout=5m",

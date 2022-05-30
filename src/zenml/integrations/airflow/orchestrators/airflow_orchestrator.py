@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 from pydantic import root_validator
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
-import zenml.io.utils
+import zenml.utils.io_utils
 from zenml.integrations.airflow import AIRFLOW_ORCHESTRATOR_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -184,7 +184,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         if "uuid" not in values:
             raise ValueError("`uuid` needs to exist for AirflowOrchestrator.")
         values["airflow_home"] = os.path.join(
-            zenml.io.utils.get_global_config_directory(),
+            zenml.utils.io_utils.get_global_config_directory(),
             AIRFLOW_ROOT_DIR,
             str(values["uuid"]),
         )
@@ -226,7 +226,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         Args:
             dag_filepath: Path to the file in which the DAG is defined.
         """
-        dags_directory = zenml.io.utils.resolve_relative_path(
+        dags_directory = zenml.utils.io_utils.resolve_relative_path(
             self.dags_directory
         )
 
@@ -343,7 +343,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             return
 
         if not fileio.exists(self.dags_directory):
-            zenml.io.utils.create_dir_recursive_if_not_exists(
+            zenml.utils.io_utils.create_dir_recursive_if_not_exists(
                 self.dags_directory
             )
 

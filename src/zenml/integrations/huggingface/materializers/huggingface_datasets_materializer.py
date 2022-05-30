@@ -20,8 +20,8 @@ from datasets import Dataset, load_from_disk  # type: ignore[attr-defined]
 from datasets.dataset_dict import DatasetDict
 
 from zenml.artifacts import DataArtifact
-from zenml.io import utils as fileio_utils
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils import io_utils as fileio_utils
 
 DEFAULT_DATASET_DIR = "hf_datasets"
 

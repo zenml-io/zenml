@@ -24,7 +24,7 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis.strategies import text
 from tfx.dsl.io.filesystem import NotFoundError
 
-import zenml.io.utils
+import zenml.utils.io_utils
 from zenml.constants import REMOTE_FS_PREFIX
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -43,12 +43,12 @@ def test_walk_function_returns_a_generator_object(tmp_path):
 
 def test_is_root_when_true():
     """Check is_root returns true if path is the root"""
-    assert zenml.io.utils.is_root("/")
+    assert zenml.utils.io_utils.is_root("/")
 
 
 def test_is_root_when_false(tmp_path):
     """Check is_root returns false if path isn't the root"""
-    assert zenml.io.utils.is_root(tmp_path) is False
+    assert zenml.utils.io_utils.is_root(tmp_path) is False
 
 
 def test_is_dir_when_true(tmp_path):
@@ -68,7 +68,7 @@ def test_find_files_returns_generator_object_when_file_present(tmp_path):
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         assert isinstance(
-            zenml.io.utils.find_files(
+            zenml.utils.io_utils.find_files(
                 str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX
             ),
             GeneratorType,
@@ -81,7 +81,7 @@ def test_find_files_when_file_present(tmp_path):
     with open(temp_file, "w"):
         assert (
             next(
-                zenml.io.utils.find_files(
+                zenml.utils.io_utils.find_files(
                     str(tmp_path), TEMPORARY_FILE_SEARCH_PREFIX
                 )
             )
@@ -94,7 +94,9 @@ def test_find_files_when_file_absent(tmp_path):
     temp_file = os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     with open(temp_file, "w"):
         with pytest.raises(StopIteration):
-            assert next(zenml.io.utils.find_files(str(tmp_path), "abc*.*"))
+            assert next(
+                zenml.utils.io_utils.find_files(str(tmp_path), "abc*.*")
+            )
 
 
 @pytest.mark.parametrize("filesystem", REMOTE_FS_PREFIX)
@@ -102,7 +104,7 @@ def test_is_remote_when_using_remote_prefix(filesystem):
     """is_remote returns True when path starts with one of
     the ZenML remote file prefixes"""
     some_random_path = os.path.join(filesystem + "some_directory")
-    assert zenml.io.utils.is_remote(some_random_path)
+    assert zenml.utils.io_utils.is_remote(some_random_path)
 
 
 @given(text())
@@ -110,7 +112,7 @@ def test_is_remote_when_using_non_remote_prefix(filesystem):
     """is_remote returns False when path doesn't start with
     a remote prefix"""
     some_random_path = os.path.join(filesystem + "some_directory")
-    assert zenml.io.utils.is_remote(some_random_path) is False
+    assert zenml.utils.io_utils.is_remote(some_random_path) is False
 
 
 def test_listdir_returns_a_list_of_file_names(tmp_path):
@@ -122,7 +124,7 @@ def test_listdir_returns_a_list_of_file_names(tmp_path):
 def test_listdir_returns_one_result_for_one_file(tmp_path):
     """list_dir should return only one result, when there is only
     one file created"""
-    zenml.io.utils.create_file_if_not_exists(
+    zenml.utils.io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, TEMPORARY_FILE_NAME)
     )
     assert len(fileio.listdir(str(tmp_path))) == 1
@@ -151,7 +153,7 @@ def test_open_returns_error_when_file_nonexistent(
 
 def test_copy_moves_file_to_new_location(tmp_path) -> None:
     """Test that copy moves the file to the new location"""
-    zenml.io.utils.create_file_if_not_exists(
+    zenml.utils.io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, "test_file.txt")
     )
     fileio.copy(
@@ -164,10 +166,10 @@ def test_copy_moves_file_to_new_location(tmp_path) -> None:
 def test_copy_raises_error_when_file_exists(tmp_path) -> None:
     """Test that copy raises an error when the file already exists in
     the desired location"""
-    zenml.io.utils.create_file_if_not_exists(
+    zenml.utils.io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, "test_file.txt")
     )
-    zenml.io.utils.create_file_if_not_exists(
+    zenml.utils.io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, "test_file2.txt")
     )
     with pytest.raises(OSError):
@@ -191,7 +193,7 @@ def test_file_exists_when_file_doesnt_exist(tmp_path) -> None:
 def test_remove_function(tmp_path) -> None:
     """Test that remove function actually removes a file"""
     new_file_path = os.path.join(tmp_path, "test_file.txt")
-    zenml.io.utils.create_file_if_not_exists(new_file_path)
+    zenml.utils.io_utils.create_file_if_not_exists(new_file_path)
     assert fileio.exists(new_file_path)
     fileio.remove(new_file_path)
     assert not os.path.exists(new_file_path)
@@ -231,7 +233,7 @@ def test_mkdir_function_when_parent_doesnt_exist(tmp_path) -> None:
 
 def test_rename_function(tmp_path) -> None:
     """Test that rename renames a file"""
-    zenml.io.utils.create_file_if_not_exists(
+    zenml.utils.io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, "test_file.txt")
     )
     fileio.rename(
@@ -286,7 +288,7 @@ def test_walk_returns_an_iterator(tmp_path) -> None:
 
 def test_create_file_if_not_exists(tmp_path) -> None:
     """Test that create_file_if_not_exists creates a file"""
-    zenml.io.utils.create_file_if_not_exists(
+    zenml.utils.io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, "new_file.txt")
     )
     assert os.path.exists(os.path.join(tmp_path, "new_file.txt"))
@@ -295,23 +297,25 @@ def test_create_file_if_not_exists(tmp_path) -> None:
 def test_create_file_if_not_exists_does_not_overwrite(tmp_path) -> None:
     """Test that create_file_if_not_exists doesn't overwrite an existing file"""
     temporary_file = os.path.join(tmp_path, "new_file.txt")
-    zenml.io.utils.create_file_if_not_exists(temporary_file)
+    zenml.utils.io_utils.create_file_if_not_exists(temporary_file)
     with open(temporary_file, "w") as f:
         f.write("Aria is a good cat")
-    zenml.io.utils.create_file_if_not_exists(temporary_file)
+    zenml.utils.io_utils.create_file_if_not_exists(temporary_file)
     with open(temporary_file, "r") as f:
         assert f.read() == "Aria is a good cat"
 
 
 def test_create_dir_if_not_exists(tmp_path) -> None:
     """Test that create_dir_if_not_exists creates a directory"""
-    zenml.io.utils.create_dir_if_not_exists(os.path.join(tmp_path, "new_dir"))
+    zenml.utils.io_utils.create_dir_if_not_exists(
+        os.path.join(tmp_path, "new_dir")
+    )
     assert os.path.exists(os.path.join(tmp_path, "new_dir"))
 
 
 def test_create_dir_recursive_if_not_exists(tmp_path) -> None:
     """Test that create_dir_recursive_if_not_exists creates a directory"""
-    zenml.io.utils.create_dir_recursive_if_not_exists(
+    zenml.utils.io_utils.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
     assert os.path.exists(os.path.join(tmp_path, "new_dir/new_dir2"))
@@ -320,17 +324,18 @@ def test_create_dir_recursive_if_not_exists(tmp_path) -> None:
 def test_resolve_relative_path(tmp_path) -> None:
     """Test that resolve_relative_path resolves a relative path"""
     current_working_directory = os.getcwd()
-    assert current_working_directory == zenml.io.utils.resolve_relative_path(
-        "."
+    assert (
+        current_working_directory
+        == zenml.utils.io_utils.resolve_relative_path(".")
     )
 
 
 def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
     """Test that copy_dir copies a directory from source to destination"""
-    zenml.io.utils.create_file_if_not_exists(
+    zenml.utils.io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, "new_file.txt")
     )
-    zenml.io.utils.copy_dir(
+    zenml.utils.io_utils.copy_dir(
         os.path.join(tmp_path),
         os.path.join(tmp_path, "test_dir_copy"),
     )
@@ -340,7 +345,7 @@ def test_copy_dir_copies_dir_from_source_to_destination(tmp_path) -> None:
 
 def test_move_moves_a_file_from_source_to_destination(tmp_path) -> None:
     """Test that move moves a file from source to destination"""
-    zenml.io.utils.create_file_if_not_exists(
+    zenml.utils.io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, "new_file.txt")
     )
     fileio.rename(
@@ -353,7 +358,7 @@ def test_move_moves_a_file_from_source_to_destination(tmp_path) -> None:
 
 def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
     """Test that move moves a directory from source to destination"""
-    zenml.io.utils.create_file_if_not_exists(
+    zenml.utils.io_utils.create_file_if_not_exists(
         os.path.join(tmp_path, "new_folder/new_file.txt")
     )
     fileio.rename(
@@ -366,10 +371,10 @@ def test_move_moves_a_directory_from_source_to_destination(tmp_path) -> None:
 
 def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
     """Test that get_grandparent gets the grandparent directory"""
-    zenml.io.utils.create_dir_recursive_if_not_exists(
+    zenml.utils.io_utils.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
-    grandparent = zenml.io.utils.get_grandparent(
+    grandparent = zenml.utils.io_utils.get_grandparent(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
     assert grandparent == Path(tmp_path).stem
@@ -377,10 +382,10 @@ def test_get_grandparent_gets_the_grandparent_directory(tmp_path) -> None:
 
 def test_get_parent_gets_the_parent_directory(tmp_path) -> None:
     """Test that get_parent gets the parent directory"""
-    zenml.io.utils.create_dir_recursive_if_not_exists(
+    zenml.utils.io_utils.create_dir_recursive_if_not_exists(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
-    parent = zenml.io.utils.get_parent(
+    parent = zenml.utils.io_utils.get_parent(
         os.path.join(tmp_path, "new_dir/new_dir2")
     )
     assert parent == "new_dir"
@@ -389,8 +394,8 @@ def test_get_parent_gets_the_parent_directory(tmp_path) -> None:
 def test_convert_to_str_converts_to_string(tmp_path) -> None:
     """Test that convert_to_str converts bytes to a string"""
     assert isinstance(
-        zenml.io.utils.convert_to_str(bytes(str(tmp_path), "ascii")), str
+        zenml.utils.io_utils.convert_to_str(bytes(str(tmp_path), "ascii")), str
     )
-    assert zenml.io.utils.convert_to_str(bytes(str(tmp_path), "ascii")) == str(
-        tmp_path
-    )
+    assert zenml.utils.io_utils.convert_to_str(
+        bytes(str(tmp_path), "ascii")
+    ) == str(tmp_path)

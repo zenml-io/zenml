@@ -22,16 +22,16 @@ from zenml.cli.utils import error
 from zenml.constants import LOCAL_SECRETS_FILENAME, LOCAL_STORES_DIRECTORY_NAME
 from zenml.exceptions import SecretExistsError
 from zenml.io.fileio import remove
-from zenml.io.utils import (
-    create_file_if_not_exists,
-    get_global_config_directory,
-)
 from zenml.logger import get_logger
 from zenml.secret import SecretSchemaClassRegistry
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.secrets_managers.utils import decode_secret_dict, encode_secret
 from zenml.utils import yaml_utils
+from zenml.utils.io_utils import (
+    create_file_if_not_exists,
+    get_global_config_directory,
+)
 
 logger = get_logger(__name__)
 

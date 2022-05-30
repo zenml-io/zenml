@@ -25,7 +25,7 @@ from facets_overview.generic_feature_statistics_generator import (
 )
 from IPython.core.display import HTML, display
 
-import zenml.io.utils
+import zenml.utils.io_utils
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
@@ -79,7 +79,9 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
             os.path.abspath(os.path.dirname(__file__)),
             "stats.html",
         )
-        html_template = zenml.io.utils.read_file_contents_as_string(template)
+        html_template = zenml.utils.io_utils.read_file_contents_as_string(
+            template
+        )
 
         html_ = html_template.replace("protostr", protostr)
         return html_
@@ -99,7 +101,9 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
             display(HTML(html_))
         else:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
-                zenml.io.utils.write_file_contents_as_string(f.name, html_)
+                zenml.utils.io_utils.write_file_contents_as_string(
+                    f.name, html_
+                )
                 url = f"file:///{f.name}"
                 logger.info("Opening %s in a new browser.." % f.name)
                 webbrowser.open(url, new=2)

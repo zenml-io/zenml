@@ -24,7 +24,7 @@ from packaging.version import Version, parse
 from rich.markdown import Markdown
 from rich.text import Text
 
-import zenml.io.utils
+import zenml.utils.io_utils
 from zenml import __version__ as zenml_version_installed
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import confirmation, declare, error, print_table, warning
@@ -62,7 +62,7 @@ class LocalExample:
     def python_files_in_dir(self) -> List[str]:
         """List of all python files in the drectl in local example directory
         the __init__.py file is excluded from this list"""
-        py_in_dir = zenml.io.utils.find_files(str(self.path), "*.py")
+        py_in_dir = zenml.utils.io_utils.find_files(str(self.path), "*.py")
         py_files = []
         for file in py_in_dir:
             # Make sure only files directly in dir are considered, not files
@@ -350,7 +350,7 @@ class GitExamplesHandler(object):
 
     def __init__(self) -> None:
         """Create a new GitExamplesHandler instance."""
-        self.repo_dir = zenml.io.utils.get_global_config_directory()
+        self.repo_dir = zenml.utils.io_utils.get_global_config_directory()
         self.examples_dir = Path(
             os.path.join(self.repo_dir, EXAMPLES_GITHUB_REPO)
         )
@@ -439,8 +439,8 @@ class GitExamplesHandler(object):
 
     def copy_example(self, example: Example, destination_dir: str) -> None:
         """Copies an example to the destination_dir."""
-        zenml.io.utils.create_dir_if_not_exists(destination_dir)
-        zenml.io.utils.copy_dir(
+        zenml.utils.io_utils.create_dir_if_not_exists(destination_dir)
+        zenml.utils.io_utils.copy_dir(
             str(example.path_in_repo), destination_dir, overwrite=True
         )
 
@@ -625,7 +625,7 @@ def pull(
     git_examples_handler.pull(branch=branch, force=force)
 
     examples_dir = os.path.join(os.getcwd(), path)
-    zenml.io.utils.create_dir_if_not_exists(examples_dir)
+    zenml.utils.io_utils.create_dir_if_not_exists(examples_dir)
     try:
         examples = git_examples_handler.get_examples(example_name)
 
@@ -650,7 +650,7 @@ def pull(
 
             declare(f"Pulling example {example.name}...")
 
-            zenml.io.utils.create_dir_if_not_exists(destination_dir)
+            zenml.utils.io_utils.create_dir_if_not_exists(destination_dir)
             git_examples_handler.copy_example(example, destination_dir)
             declare(f"Example pulled in directory: {destination_dir}")
             track_event(

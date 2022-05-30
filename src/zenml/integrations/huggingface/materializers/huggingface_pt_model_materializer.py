@@ -20,8 +20,8 @@ from typing import Any, Type
 from transformers import AutoConfig, PreTrainedModel
 
 from zenml.artifacts import ModelArtifact
-from zenml.io import utils as fileio_utils
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils import io_utils as fileio_utils
 
 DEFAULT_PT_MODEL_DIR = "hf_pt_model"
 
