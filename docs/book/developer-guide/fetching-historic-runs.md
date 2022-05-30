@@ -15,7 +15,7 @@ executing step. Examples of this:
 ### Utilizing `StepContext`
 
 ZenML allows users to fetch historical parameters and artifacts using the `StepContext` 
-[fixture](step-fixtures.md).
+[fixture](./step-fixtures.md).
 
 As an example, see this step that uses the `StepContext` to query the metadata store while running a step.
 We use this to evaluate all models of past training pipeline runs and store the current best model. 

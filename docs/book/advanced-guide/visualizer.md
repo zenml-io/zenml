@@ -7,7 +7,7 @@ description: An image speaks a thousand words.
 ## What is a visualizer?
 
 Sometimes it makes sense in
-the [post-execution workflow](../../developer-guide/post-execution-workflow.md) to
+the [post-execution workflow](../developer-guide/post-execution-workflow.md) to
 actually visualize step
 outputs. ZenML has a standard, extensible interface for all visualizers:
 
@@ -45,7 +45,7 @@ PipelineRunLineageVisualizer().visualize(latest_run)
 
 It produces the following visualization:
 
-![Lineage Diagram](../../assets/zenml-pipeline-run-lineage-dash.png)
+![Lineage Diagram](../assets/zenml-pipeline-run-lineage-dash.png)
 
 ### Statistics with [`facets`](https://github.com/PAIR-code/facets)
 
@@ -59,7 +59,7 @@ FacetStatisticsVisualizer().visualize(output)
 
 It produces the following visualization:
 
-![Statistics for boston housing dataset](../../assets/statistics-boston-housing.png)
+![Statistics for boston housing dataset](../assets/statistics-boston-housing.png)
 
 ### Distributions with [`whylogs`](https://github.com/whylabs/whylogs)
 
@@ -74,7 +74,7 @@ WhylogsVisualizer().visualize(whylogs_outputs)
 
 It produces the following visualization:
 
-![whylogs visualization](../../assets/whylogs/whylogs-visualizer.png)
+![whylogs visualization](../assets/whylogs/whylogs-visualizer.png)
 
 ### Drift with [`evidently`](https://github.com/evidentlyai/evidently)
 
@@ -90,4 +90,4 @@ EvidentlyVisualizer().visualize(evidently_outputs)
 
 It produces the following visualization:
 
-![Evidently Drift Detection](../../assets/evidently/drift_visualization.png)
+![Evidently Drift Detection](../assets/evidently/drift_visualization.png)
