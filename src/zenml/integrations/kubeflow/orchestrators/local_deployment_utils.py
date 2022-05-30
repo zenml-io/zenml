@@ -190,7 +190,9 @@ def wait_until_kubeflow_pipelines_ready(kubernetes_context: str) -> None:
         if kubeflow_pipelines_ready(kubernetes_context=kubernetes_context):
             break
 
-        logger.info("One or more pods not ready yet, waiting for 30 seconds...")
+        logger.info(
+            "One or more pods not ready yet, waiting for 30 seconds..."
+        )
         time.sleep(30)
 
 
@@ -246,7 +248,7 @@ def add_hostpath_to_kubeflow_pipelines(
     a hostpath for visualization purposes.
 
     This function reconfigures the Kubeflow pipelines deployment to use a
-    shared local folder to support loading the Tensorboard viewer and other
+    shared local folder to support loading the TensorBoard viewer and other
     pipeline visualization results from a local artifact store, as described
     here:
 

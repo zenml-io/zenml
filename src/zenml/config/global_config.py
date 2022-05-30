@@ -100,7 +100,9 @@ class GlobalConfiguration(
         _config_path: Directory where the global config file is stored.
     """
 
-    user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
+    user_id: uuid.UUID = Field(
+        default_factory=uuid.uuid4, allow_mutation=False
+    )
     user_metadata: Optional[Dict[str, str]]
     analytics_opt_in: bool = True
     version: Optional[str]
@@ -178,7 +180,9 @@ class GlobalConfiguration(
             # If the version parsing fails, it returns a `LegacyVersion` instead.
             # Check to make sure it's an actual `Version` object which represents
             # a valid version.
-            raise RuntimeError(f"Invalid version in global configuration: {v}.")
+            raise RuntimeError(
+                f"Invalid version in global configuration: {v}."
+            )
 
         return v
 
@@ -205,7 +209,7 @@ class GlobalConfiguration(
         environment_variable_name = f"{CONFIG_ENV_VAR_PREFIX}{key.upper()}"
         try:
             environment_variable_value = os.environ[environment_variable_name]
-            # set the environment variable value to leverage pydantics type
+            # set the environment variable value to leverage Pydantic's type
             # conversion and validation
             super().__setattr__(key, environment_variable_value)
             return_value = super().__getattribute__(key)
@@ -355,7 +359,7 @@ class GlobalConfiguration(
         # ProfileConfiguration and the Repository classes to avoid triggering
         # the analytics and interact directly with the store creation
         config_copy.profiles[profile.name] = profile
-        # We dont need to track analytics here
+        # We don't need to track analytics here
         store = Repository.create_store(
             profile,
             skip_default_registrations=True,

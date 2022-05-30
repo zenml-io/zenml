@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """
 The mlflow integrations currently enables you to use mlflow tracking as a
-convenient way to visualize your experiment runs within the mlflow ui
+convenient way to visualize your experiment runs within the mlflow UI
 """
 from typing import List
 

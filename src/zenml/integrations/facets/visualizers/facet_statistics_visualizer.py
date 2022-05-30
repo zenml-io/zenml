@@ -53,7 +53,7 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
             if type(df) is not pd.DataFrame:
                 logger.warning(
                     "`%s` is not a pd.DataFrame. You can only visualize "
-                    "statistics of steps that output pandas dataframes. "
+                    "statistics of steps that output pandas DataFrames. "
                     "Skipping this output.." % output_name
                 )
             else:
@@ -65,7 +65,7 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
         """Generates html for facet.
 
         Args:
-            datasets: List of dicts of dataframes to be visualized as stats.
+            datasets: List of dicts of DataFrames to be visualized as stats.
 
         Returns:
             HTML template with proto string embedded.
@@ -98,7 +98,9 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
                 )
             display(HTML(html_))
         else:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
+            with tempfile.NamedTemporaryFile(
+                delete=False, suffix=".html"
+            ) as f:
                 zenml.io.utils.write_file_contents_as_string(f.name, html_)
                 url = f"file:///{f.name}"
                 logger.info("Opening %s in a new browser.." % f.name)

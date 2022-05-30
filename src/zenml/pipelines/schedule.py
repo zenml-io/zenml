@@ -22,9 +22,9 @@ class Schedule(BaseModel):
     """Class for defining a pipeline schedule.
 
     Attributes:
-        start_time: Datetime object to indicate when to start the schedule.
-        end_time: Datetime object to indicate when to end the schedule.
-        interval_second: Datetime timedelta indicating the seconds between two
+        start_time: datetime object to indicate when to start the schedule.
+        end_time: datetime object to indicate when to end the schedule.
+        interval_second: datetime timedelta indicating the seconds between two
             recurring runs for a periodic schedule.
         catchup: Whether the recurring run should catch up if behind schedule.
             For example, if the recurring run is paused for a while and

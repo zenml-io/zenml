@@ -60,8 +60,10 @@ class LocalExample:
 
     @property
     def python_files_in_dir(self) -> List[str]:
-        """List of all python files in the drectl in local example directory
-        the __init__.py file is excluded from this list"""
+        """List of all Python files in the local example directory.
+
+        The __init__.py file is excluded from this list.
+        """
         py_in_dir = zenml.io.utils.find_files(str(self.path), "*.py")
         py_files = []
         for file in py_in_dir:
@@ -210,7 +212,7 @@ class Example:
 
     @property
     def readme_content(self) -> str:
-        """Returns the readme content associated with a particular example."""
+        """Returns the README content associated with a particular example."""
         readme_file = os.path.join(self.path_in_repo, "README.md")
         try:
             with open(readme_file) as readme:
@@ -376,7 +378,9 @@ class GitExamplesHandler(object):
     def is_matching_versions(self) -> bool:
         """Returns a boolean whether the checked out examples are on the
         same code version as zenml"""
-        return zenml_version_installed == str(self.examples_repo.active_version)
+        return zenml_version_installed == str(
+            self.examples_repo.active_version
+        )
 
     def is_example(self, example_name: Optional[str] = None) -> bool:
         """Checks if the supplied example_name corresponds to an example"""
@@ -387,7 +391,9 @@ class GitExamplesHandler(object):
 
         return False
 
-    def get_examples(self, example_name: Optional[str] = None) -> List[Example]:
+    def get_examples(
+        self, example_name: Optional[str] = None
+    ) -> List[Example]:
         """Method that allows you to get an example by name. If no example is
         supplied,  all examples are returned
 

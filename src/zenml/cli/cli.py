@@ -77,11 +77,13 @@ class ZenMLCLI(click.Group):
         """
         Extra format methods for multi methods that adds all the commands
         after the options.
-        This custom format commands is used to retrive the commands and
+        This custom format commands is used to retrieve the commands and
         groups of commands with a tag. In order to call the new custom format
         method, the command must be added to the ZenMLCLI class.
         """
-        commands: List[Tuple[CliCategories, str, Union[Command, TagGroup]]] = []
+        commands: List[
+            Tuple[CliCategories, str, Union[Command, TagGroup]]
+        ] = []
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
             # What is this, the tool lied about a command.  Ignore it

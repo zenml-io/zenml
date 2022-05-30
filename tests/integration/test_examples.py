@@ -55,7 +55,9 @@ def example_runner(examples_dir):
     latter option is needed for Windows compatibility.
     """
     return (
-        [os.environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in os.environ else []
+        [os.environ[SHELL_EXECUTABLE]]
+        if SHELL_EXECUTABLE in os.environ
+        else []
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
@@ -101,7 +103,7 @@ examples = [
         ),
     ),
     # TODO [ENG-858]: Create Integration tests for lightgbm
-    # TODO [ENG-859]: Create Integration tests for MLFlow Deployment
+    # TODO [ENG-859]: Create Integration tests for MLflow Deployment
     ExampleIntegrationTestConfiguration(
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
@@ -162,7 +164,10 @@ def test_run_example(
         virtualenv: Either a separate cloned environment for each test, or an
                     empty string.
     """
-    if example_configuration.skip_on_windows and platform.system() == "Windows":
+    if (
+        example_configuration.skip_on_windows
+        and platform.system() == "Windows"
+    ):
         logging.info(
             f"Skipping example {example_configuration.name} on windows."
         )
