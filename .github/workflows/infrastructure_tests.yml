@@ -2,6 +2,8 @@ name: Build, Lint, Unit & Integration Test
 
 on:
   workflow_dispatch:
+  pull_request:
+    types: [opened]
   issue_comment:
     types: [ created ]
 
@@ -23,7 +25,7 @@ jobs:
         if: steps.check.outputs.triggered == 'true'
 
   kubeflow-tests:
-    needs: check_comments
+    # needs: check_comments
     # Run this one automatically if 'LTKF! is in the PR comments
     if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
     uses: ./.github/workflows/kubeflow.yml
