@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to administer users of the ZenML CLI and server."""
 
 from typing import Optional, Tuple
 
@@ -269,7 +270,7 @@ def set_project(project_name: str) -> None:
 
 @project.command("unset")
 def unset_project() -> None:
-    """Unset the active project from current repository"""
+    """Unset the active project from current repository."""
     cli_utils.print_active_profile()
     if not Repository.find_repository():
         cli_utils.error(

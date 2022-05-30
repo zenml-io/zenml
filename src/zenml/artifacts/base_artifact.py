@@ -25,8 +25,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""The below code is copied from the TFX source repo with minor changes.
-All credits go to the TFX team for the core implementation"""
+"""Base class for ZenML artifacts.
+
+The below code is copied from the TFX source repo with minor changes. All credits go to the TFX team for the core implementation.
+"""
 from typing import Any, Dict
 
 from ml_metadata.proto import metadata_store_pb2
@@ -61,13 +63,22 @@ class BaseArtifact(Artifact):
     _MLMD_ARTIFACT_TYPE: Any = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Init method for BaseArtifact"""
+        """Init method for BaseArtifact.
+
+        Args:
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
+        """
         self.set_zenml_artifact_type()
         super(BaseArtifact, self).__init__(*args, **kwargs)
 
     @classmethod
     def set_zenml_artifact_type(cls) -> None:
-        """Set the type of the artifact."""
+        """Set the type of the artifact.
+
+        Raises:
+            ValueError: If the artifact type is not a string or dictionary.
+        """
         type_name = cls.TYPE_NAME
         if not (type_name and isinstance(type_name, str)):
             raise ValueError(
