@@ -27,7 +27,7 @@ jobs:
   kubeflow-tests:
     # needs: check_comments
     # Run this one automatically if 'LTKF! is in the PR comments
-    if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
+    # if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
     uses: ./.github/workflows/kubeflow.yml
     secrets: inherit
 
