@@ -48,7 +48,7 @@ try:
     # Make sure all ZenServer dependencies are installed
     import fastapi  # noqa
 
-    from zenml.zen_server import ZenServer  # noqa
+    from zenml.zen_server import ZenServer, ZenServerConfig  # noqa
 
     server_installed = True
 except ImportError:
@@ -97,7 +97,6 @@ if server_installed:
     ) -> None:
         """Provisions resources for the ZenServer."""
         from zenml.services import ServiceRegistry
-        from zenml.zen_server.zen_server import ZenServer, ZenServerConfig
 
         service_config = ZenServerConfig(
             root_runtime_path=GLOBAL_ZENML_SERVER_CONFIG_PATH,
