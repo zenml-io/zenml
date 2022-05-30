@@ -20,34 +20,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-
-      # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
-      # as the TF images are too large for the GH action runner disk
-      - name: Free disk space
-        run: |
-          echo "Available storage:"
-          df -h
-          echo
-          echo -n "  Removing: .NET (frees ~22GB)"
-          sudo rm -rf /usr/share/dotnet
-          echo "... done"
-          echo -n "  Removing: Android"
-          sudo rm -rf /usr/local/lib/android
-          echo "... done"
-          echo
-          echo "Available storage:"
-          df -h
-
-      - name: Install aspell
-        run: |
-          sudo apt update
-          sudo apt install aspell-en
-
-      - name: Set up Python
+      - name: Set up Python 3.7
         uses: actions/setup-python@v2
-
-      - name: Install pyspelling
-        run: pip install pyspelling
-
-      - name: Run spellcheck
-        run: pyspelling
+        with:
+          python-version: 3.7
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools
+          python -m pip install pyspelling
+      - name: Install Aspell
+        run: sudo apt-get install aspell aspell-en
+      - name: Spell check
+        run: bash scripts/check-spelling.sh
