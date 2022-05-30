@@ -79,8 +79,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install mlflow
-zenml integration install tensorflow
+zenml integration install mlflow tensorflow
 
 # pull example
 zenml example pull mlflow_tracking
@@ -132,7 +131,5 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 
 # 📜 Learn more
 
-Our docs regarding the mlflow tracking integration can be found [here](TODO: Link to docs).
-
-If you want to learn more about the implementation in general or about how to build your own decorators in zenml
-check out our [docs](TODO: Link to docs)
+If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
+check out our [docs](https://docs.zenml.io/extending-zenml/experiment-tracker).

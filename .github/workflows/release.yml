@@ -10,6 +10,7 @@ on:
 jobs:
   lint-code:
     uses: ./.github/workflows/lint.yml
+    secrets: inherit
 
   publish-python-package:
     needs: lint-code

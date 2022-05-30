@@ -27,7 +27,7 @@ a deployed model on Kubernetes using [Seldon Core](https://www.seldon.io/).
 All of this allows you to write your code now and add the right tool for the job
 as soon as the need arises.
 
-![ZenML is the glue](../../assets/zenml-is-the-glue.jpeg)
+![ZenML is the glue](../assets/zenml-is-the-glue.jpeg)
 
 These are the third-party integrations that ZenML currently supports:
 

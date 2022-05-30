@@ -495,9 +495,9 @@ def example() -> None:
     """Access all ZenML examples."""
 
 
-@example.command(help="List the available examples.")
+@example.command(name="list", help="List the available examples.")
 @pass_git_examples_handler
-def list(git_examples_handler: GitExamplesHandler) -> None:
+def list_examples(git_examples_handler: GitExamplesHandler) -> None:
     """List all available examples."""
     check_for_version_mismatch(git_examples_handler)
     examples = [
@@ -648,8 +648,9 @@ def pull(
     else:
         for example in examples:
             destination_dir = os.path.join(os.getcwd(), path, example.name)
-
-            if LocalExample(Path(example.name), destination_dir).is_present():
+            if LocalExample(
+                name=example.name, path=Path(destination_dir)
+            ).is_present():
                 if force or confirmation(
                     f"Example {example.name} is already pulled. "
                     "Do you wish to overwrite the directory at "

@@ -13,7 +13,7 @@ relevant.
 - Continuous Training refers to the paradigm where a team deploys training
   pipelines that run automatically to train
   models on
-  new (fresh) data. (e.g. Every two weeks, take the latest data from an API, and
+  new (fresh) data. (e.g. every two weeks, take the latest data from an API, and
   train a new model on it.)
 - Continuous Deployment refers to the paradigm where newly trained models are
   automatically deployed to a prediction

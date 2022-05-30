@@ -308,7 +308,7 @@ def generate_stack_component_register_command(
                     f"the right attributes. Current problems:\n\n{e}"
                 )
             except Exception as e:
-                cli_utils.error(e)  # type: ignore[arg-type]
+                cli_utils.error(str(e))
 
         cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 
