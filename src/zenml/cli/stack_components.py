@@ -330,9 +330,31 @@ def generate_stack_component_flavor_register_command(
         cli_utils.print_active_profile()
 
         # Check whether the module exists and is the right type
-        component_class = validate_flavor_source(
-            source=source, component_type=component_type
-        )
+        try:
+            component_class = validate_flavor_source(
+                source=source, component_type=component_type
+            )
+        except ValueError as e:
+            error_message = str(e) + "\n\n"
+            repo_root = Repository().root
+
+            if repo_root:
+                error_message += (
+                    "Please make sure your source is either importable from an "
+                    "installed package or specified relative to your ZenML "
+                    f"repository root '{repo_root}'."
+                )
+
+            else:
+                error_message += (
+                    "Please make sure your source is either importable from an "
+                    "installed package or create a ZenML repository by running "
+                    "`zenml init` and specify the source relative to the "
+                    "repository directory. Check out https://docs.zenml.io/developer-guide/repo-and-config#the-zenml-repository "
+                    "for more information."
+                )
+
+            cli_utils.error(error_message)
 
         # Register the flavor in the given source
         try:
