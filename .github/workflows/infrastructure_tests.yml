@@ -1,4 +1,4 @@
-name: Build, Lint, Unit & Integration Test
+name: Test Examples on Remote Infrastructure
 
 on:
   workflow_dispatch:
