@@ -102,7 +102,7 @@ step.
 ### Enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
 
 Cache is implicitly disabled for steps that have a
-[context]((../developer-guide/step-fixtures.md#using-the-stepcontext)) argument,
+[context](../developer-guide/step-fixtures.md#using-the-stepcontext) argument,
 because it is assumed that you might use the step context to retrieve artifacts
 from the artifact store that are unrelated to the current step. However, if that
 is not the case, and your step logic doesn't invalidate the caching behavior, it

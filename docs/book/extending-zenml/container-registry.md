@@ -16,7 +16,7 @@ setting.
 
 {% hint style="warning" %}
 Before reading this chapter, make sure that you are familiar with the concept of 
-[stacks, stack components and their flavors](./stacks-components-flavors.md).  
+[stacks, stack components and their flavors](../advanced-guide/stacks-components-flavors.md).  
 {% endhint %}
 
 ## Base Abstraction
