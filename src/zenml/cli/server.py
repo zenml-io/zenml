@@ -45,12 +45,16 @@ ZENML_SERVER_CONFIG_FILENAME = os.path.join(
 help_message = "Commands for managing the ZenServer."
 
 try:
+    # Make sure all ZenServer dependencies are installed
     import fastapi  # noqa
 
     from zenml.zen_server import ZenServer  # noqa
 
     server_installed = True
 except ImportError:
+    # Unable to import the ZenServer dependencies. Include a help message in
+    # the `zenml server` CLI group and don't add any subcommands that would
+    # just fail.
     server_installed = False
     help_message += (
         "\n\n**Note**: The ZenServer seems to be unavailable on your machine. "
