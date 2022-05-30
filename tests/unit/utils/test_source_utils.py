@@ -56,9 +56,7 @@ def test_prepend_python_path():
     assert path_element not in sys.path
 
 
-def test_loading_class_by_path_prepends_repo_path(
-    clean_repo, mocker, tmp_path
-):
+def test_loading_class_by_path_prepends_repo_path(clean_repo, mocker, tmp_path):
     """Tests that loading a class always prepends the active repository root to
     the python path."""
 
@@ -84,9 +82,7 @@ def test_loading_class_by_path_prepends_repo_path(
         source_utils.load_source_path_class("python_file.test")
 
 
-def test_import_python_file_for_first_time(
-    clean_repo, mocker, files_dir: Path
-):
+def test_import_python_file_for_first_time(clean_repo, mocker, files_dir: Path):
     """Test that importing a python file as module works and allows for
     importing of module attributes even with module popped from sys path"""
 

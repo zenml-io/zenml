@@ -153,9 +153,7 @@ def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
         if isinstance(col_name, str):
             rich_table.add_column(str(col_name), overflow="fold")
         else:
-            rich_table.add_column(
-                str(col_name.header).upper(), overflow="fold"
-            )
+            rich_table.add_column(str(col_name.header).upper(), overflow="fold")
     for dict_ in obj:
         values = []
         for key in column_keys:
@@ -540,8 +538,7 @@ def parse_unknown_options(
 
     if expand_args:
         r_args = {
-            k: _expand_argument_value_from_file(k, v)
-            for k, v in r_args.items()
+            k: _expand_argument_value_from_file(k, v) for k, v in r_args.items()
         }
 
     return r_args

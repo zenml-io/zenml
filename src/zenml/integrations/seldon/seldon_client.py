@@ -535,15 +535,13 @@ class SeldonClient:
             # are not
             deployment.mark_as_managed_by_zenml()
 
-            response = (
-                self._custom_objects_api.create_namespaced_custom_object(
-                    group="machinelearning.seldon.io",
-                    version="v1",
-                    namespace=self._namespace,
-                    plural="seldondeployments",
-                    body=deployment.dict(exclude_none=True),
-                    _request_timeout=poll_timeout or None,
-                )
+            response = self._custom_objects_api.create_namespaced_custom_object(
+                group="machinelearning.seldon.io",
+                version="v1",
+                namespace=self._namespace,
+                plural="seldondeployments",
+                body=deployment.dict(exclude_none=True),
+                _request_timeout=poll_timeout or None,
             )
             logger.debug("Seldon Core API response: %s", response)
         except k8s_client.rest.ApiException as e:
@@ -600,16 +598,14 @@ class SeldonClient:
             # a SeldonDeploymentNotFoundError otherwise
             self.get_deployment(name=name)
 
-            response = (
-                self._custom_objects_api.delete_namespaced_custom_object(
-                    group="machinelearning.seldon.io",
-                    version="v1",
-                    namespace=self._namespace,
-                    plural="seldondeployments",
-                    name=name,
-                    _request_timeout=poll_timeout or None,
-                    grace_period_seconds=0 if force else None,
-                )
+            response = self._custom_objects_api.delete_namespaced_custom_object(
+                group="machinelearning.seldon.io",
+                version="v1",
+                namespace=self._namespace,
+                plural="seldondeployments",
+                name=name,
+                _request_timeout=poll_timeout or None,
+                grace_period_seconds=0 if force else None,
             )
             logger.debug("Seldon Core API response: %s", response)
         except k8s_client.rest.ApiException as e:

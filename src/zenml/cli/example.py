@@ -378,9 +378,7 @@ class GitExamplesHandler(object):
     def is_matching_versions(self) -> bool:
         """Returns a boolean whether the checked out examples are on the
         same code version as zenml"""
-        return zenml_version_installed == str(
-            self.examples_repo.active_version
-        )
+        return zenml_version_installed == str(self.examples_repo.active_version)
 
     def is_example(self, example_name: Optional[str] = None) -> bool:
         """Checks if the supplied example_name corresponds to an example"""
@@ -391,9 +389,7 @@ class GitExamplesHandler(object):
 
         return False
 
-    def get_examples(
-        self, example_name: Optional[str] = None
-    ) -> List[Example]:
+    def get_examples(self, example_name: Optional[str] = None) -> List[Example]:
         """Method that allows you to get an example by name. If no example is
         supplied,  all examples are returned
 

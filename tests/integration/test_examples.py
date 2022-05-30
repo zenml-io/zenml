@@ -55,9 +55,7 @@ def example_runner(examples_dir):
     latter option is needed for Windows compatibility.
     """
     return (
-        [os.environ[SHELL_EXECUTABLE]]
-        if SHELL_EXECUTABLE in os.environ
-        else []
+        [os.environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in os.environ else []
     ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
 
 
@@ -164,10 +162,7 @@ def test_run_example(
         virtualenv: Either a separate cloned environment for each test, or an
                     empty string.
     """
-    if (
-        example_configuration.skip_on_windows
-        and platform.system() == "Windows"
-    ):
+    if example_configuration.skip_on_windows and platform.system() == "Windows":
         logging.info(
             f"Skipping example {example_configuration.name} on windows."
         )
