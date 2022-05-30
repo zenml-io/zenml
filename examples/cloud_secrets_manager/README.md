@@ -37,7 +37,7 @@ pip install zenml
 zenml integration install aws
 
 # or alternatively the gcp integration
-zenml integration install gcp_secrets_manager
+zenml integration install gcp
 
 # pull example
 zenml example pull cloud_secrets_manager
@@ -71,14 +71,14 @@ and get the `project_id` which will need to be specified when you register the
 secrets manager.
 
 ```shell
-zenml secrets-manager register gcp_secrets_manager --flavor=gcp_secrets_manager --project_id=PROJECT_ID
+zenml secrets-manager register gcp_secrets_manager --flavor=gcp --project_id=PROJECT_ID
 zenml stack register secrets_stack -m default -o default -a default -x gcp_secrets_manager --set
 ```
 
 ### Or stay on a local stack
 
 In case you run into issues with either of the clouds, feel free to use a local 
-secret manager. Just replace `--flavor=aws`/`--flavor=gcp_secret_manager` with `--flavor=local` to
+secret manager. Just replace `--flavor=aws`/`--flavor=gcp` with `--flavor=local` to
 use a file based version of a secret manager. Be aware that this is not 
 a recommended location to store sensitive information.
 

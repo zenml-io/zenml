@@ -15,6 +15,8 @@
 The Azure integration submodule provides a way to run ZenML pipelines in a cloud
 environment. Specifically, it allows the use of cloud artifact stores,
 and an `io` module to handle file operations on Azure Blob Storage.
+The Azure Step Operator integration submodule provides a way to run ZenML steps
+in AzureML.
 """
 from typing import List
 
@@ -24,13 +26,14 @@ from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
 AZURE_ARTIFACT_STORE_FLAVOR = "azure"
+AZUREML_STEP_OPERATOR_FLAVOR = "azureml"
 
 
 class AzureIntegration(Integration):
     """Definition of Azure integration for ZenML."""
 
     NAME = AZURE
-    REQUIREMENTS = ["adlfs==2021.10.0"]
+    REQUIREMENTS = ["adlfs==2021.10.0", "azureml-core==1.39.0.post1"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
@@ -38,8 +41,16 @@ class AzureIntegration(Integration):
         return [
             FlavorWrapper(
                 name=AZURE_ARTIFACT_STORE_FLAVOR,
-                source="zenml.integrations.azure.artifact_stores.AzureArtifactStore",
+                source="zenml.integrations.azure.artifact_stores"
+                       ".AzureArtifactStore",
                 type=StackComponentType.ARTIFACT_STORE,
+                integration=cls.NAME,
+            ),
+            FlavorWrapper(
+                name=AZUREML_STEP_OPERATOR_FLAVOR,
+                source="zenml.integrations.azure.step_operators"
+                       ".AzureMLStepOperator",
+                type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
             )
         ]

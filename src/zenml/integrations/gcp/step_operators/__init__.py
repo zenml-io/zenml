@@ -11,13 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Secrets Manager
-The GCP Secrets Manager allows your pipeline to directly access the GCP
-secrets manager and use the secrets within during runtime.
-"""
-from zenml.integrations.gcp_secrets_manager.secrets_manager.gcp_secrets_manager import (
-    GCPSecretsManager,
-)
 
-__all__ = ["GCPSecretsManager"]
+from zenml.integrations.gcp.step_operators.vertex_step_operator import (  # noqa
+    VertexStepOperator,
+)

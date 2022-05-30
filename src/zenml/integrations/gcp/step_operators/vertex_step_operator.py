@@ -24,7 +24,7 @@ from pydantic import validator as property_validator
 from zenml import __version__
 from zenml.enums import StackComponentType
 from zenml.integrations.vertex import VERTEX_STEP_OPERATOR_FLAVOR
-from zenml.integrations.vertex.constants import (
+from zenml.integrations.gcp.constants import (
     CONNECTION_ERROR_RETRY_LIMIT,
     POLLING_INTERVAL_IN_SECONDS,
     VERTEX_ENDPOINT_SUFFIX,

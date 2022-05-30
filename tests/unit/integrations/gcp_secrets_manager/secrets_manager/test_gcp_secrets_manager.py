@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Type
 import pytest
 from pydantic import BaseModel
 
-from zenml.integrations.gcp_secrets_manager.secrets_manager.gcp_secrets_manager import (
+from zenml.integrations.gcp.secrets_manager.gcp_secrets_manager import (
     prepend_group_name_to_keys,
     remove_group_name_from_key,
 )

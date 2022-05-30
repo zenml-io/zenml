@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """
 The AWS integration provides a way for our users to manage their secrets
-through AWS.
+through AWS, a way to use the aws container registry. Additionally, the
+Sagemaker integration submodule provides a way to run ZenML steps in
+Sagemaker.
 """
 from typing import List
 
@@ -24,13 +26,14 @@ from zenml.zen_stores.models import FlavorWrapper
 
 AWS_SECRET_MANAGER_FLAVOR = "aws"
 AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
+AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR = "sagemaker"
 
 
 class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
 
     NAME = AWS
-    REQUIREMENTS = ["boto3==1.21.21"]
+    REQUIREMENTS = ["boto3==1.21.21", "sagemaker==2.82.2"]
 
     @classmethod
     def activate(cls) -> None:
@@ -50,10 +53,18 @@ class AWSIntegration(Integration):
             ),
             FlavorWrapper(
                 name=AWS_CONTAINER_REGISTRY_FLAVOR,
-                source="zenml.integrations.aws.container_registries.AWSContainerRegistry",
+                source="zenml.integrations.aws.container_registries"
+                       ".AWSContainerRegistry",
                 type=StackComponentType.CONTAINER_REGISTRY,
                 integration=cls.NAME,
             ),
+            FlavorWrapper(
+                name=AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR,
+                source="zenml.integrations.aws.step_operators"
+                       ".SagemakerStepOperator",
+                type=StackComponentType.STEP_OPERATOR,
+                integration=cls.NAME,
+            )
         ]
 
 
