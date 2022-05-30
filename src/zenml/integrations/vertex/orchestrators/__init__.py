@@ -12,6 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.vertex.orchestrator.vertex_ai_orchestrator import (  # noqa
+from zenml.integrations.vertex.orchestrators.vertex_orchestrator import (  # noqa
     VertexOrchestrator,
 )

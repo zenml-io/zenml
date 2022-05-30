@@ -18,8 +18,6 @@ google_cloud_ai_platform/training_clients.py"""
 import time
 from typing import ClassVar, List, Optional, Tuple
 
-from google.auth import credentials as auth_credentials
-from google.auth import default, load_credentials_from_file
 from google.cloud import aiplatform
 from pydantic import validator as property_validator
 
@@ -33,6 +31,9 @@ from zenml.integrations.vertex.constants import (
     VERTEX_JOB_STATES_COMPLETED,
     VERTEX_JOB_STATES_FAILED,
 )
+from zenml.integrations.vertex.google_credentials_mixin import (
+    GoogleCredentialsMixin,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
@@ -43,7 +44,7 @@ from zenml.utils.source_utils import get_source_root_path
 logger = get_logger(__name__)
 
 
-class VertexStepOperator(BaseStepOperator):
+class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
     """Step operator to run a step on Vertex AI.
 
     This class defines code that can set up a Vertex AI environment and run the
@@ -59,9 +60,6 @@ class VertexStepOperator(BaseStepOperator):
         machine_type: [Optional] Machine type specified here: https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types
         base_image: [Optional] Base image for building the custom job container.
         encryption_spec_key_name: [Optional]: Encryption spec key name.
-        service_account_path: [Optional]: Path to service account file
-            specifying credentials of the GCP user. If not provided, falls back
-            to Default Credentials.
     """
 
     region: str
@@ -74,10 +72,6 @@ class VertexStepOperator(BaseStepOperator):
     # customer managed encryption key resource name
     # will be applied to all Vertex AI resources if set
     encryption_spec_key_name: Optional[str] = None
-
-    # path to google service account
-    # environment default credentials used if not set
-    service_account_path: Optional[str] = None
 
     # Class configuration
     FLAVOR: ClassVar[str] = VERTEX_STEP_OPERATOR_FLAVOR
@@ -112,17 +106,6 @@ class VertexStepOperator(BaseStepOperator):
             raise ValueError(
                 f"Accelerator must be one of the following: {accepted_vals}"
             )
-
-    def _get_authentication(
-        self,
-    ) -> Tuple[Optional[auth_credentials.Credentials], Optional[str]]:
-        if self.service_account_path:
-            credentials, project_id = load_credentials_from_file(
-                self.service_account_path
-            )
-        else:
-            credentials, project_id = default()
-        return credentials, project_id
 
     def _build_and_push_docker_image(
         self,
@@ -174,8 +157,10 @@ class VertexStepOperator(BaseStepOperator):
         if self.project:
             if self.project != project_id:
                 logger.warning(
-                    f"Authenticated with project {project_id}, but this "
-                    f"operator is configured to use project {self.project}."
+                    "Authenticated with project `%s`, but this orchestrator is "
+                    "configured to use the project `%s`.",
+                    project_id,
+                    self.project,
                 )
         else:
             self.project = project_id
