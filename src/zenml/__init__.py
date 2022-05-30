@@ -23,6 +23,11 @@ from zenml.logger import init_logging  # noqa
 
 init_logging()
 
-# Import ZenServer here because it needs to be registered in the service registry
-# early on in order to be available for use in other modules.
-from zenml.zen_server.zen_server import ZenServer
+# Try to import the ZenServer here because it needs to be registered in the 
+# service registry early on in order to be available for use in other modules.
+# If the ZenServer dependencies aren't installed, there is no need to register 
+# it anywhere so we simply pass.
+try:
+    from zenml.zen_server.zen_server import ZenServer
+except ImportError:
+    pass
