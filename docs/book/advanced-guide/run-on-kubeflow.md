@@ -4,7 +4,7 @@ description: Deploy pipelines to production.
 
 # Run your Pipeline on Kubeflow
 
-[Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) is a pipeline orchestrator built for machine learning workflows. When developing ML models, you probably develop [your pipelines](../extending-zenml/getting\_started.md#pipeline) on your local machine initially as this allows for quicker iteration and debugging. However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting and deploy the pipeline to a more robust environment.
+[Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) is a pipeline orchestrator built for machine learning workflows. When developing ML models, you probably develop [your pipelines](../extending-zenml/getting-started.md#pipeline) on your local machine initially as this allows for quicker iteration and debugging. However, at a certain point when you are finished with its design, you might want to transition to a more production-ready setting and deploy the pipeline to a more robust environment.
 
 You can watch a tutorial video of an example that uses a Kubeflow Pipelines stack [here](https://www.youtube.com/watch?v=b5TXRYkdL3w):
 
