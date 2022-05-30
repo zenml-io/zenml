@@ -1,7 +1,21 @@
 matrix:
   - name: python
     pipeline:
-      - pyspelling.filters.markdown:
-      # - pyspelling.filters.python:
+      - pyspelling.filters.python:
+    aspell:
+      lang: en
+      d: en_US
     sources:
-      - "CONTRIBUTING.md"
+      - "test.py"
+  - name: markdown
+    aspell:
+      lang: en
+      d: en_US
+    dictionary:
+      wordlists:
+        - .pyspelling-ignore-words
+    pipeline:
+      - pyspelling.filters.text
+    sources:
+      - "examples/**/*.md"
+    default_encoding: utf-8
