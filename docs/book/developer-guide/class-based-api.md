@@ -7,7 +7,7 @@ of using the `@step` and `@pipeline` decorators that you have used in the previo
 users to maintain a higher level of control while they are creating a step definition and using it within the context of 
 a pipeline.
 
-We'll be using the code for the [Chapter on Runtime Configuration](./runtime-configuration.md) as a point of comparison.
+We'll be using the code for the [Runtime Configuration](./runtime-configuration.md) as a point of comparison.
 
 ### Subclassing the BaseStep
 
