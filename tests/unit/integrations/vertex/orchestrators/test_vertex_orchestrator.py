@@ -23,6 +23,7 @@ from zenml.container_registries import (
 )
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
+from zenml.integrations.azure.artifact_stores import AzureArtifactStore
 from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
 from zenml.integrations.vertex.orchestrators import VertexOrchestrator
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
@@ -51,6 +52,10 @@ def test_vertex_orchestrator_stack_validation() -> None:
         location="europe-west4",
         pipeline_root="gs://my-bucket/pipeline",
     )
+    orchestrator_no_pipeline_root = VertexOrchestrator(
+        name="", location="europe-west4"
+    )
+
     local_metadata_store = SQLiteMetadataStore(name="", uri="./metadata.db")
     local_artifact_store = LocalArtifactStore(name="", path=".")
     mysql_metadata_store = MySQLMetadataStore(
@@ -63,6 +68,9 @@ def test_vertex_orchestrator_stack_validation() -> None:
     )
     gcp_artifact_store = GCPArtifactStore(
         name="gcp_artifact_store", path="gs://my-bucket/artifacts"
+    )
+    azure_artifact_store = AzureArtifactStore(
+        name="azure_artifact_store", path="abfs://my-container/artifacts"
     )
 
     local_container_registry = DefaultContainerRegistry(
@@ -99,6 +107,16 @@ def test_vertex_orchestrator_stack_validation() -> None:
             metadata_store=mysql_metadata_store,
             artifact_store=gcp_artifact_store,
             container_registry=local_container_registry,
+        ).validate()
+
+    with pytest.raises(StackValidationError):
+        # `pipeline_root` was not set and the artifact store is not a `GCPArtifactStore`
+        Stack(
+            name="",
+            orchestrator=orchestrator_no_pipeline_root,
+            metadata_store=mysql_metadata_store,
+            artifact_store=azure_artifact_store,
+            container_registry=gcp_container_registry,
         ).validate()
 
     with does_not_raise():
