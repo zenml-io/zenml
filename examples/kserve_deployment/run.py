@@ -1,8 +1,5 @@
-from zenml.integrations.kserve.services import (
-    KServeDeploymentService,
-    KServeDeploymentConfig,
-)
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
+from zenml.integrations.kserve.services import KServeDeploymentConfig
 
 
 def main():
