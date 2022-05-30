@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import argparse
+import base64
 import importlib
 import json
 import logging
@@ -347,13 +348,19 @@ class StepEntrypointConfiguration(ABC):
             for output_name, materializer_class in materializer_classes.items()
         }
 
+        # Encode the pb2_pipeline JSON to a base64 string. This avoids issues
+        # when compiling a intermediary representation of the pipeline.
+        encoded_pb2_pipeline_json = base64.b64encode(
+            json_format.MessageToJson(pb2_pipeline).encode("utf-8")
+        ).hex()
+
         # See `get_entrypoint_options()` for an in -depth explanation of all
         # these arguments.
         zenml_arguments = [
             f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}",
             source_utils.resolve_class(cls),
             f"--{PIPELINE_JSON_OPTION}",
-            json_format.MessageToJson(pb2_pipeline),
+            encoded_pb2_pipeline_json,
             f"--{MAIN_MODULE_SOURCE_OPTION}",
             main_module_source,
             f"--{STEP_SOURCE_OPTION}",
@@ -494,7 +501,9 @@ class StepEntrypointConfiguration(ABC):
         # Extract and parse all the entrypoint arguments required to execute
         # the step. See `get_entrypoint_options()` for an in-depth explanation
         # of all these arguments.
-        pb2_pipeline_json = self.entrypoint_args[PIPELINE_JSON_OPTION]
+        pb2_pipeline_json = base64.b64decode(
+            bytes.fromhex(self.entrypoint_args[PIPELINE_JSON_OPTION])
+        ).decode("utf-8")
         pb2_pipeline = Pb2Pipeline()
         json_format.Parse(pb2_pipeline_json, pb2_pipeline)
 
