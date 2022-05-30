@@ -237,6 +237,7 @@ module = [
     "boto3.*",
     "botocore.*",
     "jupyter_dash.*",
+    "azure-keyvault-keys.*"
 ]
 ignore_missing_imports = true
 
