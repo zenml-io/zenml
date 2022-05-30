@@ -30,8 +30,7 @@ roadmap.
 
 Most importantly, ZenML is extensible and we encourage you to use it with
 whatever other tools you require as part of your ML process and system(s). Check
-out [our documentation on how to get
-started](../extending-zenml/stacks-components-flavors) with extending ZenML to
+out [our documentation on how to get started](../extending-zenml/getting-started.md) with extending ZenML to
 learn more!
 
 #### How do I install on an M1 Mac
@@ -49,7 +48,7 @@ helpful.
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
 This depends on the tool and its respective MLOps category. We have a full guide
-on this over [here](../extending-zenml/stacks-components-flavors)!
+on this over [here](../advanced-guide/stacks-components-flavors)!
 
 #### Why did you build ZenML?
 
