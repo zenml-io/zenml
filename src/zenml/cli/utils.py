@@ -217,7 +217,7 @@ def print_pydantic_models(
 
 
 def format_integration_list(
-    integrations: List[Tuple[str, "IntegrationMeta"]]
+    integrations: List[Tuple[str, IntegrationMeta]]
 ) -> List[Dict[str, str]]:
     """Formats a list of integrations into a List of Dicts.
 
