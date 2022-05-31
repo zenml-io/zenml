@@ -31,7 +31,7 @@ class MlflowIntegration(Integration):
 
     NAME = MLFLOW
     REQUIREMENTS = [
-        "mlflow>=1.2.0",
+        "mlflow>=1.2.0,<1.26.0",
         "mlserver>=0.5.3",
         "mlserver-mlflow>=0.5.3",
     ]

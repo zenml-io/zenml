@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base functionality for the CLI."""
+
 import os
 import subprocess
 import tempfile
@@ -55,10 +57,7 @@ def init(path: Optional[Path]) -> None:
     """Initialize ZenML on given path.
 
     Args:
-      path: Path to the repository.
-
-    Raises:
-        InitializationException: If the repo is already initialized.
+        path: Path to the repository.
     """
     if path is None:
         path = Path.cwd()
@@ -86,7 +85,8 @@ def _delete_local_files(force_delete: bool = False) -> None:
     """Delete local files corresponding to the active stack.
 
     Args:
-      force_delete: Whether to force delete the files."""
+        force_delete: Whether to force delete the files.
+    """
     if not force_delete:
         confirm = confirmation(
             "DANGER: This will completely delete metadata, artifacts and so on associated with all active stack components. \n\n"
@@ -132,8 +132,8 @@ def clean(yes: bool = False, local: bool = False) -> None:
     This is a destructive operation, primarily intended for use in development.
 
     Args:
-      yes (flag; default value = False): If you don't want a confirmation prompt.
-      local (flag; default value = False): If you want to delete local files associated with the active stack.
+        yes: If you don't want a confirmation prompt.
+        local: If you want to delete local files associated with the active stack.
     """
     if local:
         _delete_local_files(force_delete=yes)
@@ -180,7 +180,11 @@ def clean(yes: bool = False, local: bool = False) -> None:
 
 @cli.command("go")
 def go() -> None:
-    """Quickly explore ZenML with this walkthrough."""
+    """Quickly explore ZenML with this walkthrough.
+
+    Raises:
+        GitNotFoundError: If git is not installed.
+    """
     from zenml.cli.text_utils import (
         zenml_go_notebook_tutorial_message,
         zenml_go_privacy_message,
@@ -250,8 +254,14 @@ def go() -> None:
 
 
 def _prompt_email(gc: GlobalConfiguration) -> bool:
-    """Ask the user to give their email address. Returns
-    True if email is given, else False."""
+    """Ask the user to give their email address.
+
+    Args:
+        gc (GlobalConfiguration): The global configuration object.
+
+    Returns:
+        bool: True if the user gave an email address, False otherwise.
+    """
     from zenml.cli.text_utils import (
         zenml_go_email_prompt,
         zenml_go_thank_you_message,

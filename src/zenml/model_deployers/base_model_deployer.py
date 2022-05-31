@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base class for all ZenML model deployers."""
+
 from abc import ABC, abstractmethod
 from typing import ClassVar, Dict, Generator, List, Optional
 from uuid import UUID
@@ -100,11 +102,13 @@ class BaseModelDeployer(StackComponent, ABC):
     def get_model_server_info(
         service: BaseService,
     ) -> Dict[str, Optional[str]]:
-        """Give implementation specific way to extract relevant model server
-        properties for the user
+        """Give implementation specific way to extract relevant model server properties for the user.
 
         Args:
             service: Integration-specific service instance
+
+        Returns:
+            A dictionary containing the relevant model server properties.
         """
 
     @abstractmethod
@@ -119,8 +123,7 @@ class BaseModelDeployer(StackComponent, ABC):
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
     ) -> List[BaseService]:
-        """Abstract method to find one or more a model servers that match the
-        given criteria.
+        """Abstract method to find one or more a model servers that match the given criteria.
 
         Args:
             running: If true, only running services will be returned.
@@ -211,6 +214,12 @@ class BaseModelDeployer(StackComponent, ABC):
             uuid: UUID of the model server to get the logs of.
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that yields the logs of the model server.
+
+        Raises:
+            RuntimeError: if the model server is not found.
         """
         services = self.find_model_server(service_uuid=uuid)
         if len(services) == 0:
