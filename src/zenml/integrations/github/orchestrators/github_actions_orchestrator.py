@@ -43,12 +43,31 @@ logger = get_logger(__name__)
 
 GITHUB_URL_PREFIXES = ["git@github.com", "https://github.com"]
 
-# TODO: run name
 # TODO: secrets
 # TODO: container registry user/pw
 
 
 class GithubActionsOrchestrator(BaseOrchestrator):
+    """Orchestrator responsible for running pipelines using GitHub Actions.
+
+    Attributes:
+        custom_docker_base_image_name: Name of a docker image that should be
+            used as the base for the image that will be run on GitHub Action
+            runners. If no custom image is given, a basic image of the active
+            ZenML version will be used. **Note**: This image needs to have
+            ZenML installed, otherwise the pipeline execution will fail. For
+            that reason, you might want to extend the ZenML docker images
+            found here: https://hub.docker.com/r/zenmldocker/zenml/
+        prevent_dirty_repository: If `True`, this orchestrator will raise an
+            exception when trying to run a pipeline while there are still
+            untracked/uncommitted files in the git repository.
+        push: If `True`, this orchestrator will automatically commit and push
+            the GitHub workflow file when running a pipeline. If `False`, the
+            workflow file will be written to the correct location but needs to
+            be committed and pushed manually.
+    """
+
+    custom_docker_base_image_name: Optional[str] = None
     prevent_dirty_repository: bool = True
     push: bool = False
 
@@ -90,6 +109,9 @@ class GithubActionsOrchestrator(BaseOrchestrator):
 
     @property
     def validator(self) -> Optional[StackValidator]:
+        """Validates that the stack contains a container registry and only
+        remote components."""
+
         def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
             container_registry = stack.container_registry
             assert container_registry is not None
@@ -126,9 +148,7 @@ class GithubActionsOrchestrator(BaseOrchestrator):
         """Returns the full docker image name including registry and tag."""
         container_registry = Repository().active_stack.container_registry
         assert container_registry  # should never happen due to validation
-
-        base_image_name = f"zenml-github-actions:{pipeline_name}"
-        return f"{container_registry.uri.rstrip('/')}/{base_image_name}"
+        return f"{container_registry.uri}/zenml-github-actions:{pipeline_name}"
 
     def prepare_pipeline_deployment(
         self,
@@ -153,7 +173,7 @@ class GithubActionsOrchestrator(BaseOrchestrator):
         requirements = {*stack.requirements(), *pipeline.requirements}
 
         logger.debug(
-            "Github actions docker container requirements: %s", requirements
+            "Github actions docker image requirements: %s", requirements
         )
 
         docker_utils.build_docker_image(
@@ -161,6 +181,7 @@ class GithubActionsOrchestrator(BaseOrchestrator):
             image_name=image_name,
             dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
+            base_image=self.custom_docker_base_image_name,
         )
 
         assert stack.container_registry  # should never happen due to validation
@@ -221,7 +242,7 @@ class GithubActionsOrchestrator(BaseOrchestrator):
                 image_name,
                 *GithubActionsEntrypointConfiguration.get_entrypoint_command(),
                 *GithubActionsEntrypointConfiguration.get_entrypoint_arguments(
-                    step=step, pb2_pipeline=pb2_pipeline, run_name=run_name
+                    step=step, pb2_pipeline=pb2_pipeline
                 ),
             ]
             docker_run_step = {"run": " ".join(command)}

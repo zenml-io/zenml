@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import re
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 from pydantic import validator
 
@@ -26,9 +26,13 @@ class BaseContainerRegistry(StackComponent):
 
     Attributes:
         uri: The URI of the container registry.
+        username: Username to authenticate with the container registry.
+        password: Password to authenticate with the container registry.
     """
 
     uri: str
+    username: Optional[str] = None
+    password: Optional[str] = None
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
