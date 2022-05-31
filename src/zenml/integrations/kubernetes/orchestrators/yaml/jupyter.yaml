@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyter
+spec:
+  selector:
+    matchLabels:
+      app: jupyter
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: jupyter
+    spec:
+      containers:
+      - name: jupyter
+        image: jupyter/tensorflow-notebook:ubuntu-18.04
+        ports:
+        - containerPort: 8888
