@@ -19,7 +19,8 @@ from uuid import UUID
 
 import yaml
 
-from zenml.io import fileio, utils
+from zenml.io import fileio
+from zenml.utils import io_utils
 
 
 def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
@@ -32,22 +33,22 @@ def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
     Raises:
         FileNotFoundError: if directory does not exist.
     """
-    if not utils.is_remote(file_path):
+    if not io_utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
         if not fileio.isdir(dir_):
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    utils.write_file_contents_as_string(file_path, yaml.dump(contents))
+    io_utils.write_file_contents_as_string(file_path, yaml.dump(contents))
 
 
 def append_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
     """Append contents to a YAML file at file_path."""
     file_contents = read_yaml(file_path) or {}
     file_contents.update(contents)
-    if not utils.is_remote(file_path):
+    if not io_utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
         if not fileio.isdir(dir_):
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    utils.write_file_contents_as_string(file_path, yaml.dump(file_contents))
+    io_utils.write_file_contents_as_string(file_path, yaml.dump(file_contents))
 
 
 def read_yaml(file_path: str) -> Any:
@@ -64,7 +65,7 @@ def read_yaml(file_path: str) -> Any:
     """
 
     if fileio.exists(file_path):
-        contents = utils.read_file_contents_as_string(file_path)
+        contents = io_utils.read_file_contents_as_string(file_path)
         # TODO: [LOW] consider adding a default empty dict to be returned
         #   instead of None
         return yaml.safe_load(contents)
@@ -99,12 +100,12 @@ def write_json(file_path: str, contents: Dict[str, Any]) -> None:
     Raises:
         FileNotFoundError: if directory does not exist.
     """
-    if not utils.is_remote(file_path):
+    if not io_utils.is_remote(file_path):
         dir_ = str(Path(file_path).parent)
         if not fileio.isdir(dir_):
             # Check if it is a local path, if it doesn't exist, raise Exception.
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    utils.write_file_contents_as_string(file_path, json.dumps(contents))
+    io_utils.write_file_contents_as_string(file_path, json.dumps(contents))
 
 
 def read_json(file_path: str) -> Any:
@@ -114,7 +115,7 @@ def read_json(file_path: str) -> Any:
         file_path: Path to JSON file.
     """
     if fileio.exists(file_path):
-        contents = utils.read_file_contents_as_string(file_path)
+        contents = io_utils.read_file_contents_as_string(file_path)
         return json.loads(contents)
     else:
         raise FileNotFoundError(f"{file_path} does not exist.")

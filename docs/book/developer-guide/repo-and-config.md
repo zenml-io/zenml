@@ -27,7 +27,7 @@ Config Directory_ used on a system can be retrieved by running the following
 command:
 
 ```shell
-python -c 'from zenml.io.utils import get_global_config_directory; print(get_global_config_directory())'
+python -c 'from zenml.utils.io_utils import get_global_config_directory; print(get_global_config_directory())'
 ```
 
 {% hint style="warning" %}
