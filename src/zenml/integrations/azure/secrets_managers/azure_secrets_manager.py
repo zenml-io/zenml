@@ -1,7 +1,7 @@
 from typing import Any, ClassVar, Dict, List
 
 from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient  # type: ignore [import]
+from azure.keyvault.secrets import SecretClient
 
 from zenml.exceptions import SecretExistsError
 from zenml.logger import get_logger
@@ -123,12 +123,12 @@ class AzureSecretsManager(BaseSecretsManager):
                 secret_key = remove_group_name_from_key(
                     combined_key_name=response.name, group_name=secret_name
                 )
+                if secret_key == "name":
+                    raise ValueError("The secret's key cannot be 'name'.")
 
                 secret_contents[secret_key] = response.value
 
-                zenml_schema_name = response.properties.tags.get(
-                    ZENML_SCHEMA_NAME
-                )
+                zenml_schema_name = tags.get(ZENML_SCHEMA_NAME)
 
         if not secret_contents:
             raise RuntimeError(f"No secrets found within the {secret_name}")
