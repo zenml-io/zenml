@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to generate stack component CLI commands."""
+
 import time
 from importlib import import_module
 from typing import Any, Callable, List, Optional, Sequence, Tuple, Type
@@ -91,7 +93,6 @@ def _get_stack_component_wrapper(
         component is registered for the given name and type, and a boolean
         indicating whether the component is active or not.
     """
-
     singular_display_name = _component_display_name(component_type)
     plural_display_name = _component_display_name(component_type, plural=True)
 
@@ -138,7 +139,6 @@ def generate_stack_component_get_command(
 
     def get_stack_component_command() -> None:
         """Prints the name of the active component."""
-
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
@@ -170,7 +170,8 @@ def generate_stack_component_describe_command(
         """Prints details about the active/specified component.
 
         Args:
-            name: Name of the component to describe."""
+            name: Name of the component to describe.
+        """
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
@@ -195,7 +196,6 @@ def generate_stack_component_list_command(
 
     def list_stack_components_command() -> None:
         """Prints a table of stack components."""
-
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
@@ -326,7 +326,7 @@ def generate_stack_component_flavor_register_command(
         required=True,
     )
     def register_stack_component_flavor_command(source: str) -> None:
-        """Adds a flavor for a stack component type"""
+        """Adds a flavor for a stack component type."""
         cli_utils.print_active_profile()
 
         # Check whether the module exists and is the right type
@@ -381,7 +381,7 @@ def generate_stack_component_flavor_list_command(
     """Generates a `list` command for the flavors of a stack component."""
 
     def list_stack_component_flavor_command() -> None:
-        """Adds a flavor for a stack component type"""
+        """Adds a flavor for a stack component type."""
         cli_utils.print_active_profile()
 
         from zenml.stack.flavor_registry import flavor_registry
@@ -492,8 +492,7 @@ def generate_stack_component_update_command(
 def generate_stack_component_remove_attribute_command(
     component_type: StackComponentType,
 ) -> Callable[[str, List[str]], None]:
-    """Generates an `remove_attribute` command for the specific stack
-    component type."""
+    """Generates an `remove_attribute` command for the specific stack component type."""
     display_name = _component_display_name(component_type)
 
     @click.argument(
@@ -824,7 +823,6 @@ def generate_stack_component_explain_command(
 
     def explain_stack_components_command() -> None:
         """Explains the concept of the stack component."""
-
         component_module = import_module(f"zenml.{component_type.plural}")
 
         if component_module.__doc__ is not None:
@@ -891,8 +889,7 @@ def register_single_stack_component_cli_commands(
         "flavor", help=f"Commands to interact with {plural_display_name}."
     )
     def flavor_group() -> None:
-        """Group commands for handling the flavors of single stack component
-        type."""
+        """Group commands for handling the flavors of single stack component type."""
 
     # zenml stack-component flavor register
     register_flavor_command = generate_stack_component_flavor_register_command(

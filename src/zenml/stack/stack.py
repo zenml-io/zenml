@@ -29,13 +29,12 @@ from typing import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
-from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
     RuntimeConfiguration,
 )
-from zenml.utils import string_utils
+from zenml.utils import io_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -222,7 +221,7 @@ class Stack:
             "local_stores",
             str(artifact_store_uuid),
         )
-        utils.create_dir_recursive_if_not_exists(artifact_store_path)
+        io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
         artifact_store = LocalArtifactStore(
             name="default",
             uuid=artifact_store_uuid,

@@ -45,7 +45,6 @@ from kubernetes import config as k8s_config
 from pydantic import root_validator
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
-import zenml.io.utils
 from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
@@ -63,19 +62,19 @@ from zenml.integrations.kubeflow.orchestrators.local_deployment_utils import (
     KFP_VERSION,
 )
 from zenml.io import fileio
-from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
-from zenml.stack import Stack, StackValidator
-from zenml.steps import BaseStep
-from zenml.utils import networking_utils
+from zenml.stack import StackValidator
+from zenml.utils import io_utils, networking_utils
 from zenml.utils.docker_utils import get_image_digest
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.stack import Stack
+    from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
 
@@ -189,7 +188,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Validates that the stack contains a container registry and that
         requirements are met for local components."""
 
-        def _validate_local_requirements(stack: Stack) -> Tuple[bool, str]:
+        def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
 
             container_registry = stack.container_registry
 
@@ -340,7 +339,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns path to the root directory for all files concerning
         this orchestrator."""
         return os.path.join(
-            zenml.io.utils.get_global_config_directory(),
+            io_utils.get_global_config_directory(),
             "kubeflow",
             str(self.uuid),
         )
@@ -415,7 +414,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         }
 
         stack = Repository().active_stack
-        global_cfg_dir = get_global_config_directory()
+        global_cfg_dir = io_utils.get_global_config_directory()
 
         # go through all stack components and identify those that advertise
         # a local path where they persist information that they need to be
@@ -499,7 +498,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List[BaseStep],
+        sorted_steps: List["BaseStep"],
         pipeline: "BasePipeline",
         pb2_pipeline: Pb2Pipeline,
         stack: "Stack",
@@ -772,7 +771,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
             )
             return
 
-        global_config_dir_path = zenml.io.utils.get_global_config_directory()
+        global_config_dir_path = io_utils.get_global_config_directory()
         kubeflow_commands = [
             f"> k3d cluster create {self._k3d_cluster_name} --image {local_deployment_utils.K3S_IMAGE_NAME} --registry-create {container_registry_name} --registry-config {container_registry_path} --volume {global_config_dir_path}:{global_config_dir_path}\n",
             f"> kubectl --context {self.kubernetes_context} apply -k github.com/kubeflow/pipelines/manifests/kustomize/cluster-scoped-resources?ref={KFP_VERSION}&timeout=5m",

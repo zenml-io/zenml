@@ -27,9 +27,9 @@ from zenml.config.profile_config import (
     DEFAULT_PROFILE_NAME,
     ProfileConfiguration,
 )
-from zenml.io import fileio, utils
+from zenml.io import fileio
 from zenml.logger import disable_logging, get_logger
-from zenml.utils import yaml_utils
+from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
@@ -294,7 +294,7 @@ class GlobalConfiguration(
         logger.debug(f"Writing config to {config_file}")
 
         if not fileio.exists(config_file):
-            utils.create_dir_recursive_if_not_exists(
+            io_utils.create_dir_recursive_if_not_exists(
                 config_path or self.config_directory
             )
 
@@ -303,7 +303,7 @@ class GlobalConfiguration(
     @staticmethod
     def default_config_directory() -> str:
         """Path to the default global configuration directory."""
-        return utils.get_global_config_directory()
+        return io_utils.get_global_config_directory()
 
     def _config_file(self, config_path: Optional[str] = None) -> str:
         """Path to the file where global configuration options are stored.

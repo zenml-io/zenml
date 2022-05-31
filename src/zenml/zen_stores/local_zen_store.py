@@ -31,8 +31,9 @@ from uuid import UUID
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
-from zenml.io import fileio, utils
+from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
     ComponentWrapper,
@@ -131,7 +132,7 @@ class LocalZenStore(BaseZenStore):
 
         self._root = self.get_path_from_url(url)
         self._url = f"file://{self._root}"
-        utils.create_dir_recursive_if_not_exists(str(self._root))
+        io_utils.create_dir_recursive_if_not_exists(str(self._root))
 
         if store_data is not None:
             self.__store = store_data
@@ -247,10 +248,10 @@ class LocalZenStore(BaseZenStore):
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
-        utils.create_dir_recursive_if_not_exists(
+        io_utils.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
         )
-        utils.write_file_contents_as_string(
+        io_utils.write_file_contents_as_string(
             component_config_path,
             base64.b64decode(component.config).decode(),
         )
@@ -296,10 +297,10 @@ class LocalZenStore(BaseZenStore):
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
-        utils.create_dir_recursive_if_not_exists(
+        io_utils.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
         )
-        utils.write_file_contents_as_string(
+        io_utils.write_file_contents_as_string(
             component_config_path,
             base64.b64decode(component.config).decode(),
         )
@@ -380,7 +381,9 @@ class LocalZenStore(BaseZenStore):
         )
         flavor = components[name]
         config = base64.b64encode(
-            utils.read_file_contents_as_string(component_config_path).encode()
+            io_utils.read_file_contents_as_string(
+                component_config_path
+            ).encode()
         )
         return flavor, config
 

@@ -23,9 +23,9 @@ import zenml
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.io import fileio
-from zenml.io.utils import read_file_contents_as_string
 from zenml.logger import get_logger
 from zenml.utils import string_utils
+from zenml.utils.io_utils import read_file_contents_as_string
 
 DEFAULT_BASE_IMAGE = f"zenmldocker/zenml:{zenml.__version__}"
 CONTAINER_ZENML_CONFIG_DIR = ".zenconfig"

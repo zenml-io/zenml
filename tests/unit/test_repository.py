@@ -27,11 +27,12 @@ from zenml.exceptions import (
     StackComponentExistsError,
     StackExistsError,
 )
-from zenml.io import fileio, utils
+from zenml.io import fileio
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.orchestrators import LocalOrchestrator
 from zenml.repository import Repository
 from zenml.stack import Stack
+from zenml.utils import io_utils
 
 
 def _create_local_stack(
@@ -112,7 +113,7 @@ def test_finding_repository_directory_with_explicit_path(tmp_path, clean_repo):
     """Tests that a repository can be found using an explicit path, an
     environment variable and the current working directory."""
     subdirectory_path = tmp_path / "some_other_directory"
-    utils.create_dir_recursive_if_not_exists(str(subdirectory_path))
+    io_utils.create_dir_recursive_if_not_exists(str(subdirectory_path))
     os.chdir(str(subdirectory_path))
 
     # no repo exists and explicit path passed
@@ -166,7 +167,7 @@ def test_finding_repository_directory_with_explicit_path(tmp_path, clean_repo):
 def test_repo_without_configuration_file_falls_back_to_empty_config(tmp_path):
     """Tests that the repo uses an empty configuration if the config file was
     deleted."""
-    utils.create_dir_recursive_if_not_exists(str(tmp_path / ".zen"))
+    io_utils.create_dir_recursive_if_not_exists(str(tmp_path / ".zen"))
     repo = Repository(tmp_path)
 
     assert len(repo.stacks) == 1

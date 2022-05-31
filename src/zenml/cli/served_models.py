@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to interact with models served by ZenML."""
+
 import uuid
 from typing import TYPE_CHECKING, Optional
 
@@ -38,9 +40,7 @@ if TYPE_CHECKING:
 )
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
-    """List and manage served models with the active model
-    deployer.
-    """
+    """List and manage served models with the active model deployer."""
     repo = Repository()
     active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
     model_deployer_wrapper = active_stack.get_component_wrapper(
@@ -101,8 +101,18 @@ def list_models(
     model: Optional[str],
     running: bool,
 ) -> None:
-    """Get a list of all served models within the model-deployer stack
-    component.
+    """Get a list of all served models within the model-deployer stack component.
+
+    Args:
+        model_deployer: The model-deployer stack component.
+        pipeline: Show only served models that were deployed by the indicated
+            pipeline.
+        step: Show only served models that were deployed by the indicated
+            pipeline step.
+        pipeline_run: Show only served models that were deployed by the
+            indicated pipeline run.
+        model: Show only served model versions for the given model name.
+        running: Show only model servers that are currently running.
     """
     services = model_deployer.find_model_server(
         running=running,
@@ -127,7 +137,6 @@ def describe_model(
     model_deployer: "BaseModelDeployer", served_model_uuid: str
 ) -> None:
     """Describe a specified served model."""
-
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -181,7 +190,6 @@ def start_model_service(
     model_deployer: "BaseModelDeployer", served_model_uuid: str, timeout: int
 ) -> None:
     """Start a specified model server."""
-
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -340,7 +348,6 @@ def get_model_service_logs(
     raw: bool,
 ) -> None:
     """Display the logs for a model server."""
-
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
