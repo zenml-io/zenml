@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to support ZenML Profile configuration."""
 
 import os
 from typing import TYPE_CHECKING, Any, Dict, Optional
@@ -91,14 +92,17 @@ class ProfileConfiguration(BaseModel):
 
     @property
     def config_directory(self) -> str:
-        """Directory where the profile configuration is stored."""
+        """Directory where the profile configuration is stored.
+
+        Returns:
+            The directory where the profile configuration is stored.
+        """
         return os.path.join(
             self.global_config.config_directory, "profiles", self.name
         )
 
     def initialize(self) -> None:
         """Initialize the profile."""
-
         # import here to avoid circular dependency
         from zenml.repository import Repository
 
@@ -125,7 +129,11 @@ class ProfileConfiguration(BaseModel):
 
     @property
     def global_config(self) -> "GlobalConfiguration":
-        """Return the global configuration to which this profile belongs."""
+        """Return the global configuration to which this profile belongs.
+
+        Returns:
+            The global configuration to which this profile belongs.
+        """
         from zenml.config.global_config import GlobalConfiguration
 
         return self._config or GlobalConfiguration()
@@ -164,6 +172,12 @@ class ProfileConfiguration(BaseModel):
 
         If the active user is missing and the profile specifies a local store,
         a default user is used as fallback.
+
+        Args:
+            attributes: attributes of the profile configuration
+
+        Returns:
+            attributes of the profile configuration
 
         Raises:
             RuntimeError: If the active user is missing for a profile with a

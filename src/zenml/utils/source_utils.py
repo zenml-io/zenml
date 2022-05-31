@@ -407,8 +407,7 @@ def import_class_by_path(class_path: str) -> Type[Any]:
 
     Returns: the given class
     """
-    classname = class_path.split(".")[-1]
-    modulename = ".".join(class_path.split(".")[0:-1])
+    modulename, classname = class_path.rsplit(".", 1)
     mod = importlib.import_module(modulename)
     return getattr(mod, classname)  # type: ignore[no-any-return]
 
@@ -498,9 +497,9 @@ def validate_flavor_source(
     """
     try:
         stack_component_class = load_source_path_class(source)
-    except (ValueError, AttributeError, ImportError):
+    except (ValueError, AttributeError, ImportError) as e:
         raise ValueError(
-            f"ZenML can not import the source '{source}' of the given module."
+            f"ZenML can not import the flavor class '{source}': {e}"
         )
 
     if not issubclass(stack_component_class, StackComponent):
