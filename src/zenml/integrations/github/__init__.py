@@ -30,7 +30,6 @@ class GitHubIntegration(Integration):
     """Definition of GitHub integration for ZenML."""
 
     NAME = GITHUB
-    REQUIREMENTS = []
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:

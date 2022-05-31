@@ -14,7 +14,7 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
@@ -112,6 +112,7 @@ class GithubActionsOrchestrator(BaseOrchestrator):
     @property
     def workflow_directory(self) -> str:
         """Returns path to the github workflows directory."""
+        assert self.git_repo.working_dir
         return os.path.join(self.git_repo.working_dir, ".github", "workflows")
 
     @property
@@ -212,7 +213,7 @@ class GithubActionsOrchestrator(BaseOrchestrator):
             self.workflow_directory, f"{pipeline.name}.yaml"
         )
 
-        workflow_dict = {"name": pipeline.name}
+        workflow_dict: Dict[str, Any] = {"name": pipeline.name}
 
         schedule = runtime_configuration.schedule
         if schedule:
@@ -254,7 +255,7 @@ class GithubActionsOrchestrator(BaseOrchestrator):
             # modified. As long as users don't manually modify these files this
             # should be sufficient.
             workflow_path_in_repo = os.path.relpath(
-                workflow_path, self.workflow_directory
+                workflow_path, self.git_repo.working_dir
             )
             workflow_dict["on"] = {"push": {"paths": [workflow_path_in_repo]}}
 
@@ -277,7 +278,9 @@ class GithubActionsOrchestrator(BaseOrchestrator):
                 image_name,
                 *GithubActionsEntrypointConfiguration.get_entrypoint_command(),
                 *GithubActionsEntrypointConfiguration.get_entrypoint_arguments(
-                    step=step, pb2_pipeline=pb2_pipeline
+                    step=step,
+                    pb2_pipeline=pb2_pipeline,
+                    pipeline_name=pipeline.name,
                 ),
             ]
             docker_run_step = {"run": " ".join(command)}

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, List, Set
+from typing import Any, List, Set, cast
 
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.steps import BaseStep
@@ -35,12 +35,12 @@ class GithubActionsEntrypointConfiguration(StepEntrypointConfiguration):
         """Adds a run name argument for the entrypoint."""
         # These placeholders in the workflow file will be replaced with
         # concrete values by the GH action runner
-        run_name = (
-            "${{ github.run_id }}-${{ github.run_number }}-"
+        run_name = kwargs["pipeline_name"] + (
+            "-${{ github.run_id }}_${{ github.run_number }}_"
             "${{ github.run_attempt }}"
         )
         return [f"--{RUN_NAME_OPTION}", run_name]
 
     def get_run_name(self, pipeline_name: str) -> str:
         """Returns the pipeline run name."""
-        return self.entrypoint_args[RUN_NAME_OPTION]
+        return cast(str, self.entrypoint_args[RUN_NAME_OPTION])
