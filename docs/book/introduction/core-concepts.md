@@ -11,10 +11,11 @@ when using ZenML, starting with the most basic to things you'll only encounter
 when deploying your work to the cloud. At the very highest level, the workflow
 is as follows:
 
-- You write your code to define what you want to happen in your machine learning
+- You write your code as a pipeline to define what you want to happen in your machine learning
   workflow
 - You configure a ZenML Stack which is the infrastructure and setup that will
-  run your machine learning code
+  run your machine learning 
+- A stack consists of stack components that interact with your pipeline and its steps in various ways.
 - You can easily switch between different Stacks (i.e. infrastructure
   configurations) depending on your needs at any given moment.
 - You can use whatever you want as part of your Stacks as we're built as a
@@ -92,7 +93,8 @@ experiments through the metadata store.
 At a certain point, however, you'll want to do something that requires a bit
 more compute power - perhaps requiring GPUs for model training - or some custom
 functionality at which point you'll want to add some extra components to your
-stack.
+stack. These stacks will supercharge your steps and pipelines with extra functionality 
+which you can then use in production!
 
 ## Cloud Training, Deployment, Monitoring...
 
