@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to install or uninstall ZenML integrations via the CLI."""
 
 from typing import Optional, Tuple
 
@@ -120,9 +121,11 @@ def install(
     force: bool = False,
     old_force: bool = False,
 ) -> None:
-    """Installs the required packages for a given integration. If no integration
-    is specified all required packages for all integrations are installed
-    using pip"""
+    """Installs the required packages for a given integration.
+
+    If no integration is specified all required packages for all integrations
+    are installed using pip.
+    """
     from zenml.integrations.registry import integration_registry
 
     if old_force:
@@ -203,9 +206,11 @@ def install(
 def uninstall(
     integrations: Tuple[str], force: bool = False, old_force: bool = False
 ) -> None:
-    """Installs the required packages for a given integration. If no integration
-    is specified all required packages for all integrations are installed
-    using pip"""
+    """Installs the required packages for a given integration.
+
+    If no integration is specified all required packages for all integrations
+    are installed using pip.
+    """
     from zenml.integrations.registry import integration_registry
 
     if old_force:

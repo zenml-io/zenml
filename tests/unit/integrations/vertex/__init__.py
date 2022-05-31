@@ -11,16 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Alerters allow you to send alerts from within your pipeline.
-
-This is useful to immediately get notified when failures happen,
-and also for general monitoring / reporting.
-"""
-
-from zenml.alerter.alerter_step import alerter_step
-from zenml.alerter.base_alerter import BaseAlerter
-
-__all__ = [
-    "BaseAlerter",
-    "alerter_step",
-]
