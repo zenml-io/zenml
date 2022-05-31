@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
+
 import ipaddress
 import os
 import shutil
@@ -29,8 +30,8 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
+from zenml.utils.io_utils import get_global_config_directory
 
 logger = get_logger(__name__)
 GLOBAL_ZENML_SERVER_CONFIG_PATH = os.path.join(
