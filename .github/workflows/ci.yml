@@ -7,7 +7,7 @@ on:
     branches: ['main', 'develop']
     paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml', '**.md']
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, ready_for_review]
     paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml', '**.md']
 
 concurrency:
