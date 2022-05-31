@@ -28,6 +28,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Type,
     TypeVar,
     Union,
 )
@@ -51,7 +52,7 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config.profile_config import ProfileConfiguration
     from zenml.enums import StackComponentType
-    from zenml.integrations.integration import IntegrationMeta
+    from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService
@@ -217,7 +218,7 @@ def print_pydantic_models(
 
 
 def format_integration_list(
-    integrations: List[Tuple[str, "IntegrationMeta"]]
+    integrations: List[Tuple[str, Type["Integration"]]]
 ) -> List[Dict[str, str]]:
     """Formats a list of integrations into a List of Dicts.
 
@@ -230,12 +231,12 @@ def format_integration_list(
     """
     list_of_dicts = []
     for name, integration_impl in integrations:
-        is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
+        is_installed = integration_impl.check_installation()
         list_of_dicts.append(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
+                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
             }
         )
     return list_of_dicts
