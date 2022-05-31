@@ -1,6 +1,7 @@
 matrix:
   - name: python
     pipeline:
+      - pyspelling.filters.url:
       - pyspelling.filters.python:
       - pyspelling.filters.context:
           context_visible_first: true
@@ -32,6 +33,7 @@ matrix:
       wordlists:
         - .pyspelling-ignore-words
     pipeline:
+      - pyspelling.filters.url:
       - pyspelling.filters.context:
           context_visible_first: true
           escapes: \\[\\`~]
@@ -46,5 +48,5 @@ matrix:
             - open: "(?P<open>`+)"
               close: "(?P=open)"
     sources:
-      - "examples/**/*.md|docs/**/*.md"
+      - "examples/**/*.md|docs/**/*.md|!docs/book/drafts/**/*.*"
     default_encoding: utf-8
