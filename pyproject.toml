@@ -118,7 +118,6 @@ types-setuptools = "^57.4.2"
 types-six = "^1.16.2"
 types-termcolor = "^1.1.2"
 types-psutil = "^5.8.13"
-pytest-mock = "^3.6.1"
 flake8-docstrings = "^1.6.0"
 
 [build-system]
