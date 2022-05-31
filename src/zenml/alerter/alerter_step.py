@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""The alerter step allows you to post messages to registered alerter components."""
 
 from zenml.exceptions import DoesNotExistException
 from zenml.steps import StepContext, step
@@ -22,8 +22,7 @@ from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
 def alerter_step(
     config: BaseAlerterStepConfig, context: StepContext, message: str
 ) -> bool:
-    """Post a given message to the registered alerter component of the
-    active stack.
+    """Post a given message to the registered alerter component of the active stack.
 
     Args:
         config: Runtime configuration for the slack alerter.
@@ -34,9 +33,9 @@ def alerter_step(
         True if operation succeeded, else False.
 
     Raises:
-        ValueError if active stack has no slack alerter.
+        DoesNotExistException: If no alerter component is registered in the active stack.
+        ValueError: if active stack has no slack alerter.
     """
-
     # TODO: duplicate code with examples/feast_feature_store/run.py
     if not context.stack:
         raise DoesNotExistException(

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to manage or use your secrets via a SecretsManager stack component."""
 
 import getpass
 from typing import TYPE_CHECKING, List
@@ -109,7 +110,6 @@ def register_secret(
     `@password`.
 
     Examples:
-
     - register a secret with the name `secret_one` and configure its values
     interactively:
 
@@ -312,7 +312,6 @@ def update_secret(
     `@password`.
 
     Examples:
-
     - update a secret with the name `secret_one` and configure its values
     interactively:
 

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Class for artifact type registry."""
 
 from typing import TYPE_CHECKING, Any, Dict, Iterable, Tuple, Type
 
@@ -24,11 +25,10 @@ if TYPE_CHECKING:
 
 
 class ArtifactTypeRegistry(object):
-    """A registry to keep track of which datatypes map to which artifact
-    types"""
+    """A registry to keep track of which datatypes map to which artifact types."""
 
     def __init__(self) -> None:
-        """Initialization with an empty registry"""
+        """Initialization with an empty registry."""
         self._artifact_types: Dict[
             Type[Any], Tuple[Type["BaseArtifact"], ...]
         ] = {}
@@ -36,7 +36,7 @@ class ArtifactTypeRegistry(object):
     def register_integration(
         self, key: Type[Any], type_: Iterable[Type["BaseArtifact"]]
     ) -> None:
-        """Method to register an integration within the registry
+        """Method to register an integration within the registry.
 
         Args:
             key: any datatype
@@ -48,7 +48,7 @@ class ArtifactTypeRegistry(object):
     def get_artifact_type(
         self, key: Type[Any]
     ) -> Tuple[Type["BaseArtifact"], ...]:
-        """Method to extract the list of artifact types given the data type
+        """Method to extract the list of artifact types given the data type.
 
         Args:
             key: Indicates the type of object.

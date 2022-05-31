@@ -11,9 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-ZenML CLI
-==================
+"""ZenML CLI.
 
 The ZenML CLI tool is usually downloaded and installed via PyPI and a
 ``pip install zenml`` command. Please see the Installation & Setup
