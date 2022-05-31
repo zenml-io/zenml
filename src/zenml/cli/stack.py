@@ -929,8 +929,7 @@ def import_stack(
 
     # ask user for new stack_name if current one already exists
     repo = Repository()
-    registered_stacks = {stack_.name for stack_ in repo.stacks}
-    while stack_name in registered_stacks:
+    while stack_name in repo.stack_configurations:
         stack_name = click.prompt(
             f"Stack `{stack_name}` already exists. "
             f"Please choose a different name.",
