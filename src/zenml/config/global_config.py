@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to support ZenML GlobalConfiguration."""
+
 import json
 import logging
 import os
@@ -54,7 +56,12 @@ class GlobalConfigMetaClass(ModelMetaclass):
     """
 
     def __init__(cls, *args: Any, **kwargs: Any) -> None:
-        """Initialize a singleton class."""
+        """Initialize a singleton class.
+
+        Args:
+            *args: positional arguments
+            **kwargs: keyword arguments
+        """
         super().__init__(*args, **kwargs)
         cls._global_config: Optional["GlobalConfiguration"] = None
 
@@ -65,6 +72,13 @@ class GlobalConfigMetaClass(ModelMetaclass):
         the singleton functionality of the metaclass is bypassed: a new
         GlobalConfiguration instance is created and returned immediately and
         without saving it as the global GlobalConfiguration singleton.
+
+        Args:
+            *args: positional arguments
+            **kwargs: keyword arguments
+
+        Returns:
+            The global GlobalConfiguration instance.
         """
         if args or kwargs:
             return cast(
@@ -111,8 +125,7 @@ class GlobalConfiguration(
     def __init__(
         self, config_path: Optional[str] = None, **kwargs: Any
     ) -> None:
-        """Initializes a GlobalConfiguration object using values from the config
-        file.
+        """Initializes a GlobalConfiguration object using values from the config file.
 
         GlobalConfiguration is a singleton class: only one instance can exist.
         Calling this constructor multiple times will always yield the same
@@ -134,6 +147,7 @@ class GlobalConfiguration(
                 global configuration singleton instance is returned. Only used
                 to create configuration copies for transfer to different
                 runtime environments.
+            **kwargs: keyword arguments
         """
         self._config_path = config_path or self.default_config_directory()
         config_values = self._read_config()
@@ -170,7 +184,17 @@ class GlobalConfiguration(
 
     @validator("version")
     def _validate_version(cls, v: Optional[str]) -> Optional[str]:
-        """Validate the version attribute."""
+        """Validate the version attribute.
+
+        Args:
+            v: The version attribute value.
+
+        Returns:
+            The version attribute value.
+
+        Raises:
+            RuntimeError: If the version parsing fails.
+        """
         if v is None:
             return v
 
@@ -183,8 +207,12 @@ class GlobalConfiguration(
         return v
 
     def __setattr__(self, key: str, value: Any) -> None:
-        """Sets an attribute on the config and persists the new value in the
-        global configuration."""
+        """Sets an attribute on the config and persists the new value in the global configuration.
+
+        Args:
+            key: The attribute name.
+            value: The attribute value.
+        """
         super().__setattr__(key, value)
         if key.startswith("_"):
             return
@@ -197,6 +225,12 @@ class GlobalConfiguration(
         variable called `$(CONFIG_ENV_VAR_PREFIX)$(ATTRIBUTE_NAME)` and its
         value can be parsed to the attribute type, the value from this
         environment variable is returned instead.
+
+        Args:
+            key: The attribute name.
+
+        Returns:
+            The attribute value.
         """
         value = super().__getattribute__(key)
         if key.startswith("_"):
@@ -218,7 +252,6 @@ class GlobalConfiguration(
 
     def _migrate_config(self) -> None:
         """Migrates the global config to the latest version."""
-
         curr_version = version.parse(__version__)
         if self.version is None:
             logger.info(
@@ -264,6 +297,9 @@ class GlobalConfiguration(
 
         If the config file doesn't exist yet, this method falls back to reading
         options from a legacy config file or returns an empty dictionary.
+
+        Returns:
+            A dictionary containing the configuration options.
         """
         legacy_config_file = os.path.join(
             self.config_directory, LEGACY_CONFIG_FILE_NAME
@@ -302,15 +338,22 @@ class GlobalConfiguration(
 
     @staticmethod
     def default_config_directory() -> str:
-        """Path to the default global configuration directory."""
+        """Path to the default global configuration directory.
+
+        Returns:
+            The default global configuration directory.
+        """
         return utils.get_global_config_directory()
 
     def _config_file(self, config_path: Optional[str] = None) -> str:
         """Path to the file where global configuration options are stored.
 
         Args:
-            config_path: custom config file path. When not specified, the default
-                global configuration path is used.
+            config_path: custom config file path. When not specified, the
+                default global configuration path is used.
+
+        Returns:
+            The path to the global configuration file.
         """
         return os.path.join(config_path or self._config_path, "config.yaml")
 
@@ -319,8 +362,7 @@ class GlobalConfiguration(
         config_path: str,
         load_config_path: Optional[str] = None,
     ) -> "GlobalConfiguration":
-        """Create a copy of the global config, the active repository profile
-        and the active stack using a different configuration path.
+        """Create a copy of the global config, the active repository profile and the active stack using a different configuration path.
 
         This method is used to extract the active slice of the current state
         (consisting only of the global configuration, the active profile and the
@@ -336,6 +378,10 @@ class GlobalConfiguration(
                 path, e.g. when the global config copy is copied to a
                 container image. This will be reflected in the paths and URLs
                 encoded in the profile copy.
+
+        Returns:
+            A new global configuration object with the active configuration
+            copied to the specified path.
         """
         from zenml.repository import Repository
 
@@ -382,7 +428,11 @@ class GlobalConfiguration(
 
     @property
     def config_directory(self) -> str:
-        """Directory where the global configuration file is located."""
+        """Directory where the global configuration file is located.
+
+        Returns:
+            The directory where the global configuration file is located.
+        """
         return self._config_path
 
     def add_or_update_profile(
@@ -447,14 +497,12 @@ class GlobalConfiguration(
     def _add_and_activate_default_profile(
         self,
     ) -> Optional[ProfileConfiguration]:
-        """Creates and activates the default configuration profile if no
-        profiles are configured.
+        """Creates and activates the default configuration profile if no profiles are configured.
 
         Returns:
             The newly created default profile or None if other profiles are
             configured.
         """
-
         if self.profiles:
             return None
         logger.info("Creating default profile...")
