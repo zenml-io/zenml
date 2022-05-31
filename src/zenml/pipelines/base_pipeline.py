@@ -42,14 +42,14 @@ from zenml.exceptions import (
     StackValidationError,
 )
 from zenml.integrations.registry import integration_registry
-from zenml.io import fileio, utils
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.pipelines.schedule import Schedule
 from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
-from zenml.utils import yaml_utils
+from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 if TYPE_CHECKING:
@@ -390,7 +390,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # Path of the file where pipeline.run() was called. This is needed by
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
-        dag_filepath = utils.resolve_relative_path(
+        dag_filepath = io_utils.resolve_relative_path(
             inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
         )
         runtime_configuration = RuntimeConfiguration(

@@ -29,9 +29,9 @@ from zenml.config.profile_config import (
     DEFAULT_PROFILE_NAME,
     ProfileConfiguration,
 )
-from zenml.io import fileio, utils
+from zenml.io import fileio
 from zenml.logger import disable_logging, get_logger
-from zenml.utils import yaml_utils
+from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
 logger = get_logger(__name__)
@@ -114,7 +114,9 @@ class GlobalConfiguration(
         _config_path: Directory where the global config file is stored.
     """
 
-    user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
+    user_id: uuid.UUID = Field(
+        default_factory=uuid.uuid4, allow_mutation=False
+    )
     user_metadata: Optional[Dict[str, str]]
     analytics_opt_in: bool = True
     version: Optional[str]
@@ -202,7 +204,9 @@ class GlobalConfiguration(
             # If the version parsing fails, it returns a `LegacyVersion` instead.
             # Check to make sure it's an actual `Version` object which represents
             # a valid version.
-            raise RuntimeError(f"Invalid version in global configuration: {v}.")
+            raise RuntimeError(
+                f"Invalid version in global configuration: {v}."
+            )
 
         return v
 
@@ -330,7 +334,7 @@ class GlobalConfiguration(
         logger.debug(f"Writing config to {config_file}")
 
         if not fileio.exists(config_file):
-            utils.create_dir_recursive_if_not_exists(
+            io_utils.create_dir_recursive_if_not_exists(
                 config_path or self.config_directory
             )
 
@@ -343,7 +347,7 @@ class GlobalConfiguration(
         Returns:
             The default global configuration directory.
         """
-        return utils.get_global_config_directory()
+        return io_utils.get_global_config_directory()
 
     def _config_file(self, config_path: Optional[str] = None) -> str:
         """Path to the file where global configuration options are stored.
