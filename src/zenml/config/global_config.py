@@ -114,9 +114,7 @@ class GlobalConfiguration(
         _config_path: Directory where the global config file is stored.
     """
 
-    user_id: uuid.UUID = Field(
-        default_factory=uuid.uuid4, allow_mutation=False
-    )
+    user_id: uuid.UUID = Field(default_factory=uuid.uuid4, allow_mutation=False)
     user_metadata: Optional[Dict[str, str]]
     analytics_opt_in: bool = True
     version: Optional[str]
@@ -204,9 +202,7 @@ class GlobalConfiguration(
             # If the version parsing fails, it returns a `LegacyVersion` instead.
             # Check to make sure it's an actual `Version` object which represents
             # a valid version.
-            raise RuntimeError(
-                f"Invalid version in global configuration: {v}."
-            )
+            raise RuntimeError(f"Invalid version in global configuration: {v}.")
 
         return v
 
