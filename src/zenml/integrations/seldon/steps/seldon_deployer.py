@@ -34,7 +34,7 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils import io_utils as io_utils
+from zenml.utils import io_utils
 
 logger = get_logger(__name__)
 
