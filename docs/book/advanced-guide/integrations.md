@@ -9,7 +9,7 @@ for many different ZenML abstractions.
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with powerful integrations on multiple
-[MLOps stacks](../../introduction/core-concepts.md). There are lots of moving parts
+[MLOps stacks](../introduction/core-concepts.md). There are lots of moving parts
 for all the MLOps tooling and infrastructure you require for ML in production
 and ZenML aims to bring it all together under one roof.
 
@@ -57,7 +57,8 @@ These are the third-party integrations that ZenML currently supports:
 | Plotly                    | ✅      | Visualizer             | For Pipeline and PipelineRun visualization objects.                                           | [lineage](https://github.com/zenml-io/zenml/tree/main/examples/lineage)                                                                                  |
 | PyTorch                   | ✅      | Training               |                                                                                               | [pytorch](https://github.com/zenml-io/zenml/tree/main/examples/pytorch)                                                                                  |
 | PyTorch Lightning         | ✅      | Training               |                                                                                               |                                                                                                                                                          |
-| Vertex                    | ✅      | Cloud                  | Vertex AI as a ZenML step operator.                                                           | [vertex_step_operator](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training)                                               |
+| Vertex                    | ✅      | Step Operator          | Vertex AI as a ZenML step operator.                                                           | [vertex_step_operator](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training)                                               |
+| Vertex                    | ✅      | Orchestrator           | Execute your ZenML pipelines using Vertex AI Pipelines                                        |
 | S3                        | ✅      | Artifact Store         | Use S3 buckets as ZenML artifact stores.                                                      | [caching chapter](https://docs.zenml.io/v/docs/guides/functional-api/caching)                                                                            |
 | Sagemaker                 | ✅      | Cloud                  | Sagemaker as a ZenML step operator.                                                           | [sagemaker_step_operator](https://github.com/zenml-io/zenml/tree/main/examples/step_operator_remote_training)                                            |
 | scikit-learn              | ✅      | Training               |                                                                                               | [caching chapter](https://docs.zenml.io/v/docs/guides/functional-api/caching)                                                                            |
@@ -76,5 +77,5 @@ These are the third-party integrations that ZenML currently supports:
 There are many tools in the ML / MLOps field. We have made an initial
 prioritization of which tools to support with integrations, but we also welcome
 community contributions. Check our
-[Contributing Guide](../../../../CONTRIBUTING.md) for more details on how best to
+[Contributing Guide](../../../CONTRIBUTING.md) for more details on how best to
 contribute.

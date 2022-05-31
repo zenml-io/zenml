@@ -171,7 +171,7 @@ global configuration: the _Repository_ active Profile and active Stack. These
 settings are in effect when ZenML code is executed while the current working
 directory is the _Repository_ root or one of its sub-folders. For more information
 on setting the active Profile and Stack local to a _Repository_, please visit
-the [ZenML Profiles](./profiles.md) section.
+the [ZenML Profiles](../collaborate/profiles.md) section.
 
 A ZenML _Repository_ is easily identifiable by the presence of a (hidden) `.zen`
 directory located in the root folder. The `.zen` directory contains a single

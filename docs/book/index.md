@@ -23,14 +23,14 @@ standard abstraction to write and build your workflows.
 Every journey has to start somewhere, if you are new to ZenML, you might want to
 get acquainted with the [core concepts](introduction/core-concepts.md) first, 
 to understand what makes ZenML so special. Afterwards, you could jump right 
-into our [developer guide](developer-guide/getting-started/README.md) that will 
+into our [developer guide](developer-guide/installation.md) that will 
 take you from zero to hero in no time and explain the necessary knowledge of 
 **how to use ZenML**.
 
 ## **Stacking** - Customize your Stack
 
 Already ran your first pipelines and want to know about integrations and
-production use cases? Our [Advanced Guides](advanced-guide/advanced-zenml/README.md) are the 
+production use cases? Our [Advanced Guides](advanced-guide/integrations.md) are the 
 right place for you. You'll find some more detailed descriptions of specific
 use cases and features here. This is where you'll learn how to take your 
 MLOps stack from basic to fully loaded.
@@ -40,7 +40,7 @@ MLOps stack from basic to fully loaded.
 ZenML does not natively support your favorite tool? Don't you worry! ZenML is 
 built from the ground up with extensibility in mind. Find out how to integrate 
 other tools or proprietary on-prem solutions for you and your team in our 
-section on [Stack Components](extending-zenml/stacks-components-flavors.md). 
+section on [Stack Components](advanced-guide/stacks-components-flavors.md). 
 
 ## **Collaborating** - Work together with your team
 

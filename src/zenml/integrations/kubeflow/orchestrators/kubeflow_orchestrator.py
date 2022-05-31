@@ -66,8 +66,7 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
-from zenml.stack import Stack, StackValidator
-from zenml.steps import BaseStep
+from zenml.stack import StackValidator
 from zenml.utils import networking_utils
 from zenml.utils.docker_utils import get_image_digest
 from zenml.utils.io_utils import get_global_config_directory
@@ -76,6 +75,8 @@ from zenml.utils.source_utils import get_source_root_path
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
     from zenml.runtime_configuration import RuntimeConfiguration
+    from zenml.stack import Stack
+    from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
 
@@ -189,7 +190,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Validates that the stack contains a container registry and that
         requirements are met for local components."""
 
-        def _validate_local_requirements(stack: Stack) -> Tuple[bool, str]:
+        def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
 
             container_registry = stack.container_registry
 
@@ -499,7 +500,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
 
     def prepare_or_run_pipeline(
         self,
-        sorted_steps: List[BaseStep],
+        sorted_steps: List["BaseStep"],
         pipeline: "BasePipeline",
         pb2_pipeline: Pb2Pipeline,
         stack: "Stack",
