@@ -2,7 +2,7 @@
 set -e
 set -x
 
-DOCSTRING_SRC=${1:-"src/zenml/alerter src/zenml/artifact_stores src/zenml/artifacts src/zenml/config"}
+DOCSTRING_SRC=${1:-"src/zenml/alerter src/zenml/artifact_stores src/zenml/artifacts src/zenml/config src/zenml/entrypoints src/zenml/experiment_trackers"}
 
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
