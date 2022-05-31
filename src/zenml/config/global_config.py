@@ -408,13 +408,27 @@ class GlobalConfiguration(
             track_analytics=False,
             skip_migration=True,
         )
-        # transfer the active stack to the new store. we disable logs for this
-        # call so there is no confusion about newly registered stacks/stack
-        # components
+        # transfer the active stack and all necessary flavors to the new store.
+        # we disable logs for this call so there is no confusion about newly registered
+        # stacks/components/flavors
         with disable_logging(logging.INFO):
-            store.register_stack(
-                repo.zen_store.get_stack(repo.active_stack_name)
-            )
+            active_stack = repo.zen_store.get_stack(repo.active_stack_name)
+            store.register_stack(active_stack)
+
+            for component in active_stack.components:
+                try:
+                    flavor = repo.zen_store.get_flavor_by_name_and_type(
+                        flavor_name=component.flavor,
+                        component_type=component.type,
+                    )
+                    store.create_flavor(
+                        source=flavor.source,
+                        name=flavor.name,
+                        stack_component_type=flavor.type,
+                    )
+                except KeyError:
+                    # not a custom flavor, no need to register anything
+                    pass
 
         # if a custom load config path is specified, use it to replace the
         # current store local path in the profile URL
