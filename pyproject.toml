@@ -89,6 +89,9 @@ typing-extensions = ">=3.7.4"
 
 # pytest dev dependencies
 pytest-randomly = "^3.10.1"
+pytest-mock = "^3.6.1"
+codespell = "^2.1.0"
+darglint = "^1.8.1"
 pytest-clarity = "^1.0.1"
 
 # mkdocs including plugins
@@ -115,8 +118,7 @@ types-setuptools = "^57.4.2"
 types-six = "^1.16.2"
 types-termcolor = "^1.1.2"
 types-psutil = "^5.8.13"
-pytest-mock = "^3.6.1"
-codespell = "^2.1.0"
+flake8-docstrings = "^1.6.0"
 
 [build-system]
 requires = ["poetry-core"]
