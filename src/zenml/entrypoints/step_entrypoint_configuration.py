@@ -49,6 +49,20 @@ INPUT_ARTIFACT_SOURCES_OPTION = "input_artifact_sources"
 MATERIALIZER_SOURCES_OPTION = "materializer_sources"
 
 
+def _b64_encode(input_: str) -> str:
+    """Returns a base 64 encoded string of the input string."""
+    json_bytes = input_.encode()
+    encoded_bytes = base64.b64encode(json_bytes)
+    return encoded_bytes.decode()
+
+
+def _b64_decode(input_: str) -> str:
+    """Returns a decoded string of the base 64 encoded input string."""
+    encoded_bytes = input_.encode()
+    decoded_bytes = base64.b64decode(encoded_bytes)
+    return decoded_bytes.decode()
+
+
 class StepEntrypointConfiguration(ABC):
     """Abstract base class for entrypoint configurations that run a single step.
 
@@ -244,10 +258,6 @@ class StepEntrypointConfiguration(ABC):
             # Importable source pointing to the entrypoint configuration class
             # that should be used inside the entrypoint.
             ENTRYPOINT_CONFIG_SOURCE_OPTION,
-            # Json representation of the parent pipeline of the step that
-            # will be executed. This is needed in order to create the tfx
-            # launcher in the entrypoint that will run the ZenML step.
-            PIPELINE_JSON_OPTION,
             # Importable source pointing to the python module that was executed
             # to run a pipeline. This will be imported inside the entrypoint to
             # make sure all custom materializer/artifact types are registered.
@@ -256,14 +266,19 @@ class StepEntrypointConfiguration(ABC):
             # run inside the entrypoint. This will be used to recreate the tfx
             # executor class that is required to run the step function.
             STEP_SOURCE_OPTION,
-            # Dictionary mapping the step input names to importable sources
-            # pointing to `zenml.artifacts.base_artifact.BaseArtifact`
-            # subclasses. These classes are needed to recreate the tfx executor
+            # Base64 encoded json representation of the parent pipeline of
+            # the step that will be executed. This is needed in order to create
+            # the tfx launcher in the entrypoint that will run the ZenML step.
+            PIPELINE_JSON_OPTION,
+            # Base64 encoded json dictionary mapping the step input names to
+            # importable sources pointing to
+            # `zenml.artifacts.base_artifact.BaseArtifact` subclasses.
+            # These classes are needed to recreate the tfx executor
             # class and can't be inferred as we do not have access to the
             # output artifacts from previous steps.
             INPUT_ARTIFACT_SOURCES_OPTION,
-            # Dictionary mapping the step output names to importable sources
-            # pointing to
+            # Base64 encoded json dictionary mapping the step output names to
+            # importable sources pointing to
             # `zenml.materializers.base_materializer.BaseMaterializer`
             # subclasses. These classes are needed to recreate the tfx executor
             # class if custom materializers were specified for the step.
@@ -332,6 +347,9 @@ class StepEntrypointConfiguration(ABC):
 
             return f"{module_source}.{class_source}"
 
+        # Resolve the entrypoint config source
+        entrypoint_config_source = _resolve_class(cls)
+
         # Resolve the step class
         step_source = _resolve_class(step.__class__)
 
@@ -348,27 +366,23 @@ class StepEntrypointConfiguration(ABC):
             for output_name, materializer_class in materializer_classes.items()
         }
 
-        # Encode the pb2_pipeline JSON to a base64 string. This avoids issues
-        # when compiling a intermediary representation of the pipeline.
-        encoded_pb2_pipeline_json = base64.b64encode(
-            json_format.MessageToJson(pb2_pipeline).encode("utf-8")
-        ).hex()
-
         # See `get_entrypoint_options()` for an in -depth explanation of all
         # these arguments.
         zenml_arguments = [
             f"--{ENTRYPOINT_CONFIG_SOURCE_OPTION}",
-            source_utils.resolve_class(cls),
-            f"--{PIPELINE_JSON_OPTION}",
-            encoded_pb2_pipeline_json,
+            entrypoint_config_source,
             f"--{MAIN_MODULE_SOURCE_OPTION}",
             main_module_source,
             f"--{STEP_SOURCE_OPTION}",
             step_source,
+            # Base64 encode the jsons to make sure there are no issues when
+            # passing these arguments
+            f"--{PIPELINE_JSON_OPTION}",
+            _b64_encode(json_format.MessageToJson(pb2_pipeline)),
             f"--{INPUT_ARTIFACT_SOURCES_OPTION}",
-            json.dumps(input_artifact_sources),
+            _b64_encode(json.dumps(input_artifact_sources)),
             f"--{MATERIALIZER_SOURCES_OPTION}",
-            json.dumps(materializer_sources),
+            _b64_encode(json.dumps(materializer_sources)),
         ]
 
         custom_arguments = cls.get_custom_entrypoint_arguments(
@@ -501,19 +515,19 @@ class StepEntrypointConfiguration(ABC):
         # Extract and parse all the entrypoint arguments required to execute
         # the step. See `get_entrypoint_options()` for an in-depth explanation
         # of all these arguments.
-        pb2_pipeline_json = base64.b64decode(
-            bytes.fromhex(self.entrypoint_args[PIPELINE_JSON_OPTION])
-        ).decode("utf-8")
         pb2_pipeline = Pb2Pipeline()
+        pb2_pipeline_json = _b64_decode(
+            self.entrypoint_args[PIPELINE_JSON_OPTION]
+        )
         json_format.Parse(pb2_pipeline_json, pb2_pipeline)
 
         main_module_source = self.entrypoint_args[MAIN_MODULE_SOURCE_OPTION]
         step_source = self.entrypoint_args[STEP_SOURCE_OPTION]
         input_artifact_sources = json.loads(
-            self.entrypoint_args[INPUT_ARTIFACT_SOURCES_OPTION]
+            _b64_decode(self.entrypoint_args[INPUT_ARTIFACT_SOURCES_OPTION])
         )
         materializer_sources = json.loads(
-            self.entrypoint_args[MATERIALIZER_SOURCES_OPTION]
+            _b64_decode(self.entrypoint_args[MATERIALIZER_SOURCES_OPTION])
         )
 
         # Get some common values that will be used throughout the remainder of

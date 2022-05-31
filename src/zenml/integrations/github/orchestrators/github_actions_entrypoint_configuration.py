@@ -30,7 +30,7 @@ class GithubActionsEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_custom_entrypoint_arguments(
-        cls, step: BaseStep, *args: Any, **kwargs: Any
+        cls, step: BaseStep, **kwargs: Any
     ) -> List[str]:
         """"""
         return [f"--{RUN_NAME_OPTION}", kwargs[RUN_NAME_OPTION]]

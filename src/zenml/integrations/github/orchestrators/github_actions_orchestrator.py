@@ -41,7 +41,8 @@ from zenml.utils import docker_utils, source_utils
 
 logger = get_logger(__name__)
 
-# TODO: b64 encoding
+GITHUB_URL_PREFIXES = ["git@github.com", "https://github.com"]
+
 # TODO: run name
 # TODO: secrets
 # TODO: container registry user/pw
@@ -51,31 +52,41 @@ class GithubActionsOrchestrator(BaseOrchestrator):
     prevent_dirty_repository: bool = True
     push: bool = False
 
-    _git_repo: Repo
+    _git_repo: Optional[Repo] = None
 
     # Class configuration
     FLAVOR: ClassVar[str] = GITHUB_ORCHESTRATOR_FLAVOR
 
-    def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs)
-        try:
-            self._git_repo = Repo(search_parent_directories=True)
-        except InvalidGitRepositoryError:
-            raise RuntimeError("No git repo found")
+    @property
+    def git_repo(self) -> Repo:
+        if not self._git_repo:
+            try:
+                self._git_repo = Repo(search_parent_directories=True)
+            except InvalidGitRepositoryError:
+                raise RuntimeError(
+                    "Unable to find git repository in current working "
+                    f"directory {os.getcwd()} or its parent directories."
+                )
 
-        remote_url = self._git_repo.remote().url
+            remote_url = self.git_repo.remote().url
+            is_github_repo = any(
+                remote_url.startswith(prefix) for prefix in GITHUB_URL_PREFIXES
+            )
+            if not is_github_repo:
+                raise RuntimeError(
+                    f"The remote URL '{remote_url}' of your git repo "
+                    f"({self._git_repo.git_dir}) is not pointing to a GitHub "
+                    "repository. The GitHub Actions orchestrator runs "
+                    "pipelines using GitHub Actions and therefore only works "
+                    "with GitHub repositories."
+                )
 
-        if remote_url.startswith("git@github.com") or remote_url.startswith(
-            "https://github.com"
-        ):
-            pass
-        else:
-            raise RuntimeError("Not a github repo")
+        return self._git_repo
 
     @property
     def workflow_directory(self) -> str:
-        """Returns path to a directory in which the github workflows are stored."""
-        return os.path.join(self._git_repo.working_dir, ".github", "workflows")
+        """Returns path to the github workflows directory."""
+        return os.path.join(self.git_repo.working_dir, ".github", "workflows")
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -84,11 +95,25 @@ class GithubActionsOrchestrator(BaseOrchestrator):
             assert container_registry is not None
 
             if container_registry.is_local:
-                return False, ""
+                return False, (
+                    "The GitHub Actions orchestrator requires a remote "
+                    f"container registry, but the '{container_registry.name}' "
+                    "container registry of your active stack points to a local "
+                    f"URI '{container_registry.uri}'. Please make sure stacks "
+                    "with a GitHub Actions orchestrator always contain remote "
+                    "container registries."
+                )
 
             for component in stack.components.values():
                 if component.local_path:
-                    return False, ""
+                    return False, (
+                        "The GitHub Actions orchestrator runs pipelines on "
+                        "remote GitHub Actions runners, but the "
+                        f"'{component.name}' {component.TYPE.value} of your "
+                        "active stack is a local component. Please make sure "
+                        "to only use remote stack components in combination "
+                        "with the GitHub Actions orchestrator. "
+                    )
 
             return True, ""
 
@@ -114,13 +139,17 @@ class GithubActionsOrchestrator(BaseOrchestrator):
         """Builds a docker image for the current environment and uploads it to
         a container registry if configured.
         """
-        if self.prevent_dirty_repository and self._git_repo.is_dirty(
+        if self.prevent_dirty_repository and self.git_repo.is_dirty(
             untracked_files=True
         ):
-            raise RuntimeError("")
+            raise RuntimeError(
+                "Trying to run a pipeline from within a dirty git repository."
+                "If you want this orchestrator to skip the dirty repo check in "
+                f"the future, run\n `zenml orchestrator update {self.name} "
+                "--prevent_dirty_repository=false`"
+            )
 
         image_name = self.get_docker_image_name(pipeline.name)
-
         requirements = {*stack.requirements(), *pipeline.requirements}
 
         logger.debug(
@@ -160,7 +189,7 @@ class GithubActionsOrchestrator(BaseOrchestrator):
         if schedule:
             # TODO: warn that it only works once merged to the main branch
             # TODO: only cron schedule, >= 5 min
-            raise
+            raise NotImplementedError
         else:
             # The pipeline should only run once. The only fool-proof way to
             # only execute a workflow once seems to be running on specific tags.
@@ -192,7 +221,7 @@ class GithubActionsOrchestrator(BaseOrchestrator):
                 image_name,
                 *GithubActionsEntrypointConfiguration.get_entrypoint_command(),
                 *GithubActionsEntrypointConfiguration.get_entrypoint_arguments(
-                    step=step, pb2_pipeline=pb2_pipeline
+                    step=step, pb2_pipeline=pb2_pipeline, run_name=run_name
                 ),
             ]
             docker_run_step = {"run": " ".join(command)}
@@ -209,11 +238,24 @@ class GithubActionsOrchestrator(BaseOrchestrator):
 
         fileio.makedirs(self.workflow_directory)
         yaml_utils.write_yaml(workflow_path, workflow_dict, sort_keys=False)
+        logger.info("Wrote GitHub workflow file to %s", workflow_path)
 
         if self.push:
             # Add, commit and push the pipeline worflow yaml
-            self._git_repo.index.add(workflow_path)
-            self._git_repo.index.commit(
-                f"[ZenML GitHub Actions Orchestrator] Add github workflow for pipeline {pipeline.name}."
+            self.git_repo.index.add(workflow_path)
+            self.git_repo.index.commit(
+                "[ZenML GitHub Actions Orchestrator] Add github workflow for "
+                f"pipeline {pipeline.name}."
             )
-            self._git_repo.remote().push()
+            self.git_repo.remote().push()
+        else:
+            logger.info(
+                "Automatically committing and pushing is disabled for this "
+                "orchestrator. To run the pipeline, you'll have to commit and "
+                "push the workflow file %s manually.\n"
+                "If you want to update this orchestrator to automatically "
+                "commit and push in the future, run "
+                "`zenml orchestrator update %s --push=true`",
+                workflow_path,
+                self.name,
+            )
