@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Abstract base class for entrypoint configurations that run a single step."""
+
 import argparse
 import base64
 import importlib
@@ -132,14 +134,16 @@ class StepEntrypointConfiguration(ABC):
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
-        """Custom options for this entrypoint configuration that are
-        required in addition to the default ZenML ones.
+        """Custom options for this entrypoint configuration that are required in addition to the default ZenML ones.
 
         The options returned by this method should be strings like "my_option"
         (no "--" prefix). When the entrypoint is executed, it will parse the
         command line arguments and expect all options to be passed in the form
         "--my_option my_value". You'll be able to retrieve the argument
         value by calling `self.entrypoint_args["my_option"]`.
+
+        Returns:
+            A set of strings with the custom options.
         """
         return set()
 
@@ -158,6 +162,11 @@ class StepEntrypointConfiguration(ABC):
         Args:
             step: The step that the entrypoint should run using the arguments
                 returned by this method.
+            **kwargs: Additional keyword arguments that are passed to the
+                `get_custom_entrypoint_options()` method.
+
+        Returns:
+            A list of strings with the arguments.
         """
         return []
 
@@ -177,11 +186,16 @@ class StepEntrypointConfiguration(ABC):
             to the entrypoint (make sure to also return it from
             `get_custom_entrypoint_options()`) and use it like this:
             `return self.entrypoint_args["run_name_option"]`
+
+        Args:
+            pipeline_name: The name of the pipeline.
+
+        Returns:
+            The run name.
         """
 
     def setup(self, pipeline_name: str, step_name: str) -> None:
-        """Runs setup code that needs to run before any user code is imported
-        or the step is executed.
+        """Runs setup code that needs to run before any user code is imported or the step is executed.
 
         Subclasses should overwrite this method if they need to perform any
         additional setup, but should in most cases include a
@@ -228,17 +242,22 @@ class StepEntrypointConfiguration(ABC):
         **Note**: This command won't work on its own but needs to be called with
             the arguments returned by the `get_entrypoint_arguments(...)`
             method of this class.
+
+        Returns:
+            A list of strings with the command.
         """
         return DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
-        """Gets all the options that are required when running an entrypoint
-        with this configuration.
+        """Gets all the options that are required when running an entrypoint with this configuration.
 
         **Note**: Subclasses should implement the
             `get_custom_entrypoint_options()` class method instead of this
             one if they require custom options.
+
+        Returns:
+            A set of strings with all the options that are required when running.
         """
         zenml_options = {
             # Importable source pointing to the entrypoint configuration class
@@ -299,9 +318,8 @@ class StepEntrypointConfiguration(ABC):
             **kwargs: Custom options that will be passed to
                 `get_custom_entrypoint_arguments()`.
 
-        Raises:
-            ValueError: If the argument format is incorrect or one of the
-                options is missing.
+        Returns:
+            A list of strings with the arguments.
         """
         # Get an importable source of the user main module. If the `__main__`
         # module is not the actual module that a user executed (e.g. if we're
@@ -317,8 +335,13 @@ class StepEntrypointConfiguration(ABC):
 
         # TODO [ENG-887]: Move this method to source utils
         def _resolve_class(class_: Type[Any]) -> str:
-            """Resolves the input class in a way that it is importable inside
-            the entrypoint.
+            """Resolves the input class in a way that it is importable inside the entrypoint.
+
+            Args:
+                class_: The class to resolve.
+
+            Returns:
+                The importable source of the class.
             """
             source = source_utils.resolve_class(class_)
             module_source, class_source = source.rsplit(".", 1)
@@ -401,9 +424,9 @@ class StepEntrypointConfiguration(ABC):
         Returns:
             Dictionary of the parsed arguments.
 
-        Raises:
+        Raise:
             ValueError: If the parsing failed because the argument format is
-                incorrect or one of the options is missing.
+                        incorrect or one of the options is missing.
         """
         # Argument parser subclass that suppresses some argparse logs and
         # raises an exception instead of the `sys.exit()` call
@@ -440,6 +463,10 @@ class StepEntrypointConfiguration(ABC):
                 source strings of the artifact class to use for that input.
             materializer_sources: Dictionary mapping step output names to a
                 source string of the materializer class to use for that output.
+
+        Raises:
+            TypeError: If the step does not have a valid input or output
+                specification.
         """
         # Import the input artifact classes from the given sources
         input_spec = {}
@@ -492,6 +519,9 @@ class StepEntrypointConfiguration(ABC):
         methods instead. If you still need to customize the functionality of
         this method, make sure to still include all the existing logic as your
         step won't be executed properly otherwise.
+
+        Raises:
+            TypeError: If the arguments passed to the entrypoint are invalid.
         """
         # Make sure this entrypoint does not run an entire pipeline when
         # importing user modules. This could happen if the `pipeline.run()` call
