@@ -33,13 +33,8 @@ class GitHubIntegration(Integration):
     REQUIREMENTS = []
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        pass
-
-    @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the AWS integration."""
+        """Declare the stack component flavors for the GitHub integration."""
         return [
             FlavorWrapper(
                 name=GITHUB_ORCHESTRATOR_FLAVOR,
@@ -49,7 +44,7 @@ class GitHubIntegration(Integration):
             ),
             FlavorWrapper(
                 name=GITHUB_SECRET_MANAGER_FLAVOR,
-                source="zenml.integrations.aws.secrets_manager.GithubSecretsManager",
+                source="zenml.integrations.github.secrets_managers.GithubSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),

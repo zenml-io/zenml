@@ -79,6 +79,12 @@ class GithubActionsOrchestrator(BaseOrchestrator):
 
     @property
     def git_repo(self) -> Repo:
+        """Returns the git repository for the current working directory.
+
+        Raises:
+            RuntimeError: If there is no git repository for the current working
+                directory or the repository remote is not pointing to GitHub.
+        """
         if not self._git_repo:
             try:
                 self._git_repo = Repo(search_parent_directories=True)
@@ -201,6 +207,7 @@ class GithubActionsOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
+        """Writes a GitHub Action workflow yaml and optionally pushes it."""
         workflow_path = os.path.join(
             self.workflow_directory, f"{pipeline.name}.yaml"
         )
