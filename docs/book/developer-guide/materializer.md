@@ -8,7 +8,7 @@ step should be considered as its very own process that reads and writes its
 inputs and outputs from and to the artifact store. This is where
 **materializers** come into play.
 
-### What is a materializer?
+# What is a materializer?
 
 A materializer dictates how a given artifact can be written to and retrieved
 from the artifact store. It contains all serialization and deserialization
@@ -77,7 +77,7 @@ Each materializer has `ASSOCIATED_TYPES` and `ASSOCIATED_ARTIFACT_TYPES`.
   etc. This is simply a tag to query certain artifact types in the
   post-execution workflow.
 
-### Extending the `BaseMaterializer`
+# Writing a custom materializer
 
 Let's say you have a custom class called `MyObject` that flows between two steps
 in a pipeline:
@@ -198,7 +198,7 @@ Step `my_second_step` has finished in 0.048s.
 Pipeline run `first_pipeline-22_Apr_22-10_58_51_135729` has finished in 0.153s.
 ```
 
-### Summary in Code
+## Summary in Code
 
 <details>
     <summary>Code Example of this Section</summary>
