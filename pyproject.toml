@@ -117,7 +117,6 @@ types-six = "^1.16.2"
 types-termcolor = "^1.1.2"
 types-psutil = "^5.8.13"
 pytest-mock = "^3.6.1"
-codespell = "^2.1.0"
 
 [build-system]
 requires = ["poetry-core"]

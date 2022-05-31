@@ -33,7 +33,6 @@ matrix:
         - .pyspelling-ignore-words
     pipeline:
       - pyspelling.filters.context:
-      - pyspelling.filters.context:
           context_visible_first: true
           escapes: \\[\\`~]
           delimiters:
