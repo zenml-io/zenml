@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 
 import os
+import re
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Tuple
 
 from git.exc import InvalidGitRepositoryError
@@ -208,9 +209,36 @@ class GithubActionsOrchestrator(BaseOrchestrator):
 
         schedule = runtime_configuration.schedule
         if schedule:
-            # TODO: warn that it only works once merged to the main branch
-            # TODO: only cron schedule, >= 5 min
-            raise NotImplementedError
+            if not schedule.cron_expression:
+                raise ValueError(
+                    "GitHub Action workflows can only be scheduled using cron "
+                    "expressions and not using a periodic schedule. If you "
+                    "want to schedule pipelines using this GitHub Action "
+                    "orchestrator, please include a cron expression in your "
+                    "schedule object."
+                )
+
+            # GitHub workflows requires a schedule interval of at least 5
+            # minutes. Invalid cron expressions would be something like
+            # `*/3 * * * *` (all stars except the first part of the expression,
+            # which will have the format `*/minute_interval`)
+            if re.fullmatch(r"\*/[1-4]( \*){4,}", schedule.cron_expression):
+                raise ValueError(
+                    "GitHub workflows requires a schedule interval of at "
+                    "least 5 minutes which is incompatible with your cron "
+                    "expression '{schedule.cron_expression}'."
+                )
+
+            logger.warning(
+                "GitHub only runs scheduled workflows once the "
+                "workflow file is merged to the default branch of the "
+                "repository (https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches#about-the-default-branch). "
+                "Please make sure to merge your current branch into the "
+                "default branch for this scheduled pipeline to run."
+            )
+            workflow_dict["on"] = {
+                "schedule": {"cron": schedule.cron_expression}
+            }
         else:
             # The pipeline should only run once. The only fool-proof way to
             # only execute a workflow once seems to be running on specific tags.

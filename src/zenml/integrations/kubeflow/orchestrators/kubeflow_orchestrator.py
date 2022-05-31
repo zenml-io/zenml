@@ -685,6 +685,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
                     job_name=runtime_configuration.run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
+                    cron_expression=schedule.cron_expression,
                     start_time=schedule.utc_start_time,
                     end_time=schedule.utc_end_time,
                     interval_second=schedule.interval_second.seconds,

@@ -13,15 +13,17 @@
 #  permissions and limitations under the License.
 
 import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 
 
 class Schedule(BaseModel):
     """Class for defining a pipeline schedule.
 
     Attributes:
+        cron_expression: Cron expression for the pipeline schedule. If a value
+            for this is set it takes precendence over the start time + interval.
         start_time: Datetime object to indicate when to start the schedule.
         end_time: Datetime object to indicate when to end the schedule.
         interval_second: Datetime timedelta indicating the seconds between two
@@ -35,14 +37,34 @@ class Schedule(BaseModel):
             internally, you should turn catchup off to avoid duplicate backfill.
     """
 
-    start_time: datetime.datetime
+    cron_expression: Optional[str] = None
+    start_time: Optional[datetime.datetime] = None
     end_time: Optional[datetime.datetime] = None
-    interval_second: datetime.timedelta
+    interval_second: Optional[datetime.timedelta] = None
     catchup: bool = False
 
+    @root_validator
+    def _ensure_cron_or_periodic_schedule_configured(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Ensures that the cron expression or start time + inverval are set."""
+
+        if "cron_expression" in values or (
+            "start_time" in values and "interval_second" in values
+        ):
+            return values
+
+        raise ValueError(
+            "Either a cron expression or start time and interval seconds need "
+            "to be set for a valid schedule."
+        )
+
     @property
-    def utc_start_time(self) -> str:
-        """ISO-formatted string of the UTC start time."""
+    def utc_start_time(self) -> Optional[str]:
+        """Optional ISO-formatted string of the UTC start time."""
+        if not self.start_time:
+            return None
+
         return self.start_time.astimezone(datetime.timezone.utc).isoformat()
 
     @property
