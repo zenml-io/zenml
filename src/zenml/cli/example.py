@@ -64,7 +64,7 @@ class LocalExample:
 
         The `__init__.py` file is excluded from this list.
         """
-        py_in_dir = zenml.io.utils.find_files(str(self.path), "*.py")
+        py_in_dir = io_utils.find_files(str(self.path), "*.py")
         py_files = []
         for file in py_in_dir:
             # Make sure only files directly in dir are considered, not files
@@ -107,9 +107,7 @@ class LocalExample:
         Returns:
             True if no setup.sh file in self.path, False else
         """
-        return not zenml.io.fileio.exists(
-            os.path.join(str(self.path), "setup.sh")
-        )
+        return not fileio.exists(os.path.join(str(self.path), "setup.sh"))
 
     @property
     def executable_python_example(self) -> str:
