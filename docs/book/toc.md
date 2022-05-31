@@ -11,7 +11,7 @@
 * [Steps & Pipelines](developer-guide/steps-and-pipelines.md)
 * [Runtime Configuration](developer-guide/runtime-configuration.md)
 * [Post-Execution Workflow](developer-guide/post-execution-workflow.md)
-* [Materializer](developer-guide/materializer.md)
+* [Write your own Materializer](developer-guide/materializer.md)
 * [Caching](developer-guide/caching.md)
 * [Step Fixture](developer-guide/step-fixtures.md)
 * [Fetching Historic Runs](developer-guide/fetching-historic-runs.md)

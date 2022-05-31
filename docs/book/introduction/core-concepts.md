@@ -42,7 +42,9 @@ things. (Your code lives inside a Repository, which is the main abstraction
 within which your project-specific pipelines should live.)
 
 When it comes time to run your pipeline, ZenML offers an abstraction to handle
-all the decisions around how your pipeline gets run.
+all the decisions around how your pipeline gets run. The different stack
+components interact in different ways depending on how you've written your
+pipeline.
 
 ## Stacks, Components and Stores
 

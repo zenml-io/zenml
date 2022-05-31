@@ -1,5 +1,5 @@
 ---
-description: Control how Data is persisted between Steps
+description: Control how data is persisted between steps.
 ---
 
 A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
