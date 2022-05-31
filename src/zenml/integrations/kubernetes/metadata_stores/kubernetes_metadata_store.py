@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
 import os
 import subprocess
 import sys
@@ -53,7 +54,7 @@ DEFAULT_KFP_METADATA_GRPC_PORT = 8081
 DEFAULT_KFP_METADATA_DAEMON_TIMEOUT = 60
 
 
-class KubeflowMetadataStore(BaseMetadataStore):
+class KubernetesMetadataStore(BaseMetadataStore):
     """Kubeflow GRPC backend for ZenML metadata store."""
 
     upgrade_migration_enabled: bool = False

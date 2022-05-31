@@ -28,14 +28,14 @@ KUBERNETES_ORCHESTRATOR_FLAVOR = "kubernetes"
 
 
 class KubernetesIntegration(Integration):
-    """Definition of Kubeflow Integration for ZenML."""
+    """Definition of Kubernetes Integration for ZenML."""
 
     NAME = KUBERNETES
     REQUIREMENTS = ["kfp==1.8.9"]  # TODO
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Kubeflow integration."""
+        """Declare the stack component flavors for the Kubernetes integration."""
         return [
             FlavorWrapper(
                 name=KUBERNETES_METADATA_STORE_FLAVOR,

@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,6 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator import (  # noqa
-    KubeflowOrchestrator,
+from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (  # noqa
+    KubernetesOrchestrator,
 )

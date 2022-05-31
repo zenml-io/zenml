@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC. All Rights Reserved.
+# Copyright 2022 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ KFP_POD_LABELS = {
 }
 
 
-class KubeflowOrchestrator(BaseOrchestrator):
+class KubernetesOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using Kubeflow.
 
     Attributes:
@@ -142,7 +142,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns the name of the kubernetes context associated with the k3d
         cluster managed locally by ZenML corresponding to the orchestrator
         UUID."""
-        return f"k3d-{KubeflowOrchestrator._get_k3d_cluster_name(uuid)}"
+        return f"k3d-{KubernetesOrchestrator._get_k3d_cluster_name(uuid)}"
 
     @root_validator(skip_on_failure=True)
     def set_default_kubernetes_context(
