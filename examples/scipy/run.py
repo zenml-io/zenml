@@ -18,8 +18,10 @@ from steps.trainer.trainer_step import trainer
 from steps.vectorizer.vectorizer_step import vectorizer
 
 if __name__ == "__main__":
-    run = scipy_example_pipeline(importer=importer(),
-               vectorizer=vectorizer(),
-               trainer=trainer(),
-               predictor=predictor())
+    run = scipy_example_pipeline(
+        importer=importer(),
+        vectorizer=vectorizer(),
+        trainer=trainer(),
+        predictor=predictor(),
+    )
     run.run()

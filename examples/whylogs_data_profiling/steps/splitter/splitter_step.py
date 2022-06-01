@@ -12,10 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import pandas as pd
-import xgboost as xgb
 from sklearn.model_selection import train_test_split
 
-from zenml.steps import step, BaseStepConfig, Output
+from zenml.steps import Output, step
+
 
 @step
 def data_splitter(

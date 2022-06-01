@@ -11,16 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, Type, NamedTuple, Callable, \
-    Optional, List
+from abc import ABC
+from typing import List
 
-from pydantic import BaseModel
-
-from zenml import repository
-from zenml.enums import StackComponentType
-from zenml.integrations.mlflow.experiment_trackers import \
-    MLFlowExperimentTracker
+from zenml.integrations.mlflow.experiment_trackers import (
+    MLFlowExperimentTracker,
+)
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.stack import Stack, StackComponent
@@ -47,8 +43,9 @@ class ExampleConfiguration(ABC):
 
         for component in self.required_stack_components:
             components[component.TYPE] = component
-        stack = Stack.from_components(name=f"{self.name}_stack",
-                                      components=components)
+        stack = Stack.from_components(
+            name=f"{self.name}_stack", components=components
+        )
         repo.register_stack(stack)
         repo.activate_stack(stack.name)
 
@@ -67,7 +64,4 @@ class MLflowTrackingExample(ExampleConfiguration):
     required_stack_components = [MLFlowExperimentTracker(name="mlflow_tracker")]
 
 
-EXAMPLES = [
-    XGBoostExample,
-    MLflowTrackingExample
-]
+EXAMPLES = [XGBoostExample, MLflowTrackingExample]

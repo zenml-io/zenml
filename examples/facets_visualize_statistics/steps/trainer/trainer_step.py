@@ -33,6 +33,7 @@ FEATURE_COLS = [
 ]
 TARGET_COL_NAME = "target"
 
+
 @step
 def trainer(train_df: pd.DataFrame) -> tf.keras.Model:
     """A simple Keras Model to train on the data."""

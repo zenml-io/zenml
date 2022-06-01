@@ -13,10 +13,6 @@
 #  permissions and limitations under the License.
 """CLI functionality to interact with pipelines."""
 
-import os.path
-import textwrap
-import types
-from typing import Any, Dict
 
 import click
 
@@ -44,5 +40,3 @@ def pipeline() -> None:
 @click.argument("python_file")
 def cli_pipeline_run(python_file: str, config_path: str) -> None:
     run_pipeline(python_file=python_file, config_path=config_path)
-
-

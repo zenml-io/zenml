@@ -16,14 +16,17 @@ import tempfile
 import requests
 import xgboost as xgb
 
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
+TRAIN_SET_RAW = (
+    "https://raw.githubusercontent.com/dmlc/xgboost/master/demo"
+    "/data/agaricus.txt.train"
+)
 
-TRAIN_SET_RAW = "https://raw.githubusercontent.com/dmlc/xgboost/master/demo" \
-                "/data/agaricus.txt.train"
-
-TEST_SET_RAW = "https://raw.githubusercontent.com/dmlc/xgboost/master/demo" \
-               "/data/agaricus.txt.test"
+TEST_SET_RAW = (
+    "https://raw.githubusercontent.com/dmlc/xgboost/master/demo"
+    "/data/agaricus.txt.test"
+)
 
 
 @step
@@ -31,13 +34,13 @@ def data_loader() -> Output(mat_train=xgb.DMatrix, mat_test=xgb.DMatrix):
     """Retrieves the data from the demo directory of the XGBoost repo."""
     # Write data to temporary files to load it with `xgb.DMatrix`.
     with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, suffix=".html", encoding="utf-8"
+        mode="w", delete=False, suffix=".html", encoding="utf-8"
     ) as f:
         f.write(requests.get(TRAIN_SET_RAW).text)
         mat_train = xgb.DMatrix(f.name)
 
     with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, suffix=".html", encoding="utf-8"
+        mode="w", delete=False, suffix=".html", encoding="utf-8"
     ) as f:
         f.write(requests.get(TEST_SET_RAW).text)
         mat_test = xgb.DMatrix(f.name)

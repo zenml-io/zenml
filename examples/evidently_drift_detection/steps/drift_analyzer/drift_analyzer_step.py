@@ -10,8 +10,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.evidently.steps import EvidentlyProfileStep, \
-    EvidentlyProfileConfig
+from zenml.integrations.evidently.steps import (
+    EvidentlyProfileConfig,
+    EvidentlyProfileStep,
+)
 
 drift_detector = EvidentlyProfileStep(
     EvidentlyProfileConfig(

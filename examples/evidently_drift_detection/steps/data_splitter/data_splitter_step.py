@@ -12,7 +12,7 @@
 #  permissions and limitations under the License.
 import pandas as pd
 
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 
 @step

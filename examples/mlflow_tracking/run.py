@@ -12,14 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.training_pipeline.training_pipeline \
-    import \
-    mlflow_example_pipeline
+from pipelines.training_pipeline.training_pipeline import (
+    mlflow_example_pipeline,
+)
 from steps.evaluator.evaluator_step import tf_evaluator
-from steps.trainer.trainer_step import TrainerConfig, \
-    tf_trainer
-from steps.normalizer.normalizer_step import normalizer
 from steps.loader.loader_step import loader_mnist
+from steps.normalizer.normalizer_step import normalizer
+from steps.trainer.trainer_step import TrainerConfig, tf_trainer
 
 from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
 

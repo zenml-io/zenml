@@ -16,8 +16,7 @@ from sklearn import datasets
 from whylogs import DatasetProfile
 
 from zenml.integrations.whylogs.whylogs_step_decorator import enable_whylogs
-from zenml.steps import step, Output, StepContext
-
+from zenml.steps import Output, StepContext, step
 
 # Simply set these environment variables to point to a Whylabs account and all
 # whylogs DatasetProfile artifacts that are produced by a pipeline run will

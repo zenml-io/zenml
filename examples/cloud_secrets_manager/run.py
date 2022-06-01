@@ -11,7 +11,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from pipelines.secret_loading_pipeline.secret_loading_pipeline import (
-    secret_loading_pipeline
+    secret_loading_pipeline,
 )
 from steps.secret_loader.secret_loader_step import secret_loader
 

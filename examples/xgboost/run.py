@@ -15,7 +15,6 @@ from steps.loader.loader_step import data_loader
 from steps.predictor.predictor_step import predictor
 from steps.trainer.trainer_step import trainer
 
-
 if __name__ == "__main__":
 
     pipeline = xgboost_pipeline(

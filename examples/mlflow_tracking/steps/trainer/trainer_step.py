@@ -25,6 +25,7 @@ class TrainerConfig(BaseStepConfig):
     epochs: int = 1
     lr: float = 0.001
 
+
 # Define the step and enable mlflow - order of decorators is important here
 @enable_mlflow
 @step

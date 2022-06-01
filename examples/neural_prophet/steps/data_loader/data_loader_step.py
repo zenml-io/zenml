@@ -14,9 +14,10 @@
 import pandas as pd
 from neuralprophet import NeuralProphet
 
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 DATA_LOCATION = "https://raw.githubusercontent.com/ourownstory/neuralprophet-data/main/datasets/"
+
 
 @step
 def data_loader() -> Output(df_train=pd.DataFrame, df_test=pd.DataFrame):
@@ -26,5 +27,3 @@ def data_loader() -> Output(df_train=pd.DataFrame, df_test=pd.DataFrame):
         sf_pv_df, freq="H", valid_p=1.0 / 12
     )
     return df_train, df_test
-
-

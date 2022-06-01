@@ -15,6 +15,7 @@ from pipelines.facets_pipeline.facets_pipeline import facets_pipeline
 from steps.evaluator.evaluator_step import evaluator
 from steps.importer.importer_step import importer
 from steps.trainer.trainer_step import trainer
+
 from zenml.integrations.facets.visualizers.facet_statistics_visualizer import (
     FacetStatisticsVisualizer,
 )

@@ -16,7 +16,7 @@ from scipy.sparse import csr_matrix
 from sklearn.base import BaseEstimator
 from sklearn.feature_extraction.text import CountVectorizer
 
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 
 @step

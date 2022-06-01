@@ -14,18 +14,18 @@
 import os
 import textwrap
 import types
-from typing import Dict, Any
+from typing import Any, Dict
 
 from zenml.cli import logger
-from zenml.config.config_keys import PipelineConfigurationKeys, \
-    StepConfigurationKeys, SourceConfigurationKeys
+from zenml.config.config_keys import (
+    PipelineConfigurationKeys,
+    SourceConfigurationKeys,
+    StepConfigurationKeys,
+)
 from zenml.exceptions import PipelineConfigurationError
+from zenml.logger import get_logger
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, yaml_utils
-
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
 
 
 def run_pipeline(python_file: str, config_path: str) -> None:
@@ -39,7 +39,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     #  In order to allow seamless switching between running directly and through
     #  zenml, this is done at this point
     with source_utils.prepend_python_path(
-            os.path.abspath(os.path.dirname(python_file))
+        os.path.abspath(os.path.dirname(python_file))
     ):
 
         module = source_utils.import_python_file(python_file)
@@ -126,6 +126,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
         )
         pipeline_instance.run()
 
+
 def _load_class_from_module(
     module: types.ModuleType, config_item: Dict[str, str]
 ) -> Any:
@@ -198,4 +199,3 @@ def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
             f"Unable to load '{attribute_name}' from"
             f" file '{module.__file__}'"
         ) from None
-
