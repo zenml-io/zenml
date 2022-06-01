@@ -83,6 +83,7 @@ DockerHub
 Dockerfile
 Docstring
 DoesNotExistException
+DuplicatedConfigurationError
 ECR
 ECS
 EKS
@@ -483,6 +484,7 @@ datasets
 datasource
 datatypes
 datetime
+dct
 de
 decodable
 defaultdict
