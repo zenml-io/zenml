@@ -23,7 +23,6 @@ from zenml.integrations.constants import KUBERNETES
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-KUBERNETES_METADATA_STORE_FLAVOR = "kubernetes"  # TODO: do we need this?
 KUBERNETES_ORCHESTRATOR_FLAVOR = "kubernetes"
 
 
@@ -38,17 +37,11 @@ class KubernetesIntegration(Integration):
         """Declare the stack component flavors for the Kubernetes integration."""
         return [
             FlavorWrapper(
-                name=KUBERNETES_METADATA_STORE_FLAVOR,
-                source="zenml.integrations.kubernetes.metadata_stores.KubernetesMetadataStore",
-                type=StackComponentType.METADATA_STORE,
-                integration=cls.NAME,
-            ),  # TODO: do we need this?
-            FlavorWrapper(
                 name=KUBERNETES_ORCHESTRATOR_FLAVOR,
                 source="zenml.integrations.kubernetes.orchestrators.KubernetesOrchestrator",
                 type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,
-            ),
+            )
         ]
 
 
