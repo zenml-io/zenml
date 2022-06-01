@@ -40,7 +40,7 @@ def _get_active_alerter(context: StepContext) -> BaseAlerter:
     if not context.stack.alerter:
         raise DoesNotExistException(
             "The active stack needs to have an alerter component registered "
-            "to be able to use `alerter_step`. "
+            "to be able to use an `alerter_step`. "
             "You can create a new stack with e.g. a Slack alerter component or update "
             "your existing stack to add this component, e.g.:\n\n"
             "  'zenml alerter register slack_alerter --flavor=slack' ...\n"
@@ -82,7 +82,7 @@ def alerter_ask_step(
         message: Initial message to be posted.
 
     Returns:
-        True if a user approved the operation, else False
+        True if a user approved the operation, else False.
     """
     alerter = _get_active_alerter(context)
     return alerter.ask(message, config)

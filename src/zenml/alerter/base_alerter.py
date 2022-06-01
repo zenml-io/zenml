@@ -38,7 +38,7 @@ class BaseAlerter(StackComponent, ABC):
             config: Optional runtime configuration of this function.
 
         Returns:
-            True if operation succeeded, else False
+            True if operation succeeded, else False.
         """
         return True
 
