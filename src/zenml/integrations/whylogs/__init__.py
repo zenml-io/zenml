@@ -20,7 +20,7 @@ class WhylogsIntegration(Integration):
     integration for ZenML."""
 
     NAME = WHYLOGS
-    REQUIREMENTS = ["whylogs>=0.6.22", "pybars3>=0.9.7"]
+    REQUIREMENTS = ["whylogs<=0.7.9", "pybars3>=0.9.7"]
 
     @classmethod
     def activate(cls) -> None:
