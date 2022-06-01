@@ -6,7 +6,7 @@ The integration includes an `alerter` component with two methods:
 - `post()` takes a string as input, posts it to a slack channel according to
   the alerter configuration, and returns whether the operation was successful.
 - `ask()` also posts a given message to a slack channel, but waits for user
-  feedback, and only returns `True` if a user explicity approved the operation.
+  feedback, and only returns `True` if a user explicitly approved the operation.
 
 These functionalities are very useful in practice:
 - `post()` allows you to get notified immediately when failures happen 

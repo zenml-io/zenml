@@ -68,7 +68,7 @@ class SlackAlerter(BaseAlerter):
             ID of the Slack channel to be used.
 
         Raises:
-            RuntimeError: if config is not of type BaseAlerterStepConfig.
+            RuntimeError: if config is not of type `BaseAlerterStepConfig`.
             ValueError: if a slack channel was neither defined in the config
                 nor in the slack alerter component.
         """
@@ -205,7 +205,7 @@ class SlackAlerter(BaseAlerter):
                     print(f"User {event['user']} disapproved on slack.")
                     rtm.stop()  # type:ignore
 
-        # start another thread until rtm.stop() is called in handle()
+        # start another thread until `rtm.stop()` is called in handle()
         rtm.start()
 
         return approved
