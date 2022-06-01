@@ -37,7 +37,7 @@ class KubernetesEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_custom_entrypoint_arguments(
-        cls, step: BaseStep, *args: Any, **kwargs: Any
+        cls, step: "BaseStep", *args: Any, **kwargs: Any
     ) -> List[str]:
         """Sets the value for the `KUBERNETES_JOB_ID_OPTION` argument."""
         return [
