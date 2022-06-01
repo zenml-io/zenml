@@ -11,16 +11,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.post_pipeline import slack_post_pipeline
-from steps import evaluator, importer, svc_trainer, test_acc_post_formatter
+from zenml.pipelines import pipeline
 
-from zenml.alerter.alerter_step import alerter_post_step
 
-if __name__ == "__main__":
-    slack_post_pipeline(
-        importer=importer(),
-        trainer=svc_trainer(),
-        evaluator=evaluator(),
-        formatter=test_acc_post_formatter(),
-        alerter=alerter_post_step(),
-    ).run()
+@pipeline
+def slack_post_pipeline(importer, trainer, evaluator, formatter, alerter):
+    """Train and evaluate a model and post the test accuracy to slack."""
+    X_train, X_test, y_train, y_test = importer()
+    model = trainer(X_train=X_train, y_train=y_train)
+    test_acc = evaluator(X_test=X_test, y_test=y_test, model=model)
+    message = formatter(test_acc)
+    alerter(message)
