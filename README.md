@@ -2,6 +2,17 @@
     <img src="docs/book/assets/oss-header.svg">
 </div>
 
+# :family_man_woman_boy_boy: ZenML: Meet the Team
+
+Hi ZenCommunity! Did you ever have a question but its too hard to express on our Slack? Is it just too much effort to say everything on a 
+long GitHub issue? Or are you just curious what ZenML has been up to in the last week? Well, register now for the ZenML Office 
+(Half) Hour to get your answers and more!
+
+Every week, part of the ZenML core team will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a 
+feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
+
+We will host the gathering every Wednesday 8:30AM PT (5:30PM CET). Register now through [this link](https://www.eventbrite.com/e/zenml-meet-the-community-tickets-354426688767).
+
 # 👀 What is ZenML?
 
 **ZenML** is an extensible, open-source MLOps framework for creating 
