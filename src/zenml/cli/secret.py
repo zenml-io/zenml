@@ -149,9 +149,10 @@ def register_secret(
         parsed_args = parse_unknown_options(args, expand_args=True)
     except AssertionError as e:
         error(str(e))
-        return
 
-    if name == "name":
+    if "name" in parsed_args:
+        error("You can't use 'name' as the key for one of your secrets.")
+    elif name == "name":
         error("Secret names cannot be named 'name'.")
 
     if name.startswith("--"):
