@@ -133,7 +133,7 @@ class LocalExample:
 
         Raises:
             RuntimeError: If no runner script is present in the example.
-            NotImplementedError: If run from the CLI.
+            NotImplementedError: If the examples needs manual user setup.
         """
         if self.needs_manual_user_setup:
             raise NotImplementedError(
