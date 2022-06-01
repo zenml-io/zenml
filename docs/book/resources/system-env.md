@@ -42,7 +42,7 @@ Path to global ZenML config:
 ZENML_CONFIG_PATH
 ```
 
-Setting to `false` disables integrations logs supression:
+Setting to `false` disables integrations logs suppression:
 ```bash
 ZENML_SUPPRESS_LOGS=false
 ```

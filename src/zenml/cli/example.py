@@ -209,7 +209,7 @@ class Example:
 
     @property
     def readme_content(self) -> str:
-        """Returns the readme content associated with a particular example."""
+        """Returns the README content associated with a particular example."""
         readme_file = os.path.join(self.path_in_repo, "README.md")
         try:
             with open(readme_file) as readme:

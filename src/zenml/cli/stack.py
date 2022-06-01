@@ -792,7 +792,7 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
 def _get_component_as_dict(
     component_type: StackComponentType, component_name: str
 ) -> Dict[str, str]:
-    """Return a dict represention of a component's key config values."""
+    """Return a dict representation of a component's key config values."""
     repo = Repository()
     component = repo.get_stack_component(component_type, name=component_name)
     component_dict = {

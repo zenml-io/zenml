@@ -98,7 +98,7 @@ class RestZenStore(BaseZenStore):
             url: The URL to get the path from.
 
         Returns:
-            None, because there are no local paths from REST urls.
+            None, because there are no local paths from REST URLs.
         """
         return None
 
