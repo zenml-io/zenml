@@ -1,5 +1,9 @@
-from zenml.integrations.kserve.model_deployers import KServeModelDeployer
-from zenml.integrations.kserve.services import KServeDeploymentConfig
+from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
+    KServeModelDeployer,
+)
+from zenml.integrations.kserve.services.kserve_deployment import (
+    KServeDeploymentConfig,
+)
 
 
 def main():
@@ -8,7 +12,7 @@ def main():
     model_deployer.deploy_model(
         config=KServeDeploymentConfig(
             model_uri="gs://kfserving-samples/models/tensorflow/flowers",
-            model_name="flower",
+            model_name="flower2",
             predictor="tensorflow",
             resources={"requests": {"cpu": "200m"}},
         ),

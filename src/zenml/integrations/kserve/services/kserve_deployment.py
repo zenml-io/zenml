@@ -22,12 +22,14 @@ from zenml.services import (
     ServiceStatus,
     ServiceType,
 )
+from zenml.logger import get_logger
 
 if TYPE_CHECKING:
-    from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
+    from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
     )
 
+logger = get_logger(__name__)
 
 class KServeDeploymentConfig(ServiceConfig):
     """KServe deployment service configuration.
@@ -327,7 +329,100 @@ class KServeDeploymentService(BaseService):
 
         # TODO[HIGH]: catch errors if deleting a KServe instance that is no
         #   longer available
-        client.delete(name=name, namespace=namespace)
+        try:
+            client.delete(name=name, namespace=namespace)
+        except RuntimeError:
+            raise ValueError(
+                f"Could not delete KServe instance '{name}' from namespace "
+                f"'{namespace}'"
+            )
+
+    def _get_deployment_logs(
+        self,
+        name: str,
+        follow: bool = False,
+        tail: Optional[int] = None,
+    ) -> Generator[str, bool, None]:
+        """Get the logs of a Seldon Core deployment resource.
+
+        Args:
+            name: the name of the Seldon Core deployment to get logs for.
+            follow: if True, the logs will be streamed as they are written
+            tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that can be acccessed to get the service logs.
+
+        Raises:
+            Exception: if an unknown error occurs while fetching
+                the logs.
+        """
+        logger.debug(f"Retrieving logs for InferenceService resource: {name}")
+        try:
+            response = self._core_api.list_namespaced_pod(
+                namespace=self._namespace,
+                label_selector=f"kserve-deployment-id={name}",
+            )
+            logger.debug("Kubernetes API response: %s", response)
+            pods = response.items
+            if not pods:
+                raise Exception(
+                    f"The KServe deployment {name} is not currently "
+                    f"running: no Kubernetes pods associated with it were found"
+                )
+            pod = pods[0]
+            pod_name = pod.metadata.name
+
+            containers = [c.name for c in pod.spec.containers]
+            init_containers = [c.name for c in pod.spec.init_containers]
+            container_statuses = {
+                c.name: c.started or c.restart_count
+                for c in pod.status.container_statuses
+            }
+
+            container = "default"
+            if container not in containers:
+                container = containers[0]
+            # some containers might not be running yet and have no logs to show,
+            # so we need to filter them out
+            if not container_statuses[container]:
+                container = init_containers[0]
+
+            logger.info(
+                f"Retrieving logs for pod: `{pod_name}` and container "
+                f"`{container}` in namespace `{self._namespace}`"
+            )
+            response = self._core_api.read_namespaced_pod_log(
+                name=pod_name,
+                namespace=self._namespace,
+                container=container,
+                follow=follow,
+                tail_lines=tail,
+                _preload_content=False,
+            )
+        except k8s_client.rest.ApiException as e:
+            logger.error(
+                "Exception when fetching logs for InferenceService resource "
+                "%s: %s",
+                name,
+                str(e),
+            )
+            raise Exception(
+                f"Unexpected exception when fetching logs for InferenceService "
+                f"resource: {name}"
+            ) from e
+
+        try:
+            while True:
+                line = response.readline().decode("utf-8").rstrip("\n")
+                if not line:
+                    return
+                stop = yield line
+                if stop:
+                    return
+        finally:
+            response.release_conn()
+
 
     def get_logs(
         self, follow: bool = False, tail: Optional[int] = None
@@ -341,6 +436,12 @@ class KServeDeploymentService(BaseService):
         Returns:
             A generator that can be accessed to get the service logs.
         """
+
+        return self._get_deployment_logs(
+            self.crd_name,
+            follow=follow,
+            tail=tail,
+        )
         # TODO[HIGH]: Implement KServe log retrieval
 
     @property
