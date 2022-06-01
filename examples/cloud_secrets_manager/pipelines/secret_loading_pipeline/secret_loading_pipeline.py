@@ -10,13 +10,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from pipelines.secret_loading_pipeline.secret_loading_pipeline import (
-    secret_loading_pipeline
-)
-from steps.secret_loader.secret_loader_step import secret_loader
+from zenml.integrations.constants import AWS
+from zenml.pipelines import pipeline
 
-if __name__ == "__main__":
-    pipeline = secret_loading_pipeline(
-        secret_loader=secret_loader(),
-    )
-    pipeline.run()
+
+@pipeline(required_integrations=[AWS])
+def secret_loading_pipeline(
+    secret_loader,
+):
+    """Define single step pipeline."""
+    secret_loader()

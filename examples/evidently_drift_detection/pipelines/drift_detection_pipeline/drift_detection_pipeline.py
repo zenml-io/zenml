@@ -10,13 +10,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from pipelines.secret_loading_pipeline.secret_loading_pipeline import (
-    secret_loading_pipeline
-)
-from steps.secret_loader.secret_loader_step import secret_loader
+from zenml.integrations.constants import EVIDENTLY, SKLEARN
+from zenml.pipelines import pipeline
 
-if __name__ == "__main__":
-    pipeline = secret_loading_pipeline(
-        secret_loader=secret_loader(),
+
+@pipeline(required_integrations=[EVIDENTLY, SKLEARN])
+def drift_detection_pipeline(
+    data_loader,
+    data_splitter,
+    drift_detector,
+    drift_analyzer,
+):
+    """Links all the steps together in a pipeline"""
+    data = data_loader()
+    reference_dataset, comparison_dataset = data_splitter(data)
+    drift_report, _ = drift_detector(
+        reference_dataset=reference_dataset,
+        comparison_dataset=comparison_dataset,
     )
-    pipeline.run()
+    drift_analyzer(drift_report)

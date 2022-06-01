@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
@@ -10,13 +10,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from pipelines.secret_loading_pipeline.secret_loading_pipeline import (
-    secret_loading_pipeline
-)
-from steps.secret_loader.secret_loader_step import secret_loader
+from zenml.steps import step
 
-if __name__ == "__main__":
-    pipeline = secret_loading_pipeline(
-        secret_loader=secret_loader(),
-    )
-    pipeline.run()
+
+@step
+def analyze_drift(
+    input: dict,
+) -> bool:
+    """Analyze the Evidently drift report and return a true/false value
+    indicating whether data drift was detected."""
+    return input["data_drift"]["data"]["metrics"]["dataset_drift"]
