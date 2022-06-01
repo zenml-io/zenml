@@ -17,6 +17,10 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, root_validator
 
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class Schedule(BaseModel):
     """Class for defining a pipeline schedule.
@@ -49,15 +53,27 @@ class Schedule(BaseModel):
     ) -> Dict[str, Any]:
         """Ensures that the cron expression or start time + inverval are set."""
 
-        if "cron_expression" in values or (
-            "start_time" in values and "interval_second" in values
-        ):
-            return values
-
-        raise ValueError(
-            "Either a cron expression or start time and interval seconds need "
-            "to be set for a valid schedule."
+        cron_expression = values.get("cron_expression")
+        periodic_schedule = values.get("start_time") and values.get(
+            "interval_second"
         )
+
+        if cron_expression and periodic_schedule:
+            logger.warning(
+                "This schedule was created with a cron expression as well as "
+                "values for `start_time` and `interval_seconds`. The resulting "
+                "behaviour depends on the concrete orchestrator implementation "
+                "but will usually ignore the interval and use the cron "
+                "expression."
+            )
+            return values
+        elif cron_expression or periodic_schedule:
+            return values
+        else:
+            raise ValueError(
+                "Either a cron expression or start time and interval seconds need "
+                "to be set for a valid schedule."
+            )
 
     @property
     def utc_start_time(self) -> Optional[str]:
