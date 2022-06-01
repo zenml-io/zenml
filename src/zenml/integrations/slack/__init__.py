@@ -11,9 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-The Slack integration... TBD
-"""
+"""Slack integration for alerter components."""
 
 from typing import List
 
@@ -26,15 +24,21 @@ SLACK_ALERTER_FLAVOR = "slack"
 
 
 class SlackIntegration(Integration):
-    """Definition of [Slack SDK](https://pypi.org/project/slack-sdk/) integration
-    for ZenML."""
+    """Definition of a Slack integration for ZenML.
+
+    Implemented using [Slack SDK](https://pypi.org/project/slack-sdk/).
+    """
 
     NAME = SLACK
     REQUIREMENTS = ["slack-sdk>=3.16.1"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Sagemaker integration."""
+        """Declare the stack component flavors for the Slack integration.
+
+        Returns:
+            List of new flavors defined by the Slack integration.
+        """
         return [
             FlavorWrapper(
                 name=SLACK_ALERTER_FLAVOR,

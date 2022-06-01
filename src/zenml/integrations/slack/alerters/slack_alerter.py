@@ -1,3 +1,5 @@
+"""Implementation for slack flavor of alerter component."""
+
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +29,7 @@ logger = get_logger(__name__)
 
 
 class SlackAlerterConfig(BaseAlerterStepConfig):
-    """Slack alerter config"""
+    """Slack alerter config."""
 
     slack_channel_id: Optional[
         str
@@ -48,6 +50,18 @@ class SlackAlerter(BaseAlerter):
     FLAVOR: ClassVar[str] = SLACK_ALERTER_FLAVOR
 
     def _get_channel_id(self, config: Optional[BaseAlerterStepConfig]) -> str:
+        """Get the Slack channel ID to be used by post/ask.
+
+        Args:
+            config: Optional runtime configuration.
+
+        Returns:
+            ID of the Slack channel to be used.
+
+        Raises:
+            ValueError: if a slack channel was neither defined in the config
+                nor in the slack alerter component.
+        """
         if not isinstance(config, BaseAlerterStepConfig):
             raise RuntimeError(
                 "The config object must be of type `BaseAlerterStepConfig`."
@@ -94,8 +108,8 @@ class SlackAlerter(BaseAlerter):
     def ask(
         self, message: str, config: Optional[BaseAlerterStepConfig]
     ) -> bool:
-        """
-        Post a message to a Slack channel and wait for approval.
+        """Post a message to a Slack channel and wait for approval.
+
         This can be useful, e.g. to easily get a human in the loop when
         deploying models.
 
@@ -113,13 +127,13 @@ class SlackAlerter(BaseAlerter):
 
         @RTMClient.run_on(event="hello")  # type: ignore
         def post_initial_message(**payload: Any) -> None:
-            """Post an initial message in a channel and start listening"""
+            """Post an initial message in a channel and start listening."""
             web_client = payload["web_client"]
             web_client.chat_postMessage(channel=slack_channel_id, text=message)
 
         @RTMClient.run_on(event="message")  # type: ignore
         def handle(**payload: Any) -> None:
-            """Listen / handle messages posted in the channel"""
+            """Listen / handle messages posted in the channel."""
             event = payload["data"]
             if event["channel"] == slack_channel_id:
 
