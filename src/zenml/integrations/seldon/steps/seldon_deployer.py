@@ -26,7 +26,6 @@ from zenml.integrations.seldon.services.seldon_deployment import (
     SeldonDeploymentService,
 )
 from zenml.io import fileio
-from zenml.io import utils as io_utils
 from zenml.logger import get_logger
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
@@ -35,6 +34,7 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
+from zenml.utils import io_utils
 
 logger = get_logger(__name__)
 

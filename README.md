@@ -309,6 +309,8 @@ manage and switch between your stacks. The ZenML Server handles all the
 interaction and sharing and you can host it wherever you'd like.
 
 ```
+# Make sure to install ZenML with all necessary requirements for the ZenServer
+pip install zenml[server]
 zenml server up
 ```
 

@@ -33,7 +33,7 @@ from pydantic import validator
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
-from zenml.io.utils import convert_to_str
+from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
 

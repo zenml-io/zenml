@@ -139,7 +139,7 @@ def clean_repo(
         tmp_path_factory: Pytest TempPathFactory in order to create a new
                           temporary directory
         mocker: Pytest mocker to patch away the
-                zenml.io.utils.get_global_config_directory
+                zenml.utils.io_utils.get_global_config_directory
         base_repo: Fixture that returns the base_repo that all tests use
     """
     orig_cwd = os.getcwd()

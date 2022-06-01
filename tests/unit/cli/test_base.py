@@ -18,8 +18,8 @@ from click.testing import CliRunner
 
 from zenml.cli.base import clean, init
 from zenml.constants import CONFIG_FILE_NAME, REPOSITORY_DIRECTORY_NAME
-from zenml.io.utils import get_global_config_directory
 from zenml.utils import yaml_utils
+from zenml.utils.io_utils import get_global_config_directory
 
 
 def test_init_creates_zen_folder(tmp_path: Path) -> None:
