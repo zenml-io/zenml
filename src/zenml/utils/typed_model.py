@@ -27,7 +27,7 @@ class BaseTypedModelMeta(ModelMetaclass):
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BaseTypedModelMeta":
-        """Creates a pydantic BaseModel class that includes a hidden attribute that
+        """Creates a Pydantic BaseModel class that includes a hidden attribute that
         reflects the full class identifier."""
         if "type" in dct:
             raise TypeError(

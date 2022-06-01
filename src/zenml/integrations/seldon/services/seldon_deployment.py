@@ -323,7 +323,7 @@ class SeldonDeploymentService(BaseService):
             tail: only retrieve the last NUM lines of log output.
 
         Returns:
-            A generator that can be acccessed to get the service logs.
+            A generator that can be accessed to get the service logs.
         """
         return self._get_client().get_deployment_logs(
             self.seldon_deployment_name,

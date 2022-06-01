@@ -37,7 +37,7 @@ class PandasMaterializer(BaseMaterializer):
     )
 
     def handle_input(self, data_type: Type[Any]) -> pd.DataFrame:
-        """Reads pd.Dataframe from a parquet file."""
+        """Reads pd.DataFrame from a parquet file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 

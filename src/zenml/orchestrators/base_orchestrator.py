@@ -450,7 +450,7 @@ class BaseOrchestrator(StackComponent, ABC):
                 properties=stack.dict(),
             )
 
-            # Add all pydantic objects from runtime_configuration to the context
+            # Add all Pydantic objects from runtime_configuration to the context
             context_utils.add_runtime_configuration_to_node(
                 pipeline_node, runtime_configuration
             )

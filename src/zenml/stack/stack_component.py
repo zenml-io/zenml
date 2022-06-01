@@ -83,7 +83,7 @@ class StackComponent(BaseModel, ABC):
         path:
 
         ```python
-        from zenml.io.utils import get_global_config_directory
+        from zenml.utils.io_utils import get_global_config_directory
         from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 
         ...

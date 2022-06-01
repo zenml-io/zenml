@@ -30,10 +30,10 @@ from zenml.exceptions import (
     ForbiddenRepositoryAccessError,
     InitializationException,
 )
-from zenml.io import fileio, utils
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.stack import Stack, StackComponent
-from zenml.utils import yaml_utils
+from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
 from zenml.utils.filesync_model import FileSyncModel
 
@@ -598,7 +598,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
 
         config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
-        utils.create_dir_recursive_if_not_exists(config_directory)
+        io_utils.create_dir_recursive_if_not_exists(config_directory)
         # Initialize the repository configuration at the custom path
         Repository(root=root)
 
@@ -1133,7 +1133,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             if Repository.is_repository_directory(path_):
                 return path_
 
-            if not search_parent_directories or utils.is_root(str(path_)):
+            if not search_parent_directories or io_utils.is_root(str(path_)):
                 return None
 
             return _find_repo_helper(path_.parent)

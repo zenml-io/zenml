@@ -41,7 +41,7 @@ class SklearnEvaluator(BaseEvaluatorStep):
         """Method which is responsible for the computation of the evaluation
 
         Args:
-            dataset: a pandas Dataframe which represents the test dataset
+            dataset: a pandas DataFrame which represents the test dataset
             model: a trained sklearn model
             config: the configuration for the step
         Returns:

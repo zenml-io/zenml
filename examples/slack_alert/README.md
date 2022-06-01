@@ -28,7 +28,7 @@ In order to run this example, you need to have a Slack workspace set up
 with a channel that you want your pipelines to post to.
 Open the channel in a browser, then copy out the last part of the URL 
 ('C....').
-This is the `<SLACK_CHANNEL_ID>` you will need when registiering the
+This is the `<SLACK_CHANNEL_ID>` you will need when registering the
 slack alerter component.
 
 Then, you need to [create a Slack App](https://api.slack.com/apps?new_app=1)

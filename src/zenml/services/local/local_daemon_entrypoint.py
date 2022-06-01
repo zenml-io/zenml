@@ -40,7 +40,7 @@ def run(
         configuration file.
         """
 
-        # doing zenml imports here to avoid polluting the stdout/sterr
+        # doing zenml imports here to avoid polluting the stdout/stderr
         # with messages before daemonization is complete
         from zenml.integrations.registry import integration_registry
         from zenml.logger import get_logger

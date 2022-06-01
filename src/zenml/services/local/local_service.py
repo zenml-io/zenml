@@ -24,13 +24,13 @@ from typing import Dict, Generator, List, Optional, Tuple
 import psutil
 from pydantic import Field
 
-from zenml.io.utils import create_dir_recursive_if_not_exists
 from zenml.logger import get_logger
 from zenml.services.local.local_service_endpoint import (
     LocalDaemonServiceEndpoint,
 )
 from zenml.services.service import BaseService, ServiceConfig
 from zenml.services.service_status import ServiceState, ServiceStatus
+from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
 logger = get_logger(__name__)
 
@@ -397,7 +397,7 @@ class LocalDaemonService(BaseService):
             tail: only retrieve the last NUM lines of log output.
 
         Returns:
-            A generator that can be acccessed to get the service logs.
+            A generator that can be accessed to get the service logs.
         """
         if not self.status.log_file or not os.path.exists(self.status.log_file):
             return

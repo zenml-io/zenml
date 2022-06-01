@@ -2,7 +2,7 @@
 
 ## General documentation
 
-We write our [documentation](https://docs.zenml.io/) in Markdown files and use [Gitbook](https://www.gitbook.com/) to build it.
+We write our [documentation](https://docs.zenml.io/) in Markdown files and use [GitBook](https://www.gitbook.com/) to build it.
 The documentation source files can be found in this repository at `docs/book`
 
 * You can edit the docs by simply editing the markdown files. Once the changes
