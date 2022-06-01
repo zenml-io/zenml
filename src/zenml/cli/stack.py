@@ -489,7 +489,6 @@ def remove_stack_component(
     experiment_tracker_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack."""
-
     cli_utils.print_active_profile()
 
     repo = Repository()
@@ -793,7 +792,7 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
 def _get_component_as_dict(
     component_type: StackComponentType, component_name: str
 ) -> Dict[str, str]:
-    """Return a dict represention of a component's key config values"""
+    """Return a dict representation of a component's key config values."""
     repo = Repository()
     component = repo.get_stack_component(component_type, name=component_name)
     component_dict = {
@@ -846,7 +845,7 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
 def _import_stack_component(
     component_type: StackComponentType, component_config: Dict[str, str]
 ) -> str:
-    """import a single stack component with given type/config"""
+    """Import a single stack component with given type/config."""
     component_type = StackComponentType(component_type)
     component_name = component_config.pop("name")
     component_flavor = component_config.pop("flavor")

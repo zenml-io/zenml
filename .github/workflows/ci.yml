@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   workflow_call:
   push:
-    branches: ['main', 'develop']
-    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml', '**.md']
+    branches: ["main", "develop"]
+    paths-ignore: ["docs/**", "docker/**", "*", "!pyproject.toml", "**.md"]
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, ready_for_review]
     paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml', '**.md']
 
 concurrency:

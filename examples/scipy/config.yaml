@@ -1,0 +1,19 @@
+name: scipy_example_pipeline
+steps:
+  importer:
+    source:
+      file: steps/loader/loader_step
+      name: importer
+  vectorizer:
+    source:
+      file: steps/vectorizer/vectorizer_step
+      name: vectorizer
+  trainer:
+    source:
+      file: steps/trainer/trainer_step
+      name: trainer
+  predictor:
+    source:
+      file: steps/predictor/predictor_step
+      name: predictor
+

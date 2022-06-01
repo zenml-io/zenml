@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Validates global configuration values."""
 
 from typing import Any, Dict, List, Tuple
 
@@ -42,8 +43,7 @@ class ConfigKeys:
 
     @classmethod
     def key_check(cls, config: Dict[str, Any]) -> None:
-        """Checks whether a configuration dict contains all required keys
-        and no unknown keys.
+        """Checks whether a configuration dict contains all required keys and no unknown keys.
 
         Args:
             config: The configuration dict to verify.

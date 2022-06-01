@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""The base class for feature stores."""
 
 from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Dict, List, Union
@@ -37,7 +38,7 @@ class BaseFeatureStore(StackComponent, ABC):
         """Returns the historical features for training or batch scoring.
 
         Args:
-            entity_df: The entity dataframe or entity name.
+            entity_df: The entity DataFrame or entity name.
             features: The features to retrieve.
             full_feature_names: Whether to return the full feature names.
 

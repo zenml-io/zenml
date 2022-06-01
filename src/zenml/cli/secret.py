@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to manage or use your secrets via a SecretsManager stack component."""
 
 import getpass
 from typing import TYPE_CHECKING, List
@@ -109,7 +110,6 @@ def register_secret(
     `@password`.
 
     Examples:
-
     - register a secret with the name `secret_one` and configure its values
     interactively:
 
@@ -149,9 +149,10 @@ def register_secret(
         parsed_args = parse_unknown_options(args, expand_args=True)
     except AssertionError as e:
         error(str(e))
-        return
 
-    if name == "name":
+    if "name" in parsed_args:
+        error("You can't use 'name' as the key for one of your secrets.")
+    elif name == "name":
         error("Secret names cannot be named 'name'.")
 
     if name.startswith("--"):
@@ -312,7 +313,6 @@ def update_secret(
     `@password`.
 
     Examples:
-
     - update a secret with the name `secret_one` and configure its values
     interactively:
 

@@ -188,7 +188,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             tail: only retrieve the last NUM lines of log output.
 
         Returns:
-            A generator that can be acccessed to get the service logs.
+            A generator that can be accessed to get the service logs.
         """
 
     def update_status(self) -> None:

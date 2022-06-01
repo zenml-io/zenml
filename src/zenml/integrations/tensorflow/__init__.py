@@ -24,7 +24,7 @@ class TensorflowIntegration(Integration):
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
-        # need to import this explicitly to load the Tensoflow file IO support
+        # need to import this explicitly to load the Tensorflow file IO support
         # for S3 and other file systems
         import tensorflow_io  # type: ignore [import]
 
