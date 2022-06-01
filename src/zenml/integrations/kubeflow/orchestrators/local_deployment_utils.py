@@ -245,7 +245,7 @@ def add_hostpath_to_kubeflow_pipelines(
     a hostpath for visualization purposes.
 
     This function reconfigures the Kubeflow pipelines deployment to use a
-    shared local folder to support loading the Tensorboard viewer and other
+    shared local folder to support loading the TensorBoard viewer and other
     pipeline visualization results from a local artifact store, as described
     here:
 

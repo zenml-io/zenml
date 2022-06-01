@@ -59,7 +59,7 @@ class FeastFeatureStore(BaseFeatureStore):
         """Returns the historical features for training or batch scoring.
 
         Args:
-            entity_df: The entity dataframe or entity name.
+            entity_df: The entity DataFrame or entity name.
             features: The features to retrieve.
             full_feature_names: Whether to return the full feature names.
 

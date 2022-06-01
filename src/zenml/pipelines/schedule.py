@@ -28,9 +28,9 @@ class Schedule(BaseModel):
     Attributes:
         cron_expression: Cron expression for the pipeline schedule. If a value
             for this is set it takes precendence over the start time + interval.
-        start_time: Datetime object to indicate when to start the schedule.
-        end_time: Datetime object to indicate when to end the schedule.
-        interval_second: Datetime timedelta indicating the seconds between two
+        start_time: datetime object to indicate when to start the schedule.
+        end_time: datetime object to indicate when to end the schedule.
+        interval_second: datetime timedelta indicating the seconds between two
             recurring runs for a periodic schedule.
         catchup: Whether the recurring run should catch up if behind schedule.
             For example, if the recurring run is paused for a while and
@@ -71,8 +71,8 @@ class Schedule(BaseModel):
             return values
         else:
             raise ValueError(
-                "Either a cron expression or start time and interval seconds need "
-                "to be set for a valid schedule."
+                "Either a cron expression or start time and interval seconds "
+                "need to be set for a valid schedule."
             )
 
     @property
