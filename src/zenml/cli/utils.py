@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility functions for the CLI."""
+
 import base64
 import datetime
 import os
@@ -137,14 +139,15 @@ def pretty_print(obj: Any) -> None:
 
 
 def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
-    """Prints the list of dicts in a table format. The input object should be a
-    List of Dicts. Each item in that list represent a line in the Table. Each
-    dict should have the same keys. The keys of the dict will be used as
-    headers of the resulting table.
+    """Prints the list of dicts in a table format.
+
+    The input object should be a List of Dicts. Each item in that list represent
+    a line in the Table. Each dict should have the same keys. The keys of the
+    dict will be used as headers of the resulting table.
 
     Args:
-      obj: A List containing dictionaries.
-      columns: Optional column configurations to be used in the table.
+        obj: A List containing dictionaries.
+        columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
@@ -216,8 +219,15 @@ def print_pydantic_models(
 def format_integration_list(
     integrations: List[Tuple[str, "IntegrationMeta"]]
 ) -> List[Dict[str, str]]:
-    """Formats a list of integrations into a List of Dicts. This list of dicts
-    can then be printed in a table style using cli_utils.print_table."""
+    """Formats a list of integrations into a List of Dicts.
+
+    This list of dicts can then be printed in a table style using
+    cli_utils.print_table.
+
+    Args:
+        integrations: List of tuples containing the name of the integration and
+            the integration metadata.
+    """
     list_of_dicts = []
     for name, integration_impl in integrations:
         is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
@@ -459,8 +469,7 @@ MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
 def _expand_argument_value_from_file(name: str, value: str) -> str:
-    """Expands the value of an argument pointing to a file into the contents of
-    that file.
+    """Expands the value of an argument pointing to a file into the contents of that file.
 
     Args:
         name: Name of the argument. Used solely for logging purposes.
@@ -566,7 +575,7 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
 
 
 def install_packages(packages: List[str]) -> None:
-    """Installs pypi packages into the current environment with pip"""
+    """Installs pypi packages into the current environment with pip."""
     command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
@@ -579,7 +588,7 @@ def install_packages(packages: List[str]) -> None:
 
 
 def uninstall_package(package: str) -> None:
-    """Uninstalls pypi package from the current environment with pip"""
+    """Uninstalls pypi package from the current environment with pip."""
     subprocess.check_call(
         [
             sys.executable,
@@ -596,7 +605,7 @@ def uninstall_package(package: str) -> None:
 def pretty_print_secret(
     secret: "BaseSecretSchema", hide_secret: bool = True
 ) -> None:
-    """Given a secret set print all key value pairs associated with the secret
+    """Given a secret set, print all key-value pairs associated with the secret.
 
     Args:
         secret: Secret of type BaseSecretSchema
@@ -663,8 +672,7 @@ def get_service_status_emoji(service: "BaseService") -> str:
 def pretty_print_model_deployer(
     model_services: List["BaseService"], model_deployer: "BaseModelDeployer"
 ) -> None:
-    """Given a list of served_models print all key value pairs associated with
-    the secret
+    """Given a list of served_models, print all key-value pairs associated with the secret.
 
     Args:
         model_services: list of model deployment services

@@ -104,7 +104,7 @@ We wanted to focus on abstractions that can address different needs throughout t
 
 It is important that we integrate within the various tools of the fragmented MLOps landscape. ZenML is fully 
 extensible, so you are free to add whichever custom tooling you currently use. We already integrate with a number 
-of the most commonly used parts an ML stack: checkout our supported integrations [here](../features/integrations.md).
+of the most commonly used parts an ML stack: checkout our supported integrations [here](../advanced-guide/integrations.md).
 
 An additional important benefit of the stack is the infrastructure and tooling agnostic code that is achieved. With
 ZenML you can write your code once and simply go from local to remote stack with just a few CLI commands. You can also 

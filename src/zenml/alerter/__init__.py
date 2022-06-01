@@ -11,10 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Alerter
+"""Alerters allow you to send alerts from within your pipeline.
 
-Alerters allow you to send alerts from within your pipeline.
 This is useful to immediately get notified when failures happen,
 and also for general monitoring / reporting.
 """

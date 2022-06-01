@@ -20,16 +20,16 @@ This is achieved by bringing together different types of **stack components**, t
 
 | **Type of Stack Component**                        | **Description**                                                   |
 | -------------------------------------------------- | ----------------------------------------------------------------- |
-| [**Orchestrator (required)**](orchestrator.md)     | Orchestrating the runs of your pipeline                           |
-| [**Artifact Store (required)**](artifact-store.md) | Storage for the artifacts created by your pipelines               |
-| [**Metadata Store (required)**](metadata-store.md) | Tracking the execution of your pipelines/steps                    |
-| [Container Registry](container-registry.md)        | Store for your containers                                         |
-| [Secrets Manager](secrets-manager.md)              | Centralized location for the storage of your secrets              |
-| [Step Operator](step-operator.md)                  | Execution of individual steps in specialized runtime environments |
-| [Model Deployer](model-deployer.md)                | Services/platforms responsible for online model serving           |
-| [Feature Store](feature-store.md)                  | Management of your data/features                                  |
-| [Experiment Tracker](experiment-tracker.md)        | Tracking your ML experiments                                      |
-| [Alerter](alerter.md)                              | Sending alerts through specified channels                         |
+| [**Orchestrator (required)**](../extending-zenml/orchestrator.md)     | Orchestrating the runs of your pipeline                           |
+| [**Artifact Store (required)**](../extending-zenml/artifact-store.md) | Storage for the artifacts created by your pipelines               |
+| [**Metadata Store (required)**](../extending-zenml/metadata-store.md) | Tracking the execution of your pipelines/steps                    |
+| [Container Registry](../extending-zenml/container-registry.md)        | Store for your containers                                         |
+| [Secrets Manager](../extending-zenml/secrets-manager.md)              | Centralized location for the storage of your secrets              |
+| [Step Operator](../extending-zenml/step-operator.md)                  | Execution of individual steps in specialized runtime environments |
+| [Model Deployer](../extending-zenml/model-deployer.md)                | Services/platforms responsible for online model serving           |
+| [Feature Store](../extending-zenml/feature-store.md)                  | Management of your data/features                                  |
+| [Experiment Tracker](../extending-zenml/experiment-tracker.md)        | Tracking your ML experiments                                      |
+| [Alerter](../extending-zenml/alerter.md)                              | Sending alerts through specified channels                         |
 
 Keep in mind that each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator, an artifact store, and a metadata store. The rest of the **stack components** are optional, and you can use them as you see fit.
 

@@ -10,7 +10,7 @@ However, there are some exceptions.
 
 * An object which is a subclass of `BaseStepConfig`: This object is used to pass run-time parameters to a pipeline run. 
 It can be used to send parameters to a step that are not artifacts. You learned about this one already in the chapter
-on [Step Configuration](#step-configuration)
+on [Step Configuration](./runtime-configuration.md#step-configuration)
 * A `StepContext` object: This object gives access to the active stack, materializers, and special 
 integration-specific libraries.
 
@@ -111,5 +111,5 @@ def my_step(
 
 For more information, check the [API reference](https://apidocs.zenml.io/latest/api_docs/steps/)
 
-The next [section](#fetching-historic-runs) will directly address one important
+The next [section](./fetching-historic-runs.md) will directly address one important
 use for the Step Context.

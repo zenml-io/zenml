@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""The alerter step allows you to post messages to registered alerter components."""
 
 from zenml.alerter.base_alerter import BaseAlerter
 from zenml.exceptions import DoesNotExistException
@@ -20,8 +20,16 @@ from zenml.steps.step_interfaces.base_alerter_step import BaseAlerterStepConfig
 
 
 def _get_active_alerter(context: StepContext) -> BaseAlerter:
-    """
-    Raise an error if the active stack has no alerter registered.
+    """Get the alerter component of the active stack.
+
+    Args:
+        context: StepContext of the ZenML repository.
+
+    Returns:
+        Alerter component of the active stack.
+
+    Raises:
+        DoesNotExistException: if active stack has no slack alerter.
     """
     # TODO: duplicate code with examples/feast_feature_store/run.py
     if not context.stack:
@@ -45,8 +53,7 @@ def _get_active_alerter(context: StepContext) -> BaseAlerter:
 def alerter_post_step(
     config: BaseAlerterStepConfig, context: StepContext, message: str
 ) -> bool:
-    """Post a given message to the registered alerter component of the
-    active stack.
+    """Post a message to the alerter component of the active stack.
 
     Args:
         config: Runtime configuration for the slack alerter.
@@ -55,9 +62,6 @@ def alerter_post_step(
 
     Returns:
         True if operation succeeded, else False.
-
-    Raises:
-        DoesNotExistException if active stack has no slack alerter.
     """
     alerter = _get_active_alerter(context)
     return alerter.post(message, config)
@@ -67,9 +71,9 @@ def alerter_post_step(
 def alerter_ask_step(
     config: BaseAlerterStepConfig, context: StepContext, message: str
 ) -> bool:
-    """Post a given message to the registered alerter component of the
-    active stack and wait for approval.
-    This can be useful, e.g. to easily get a human in the loop when
+    """Posts a message to the alerter component and waits for approval.
+
+    This can be useful, e.g. to easily get a human in the loop before
     deploying models.
 
     Args:
@@ -79,9 +83,6 @@ def alerter_ask_step(
 
     Returns:
         True if a user approved the operation, else False
-
-    Raises:
-        ValueDoesNotExistExceptionError if active stack has no slack alerter.
     """
     alerter = _get_active_alerter(context)
     return alerter.ask(message, config)

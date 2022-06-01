@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """CLI for manipulating ZenML local and global config file."""
+
 from typing import TYPE_CHECKING, Optional
 
 import click
@@ -49,7 +50,7 @@ def is_analytics_opted_in() -> None:
 
 @analytics.command("opt-in", context_settings=dict(ignore_unknown_options=True))
 def opt_in() -> None:
-    """Opt-in to analytics"""
+    """Opt-in to analytics."""
     gc = GlobalConfiguration()
     gc.analytics_opt_in = True
     cli_utils.declare("Opted in to analytics.")
@@ -60,7 +61,7 @@ def opt_in() -> None:
     "opt-out", context_settings=dict(ignore_unknown_options=True)
 )
 def opt_out() -> None:
-    """Opt-out to analytics"""
+    """Opt-out of analytics."""
     gc = GlobalConfiguration()
     gc.analytics_opt_in = False
     cli_utils.declare("Opted out of analytics.")
@@ -82,7 +83,14 @@ def logging() -> None:
     ),
 )
 def set_logging_verbosity(verbosity: str) -> None:
-    """Set logging level"""
+    """Set logging level.
+
+    Args:
+        verbosity: The logging level.
+
+    Raises:
+        KeyError: If the logging level is not supported.
+    """
     verbosity = verbosity.upper()
     if verbosity not in LoggingLevels.__members__:
         raise KeyError(
@@ -135,8 +143,14 @@ def create_profile_command(
     store_type: Optional[StoreType],
     user_name: Optional[str],
 ) -> None:
-    """Create a new configuration profile."""
+    """Create a new configuration profile.
 
+    Args:
+        name: The name of the profile.
+        url: The URL of the store.
+        store_type: The store type.
+        user_name: The username that is used to authenticate with the ZenServer.
+    """
     cli_utils.print_active_profile()
 
     cfg = GlobalConfiguration()
@@ -160,7 +174,6 @@ def create_profile_command(
 @profile.command("list")
 def list_profiles_command() -> None:
     """List configuration profiles."""
-
     cli_utils.print_active_profile()
 
     cfg = GlobalConfiguration()
@@ -200,7 +213,11 @@ def list_profiles_command() -> None:
     required=False,
 )
 def describe_profile(name: Optional[str]) -> None:
-    """Show details about a named profile or the active profile."""
+    """Show details about a named profile or the active profile.
+
+    Args:
+        name: The name of the profile.
+    """
     cli_utils.print_active_profile()
 
     repo = Repository()
@@ -223,6 +240,9 @@ def delete_profile(name: str) -> None:
     """Delete a profile.
 
     If the profile is currently active, it cannot be deleted.
+
+    Args:
+        name: The name of the profile.
     """
     cli_utils.print_active_profile()
 
@@ -267,6 +287,10 @@ def set_active_profile(name: str, global_profile: bool = False) -> None:
 
     If the '--global' flag is set, the profile will be set as the global
     active profile, otherwise as the repository local active profile.
+
+    Args:
+        name: The name of the profile.
+        global_profile: Set the profile as the global active profile.
     """
     cli_utils.print_active_profile()
     scope = " global" if global_profile else ""
@@ -307,7 +331,6 @@ def get_active_profile() -> None:
 @profile.command("explain")
 def explain_profile() -> None:
     """Explains the concept of ZenML profiles."""
-
     with console.pager():
         console.print(
             Markdown(
