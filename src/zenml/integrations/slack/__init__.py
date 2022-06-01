@@ -30,7 +30,7 @@ class SlackIntegration(Integration):
     """
 
     NAME = SLACK
-    REQUIREMENTS = ["slack-sdk>=3.16.1"]
+    REQUIREMENTS = ["slack-sdk>=3.16.1", "aiohttp>=3.8.1"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
