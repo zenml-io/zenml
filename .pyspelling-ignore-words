@@ -54,6 +54,7 @@ CLI
 CLIs
 CRD
 CWD
+CalledProcessError
 CamelCase
 ChatOps
 ClassVar
@@ -726,6 +727,7 @@ reconfigures
 redis
 redownload
 redownload
+redownloaded
 regressionmodelperformance
 repo
 reproducibility
@@ -809,6 +811,7 @@ txt
 ui
 uncomment
 unconfigured
+uninstallation
 unix
 unlinking
 unprovisioned
