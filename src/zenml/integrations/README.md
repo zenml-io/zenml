@@ -73,7 +73,7 @@ class ExampleIntegration(Integration):
 ExampleIntegration.check_installation() # this checks if the requirements are installed
 ```
 
-Have a look at the MLFlow [Integration](mlflow/__init__.py) 
+Have a look at the MLflow [Integration](mlflow/__init__.py) 
 as an example for how it is done.
 
 ### 4. Create the implementation(s)

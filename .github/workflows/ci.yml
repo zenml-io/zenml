@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
   workflow_call:
   push:
-    branches: ['main', 'develop']
-    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml', '**.md']
+    branches: ["main", "develop"]
+    paths-ignore: ["docs/**", "docker/**", "*", "!pyproject.toml", "**.md"]
   pull_request:
     types: [opened, synchronize, ready_for_review]
     paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml', '**.md']
@@ -45,13 +45,12 @@ jobs:
       - uses: khan/pull-request-comment-trigger@master
         id: check
         with:
-          trigger: 'LTKF!'
+          trigger: "LTKF!"
           reaction: rocket
         env:
-          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-      - run: 'echo Found LTKF! in the comments!'
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      - run: "echo Found LTKF! in the comments!"
         if: steps.check.outputs.triggered == 'true'
-
 
   kubeflow-tests:
     needs: [poetry-install, check_comments]
@@ -59,3 +58,6 @@ jobs:
     if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
     uses: ./.github/workflows/kubeflow.yml
     secrets: inherit
+
+  spell-check:
+    uses: ./.github/workflows/spellcheck.yml

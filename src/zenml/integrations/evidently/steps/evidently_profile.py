@@ -67,7 +67,7 @@ dashboard_mapper = {
 class EvidentlyProfileConfig(BaseDriftDetectionConfig):
     """Config class for Evidently profile steps.
 
-    column_mapping: properties of the dataframe's columns used
+    column_mapping: properties of the DataFrame's columns used
     profile_section: a string that identifies the profile section to be used.
         The following are valid options supported by Evidently:
         - "datadrift"
@@ -125,8 +125,8 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         step.
 
         Args:
-            reference_dataset: a Pandas dataframe
-            comparison_dataset: a Pandas dataframe of new data you wish to
+            reference_dataset: a Pandas DataFrame
+            comparison_dataset: a Pandas DataFrame of new data you wish to
                 compare against the reference data
             config: the configuration for the step
 

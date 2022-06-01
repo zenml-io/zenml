@@ -189,7 +189,7 @@ def clean_repo(
             "Skipping deletion of temp dir at teardown, due to "
             "Windows Permission error"
         )
-        # Todo[HIGH]: Implement fixture cleanup for Windows where shutil.rmtree
+        # TODO[HIGH]: Implement fixture cleanup for Windows where shutil.rmtree
         #  fails on files that are in use on python 3.7
 
     # restore the global configuration path
