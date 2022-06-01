@@ -52,6 +52,9 @@ def _load_class_from_module(
 
     Returns:
         The imported function/class
+
+    Raises:
+        PipelineConfigurationError: If you passed in the wrong value type.
     """
     if isinstance(config_item, dict):
         if SourceConfigurationKeys.FILE_ in config_item:
@@ -128,6 +131,9 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     Args:
         python_file: Path to the python file that defines the pipeline.
         config_path: Path to configuration YAML file.
+
+    Raises:
+        PipelineConfigurationError: If the pipeline configuration is invalid.
     """
     # If the file was run with `python run.py, this would happen automatically.
     #  In order to allow seamless switching between running directly and through
