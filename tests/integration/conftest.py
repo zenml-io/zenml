@@ -48,7 +48,7 @@ def shared_kubeflow_profile(
     """
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 
-    # Patch the ui daemon as forking doesn't work well with pytest
+    # Patch the UI daemon as forking doesn't work well with pytest
     module_mocker.patch(
         "zenml.integrations.kubeflow.orchestrators.local_deployment_utils.start_kfp_ui_daemon"
     )

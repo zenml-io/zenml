@@ -167,7 +167,7 @@ def old_path_in_sys_path(sys_path: List[str], src_dir: str) -> bool:
 def fix_symlink_if_necessary(src_dir: str, dst_dir: str) -> None:
     """Sometimes the source virtual environment has symlinks that point to
     itself. One example is $OLD_VIRTUAL_ENV/local/lib points to
-    $OLD_VIRTUAL_ENV/lib. Tis function makes sure $NEW_VIRTUAL_ENV/local/lib
+    $OLD_VIRTUAL_ENV/lib. This function makes sure $NEW_VIRTUAL_ENV/local/lib
     will point to $NEW_VIRTUAL_ENV/lib. Usually this goes unnoticed unless one
     tries to upgrade a package though pip, so this bug would be hard to find.
 
@@ -241,7 +241,7 @@ def fixup_script_(
     py_version: str,
     rewrite_env_python: bool = False,
 ) -> None:
-    """This is meant to rewrite the shebang of files in teh destination
+    """This is meant to rewrite the shebang of files in the destination
     venv that still point at the python executable of the original venv
     or even the system python executable.
 

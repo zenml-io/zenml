@@ -97,7 +97,7 @@ STYLESHEET = [
 
 class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
     """Implementation of a lineage diagram via the [dash](
-    https://plotly.com/dash/) and [dash-cyctoscape](
+    https://plotly.com/dash/) and [dash-cytoscape](
     https://dash.plotly.com/cytoscape) library."""
 
     ARTIFACT_PREFIX = "artifact_"
