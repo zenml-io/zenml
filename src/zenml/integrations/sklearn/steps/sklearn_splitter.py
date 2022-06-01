@@ -43,10 +43,10 @@ class SklearnSplitter(BaseSplitStep):
         """Method which is responsible for the splitting logic
 
         Args:
-            dataset: a pandas Dataframe which entire dataset
+            dataset: a pandas DataFrame which entire dataset
             config: the configuration for the step
         Returns:
-            three dataframes representing the splits
+            three DataFrames representing the splits
         """
         if (
             any(

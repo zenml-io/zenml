@@ -50,7 +50,7 @@ at any point without running into dependency issues.
 
 ### Do not overlap `required_integrations` and `requirements`
 
-Setting requirements twice can lead to unexpected behaviour as you will end up
+Setting requirements twice can lead to unexpected behavior as you will end up
 with *only* one of the two defined package versions, which might cause problems.
 
 ### Nest `pipeline_instance.run()` in `if __name__ == "__main__"`

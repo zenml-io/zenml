@@ -23,12 +23,17 @@ from zenml.io import fileio
 from zenml.utils import io_utils
 
 
-def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
+def write_yaml(
+    file_path: str, contents: Dict[Any, Any], sort_keys: bool = True
+) -> None:
     """Write contents as YAML format to file_path.
 
     Args:
         file_path: Path to YAML file.
         contents: Contents of YAML file as dict.
+        sort_keys: If `True`, keys are sorted alphabetically. If `False`,
+            the order in which the keys were inserted into the dict will
+            be preserved.
 
     Raises:
         FileNotFoundError: if directory does not exist.
@@ -37,7 +42,9 @@ def write_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
         dir_ = str(Path(file_path).parent)
         if not fileio.isdir(dir_):
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
-    io_utils.write_file_contents_as_string(file_path, yaml.dump(contents))
+    io_utils.write_file_contents_as_string(
+        file_path, yaml.dump(contents, sort_keys=sort_keys)
+    )
 
 
 def append_yaml(file_path: str, contents: Dict[Any, Any]) -> None:

@@ -45,8 +45,8 @@ the [Seldon deployment example](https://github.com/zenml-io/zenml/tree/main/exam
 ## Example services
 
 One concrete example of a `Service` implementation is the `TensorboardService`.
-It enables visualizing [Tensorboard](https://www.tensorflow.org/tensorboard)
-logs easily by managing a local Tensorboard
+It enables visualizing [TensorBoard](https://www.tensorflow.org/tensorboard)
+logs easily by managing a local TensorBoard
 server.
 
 ```python

@@ -239,7 +239,7 @@ class GlobalConfiguration(
         environment_variable_name = f"{CONFIG_ENV_VAR_PREFIX}{key.upper()}"
         try:
             environment_variable_value = os.environ[environment_variable_name]
-            # set the environment variable value to leverage pydantics type
+            # set the environment variable value to leverage Pydantic's type
             # conversion and validation
             super().__setattr__(key, environment_variable_value)
             return_value = super().__getattribute__(key)
@@ -401,20 +401,34 @@ class GlobalConfiguration(
         # ProfileConfiguration and the Repository classes to avoid triggering
         # the analytics and interact directly with the store creation
         config_copy.profiles[profile.name] = profile
-        # We dont need to track analytics here
+        # We don't need to track analytics here
         store = Repository.create_store(
             profile,
             skip_default_registrations=True,
             track_analytics=False,
             skip_migration=True,
         )
-        # transfer the active stack to the new store. we disable logs for this
-        # call so there is no confusion about newly registered stacks/stack
-        # components
+        # transfer the active stack and all necessary flavors to the new store.
+        # we disable logs for this call so there is no confusion about newly registered
+        # stacks/components/flavors
         with disable_logging(logging.INFO):
-            store.register_stack(
-                repo.zen_store.get_stack(repo.active_stack_name)
-            )
+            active_stack = repo.zen_store.get_stack(repo.active_stack_name)
+            store.register_stack(active_stack)
+
+            for component in active_stack.components:
+                try:
+                    flavor = repo.zen_store.get_flavor_by_name_and_type(
+                        flavor_name=component.flavor,
+                        component_type=component.type,
+                    )
+                    store.create_flavor(
+                        source=flavor.source,
+                        name=flavor.name,
+                        stack_component_type=flavor.type,
+                    )
+                except KeyError:
+                    # not a custom flavor, no need to register anything
+                    pass
 
         # if a custom load config path is specified, use it to replace the
         # current store local path in the profile URL

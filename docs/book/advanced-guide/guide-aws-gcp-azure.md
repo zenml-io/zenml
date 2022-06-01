@@ -346,6 +346,6 @@ a `kubeflow` flavor metadata-store).
 
 {% hint style="warning" %}
 Make sure to replace `$PATH_TO_YOUR_BUCKET`
-and `$PATH_TO_YOUR_CONTAINER_REGISTRY` with the actual URI's of your bucket and
+and `$PATH_TO_YOUR_CONTAINER_REGISTRY` with the actual URIs of your bucket and
 container registry.
 {% endhint %}

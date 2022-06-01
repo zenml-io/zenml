@@ -225,7 +225,7 @@ def parametrized(
         """Internal layer"""
 
         def repl(f: Callable[..., Any]) -> Callable[..., Any]:
-            """Internal repl"""
+            """Internal REPL"""
             return dec(f, *args, **kwargs)
 
         return repl
