@@ -338,9 +338,9 @@ class KubernetesOrchestrator(BaseOrchestrator):
             dockerignore_path=pipeline.dockerignore_file,
             requirements=requirements,
             base_image=self.custom_docker_base_image_name,
-            environment_vars=self._get_environment_vars_from_secrets(
-                pipeline.secrets
-            ),
+            # environment_vars=self._get_environment_vars_from_secrets(
+            #     pipeline.secrets
+            # ),
         )
 
         assert stack.container_registry  # should never happen due to validation
@@ -387,10 +387,13 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
             step_name = step.name
 
-            args = KubernetesEntrypointConfiguration.get_custom_entrypoint_arguments(
-                step=step, **{KUBERNETES_JOB_ID_OPTION: run_name}
+            args = KubernetesEntrypointConfiguration.get_entrypoint_arguments(
+                step=step,
+                pb2_pipeline=pb2_pipeline,
+                **{KUBERNETES_JOB_ID_OPTION: run_name},
             )
             pod_name = f"{pipeline_name}-{step_name}-{run_name}"
+            pod_name = pod_name.lower().replace("_", "-")  # happy now, k8s?
             pod_manifest = {
                 "apiVersion": "v1",
                 "kind": "Pod",
@@ -398,16 +401,16 @@ class KubernetesOrchestrator(BaseOrchestrator):
                     "name": pod_name,
                 },
                 "spec": {
-                    "restartPolicy": "never",
+                    "restartPolicy": "Never",
+                    "containers": [
+                        {
+                            "name": "main",
+                            "image": image_name,
+                            "command": command,
+                            "args": args,
+                        }
+                    ],
                 },
-                "containers": [
-                    {
-                        "name": "main",
-                        "image": image_name,
-                        "command": command,
-                        "args": args,
-                    }
-                ],
             }
 
             core_api.create_namespaced_pod(
