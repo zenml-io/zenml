@@ -12,7 +12,7 @@ dynamically set parameters at runtime.
 You can configure your pipelines at runtime in the following ways:
 
 * Configure from within the code: Do this when you are quickly iterating on your code 
-and don't wait to your actual step code. This is useful in the development phase.
+and don't want to change your actual step code. This is useful in the development phase.
 * Configure from the CLI and a YAML config: Do this when you want to launch pipeline runs 
 without modifying the code at all. This is most useful in production scenarios.
 
