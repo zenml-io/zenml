@@ -16,6 +16,7 @@ Anys
 Argo
 Args
 ArtifactStore
+ArtifactStoreInterfaceError
 ArtifactView
 AssertionError
 AttributeError
@@ -128,6 +129,7 @@ GitBook
 GitCommandError
 GitExamplesHandler
 GitLab
+GitNotFoundError
 GlobalConfiguration
 GmbH
 Gojek
@@ -278,6 +280,7 @@ SecondStep
 SecondStepConfig
 SecretSchema
 SecretSchemas
+SecretsManager
 Seldon
 SeldonClient
 SeldonClientError
@@ -456,6 +459,7 @@ cprf
 cpu
 creationTimestamp
 csv
+ctx
 cuda
 customizable
 cwd
@@ -537,11 +541,13 @@ fileio
 filepath
 filesize
 filesystem
+formatter
 fromisoformat
 fs
 fsspec
 func
 gRPC
+gc
 gcloud
 gcp
 gcr
@@ -768,6 +774,7 @@ subclassed
 subclasses
 subclassing
 subcommand
+subcommands
 subdirectories
 subdirectory
 sublicense
@@ -840,9 +847,3 @@ zenfiles
 zenml
 zenmldocker
 zenserver
-formatter
-ctx
-SecretsManager
-GitNotFoundError
-gc
-ArtifactStoreInterfaceError
