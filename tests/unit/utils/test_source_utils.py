@@ -132,7 +132,7 @@ def test_import_python_file_when_already_loaded(
     # Assert that module has been loaded into sys.module
     assert SOME_MODULE in sys.modules
 
-    # Load module again, to cover alternative behaviour of the
+    # Load module again, to cover alternative behavior of the
     #  import_python_file, where the module is loaded already
     module = source_utils.import_python_file(str(SOME_MODULE_FILENAME))
 

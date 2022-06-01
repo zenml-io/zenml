@@ -239,7 +239,7 @@ class GlobalConfiguration(
         environment_variable_name = f"{CONFIG_ENV_VAR_PREFIX}{key.upper()}"
         try:
             environment_variable_value = os.environ[environment_variable_name]
-            # set the environment variable value to leverage pydantics type
+            # set the environment variable value to leverage Pydantic's type
             # conversion and validation
             super().__setattr__(key, environment_variable_value)
             return_value = super().__getattribute__(key)
@@ -401,7 +401,7 @@ class GlobalConfiguration(
         # ProfileConfiguration and the Repository classes to avoid triggering
         # the analytics and interact directly with the store creation
         config_copy.profiles[profile.name] = profile
-        # We dont need to track analytics here
+        # We don't need to track analytics here
         store = Repository.create_store(
             profile,
             skip_default_registrations=True,

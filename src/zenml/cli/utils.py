@@ -187,7 +187,7 @@ def print_pydantic_models(
     """Prints the list of Pydantic models in a table.
 
     Args:
-        models: List of pydantic models that will be represented as a row in
+        models: List of Pydantic models that will be represented as a row in
             the table.
         columns: Optionally specify subset and order of columns to display.
         exclude_columns: Optionally specify columns to exclude. (Note: `columns`
