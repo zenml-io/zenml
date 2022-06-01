@@ -12,65 +12,40 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import os
-from typing import Any, List, Optional, Set
-
-import kfp
-from kubernetes import config as k8s_config
-from tfx.orchestration.portable import data_types
-from tfx.proto.orchestration.pipeline_pb2 import PipelineNode as Pb2PipelineNode
+from typing import TYPE_CHECKING, Any, List, Set
 
 from zenml.entrypoints import StepEntrypointConfiguration
-from zenml.integrations.kubeflow.orchestrators import utils
-from zenml.steps import BaseStep
 
-METADATA_UI_PATH_OPTION = "metadata_ui_path"
+if TYPE_CHECKING:
+    from zenml.steps import BaseStep
+
+KUBERNETES_JOB_ID_OPTION = "kubernetes_job_id"
 
 
 class KubernetesEntrypointConfiguration(StepEntrypointConfiguration):
-    """Entrypoint configuration for running steps on Kubernertes.
-
-    This class writes a markdown file that will be displayed in the KFP UI.
-    """
+    """Entrypoint configuration for running steps on Kubernertes."""
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
         """Kubernertes specific entrypoint options.
 
-        The metadata ui path option expects a path where the markdown file
-        that will be displayed in the kubernetes UI should be written. The same
-        path needs to be added as an output artifact called
-        `mlpipeline-ui-metadata` for the corresponding `kfp.dsl.ContainerOp`.
+        The argument `KUBERNETES_JOB_ID_OPTION` allows to specify the job id of
+        the Vertex AI Pipeline and get it in the execution of the step, via the
+        `get_run_name`method.
         """
-        return {METADATA_UI_PATH_OPTION}
+        return {KUBERNETES_JOB_ID_OPTION}
 
     @classmethod
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, *args: Any, **kwargs: Any
     ) -> List[str]:
-        """Sets the metadata ui path argument to the value passed in via the
-        keyword args.
-        """
-        return [f"--{METADATA_UI_PATH_OPTION}", kwargs[METADATA_UI_PATH_OPTION]]
+        """Sets the value for the `KUBERNETES_JOB_ID_OPTION` argument."""
+        return [
+            f"--{KUBERNETES_JOB_ID_OPTION}",
+            kwargs[KUBERNETES_JOB_ID_OPTION],
+        ]
 
     def get_run_name(self, pipeline_name: str) -> str:
         """Returns the Kubernertes pipeline run name."""
-        k8s_config.load_incluster_config()
-        run_id = os.environ["KFP_RUN_ID"]
-        return kfp.Client().get_run(run_id).run.name  # type: ignore[no-any-return]
-
-    def post_run(
-        self,
-        pipeline_name: str,
-        step_name: str,
-        pipeline_node: Pb2PipelineNode,
-        execution_info: Optional[data_types.ExecutionInfo] = None,
-    ) -> None:
-        """Writes a markdown file that will display information about the step
-        execution and input/output artifacts in the KFP UI."""
-        if execution_info:
-            utils.dump_ui_metadata(
-                node=pipeline_node,
-                execution_info=execution_info,
-                metadata_ui_path=self.entrypoint_args[METADATA_UI_PATH_OPTION],
-            )
+        job_id: str = self.entrypoint_args[KUBERNETES_JOB_ID_OPTION]
+        return job_id
