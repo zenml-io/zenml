@@ -29,7 +29,6 @@
 # Parts of the `prepare_or_run_pipeline()` method of this file are
 # inspired by the kubernetes dag runner implementation of tfx
 
-import os
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -37,17 +36,14 @@ from kubernetes import config as k8s_config
 from pydantic import root_validator
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
-import zenml.io.utils
-from zenml.artifact_stores import LocalArtifactStore
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
-from zenml.exceptions import ProvisioningError
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
-from zenml.integrations.kubernetes.orchestrators import local_deployment_utils
+from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_entrypoint_configuration import (
+    KUBERNETES_JOB_ID_OPTION,
     KubernetesEntrypointConfiguration,
 )
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
@@ -102,7 +98,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         UUID."""
         # k3d only allows cluster names with up to 32 characters; use the
         # first 8 chars of the orchestrator UUID as identifier
-        return f"zenml-kubeflow-{str(uuid)[:8]}"  # TODO: adjust
+        return f"zenml-kubernetes-{str(uuid)[:8]}"
 
     @staticmethod
     def _get_k3d_kubernetes_context(uuid: UUID) -> str:
@@ -285,7 +281,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
     def get_docker_image_name(self, pipeline_name: str) -> str:
         """Returns the full docker image name including registry and tag."""
 
-        base_image_name = f"zenml-kubeflow:{pipeline_name}"  # TODO: adjust
+        base_image_name = f"zenml-kubernetes:{pipeline_name}"
         container_registry = Repository().active_stack.container_registry
 
         if container_registry:
@@ -303,21 +299,21 @@ class KubernetesOrchestrator(BaseOrchestrator):
             self.uuid
         )
 
-    @property
-    def root_directory(self) -> str:  # TODO: delete?
-        """Returns path to the root directory for all files concerning
-        this orchestrator."""
-        return os.path.join(
-            zenml.io.utils.get_global_config_directory(),
-            "kubeflow",
-            str(self.uuid),
-        )
+    # @property
+    # def root_directory(self) -> str:
+    #     """Returns path to the root directory for all files concerning
+    #     this orchestrator."""
+    #     return os.path.join(
+    #         zenml.io.utils.get_global_config_directory(),
+    #         "kubernetes",
+    #         str(self.uuid),
+    #     )
 
-    @property
-    def pipeline_directory(self) -> str:  # TODO: delete?
-        """Returns path to a directory in which the kubeflow pipeline files
-        are stored."""
-        return os.path.join(self.root_directory, "pipelines")
+    # @property
+    # def pipeline_directory(self) -> str:
+    #     """Returns path to a directory in which the kubeflow pipeline files
+    #     are stored."""
+    #     return os.path.join(self.root_directory, "pipelines")
 
     def prepare_pipeline_deployment(
         self,
@@ -376,253 +372,285 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 "orchestrator."
             )
 
+        assert runtime_configuration.run_name, "Run name must be set"
+
+        run_name = runtime_configuration.run_name
+        pipeline_name = pipeline.name
+
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
+        command = KubernetesEntrypointConfiguration.get_entrypoint_command()
+        core_api = kube_utils.make_core_v1_api()
+
         for step in sorted_steps:
-            # The command will be needed to eventually call the python step
-            # within the docker container
-            command = KubernetesEntrypointConfiguration.get_entrypoint_command()
-            pass  # TODO
 
-    def _upload_and_run_pipeline(
-        self,
-        pipeline_name: str,
-        pipeline_file_path: str,
-        runtime_configuration: "RuntimeConfiguration",
-        enable_cache: bool,
-    ) -> None:
-        """Tries to upload and run a Kubernetes pipeline"""
-        pass  # TODO?
+            step_name = step.name
 
-    @property
-    def _k3d_cluster_name(self) -> str:
-        """Returns the K3D cluster name."""
-        return self._get_k3d_cluster_name(self.uuid)
-
-    def _get_k3d_registry_name(self, port: int) -> str:
-        """Returns the K3D registry name."""
-        return f"k3d-zenml-kubeflow-registry.localhost:{port}"  # TODO: adjust
-
-    @property
-    def _k3d_registry_config_path(self) -> str:
-        """Returns the path to the K3D registry config yaml."""
-        return os.path.join(self.root_directory, "k3d_registry.yaml")
-
-    @property
-    def is_provisioned(self) -> bool:
-        """Returns if a local k3d cluster for this orchestrator exists."""
-        if not local_deployment_utils.check_prerequisites(
-            skip_k3d=self.skip_cluster_provisioning or not self.is_local,
-            skip_kubectl=self.skip_cluster_provisioning,
-        ):
-            # if any prerequisites are missing there is certainly no
-            # local deployment running
-            return False
-
-        return self.is_cluster_provisioned
-
-    @property
-    def is_running(self) -> bool:
-        """Returns if the local k3d cluster for this orchestrator is running.
-
-        For remote (i.e. not managed by ZenML) Kubernetes installations,
-        this always returns True.
-        """
-        return self.is_provisioned and self.is_cluster_running
-
-    @property
-    def is_suspended(self) -> bool:
-        """Returns if the local k3d cluster is stopped."""
-        return self.is_provisioned and (
-            self.skip_cluster_provisioning or not self.is_cluster_running
-        )
-
-    @property
-    def is_cluster_provisioned(self) -> bool:
-        """Returns if the local k3d cluster for this orchestrator is provisioned.
-
-        For remote (i.e. not managed by ZenML) Kubeflow Pipelines installations,
-        this always returns True.
-        """
-        if self.skip_cluster_provisioning or not self.is_local:
-            return True
-        return local_deployment_utils.k3d_cluster_exists(
-            cluster_name=self._k3d_cluster_name
-        )
-
-    @property
-    def is_cluster_running(self) -> bool:
-        """Returns if the local k3d cluster of this orchestrator is running."""
-        if self.skip_cluster_provisioning or not self.is_local:
-            return True
-        return local_deployment_utils.k3d_cluster_running(
-            cluster_name=self._k3d_cluster_name
-        )
-
-    def provision(self) -> None:
-        """Provisions a local Kubernetes deployment."""
-        if self.skip_cluster_provisioning:
-            return
-
-        if self.is_running:
-            logger.info(
-                "Found already existing local Kubernetes deployment. "
-                "If there are any issues with the existing deployment, please "
-                "run 'zenml stack down --yes' to delete it."
+            args = KubernetesEntrypointConfiguration.get_custom_entrypoint_arguments(
+                step=step, **{KUBERNETES_JOB_ID_OPTION: run_name}
             )
-            return
+            pod_name = f"{pipeline_name}-{step_name}-{run_name}"
+            pod_manifest = {
+                "apiVersion": "v1",
+                "kind": "Pod",
+                "metadata": {
+                    "name": pod_name,
+                },
+                "spec": {
+                    "restartPolicy": "never",
+                },
+                "containers": [
+                    {
+                        "name": "main",
+                        "image": image_name,
+                        "command": command,
+                        "args": args,
+                    }
+                ],
+            }
 
-        if not local_deployment_utils.check_prerequisites():
-            raise ProvisioningError(
-                "Unable to provision local Kubernetes deployment: "
-                "Please install 'k3d' and 'kubectl' and try again."
+            core_api.create_namespaced_pod(
+                namespace="default",  # TODO: don't hardcode
+                body=pod_manifest,
             )
 
-        container_registry = Repository().active_stack.container_registry
-
-        # should not happen, because the stack validation takes care of this,
-        # but just in case
-        assert container_registry is not None
-
-        fileio.makedirs(self.root_directory)
-
-        if not self.is_local:
-            # don't provision any resources if using a remote installation
-            return
-
-        logger.info("Provisioning local Kubernetes deployment...")
-
-        container_registry_port = int(container_registry.uri.split(":")[-1])
-        container_registry_name = self._get_k3d_registry_name(
-            port=container_registry_port
-        )
-        local_deployment_utils.write_local_registry_yaml(
-            yaml_path=self._k3d_registry_config_path,
-            registry_name=container_registry_name,
-            registry_uri=container_registry.uri,
-        )
-
-        try:
-            local_deployment_utils.create_k3d_cluster(
-                cluster_name=self._k3d_cluster_name,
-                registry_name=container_registry_name,
-                registry_config_path=self._k3d_registry_config_path,
-            )
-            kubernetes_context = self.kubernetes_context
-
-            # will never happen, but mypy doesn't know that
-            assert kubernetes_context is not None
-
-            local_deployment_utils.deploy_kubeflow_pipelines(
-                kubernetes_context=kubernetes_context
-            )  # TODO: adjust
-
-            artifact_store = Repository().active_stack.artifact_store
-            if isinstance(artifact_store, LocalArtifactStore):
-                local_deployment_utils.add_hostpath_to_kubeflow_pipelines(
-                    kubernetes_context=kubernetes_context,
-                    local_path=artifact_store.path,
-                )  # TODO: adjust
-        except Exception as e:
-            logger.error(e)
-            logger.error("Unable to spin up local Kubernetes deployment.")
-
-            self.list_manual_setup_steps(
-                container_registry_name, self._k3d_registry_config_path
-            )
-            self.deprovision()
-
-    def deprovision(self) -> None:
-        """Deprovisions a local Kubernetes deployment."""
-        if self.skip_cluster_provisioning:
-            return
-
-        if self.is_local:
-            # don't deprovision any resources if using a remote installation
-            local_deployment_utils.delete_k3d_cluster(
-                cluster_name=self._k3d_cluster_name
+            kube_utils.wait_pod(
+                core_api,
+                pod_name,
+                namespace="default",  # TODO: don't hardcode
+                exit_condition_lambda=kube_utils.pod_is_done,
+                condition_description="done state",
             )
 
-            logger.info("Local Kubernetes deployment deprovisioned.")
+    # @property
+    # def _k3d_cluster_name(self) -> str:
+    #     """Returns the K3D cluster name."""
+    #     return self._get_k3d_cluster_name(self.uuid)
 
-        if fileio.exists(self.log_file):
-            fileio.remove(self.log_file)
+    # def _get_k3d_registry_name(self, port: int) -> str:
+    #     """Returns the K3D registry name."""
+    #     return f"k3d-zenml-kubernetes-registry.localhost:{port}"
 
-    def resume(self) -> None:
-        """Resumes the local k3d cluster."""
-        if self.is_running:
-            logger.info("Local Kubernetes deployment already running.")
-            return
+    # @property
+    # def _k3d_registry_config_path(self) -> str:
+    #     """Returns the path to the K3D registry config yaml."""
+    #     return os.path.join(self.root_directory, "k3d_registry.yaml")
 
-        if not self.is_provisioned:
-            raise ProvisioningError(
-                "Unable to resume local Kubernetes deployment: No "
-                "resources provisioned for local deployment."
-            )
+    # @property
+    # def is_provisioned(self) -> bool:
+    #     """Returns if a local k3d cluster for this orchestrator exists."""
+    #     if not local_deployment_utils.check_prerequisites(
+    #         skip_k3d=self.skip_cluster_provisioning or not self.is_local,
+    #         skip_kubectl=self.skip_cluster_provisioning,
+    #     ):
+    #         # if any prerequisites are missing there is certainly no
+    #         # local deployment running
+    #         return False
 
-        kubernetes_context = self.kubernetes_context
+    #     return self.is_cluster_provisioned
 
-        # will never happen, but mypy doesn't know that
-        assert kubernetes_context is not None
+    # @property
+    # def is_running(self) -> bool:
+    #     """Returns if the local k3d cluster for this orchestrator is running.
 
-        if (
-            not self.skip_cluster_provisioning
-            and self.is_local
-            and not self.is_cluster_running
-        ):
-            # don't resume any resources if using a remote installation
-            local_deployment_utils.start_k3d_cluster(
-                cluster_name=self._k3d_cluster_name
-            )
+    #     For remote (i.e. not managed by ZenML) Kubernetes installations,
+    #     this always returns True.
+    #     """
+    #     return self.is_provisioned and self.is_cluster_running
 
-            local_deployment_utils.wait_until_kubeflow_pipelines_ready(
-                kubernetes_context=kubernetes_context
-            )  # TODO: adjust
+    # @property
+    # def is_suspended(self) -> bool:
+    #     """Returns if the local k3d cluster is stopped."""
+    #     return self.is_provisioned and (
+    #         self.skip_cluster_provisioning or not self.is_cluster_running
+    #     )
 
-    def suspend(self) -> None:
-        """Suspends the local k3d cluster."""
-        if not self.is_provisioned:
-            logger.info("Local Kubernetes deployment not provisioned.")
-            return
+    # @property
+    # def is_cluster_provisioned(self) -> bool:
+    #     """Returns if the local k3d cluster for this orchestrator is provisioned.
 
-        if (
-            not self.skip_cluster_provisioning
-            and self.is_local
-            and self.is_cluster_running
-        ):
-            # don't suspend any resources if using a remote installation
-            local_deployment_utils.stop_k3d_cluster(
-                cluster_name=self._k3d_cluster_name
-            )
+    #     For remote (i.e. not managed by ZenML) Kubeflow Pipelines installations,
+    #     this always returns True.
+    #     """
+    #     if self.skip_cluster_provisioning or not self.is_local:
+    #         return True
+    #     return local_deployment_utils.k3d_cluster_exists(
+    #         cluster_name=self._k3d_cluster_name
+    #     )
 
-    def _get_environment_vars_from_secrets(
-        self, secrets: List[str]
-    ) -> Dict[str, str]:
-        """Get key-value pairs from list of secrets provided by the user.
+    # @property
+    # def is_cluster_running(self) -> bool:
+    #     """Returns if the local k3d cluster of this orchestrator is running."""
+    #     if self.skip_cluster_provisioning or not self.is_local:
+    #         return True
+    #     return local_deployment_utils.k3d_cluster_running(
+    #         cluster_name=self._k3d_cluster_name
+    #     )
 
-        Args:
-            secrets: List of secrets provided by the user.
+    # def provision(self) -> None:
+    #     """Provisions a local Kubernetes deployment."""
+    #     if self.skip_cluster_provisioning:
+    #         return
 
-        Returns:
-            A dictionary of key-value pairs.
+    #     if self.is_running:
+    #         logger.info(
+    #             "Found already existing local Kubernetes deployment. "
+    #             "If there are any issues with the existing deployment, please "
+    #             "run 'zenml stack down --yes' to delete it."
+    #         )
+    #         return
 
-        Raises:
-            ProvisioningError: If the stack has no secrets manager."""
-        environment_vars: Dict[str, str] = {}
-        secret_manager = Repository().active_stack.secrets_manager
-        if secrets and secret_manager:
-            for secret in secrets:
-                secret_schema = secret_manager.get_secret(secret)
-                environment_vars.update(secret_schema.content)
-        elif secrets and not secret_manager:
-            raise ProvisioningError(
-                "Unable to provision local Kubernetes deployment: "
-                f"You passed in the following secrets: { ', '.join(secrets) }, "
-                "however, no secrets manager is registered for the current "
-                "stack."
-            )
-        else:
-            # No secrets provided by the user.
-            pass
-        return environment_vars
+    #     if not local_deployment_utils.check_prerequisites():
+    #         raise ProvisioningError(
+    #             "Unable to provision local Kubernetes deployment: "
+    #             "Please install 'k3d' and 'kubectl' and try again."
+    #         )
+
+    #     container_registry = Repository().active_stack.container_registry
+
+    #     # should not happen, because the stack validation takes care of this,
+    #     # but just in case
+    #     assert container_registry is not None
+
+    #     fileio.makedirs(self.root_directory)
+
+    #     if not self.is_local:
+    #         # don't provision any resources if using a remote installation
+    #         return
+
+    #     logger.info("Provisioning local Kubernetes deployment...")
+
+    #     container_registry_port = int(container_registry.uri.split(":")[-1])
+    #     container_registry_name = self._get_k3d_registry_name(
+    #         port=container_registry_port
+    #     )
+    #     local_deployment_utils.write_local_registry_yaml(
+    #         yaml_path=self._k3d_registry_config_path,
+    #         registry_name=container_registry_name,
+    #         registry_uri=container_registry.uri,
+    #     )
+
+    #     try:
+    #         local_deployment_utils.create_k3d_cluster(
+    #             cluster_name=self._k3d_cluster_name,
+    #             registry_name=container_registry_name,
+    #             registry_config_path=self._k3d_registry_config_path,
+    #         )
+    #         kubernetes_context = self.kubernetes_context
+
+    #         # will never happen, but mypy doesn't know that
+    #         assert kubernetes_context is not None
+
+    #         local_deployment_utils.deploy_kubeflow_pipelines(
+    #             kubernetes_context=kubernetes_context
+    #         )  # TODO: adjust
+
+    #         artifact_store = Repository().active_stack.artifact_store
+    #         if isinstance(artifact_store, LocalArtifactStore):
+    #             local_deployment_utils.add_hostpath_to_kubeflow_pipelines(
+    #                 kubernetes_context=kubernetes_context,
+    #                 local_path=artifact_store.path,
+    #             )  # TODO: adjust
+    #     except Exception as e:
+    #         logger.error(e)
+    #         logger.error("Unable to spin up local Kubernetes deployment.")
+
+    #         self.list_manual_setup_steps(
+    #             container_registry_name, self._k3d_registry_config_path
+    #         )
+    #         self.deprovision()
+
+    # def deprovision(self) -> None:
+    #     """Deprovisions a local Kubernetes deployment."""
+    #     if self.skip_cluster_provisioning:
+    #         return
+
+    #     if self.is_local:
+    #         # don't deprovision any resources if using a remote installation
+    #         local_deployment_utils.delete_k3d_cluster(
+    #             cluster_name=self._k3d_cluster_name
+    #         )
+
+    #         logger.info("Local Kubernetes deployment deprovisioned.")
+
+    #     if fileio.exists(self.log_file):
+    #         fileio.remove(self.log_file)
+
+    # def resume(self) -> None:
+    #     """Resumes the local k3d cluster."""
+    #     if self.is_running:
+    #         logger.info("Local Kubernetes deployment already running.")
+    #         return
+
+    #     if not self.is_provisioned:
+    #         raise ProvisioningError(
+    #             "Unable to resume local Kubernetes deployment: No "
+    #             "resources provisioned for local deployment."
+    #         )
+
+    #     kubernetes_context = self.kubernetes_context
+
+    #     # will never happen, but mypy doesn't know that
+    #     assert kubernetes_context is not None
+
+    #     if (
+    #         not self.skip_cluster_provisioning
+    #         and self.is_local
+    #         and not self.is_cluster_running
+    #     ):
+    #         # don't resume any resources if using a remote installation
+    #         local_deployment_utils.start_k3d_cluster(
+    #             cluster_name=self._k3d_cluster_name
+    #         )
+
+    #         local_deployment_utils.wait_until_kubeflow_pipelines_ready(
+    #             kubernetes_context=kubernetes_context
+    #         )  # TODO: adjust
+
+    # def suspend(self) -> None:
+    #     """Suspends the local k3d cluster."""
+    #     if not self.is_provisioned:
+    #         logger.info("Local Kubernetes deployment not provisioned.")
+    #         return
+
+    #     if (
+    #         not self.skip_cluster_provisioning
+    #         and self.is_local
+    #         and self.is_cluster_running
+    #     ):
+    #         # don't suspend any resources if using a remote installation
+    #         local_deployment_utils.stop_k3d_cluster(
+    #             cluster_name=self._k3d_cluster_name
+    #         )
+
+    # def _get_environment_vars_from_secrets(
+    #     self, secrets: List[str]
+    # ) -> Dict[str, str]:
+    #     """Get key-value pairs from list of secrets provided by the user.
+
+    #     Args:
+    #         secrets: List of secrets provided by the user.
+
+    #     Returns:
+    #         A dictionary of key-value pairs.
+
+    #     Raises:
+    #         ProvisioningError: If the stack has no secrets manager."""
+    #     environment_vars: Dict[str, str] = {}
+    #     secret_manager = Repository().active_stack.secrets_manager
+    #     if secrets and secret_manager:
+    #         for secret in secrets:
+    #             secret_schema = secret_manager.get_secret(secret)
+    #             environment_vars.update(secret_schema.content)
+    #     elif secrets and not secret_manager:
+    #         raise ProvisioningError(
+    #             "Unable to provision local Kubernetes deployment: "
+    #             f"You passed in the following secrets: { ', '.join(secrets) }, "
+    #             "however, no secrets manager is registered for the current "
+    #             "stack."
+    #         )
+    #     else:
+    #         # No secrets provided by the user.
+    #         pass
+    #     return environment_vars
