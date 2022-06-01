@@ -20,6 +20,11 @@
 - S3_BUCKET_NAME = "s3://zenbytes-bucket"
 - `zenml artifact-store register s3_store --flavor=s3 --path={S3_BUCKET_NAME}`
 
-## (?) Setup Secrets Manager
-- zenml secrets-manager register aws_secret_manager --flavor=aws
-- zenml stack register aws_kubernetes_stack -m kubernetes_store -a s3_store -o k8s_orchestrator -c ecr_registry -x aws_secret_manager
+## Register Stack
+- zenml stack register aws_kubernetes_stack -m kubernetes_store -a s3_store -o k8s_orchestrator -c ecr_registry
+
+## Run pipeline
+
+- `python run.py`
+- `kubectl get pods` -> find "evaluator" pod
+- `kubectl logs {EVALUATOR_POD}`  -> you should see "Test accuracy: ..." in outputs
