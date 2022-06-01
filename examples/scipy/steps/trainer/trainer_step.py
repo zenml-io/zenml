@@ -11,15 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from pipelines.training_pipeline.training_pipeline import scipy_example_pipeline
-from steps.loader.loader_step import importer
-from steps.predictor.predictor_step import predictor
-from steps.trainer.trainer_step import trainer
-from steps.vectorizer.vectorizer_step import vectorizer
+import numpy as np
+from scipy.sparse import csr_matrix
+from sklearn.base import ClassifierMixin
+from sklearn.linear_model import LogisticRegression
 
-if __name__ == "__main__":
-    run = scipy_example_pipeline(importer=importer(),
-               vectorizer=vectorizer(),
-               trainer=trainer(),
-               predictor=predictor())
-    run.run()
+from zenml.steps import step
+
+
+@step
+def trainer(
+    X_train: csr_matrix,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    model = LogisticRegression(solver="liblinear")
+    model.fit(X_train, y_train)
+    return model

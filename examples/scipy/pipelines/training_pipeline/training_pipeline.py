@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2020. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,15 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from pipelines.training_pipeline.training_pipeline import scipy_example_pipeline
-from steps.loader.loader_step import importer
-from steps.predictor.predictor_step import predictor
-from steps.trainer.trainer_step import trainer
-from steps.vectorizer.vectorizer_step import vectorizer
+from zenml.integrations.constants import SKLEARN
+from zenml.pipelines import pipeline
 
-if __name__ == "__main__":
-    run = scipy_example_pipeline(importer=importer(),
-               vectorizer=vectorizer(),
-               trainer=trainer(),
-               predictor=predictor())
-    run.run()
+
+@pipeline(required_integrations=[SKLEARN])
+def scipy_example_pipeline(importer, vectorizer, trainer, predictor):
+    X_train, X_test, y_train, y_test = importer()
+    vec_transformer, X_train_vec, X_test_vec = vectorizer(X_train, X_test)
+    model = trainer(X_train_vec, y_train)
+    predictor(vec_transformer, model, X_test)
