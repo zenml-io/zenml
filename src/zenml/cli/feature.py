@@ -33,7 +33,11 @@ if TYPE_CHECKING:
 @cli.group(cls=TagGroup)
 @click.pass_context
 def feature(ctx: click.Context) -> None:
-    """Features as obtained from a feature store."""
+    """Features as obtained from a feature store.
+
+    Args:
+        ctx: The click context.
+    """
     repo = Repository()
     active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
     feature_store_wrapper = active_stack.get_component_wrapper(
@@ -51,7 +55,11 @@ def feature(ctx: click.Context) -> None:
 @feature.command("get-data-sources")
 @click.pass_obj
 def get_data_sources(feature_store: "BaseFeatureStore") -> None:
-    """Get all data sources from the feature store."""
+    """Get all data sources from the feature store.
+
+    Args:
+        feature_store: The feature store.
+    """
     data_sources = feature_store.get_data_sources()
     declare(f"Data sources: {data_sources}")
 
@@ -59,7 +67,11 @@ def get_data_sources(feature_store: "BaseFeatureStore") -> None:
 @feature.command("get-entities")
 @click.pass_obj
 def get_entities(feature_store: "BaseFeatureStore") -> None:
-    """Get all entities from the feature store."""
+    """Get all entities from the feature store.
+
+    Args:
+        feature_store: The feature store.
+    """
     entities = feature_store.get_entities()
     declare(f"Entities: {entities}")
 
@@ -67,7 +79,11 @@ def get_entities(feature_store: "BaseFeatureStore") -> None:
 @feature.command("get-feature-services")
 @click.pass_obj
 def get_feature_services(feature_store: "BaseFeatureStore") -> None:
-    """Get all feature services from the feature store."""
+    """Get all feature services from the feature store.
+
+    Args:
+        feature_store: The feature store.
+    """
     feature_services = feature_store.get_feature_services()
     declare(f"Feature services: {feature_services}")
 
@@ -75,7 +91,11 @@ def get_feature_services(feature_store: "BaseFeatureStore") -> None:
 @feature.command("get-feature-views")
 @click.pass_obj
 def get_feature_views(feature_store: "BaseFeatureStore") -> None:
-    """Get all feature views from the feature store."""
+    """Get all feature views from the feature store.
+
+    Args:
+        feature_store: The feature store.
+    """
     feature_views = feature_store.get_feature_views()
     declare(f"Feature views: {feature_views}")
 
@@ -83,7 +103,11 @@ def get_feature_views(feature_store: "BaseFeatureStore") -> None:
 @feature.command("get-project")
 @click.pass_obj
 def get_project(feature_store: "BaseFeatureStore") -> None:
-    """Get the current project name from the feature store."""
+    """Get the current project name from the feature store.
+
+    Args:
+        feature_store: The feature store.
+    """
     project = feature_store.get_project()
     declare(f"Project name: {project}")
 
@@ -91,6 +115,10 @@ def get_project(feature_store: "BaseFeatureStore") -> None:
 @feature.command("get-feast-version")
 @click.pass_obj
 def get_feast_version(feature_store: "BaseFeatureStore") -> None:
-    """Get the current Feast version being used."""
+    """Get the current Feast version being used.
+
+    Args:
+        feature_store: The feature store.
+    """
     version = feature_store.get_feast_version()
     declare(f"Feast version: {version}")
