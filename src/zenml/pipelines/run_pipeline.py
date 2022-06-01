@@ -41,7 +41,6 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     with source_utils.prepend_python_path(
             os.path.abspath(os.path.dirname(python_file))
     ):
-
         module = source_utils.import_python_file(python_file)
         config = yaml_utils.read_yaml(config_path)
         PipelineConfigurationKeys.key_check(config)

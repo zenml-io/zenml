@@ -15,13 +15,18 @@ import logging
 import os
 import platform
 import shutil
+from abc import ABC
 from pathlib import Path
-from typing import Callable, NamedTuple, Optional
+from typing import Callable, NamedTuple, Optional, List
 
 import pytest
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
+from zenml.integrations.mlflow.experiment_trackers import \
+    MLFlowExperimentTracker
+from zenml.pipelines.run_pipeline import run_pipeline
 from zenml.repository import Repository
+from zenml.stack import StackComponent, Stack
 
 from .example_validations import (
     drift_detection_example_validation,
@@ -46,108 +51,79 @@ def copy_example_files(example_dir: str, dst_dir: str) -> None:
             shutil.copy2(s, d)
 
 
-def example_runner(examples_dir):
-    """Get the executable that runs examples.
-
-    By default, returns the path to an executable .sh file in the
-    repository, but can also prefix that with the path to a shell
-    / interpreter when the file is not executable on its own. The
-    latter option is needed for Windows compatibility.
-    """
-    return (
-        [os.environ[SHELL_EXECUTABLE]] if SHELL_EXECUTABLE in os.environ else []
-    ) + [str(examples_dir / EXAMPLES_RUN_SCRIPT)]
-
-
-class ExampleIntegrationTestConfiguration(NamedTuple):
+class ExampleConfiguration(ABC):
     """Configuration options for testing a ZenML example.
 
     Attributes:
         name: The name (=directory name) of the example
-        validation_function: A function that validates that this example ran
-            correctly.
-        setup_function: Optional function that performs any additional setup
-            (e.g. modifying the stack) before the example is run.
-        skip_on_windows: If `True`, this example will not run on windows.
     """
 
     name: str
-    validation_function: Callable[[Repository], None]
-    setup_function: Optional[Callable[[Repository], None]] = None
-    skip_on_windows: bool = False
+    runs_on_windows: bool
+    required_stack_components: List[StackComponent] = list()
+    pipeline_name: str
+    pipeline_path: str
+    step_count: int
+    validation_function: Optional[Callable] = None
+
+    def run_example(self):
+        run_pipeline(python_file=self.pipeline_path, config_path="config.yaml")
+
+    def duplicate_and_update_stack(self) -> None:
+        repo = Repository()
+        components = repo.active_stack.components
+
+        for component in self.required_stack_components:
+            components[component.TYPE] = component
+        stack = Stack.from_components(name=f"{self.name}_stack",
+                                      components=components)
+        repo.register_stack(stack)
+        repo.activate_stack(stack.name)
+
+    @classmethod
+    def validate(cls, repo: Repository):
+        if cls.validation_function:
+            return cls.validation_function(repo)
+        else:
+            return generate_basic_validation_function(
+                pipeline_name=cls.pipeline_name,
+                step_count=cls.step_count
+            )(repo)
 
 
-examples = [
-    ExampleIntegrationTestConfiguration(
-        name="airflow_orchestration",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="airflow_example_pipeline", step_count=3
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="evidently_drift_detection",
-        validation_function=drift_detection_example_validation,
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="facets_visualize_statistics",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="boston_housing_pipeline", step_count=3
-        ),
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="kubeflow_pipelines_orchestration",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="mnist_pipeline", step_count=4
-        ),
-    ),
-    # TODO [ENG-858]: Create Integration tests for lightgbm
-    # TODO [ENG-859]: Create Integration tests for MLflow Deployment
-    ExampleIntegrationTestConfiguration(
-        name="mlflow_tracking",
-        validation_function=mlflow_tracking_example_validation,
-        setup_function=mlflow_tracking_setup,
-        skip_on_windows=True,
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="neural_prophet",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="neural_prophet_pipeline", step_count=3
-        ),
-    ),
-    # TODO [ENG-708]: Enable running the whylogs example on kubeflow
-    ExampleIntegrationTestConfiguration(
-        name="whylogs_data_profiling",
-        validation_function=whylogs_example_validation,
-    ),
-    ExampleIntegrationTestConfiguration(
-        name="xgboost",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="xgboost_pipeline", step_count=3
-        ),
-        skip_on_windows=True,
-    ),
-    # TODO [ENG-860]: Investigate why xgboost test doesn't work on windows
-    # TODO [ENG-861]: Investigate why huggingface test throws pip error on
-    #  dill<0.3.2,>=0.3.1.1, but you have dill 0.3.4
-    ExampleIntegrationTestConfiguration(
-        name="pytorch",
-        validation_function=generate_basic_validation_function(
-            pipeline_name="fashion_mnist_pipeline", step_count=3
-        ),
-    ),
+class XGBoostExample(ExampleConfiguration):
+    name = "xgboost"
+    pipeline_path = "pipelines/training_pipeline/training_pipeline.py"
+    pipeline_name = "xgboost_pipeline"
+    runs_on_windows = False
+    step_count = 3
+
+
+class MLflowTrackingExample(ExampleConfiguration):
+    name = "mlflow_tracking"
+    pipeline_path = "pipelines/training_pipeline/training_pipeline.py"
+    pipeline_name = "mlflow_example_pipeline"
+    runs_on_windows = True
+    required_stack_components = [MLFlowExperimentTracker(name="mlflow_tracker")]
+    validation_function = mlflow_tracking_example_validation
+
+
+EXAMPLES = [
+    XGBoostExample,
+    MLflowTrackingExample
 ]
 
 
 @pytest.mark.parametrize(
     "example_configuration",
-    [pytest.param(example, id=example.name) for example in examples],
+    [pytest.param(example(), id=example.name) for example in EXAMPLES],
 )
 def test_run_example(
-    example_configuration: ExampleIntegrationTestConfiguration,
-    tmp_path_factory: pytest.TempPathFactory,
-    repo_fixture_name: str,
-    request: pytest.FixtureRequest,
-    virtualenv: str,
+        example_configuration: ExampleConfiguration,
+        tmp_path_factory: pytest.TempPathFactory,
+        repo_fixture_name: str,
+        request: pytest.FixtureRequest,
+        virtualenv: str,
 ) -> None:
     """Runs the given examples and validates they ran correctly.
 
@@ -162,7 +138,8 @@ def test_run_example(
         virtualenv: Either a separate cloned environment for each test, or an
                     empty string.
     """
-    if example_configuration.skip_on_windows and platform.system() == "Windows":
+    if (not example_configuration.runs_on_windows
+            and platform.system() == "Windows"):
         logging.info(
             f"Skipping example {example_configuration.name} on windows."
         )
@@ -181,23 +158,21 @@ def test_run_example(
         str(examples_directory / example_configuration.name), str(tmp_path)
     )
 
+    previous_wd = os.getcwd()
+    os.chdir(tmp_path)
     # allow any additional setup that the example might need
-    if example_configuration.setup_function:
-        example_configuration.setup_function(repo)
+    if example_configuration.required_stack_components:
+        example_configuration.duplicate_and_update_stack()
 
-    # Run the example
-    example = LocalExample(name=example_configuration.name, path=tmp_path)
-    example.run_example(
-        example_runner(examples_directory),
-        force=True,
-        prevent_stack_setup=True,
-    )
+    example_configuration.run_example()
+    example_configuration.run_example()
 
     # Validate the result
-    example_configuration.validation_function(repo)
+    example_configuration.validate(repo)
 
     # clean up
     try:
+        os.chdir(previous_wd)
         shutil.rmtree(tmp_path)
     except PermissionError:
         # Windows does not have the concept of unlinking a file and deleting
