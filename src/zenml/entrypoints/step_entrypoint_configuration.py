@@ -134,7 +134,7 @@ class StepEntrypointConfiguration(ABC):
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
-        """Custom options for this entrypoint configuration that are required in addition to the default ZenML ones.
+        """Custom options for this entrypoint in addition to what's needed by default.
 
         The options returned by this method should be strings like "my_option"
         (no "--" prefix). When the entrypoint is executed, it will parse the
@@ -195,7 +195,7 @@ class StepEntrypointConfiguration(ABC):
         """
 
     def setup(self, pipeline_name: str, step_name: str) -> None:
-        """Runs setup code that needs to run before any user code is imported or the step is executed.
+        """Code that needs to run before user code is imported or the step is executed.
 
         Subclasses should overwrite this method if they need to perform any
         additional setup, but should in most cases include a
@@ -250,14 +250,14 @@ class StepEntrypointConfiguration(ABC):
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
-        """Gets all the options that are required when running an entrypoint with this configuration.
+        """Gets all options required for running an entrypoint with this configuration.
 
         **Note**: Subclasses should implement the
             `get_custom_entrypoint_options()` class method instead of this
             one if they require custom options.
 
         Returns:
-            A set of strings with all the options that are required when running.
+            A set of strings with all required options.
         """
         zenml_options = {
             # Importable source pointing to the entrypoint configuration class
@@ -335,7 +335,7 @@ class StepEntrypointConfiguration(ABC):
 
         # TODO [ENG-887]: Move this method to source utils
         def _resolve_class(class_: Type[Any]) -> str:
-            """Resolves the input class in a way that it is importable inside the entrypoint.
+            """Resolves the input class so it is importable inside the entrypoint.
 
             Args:
                 class_: The class to resolve.
@@ -424,9 +424,9 @@ class StepEntrypointConfiguration(ABC):
         Returns:
             Dictionary of the parsed arguments.
 
-        Raise:
-            ValueError: If the parsing failed because the argument format is
-                        incorrect or one of the options is missing.
+        # noqa: DAR402
+        Raises:
+            ValueError: If the arguments are not valid.
         """
         # Argument parser subclass that suppresses some argparse logs and
         # raises an exception instead of the `sys.exit()` call
