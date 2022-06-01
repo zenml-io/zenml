@@ -164,7 +164,7 @@ class LocalExample:
             try:
                 # TODO [ENG-271]: Catch errors that might be thrown
                 #  in subprocess
-                subprocess.check_call(
+                a = subprocess.check_call(
                     call,
                     cwd=str(self.path),
                     shell=click._compat.WIN,
@@ -183,6 +183,7 @@ class LocalExample:
                         "has no implementation for the "
                         "run method"
                     )
+                logger.error(e)
                 raise
         else:
             raise FileNotFoundError(

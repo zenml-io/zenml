@@ -14,14 +14,20 @@
 import os
 import shutil
 from typing import Generator
+from unittest.mock import PropertyMock
 
 import pytest
 from pytest_mock import MockerFixture
 
-from zenml.container_registries import DefaultContainerRegistry
 from zenml.repository import Repository
 from zenml.stack import Stack
 
+AWS_REGION = "us-east-1"
+AWS_EKS_CLUSTER = "zenhacks-cluster"
+ECR_REGISTRY_NAME = "715803424590.dkr.ecr.us-east-1.amazonaws.com"
+S3_BUCKET_NAME = "s3://zenbytes-bucket"
+KUBEFLOW_NAMESPACE = "kubeflow"
+KUBE_CONTEXT = "zenml-eks"
 
 @pytest.fixture(scope="module")
 def shared_kubeflow_profile(
@@ -47,39 +53,52 @@ def shared_kubeflow_profile(
         module active profile.
     """
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
+    from zenml.container_registries import DefaultContainerRegistry
+    from zenml.integrations.kubeflow.metadata_stores import \
+        KubeflowMetadataStore
+    from zenml.integrations.s3.artifact_stores import S3ArtifactStore
 
     # Patch the ui daemon as forking doesn't work well with pytest
-    module_mocker.patch(
-        "zenml.integrations.kubeflow.orchestrators.local_deployment_utils.start_kfp_ui_daemon"
-    )
+    module_mocker.patch.object(KubeflowMetadataStore,
+                               "resume")
+    module_mocker.patch("zenml.integrations.kubeflow.metadata_stores"
+                        ".kubeflow_metadata_store.KubeflowMetadataStore"
+                        ".is_running",
+                        new_callable=PropertyMock(return_value=True))
 
     # Register and activate the kubeflow stack
     orchestrator = KubeflowOrchestrator(
-        name="local_kubeflow_orchestrator",
-        custom_docker_base_image_name="zenml-base-image:latest",
+        name="eks_orchestrator",
+        custom_docker_base_image_name="custom-base-image:latest",
         synchronous=True,
+        kubernetes_context=KUBE_CONTEXT,
+        skip_ui_daemon_provisioning=True
     )
-    metadata_store = base_profile.active_stack.metadata_store.copy(
-        update={"name": "local_kubeflow_metadata_store"}
+
+    metadata_store = KubeflowMetadataStore(
+        name="kubeflow_metadata_store",
     )
-    artifact_store = base_profile.active_stack.artifact_store.copy(
-        update={"name": "local_kubeflow_artifact_store"}
+    artifact_store = S3ArtifactStore(
+        name="s3_store",
+        path=S3_BUCKET_NAME
     )
     container_registry = DefaultContainerRegistry(
-        name="local_registry", uri="localhost:5000"
+        name="ecr_registry", uri=ECR_REGISTRY_NAME
     )
     kubeflow_stack = Stack(
-        name="local_kubeflow_stack",
+        name="aws_kubeflow_stack",
         orchestrator=orchestrator,
         metadata_store=metadata_store,
         artifact_store=artifact_store,
         container_registry=container_registry,
     )
+    # breakpoint()
     base_profile.register_stack(kubeflow_stack)
     base_profile.activate_stack(kubeflow_stack.name)
 
     # Provision resources for the kubeflow stack
     kubeflow_stack.provision()
+    kubeflow_stack.resume()
 
     yield base_profile
 
@@ -117,7 +136,7 @@ def clean_kubeflow_profile(
     Yields:
         An empty repository with a provisioned local kubeflow stack.
     """
-    cleanup_active_profile()
+    # cleanup_active_profile()
 
     yield shared_kubeflow_profile
 
