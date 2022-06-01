@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.github.secrets_managers.github_secrets_manager import (
-    GithubSecretsManager,
+    GitHubSecretsManager,
 )
 
-__all__ = ["GithubSecretsManager"]
+__all__ = ["GitHubSecretsManager"]

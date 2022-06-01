@@ -20,8 +20,14 @@ from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
+from zenml.container_registries.base_container_registry import (
+    BaseContainerRegistry,
+)
+from zenml.integrations.github.container_registries import (
+    GitHubContainerRegistry,
+)
 from zenml.integrations.github.orchestrators.github_actions_entrypoint_configuration import (
-    GithubActionsEntrypointConfiguration,
+    GitHubActionsEntrypointConfiguration,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -45,10 +51,9 @@ logger = get_logger(__name__)
 GITHUB_URL_PREFIXES = ["git@github.com", "https://github.com"]
 
 # TODO: secrets
-# TODO: container registry user/pw
 
 
-class GithubActionsOrchestrator(BaseOrchestrator):
+class GitHubActionsOrchestrator(BaseOrchestrator):
     """Orchestrator responsible for running pipelines using GitHub Actions.
 
     Attributes:
@@ -158,6 +163,44 @@ class GithubActionsOrchestrator(BaseOrchestrator):
         assert container_registry  # should never happen due to validation
         return f"{container_registry.uri}/zenml-github-actions:{pipeline_name}"
 
+    def _prepare_docker_login_step(
+        self,
+        container_registry: BaseContainerRegistry,
+    ) -> Optional[Dict[str, Any]]:
+        """GitHub Actions step for authenticating with the container registry.
+
+        Args:
+            container_registry: The container registry which (potentially)
+                requires a step to authenticate.
+
+        Returns:
+            Dictionary specifying the GitHub Actions step for authenticating
+            with the container registry if that is required, `None` otherwise.
+        """
+        if (
+            isinstance(container_registry, GitHubContainerRegistry)
+            and container_registry.automatic_token_authentication
+        ):
+            # Use GitHub Actions specific placeholder if the container registry
+            # specifies automatic token authentication
+            username = "{{ github.actor }}"
+            password = "{{ secrets.GITHUB_TOKEN }}"
+        elif container_registry.requires_authentication:
+            username = container_registry.username
+            password = container_registry.password
+        else:
+            return None
+
+        return {
+            "name": "Authenticate with the container registry",
+            "uses": "docker/login-action@v1",
+            "with": {
+                "registry": container_registry.uri,
+                "username": username,
+                "password": password,
+            },
+        }
+
     def prepare_pipeline_deployment(
         self,
         pipeline: "BasePipeline",
@@ -259,37 +302,47 @@ class GithubActionsOrchestrator(BaseOrchestrator):
             )
             workflow_dict["on"] = {"push": {"paths": [workflow_path_in_repo]}}
 
+        container_registry = stack.container_registry
+        assert container_registry
+
+        image_name = self.get_docker_image_name(pipeline.name)
+        image_name = docker_utils.get_image_digest(image_name) or image_name
+        # The base command that each job will execute with specific arguments
+        base_command = [
+            "docker",
+            "run",
+            image_name,
+        ] + GitHubActionsEntrypointConfiguration.get_entrypoint_command()
+
         jobs = {}
         for step in sorted_steps:
-            # docker_login_step = {
-            #     "uses": "docker/login-action@v1",
-            #     "with": {
-            #         "registry": stack.container_registry.uri,
-            #         "username": "{{ github.actor }}",
-            #         "password": "{{ secrets.GITHUB_TOKEN }}",
-            #     },
-            # }
-            image_name = self.get_docker_image_name(pipeline.name)
-            image_name = docker_utils.get_image_digest(image_name) or image_name
+            steps = []
 
-            command = [
-                "docker",
-                "run",
-                image_name,
-                *GithubActionsEntrypointConfiguration.get_entrypoint_command(),
-                *GithubActionsEntrypointConfiguration.get_entrypoint_arguments(
+            login_step = self._prepare_docker_login_step(container_registry)
+            if login_step:
+                steps.append(login_step)
+
+            entrypoint_args = (
+                GitHubActionsEntrypointConfiguration.get_entrypoint_arguments(
                     step=step,
                     pb2_pipeline=pb2_pipeline,
                     pipeline_name=pipeline.name,
-                ),
-            ]
-            docker_run_step = {"run": " ".join(command)}
+                )
+            )
+
+            command = base_command + entrypoint_args
+            docker_run_step = {
+                "name": "Run the docker image",
+                "run": " ".join(command),
+            }
+
+            steps.append(docker_run_step)
             job_dict = {
                 "runs-on": "ubuntu-latest",
                 "needs": self.get_upstream_step_names(
                     step=step, pb2_pipeline=pb2_pipeline
                 ),
-                "steps": [docker_run_step],
+                "steps": steps,
             }
             jobs[step.name] = job_dict
 

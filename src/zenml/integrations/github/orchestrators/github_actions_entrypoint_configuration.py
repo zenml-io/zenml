@@ -20,7 +20,7 @@ from zenml.steps import BaseStep
 RUN_NAME_OPTION = "run_name"
 
 
-class GithubActionsEntrypointConfiguration(StepEntrypointConfiguration):
+class GitHubActionsEntrypointConfiguration(StepEntrypointConfiguration):
     """Entrypoint configuration for running steps on GitHub Action runners."""
 
     @classmethod

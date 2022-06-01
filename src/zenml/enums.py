@@ -80,7 +80,6 @@ class ContainerRegistryFlavor(StrEnum):
     """Flavors of container registries."""
 
     DEFAULT = "default"
-    GITHUB = "github"
     DOCKERHUB = "dockerhub"
     GCP = "gcp"
     AZURE = "azure"

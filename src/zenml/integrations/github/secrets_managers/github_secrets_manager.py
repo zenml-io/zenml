@@ -20,7 +20,7 @@ from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 logger = get_logger(__name__)
 
 
-class GithubSecretsManager(BaseSecretsManager):
+class GitHubSecretsManager(BaseSecretsManager):
     """Class to interact with the GitHub secrets manager."""
 
     # Class configuration

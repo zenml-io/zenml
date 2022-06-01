@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 from zenml.integrations.github.orchestrators.github_actions_orchestrator import (
-    GithubActionsOrchestrator,
+    GitHubActionsOrchestrator,
 )
 
-__all__ = ["GithubActionsOrchestrator"]
+__all__ = ["GitHubActionsOrchestrator"]

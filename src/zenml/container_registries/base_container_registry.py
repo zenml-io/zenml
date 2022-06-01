@@ -43,6 +43,11 @@ class BaseContainerRegistry(StackComponent):
         return uri.rstrip("/")
 
     @property
+    def requires_authentication(self) -> bool:
+        """Returns whether the container registry requires authentication."""
+        return bool(self.username) and bool(self.password)
+
+    @property
     def is_local(self) -> bool:
         """Returns whether the container registry is local or not.
 
