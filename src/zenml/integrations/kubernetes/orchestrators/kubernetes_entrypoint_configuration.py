@@ -19,7 +19,7 @@ from zenml.entrypoints import StepEntrypointConfiguration
 if TYPE_CHECKING:
     from zenml.steps import BaseStep
 
-KUBERNETES_JOB_ID_OPTION = "kubernetes_job_id"
+RUN_NAME_OPTION = "run_name"
 
 
 class KubernetesEntrypointConfiguration(StepEntrypointConfiguration):
@@ -29,23 +29,22 @@ class KubernetesEntrypointConfiguration(StepEntrypointConfiguration):
     def get_custom_entrypoint_options(cls) -> Set[str]:
         """Kubernertes specific entrypoint options.
 
-        The argument `KUBERNETES_JOB_ID_OPTION` allows to specify the job id of
-        the Vertex AI Pipeline and get it in the execution of the step, via the
-        `get_run_name`method.
+        The argument `RUN_NAME_OPTION` is needed for `get_run_name` to have
+        consistent values between steps.
         """
-        return {KUBERNETES_JOB_ID_OPTION}
+        return {RUN_NAME_OPTION}
 
     @classmethod
     def get_custom_entrypoint_arguments(
         cls, step: "BaseStep", *args: Any, **kwargs: Any
     ) -> List[str]:
-        """Sets the value for the `KUBERNETES_JOB_ID_OPTION` argument."""
+        """Sets the value for the `RUN_NAME_OPTION` argument."""
         return [
-            f"--{KUBERNETES_JOB_ID_OPTION}",
-            kwargs[KUBERNETES_JOB_ID_OPTION],
+            f"--{RUN_NAME_OPTION}",
+            kwargs[RUN_NAME_OPTION],
         ]
 
     def get_run_name(self, pipeline_name: str) -> str:
-        """Returns the Kubernertes pipeline run name."""
-        job_id: str = self.entrypoint_args[KUBERNETES_JOB_ID_OPTION]
+        """Returns the run name."""
+        job_id: str = self.entrypoint_args[RUN_NAME_OPTION]
         return job_id

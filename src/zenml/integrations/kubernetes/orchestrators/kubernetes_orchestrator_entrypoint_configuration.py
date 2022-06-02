@@ -2,7 +2,7 @@ import json
 from typing import List, Set
 
 from zenml.integrations.kubernetes.orchestrators.kubernetes_entrypoint_configuration import (
-    KUBERNETES_JOB_ID_OPTION,
+    RUN_NAME_OPTION,
     KubernetesEntrypointConfiguration,
 )
 
@@ -55,7 +55,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
             args = KubernetesEntrypointConfiguration.get_entrypoint_arguments(
                 step=step,
                 pb2_pipeline=pb2_pipeline,
-                **{KUBERNETES_JOB_ID_OPTION: run_name},
+                **{RUN_NAME_OPTION: run_name},
             )
 
             # remove pipeline json to avoid sending it multiple times
