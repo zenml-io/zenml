@@ -75,6 +75,8 @@ class KubernetesOrchestrator(BaseOrchestrator):
             pipelines in. If not set, the current active context will be used.
             You can find the active context by running `kubectl config
             current-context`.
+        kubernetes_namespace: Name of the kubernetes namespace to be used.
+            If not provided, `default` namespace will be used.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Kubernetes.
         skip_local_validations: If `True`, the local validations will be
@@ -85,6 +87,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
     custom_docker_base_image_name: Optional[str] = None
     kubernetes_context: Optional[str] = None
+    kubernetes_namespace: str = "default"
     synchronous: bool = False
     skip_local_validations: bool = False
     skip_cluster_provisioning: bool = False
@@ -419,14 +422,14 @@ class KubernetesOrchestrator(BaseOrchestrator):
             }
 
             core_api.create_namespaced_pod(
-                namespace="default",  # TODO: don't hardcode
+                namespace=self.kubernetes_namespace,
                 body=pod_manifest,
             )
 
             kube_utils.wait_pod(
                 core_api,
                 pod_name,
-                namespace="default",  # TODO: don't hardcode
+                namespace=self.kubernetes_namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,
                 condition_description="done state",
             )
