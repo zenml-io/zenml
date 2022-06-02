@@ -14,7 +14,7 @@ is as follows:
 - You write your code as a pipeline to define what you want to happen in your machine learning
   workflow
 - You configure a ZenML Stack which is the infrastructure and setup that will
-  run your machine learning 
+  run your machine learning code.
 - A stack consists of stack components that interact with your pipeline and its steps in various ways.
 - You can easily switch between different Stacks (i.e. infrastructure
   configurations) depending on your needs at any given moment.
