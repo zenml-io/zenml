@@ -133,7 +133,7 @@ class KServeDeploymentConfig(ServiceConfig):
                 the expected annotations or it contains an invalid or
                 incompatible KServe ZenML service configuration.
         """
-        config_data = deployment.metadata.annotations.get(
+        config_data = deployment.metadata.get("annotations").get(
             "zenml.service_config"
         )
         if not config_data:
@@ -273,7 +273,7 @@ class KServeDeploymentService(BaseService):
         cls, deployment: V1beta1InferenceService
     ) -> "KServeDeploymentService":
         config = KServeDeploymentConfig.create_from_deployment(deployment)
-        uuid = deployment.metadata.labels.get("zenml.service_uuid")
+        uuid = deployment.metadata.get("labels").get("zenml.service_uuid")
         if not uuid:
             raise ValueError(
                 f"The given deployment resource does not contain a valid "
@@ -358,10 +358,15 @@ class KServeDeploymentService(BaseService):
             Exception: if an unknown error occurs while fetching
                 the logs.
         """
+
+        client = self._get_client()
+        namespace = self._get_namespace()
+        #name = self.crd_name
+
         logger.debug(f"Retrieving logs for InferenceService resource: {name}")
         try:
-            response = self._core_api.list_namespaced_pod(
-                namespace=self._namespace,
+            response = client.core_api.list_namespaced_pod(
+                namespace=namespace,
                 label_selector=f"zenml.service_uuid={self.uuid}",
             )
             logger.debug("Kubernetes API response: %s", response)
@@ -391,11 +396,11 @@ class KServeDeploymentService(BaseService):
 
             logger.info(
                 f"Retrieving logs for pod: `{pod_name}` and container "
-                f"`{container}` in namespace `{self._namespace}`"
+                f"`{container}` in namespace `{namespace}`"
             )
-            response = self._core_api.read_namespaced_pod_log(
+            response = client.core_api.read_namespaced_pod_log(
                 name=pod_name,
-                namespace=self._namespace,
+                namespace=namespace,
                 container=container,
                 follow=follow,
                 tail_lines=tail,

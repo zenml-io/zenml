@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+import datetime
+import json
 import re
 from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
@@ -11,6 +13,8 @@ from kserve import (  # type: ignore[import]
 )
 from kubernetes import client
 from kserve import ApiClient
+import six
+from zenml.integrations import kserve
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
@@ -26,6 +30,17 @@ logger = get_logger(__name__)
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 api = ApiClient()
+
+PRIMITIVE_TYPES = (float, bool, bytes, six.text_type) + six.integer_types
+NATIVE_TYPES_MAPPING = {
+    'int': int,
+    'float': float,
+    'str': str,
+    'bool': bool,
+    'date': datetime.date,
+    'datetime': datetime.datetime,
+    'object': object,
+}
 
 class KServeModelDeployer(BaseModelDeployer):
     """Kserve model deployer stack component implementation.
@@ -248,11 +263,8 @@ class KServeModelDeployer(BaseModelDeployer):
 
         inference_services: List[V1beta1InferenceService] = []
         for item in response.get("items", []):
-            snake_case_item = api.sanitize_for_serialization(self._camel_to_snake(item))
+            snake_case_item = self._camel_to_snake(item)
             inference_service = V1beta1InferenceService(**snake_case_item)
-            config_data = inference_service.metadata.annotations.get(
-            "zenml.service_config"
-        )
             inference_services.append(inference_service)
         return inference_services
 
