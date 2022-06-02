@@ -18,6 +18,10 @@ import logging
 import sys
 
 from zenml.integrations.kubernetes.orchestrators import tfx_kube_utils
+from zenml.integrations.kubernetes.orchestrators.utils import (
+    build_base_pod_manifest,
+    update_pod_manifest,
+)
 
 
 def parse_args():
@@ -45,6 +49,12 @@ def main():
     step_command = pipeline_config["step_command"]
     sorted_steps = pipeline_config["sorted_steps"]
 
+    base_pod_manifest = build_base_pod_manifest(
+        run_name=args.run_name,
+        pipeline_name=args.pipeline_name,
+        image_name=args.image_name,
+    )
+
     for step_name in sorted_steps:
         # Define k8s pod name.
         pod_name = f"{args.run_name}-{step_name}"
@@ -54,29 +64,12 @@ def main():
         step_args += ["--pipeline_json", args.pipeline_json]  # TODO
 
         # Define k8s pod manifest.
-        pod_manifest = {
-            "apiVersion": "v1",
-            "kind": "Pod",
-            "metadata": {
-                "name": pod_name,
-                "labels": {
-                    "run": args.run_name,
-                    "pipeline": args.pipeline_name,
-                    "step": step_name,
-                },
-            },
-            "spec": {
-                "restartPolicy": "Never",
-                "containers": [
-                    {
-                        "name": "main",
-                        "image": args.image_name,
-                        "command": step_command,
-                        "args": step_args,
-                    }
-                ],
-            },
-        }
+        pod_manifest = update_pod_manifest(
+            base_pod_manifest=base_pod_manifest,
+            pod_name=pod_name,
+            command=step_command,
+            args=step_args,
+        )
 
         logging.info(f"Running step {step_name}...")
 

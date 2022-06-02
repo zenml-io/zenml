@@ -45,6 +45,10 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_entrypoint_configura
     KUBERNETES_JOB_ID_OPTION,
     KubernetesEntrypointConfiguration,
 )
+from zenml.integrations.kubernetes.orchestrators.utils import (
+    build_base_pod_manifest,
+    update_pod_manifest,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
 from zenml.repository import Repository
@@ -398,8 +402,6 @@ class KubernetesOrchestrator(BaseOrchestrator):
             "step_args": step_args,
         }
 
-        json.dump(step_args, open("step_args.json", "w"))
-
         command = [
             "python",
             "-m",
@@ -421,31 +423,20 @@ class KubernetesOrchestrator(BaseOrchestrator):
             json.dumps(pipeline_config),
         ]
 
-        pod_name = run_name
-        pod_name = pod_name.lower().replace("_", "-")  # happy now, k8s?
-        pod_manifest = {
-            "apiVersion": "v1",
-            "kind": "Pod",
-            "metadata": {
-                "name": pod_name,
-                "labels": {
-                    "run": run_name,
-                    "pipeline": pipeline_name,
-                },
-            },
-            "spec": {
-                "restartPolicy": "Never",
-                "containers": [
-                    {
-                        "name": "main",
-                        "image": image_name,
-                        "command": command,
-                        "args": args,
-                    }
-                ],
-                "serviceAccountName": "zenml-service-account",
-            },
-        }
+        pod_name = tfx_kube_utils.sanitize_pod_name(run_name)
+
+        pod_manifest = build_base_pod_manifest(
+            run_name=run_name,
+            pipeline_name=pipeline_name,
+            image_name=image_name,
+        )
+        pod_manifest = update_pod_manifest(
+            base_pod_manifest=pod_manifest,
+            pod_name=pod_name,
+            command=command,
+            args=args,
+        )
+        pod_manifest["spec"]["serviceAccountName"] = "zenml-service-account"
 
         # Create and run pod.
         core_api = tfx_kube_utils.make_core_v1_api()
