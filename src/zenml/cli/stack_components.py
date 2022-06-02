@@ -37,7 +37,15 @@ from zenml.zen_stores.models.component_wrapper import ComponentWrapper
 def _get_required_attributes(
     component_class: Type[StackComponent],
 ) -> List[str]:
-    """Gets the required properties for a stack component."""
+    """Gets the required properties for a stack component.
+
+    Args:
+        component_class: Class of the component to get the required properties
+            for.
+
+    Returns:
+        A list of the required properties for the given component class.
+    """
     return [
         field_name
         for field_name, field in component_class.__fields__.items()
@@ -49,7 +57,15 @@ def _get_required_attributes(
 def _get_available_attributes(
     component_class: Type[StackComponent],
 ) -> List[str]:
-    """Gets the available non-mandatory properties for a stack component."""
+    """Gets the available non-mandatory properties for a stack component.
+
+    Args:
+        component_class: Class of the component to get the available
+            properties for.
+
+    Returns:
+        A list of the available properties for the given component class.
+    """
     return [
         field_name
         for field_name, _ in component_class.__fields__.items()
@@ -60,7 +76,15 @@ def _get_available_attributes(
 def _get_optional_attributes(
     component_class: Type[StackComponent],
 ) -> List[str]:
-    """Gets the optional properties for a stack component."""
+    """Gets the optional properties for a stack component.
+
+    Args:
+        component_class: Class of the component to get the optional properties
+            for.
+
+    Returns:
+        A list of the optional properties for the given component class.
+    """
     return [
         field_name
         for field_name, field in component_class.__fields__.items()
@@ -72,7 +96,15 @@ def _get_optional_attributes(
 def _component_display_name(
     component_type: StackComponentType, plural: bool = False
 ) -> str:
-    """Human-readable name for a stack component."""
+    """Human-readable name for a stack component.
+
+    Args:
+        component_type: Type of the component to get the display name for.
+        plural: Whether the display name should be plural or not.
+
+    Returns:
+        A human-readable name for the given stack component type.
+    """
     name = component_type.plural if plural else component_type.value
     return name.replace("_", " ")
 
@@ -135,7 +167,14 @@ def _get_stack_component_wrapper(
 def generate_stack_component_get_command(
     component_type: StackComponentType,
 ) -> Callable[[], None]:
-    """Generates a `get` command for the specific stack component type."""
+    """Generates a `get` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
 
     def get_stack_component_command() -> None:
         """Prints the name of the active component."""
@@ -159,7 +198,14 @@ def generate_stack_component_get_command(
 def generate_stack_component_describe_command(
     component_type: StackComponentType,
 ) -> Callable[[Optional[str]], None]:
-    """Generates a `describe` command for the specific stack component type."""
+    """Generates a `describe` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
 
     @click.argument(
         "name",
@@ -192,7 +238,14 @@ def generate_stack_component_describe_command(
 def generate_stack_component_list_command(
     component_type: StackComponentType,
 ) -> Callable[[], None]:
-    """Generates a `list` command for the specific stack component type."""
+    """Generates a `list` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
 
     def list_stack_components_command() -> None:
         """Prints a table of stack components."""
@@ -225,7 +278,14 @@ def _register_stack_component(
     component_flavor: str,
     **kwargs: Any,
 ) -> None:
-    """Register a stack component."""
+    """Register a stack component.
+
+    Args:
+        component_type: Type of the component to register.
+        component_name: Name of the component to register.
+        component_flavor: Flavor of the component to register.
+        **kwargs: Additional arguments to pass to the component.
+    """
     repo = Repository()
     flavor_class = repo.get_flavor(
         name=component_flavor, component_type=component_type
@@ -237,7 +297,14 @@ def _register_stack_component(
 def generate_stack_component_register_command(
     component_type: StackComponentType,
 ) -> Callable[[str, str, str, List[str]], None]:
-    """Generates a `register` command for the specific stack component type."""
+    """Generates a `register` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
     display_name = _component_display_name(component_type)
 
     @click.argument(
@@ -263,7 +330,14 @@ def generate_stack_component_register_command(
     def register_stack_component_command(
         name: str, flavor: str, old_flavor: str, args: List[str]
     ) -> None:
-        """Registers a stack component."""
+        """Registers a stack component.
+
+        Args:
+            name: Name of the component to register.
+            flavor: Flavor of the component to register.
+            old_flavor: DEPRECATED: The flavor of the component to register.
+            args: Additional arguments to pass to the component.
+        """
         cli_utils.print_active_profile()
 
         if flavor or old_flavor:
@@ -318,7 +392,14 @@ def generate_stack_component_register_command(
 def generate_stack_component_flavor_register_command(
     component_type: StackComponentType,
 ) -> Callable[[str], None]:
-    """Generates a `register` command for the flavors of a stack component."""
+    """Generates a `register` command for the flavors of a stack component.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
 
     @click.argument(
         "source",
@@ -326,7 +407,11 @@ def generate_stack_component_flavor_register_command(
         required=True,
     )
     def register_stack_component_flavor_command(source: str) -> None:
-        """Adds a flavor for a stack component type."""
+        """Adds a flavor for a stack component type.
+
+        Args:
+            source: The source file to read the flavor from.
+        """
         cli_utils.print_active_profile()
 
         # Check whether the module exists and is the right type
@@ -378,7 +463,14 @@ def generate_stack_component_flavor_register_command(
 def generate_stack_component_flavor_list_command(
     component_type: StackComponentType,
 ) -> Callable[[], None]:
-    """Generates a `list` command for the flavors of a stack component."""
+    """Generates a `list` command for the flavors of a stack component.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
 
     def list_stack_component_flavor_command() -> None:
         """Adds a flavor for a stack component type."""
@@ -408,7 +500,14 @@ def generate_stack_component_flavor_list_command(
 def generate_stack_component_update_command(
     component_type: StackComponentType,
 ) -> Callable[[str, List[str]], None]:
-    """Generates an `update` command for the specific stack component type."""
+    """Generates an `update` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
     display_name = _component_display_name(component_type)
 
     @click.argument(
@@ -420,7 +519,12 @@ def generate_stack_component_update_command(
     def update_stack_component_command(
         name: Optional[str], args: Sequence[str]
     ) -> None:
-        """Updates a stack component."""
+        """Updates a stack component.
+
+        Args:
+            name: The name of the stack component to update.
+            args: Additional arguments to pass to the update command.
+        """
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
@@ -492,7 +596,14 @@ def generate_stack_component_update_command(
 def generate_stack_component_remove_attribute_command(
     component_type: StackComponentType,
 ) -> Callable[[str, List[str]], None]:
-    """Generates an `remove_attribute` command for the specific stack component type."""
+    """Generates an `remove_attribute` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
     display_name = _component_display_name(component_type)
 
     @click.argument(
@@ -504,7 +615,12 @@ def generate_stack_component_remove_attribute_command(
     def remove_attribute_stack_component_command(
         name: str, args: List[str]
     ) -> None:
-        """Removes one or more attributes from a stack component."""
+        """Removes one or more attributes from a stack component.
+
+        Args:
+            name: The name of the stack component to remove the attribute from.
+            args: Additional arguments to pass to the remove_attribute command.
+        """
         cli_utils.print_active_profile()
         with console.status(f"Updating {display_name} '{name}'...\n"):
             repo = Repository()
@@ -558,7 +674,14 @@ def generate_stack_component_remove_attribute_command(
 def generate_stack_component_rename_command(
     component_type: StackComponentType,
 ) -> Callable[[str, str], None]:
-    """Generates a `rename` command for the specific stack component type."""
+    """Generates a `rename` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
     display_name = _component_display_name(component_type)
 
     @click.argument(
@@ -572,7 +695,12 @@ def generate_stack_component_rename_command(
         required=True,
     )
     def rename_stack_component_command(name: str, new_name: str) -> None:
-        """Rename a stack component."""
+        """Rename a stack component.
+
+        Args:
+            name: The name of the stack component to rename.
+            new_name: The new name of the stack component.
+        """
         cli_utils.print_active_profile()
         with console.status(f"Renaming {display_name} '{name}'...\n"):
             repo = Repository()
@@ -611,12 +739,23 @@ def generate_stack_component_rename_command(
 def generate_stack_component_delete_command(
     component_type: StackComponentType,
 ) -> Callable[[str], None]:
-    """Generates a `delete` command for the specific stack component type."""
+    """Generates a `delete` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
     display_name = _component_display_name(component_type)
 
     @click.argument("name", type=str)
     def delete_stack_component_command(name: str) -> None:
-        """Deletes a stack component."""
+        """Deletes a stack component.
+
+        Args:
+            name: The name of the stack component to delete.
+        """
         cli_utils.print_active_profile()
 
         with console.status(f"Deleting {display_name} '{name}'...\n"):
@@ -632,11 +771,22 @@ def generate_stack_component_delete_command(
 def generate_stack_component_up_command(
     component_type: StackComponentType,
 ) -> Callable[[Optional[str]], None]:
-    """Generates a `up` command for the specific stack component type."""
+    """Generates a `up` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
 
     @click.argument("name", type=str, required=False)
     def up_stack_component_command(name: Optional[str] = None) -> None:
-        """Deploys a stack component locally."""
+        """Deploys a stack component locally.
+
+        Args:
+            name: The name of the stack component to deploy.
+        """
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
@@ -682,7 +832,14 @@ def generate_stack_component_up_command(
 def generate_stack_component_down_command(
     component_type: StackComponentType,
 ) -> Callable[[Optional[str], bool], None]:
-    """Generates a `down` command for the specific stack component type."""
+    """Generates a `down` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
 
     @click.argument("name", type=str, required=False)
     @click.option(
@@ -701,9 +858,18 @@ def generate_stack_component_down_command(
         "them. Use `-y/--yes` instead.",
     )
     def down_stack_component_command(
-        name: Optional[str] = None, force: bool = False, old_force: bool = False
+        name: Optional[str] = None,
+        force: bool = False,
+        old_force: bool = False,
     ) -> None:
-        """Stops/Tears down the local deployment of a stack component."""
+        """Stops/Tears down the local deployment of a stack component.
+
+        Args:
+            name: The name of the stack component to stop/deprovision.
+            force: Deprovision local resources instead of suspending them.
+            old_force: DEPRECATED: Deprovision local resources instead of
+                suspending them. Use `-y/--yes` instead.
+        """
         if old_force:
             force = old_force
             cli_utils.warning(
@@ -761,7 +927,14 @@ def generate_stack_component_down_command(
 def generate_stack_component_logs_command(
     component_type: StackComponentType,
 ) -> Callable[[Optional[str], bool], None]:
-    """Generates a `logs` command for the specific stack component type."""
+    """Generates a `logs` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
 
     @click.argument("name", type=str, required=False)
     @click.option(
@@ -773,7 +946,13 @@ def generate_stack_component_logs_command(
     def stack_component_logs_command(
         name: Optional[str] = None, follow: bool = False
     ) -> None:
-        """Displays stack component logs."""
+        """Displays stack component logs.
+
+        Args:
+            name: The name of the stack component to display logs for.
+            follow: Follow the log file instead of just displaying the current
+                logs.
+        """
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
 
@@ -819,7 +998,14 @@ def generate_stack_component_logs_command(
 def generate_stack_component_explain_command(
     component_type: StackComponentType,
 ) -> Callable[[], None]:
-    """Generates an `explain` command for the specific stack component type."""
+    """Generates an `explain` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
 
     def explain_stack_components_command() -> None:
         """Explains the concept of the stack component."""
@@ -842,7 +1028,12 @@ def generate_stack_component_explain_command(
 def register_single_stack_component_cli_commands(
     component_type: StackComponentType, parent_group: click.Group
 ) -> None:
-    """Registers all basic stack component CLI commands."""
+    """Registers all basic stack component CLI commands.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+        parent_group: The parent group to register the commands to.
+    """
     command_name = component_type.value.replace("_", "-")
     singular_display_name = _component_display_name(component_type)
     plural_display_name = _component_display_name(component_type, plural=True)

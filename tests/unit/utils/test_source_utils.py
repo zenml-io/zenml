@@ -34,6 +34,24 @@ def test_is_third_party_module():
     assert not source_utils.is_third_party_module(non_third_party_file)
 
 
+class EmptyClass:
+    pass
+
+
+def test_resolve_class():
+    """Tests that class resolving works as expected."""
+    os.getcwd()
+    parent_directory = os.path.dirname(os.path.dirname(__file__))
+    os.chdir(parent_directory)
+    try:
+        assert (
+            source_utils.resolve_class(EmptyClass)
+            == "utils.test_source_utils.EmptyClass"
+        )
+    finally:
+        os.chdir(parent_directory)
+
+
 def test_get_source():
     """Tests if source of objects is gotten properly."""
     assert source_utils.get_source(pytest.Cache)

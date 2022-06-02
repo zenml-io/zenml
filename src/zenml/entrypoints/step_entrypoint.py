@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to run ZenML steps."""
+
 import argparse
 
 from zenml.entrypoints.step_entrypoint_configuration import (
@@ -28,6 +30,9 @@ def main() -> None:
     `zenml.entrypoints.StepEntrypointConfiguration` subclass (the concrete
     implementation can be specified using the command line arguments) and calls
     its `run()` method.
+
+    Raises:
+        TypeError: If the command line arguments are invalid.
     """
     # Read the source for the entrypoint configuration class from the command
     # line arguments

@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Class for built-in ZenML training pipeline."""
 
 from zenml.pipelines import BasePipeline
 from zenml.steps import step_interfaces
 
 
 class TrainingPipeline(BasePipeline):
-    """Class for the classic training pipeline implementation"""
+    """Class for the classic training pipeline implementation."""
 
     def connect(  # type: ignore[override]
         self,
@@ -28,7 +29,7 @@ class TrainingPipeline(BasePipeline):
         trainer: step_interfaces.BaseTrainerStep,
         evaluator: step_interfaces.BaseEvaluatorStep,
     ) -> None:
-        """Main connect method for the standard training pipelines
+        """Main connect method for the standard training pipelines.
 
         Args:
             datasource: the step responsible for the data ingestion

@@ -193,7 +193,7 @@ def get_module_source_from_module(module: ModuleType) -> str:
 
     # Kick out the .py and replace `/` with `.` to get the module source
     module_path = module_path.replace(".py", "")
-    module_source = module_path.replace("/", ".")
+    module_source = module_path.replace(os.path.sep, ".")
 
     logger.debug(
         f"Resolved module source for module {module} to: {module_source}"
@@ -210,7 +210,7 @@ def get_relative_path_from_module_source(module_source: str) -> str:
     Args:
         module_source: A module e.g. zenml.core.step
     """
-    return module_source.replace(".", "/")
+    return module_source.replace(".", os.path.sep)
 
 
 def get_absolute_path_from_module_source(module: str) -> str:
@@ -470,7 +470,7 @@ def import_python_file(file_path: str) -> types.ModuleType:
     #  module
     full_module_path = os.path.splitext(
         os.path.relpath(file_path, os.getcwd())
-    )[0].replace("/", ".")
+    )[0].replace(os.path.sep, ".")
 
     if full_module_path not in sys.modules:
         with prepend_python_path(os.path.dirname(file_path)):
