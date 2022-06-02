@@ -40,7 +40,7 @@ from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
-from zenml.integrations.kubernetes.orchestrators import kube_utils
+from zenml.integrations.kubernetes.orchestrators import tfx_kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_entrypoint_configuration import (
     KUBERNETES_JOB_ID_OPTION,
     KubernetesEntrypointConfiguration,
@@ -448,7 +448,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         }
 
         # Create and run pod.
-        core_api = kube_utils.make_core_v1_api()
+        core_api = tfx_kube_utils.make_core_v1_api()
         core_api.create_namespaced_pod(
             namespace=self.kubernetes_namespace,
             body=pod_manifest,
@@ -457,11 +457,11 @@ class KubernetesOrchestrator(BaseOrchestrator):
         logger.info("Kubernetes orchestrator pod started.")
 
         # Wait for pod to finish.
-        kube_utils.wait_pod(
+        tfx_kube_utils.wait_pod(
             core_api,
             pod_name,
             namespace=self.kubernetes_namespace,
-            exit_condition_lambda=kube_utils.pod_is_done,
+            exit_condition_lambda=tfx_kube_utils.pod_is_done,
             condition_description="done state",
         )
 

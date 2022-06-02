@@ -17,7 +17,7 @@ import json
 import logging
 import sys
 
-from zenml.integrations.kubernetes.orchestrators import kube_utils
+from zenml.integrations.kubernetes.orchestrators import tfx_kube_utils
 
 
 def parse_args():
@@ -37,7 +37,7 @@ def main():
     logging.getLogger().setLevel(logging.INFO)
 
     args = parse_args()
-    core_api = kube_utils.make_core_v1_api()
+    core_api = tfx_kube_utils.make_core_v1_api()
 
     logging.info("Starting orchestration...")
 
@@ -89,11 +89,11 @@ def main():
         logging.info(f"Waiting for step {step_name}...")
 
         # Wait for pod to finish.
-        kube_utils.wait_pod(
+        tfx_kube_utils.wait_pod(
             core_api,
             pod_name,
             namespace=args.kubernetes_namespace,
-            exit_condition_lambda=kube_utils.pod_is_done,
+            exit_condition_lambda=tfx_kube_utils.pod_is_done,
             condition_description="done state",
         )
 
