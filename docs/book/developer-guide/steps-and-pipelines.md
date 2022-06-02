@@ -20,7 +20,7 @@ def my_first_step() -> Output(output_int=int, output_float=float):
 
 As this step has multiple outputs, we need to use the `zenml.steps.step_output.Output` class to indicate the names 
 of each output. These names can be used to directly access an output within the 
-[post execution workflow](#post-execution-workflow).
+[post execution workflow](./post-execution-workflow.md).
 
 Let's come up with a second step that consumes the output of our first step and performs some sort of transformation
 on it. In this case, let's double the input.
@@ -77,7 +77,7 @@ Step `my_second_step` has finished in 0.067s.
 Pipeline run `first_pipeline-20_Apr_22-16_07_14_577771` has finished in 0.128s.
 ```
 
-You'll learn how to inspect the finished run within the chapter on our [Post Execution Workflow](#post-execution-workflow).
+You'll learn how to inspect the finished run within the chapter on our [Post Execution Workflow](./post-execution-workflow.md).
 
 ### Summary in Code
 

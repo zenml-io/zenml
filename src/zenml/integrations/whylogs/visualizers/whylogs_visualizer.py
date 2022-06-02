@@ -62,7 +62,7 @@ class WhylogsVisualizer(BaseStepVisualizer):
             f"{DatasetProfile.__module__}.{DatasetProfile.__name__}"
         )
         for artifact_name, artifact_view in object.outputs.items():
-            # filter out anything but whylog dataset profile artifacts
+            # filter out anything but whylogs dataset profile artifacts
             if artifact_view.data_type == whylogs_artifact_datatype:
                 profile = artifact_view.read()
                 # whylogs doesn't currently support visualizing multiple

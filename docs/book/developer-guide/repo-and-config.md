@@ -27,7 +27,7 @@ Config Directory_ used on a system can be retrieved by running the following
 command:
 
 ```shell
-python -c 'from zenml.io.utils import get_global_config_directory; print(get_global_config_directory())'
+python -c 'from zenml.utils.io_utils import get_global_config_directory; print(get_global_config_directory())'
 ```
 
 {% hint style="warning" %}
@@ -171,7 +171,7 @@ global configuration: the _Repository_ active Profile and active Stack. These
 settings are in effect when ZenML code is executed while the current working
 directory is the _Repository_ root or one of its sub-folders. For more information
 on setting the active Profile and Stack local to a _Repository_, please visit
-the [ZenML Profiles](./profiles.md) section.
+the [ZenML Profiles](../collaborate/profiles.md) section.
 
 A ZenML _Repository_ is easily identifiable by the presence of a (hidden) `.zen`
 directory located in the root folder. The `.zen` directory contains a single

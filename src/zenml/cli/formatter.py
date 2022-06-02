@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Helper functions to format output for CLI."""
 
 from typing import Dict, Iterable, Iterator, Optional, Sequence, Tuple
 
@@ -19,8 +20,13 @@ from click._compat import term_len
 
 
 def measure_table(rows: Iterable[Tuple[str, ...]]) -> Tuple[int, ...]:
-    """
-    Measure the width of each column in a table.
+    """Measure the width of each column in a table.
+
+    Args:
+        rows: The rows of the table.
+
+    Returns:
+        A tuple of the width of each column.
     """
     widths: Dict[int, int] = {}
     for row in rows:
@@ -34,18 +40,21 @@ def iter_rows(
     rows: Iterable[Tuple[str, ...]],
     col_count: int,
 ) -> Iterator[Tuple[str, ...]]:
-    """
-    Iterate over rows of a table.
+    """Iterate over rows of a table.
+
+    Args:
+        rows: The rows of the table.
+        col_count: The number of columns in the table.
+
+    Yields:
+        An iterator over the rows of the table.
     """
     for row in rows:
         yield row + ("",) * (col_count - len(row))
 
 
 class ZenFormatter(formatting.HelpFormatter):
-    """
-    Override the default HelpFormatter to add a custom
-    format for the help command output.
-    """
+    """Override the default HelpFormatter to add a custom format for the help command output."""
 
     def __init__(
         self,
@@ -53,6 +62,14 @@ class ZenFormatter(formatting.HelpFormatter):
         width: Optional[int] = None,
         max_width: Optional[int] = None,
     ) -> None:
+        """Initialize the formatter.
+
+        Args:
+            indent_increment: The number of spaces to indent each level of
+                nesting.
+            width: The maximum width of the help output.
+            max_width: The maximum width of the help output.
+        """
         super(ZenFormatter, self).__init__(indent_increment, width, max_width)
         self.current_indent = 0
 
@@ -62,8 +79,9 @@ class ZenFormatter(formatting.HelpFormatter):
         col_max: int = 30,
         col_spacing: int = 2,
     ) -> None:
-        """Writes a definition list into the buffer.  This is how options
-        and commands are usually formatted.
+        """Writes a definition list into the buffer.
+
+        This is how options and commands are usually formatted.
 
         Arguments:
             rows: a list of items as tuples for the terms and values.
@@ -76,6 +94,9 @@ class ZenFormatter(formatting.HelpFormatter):
         But for new CLI commands, we want to format the rows in a definition
         list with rows of 3 columns following the format the format
                             ``(term, value, description)``.
+
+        Raises:
+            TypeError: if the number of columns is not 2 or 3.
         """
         rows = list(rows)
         widths = measure_table(rows)

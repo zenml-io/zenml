@@ -33,10 +33,10 @@ logger = get_logger(__name__)
 
 
 class TensorboardServiceConfig(LocalDaemonServiceConfig):
-    """Tensorboard service configuration.
+    """TensorBoard service configuration.
 
     Attributes:
-        logdir: location of Tensorboard log files.
+        logdir: location of TensorBoard log files.
         max_reload_threads: the max number of threads that TensorBoard can use
             to reload runs. Each thread reloads one run at a time.
         reload_interval: how often the backend should load more data, in
@@ -49,12 +49,12 @@ class TensorboardServiceConfig(LocalDaemonServiceConfig):
 
 
 class TensorboardService(LocalDaemonService):
-    """Tensorboard service that can be used to start a local Tensorboard server
+    """TensorBoard service that can be used to start a local TensorBoard server
     for one or more models.
 
     Attributes:
         SERVICE_TYPE: a service type descriptor with information describing
-            the Tensorboard service class
+            the TensorBoard service class
         config: service configuration
         endpoint: optional service endpoint
     """
@@ -63,7 +63,7 @@ class TensorboardService(LocalDaemonService):
         name="tensorboard",
         type="visualization",
         flavor="tensorboard",
-        description="Tensorboard visualization service",
+        description="TensorBoard visualization service",
     )
 
     config: TensorboardServiceConfig
@@ -75,7 +75,7 @@ class TensorboardService(LocalDaemonService):
         **attrs: Any,
     ) -> None:
         # ensure that the endpoint is created before the service is initialized
-        # TODO [ENG-697]: implement a service factory or builder for Tensorboard
+        # TODO [ENG-697]: implement a service factory or builder for TensorBoard
         #   deployment services
         if (
             isinstance(config, TensorboardServiceConfig)
@@ -97,7 +97,7 @@ class TensorboardService(LocalDaemonService):
 
     def run(self) -> None:
         logger.info(
-            "Starting Tensorboard service as blocking "
+            "Starting TensorBoard service as blocking "
             "process... press CTRL+C once to stop it."
         )
 
@@ -118,5 +118,5 @@ class TensorboardService(LocalDaemonService):
             tensorboard.main()
         except KeyboardInterrupt:
             logger.info(
-                "Tensorboard service stopped. Resuming normal execution."
+                "TensorBoard service stopped. Resuming normal execution."
             )

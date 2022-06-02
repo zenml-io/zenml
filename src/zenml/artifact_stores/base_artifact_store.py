@@ -25,7 +25,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""The `BaseArtifactStore` offers an interface for extending the ZenML artifact store."""
 import textwrap
 from abc import abstractmethod
 from typing import (
@@ -52,14 +52,35 @@ PathType = Union[bytes, str]
 
 
 def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
-    """Utility decorator used for catching a `FileNotFoundError` and
-    converting it to a `NotFoundError` in order to deal with the TFX exception
-    handling."""
+    """Utility decorator used for catching a `FileNotFoundError`.
+
+    Error is converted to a `NotFoundError` in order to deal with the TFX
+    exception handling.
+
+    Args:
+        _func: The function to decorate.
+
+    Returns:
+        The decorated function.
+    """
 
     def inner_function(*args: Any, **kwargs: Any) -> Any:
-        """Inner function for the decorator. It attempts to run the function
+        """Inner function for the decorator.
+
+        It attempts to run the function
         wrapped by the decorator and catches the FileNotFoundError if it is
-        thrown. In that case, the tfx.NotFoundError is raised instead."""
+        thrown. In that case, the tfx.NotFoundError is raised instead.
+
+        Args:
+            *args: The positional arguments to pass to the function.
+            **kwargs: The keyword arguments to pass to the function.
+
+        Returns:
+            The inner function.
+
+        Raises:
+            NotFoundError: If the function throws a FileNotFoundError.
+        """
         try:
             return _func(*args, **kwargs)
         except FileNotFoundError as e:
@@ -70,6 +91,7 @@ def _catch_not_found_error(_func: Callable[..., Any]) -> Callable[..., Any]:
 
 class BaseArtifactStore(StackComponent):
     """Base class for all ZenML artifact stores.
+
     Attributes:
         path: The root path of the artifact store.
     """
@@ -83,55 +105,126 @@ class BaseArtifactStore(StackComponent):
     # --- User interface ---
     @abstractmethod
     def open(self, name: PathType, mode: str = "r") -> Any:
-        """Open a file at the given path."""
+        """Open a file at the given path.
+
+        Args:
+            name: The path of the file to open.
+            mode: The mode to open the file.
+
+        Returns:
+            The file object.
+        """
 
     @abstractmethod
     def copyfile(
         self, src: PathType, dst: PathType, overwrite: bool = False
     ) -> None:
-        """Copy a file from the source to the destination."""
+        """Copy a file from the source to the destination.
+
+        Args:
+            src: The source path.
+            dst: The destination path.
+            overwrite: Whether to overwrite the destination file if it exists.
+        """
 
     @abstractmethod
     def exists(self, path: PathType) -> bool:
-        """Returns `True` if the given path exists."""
+        """Checks if a path exists.
+
+        Args:
+            path: The path to check.
+
+        Returns:
+            `True` if the path exists.
+        """
 
     @abstractmethod
     def glob(self, pattern: PathType) -> List[PathType]:
-        """Return the paths that match a glob pattern."""
+        """Gets the paths that match a glob pattern.
+
+        Args:
+            pattern: The glob pattern.
+
+        Returns:
+            The list of paths that match the pattern.
+        """
 
     @abstractmethod
     def isdir(self, path: PathType) -> bool:
-        """Returns whether the given path points to a directory."""
+        """Returns whether the given path points to a directory.
+
+        Args:
+            path: The path to check.
+
+        Returns:
+            `True` if the path points to a directory.
+        """
 
     @abstractmethod
     def listdir(self, path: PathType) -> List[PathType]:
-        """Returns a list of files under a given directory in the filesystem."""
+        """Returns a list of files under a given directory in the filesystem.
+
+        Args:
+            path: The path to list.
+
+        Returns:
+            The list of files under the given path.
+        """
 
     @abstractmethod
     def makedirs(self, path: PathType) -> None:
-        """Make a directory at the given path, recursively creating parents."""
+        """Make a directory at the given path, recursively creating parents.
+
+        Args:
+            path: The path to create.
+        """
 
     @abstractmethod
     def mkdir(self, path: PathType) -> None:
-        """Make a directory at the given path; parent directory must exist."""
+        """Make a directory at the given path; parent directory must exist.
+
+        Args:
+            path: The path to create.
+        """
 
     @abstractmethod
     def remove(self, path: PathType) -> None:
-        """Remove the file at the given path. Dangerous operation."""
+        """Remove the file at the given path. Dangerous operation.
+
+        Args:
+            path: The path to remove.
+        """
 
     @abstractmethod
     def rename(
         self, src: PathType, dst: PathType, overwrite: bool = False
     ) -> None:
-        """Rename source file to destination file."""
+        """Rename source file to destination file.
+
+        Args:
+            src: The source path.
+            dst: The destination path.
+            overwrite: Whether to overwrite the destination file if it exists.
+        """
 
     @abstractmethod
     def rmtree(self, path: PathType) -> None:
-        """Deletes dir recursively. Dangerous operation."""
+        """Deletes dir recursively. Dangerous operation.
+
+        Args:
+            path: The path to delete.
+        """
 
     @abstractmethod
     def stat(self, path: PathType) -> Any:
-        """Return the stat descriptor for a given file path."""
+        """Return the stat descriptor for a given file path.
+
+        Args:
+            path: The path to check.
+
+        Returns:
+            The stat descriptor.
+        """
 
     @abstractmethod
     def walk(
@@ -140,19 +233,44 @@ class BaseArtifactStore(StackComponent):
         topdown: bool = True,
         onerror: Optional[Callable[..., None]] = None,
     ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
-        """Return an iterator that walks the contents of the given directory."""
+        """Return an iterator that walks the contents of the given directory.
+
+        Args:
+            top: The path to walk.
+            topdown: Whether to walk the top-down or bottom-up.
+            onerror: The error handler.
+
+        Returns:
+            The iterator that walks the contents of the given directory.
+        """
 
     # --- Internal interface ---
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initiate the Pydantic object and register the corresponding
-        filesystem."""
+        """Initiate the Pydantic object and register the corresponding filesystem.
+
+        Args:
+            *args: The positional arguments to pass to the Pydantic object.
+            **kwargs: The keyword arguments to pass to the Pydantic object.
+        """
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
         self._register()
 
     @root_validator(skip_on_failure=True)
     def _ensure_artifact_store(cls, values: Dict[str, Any]) -> Any:
-        """Validator function for the Artifact Stores. Checks whether
-        supported schemes are defined and the given path is supported"""
+        """Validator function for the Artifact Stores.
+
+        Checks whether supported schemes are defined and the given path is
+        supported.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+
+        Raises:
+            ArtifactStoreInterfaceError: If the scheme is not supported.
+        """
         try:
             getattr(cls, "SUPPORTED_SCHEMES")
         except AttributeError:
@@ -191,7 +309,11 @@ class BaseArtifactStore(StackComponent):
         return values
 
     def _register(self, priority: int = 5) -> None:
-        """Create and register a filesystem within the TFX registry"""
+        """Create and register a filesystem within the TFX registry.
+
+        Args:
+            priority: The priority of the filesystem.
+        """
         from tfx.dsl.io.filesystem import Filesystem
         from tfx.dsl.io.filesystem_registry import DEFAULT_FILESYSTEM_REGISTRY
 

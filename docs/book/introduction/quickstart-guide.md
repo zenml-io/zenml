@@ -35,7 +35,7 @@ zenml integration install sklearn -y
 
 {% hint style="success" %}
 We are just using sklearn for the purposes of illustration; ZenML works with any ML library such as PyTorch, Tensorflow,
-HuggingFace, PyTorch Lightning, etc. See our [full list of integrations](../advanced-guide/integrations/integrations.md) for a
+HuggingFace, PyTorch Lightning, etc. See our [full list of integrations](../advanced-guide/integrations.md) for a
 complete overview.
 {% endhint %}
 
@@ -139,11 +139,11 @@ that is super helpful:
 
 With just a little more work, one can:
 
-- Run this pipeline [in production on the cloud](../guides/Use%20Cases/guide-aws-gcp-azure.md) with a production
+- Run this pipeline [in production on the cloud](../advanced-guide/guide-aws-gcp-azure.md) with a production
   ready orchestrator like Kubeflow.
-- Access important metadata like [statistics, schemas and drifts](../guides/basics/visualizers.md) which is inferred from
+- Access important metadata like [statistics, schemas and drifts](../advanced-guide/visualizer.md) which is inferred from
 the model and data which flows through these steps.
-- Easily [deploy models](../advanced-guide/cloud/continuous-training-and-deployment.md) that are trained within a ZenML 
+- Easily [deploy models](../advanced-guide/continuous-training-and-deployment.md) that are trained within a ZenML 
 pipeline and even set up continuous training loops including automatic deployments.
 
 Best of all: We let you and your infrastructure / ops team decide what the underlying tools are to achieve all this.

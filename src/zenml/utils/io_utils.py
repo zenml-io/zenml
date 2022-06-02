@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Various utility functions for the io module."""
 
 import fnmatch
 import os
@@ -34,7 +35,11 @@ from zenml.io.fileio import (
 
 
 def get_global_config_directory() -> str:
-    """Returns the global config directory for ZenML."""
+    """Gets the global config directory for ZenML.
+
+    Returns:
+        The global config directory for ZenML.
+    """
     env_var_path = os.getenv(ENV_ZENML_CONFIG_PATH)
     if env_var_path:
         return str(Path(env_var_path).resolve())
@@ -57,6 +62,12 @@ def read_file_contents_as_string(file_path: str) -> str:
 
     Args:
         file_path: Path to file.
+
+    Returns:
+        Contents of file.
+
+    Raises:
+        FileNotFoundError: If file does not exist.
     """
     if not exists(file_path):
         raise FileNotFoundError(f"{file_path} does not exist!")
@@ -135,7 +146,7 @@ def resolve_relative_path(path: str) -> str:
     """Takes relative path and resolves it absolutely.
 
     Args:
-      path: Local path in filesystem.
+        path: Local path in filesystem.
 
     Returns:
         Resolved path.
@@ -198,7 +209,14 @@ def get_parent(dir_path: str) -> str:
 
 
 def convert_to_str(path: PathType) -> str:
-    """Converts a PathType to a str using UTF-8."""
+    """Converts a PathType to a str using UTF-8.
+
+    Args:
+        path: Path to convert.
+
+    Returns:
+        Converted path.
+    """
     if isinstance(path, str):
         return path
     else:

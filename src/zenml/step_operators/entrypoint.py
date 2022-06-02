@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Entrypoint for the step operator."""
 
 import importlib
 import logging
@@ -46,6 +47,9 @@ def create_executor_class(
         step_source_path: Import path of the step to run.
         input_artifact_type_mapping: A dictionary mapping input names to
             a string representation of their artifact classes.
+
+    Returns:
+        A class of an executor instance.
     """
     step_class = cast(
         Type[BaseStep], source_utils.load_source_path_class(step_source_path)
@@ -85,7 +89,14 @@ def create_executor_class(
 
 
 def load_execution_info(execution_info_path: str) -> ExecutionInfo:
-    """Loads the execution info from the given path."""
+    """Loads the execution info from the given path.
+
+    Args:
+        execution_info_path: Path to the execution info file.
+
+    Returns:
+        Execution info.
+    """
     with fileio.open(execution_info_path, "rb") as f:
         execution_info_proto = ExecutionInvocation.FromString(f.read())
 
@@ -128,7 +139,14 @@ def main(
     execution_info_path: str,
     input_artifact_types_path: str,
 ) -> None:
-    """Runs a single ZenML step."""
+    """Runs a single ZenML step.
+
+    Args:
+        main_module: The module containing the main function.
+        step_source_path: Import path of the step to run.
+        execution_info_path: Path to the execution info file.
+        input_artifact_types_path: Path to the input artifact types file.
+    """
     # prevent running entire pipeline in user code if they would run at import
     # time (e.g. not wrapped in a function or __name__== "__main__" check)
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True

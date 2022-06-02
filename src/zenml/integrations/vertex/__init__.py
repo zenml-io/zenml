@@ -23,6 +23,7 @@ from zenml.integrations.constants import VERTEX
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
+VERTEX_ORCHESTRATOR_FLAVOR = "vertex"
 VERTEX_STEP_OPERATOR_FLAVOR = "vertex"
 
 
@@ -30,18 +31,24 @@ class VertexIntegration(Integration):
     """Definition of Vertex AI integration for ZenML."""
 
     NAME = VERTEX
-    REQUIREMENTS = ["google-cloud-aiplatform>=1.11.0"]
+    REQUIREMENTS = ["google-cloud-aiplatform>=1.11.0", "kfp==1.8.9"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the Vertex integration."""
         return [
             FlavorWrapper(
+                name=VERTEX_ORCHESTRATOR_FLAVOR,
+                source="zenml.integrations.vertex.orchestrators.VertexOrchestrator",
+                type=StackComponentType.ORCHESTRATOR,
+                integration=cls.NAME,
+            ),
+            FlavorWrapper(
                 name=VERTEX_STEP_OPERATOR_FLAVOR,
                 source="zenml.integrations.vertex.step_operators.VertexStepOperator",
                 type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
-            )
+            ),
         ]
 
 

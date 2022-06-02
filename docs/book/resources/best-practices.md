@@ -50,7 +50,7 @@ at any point without running into dependency issues.
 
 ### Do not overlap `required_integrations` and `requirements`
 
-Setting requirements twice can lead to unexpected behaviour as you will end up
+Setting requirements twice can lead to unexpected behavior as you will end up
 with *only* one of the two defined package versions, which might cause problems.
 
 ### Nest `pipeline_instance.run()` in `if __name__ == "__main__"`
@@ -102,7 +102,7 @@ step.
 ### Enable cache explicitly for steps that have a `context` argument, if they don't invalidate the caching behavior
 
 Cache is implicitly disabled for steps that have a
-[context]((../developer-guide/step-fixtures.md#using-the-stepcontext)) argument,
+[context](../developer-guide/step-fixtures.md#using-the-stepcontext) argument,
 because it is assumed that you might use the step context to retrieve artifacts
 from the artifact store that are unrelated to the current step. However, if that
 is not the case, and your step logic doesn't invalidate the caching behavior, it
