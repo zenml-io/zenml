@@ -71,9 +71,9 @@ can also help by
 indicating to our maintainers that a particular issue is affecting more than
 just the reporter.
 
-### 🏷 Pull Requests
+### 🏷 Pull Requests: When to make one
 
-PRs to ZenML are always welcome and can be a quick way to get your fix or
+Pull Requests (PRs) to ZenML are always welcome and can be a quick way to get your fix or
 improvement slated for the next release. In
 general, PRs should:
 
@@ -89,6 +89,11 @@ general, PRs should:
 For changes that address core functionality or would require breaking changes (e.g. a major release), it's best to open
 an Issue to discuss your proposal first. This is not required but can save time
 creating and reviewing changes.
+
+### 💯 Pull Requests: Workflow to Contribute
+
+<p class="callout warning">Please note that development in ZenML happens off of the `develop` branch, **not** `main`, 
+which is the default branch on GitHub. Therefore, please pay particular attention to step 5 and step 9 below. </p>
 
 In general, we follow
 the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
