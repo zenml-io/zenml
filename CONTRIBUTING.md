@@ -98,11 +98,11 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
    CLA).
 2. Fork the repository to your own Github account
 3. Clone the project to your machine
-4. Create a branch locally with a succinct but descriptive name
-5. Commit changes to the branch
-6. Following any formatting and testing guidelines specific to this repo
-7. Push changes to your fork
-8. Open a PR in our repository (to the `develop` branch, **NOT** `main`) and
+5. Create a branch **off of the develop** branch locally with a succinct but descriptive name
+6. Commit changes to the branch
+7. Following any formatting and testing guidelines specific to this repo
+8. Push changes to your fork
+9. Open a PR in our repository (to the `develop` branch, **NOT** `main`) and
    follow the PR template so that we can efficiently review the changes.
 
 ### 🧐 Linting, formatting, and tests
