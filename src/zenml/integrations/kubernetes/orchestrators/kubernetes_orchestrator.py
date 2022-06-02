@@ -29,6 +29,7 @@
 # Parts of the `prepare_or_run_pipeline()` method of this file are
 # inspired by the kubernetes dag runner implementation of tfx
 
+import json
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -361,56 +362,107 @@ class KubernetesOrchestrator(BaseOrchestrator):
         run_name = runtime_configuration.run_name
         pipeline_name = pipeline.name
 
+        # Get docker image name
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
-        command = KubernetesEntrypointConfiguration.get_entrypoint_command()
-        core_api = kube_utils.make_core_v1_api()
+        # Define pipeline config
+        pipeline_json = ""
 
-        for step in sorted_steps:
-
-            step_name = step.name
-
+        def _get_args_for_step(step):
             args = KubernetesEntrypointConfiguration.get_entrypoint_arguments(
                 step=step,
                 pb2_pipeline=pb2_pipeline,
                 **{KUBERNETES_JOB_ID_OPTION: run_name},
             )
-            pod_name = f"{run_name}-{step_name}"
-            pod_name = pod_name.lower().replace("_", "-")  # happy now, k8s?
-            pod_manifest = {
-                "apiVersion": "v1",
-                "kind": "Pod",
-                "metadata": {
-                    "name": pod_name,
-                    "labels": {
-                        "run": run_name,
-                        "pipeline": pipeline_name,
-                        "step": step_name,
+
+            # remove pipeline json to avoid sending it multiple times
+            # TODO: refactor step args to separate step-specific from general
+            for i, arg in enumerate(args):
+                if arg == "--pipeline_json":
+                    nonlocal pipeline_json
+                    pipeline_json = args[i + 1]
+                    del args[i : i + 2]
+            return args
+
+        step_names = [step.name for step in sorted_steps]
+        step_command = (
+            KubernetesEntrypointConfiguration.get_entrypoint_command()
+        )
+        step_args = {
+            step.name: _get_args_for_step(step) for step in sorted_steps
+        }
+        pipeline_config = {
+            "sorted_steps": step_names,
+            "step_command": step_command,
+            "step_args": step_args,
+        }
+
+        json.dump(step_args, open("step_args.json", "w"))
+
+        command = [
+            "python",
+            "-m",
+            "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint",
+        ]
+
+        args = [
+            "--run_name",
+            run_name,
+            "--pipeline_name",
+            pipeline_name,
+            "--image_name",
+            image_name,
+            "--kubernetes_namespace",
+            self.kubernetes_namespace,
+            "--pipeline_json",
+            pipeline_json,
+            "--pipeline_config",
+            json.dumps(pipeline_config),
+        ]
+
+        pod_name = run_name
+        pod_name = pod_name.lower().replace("_", "-")  # happy now, k8s?
+        pod_manifest = {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": pod_name,
+                "labels": {
+                    "run": run_name,
+                    "pipeline": pipeline_name,
+                },
+            },
+            "spec": {
+                "restartPolicy": "Never",
+                "containers": [
+                    {
+                        "name": "main",
+                        "image": image_name,
+                        "command": command,
+                        "args": args,
                     }
-                },
-                "spec": {
-                    "restartPolicy": "Never",
-                    "containers": [
-                        {
-                            "name": "main",
-                            "image": image_name,
-                            "command": command,
-                            "args": args,
-                        }
-                    ],
-                },
-            }
+                ],
+                "serviceAccountName": "zenml-service-account",
+            },
+        }
 
-            core_api.create_namespaced_pod(
-                namespace=self.kubernetes_namespace,
-                body=pod_manifest,
-            )
+        # Create and run pod.
+        core_api = kube_utils.make_core_v1_api()
+        core_api.create_namespaced_pod(
+            namespace=self.kubernetes_namespace,
+            body=pod_manifest,
+        )
 
-            kube_utils.wait_pod(
-                core_api,
-                pod_name,
-                namespace=self.kubernetes_namespace,
-                exit_condition_lambda=kube_utils.pod_is_done,
-                condition_description="done state",
-            )
+        logger.info("Kubernetes orchestrator pod started.")
+
+        # Wait for pod to finish.
+        kube_utils.wait_pod(
+            core_api,
+            pod_name,
+            namespace=self.kubernetes_namespace,
+            exit_condition_lambda=kube_utils.pod_is_done,
+            condition_description="done state",
+        )
+
+        logger.info("Pipeline run finished.")
