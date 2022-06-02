@@ -101,13 +101,13 @@ the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 1. Review and sign
    the [Contributor License Agreement](https://cla-assistant.io/zenml-io/zenml) (
    CLA).
-2. Fork the repository to your own Github account
-3. Clone the project to your machine
-4. Checkout the **develop** branch <- `git checkout develop`
-5. Create a branch (again, off of the develop branch) locally with a succinct but descriptive name
+2. Fork the repository to your own Github account.
+3. Clone the project to your machine.
+4. Checkout the **develop** branch <- `git checkout develop`.
+5. Create a branch (again, off of the develop branch) locally with a succinct but descriptive name.
 6. Commit changes to the branch
-7. Following any formatting and testing guidelines specific to this repo
-8. Push changes to your fork
+7. Follow the `Linting, formatting, and tests` guide to make sure your code adheres to the ZenML coding style (see below).
+8. Push changes to your fork.
 9. Open a PR in our repository (to the `develop` branch, **NOT** `main`) and
    follow the PR template so that we can efficiently review the changes.
 
