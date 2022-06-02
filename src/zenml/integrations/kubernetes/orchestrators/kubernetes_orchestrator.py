@@ -399,6 +399,11 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 "kind": "Pod",
                 "metadata": {
                     "name": pod_name,
+                    "labels": {
+                        "run": run_name,
+                        "pipeline": pipeline_name,
+                        "step": step_name,
+                    }
                 },
                 "spec": {
                     "restartPolicy": "Never",
