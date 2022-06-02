@@ -1,4 +1,5 @@
-from typing import ClassVar, Dict, List, Optional, cast
+import re
+from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from kserve import (  # type: ignore[import]
@@ -242,7 +243,29 @@ class KServeModelDeployer(BaseModelDeployer):
         # TODO[CRITICAL]: de-serialize each item into a complete
         #   V1beta1InferenceService object recursively using the openapi
         #   schema (this doesn't work right now)
-        return [V1beta1InferenceService(**item) for item in response["items"]]
+
+        inference_services: List[V1beta1InferenceService] = []
+        for item in response.get("items", []):
+            data = self._camel_to_snake(item)
+            inference_service = V1beta1InferenceService(**data)
+            inference_services.append(inference_service)
+        return inference_services
+
+    def _camel_to_snake(self, obj: Dict[str, Any]) -> Dict[str, Any]:
+        if isinstance(obj, (str, int, float)):
+            return obj
+        if isinstance(obj, dict):
+            new = obj.__class__()
+            for k, v in obj.items():
+                new[self._convert_to_snake(k)] = self._camel_to_snake(v)
+        elif isinstance(obj, (list, set, tuple)):
+            new = obj.__class__(self._camel_to_snake(v) for v in obj)
+        else:
+            return obj
+        return new
+
+    def _convert_to_snake(self, k: str) -> str:
+        return re.sub(r"(?<!^)(?=[A-Z])", "_", k).lower()
 
     def find_model_server(
         self,

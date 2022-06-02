@@ -15,6 +15,7 @@ from kubernetes import client as k8s_client
 from pydantic import Field, ValidationError
 
 from zenml import __version__
+from zenml.logger import get_logger
 from zenml.services import (
     BaseService,
     ServiceConfig,
@@ -22,7 +23,6 @@ from zenml.services import (
     ServiceStatus,
     ServiceType,
 )
-from zenml.logger import get_logger
 
 if TYPE_CHECKING:
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     )
 
 logger = get_logger(__name__)
+
 
 class KServeDeploymentConfig(ServiceConfig):
     """KServe deployment service configuration.
@@ -361,7 +362,7 @@ class KServeDeploymentService(BaseService):
         try:
             response = self._core_api.list_namespaced_pod(
                 namespace=self._namespace,
-                label_selector=f"kserve-deployment-id={name}",
+                label_selector=f"zenml.service_uuid={self.uuid}",
             )
             logger.debug("Kubernetes API response: %s", response)
             pods = response.items
@@ -422,7 +423,6 @@ class KServeDeploymentService(BaseService):
                     return
         finally:
             response.release_conn()
-
 
     def get_logs(
         self, follow: bool = False, tail: Optional[int] = None
