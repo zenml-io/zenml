@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Class for defining a pipeline schedule."""
 
 import datetime
 from typing import Any, Dict, Optional
@@ -77,7 +78,11 @@ class Schedule(BaseModel):
 
     @property
     def utc_start_time(self) -> Optional[str]:
-        """Optional ISO-formatted string of the UTC start time."""
+        """Optional ISO-formatted string of the UTC start time.
+        
+        Returns:
+            Optional ISO-formatted string of the UTC start time.
+        """
         if not self.start_time:
             return None
 
@@ -85,7 +90,11 @@ class Schedule(BaseModel):
 
     @property
     def utc_end_time(self) -> Optional[str]:
-        """Optional ISO-formatted string of the UTC end time."""
+        """Optional ISO-formatted string of the UTC end time.
+
+        Returns:
+            Optional ISO-formatted string of the UTC end time.
+        """
         if not self.end_time:
             return None
 

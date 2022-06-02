@@ -147,7 +147,22 @@ def register_stack(
     alerter_name: Optional[str] = None,
     set_stack: bool = False,
 ) -> None:
-    """Register a stack."""
+    """Register a stack.
+
+    Args:
+        stack_name: Unique name of the stack
+        metadata_store_name: Name of the metadata store for this stack.
+        artifact_store_name: Name of the artifact store for this stack.
+        orchestrator_name: Name of the orchestrator for this stack.
+        container_registry_name: Name of the container registry for this stack.
+        secrets_manager_name: Name of the secrets manager for this stack.
+        step_operator_name: Name of the step operator for this stack.
+        feature_store_name: Name of the feature store for this stack.
+        model_deployer_name: Name of the model deployer for this stack.
+        experiment_tracker_name: Name of the experiment tracker for this stack.
+        alerter_name: Name of the alerter for this stack.
+        set_stack: Immediately set this stack as active.
+    """
     cli_utils.print_active_profile()
 
     with console.status(f"Registering stack '{stack_name}'...\n"):
@@ -325,7 +340,23 @@ def update_stack(
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
 ) -> None:
-    """Update a stack."""
+    """Update a stack.
+
+    Args:
+        stack_name: Name of the stack to update.
+        metadata_store_name: Name of the new metadata store for this stack.
+        artifact_store_name: Name of the new artifact store for this stack.
+        orchestrator_name: Name of the new orchestrator for this stack.
+        container_registry_name: Name of the new container registry for this
+            stack.
+        step_operator_name: Name of the new step operator for this stack.
+        secrets_manager_name: Name of the new secrets manager for this stack.
+        feature_store_name: Name of the new feature store for this stack.
+        model_deployer_name: Name of the new model deployer for this stack.
+        experiment_tracker_name: Name of the new experiment tracker for this
+            stack.
+        alerter_name: Name of the new alerter for this stack.
+    """
     cli_utils.print_active_profile()
 
     repo = Repository()
@@ -488,7 +519,17 @@ def remove_stack_component(
     model_deployer_flag: Optional[bool] = False,
     experiment_tracker_flag: Optional[bool] = False,
 ) -> None:
-    """Remove stack components from a stack."""
+    """Remove stack components from a stack.
+
+    Args:
+        stack_name: Name of the stack to remove components from.
+        container_registry_flag: To remove the container registry from this stack.
+        step_operator_flag: To remove the step operator from this stack.
+        secrets_manager_flag: To remove the secrets manager from this stack.
+        feature_store_flag: To remove the feature store from this stack.
+        model_deployer_flag: To remove the model deployer from this stack.
+        experiment_tracker_flag: To remove the experiment tracker from this stack.
+    """
     cli_utils.print_active_profile()
 
     repo = Repository()
@@ -538,7 +579,12 @@ def rename_stack(
     current_stack_name: str,
     new_stack_name: str,
 ) -> None:
-    """Rename a stack."""
+    """Rename a stack.
+
+    Args:
+        current_stack_name: Name of the stack to rename.
+        new_stack_name: New name of the stack.
+    """
     with console.status(f"Renaming stack `{current_stack_name}`...\n"):
         repo = Repository()
         try:
@@ -606,7 +652,11 @@ def list_stacks() -> None:
     required=False,
 )
 def describe_stack(stack_name: Optional[str]) -> None:
-    """Show details about a named stack or the active stack."""
+    """Show details about a named stack or the active stack.
+
+    Args:
+        stack_name: Name of the stack to describe.
+    """
     cli_utils.print_active_profile()
 
     repo = Repository()
@@ -641,7 +691,15 @@ def describe_stack(stack_name: Optional[str]) -> None:
 def delete_stack(
     stack_name: str, yes: bool = False, old_force: bool = False
 ) -> None:
-    """Delete a stack."""
+    """Delete a stack.
+
+    Args:
+        stack_name: Name of the stack to delete.
+        yes: Stack will be deleted without prompting for
+            confirmation.
+        old_force: Stack will be deleted without prompting for
+            confirmation.
+    """
     if old_force:
         yes = old_force
         cli_utils.warning(
@@ -695,6 +753,10 @@ def set_active_stack_command(
 
     If the '--global' flag is set, the global active stack will be set,
     otherwise the repository active stack takes precedence.
+
+    Args:
+        stack_name: Name of the stack to set as active.
+        global_profile: Set the active stack globally.
     """
     set_active_stack(stack_name, global_profile)
 
@@ -753,25 +815,31 @@ def up_stack() -> None:
 @click.option(
     "--yes",
     "-y",
-    "force",
+    "old_force",
     is_flag=True,
-    help="Deprovisions local resources instead of suspending them.",
+    help="DEPRECATED: Deprovisions local resources instead of suspending "
+    "them. Use `-f/--force` instead.",
 )
 @click.option(
     "--force",
     "-f",
-    "old_force",
+    "force",
     is_flag=True,
-    help="DEPRECATED: Deprovisions local resources instead of suspending "
-    "them. Use `-y/--yes` instead.",
+    help="Deprovisions local resources instead of suspending them.",
 )
 def down_stack(force: bool = False, old_force: bool = False) -> None:
-    """Suspends resources of the active stack deployment."""
+    """Suspends resources of the active stack deployment.
+
+    Args:
+        force: Deprovisions local resources instead of suspending them.
+        old_force: DEPRECATED: Deprovisions local resources instead of
+            suspending them. Use `-y/--yes` instead.
+    """
     if old_force:
         force = old_force
         cli_utils.warning(
-            "The `--force` flag will soon be deprecated. Use `--yes` "
-            "or `-y` instead."
+            "The `--yes` flag will soon be deprecated. Use `--force` "
+            "or `-f` instead."
         )
     cli_utils.print_active_profile()
 
@@ -792,7 +860,15 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
 def _get_component_as_dict(
     component_type: StackComponentType, component_name: str
 ) -> Dict[str, str]:
-    """Return a dict representation of a component's key config values."""
+    """Return a dict representation of a component's key config values.
+
+    Args:
+        component_type: The type of component to get.
+        component_name: The name of the component to get.
+
+    Returns:
+        A dict representation of the component's key config values.
+    """
     repo = Repository()
     component = repo.get_stack_component(component_type, name=component_name)
     component_dict = {
@@ -808,7 +884,12 @@ def _get_component_as_dict(
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=False)
 def export_stack(stack_name: str, filename: Optional[str]) -> None:
-    """Export a stack to YAML."""
+    """Export a stack to YAML.
+
+    Args:
+        stack_name: The name of the stack to export.
+        filename: The filename to export the stack to.
+    """
     track_event(AnalyticsEvent.EXPORT_STACK)
 
     # Get configuration of given stack
@@ -845,7 +926,15 @@ def export_stack(stack_name: str, filename: Optional[str]) -> None:
 def _import_stack_component(
     component_type: StackComponentType, component_config: Dict[str, str]
 ) -> str:
-    """Import a single stack component with given type/config."""
+    """Import a single stack component with given type/config.
+
+    Args:
+        component_type: The type of component to import.
+        component_config: The config of the component to import.
+
+    Returns:
+        The name of the imported component.
+    """
     component_type = StackComponentType(component_type)
     component_name = component_config.pop("name")
     component_flavor = component_config.pop("flavor")
@@ -899,7 +988,13 @@ def _import_stack_component(
 def import_stack(
     ctx: click.Context, stack_name: str, filename: Optional[str]
 ) -> None:
-    """Import a stack from YAML."""
+    """Import a stack from YAML.
+
+    Args:
+        ctx: The click context.
+        stack_name: The name of the stack to import.
+        filename: The filename to import the stack from.
+    """
     track_event(AnalyticsEvent.IMPORT_STACK)
 
     # handle 'zenml stack import file.yaml' calls
