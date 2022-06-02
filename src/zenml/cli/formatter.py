@@ -20,7 +20,14 @@ from click._compat import term_len
 
 
 def measure_table(rows: Iterable[Tuple[str, ...]]) -> Tuple[int, ...]:
-    """Measure the width of each column in a table."""
+    """Measure the width of each column in a table.
+
+    Args:
+        rows: The rows of the table.
+
+    Returns:
+        A tuple of the width of each column.
+    """
     widths: Dict[int, int] = {}
     for row in rows:
         for idx, col in enumerate(row):
@@ -33,7 +40,15 @@ def iter_rows(
     rows: Iterable[Tuple[str, ...]],
     col_count: int,
 ) -> Iterator[Tuple[str, ...]]:
-    """Iterate over rows of a table."""
+    """Iterate over rows of a table.
+
+    Args:
+        rows: The rows of the table.
+        col_count: The number of columns in the table.
+
+    Yields:
+        An iterator over the rows of the table.
+    """
     for row in rows:
         yield row + ("",) * (col_count - len(row))
 
@@ -47,7 +62,14 @@ class ZenFormatter(formatting.HelpFormatter):
         width: Optional[int] = None,
         max_width: Optional[int] = None,
     ) -> None:
-        """Initialize the formatter."""
+        """Initialize the formatter.
+
+        Args:
+            indent_increment: The number of spaces to indent each level of
+                nesting.
+            width: The maximum width of the help output.
+            max_width: The maximum width of the help output.
+        """
         super(ZenFormatter, self).__init__(indent_increment, width, max_width)
         self.current_indent = 0
 

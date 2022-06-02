@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-Experiment trackers let you track your ML experiments by logging the parameters
-and allowing you to compare between runs. In the ZenML world, every pipeline
-run is considered an experiment, and ZenML facilitates the storage of experiment
-results through ExperimentTracker stack components. This establishes a clear
-link between pipeline runs and experiments.
+"""Experiment trackers let you track your ML experiments.
+
+They log the parameters used and allow you to compare between runs. In the ZenML
+world, every pipeline run is considered an experiment, and ZenML facilitates the
+storage of experiment results through ExperimentTracker stack components. This
+establishes a clear link between pipeline runs and experiments.
 """
 
 from zenml.experiment_trackers.base_experiment_tracker import (
