@@ -31,7 +31,6 @@ def parse_args():
     parser.add_argument("--image_name", type=str, required=True)
     parser.add_argument("--kubernetes_namespace", type=str, required=True)
     parser.add_argument("--pipeline_config", type=json.loads, required=True)
-    parser.add_argument("--pipeline_json", type=str, required=True)
     return parser.parse_args()
 
 
@@ -48,6 +47,7 @@ def main():
     pipeline_config = args.pipeline_config
     step_command = pipeline_config["step_command"]
     sorted_steps = pipeline_config["sorted_steps"]
+    fixed_step_args = pipeline_config["fixed_step_args"]
 
     base_pod_manifest = build_base_pod_manifest(
         run_name=args.run_name,
@@ -58,10 +58,11 @@ def main():
     for step_name in sorted_steps:
         # Define k8s pod name.
         pod_name = f"{args.run_name}-{step_name}"
-        pod_name = pod_name.lower().replace("_", "-")  # happy now, k8s?
+        pod_name = tfx_kube_utils.sanitize_pod_name(pod_name)
 
-        step_args = pipeline_config["step_args"][step_name]
-        step_args += ["--pipeline_json", args.pipeline_json]  # TODO
+        # Build list of args for this step.
+        step_specific_args = pipeline_config["step_specific_args"][step_name]
+        step_args = [*fixed_step_args, *step_specific_args]
 
         # Define k8s pod manifest.
         pod_manifest = update_pod_manifest(
@@ -70,7 +71,6 @@ def main():
             command=step_command,
             args=step_args,
         )
-
         logging.info(f"Running step {step_name}...")
 
         # Create and run pod.
@@ -78,7 +78,6 @@ def main():
             namespace=args.kubernetes_namespace,
             body=pod_manifest,
         )
-
         logging.info(f"Waiting for step {step_name}...")
 
         # Wait for pod to finish.
@@ -89,7 +88,6 @@ def main():
             exit_condition_lambda=tfx_kube_utils.pod_is_done,
             condition_description="done state",
         )
-
         logging.info(f"Step {step_name} finished.")
 
     logging.info("Orchestration complete.")

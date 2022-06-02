@@ -1,6 +1,11 @@
 import json
 from typing import List, Set
 
+from zenml.entrypoints.step_entrypoint_configuration import (
+    INPUT_ARTIFACT_SOURCES_OPTION,
+    MATERIALIZER_SOURCES_OPTION,
+    STEP_SOURCE_OPTION,
+)
 from zenml.integrations.kubernetes.orchestrators.kubernetes_entrypoint_configuration import (
     RUN_NAME_OPTION,
     KubernetesEntrypointConfiguration,
@@ -12,6 +17,40 @@ IMAGE_NAME_OPTION = "image_name"
 NAMESPACE_OPTION = "kubernetes_namespace"
 PIPELINE_JSON_OPTION = "pipeline_json"
 PIPELINE_CONFIG_OPTION = "pipeline_config"
+
+STEP_SPECIFIC_STEP_ENTRYPOINT_OPTIONS = [
+    STEP_SOURCE_OPTION,
+    INPUT_ARTIFACT_SOURCES_OPTION,
+    MATERIALIZER_SOURCES_OPTION,
+]
+
+
+def get_fixed_step_args(step_args: List[str]) -> List[str]:
+    """Get the fixed step args that don't change between steps.
+
+    We want to have them separate so we can send them to the orchestrator pod
+    only once.
+    """
+    fixed_args = []
+    for i, arg in enumerate(step_args):
+        if arg.startswith("--"):  # arg is a value, not an option
+            continue
+        option_and_value = step_args[i : i + 2]  # e.g. ["--name", "Aria"]
+        if arg[2:] not in STEP_SPECIFIC_STEP_ENTRYPOINT_OPTIONS:
+            fixed_args += option_and_value
+    return fixed_args
+
+
+def get_step_specific_args(step_args: List[str]) -> List[str]:
+    """Get the step-specific args that change from step to step."""
+    step_specific_args = []
+    for i, arg in enumerate(step_args):
+        if not arg.startswith("--"):  # arg is a value, not an option
+            continue
+        option_and_value = step_args[i : i + 2]  # e.g. ["--name", "Aria"]
+        if arg[2:] in STEP_SPECIFIC_STEP_ENTRYPOINT_OPTIONS:
+            step_specific_args += option_and_value
+    return step_specific_args
 
 
 class KubernetesOrchestratorEntrypointConfiguration:
@@ -49,35 +88,28 @@ class KubernetesOrchestratorEntrypointConfiguration:
         sorted_steps,
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with."""
-        pipeline_json = ""
 
-        def _get_args_for_step(step):
-            args = KubernetesEntrypointConfiguration.get_entrypoint_arguments(
+        def _get_step_args(step):
+            return KubernetesEntrypointConfiguration.get_entrypoint_arguments(
                 step=step,
                 pb2_pipeline=pb2_pipeline,
                 **{RUN_NAME_OPTION: run_name},
             )
 
-            # remove pipeline json to avoid sending it multiple times
-            # TODO: refactor step args to separate step-specific from general
-            for i, arg in enumerate(args):
-                if arg == "--pipeline_json":
-                    nonlocal pipeline_json
-                    pipeline_json = args[i + 1]
-                    del args[i : i + 2]
-            return args
-
         step_names = [step.name for step in sorted_steps]
         step_command = (
             KubernetesEntrypointConfiguration.get_entrypoint_command()
         )
-        step_args = {
-            step.name: _get_args_for_step(step) for step in sorted_steps
+        fixed_step_args = get_fixed_step_args(_get_step_args(sorted_steps[0]))
+        step_specific_args = {
+            step.name: get_step_specific_args(_get_step_args(step))
+            for step in sorted_steps
         }
         pipeline_config = {
             "sorted_steps": step_names,
             "step_command": step_command,
-            "step_args": step_args,
+            "fixed_step_args": fixed_step_args,
+            "step_specific_args": step_specific_args,
         }
         args = [
             f"--{RUN_NAME_OPTION}",
@@ -88,8 +120,6 @@ class KubernetesOrchestratorEntrypointConfiguration:
             image_name,
             f"--{NAMESPACE_OPTION}",
             kubernetes_namespace,
-            f"--{PIPELINE_JSON_OPTION}",
-            pipeline_json,
             f"--{PIPELINE_CONFIG_OPTION}",
             json.dumps(pipeline_config),
         ]
