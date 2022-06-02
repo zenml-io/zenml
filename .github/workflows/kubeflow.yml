@@ -71,6 +71,11 @@ jobs:
         if: ${{ github.event.inputs.tags }}
         uses: mxschmitt/action-tmate@v3
 
+      - name: Install Prerequisites
+        run: |
+          source $VENV
+          zenml integration install mlflow -f
+
       - name: Run tests
         run: |
           source $VENV

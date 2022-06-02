@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Callable, NamedTuple, Optional, List
 
 import pytest
+from pydantic import BaseModel
 
 from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
 from zenml.integrations.mlflow.experiment_trackers import \
@@ -51,7 +52,7 @@ def copy_example_files(example_dir: str, dst_dir: str) -> None:
             shutil.copy2(s, d)
 
 
-class ExampleConfiguration(ABC):
+class ExampleConfiguration(BaseModel, ABC):
     """Configuration options for testing a ZenML example.
 
     Attributes:
@@ -63,7 +64,7 @@ class ExampleConfiguration(ABC):
     required_stack_components: List[StackComponent] = list()
     pipeline_name: str
     pipeline_path: str
-    step_count: int
+    step_count: Optional[int]
     validation_function: Optional[Callable] = None
 
     def run_example(self):
@@ -91,32 +92,29 @@ class ExampleConfiguration(ABC):
             )(repo)
 
 
-class XGBoostExample(ExampleConfiguration):
-    name = "xgboost"
-    pipeline_path = "pipelines/training_pipeline/training_pipeline.py"
-    pipeline_name = "xgboost_pipeline"
-    runs_on_windows = False
-    step_count = 3
-
-
-class MLflowTrackingExample(ExampleConfiguration):
-    name = "mlflow_tracking"
-    pipeline_path = "pipelines/training_pipeline/training_pipeline.py"
-    pipeline_name = "mlflow_example_pipeline"
-    runs_on_windows = True
-    required_stack_components = [MLFlowExperimentTracker(name="mlflow_tracker")]
-    validation_function = mlflow_tracking_example_validation
-
-
 EXAMPLES = [
-    XGBoostExample,
-    MLflowTrackingExample
+    ExampleConfiguration(
+        name="xgboost",
+        pipeline_path="pipelines/training_pipeline/training_pipeline.py",
+        pipeline_name="xgboost_pipeline",
+        runs_on_windows=False,
+        step_count=3)
+    ,
+    ExampleConfiguration(
+        name="mlflow_tracking",
+        pipeline_path="pipelines/training_pipeline/training_pipeline.py",
+        pipeline_name="mlflow_example_pipeline",
+        runs_on_windows=True,
+        required_stack_components=[
+            MLFlowExperimentTracker(name="mlflow_tracker")
+        ],
+        validation_function=mlflow_tracking_example_validation)
 ]
 
 
 @pytest.mark.parametrize(
     "example_configuration",
-    [pytest.param(example(), id=example.name) for example in EXAMPLES],
+    [pytest.param(example, id=example.name) for example in EXAMPLES],
 )
 def test_run_example(
         example_configuration: ExampleConfiguration,
