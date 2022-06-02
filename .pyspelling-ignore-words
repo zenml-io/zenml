@@ -147,6 +147,7 @@ IOError
 IPython
 ISTIO
 InitializationException
+Initializations
 Istio
 Itemwise
 Iterable
@@ -595,6 +596,7 @@ img
 implementors
 ingressgateway
 init
+initializations
 initializer
 initializers
 integrations
