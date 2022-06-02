@@ -29,7 +29,6 @@
 # Parts of the `prepare_or_run_pipeline()` method of this file are
 # inspired by the kubernetes dag runner implementation of tfx
 
-import json
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -41,9 +40,8 @@ from zenml.enums import StackComponentType
 from zenml.environment import Environment
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.orchestrators import tfx_kube_utils
-from zenml.integrations.kubernetes.orchestrators.kubernetes_entrypoint_configuration import (
-    KUBERNETES_JOB_ID_OPTION,
-    KubernetesEntrypointConfiguration,
+from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
+    KubernetesOrchestratorEntrypointConfiguration,
 )
 from zenml.integrations.kubernetes.orchestrators.utils import (
     build_base_pod_manifest,
@@ -366,65 +364,26 @@ class KubernetesOrchestrator(BaseOrchestrator):
         run_name = runtime_configuration.run_name
         pipeline_name = pipeline.name
 
-        # Get docker image name
+        # Get docker image name (for all pods).
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
-        # Define pipeline config
-        pipeline_json = ""
-
-        def _get_args_for_step(step):
-            args = KubernetesEntrypointConfiguration.get_entrypoint_arguments(
-                step=step,
-                pb2_pipeline=pb2_pipeline,
-                **{KUBERNETES_JOB_ID_OPTION: run_name},
-            )
-
-            # remove pipeline json to avoid sending it multiple times
-            # TODO: refactor step args to separate step-specific from general
-            for i, arg in enumerate(args):
-                if arg == "--pipeline_json":
-                    nonlocal pipeline_json
-                    pipeline_json = args[i + 1]
-                    del args[i : i + 2]
-            return args
-
-        step_names = [step.name for step in sorted_steps]
-        step_command = (
-            KubernetesEntrypointConfiguration.get_entrypoint_command()
+        # Build entrypoint command and args for the orchestrator pod.
+        # This will internally also build the command/args for all step pods.
+        command = (
+            KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_command()
         )
-        step_args = {
-            step.name: _get_args_for_step(step) for step in sorted_steps
-        }
-        pipeline_config = {
-            "sorted_steps": step_names,
-            "step_command": step_command,
-            "step_args": step_args,
-        }
+        args = KubernetesOrchestratorEntrypointConfiguration.get_entrypoint_arguments(
+            run_name=run_name,
+            pipeline_name=pipeline_name,
+            image_name=image_name,
+            kubernetes_namespace=self.kubernetes_namespace,
+            pb2_pipeline=pb2_pipeline,
+            sorted_steps=sorted_steps,
+        )
 
-        command = [
-            "python",
-            "-m",
-            "zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint",
-        ]
-
-        args = [
-            "--run_name",
-            run_name,
-            "--pipeline_name",
-            pipeline_name,
-            "--image_name",
-            image_name,
-            "--kubernetes_namespace",
-            self.kubernetes_namespace,
-            "--pipeline_json",
-            pipeline_json,
-            "--pipeline_config",
-            json.dumps(pipeline_config),
-        ]
-
+        # Build manifest for the orchestrator pod.
         pod_name = tfx_kube_utils.sanitize_pod_name(run_name)
-
         pod_manifest = build_base_pod_manifest(
             run_name=run_name,
             pipeline_name=pipeline_name,
@@ -438,16 +397,15 @@ class KubernetesOrchestrator(BaseOrchestrator):
         )
         pod_manifest["spec"]["serviceAccountName"] = "zenml-service-account"
 
-        # Create and run pod.
+        # Create and run the orchestrator pod.
         core_api = tfx_kube_utils.make_core_v1_api()
         core_api.create_namespaced_pod(
             namespace=self.kubernetes_namespace,
             body=pod_manifest,
         )
-
         logger.info("Kubernetes orchestrator pod started.")
 
-        # Wait for pod to finish.
+        # Wait for the orchestrator pod to finish.
         tfx_kube_utils.wait_pod(
             core_api,
             pod_name,
@@ -455,5 +413,4 @@ class KubernetesOrchestrator(BaseOrchestrator):
             exit_condition_lambda=tfx_kube_utils.pod_is_done,
             condition_description="done state",
         )
-
         logger.info("Pipeline run finished.")
