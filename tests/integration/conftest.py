@@ -29,10 +29,11 @@ S3_BUCKET_NAME = "s3://zenbytes-bucket"
 KUBEFLOW_NAMESPACE = "kubeflow"
 KUBE_CONTEXT = "zenml-eks"
 
+
 @pytest.fixture(scope="module")
 def shared_kubeflow_profile(
-    base_profile: Repository,
-    module_mocker: MockerFixture,
+        base_profile: Repository,
+        module_mocker: MockerFixture,
 ) -> Generator[Repository, None, None]:
     """Creates and activates a locally provisioned kubeflow stack.
 
@@ -69,7 +70,7 @@ def shared_kubeflow_profile(
     # Register and activate the kubeflow stack
     orchestrator = KubeflowOrchestrator(
         name="eks_orchestrator",
-        custom_docker_base_image_name="custom-base-image:latest",
+        custom_docker_base_image_name="test_base_image:latest",
         synchronous=True,
         kubernetes_context=KUBE_CONTEXT,
         skip_ui_daemon_provisioning=True
@@ -120,7 +121,7 @@ def cleanup_active_profile() -> None:
 
 @pytest.fixture
 def clean_kubeflow_profile(
-    shared_kubeflow_profile: Repository,
+        shared_kubeflow_profile: Repository,
 ) -> Generator[Repository, None, None]:
     """Creates a clean environment with a provisioned local kubeflow stack.
 
@@ -143,7 +144,7 @@ def clean_kubeflow_profile(
 
 @pytest.fixture
 def clean_base_profile(
-    base_profile: Repository,
+        base_profile: Repository,
 ) -> Generator[Repository, None, None]:
     """Creates a clean environment with an empty artifact store and metadata
     store out of the shared base profile.
