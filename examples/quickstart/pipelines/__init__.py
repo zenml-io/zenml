@@ -12,5 +12,5 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.inferene_pipeline import inference_pipeline
+from pipelines.inference_pipeline import inference_pipeline
 from pipelines.training_pipeline import training_pipeline

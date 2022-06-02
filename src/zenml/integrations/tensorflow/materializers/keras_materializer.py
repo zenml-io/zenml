@@ -18,8 +18,8 @@ from tensorflow import keras
 
 from zenml.artifacts import ModelArtifact
 from zenml.io import fileio
-from zenml.io import utils as fileio_utils
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils import io_utils
 
 
 class KerasMaterializer(BaseMaterializer):
@@ -40,7 +40,7 @@ class KerasMaterializer(BaseMaterializer):
         temp_dir = tempfile.TemporaryDirectory()
 
         # Copy from artifact store to temporary directory
-        fileio_utils.copy_dir(self.artifact.uri, temp_dir.name)
+        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
 
         # Load the model from the temporary directory
         model = keras.models.load_model(temp_dir.name)
@@ -61,7 +61,7 @@ class KerasMaterializer(BaseMaterializer):
         # Create a temporary directory to store the model
         temp_dir = tempfile.TemporaryDirectory()
         model.save(temp_dir.name)
-        fileio_utils.copy_dir(temp_dir.name, self.artifact.uri)
+        io_utils.copy_dir(temp_dir.name, self.artifact.uri)
 
         # Remove the temporary directory
         fileio.rmtree(temp_dir.name)

@@ -20,7 +20,7 @@ example:
 existing ZenML step with whylogs profiling capabilities.
 * a predefined `WhylogsProfilerStep` ZenML step class that can be
 instantiated and inserted into any pipeline to generate a whylogs profile
-out of a Pandas Dataframe and return the profile as a step output artifact.
+out of a Pandas DataFrame and return the profile as a step output artifact.
 Instantiating this type of step is simplified even further through the
 use of the `whylogs_profiler_step` function.
 
