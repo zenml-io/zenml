@@ -25,7 +25,9 @@ STEP_SPECIFIC_STEP_ENTRYPOINT_OPTIONS = [
 ]
 
 
-def get_fixed_step_args(step_args: List[str]) -> List[str]:
+def get_fixed_step_args(
+    step_args: List[str], get_fixed: bool = True
+) -> List[str]:
     """Get the fixed step args that don't change between steps.
 
     We want to have them separate so we can send them to the orchestrator pod
@@ -33,24 +35,19 @@ def get_fixed_step_args(step_args: List[str]) -> List[str]:
     """
     fixed_args = []
     for i, arg in enumerate(step_args):
-        if arg.startswith("--"):  # arg is a value, not an option
+        if not arg.startswith("--"):  # arg is a value, not an option
             continue
         option_and_value = step_args[i : i + 2]  # e.g. ["--name", "Aria"]
-        if arg[2:] not in STEP_SPECIFIC_STEP_ENTRYPOINT_OPTIONS:
+        is_fixed = arg[2:] not in STEP_SPECIFIC_STEP_ENTRYPOINT_OPTIONS
+        is_correct_category = is_fixed == get_fixed
+        if is_correct_category:
             fixed_args += option_and_value
     return fixed_args
 
 
 def get_step_specific_args(step_args: List[str]) -> List[str]:
     """Get the step-specific args that change from step to step."""
-    step_specific_args = []
-    for i, arg in enumerate(step_args):
-        if not arg.startswith("--"):  # arg is a value, not an option
-            continue
-        option_and_value = step_args[i : i + 2]  # e.g. ["--name", "Aria"]
-        if arg[2:] in STEP_SPECIFIC_STEP_ENTRYPOINT_OPTIONS:
-            step_specific_args += option_and_value
-    return step_specific_args
+    return get_fixed_step_args(step_args, get_fixed=False)
 
 
 class KubernetesOrchestratorEntrypointConfiguration:
