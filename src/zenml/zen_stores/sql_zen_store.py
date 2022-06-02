@@ -25,8 +25,8 @@ from sqlmodel.sql.expression import Select, SelectOfScalar
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
-from zenml.io import utils
 from zenml.logger import get_logger
+from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
     ComponentWrapper,
@@ -201,7 +201,7 @@ class SqlZenStore(BaseZenStore):
 
         local_path = self.get_path_from_url(url)
         if local_path:
-            utils.create_dir_recursive_if_not_exists(str(local_path.parent))
+            io_utils.create_dir_recursive_if_not_exists(str(local_path.parent))
 
         # we need to remove `skip_default_registrations` from the kwargs,
         # because SQLModel will raise an error if it is present

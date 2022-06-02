@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI to interact with pipelines."""
+"""CLI functionality to interact with pipelines."""
+
 import os.path
 import textwrap
 import types
@@ -36,8 +37,10 @@ logger = get_logger(__name__)
 def _load_class_from_module(
     module: types.ModuleType, config_item: Dict[str, str]
 ) -> Any:
-    """Based on a config item from the config yaml the corresponding module
-    attribute is loaded.
+    """Load a class from a module.
+
+    The corresponding module attribute is loaded based on a config item from the
+    config yaml.
 
     Args:
         module: Base module to use for import if only a function/class name is
@@ -48,7 +51,10 @@ def _load_class_from_module(
                         (e.g {`file`: `steps/steps.py`, `name`: `step_name`}
 
     Returns:
-         imported function/class
+        The imported function/class
+
+    Raises:
+        PipelineConfigurationError: If you passed in the wrong value type.
     """
     if isinstance(config_item, dict):
         if SourceConfigurationKeys.FILE_ in config_item:
@@ -125,6 +131,9 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     Args:
         python_file: Path to the python file that defines the pipeline.
         config_path: Path to configuration YAML file.
+
+    Raises:
+        PipelineConfigurationError: If the pipeline configuration is invalid.
     """
     # If the file was run with `python run.py, this would happen automatically.
     #  In order to allow seamless switching between running directly and through

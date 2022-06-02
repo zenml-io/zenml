@@ -77,7 +77,7 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
 
 
 class MLFlowDeploymentService(LocalDaemonService):
-    """MLFlow deployment service that can be used to start a local prediction
+    """MLflow deployment service that can be used to start a local prediction
     server for MLflow models.
 
     Attributes:

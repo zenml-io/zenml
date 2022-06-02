@@ -20,8 +20,8 @@ from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
 )
+from zenml.secrets_managers.utils import decode_secret_dict
 from zenml.utils import yaml_utils
-from zenml.utils.secrets_manager_utils import decode_secret_dict
 
 
 @pytest.fixture()

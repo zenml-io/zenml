@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utilities for CLI output."""
+
 from typing import List
 
 from rich.markdown import Markdown
@@ -58,7 +60,14 @@ zenml_go_thank_you_message = Markdown(
 
 
 def zenml_go_notebook_tutorial_message(ipynb_files: List[str]) -> Markdown:
+    """Outputs a message to the user about the `zenml go` tutorial.
 
+    Args:
+        ipynb_files: A list of IPython Notebook files.
+
+    Returns:
+        A Markdown object.
+    """
     ipynb_files = [f"- {fi} \n" for fi in ipynb_files]
     return Markdown(
         f"""

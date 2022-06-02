@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base class for global configuration management."""
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Optional
@@ -31,7 +32,7 @@ class BaseConfiguration(ABC):
 
     @abstractmethod
     def activate_profile(self, profile_name: str) -> None:
-        """Set the active profile
+        """Set the active profile.
 
         Args:
             profile_name: The name of the profile to set as active.

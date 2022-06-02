@@ -31,8 +31,8 @@ whole.
 
 **ZenML** uses [`Segment`](https://segment.com) as the data aggregation library
 for all our analytics. The entire code is entirely visible and can be seen at
-[`zenml_analytics.py`](../../../zenml/utils/zenml_analytics.py). The main
-function is the [`track`](../../../zenml/utils/zenml_analytics.py#L167) function
+[`zenml_analytics.py`](../../../src/zenml/utils/analytics_utils.py). The main
+function is the [`track`](../../../src/zenml/utils/analytics_utils.py#L167) function
 that triggers a
 [Segment Analytics Track event](https://segment.com/docs/connections/spec/track/),
 which runs on a separate background thread from the main thread.

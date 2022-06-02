@@ -1,12 +1,19 @@
 <div align="center">
-    <img src="https://zenml.io/assets/social/github.svg">
+    <img src="docs/book/assets/oss-header.svg">
 </div>
 
-# ⏲️ Join the ZenML team on the MLOps Day
+# :family_man_woman_boy_boy: ZenML: Meet the Team
 
-We are hosting a MLOps day where we'll be building a vendor-agnostic MLOps pipeline from scratch.
+Hi ZenCommunity! Did you ever have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
+long GitHub issue? Or are you just curious what ZenML has been up to in the past week? Well, register now for the ZenML Office 
+(Half) Hour to get your answers and more!
 
-Sign up [here](https://www.eventbrite.com/e/zenml-mlops-day-join-us-in-building-a-vendor-agnostic-mlops-pipeline-tickets-336331515617) to join the entire ZenML team in showcasing the latest release, answering the community's questions, and live-coding vendor agnostic MLOps features with the ZenML framework!
+Every week, part of the ZenML core team will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a 
+feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
+
+We will host the gathering every Wednesday 8:30AM PT (5:30PM CET). Register now through [this link](https://www.eventbrite.com/e/zenml-meet-the-community-tickets-354426688767), 
+or subscribe to the [public events calendar](https://calendar.google.com/calendar/u/0/r?cid=Y19iaDJ0Zm44ZzdodXBlbnBzaWplY3UwMmNjZ0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t) to get notified 
+before every community gathering.
 
 # 👀 What is ZenML?
 
@@ -315,6 +322,8 @@ manage and switch between your stacks. The ZenML Server handles all the
 interaction and sharing and you can host it wherever you'd like.
 
 ```
+# Make sure to install ZenML with all necessary requirements for the ZenServer
+pip install zenml[server]
 zenml server up
 ```
 

@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-While an orchestrator defines how and where your entire pipeline runs, a step 
-operator defines how and where an individual step runs. This can be useful in a 
-variety of scenarios. An example could be if one step within a pipeline should 
+"""Step operators allow you to run steps on custom infrastructure.
+
+While an orchestrator defines how and where your entire pipeline runs, a step
+operator defines how and where an individual step runs. This can be useful in a
+variety of scenarios. An example could be if one step within a pipeline should
 run on a separate environment equipped with a GPU (like a trainer step).
 """
 from zenml.step_operators.base_step_operator import BaseStepOperator

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to interact with models served by ZenML."""
+
 import uuid
 from typing import TYPE_CHECKING, Optional
 
@@ -38,8 +40,10 @@ if TYPE_CHECKING:
 )
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
-    """List and manage served models with the active model
-    deployer.
+    """List and manage served models with the active model deployer.
+
+    Args:
+        ctx: The click context.
     """
     repo = Repository()
     active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
@@ -101,8 +105,18 @@ def list_models(
     model: Optional[str],
     running: bool,
 ) -> None:
-    """Get a list of all served models within the model-deployer stack
-    component.
+    """Get a list of all served models within the model-deployer stack component.
+
+    Args:
+        model_deployer: The model-deployer stack component.
+        pipeline: Show only served models that were deployed by the indicated
+            pipeline.
+        step: Show only served models that were deployed by the indicated
+            pipeline step.
+        pipeline_run: Show only served models that were deployed by the
+            indicated pipeline run.
+        model: Show only served model versions for the given model name.
+        running: Show only model servers that are currently running.
     """
     services = model_deployer.find_model_server(
         running=running,
@@ -126,8 +140,12 @@ def list_models(
 def describe_model(
     model_deployer: "BaseModelDeployer", served_model_uuid: str
 ) -> None:
-    """Describe a specified served model."""
+    """Describe a specified served model.
 
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+    """
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -144,7 +162,12 @@ def describe_model(
 def get_url(
     model_deployer: "BaseModelDeployer", served_model_uuid: str
 ) -> None:
-    """Return the prediction URL to a specified model server."""
+    """Return the prediction URL to a specified model server.
+
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+    """
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -180,8 +203,13 @@ def get_url(
 def start_model_service(
     model_deployer: "BaseModelDeployer", served_model_uuid: str, timeout: int
 ) -> None:
-    """Start a specified model server."""
+    """Start a specified model server.
 
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+        timeout: Time in seconds to wait for the model to start.
+    """
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -233,7 +261,15 @@ def stop_model_service(
     force: bool,
     old_force: bool,
 ) -> None:
-    """Stop a specified model server."""
+    """Stop a specified model server.
+
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+        timeout: Time in seconds to wait for the model to stop.
+        force: Force the model server to stop.
+        old_force: DEPRECATED: Force the model server to stop.
+    """
     if old_force:
         force = old_force
         warning(
@@ -290,7 +326,15 @@ def delete_model_service(
     force: bool,
     old_force: bool,
 ) -> None:
-    """Delete a specified model server."""
+    """Delete a specified model server.
+
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+        timeout: Time in seconds to wait for the model to be deleted.
+        force: Force the model server to stop and delete.
+        old_force: DEPRECATED: Force the model server to stop and delete.
+    """
     if old_force:
         force = old_force
         warning(
@@ -339,8 +383,15 @@ def get_model_service_logs(
     tail: Optional[int],
     raw: bool,
 ) -> None:
-    """Display the logs for a model server."""
+    """Display the logs for a model server.
 
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+        follow: Continue to output new log data as it becomes available.
+        tail: Only show the last NUM lines of log output.
+        raw: Show raw log contents (don't pretty-print logs).
+    """
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )

@@ -297,7 +297,7 @@ def dump_ui_metadata(
             "type": "markdown",
         }
     ]
-    # Add Tensorboard view for ModelRun outputs.
+    # Add TensorBoard view for ModelRun outputs.
     for name, spec in node.outputs.outputs.items():
         if (
             spec.artifact_spec.type.name
@@ -313,7 +313,7 @@ def dump_ui_metadata(
             if isinstance(artifact_store, LocalArtifactStore):
                 source = os.path.relpath(source, artifact_store.path)
                 source = f"volume://local-artifact-store/{source}"
-            # Add Tensorboard view.
+            # Add TensorBoard view.
             tensorboard_output = {
                 "type": "tensorboard",
                 "source": source,
