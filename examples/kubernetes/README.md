@@ -28,3 +28,6 @@
 - `python run.py`
 - `kubectl get pods` -> find "evaluator" pod
 - `kubectl logs {EVALUATOR_POD}`  -> you should see "Test accuracy: ..." in outputs
+
+## Clean Up
+- `kubectl delete pod -l pipeline=digits_pipeline`

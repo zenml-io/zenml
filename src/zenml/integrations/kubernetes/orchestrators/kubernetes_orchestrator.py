@@ -395,7 +395,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 pb2_pipeline=pb2_pipeline,
                 **{KUBERNETES_JOB_ID_OPTION: run_name},
             )
-            pod_name = f"{pipeline_name}-{step_name}-{run_name}"
+            pod_name = f"{run_name}-{step_name}"
             pod_name = pod_name.lower().replace("_", "-")  # happy now, k8s?
             pod_manifest = {
                 "apiVersion": "v1",
