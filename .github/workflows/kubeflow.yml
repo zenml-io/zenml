@@ -60,7 +60,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_ACCESS_KEY }}
-          aws-region: ${{ us-east-1 }}
+          aws-region: us-east-1
 
       - name: Build docker image
         # this step can be much faster if we use an image that copies the
