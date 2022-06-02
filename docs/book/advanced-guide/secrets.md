@@ -105,6 +105,14 @@ def secret_loader(
     return
 ```
 
+{% hint style="info" %}
+
+This will only work if your orchestrator has access to the secret manager. 
+For example a `local_secrets_manager` will not work in combination with a 
+remote orchestrator like `kubeflow pipelines`.
+
+{% endhint %}
+
 ## Secret Schemas
 
 The concept of secret schemas exists to support strongly typed secrets that
