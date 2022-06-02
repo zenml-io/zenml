@@ -15,6 +15,7 @@ import logging
 import os
 import platform
 import shutil
+import sys
 from abc import ABC
 from pathlib import Path
 from typing import Callable, NamedTuple, Optional, List
@@ -81,34 +82,39 @@ class ExampleConfiguration(BaseModel, ABC):
         repo.register_stack(stack)
         repo.activate_stack(stack.name)
 
-    @classmethod
-    def validate(cls, repo: Repository):
-        if cls.validation_function:
-            return cls.validation_function(repo)
+    def assert_successful(self, repo: Repository):
+        if self.validation_function:
+            return self.validation_function(repo)
         else:
             return generate_basic_validation_function(
-                pipeline_name=cls.pipeline_name,
-                step_count=cls.step_count
+                pipeline_name=self.pipeline_name,
+                step_count=self.step_count
             )(repo)
 
 
 EXAMPLES = [
+    # ExampleConfiguration(
+    #     name="mlflow_tracking",
+    #     pipeline_path="pipelines/training_pipeline/training_pipeline.py",
+    #     pipeline_name="mlflow_example_pipeline",
+    #     runs_on_windows=True,
+    #     required_stack_components=[
+    #         MLFlowExperimentTracker(name="mlflow_tracker")
+    #     ],
+    #     validation_function=mlflow_tracking_example_validation),
     ExampleConfiguration(
-        name="xgboost",
+        name="scipy",
         pipeline_path="pipelines/training_pipeline/training_pipeline.py",
-        pipeline_name="xgboost_pipeline",
-        runs_on_windows=False,
-        step_count=3)
-    ,
-    ExampleConfiguration(
-        name="mlflow_tracking",
-        pipeline_path="pipelines/training_pipeline/training_pipeline.py",
-        pipeline_name="mlflow_example_pipeline",
+        pipeline_name="scipy_example_pipeline",
         runs_on_windows=True,
-        required_stack_components=[
-            MLFlowExperimentTracker(name="mlflow_tracker")
-        ],
-        validation_function=mlflow_tracking_example_validation)
+        step_count=4),
+    # ExampleConfiguration(
+    #     name="xgboost",
+    #     pipeline_path="pipelines/training_pipeline/training_pipeline.py",
+    #     pipeline_name="xgboost_pipeline",
+    #     runs_on_windows=False,
+    #     step_count=3)
+    # ,
 ]
 
 
@@ -166,11 +172,12 @@ def test_run_example(
     example_configuration.run_example()
 
     # Validate the result
-    example_configuration.validate(repo)
+    example_configuration.assert_successful(repo)
 
     # clean up
     try:
         os.chdir(previous_wd)
+        del sys.modules["training_pipeline"]
         shutil.rmtree(tmp_path)
     except PermissionError:
         # Windows does not have the concept of unlinking a file and deleting

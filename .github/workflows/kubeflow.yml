@@ -74,7 +74,7 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install mlflow -f
+          zenml integration install mlflow s3 kubeflow -f
 
       - name: Run tests
         run: |
