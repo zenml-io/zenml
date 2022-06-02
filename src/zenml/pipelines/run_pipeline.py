@@ -23,7 +23,6 @@ from zenml.config.config_keys import (
     StepConfigurationKeys,
 )
 from zenml.exceptions import PipelineConfigurationError
-from zenml.logger import get_logger
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, yaml_utils
 

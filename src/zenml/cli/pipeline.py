@@ -39,4 +39,10 @@ def pipeline() -> None:
 )
 @click.argument("python_file")
 def cli_pipeline_run(python_file: str, config_path: str) -> None:
+    """Runs pipeline specified by the given config YAML object.
+
+    Args:
+        python_file: Path to the python file that defines the pipeline.
+        config_path: Path to configuration YAML file.
+    """
     run_pipeline(python_file=python_file, config_path=config_path)
