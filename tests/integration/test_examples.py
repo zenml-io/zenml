@@ -16,6 +16,7 @@ import os
 import platform
 import shutil
 import sys
+import time
 from abc import ABC
 from pathlib import Path
 from typing import Callable, NamedTuple, Optional, List
@@ -108,13 +109,13 @@ EXAMPLES = [
         pipeline_name="scipy_example_pipeline",
         runs_on_windows=True,
         step_count=4),
-    # ExampleConfiguration(
-    #     name="xgboost",
-    #     pipeline_path="pipelines/training_pipeline/training_pipeline.py",
-    #     pipeline_name="xgboost_pipeline",
-    #     runs_on_windows=False,
-    #     step_count=3)
-    # ,
+    ExampleConfiguration(
+        name="xgboost",
+        pipeline_path="pipelines/training_pipeline/training_pipeline.py",
+        pipeline_name="xgboost_pipeline",
+        runs_on_windows=False,
+        step_count=3)
+    ,
 ]
 
 
@@ -169,15 +170,14 @@ def test_run_example(
         example_configuration.duplicate_and_update_stack()
 
     example_configuration.run_example()
-    example_configuration.run_example()
 
+    time.sleep(1)
     # Validate the result
     example_configuration.assert_successful(repo)
 
     # clean up
     try:
         os.chdir(previous_wd)
-        del sys.modules["training_pipeline"]
         shutil.rmtree(tmp_path)
     except PermissionError:
         # Windows does not have the concept of unlinking a file and deleting

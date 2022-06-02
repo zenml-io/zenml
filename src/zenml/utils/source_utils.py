@@ -472,12 +472,19 @@ def import_python_file(file_path: str) -> types.ModuleType:
         os.path.relpath(file_path, os.getcwd())
     )[0].replace(os.path.sep, ".")
 
-    if full_module_path not in sys.modules:
+    if full_module_path in sys.modules:
+        del sys.modules[full_module_path]
+        module = importlib.import_module(module_name)
+        return module
+    elif module_name in sys.modules:
+        del sys.modules[module_name]
         with prepend_python_path(os.path.dirname(file_path)):
             module = importlib.import_module(module_name)
         return module
     else:
-        return sys.modules[full_module_path]
+        with prepend_python_path(os.path.dirname(file_path)):
+            module = importlib.import_module(module_name)
+        return module
 
 
 def validate_flavor_source(
