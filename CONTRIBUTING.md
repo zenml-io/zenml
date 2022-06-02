@@ -92,7 +92,7 @@ creating and reviewing changes.
 
 ### 💯 Pull Requests: Workflow to Contribute
 
-<p class="callout warning">Please note that development in ZenML happens off of the **develop** branch, **not main**, 
+<p class="callout warning">Please note that development in ZenML happens off of the <b>develop</b> branch, **not main**, 
 which is the default branch on GitHub. Therefore, please pay particular attention to step 5 and step 9 below. </p>
 
 In general, we follow
