@@ -20,6 +20,7 @@ import dash_cytoscape as cyto
 from dash import dcc, html
 from dash.dependencies import Input, Output
 
+from zenml.cli import utils as cli_utils
 from zenml.enums import ExecutionStatus
 from zenml.environment import Environment
 from zenml.logger import get_logger
@@ -136,8 +137,7 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
                 )
                 mode = "inline"
             else:
-                # TODO [ENG-895]: Refactor this to raise a warning instead.
-                raise AssertionError(
+                cli_utils.warning(
                     "Cannot set magic flag in non-notebook environments."
                 )
         else:

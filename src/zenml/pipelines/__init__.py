@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-A ZenML pipeline is a sequence of tasks that execute in a specific order and
-yield artifacts. The artifacts are stored within the artifact store and indexed
+"""A ZenML pipeline consists of tasks that execute in order and yield artifacts.
+
+The artifacts are stored within the artifact store and indexed
 via the metadata store. Each individual task within a pipeline is known as a
 step. The standard pipelines within ZenML are designed to have easy interfaces
 to add pre-decided steps, with the order also pre-decided. Other sorts of
