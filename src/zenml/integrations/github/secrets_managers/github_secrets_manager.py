@@ -11,10 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
 import os
-import subprocess
-from typing import ClassVar, List
+from typing import ClassVar, List, Optional
+
+import requests
+from requests.auth import HTTPBasicAuth
 
 from zenml.integrations.github import GITHUB_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
@@ -23,8 +24,18 @@ from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 
 logger = get_logger(__name__)
 
+GITHUB_API_URL = "https://api.github.com"
+
+
+# Prefix used for ZenML secrets stored as GitHub secrets
 GITHUB_SECRET_PREFIX = "__ZENML__"
+# Environment variable that is set to `true` if executing in a GitHub Actions
+# environment
 ENV_IN_GITHUB_ACTIONS = "GITHUB_ACTIONS"
+
+
+ENV_GITHUB_USERNAME = "GITHUB_USERNAME"
+ENV_GITHUB_AUTHENTICATION_TOKEN = "GITHUB_AUTHENTICATION_TOKEN"
 
 
 def inside_github_action_environment() -> bool:
@@ -37,37 +48,45 @@ def inside_github_action_environment() -> bool:
 
 
 class GitHubSecretsManager(BaseSecretsManager):
-    """Class to interact with the GitHub secrets manager."""
+    """Class to interact with the GitHub secrets manager.
 
-    # TODO: git_repository: Optional[str] = None
+    Attributes:
+        owner:
+        repository:
+    """
+
+    owner: str
+    repository: str
 
     # Class configuration
     FLAVOR: ClassVar[str] = GITHUB_SECRET_MANAGER_FLAVOR
-
-    def register_secret(self, secret: BaseSecretSchema) -> None:
-        """Registers a new secret.
-
-        Args:
-            secret: The secret to register.
-        """
-        raise NotImplementedError()
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Gets the value of a secret.
 
         Args:
             secret_name: The name of the secret to get.
+
+        Raises:
+            RuntimeError:
+            KeyError:
         """
         if not inside_github_action_environment():
             raise RuntimeError(
-                "Getting secrets is only possible within GitHub Actions "
-                "environment"
+                "Getting GitHub secrets is only possible within a GitHub "
+                "Actions workflow."
             )
 
         env_variable = GITHUB_SECRET_PREFIX + secret_name
         value = os.getenv(env_variable)
         if not value:
-            raise KeyError()
+            raise KeyError(
+                f"Unable to find secret '{secret_name}'. Please check the "
+                "GitHub UI to see if a **Repository** secret called "
+                f"'{GITHUB_SECRET_PREFIX}{secret_name}' exists. (The "
+                f"'{GITHUB_SECRET_PREFIX}' to differentiate them from other "
+                "GitHub secrets)"
+            )
 
         return ArbitrarySecretSchema(
             name=secret_name, arbitrary_kv_pairs={"key": value}
@@ -78,11 +97,15 @@ class GitHubSecretsManager(BaseSecretsManager):
         if inside_github_action_environment():
             all_keys = list(os.environ)
         else:
-            response = subprocess.check_output(
-                ["gh", "api", "/repos/zenml-io/zenml/actions/secrets"]
+            logger.info(
+                "Fetching list of secrets for repository %s/%s",
+                self.owner,
+                self.repository,
             )
-            gh_secrets = json.loads(response.decode())["secrets"]
-            all_keys = [secret_dict["name"] for secret_dict in gh_secrets]
+            url = f"{GITHUB_API_URL}/repos/{self.owner}/{self.repository}/actions/secrets"
+            response = requests.get(url, auth=self._authentication_credentials)
+            secrets = response.json()["secrets"]
+            all_keys = [secret_dict["name"] for secret_dict in secrets]
 
         keys = [
             key if include_prefix else key[len(GITHUB_SECRET_PREFIX) :]
@@ -91,6 +114,14 @@ class GitHubSecretsManager(BaseSecretsManager):
         ]
 
         return keys
+
+    def register_secret(self, secret: BaseSecretSchema) -> None:
+        """Registers a new secret.
+
+        Args:
+            secret: The secret to register.
+        """
+        raise NotImplementedError()
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update an existing secret.
@@ -115,3 +146,19 @@ class GitHubSecretsManager(BaseSecretsManager):
             force: Whether to force deletion of secrets.
         """
         raise NotImplementedError()
+
+    @property
+    def _authentication_credentials(self) -> HTTPBasicAuth:
+        github_username = os.getenv(ENV_GITHUB_USERNAME)
+        authentication_token = os.getenv(ENV_GITHUB_AUTHENTICATION_TOKEN)
+
+        if not github_username or not authentication_token:
+            raise RuntimeError
+
+        return HTTPBasicAuth(github_username, authentication_token)
+
+    @property
+    def post_registration_message(self) -> Optional[str]:
+        """Prints information regarding the required environment variables to
+        authenticate with the GitHub API."""
+        return None

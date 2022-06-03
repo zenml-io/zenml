@@ -39,6 +39,7 @@ from zenml.integrations.github.orchestrators.github_actions_entrypoint_configura
     GitHubActionsEntrypointConfiguration,
 )
 from zenml.integrations.github.secrets_managers.github_secrets_manager import (
+    ENV_IN_GITHUB_ACTIONS,
     GitHubSecretsManager,
 )
 from zenml.io import fileio
@@ -61,7 +62,8 @@ from zenml.utils import docker_utils, source_utils
 
 logger = get_logger(__name__)
 
-GITHUB_URL_PREFIXES = ["git@github.com", "https://github.com"]
+# Git remote URL prefixes that indicate a GitHub repository.
+GITHUB_REMOTE_URL_PREFIXES = ["git@github.com", "https://github.com"]
 
 
 class GitHubActionsOrchestrator(BaseOrchestrator):
@@ -112,7 +114,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
             remote_url = self.git_repo.remote().url
             is_github_repo = any(
-                remote_url.startswith(prefix) for prefix in GITHUB_URL_PREFIXES
+                remote_url.startswith(prefix)
+                for prefix in GITHUB_REMOTE_URL_PREFIXES
             )
             if not is_github_repo:
                 raise RuntimeError(
@@ -234,19 +237,22 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         # Always include the environment variable that specifies whether
         # we're running in a GitHub Action workflow so the secret manager knows
         # how to query secret values
-        command = f'echo GITHUB_ACTIONS="$GITHUB_ACTIONS" > {file_name}; '
+        command = (
+            f'echo {ENV_IN_GITHUB_ACTIONS}="${ENV_IN_GITHUB_ACTIONS}" '
+            f"> {file_name}; "
+        )
 
         # Write all ZenML secrets into the environment file. Explicitly writing
         # these `${{ secrets.<SECRET_NAME> }}` placeholders into the workflow
         # yaml is the only way for us to access the GitHub secrets in a GitHub
         # Actions workflow.
-        command_placeholder = (
+        append_secret_placeholder = (
             "echo {secret_name}=${{{{ secrets.{secret_name} }}}} >> {file}; "
         )
         for secret_name in secrets_manager.get_all_secret_keys(
             include_prefix=True
         ):
-            command += command_placeholder.format(
+            command += append_secret_placeholder.format(
                 secret_name=secret_name, file=file_name
             )
 
@@ -365,7 +371,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         write_env_file_step = self._write_environment_file_step(
             file_name=env_file_name, secrets_manager=stack.secrets_manager
         )
-        docker_args = (
+        docker_run_args = (
             ["--env-file", env_file_name] if write_env_file_step else []
         )
 
@@ -378,7 +384,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         base_command = [
             "docker",
             "run",
-            *docker_args,
+            *docker_run_args,
             image_name,
         ] + GitHubActionsEntrypointConfiguration.get_entrypoint_command()
 
