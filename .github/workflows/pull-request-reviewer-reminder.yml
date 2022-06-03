@@ -11,5 +11,5 @@ jobs:
       - uses: tommykw/pull-request-reviewer-reminder-action@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }} # Required
-          reminder_message: 'One business day has passed since the review started. Give priority to reviews as much as possible.' # Required. Messages to send to reviewers on Github.
+          reminder_message: 'Two business days have passed since the review started. Pretty please review the PR?' # Required. Messages to send to reviewers on Github.
           review_turnaround_hours: 48 # Required. This is the deadline for reviews. If this time is exceeded, a reminder wil be send.
