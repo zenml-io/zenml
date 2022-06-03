@@ -27,7 +27,6 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_step_entrypoint_conf
     KubernetesStepEntrypointConfiguration,
 )
 
-RUN_NAME_OPTION = "run_name"
 PIPELINE_NAME_OPTION = "pipeline_name"
 IMAGE_NAME_OPTION = "image_name"
 NAMESPACE_OPTION = "kubernetes_namespace"
