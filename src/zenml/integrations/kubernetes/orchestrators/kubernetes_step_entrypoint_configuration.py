@@ -25,11 +25,11 @@ RUN_NAME_OPTION = "run_name"
 
 
 class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
-    """Entrypoint configuration for running steps on Kubernertes."""
+    """Entrypoint configuration for running steps on Kubernetes."""
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
-        """Kubernertes specific entrypoint options.
+        """Kubernetes specific entrypoint options.
 
         The argument `RUN_NAME_OPTION` is needed for `get_run_name` to have
         consistent values between steps.
@@ -49,6 +49,8 @@ class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
 
         Args:
             step (BaseStep): ZenML step for which the entrypoint is built.
+            args: additional (unused) arguments.
+            kwargs: keyword args; needs to include `RUN_NAME_OPTION`.
 
         Returns:
             List[str]: Entrypoint arguments.

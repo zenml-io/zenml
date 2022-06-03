@@ -348,7 +348,18 @@ class KubernetesOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """"""
+        """Run pipeline in Kubernetes.
+
+        Args:
+            sorted_steps (List[BaseStep]): List of steps in execution order.
+            pipeline (BasePipeline): ZenML pipeline.
+            pb2_pipeline (Pb2Pipeline): ZenML pipeline in TFX pb2 format.
+            stack (Stack): ZenML stack.
+            runtime_configuration (RuntimeConfiguration): _description_
+
+        Raises:
+            RuntimeError: if trying to run from a Jupyter notebook.
+        """
 
         # First check whether the code running in a notebook
         if Environment.in_notebook():

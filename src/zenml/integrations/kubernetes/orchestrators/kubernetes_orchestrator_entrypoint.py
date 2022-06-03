@@ -30,7 +30,11 @@ from zenml.integrations.kubernetes.orchestrators.utils import (
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse entrypoint arguments."""
+    """Parse entrypoint arguments.
+
+    Returns:
+        argparse.Namespace: Parsed args.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
     parser.add_argument("--pipeline_name", type=str, required=True)
@@ -42,7 +46,6 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     """Entrypoint of the k8s master/orchestrator pod."""
-
     # Log to the container's stdout so it can be streamed by the client.
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     logging.getLogger().setLevel(logging.INFO)
@@ -81,12 +84,24 @@ def main() -> None:
             self._lock = threading.Lock()
 
         def get_dependencies(self, step_name: str) -> List[str]:
-            """Get a list of all dependencies of a step."""
+            """Get a list of all dependencies of a step.
+
+            Args:
+                step_name (str): Name of the step whose dependencies to get.
+
+            Returns:
+                List[str]: List of step names on which the given step depends.
+            """
             with self._lock:
                 return self.step_dependencies[step_name]
 
         def remove_dependency(self, step_name: str, dependency: str) -> None:
-            """Remove a dependency of a step."""
+            """Remove a dependency of a step.
+
+            Args:
+                step_name (str): Name of the step.
+                dependency (str): Name of the dependency (other step).
+            """
             with self._lock:
                 self.step_dependencies[step_name].remove(dependency)
 
@@ -112,13 +127,23 @@ def main() -> None:
     thread_dict = ThreadDict()
 
     def _can_run(step_name: str) -> bool:
-        """Return whether a step has no dependencies and can run now."""
+        """Return whether a step has no dependencies and can run now.
+
+        Args:
+            step_name (str): Name of the step.
+
+        Returns:
+            bool: True if step can run now else False.
+        """
         dependencies = step_dependencies.get_dependencies(step_name)
         return len(dependencies) == 0
 
     def _run_step(step_name: str) -> None:
-        """Run a single step."""
+        """Run a single step.
 
+        Args:
+            step_name (str): Name of the step.
+        """
         # Define k8s pod name.
         pod_name = f"{args.run_name}-{step_name}"
         pod_name = tfx_kube_utils.sanitize_pod_name(pod_name)
@@ -161,6 +186,11 @@ def main() -> None:
         del thread_dict[step_name]  # remove current thread
 
     def _run_step_in_thread(step_name: str) -> None:
+        """Call _run_step() in a separate thread.
+
+        Args:
+            step_name (str): Name of the step to run.
+        """
         thread = threading.Thread(target=_run_step, args=(step_name,))
         thread_dict[step_name] = thread
         thread.start()

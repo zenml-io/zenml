@@ -1,4 +1,4 @@
-"""Util functions for building manifests for k8s pods."""
+"""Utility functions for building manifests for k8s pods."""
 
 from typing import Any, Dict, List
 
@@ -19,7 +19,6 @@ def build_base_pod_manifest(
     Returns:
         Dict[str, Any]: Base pod manifest.
     """
-
     return {
         "apiVersion": "v1",
         "kind": "Pod",

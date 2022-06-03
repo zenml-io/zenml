@@ -53,8 +53,7 @@ def get_fixed_step_args(
     Args:
         step_args (List[str]): list of ALL step args.
             E.g. ["--arg1", "arg1_value", "--arg2", "arg2_value", ...].
-        get_fixed (bool, optional): Set to `False` to get step-specific args
-            instead. Defaults to True.
+        get_fixed (bool): Set to `False` to get step-specific args instead.
 
     Returns:
         List[str]: Fixed step args (if get_fixed==True)
@@ -89,7 +88,11 @@ class KubernetesOrchestratorEntrypointConfiguration:
 
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
-        """Gets all the options required for running this entrypoint."""
+        """Gets all the options required for running this entrypoint.
+
+        Returns:
+            Set[str]: Entrypoint options.
+        """
         options = {
             RUN_NAME_OPTION,
             PIPELINE_NAME_OPTION,
@@ -101,7 +104,11 @@ class KubernetesOrchestratorEntrypointConfiguration:
 
     @classmethod
     def get_entrypoint_command(cls) -> List[str]:
-        """Returns a command that runs the entrypoint module."""
+        """Returns a command that runs the entrypoint module.
+
+        Returns:
+            List[str]: Entrypoint command.
+        """
         command = [
             "python",
             "-m",
@@ -120,7 +127,21 @@ class KubernetesOrchestratorEntrypointConfiguration:
         sorted_steps: List[BaseStep],
         step_dependencies: Dict[str, List[str]],
     ) -> List[str]:
-        """Gets all arguments that the entrypoint command should be called with."""
+        """Gets all arguments that the entrypoint command should be called with.
+
+        Args:
+            run_name (str): Name of the ZenML run.
+            pipeline_name (str): Name of the ZenML pipeline.
+            image_name (str): Name of the Docker image.
+            kubernetes_namespace (str): Name of the Kubernetes namespace.
+            pb2_pipeline (Pb2Pipeline): ZenML pipeline in TFX pb2 format.
+            sorted_steps (List[BaseStep]): List of steps in execution order.
+            step_dependencies (Dict[str, List[str]]): For each step, list of
+                steps that need to run before it.
+
+        Returns:
+            List[str]: Entrypoint arguments.
+        """
 
         def _get_step_args(step: BaseStep) -> List[str]:
             """Get the entrypoint args for a specific step.

@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
+Kubernetes integration for k8s-native orchestration.
+
 The Kubernetes integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Kubernetes orchestrator with
 the CLI tool.
@@ -34,7 +36,11 @@ class KubernetesIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Kubernetes integration."""
+        """Declare the stack component flavors for the Kubernetes integration.
+
+        Returns:
+            List[FlavorWrapper]: list of new stack component flavors.
+        """
         return [
             FlavorWrapper(
                 name=KUBERNETES_ORCHESTRATOR_FLAVOR,
