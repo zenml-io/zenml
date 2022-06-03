@@ -20,7 +20,7 @@ import logging
 import sys
 import threading
 from collections import defaultdict
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from zenml.integrations.kubernetes.orchestrators import tfx_kube_utils
 from zenml.integrations.kubernetes.orchestrators.utils import (
@@ -29,7 +29,7 @@ from zenml.integrations.kubernetes.orchestrators.utils import (
 )
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse entrypoint arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
@@ -40,7 +40,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
     """Entrypoint of the k8s master/orchestrator pod."""
 
     # Log to the container's stdout so it can be streamed by the client.
@@ -80,7 +80,7 @@ def main():
             self.step_dependencies = step_dependencies
             self._lock = threading.Lock()
 
-        def get_dependencies(self, step_name) -> List[str]:
+        def get_dependencies(self, step_name: str) -> List[str]:
             """Get a list of all dependencies of a step."""
             with self._lock:
                 return self.step_dependencies[step_name]
@@ -93,30 +93,30 @@ def main():
     # wrap step dependencies in a class to enable multi-threaded updates.
     step_dependencies = StepDependencies(step_dependencies)
 
-    class ThreadDict(dict):
+    class ThreadDict(dict):  # type: ignore[type-arg]
         """Thread-safe dict used to keep track of all threads per step."""
 
         def __init__(self) -> None:
             super().__init__()
             self._lock = threading.Lock()
 
-        def __setitem__(self, __k, __v):
+        def __setitem__(self, __k: Any, __v: Any) -> None:
             with self._lock:
                 super().__setitem__(__k, __v)
 
-        def __delitem__(self, __k):
+        def __delitem__(self, __k: Any) -> None:
             with self._lock:
                 super().__delitem__(__k)
 
     # dict {step: thread} to keep track of currently running threads
     thread_dict = ThreadDict()
 
-    def _can_run(step_name):
+    def _can_run(step_name: str) -> bool:
         """Return whether a step has no dependencies and can run now."""
         dependencies = step_dependencies.get_dependencies(step_name)
         return len(dependencies) == 0
 
-    def _run_step(step_name):
+    def _run_step(step_name: str) -> None:
         """Run a single step."""
 
         # Define k8s pod name.
@@ -160,7 +160,7 @@ def main():
 
         del thread_dict[step_name]  # remove current thread
 
-    def _run_step_in_thread(step_name):
+    def _run_step_in_thread(step_name: str) -> None:
         thread = threading.Thread(target=_run_step, args=(step_name,))
         thread_dict[step_name] = thread
         thread.start()

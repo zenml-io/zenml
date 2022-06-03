@@ -33,6 +33,9 @@ class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
 
         The argument `RUN_NAME_OPTION` is needed for `get_run_name` to have
         consistent values between steps.
+
+        Returns:
+            Set[str]: Set of entrypoint options.
         """
         return {RUN_NAME_OPTION}
 
@@ -40,13 +43,29 @@ class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
     def get_custom_entrypoint_arguments(
         cls, step: "BaseStep", *args: Any, **kwargs: Any
     ) -> List[str]:
-        """Sets the value for the `RUN_NAME_OPTION` argument."""
+        """Kubernetes specific entrypoint arguments.
+
+        Sets the value for the `RUN_NAME_OPTION` argument.
+
+        Args:
+            step (BaseStep): ZenML step for which the entrypoint is built.
+
+        Returns:
+            List[str]: Entrypoint arguments.
+        """
         return [
             f"--{RUN_NAME_OPTION}",
             kwargs[RUN_NAME_OPTION],
         ]
 
     def get_run_name(self, pipeline_name: str) -> str:
-        """Returns the run name."""
+        """Returns the ZenML run name.
+
+        Args:
+            pipeline_name (str): Name of the ZenML pipeline (unused).
+
+        Returns:
+            str: ZenML run name.
+        """
         job_id: str = self.entrypoint_args[RUN_NAME_OPTION]
         return job_id

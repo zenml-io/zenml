@@ -15,7 +15,9 @@
 #  permissions and limitations under the License.
 
 import json
-from typing import List, Set
+from typing import Dict, List, Set
+
+from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.entrypoints.step_entrypoint_configuration import (
     INPUT_ARTIFACT_SOURCES_OPTION,
@@ -26,6 +28,7 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_step_entrypoint_conf
     RUN_NAME_OPTION,
     KubernetesStepEntrypointConfiguration,
 )
+from zenml.steps.base_step import BaseStep
 
 PIPELINE_NAME_OPTION = "pipeline_name"
 IMAGE_NAME_OPTION = "image_name"
@@ -46,6 +49,16 @@ def get_fixed_step_args(
 
     We want to have them separate so we can send them to the orchestrator pod
     only once.
+
+    Args:
+        step_args (List[str]): list of ALL step args.
+            E.g. ["--arg1", "arg1_value", "--arg2", "arg2_value", ...].
+        get_fixed (bool, optional): Set to `False` to get step-specific args
+            instead. Defaults to True.
+
+    Returns:
+        List[str]: Fixed step args (if get_fixed==True)
+            or step-specific args (if `get_fixed==False`).
     """
     fixed_args = []
     for i, arg in enumerate(step_args):
@@ -60,7 +73,14 @@ def get_fixed_step_args(
 
 
 def get_step_specific_args(step_args: List[str]) -> List[str]:
-    """Get the step-specific args that change from step to step."""
+    """Get the step-specific args that change from step to step.
+
+    Args:
+        step_args (List[str]): list of ALL step args.
+
+    Returns:
+        List[str]: Step-specific args.
+    """
     return get_fixed_step_args(step_args, get_fixed=False)
 
 
@@ -96,14 +116,21 @@ class KubernetesOrchestratorEntrypointConfiguration:
         pipeline_name: str,
         image_name: str,
         kubernetes_namespace: str,
-        pb2_pipeline,
-        sorted_steps,
-        step_dependencies,
+        pb2_pipeline: Pb2Pipeline,
+        sorted_steps: List[BaseStep],
+        step_dependencies: Dict[str, List[str]],
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with."""
 
-        def _get_step_args(step):
-            """Get the entrypoint args for a specific step."""
+        def _get_step_args(step: BaseStep) -> List[str]:
+            """Get the entrypoint args for a specific step.
+
+            Args:
+                step (BaseStep): ZenML step for which to get entrypoint args.
+
+            Returns:
+                List[str]: Entrypoint args of the step.
+            """
             return (
                 KubernetesStepEntrypointConfiguration.get_entrypoint_arguments(
                     step=step,

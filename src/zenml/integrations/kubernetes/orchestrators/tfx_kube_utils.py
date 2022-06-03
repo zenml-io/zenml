@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utilities for the kubernetes related functions.
+
 Internal interface: no backwards compatibility guarantees.
+Taken from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils.py.
 """
 
 import datetime
@@ -52,8 +54,8 @@ class PodPhase(enum.Enum):
     UNKNOWN = "Unknown"
 
     @property
-    def is_done(self):
-        return self in (self.SUCCEEDED, self.FAILED)
+    def is_done(self) -> bool:
+        return self in (self.SUCCEEDED, self.FAILED)  # type: ignore
 
 
 class RestartPolicy(enum.Enum):
@@ -81,12 +83,12 @@ class PersistentVolumeAccessMode(enum.Enum):
 class _KubernetesClientFactory:
     """Factory class for creating kubernetes API client."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._config_loaded = False
         self._inside_cluster = False
 
     @property
-    def inside_cluster(self):
+    def inside_cluster(self) -> bool:
         """Whether current environment is inside the kubernetes cluster."""
         if not self._config_loaded:
             self._LoadConfig()
@@ -151,7 +153,7 @@ def sanitize_pod_name(pod_name: str) -> str:
 
 
 def pod_is_not_pending(resp: k8s_client.V1Pod) -> bool:
-    return resp.status.phase != PodPhase.PENDING.value
+    return resp.status.phase != PodPhase.PENDING.value  # type: ignore
 
 
 def pod_is_done(resp: k8s_client.V1Pod) -> bool:
@@ -325,7 +327,7 @@ def wait_pod(
     maximum_backoff = 32
     while True:
         resp = get_pod(core_api, pod_name, namespace)
-        logging.info(resp.status.phase)
+        logging.info(resp.status.phase)  # type: ignore
         if exit_condition_lambda(resp):
             return resp
         elapse_time = datetime.datetime.utcnow() - start_time
