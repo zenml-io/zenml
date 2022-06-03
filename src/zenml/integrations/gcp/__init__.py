@@ -26,13 +26,14 @@ from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
 GCP_ARTIFACT_STORE_FLAVOR = "gcp"
+GCP_VM_ORCHESTRATOR_FLAVOR = "gcp"
 
 
 class GcpIntegration(Integration):
     """Definition of Google Cloud Platform integration for ZenML."""
 
     NAME = GCP
-    REQUIREMENTS = ["gcsfs"]
+    REQUIREMENTS = ["gcsfs", "google-cloud-compute"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
@@ -43,7 +44,13 @@ class GcpIntegration(Integration):
                 source="zenml.integrations.gcp.artifact_stores.GCPArtifactStore",
                 type=StackComponentType.ARTIFACT_STORE,
                 integration=cls.NAME,
-            )
+            ),
+            FlavorWrapper(
+                name=GCP_VM_ORCHESTRATOR_FLAVOR,
+                source="zenml.integrations.gcp.orchestrators.GCPVMOrchestrator",
+                type=StackComponentType.ORCHESTRATOR,
+                integration=cls.NAME,
+            ),
         ]
 
 
