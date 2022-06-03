@@ -11,20 +11,38 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
 import os
 from typing import ClassVar, List, Optional
 
 import requests
 from requests.auth import HTTPBasicAuth
 
+from zenml.entrypoints.step_entrypoint_configuration import (
+    _b64_decode,
+    _b64_encode,
+)
 from zenml.integrations.github import GITHUB_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
-from zenml.secret import ArbitrarySecretSchema, BaseSecretSchema
+from zenml.secret import BaseSecretSchema
+from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 
 logger = get_logger(__name__)
 
-GITHUB_API_URL = "https://api.github.com"
+from base64 import b64encode
+
+
+def encrypt(public_key: str, secret_value: str) -> str:
+    """Encrypt a Unicode string using the public key."""
+    from nacl import encoding, public
+
+    public_key = public.PublicKey(
+        public_key.encode("utf-8"), encoding.Base64Encoder()
+    )
+    sealed_box = public.SealedBox(public_key)
+    encrypted = sealed_box.encrypt(secret_value.encode("utf-8"))
+    return b64encode(encrypted).decode("utf-8")
 
 
 # Prefix used for ZenML secrets stored as GitHub secrets
@@ -88,9 +106,14 @@ class GitHubSecretsManager(BaseSecretsManager):
                 "GitHub secrets)"
             )
 
-        return ArbitrarySecretSchema(
-            name=secret_name, arbitrary_kv_pairs={"key": value}
+        json_string = _b64_decode(value)
+        secret_dict = json.loads(json_string)
+
+        schema_class = SecretSchemaClassRegistry.get_class(
+            secret_schema=secret_dict["secret_schema"]
         )
+
+        return schema_class(name=secret_name, **secret_dict["values"])
 
     def get_all_secret_keys(self, include_prefix: bool = False) -> List[str]:
         """Get all secret keys."""
@@ -102,8 +125,9 @@ class GitHubSecretsManager(BaseSecretsManager):
                 self.owner,
                 self.repository,
             )
-            url = f"{GITHUB_API_URL}/repos/{self.owner}/{self.repository}/actions/secrets"
-            response = requests.get(url, auth=self._authentication_credentials)
+            response = requests.get(
+                self.secrets_api_url, auth=self._authentication_credentials
+            )
             secrets = response.json()["secrets"]
             all_keys = [secret_dict["name"] for secret_dict in secrets]
 
@@ -121,7 +145,30 @@ class GitHubSecretsManager(BaseSecretsManager):
         Args:
             secret: The secret to register.
         """
-        raise NotImplementedError()
+        # TODO: KeyError if exists
+
+        secret_dict = {"secret_schema": secret.TYPE, "values": secret.content}
+        json_string = json.dumps(secret_dict)
+        secret_value = _b64_encode(json_string)
+
+        public_key_response = requests.get(
+            f"{self.secrets_api_url}/public-key",
+            auth=self._authentication_credentials,
+        ).json()
+        print(public_key_response)
+        encrypted_secret = encrypt(
+            public_key=public_key_response["key"], secret_value=secret_value
+        )
+        print(encrypted_secret)
+        body = {
+            "encrypted_value": encrypted_secret,
+            "key_id": public_key_response["key_id"],
+        }
+        url = f"{self.secrets_api_url}/{GITHUB_SECRET_PREFIX}{secret.name}"
+        response = requests.put(
+            url, json=body, auth=self._authentication_credentials
+        )
+        print(response.content)
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update an existing secret.
@@ -137,7 +184,8 @@ class GitHubSecretsManager(BaseSecretsManager):
         Args:
             secret_name: The name of the secret to delete.
         """
-        raise NotImplementedError()
+        url = f"{self.secrets_api_url}/{GITHUB_SECRET_PREFIX}{secret_name}"
+        requests.delete(url)
 
     def delete_all_secrets(self, force: bool = False) -> None:
         """Delete all existing secrets.
@@ -145,7 +193,15 @@ class GitHubSecretsManager(BaseSecretsManager):
         Args:
             force: Whether to force deletion of secrets.
         """
-        raise NotImplementedError()
+        for secret_name in self.get_all_secret_keys():
+            self.delete_secret(secret_name=secret_name)
+
+    @property
+    def secrets_api_url(self) -> str:
+        return (
+            f"https://api.github.com/repos/{self.owner}/{self.repository}"
+            "/actions/secrets"
+        )
 
     @property
     def _authentication_credentials(self) -> HTTPBasicAuth:

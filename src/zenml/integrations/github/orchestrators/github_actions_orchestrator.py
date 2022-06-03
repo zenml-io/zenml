@@ -153,16 +153,16 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                     "container registries."
                 )
 
-            for component in stack.components.values():
-                if component.local_path:
-                    return False, (
-                        "The GitHub Actions orchestrator runs pipelines on "
-                        "remote GitHub Actions runners, but the "
-                        f"'{component.name}' {component.TYPE.value} of your "
-                        "active stack is a local component. Please make sure "
-                        "to only use remote stack components in combination "
-                        "with the GitHub Actions orchestrator. "
-                    )
+            # for component in stack.components.values():
+            #     if component.local_path:
+            #         return False, (
+            #             "The GitHub Actions orchestrator runs pipelines on "
+            #             "remote GitHub Actions runners, but the "
+            #             f"'{component.name}' {component.TYPE.value} of your "
+            #             "active stack is a local component. Please make sure "
+            #             "to only use remote stack components in combination "
+            #             "with the GitHub Actions orchestrator. "
+            #         )
 
             return True, ""
 
@@ -436,11 +436,12 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 f"pipeline {pipeline.name}."
             )
             self.git_repo.remote().push()
+            logger.info("Pushed workflow file '%s'", workflow_path)
         else:
             logger.info(
                 "Automatically committing and pushing is disabled for this "
                 "orchestrator. To run the pipeline, you'll have to commit and "
-                "push the workflow file %s manually.\n"
+                "push the workflow file '%s' manually.\n"
                 "If you want to update this orchestrator to automatically "
                 "commit and push in the future, run "
                 "`zenml orchestrator update %s --push=true`",
