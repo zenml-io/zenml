@@ -11,9 +11,9 @@ def main():
     model_deployer = KServeModelDeployer.get_active_model_deployer()
     model_deployer.deploy_model(
         config=KServeDeploymentConfig(
-            model_uri="gs://kfserving-samples/models/tensorflow/flowers",
-            model_name="flower3",
-            predictor="tensorflow",
+            model_uri="gs://kfserving-examples/models/sklearn/1.0/model",
+            model_name="iris",
+            predictor="sklearn",
             resources={"requests": {"cpu": "100m"}},
         ),
         replace=True,
