@@ -24,7 +24,8 @@ from typing import Callable, NamedTuple, Optional, List
 import pytest
 from pydantic import BaseModel
 
-from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample
+from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample, \
+    set_active_stack
 from zenml.integrations.mlflow.experiment_trackers import \
     MLFlowExperimentTracker
 from zenml.pipelines.run_pipeline import run_pipeline
@@ -165,6 +166,12 @@ def test_run_example(
 
     previous_wd = os.getcwd()
     os.chdir(tmp_path)
+
+    active_stack = Repository().active_stack.name
+    Repository.initialize(root=tmp_path)
+    Repository._reset_instance()
+    set_active_stack(stack_name=active_stack)
+
     # allow any additional setup that the example might need
     if example_configuration.required_stack_components:
         example_configuration.duplicate_and_update_stack()

@@ -41,6 +41,10 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     #  In order to allow seamless switching between running directly and through
     #  zenml, this is done at this point
     zenml_root = Repository().root
+    if not zenml_root:
+        raise RuntimeError("The `run_pipeline` function can only be called "
+                           "within a zenml repo. Run `zenml init` before "
+                           "running a pipeline using `run_pipeline`.")
 
     module = source_utils.import_python_file(python_file, str(zenml_root))
     config = yaml_utils.read_yaml(config_path)
