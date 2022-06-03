@@ -99,7 +99,7 @@ In order to clean up, tear down the Airflow stack and delete the remaining ZenML
 references.
 
 ```shell
-zenml stack down --yes
+zenml stack down --force
 rm -rf zenml_examples
 ```
 

@@ -96,7 +96,16 @@ if server_installed:
         port: int,
         profile: Optional[str],
     ) -> None:
-        """Provisions resources for the ZenServer."""
+        """Provisions resources for the ZenServer.
+
+        Args:
+            ip_address: The IP address to bind the server to.
+            port: The port to bind the server to.
+            profile: The profile to use for the server.
+
+        Raises:
+            ValueError: If the profile name wasn't found.
+        """
         from zenml.services import ServiceRegistry
 
         service_config = ZenServerConfig(
