@@ -10,7 +10,7 @@ CONTAINER_PARAMS=$(curl http://metadata.google.internal/computeMetadata/v1/insta
 sudo HOME=/home/root docker-credential-gcr configure-docker
 
 # Run! The logs will go to stack driver
-sudo HOME=/home/root docker run ${IMAGE_NAME} ${CONTAINER_PARAMS}
+sudo HOME=/home/root docker run --log-driver=gcplogs --net=host ${IMAGE_NAME} ${CONTAINER_PARAMS}
 
 # Get the zone
 zoneMetadata=$(curl "http://metadata.google.internal/computeMetadata/v1/instance/zone" -H "Metadata-Flavor:Google")

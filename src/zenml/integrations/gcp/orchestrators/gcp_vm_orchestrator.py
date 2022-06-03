@@ -31,8 +31,10 @@
 import re
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional
 
+import google.cloud.logging
 from google.api_core.extended_operation import ExtendedOperation
 from google.cloud import compute_v1
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
@@ -55,6 +57,22 @@ if TYPE_CHECKING:
     from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
+
+
+def stream_logs(
+    instance: Any, project_id: str, seconds_before: int = 10
+) -> None:
+    """Streams logs onto the logger"""
+    client = google.cloud.logging.Client()
+    time_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+    before = datetime.now(timezone.utc) - timedelta(seconds=seconds_before)
+    filter_str = (
+        f'logName="projects/{project_id}/logs/gcplogs-docker-driver"'
+        f' AND timestamp>="{before.strftime(time_format)}"'
+    )
+    # query and print all matching logs
+    for entry in client.list_entries(filter_=filter_str):  # API call(s)
+        logger.info(entry.payload["data"])
 
 
 def wait_for_extended_operation(
@@ -90,18 +108,22 @@ def wait_for_extended_operation(
     result = operation.result(timeout=timeout)
 
     if operation.error_code:
-        print(
+        logger.error(
             f"Error during {verbose_name}: [Code: {operation.error_code}]: {operation.error_message}",
             file=sys.stderr,
             flush=True,
         )
-        print(f"Operation ID: {operation.name}", file=sys.stderr, flush=True)
+        logger.error(
+            f"Operation ID: {operation.name}", file=sys.stderr, flush=True
+        )
         raise operation.exception() or RuntimeError(operation.error_message)
 
     if operation.warnings:
-        print(f"Warnings during {verbose_name}:\n", file=sys.stderr, flush=True)
+        logger.warning(
+            f"Warnings during {verbose_name}:\n", file=sys.stderr, flush=True
+        )
         for warning in operation.warnings:
-            print(
+            logger.warning(
                 f" - {warning.code}: {warning.message}",
                 file=sys.stderr,
                 flush=True,
@@ -121,12 +143,12 @@ def delete_instance(project_id: str, zone: str, machine_name: str) -> None:
     """
     instance_client = compute_v1.InstancesClient()
 
-    print(f"Deleting {machine_name} from {zone}...")
+    logger.info(f"Deleting {machine_name} from {zone}...")
     operation = instance_client.delete(
         project=project_id, zone=zone, instance=machine_name
     )
     wait_for_extended_operation(operation, "instance deletion")
-    print(f"Instance {machine_name} deleted.")
+    logger.info(f"Instance {machine_name} deleted.")
     return
 
 
@@ -223,18 +245,22 @@ def wait_for_extended_operation(
     result = operation.result(timeout=timeout)
 
     if operation.error_code:
-        print(
+        logger.error(
             f"Error during {verbose_name}: [Code: {operation.error_code}]: {operation.error_message}",
             file=sys.stderr,
             flush=True,
         )
-        print(f"Operation ID: {operation.name}", file=sys.stderr, flush=True)
+        logger.error(
+            f"Operation ID: {operation.name}", file=sys.stderr, flush=True
+        )
         raise operation.exception() or RuntimeError(operation.error_message)
 
     if operation.warnings:
-        print(f"Warnings during {verbose_name}:\n", file=sys.stderr, flush=True)
+        logger.warning(
+            f"Warnings during {verbose_name}:\n", file=sys.stderr, flush=True
+        )
         for warning in operation.warnings:
-            print(
+            logger.warning(
                 f" - {warning.code}: {warning.message}",
                 file=sys.stderr,
                 flush=True,
@@ -403,13 +429,12 @@ def create_instance(
     request.instance_resource = instance
 
     # Wait for the create operation to complete.
-    print(f"Creating the {instance_name} instance in {zone}...")
+    logger.info(f"Creating the {instance_name} instance in {zone}...")
 
     operation = instance_client.insert(request=request)
 
     wait_for_extended_operation(operation, "instance creation")
 
-    print(f"Instance {instance_name} created.")
     return instance_client.get(
         project=project_id, zone=zone, instance=instance_name
     )
@@ -500,7 +525,7 @@ class GCPVMOrchestrator(BaseOrchestrator):
 
             disk = disk_from_image(
                 f"zones/{self.zone}/diskTypes/pd-ssd",
-                disk_size_gb=100,
+                disk_size_gb=10,
                 boot=True,
                 source_image=f"projects/gce-uefi-images/global/images/{image.name}",
                 auto_delete=True,
@@ -516,11 +541,18 @@ class GCPVMOrchestrator(BaseOrchestrator):
                 external_access=True,
             )
 
-            while (
-                get_instance(self.project_id, self.zone, instance.name).status
-                == "RUNNING"
-            ):
-                logger.info(
-                    f"Instance {instance.name} still running the last step. Waiting 10 seconds.."
+            logger.info(
+                f"Instance {instance.name} is now running the pipeline. Logs will be streamed soon..."
+            )
+            seconds_wait = 10
+            while instance.status == "RUNNING":
+                instance = get_instance(
+                    self.project_id, self.zone, instance.name
                 )
-                time.sleep(10)
+                stream_logs(
+                    instance, self.project_id, seconds_before=seconds_wait
+                )
+                time.sleep(seconds_wait)
+            stream_logs(
+                instance, self.project_id, seconds_before=seconds_wait * 2
+            )

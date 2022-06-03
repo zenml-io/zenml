@@ -33,7 +33,7 @@ class GcpIntegration(Integration):
     """Definition of Google Cloud Platform integration for ZenML."""
 
     NAME = GCP
-    REQUIREMENTS = ["gcsfs", "google-cloud-compute"]
+    REQUIREMENTS = ["gcsfs", "google-cloud-compute", "google-cloud-logging"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
