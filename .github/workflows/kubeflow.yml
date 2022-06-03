@@ -62,6 +62,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Perform docker login and get Kubecontext
+        run: bash scripts/setup_kubeflow_aws_connection.sh
+
       - name: Build docker image
         # this step can be much faster if we use an image that copies the
         # lockfile that was generated in the previous step

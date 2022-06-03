@@ -22,11 +22,8 @@ from pytest_mock import MockerFixture
 from zenml.repository import Repository
 from zenml.stack import Stack
 
-AWS_REGION = "us-east-1"
-AWS_EKS_CLUSTER = "zenhacks-cluster"
 ECR_REGISTRY_NAME = "715803424590.dkr.ecr.us-east-1.amazonaws.com"
 S3_BUCKET_NAME = "s3://zenbytes-bucket"
-KUBEFLOW_NAMESPACE = "kubeflow"
 KUBE_CONTEXT = "zenml-eks"
 
 
@@ -70,7 +67,7 @@ def shared_kubeflow_profile(
     # Register and activate the kubeflow stack
     orchestrator = KubeflowOrchestrator(
         name="eks_orchestrator",
-        custom_docker_base_image_name="test_base_image:latest",
+        custom_docker_base_image_name="test-base-image:latest",
         synchronous=True,
         kubernetes_context=KUBE_CONTEXT,
         skip_ui_daemon_provisioning=True
