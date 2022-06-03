@@ -1,3 +1,5 @@
+"""Entrypoint of the k8s master/orchestrator pod."""
+
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +27,7 @@ from zenml.integrations.kubernetes.orchestrators.utils import (
 
 
 def parse_args():
+    """Parse entrypoint arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
     parser.add_argument("--pipeline_name", type=str, required=True)
@@ -35,20 +38,24 @@ def parse_args():
 
 
 def main():
+    """Entrypoint of the k8s master/orchestrator pod."""
+
     # Log to the container's stdout so it can be streamed by the client.
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     logging.getLogger().setLevel(logging.INFO)
-
-    args = parse_args()
-    core_api = tfx_kube_utils.make_core_v1_api()
-
     logging.info("Starting orchestration...")
 
+    # Parse / extract args
+    args = parse_args()
     pipeline_config = args.pipeline_config
     step_command = pipeline_config["step_command"]
     sorted_steps = pipeline_config["sorted_steps"]
     fixed_step_args = pipeline_config["fixed_step_args"]
 
+    # Get k8s Core API for running kubectl commands later
+    core_api = tfx_kube_utils.make_core_v1_api()
+
+    # Build base pod manifest
     base_pod_manifest = build_base_pod_manifest(
         run_name=args.run_name,
         pipeline_name=args.pipeline_name,
@@ -56,6 +63,7 @@ def main():
     )
 
     for step_name in sorted_steps:
+
         # Define k8s pod name.
         pod_name = f"{args.run_name}-{step_name}"
         pod_name = tfx_kube_utils.sanitize_pod_name(pod_name)

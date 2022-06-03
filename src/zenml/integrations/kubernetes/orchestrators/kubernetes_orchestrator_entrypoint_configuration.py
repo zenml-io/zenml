@@ -1,3 +1,19 @@
+"""Entrypoint configuration for the k8s master/orchestrator pod."""
+
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
 import json
 from typing import List, Set
 
@@ -15,14 +31,13 @@ RUN_NAME_OPTION = "run_name"
 PIPELINE_NAME_OPTION = "pipeline_name"
 IMAGE_NAME_OPTION = "image_name"
 NAMESPACE_OPTION = "kubernetes_namespace"
-PIPELINE_JSON_OPTION = "pipeline_json"
 PIPELINE_CONFIG_OPTION = "pipeline_config"
 
 STEP_SPECIFIC_STEP_ENTRYPOINT_OPTIONS = [
     STEP_SOURCE_OPTION,
     INPUT_ARTIFACT_SOURCES_OPTION,
     MATERIALIZER_SOURCES_OPTION,
-]
+]  # options from StepEntrypointConfiguration that change from step to step.
 
 
 def get_fixed_step_args(
@@ -51,6 +66,8 @@ def get_step_specific_args(step_args: List[str]) -> List[str]:
 
 
 class KubernetesOrchestratorEntrypointConfiguration:
+    """Entrypoint configuration for the k8s master/orchestrator pod."""
+
     @classmethod
     def get_entrypoint_options(cls) -> Set[str]:
         """Gets all the options required for running this entrypoint."""
@@ -59,7 +76,6 @@ class KubernetesOrchestratorEntrypointConfiguration:
             PIPELINE_NAME_OPTION,
             IMAGE_NAME_OPTION,
             NAMESPACE_OPTION,
-            PIPELINE_JSON_OPTION,
             PIPELINE_CONFIG_OPTION,
         }
         return options
@@ -87,27 +103,35 @@ class KubernetesOrchestratorEntrypointConfiguration:
         """Gets all arguments that the entrypoint command should be called with."""
 
         def _get_step_args(step):
+            """Get the entrypoint args for a specific step."""
             return KubernetesStepEntrypointConfiguration.get_entrypoint_arguments(
                 step=step,
                 pb2_pipeline=pb2_pipeline,
                 **{RUN_NAME_OPTION: run_name},
             )
 
+        # Get name, command, and args for each step
         step_names = [step.name for step in sorted_steps]
         step_command = (
             KubernetesStepEntrypointConfiguration.get_entrypoint_command()
         )
+        # TODO: handle empty pipelines without steps
         fixed_step_args = get_fixed_step_args(_get_step_args(sorted_steps[0]))
         step_specific_args = {
             step.name: get_step_specific_args(_get_step_args(step))
             for step in sorted_steps
-        }
+        }  # e.g.: {"trainer": train_step_args, ...}
+
+        # Write all pipeline names, commands, args to a JSON
         pipeline_config = {
             "sorted_steps": step_names,
             "step_command": step_command,
             "fixed_step_args": fixed_step_args,
             "step_specific_args": step_specific_args,
         }
+        pipeline_config_json = json.dumps(pipeline_config)
+
+        # Define entrypoint args.
         args = [
             f"--{RUN_NAME_OPTION}",
             run_name,
@@ -118,6 +142,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
             f"--{NAMESPACE_OPTION}",
             kubernetes_namespace,
             f"--{PIPELINE_CONFIG_OPTION}",
-            json.dumps(pipeline_config),
+            pipeline_config_json,
         ]
+
         return args
