@@ -134,15 +134,21 @@ class KServeModelDeployer(BaseModelDeployer):
                     f"The ZenML secret specified in the Seldon Core Model "
                     f"Deployer configuration cannot be fetched: {self.secret}."
                 )
-
-            try:
-                zenml_secret = secret_manager.get_secret(self.secret)
-                self._client.set_credentials(**zenml_secret)  # type: ignore
-            except KeyError:
+            if self.kserve_client:
+                try:
+                    zenml_secret = secret_manager.get_secret(self.secret)
+                    self.kserve_client.set_credentials(**zenml_secret.content)  # type: ignore
+                except KeyError:
+                    raise RuntimeError(
+                        f"The ZenML secret '{self.secret}' specified in the "
+                        f"KServe Model Deployer configuration was not found "
+                        f"in the active stack's secret manager."
+                    )
+            else:
                 raise RuntimeError(
-                    f"The ZenML secret '{self.secret}' specified in the "
-                    f"KServe Model Deployer configuration was not found "
-                    f"in the active stack's secret manager."
+                    f"The Kserve client is not available. The ZenML secret "
+                    f"'{self.secret}' specified in the KServe Model Deployer "
+                    f"configuration cannot be fetched."
                 )
         return self.secret
 

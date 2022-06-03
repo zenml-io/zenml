@@ -49,7 +49,7 @@ class KServeDeploymentConfig(ServiceConfig):
     secret_name: Optional[str]
     predictor: str
     replicas: int = 1
-    resources: Dict[str, Any]
+    resources: Optional[Dict[str, Any]]
 
     @staticmethod
     def sanitize_labels(labels: Dict[str, str]) -> None:
