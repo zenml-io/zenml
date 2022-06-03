@@ -118,10 +118,9 @@ class KServeModelDeployer(BaseModelDeployer):
             )
         return self._client
 
-    def _set_credentials(self) -> Optional[str]:
+    def _set_credentials(self) -> None:
         """Set the credentials for the given service instance."""
         if self.secret:
-
             secret_manager = Repository(  # type: ignore [call-arg]
                 skip_repository_check=True
             ).active_stack.secrets_manager
@@ -137,20 +136,24 @@ class KServeModelDeployer(BaseModelDeployer):
             if self.kserve_client:
                 try:
                     zenml_secret = secret_manager.get_secret(self.secret)
-                    secret = self.kserve_client.set_credentials(**zenml_secret.content)
                 except KeyError:
                     raise RuntimeError(
                         f"The ZenML secret '{self.secret}' specified in the "
                         f"KServe Model Deployer configuration was not found "
                         f"in the active stack's secret manager."
                     )
+                self.kserve_client.set_credentials(**zenml_secret.content)
             else:
                 raise RuntimeError(
                     f"The Kserve client is not available. The ZenML secret "
                     f"'{self.secret}' specified in the KServe Model Deployer "
                     f"configuration cannot be fetched."
                 )
-        return secret
+        else:
+            raise ValueError(
+                "The secret name must be specified to set in registration of the model deployer",
+                "or at the KServe deployment service configuration.",
+            )
 
     def deploy_model(
         self,
@@ -209,7 +212,10 @@ class KServeModelDeployer(BaseModelDeployer):
         config = cast(KServeDeploymentConfig, config)
         service = None
 
-        config.secret_name = config.secret_name or self._set_credentials()
+        # if the secret is passed in the config, use it to set the credentials
+        if config.secret_name:
+            self.secret = config.secret_name
+        self._set_credentials()
 
         # if replace is True, find equivalent Kserve deployments
         if replace is True:
