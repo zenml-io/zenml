@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 RUN_NAME_OPTION = "run_name"
 
 
-class KubernetesEntrypointConfiguration(StepEntrypointConfiguration):
+class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
     """Entrypoint configuration for running steps on Kubernertes."""
 
     @classmethod

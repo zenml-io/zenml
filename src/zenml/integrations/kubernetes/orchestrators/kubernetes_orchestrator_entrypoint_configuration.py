@@ -6,9 +6,9 @@ from zenml.entrypoints.step_entrypoint_configuration import (
     MATERIALIZER_SOURCES_OPTION,
     STEP_SOURCE_OPTION,
 )
-from zenml.integrations.kubernetes.orchestrators.kubernetes_entrypoint_configuration import (
+from zenml.integrations.kubernetes.orchestrators.kubernetes_step_entrypoint_configuration import (
     RUN_NAME_OPTION,
-    KubernetesEntrypointConfiguration,
+    KubernetesStepEntrypointConfiguration,
 )
 
 RUN_NAME_OPTION = "run_name"
@@ -87,7 +87,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
         """Gets all arguments that the entrypoint command should be called with."""
 
         def _get_step_args(step):
-            return KubernetesEntrypointConfiguration.get_entrypoint_arguments(
+            return KubernetesStepEntrypointConfiguration.get_entrypoint_arguments(
                 step=step,
                 pb2_pipeline=pb2_pipeline,
                 **{RUN_NAME_OPTION: run_name},
@@ -95,7 +95,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
 
         step_names = [step.name for step in sorted_steps]
         step_command = (
-            KubernetesEntrypointConfiguration.get_entrypoint_command()
+            KubernetesStepEntrypointConfiguration.get_entrypoint_command()
         )
         fixed_step_args = get_fixed_step_args(_get_step_args(sorted_steps[0]))
         step_specific_args = {
