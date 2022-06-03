@@ -14,7 +14,16 @@
 
 import os
 import re
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    cast,
+)
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
@@ -29,9 +38,13 @@ from zenml.integrations.github.container_registries import (
 from zenml.integrations.github.orchestrators.github_actions_entrypoint_configuration import (
     GitHubActionsEntrypointConfiguration,
 )
+from zenml.integrations.github.secrets_managers.github_secrets_manager import (
+    GitHubSecretsManager,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
+from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
 from zenml.steps import BaseStep
 from zenml.utils import yaml_utils
@@ -49,8 +62,6 @@ from zenml.utils import docker_utils, source_utils
 logger = get_logger(__name__)
 
 GITHUB_URL_PREFIXES = ["git@github.com", "https://github.com"]
-
-# TODO: secrets
 
 
 class GitHubActionsOrchestrator(BaseOrchestrator):
@@ -163,7 +174,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         assert container_registry  # should never happen due to validation
         return f"{container_registry.uri}/zenml-github-actions:{pipeline_name}"
 
-    def _prepare_docker_login_step(
+    def _docker_login_step(
         self,
         container_registry: BaseContainerRegistry,
     ) -> Optional[Dict[str, Any]]:
@@ -186,8 +197,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             username = "{{ github.actor }}"
             password = "{{ secrets.GITHUB_TOKEN }}"
         elif container_registry.requires_authentication:
-            username = container_registry.username
-            password = container_registry.password
+            username = cast(str, container_registry.username)
+            password = cast(str, container_registry.password)
         else:
             return None
 
@@ -199,6 +210,49 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 "username": username,
                 "password": password,
             },
+        }
+
+    def _write_environment_file_step(
+        self,
+        file_name: str,
+        secrets_manager: Optional[BaseSecretsManager] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """GitHub Actions step for writing secrets to an environment file.
+
+        Args:
+            file_name: Name of the environment file that should be written.
+            secret_names: List of GitHub secret names that should be included
+                in the environment file.
+
+        Returns:
+            Dictionary specifying the GitHub Actions step for writing the
+            environment file.
+        """
+        if not isinstance(secrets_manager, GitHubSecretsManager):
+            return None
+
+        # Always include the environment variable that specifies whether
+        # we're running in a GitHub Action workflow so the secret manager knows
+        # how to query secret values
+        command = f'echo GITHUB_ACTIONS="$GITHUB_ACTIONS" > {file_name}; '
+
+        # Write all ZenML secrets into the environment file. Explicitly writing
+        # these `${{ secrets.<SECRET_NAME> }}` placeholders into the workflow
+        # yaml is the only way for us to access the GitHub secrets in a GitHub
+        # Actions workflow.
+        command_placeholder = (
+            "echo {secret_name}=${{{{ secrets.{secret_name} }}}} >> {file}; "
+        )
+        for secret_name in secrets_manager.get_all_secret_keys(
+            include_prefix=True
+        ):
+            command += command_placeholder.format(
+                secret_name=secret_name, file=file_name
+            )
+
+        return {
+            "name": "Write environment file",
+            "run": command,
         }
 
     def prepare_pipeline_deployment(
@@ -302,15 +356,29 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             )
             workflow_dict["on"] = {"push": {"paths": [workflow_path_in_repo]}}
 
-        container_registry = stack.container_registry
-        assert container_registry
-
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = docker_utils.get_image_digest(image_name) or image_name
+
+        # Prepare the step that writes an environment file which will get
+        # passed to the docker image
+        env_file_name = ".zenml_docker_env"
+        write_env_file_step = self._write_environment_file_step(
+            file_name=env_file_name, secrets_manager=stack.secrets_manager
+        )
+        docker_args = (
+            ["--env-file", env_file_name] if write_env_file_step else []
+        )
+
+        # Prepare the docker login step if necessary
+        container_registry = stack.container_registry
+        assert container_registry
+        docker_login_step = self._docker_login_step(container_registry)
+
         # The base command that each job will execute with specific arguments
         base_command = [
             "docker",
             "run",
+            *docker_args,
             image_name,
         ] + GitHubActionsEntrypointConfiguration.get_entrypoint_command()
 
@@ -318,9 +386,11 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         for step in sorted_steps:
             steps = []
 
-            login_step = self._prepare_docker_login_step(container_registry)
-            if login_step:
-                steps.append(login_step)
+            if write_env_file_step:
+                steps.append(write_env_file_step)
+
+            if docker_login_step:
+                steps.append(docker_login_step)
 
             entrypoint_args = (
                 GitHubActionsEntrypointConfiguration.get_entrypoint_arguments(

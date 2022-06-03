@@ -79,7 +79,7 @@ class Schedule(BaseModel):
     @property
     def utc_start_time(self) -> Optional[str]:
         """Optional ISO-formatted string of the UTC start time.
-        
+
         Returns:
             Optional ISO-formatted string of the UTC start time.
         """
