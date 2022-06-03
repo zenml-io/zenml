@@ -99,15 +99,18 @@ class KubernetesOrchestratorEntrypointConfiguration:
         kubernetes_namespace: str,
         pb2_pipeline,
         sorted_steps,
+        step_dependencies,
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with."""
 
         def _get_step_args(step):
             """Get the entrypoint args for a specific step."""
-            return KubernetesStepEntrypointConfiguration.get_entrypoint_arguments(
-                step=step,
-                pb2_pipeline=pb2_pipeline,
-                **{RUN_NAME_OPTION: run_name},
+            return (
+                KubernetesStepEntrypointConfiguration.get_entrypoint_arguments(
+                    step=step,
+                    pb2_pipeline=pb2_pipeline,
+                    **{RUN_NAME_OPTION: run_name},
+                )
             )
 
         # Get name, command, and args for each step
@@ -122,12 +125,13 @@ class KubernetesOrchestratorEntrypointConfiguration:
             for step in sorted_steps
         }  # e.g.: {"trainer": train_step_args, ...}
 
-        # Write all pipeline names, commands, args to a JSON
+        # Serialize all complex datatype args into a single JSON string
         pipeline_config = {
             "sorted_steps": step_names,
             "step_command": step_command,
             "fixed_step_args": fixed_step_args,
             "step_specific_args": step_specific_args,
+            "step_dependencies": step_dependencies,
         }
         pipeline_config_json = json.dumps(pipeline_config)
 

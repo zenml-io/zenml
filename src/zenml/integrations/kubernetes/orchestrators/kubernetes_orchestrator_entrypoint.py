@@ -18,6 +18,7 @@ import argparse
 import json
 import logging
 import sys
+from collections import defaultdict
 
 from zenml.integrations.kubernetes.orchestrators import tfx_kube_utils
 from zenml.integrations.kubernetes.orchestrators.utils import (
@@ -45,32 +46,44 @@ def main():
     logging.getLogger().setLevel(logging.INFO)
     logging.info("Starting orchestration...")
 
-    # Parse / extract args
+    # Parse / extract args.
     args = parse_args()
     pipeline_config = args.pipeline_config
     step_command = pipeline_config["step_command"]
     sorted_steps = pipeline_config["sorted_steps"]
     fixed_step_args = pipeline_config["fixed_step_args"]
+    step_specific_args = pipeline_config["step_specific_args"]
+    step_dependencies = pipeline_config["step_dependencies"]
 
-    # Get k8s Core API for running kubectl commands later
+    # Revert step dependencies so we can easily get subsequent steps of a step.
+    step_successors = defaultdict(list)
+    for step_name, deps in step_dependencies.items():
+        for previous_step_name in deps:
+            step_successors[previous_step_name].append(step_name)
+
+    # Get k8s Core API for running kubectl commands later.
     core_api = tfx_kube_utils.make_core_v1_api()
 
-    # Build base pod manifest
+    # Build base pod manifest.
     base_pod_manifest = build_base_pod_manifest(
         run_name=args.run_name,
         pipeline_name=args.pipeline_name,
         image_name=args.image_name,
     )
 
-    for step_name in sorted_steps:
+    def _can_run(step_name):
+        """Returns whether a step has no more dependencies and can run now."""
+        return len(step_dependencies[step_name]) == 0
+
+    def _run_step(step_name):
+        """Run a single step."""
 
         # Define k8s pod name.
         pod_name = f"{args.run_name}-{step_name}"
         pod_name = tfx_kube_utils.sanitize_pod_name(pod_name)
 
         # Build list of args for this step.
-        step_specific_args = pipeline_config["step_specific_args"][step_name]
-        step_args = [*fixed_step_args, *step_specific_args]
+        step_args = [*fixed_step_args, *step_specific_args[step_name]]
 
         # Define k8s pod manifest.
         pod_manifest = update_pod_manifest(
@@ -79,16 +92,16 @@ def main():
             command=step_command,
             args=step_args,
         )
-        logging.info(f"Running step {step_name}...")
 
         # Create and run pod.
+        logging.info(f"Running step {step_name}...")
         core_api.create_namespaced_pod(
             namespace=args.kubernetes_namespace,
             body=pod_manifest,
         )
-        logging.info(f"Waiting for step {step_name}...")
 
         # Wait for pod to finish.
+        logging.info(f"Waiting for step {step_name}...")
         tfx_kube_utils.wait_pod(
             core_api,
             pod_name,
@@ -98,7 +111,28 @@ def main():
         )
         logging.info(f"Step {step_name} finished.")
 
+        # Remove current step from all dependencies and start next steps.
+        for successor_step_name in step_successors[step_name]:
+            step_dependencies[successor_step_name].remove(step_name)
+            if _can_run(successor_step_name):
+                _run_step(successor_step_name)
+
+    # Run all steps that have no dependencies and can be started immediately.
+    # These will, in turn, start other steps once all of their respective
+    # dependencies have run.
+    source_steps = [step for step in sorted_steps if _can_run(step)]
+    for step_name in source_steps:
+        _run_step(step_name)
+
     logging.info("Orchestration complete.")
+
+    # Make sure all steps were run, otherwise print a warning.
+    for step_name, deps in step_dependencies.items():
+        if len(deps) != 0:
+            logging.warning(
+                f"Step {step_name} was never run, because it still had the "
+                f"following dependencies: {deps}"
+            )
 
 
 if __name__ == "__main__":
