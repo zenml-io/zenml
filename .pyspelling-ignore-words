@@ -54,6 +54,7 @@ CLI
 CLIs
 CRD
 CWD
+CalledProcessError
 CamelCase
 ChatOps
 ClassVar
@@ -83,6 +84,7 @@ DockerHub
 Dockerfile
 Docstring
 DoesNotExistException
+DuplicatedConfigurationError
 ECR
 ECS
 EKS
@@ -145,6 +147,7 @@ IOError
 IPython
 ISTIO
 InitializationException
+Initializations
 Istio
 Itemwise
 Iterable
@@ -482,6 +485,7 @@ datasets
 datasource
 datatypes
 datetime
+dct
 de
 decodable
 defaultdict
@@ -592,6 +596,7 @@ img
 implementors
 ingressgateway
 init
+initializations
 initializer
 initializers
 integrations
@@ -726,6 +731,7 @@ reconfigures
 redis
 redownload
 redownload
+redownloaded
 regressionmodelperformance
 repo
 reproducibility
@@ -809,6 +815,7 @@ txt
 ui
 uncomment
 unconfigured
+uninstallation
 unix
 unlinking
 unprovisioned
