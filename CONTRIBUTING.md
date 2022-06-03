@@ -71,9 +71,9 @@ can also help by
 indicating to our maintainers that a particular issue is affecting more than
 just the reporter.
 
-### 🏷 Pull Requests
+### 🏷 Pull Requests: When to make one
 
-PRs to ZenML are always welcome and can be a quick way to get your fix or
+Pull Requests (PRs) to ZenML are always welcome and can be a quick way to get your fix or
 improvement slated for the next release. In
 general, PRs should:
 
@@ -90,19 +90,25 @@ For changes that address core functionality or would require breaking changes (e
 an Issue to discuss your proposal first. This is not required but can save time
 creating and reviewing changes.
 
+### 💯 Pull Requests: Workflow to Contribute
+
+<p class="callout warning">Please note that development in ZenML happens off of the <b>develop</b> branch, <b>not main</b>, 
+which is the default branch on GitHub. Therefore, please pay particular attention to step 5 and step 9 below. </p>
+
 In general, we follow
 the ["fork-and-pull" Git workflow](https://github.com/susam/gitpr)
 
 1. Review and sign
    the [Contributor License Agreement](https://cla-assistant.io/zenml-io/zenml) (
    CLA).
-2. Fork the repository to your own Github account
-3. Clone the project to your machine
-4. Create a branch locally with a succinct but descriptive name
-5. Commit changes to the branch
-6. Following any formatting and testing guidelines specific to this repo
-7. Push changes to your fork
-8. Open a PR in our repository (to the `develop` branch, **NOT** `main`) and
+2. Fork the repository to your own Github account.
+3. Clone the project to your machine.
+4. Checkout the **develop** branch <- `git checkout develop`.
+5. Create a branch (again, off of the develop branch) locally with a succinct but descriptive name.
+6. Commit changes to the branch
+7. Follow the `Linting, formatting, and tests` guide to make sure your code adheres to the ZenML coding style (see below).
+8. Push changes to your fork.
+9. Open a PR in our repository (to the `develop` branch, **NOT** `main`) and
    follow the PR template so that we can efficiently review the changes.
 
 ### 🧐 Linting, formatting, and tests
