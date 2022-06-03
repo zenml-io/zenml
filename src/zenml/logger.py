@@ -166,13 +166,13 @@ def init_logging() -> None:
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     set_root_verbosity()
 
-    # Enable logs if environment variable SUPRESS_ZENML_LOGS is not set to True
-    supress_zenml_logs: bool = handle_bool_env_var(
+    # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True
+    suppress_zenml_logs: bool = handle_bool_env_var(
         ENV_ZENML_SUPPRESS_LOGS, True
     )
-    if supress_zenml_logs:
-        # supress logger info messages
-        supressed_logger_names = [
+    if suppress_zenml_logs:
+        # suppress logger info messages
+        suppressed_logger_names = [
             "urllib3",
             "azure.core.pipeline.policies.http_logging_policy",
             "grpc",
@@ -180,7 +180,7 @@ def init_logging() -> None:
             "kfp",
             "tensorflow",
         ]
-        for logger_name in supressed_logger_names:
+        for logger_name in suppressed_logger_names:
             logging.getLogger(logger_name).setLevel(logging.WARNING)
 
         # disable logger messages

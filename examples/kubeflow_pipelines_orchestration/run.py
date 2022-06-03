@@ -35,7 +35,7 @@ from zenml.integrations.tensorflow.visualizers import (
     "--stop-tensorboard",
     is_flag=True,
     default=False,
-    help="Stop the Tensorboard server",
+    help="Stop the TensorBoard server",
 )
 def main(epochs: int, lr: float, stop_tensorboard: bool):
     """Run the mnist example pipeline"""

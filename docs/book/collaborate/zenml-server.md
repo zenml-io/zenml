@@ -66,8 +66,15 @@ use the Stack and Stack Component definitions stored on the server.
 
 The ZenServer can be deployed locally on any machine, as a means of assessing
 its functionality without going through the pains of provisioning a complicated
-infrastructure setup. Starting a local ZenServer instance is as simple as typing
-`zenml service up`. This will start the server as a background daemon process
+infrastructure setup. Before we get started, we need to make sure that all the 
+necessary dependencies for the ZenServer are installed. To do that, we install 
+ZenML with the server extras like this:
+```
+pip install zenml[server]
+```
+
+Starting a local ZenServer instance is as simple as typing
+`zenml server up`. This will start the server as a background daemon process
 accessible on your local machine, by default on port 8000:
 
 ```

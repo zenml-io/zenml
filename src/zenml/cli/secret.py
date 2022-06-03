@@ -41,7 +41,11 @@ if TYPE_CHECKING:
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
 @click.pass_context
 def secret(ctx: click.Context) -> None:
-    """List and manage your secrets."""
+    """List and manage your secrets.
+
+    Args:
+        ctx: Click context.
+    """
     repo = Repository()
     active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
     secrets_manager_wrapper = active_stack.get_component_wrapper(
@@ -138,6 +142,12 @@ def register_secret(
             --aws_secret_access_key=abcdefghij \
             --aws_session_token=@/path/to/token.txt
 
+    Args:
+        secrets_manager: The secrets manager to use.
+        name: The name of the secret to register.
+        secret_schema_type: The schema to use for validation.
+        interactive: Whether to use interactive mode to enter the secret values.
+        args: Command line arguments.
     """
     # flake8: noqa: C901
 
@@ -149,9 +159,10 @@ def register_secret(
         parsed_args = parse_unknown_options(args, expand_args=True)
     except AssertionError as e:
         error(str(e))
-        return
 
-    if name == "name":
+    if "name" in parsed_args:
+        error("You can't use 'name' as the key for one of your secrets.")
+    elif name == "name":
         error("Secret names cannot be named 'name'.")
 
     if name.startswith("--"):
@@ -248,7 +259,12 @@ def get_secret(
     secrets_manager: "BaseSecretsManager",
     name: str,
 ) -> None:
-    """Get a secret, given its name."""
+    """Get a secret, given its name.
+
+    Args:
+        secrets_manager: The secrets manager to use.
+        name: The name of the secret to get.
+    """
     try:
         secret = secrets_manager.get_secret(secret_name=name)
         pretty_print_secret(secret, hide_secret=False)
@@ -262,7 +278,11 @@ def get_secret(
 @secret.command("list")
 @click.pass_obj
 def list_secret(secrets_manager: "BaseSecretsManager") -> None:
-    """List all secrets tracked by your Secrets Manager."""
+    """List all secrets tracked by your Secrets Manager.
+
+    Args:
+        secrets_manager: The secrets manager to use.
+    """
     with console.status("Getting secret names..."):
         secret_names = secrets_manager.get_all_secret_keys()
         print_secrets(secret_names)
@@ -285,7 +305,7 @@ def update_secret(
     name: str,
     interactive: bool,
     args: List[str],
-) -> None:  # sourcery skip: use-named-expression
+) -> None:
     """Update a secret with a given name.
 
     Use this command to update the information stored in an existing ZenML
@@ -326,6 +346,11 @@ def update_secret(
             --aws_secret_access_key=abcdefghij \
             --aws_session_token=@/path/to/token.txt
 
+    Args:
+        secrets_manager: The secrets manager to use.
+        name: The name of the secret to update.
+        interactive: Use interactive mode to update the secret values.
+        args: The command line arguments to use to update the secret.
     """
     # TODO [ENG-726]: allow users to pass in dict or json
 
@@ -409,7 +434,13 @@ def delete_secret_set(
     name: str,
     yes: bool = False,
 ) -> None:
-    """Delete a secret identified by its name."""
+    """Delete a secret identified by its name.
+
+    Args:
+        secrets_manager: The secrets manager to use.
+        name: The name of the secret to delete.
+        yes: Skip asking for confirmation.
+    """
     if not yes:
         confirmation_response = confirmation(
             f"This will delete all data associated with the `{name}` secret. "
@@ -454,6 +485,11 @@ def delete_all_secrets(
     Use the --yes flag to specify if force should be applied when deleting all
     secrets. This might have differing implications depending on the underlying
     secrets manager
+
+    Args:
+        secrets_manager: The secrets manager to use.
+        force: Force the deletion of all secrets.
+        old_force: DEPRECATED: Force the deletion of all secrets.
     """
     if old_force:
         force = old_force

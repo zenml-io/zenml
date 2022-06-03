@@ -20,8 +20,8 @@ from datasets import Dataset, load_from_disk  # type: ignore[attr-defined]
 from datasets.dataset_dict import DatasetDict
 
 from zenml.artifacts import DataArtifact
-from zenml.io import utils as fileio_utils
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils import io_utils
 
 DEFAULT_DATASET_DIR = "hf_datasets"
 
@@ -48,6 +48,6 @@ class HFDatasetMaterializer(BaseMaterializer):
         super().handle_return(ds)
         temp_dir = TemporaryDirectory()
         ds.save_to_disk(temp_dir.name)
-        fileio_utils.copy_dir(
+        io_utils.copy_dir(
             temp_dir.name, os.path.join(self.artifact.uri, DEFAULT_DATASET_DIR)
         )
