@@ -137,7 +137,7 @@ class KServeModelDeployer(BaseModelDeployer):
             if self.kserve_client:
                 try:
                     zenml_secret = secret_manager.get_secret(self.secret)
-                    self.kserve_client.set_credentials(**zenml_secret.content)  # type: ignore
+                    secret = self.kserve_client.set_credentials(**zenml_secret.content)
                 except KeyError:
                     raise RuntimeError(
                         f"The ZenML secret '{self.secret}' specified in the "
@@ -150,7 +150,7 @@ class KServeModelDeployer(BaseModelDeployer):
                     f"'{self.secret}' specified in the KServe Model Deployer "
                     f"configuration cannot be fetched."
                 )
-        return self.secret
+        return secret
 
     def deploy_model(
         self,

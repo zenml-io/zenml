@@ -38,9 +38,9 @@ class KServeIntegration(Integration):
     def activate(cls) -> None:
         """Activate the Seldon Core integration."""
         from zenml.integrations.kserve import model_deployers  # noqa
+        from zenml.integrations.kserve import secret_schemas  # noqa
         from zenml.integrations.kserve import services  # noqa
         from zenml.integrations.kserve import steps  # noqa
-        from zenml.integrations.kserve import secret_schemas # noqa
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:

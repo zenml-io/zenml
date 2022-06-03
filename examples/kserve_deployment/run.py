@@ -142,7 +142,9 @@ def main(
                         model_name=model_name,
                         replicas=1,
                         predictor=kserve_predictor,
-                        resources={"requests": {"cpu": "100m","memory": "100m"}},
+                        resources={
+                            "requests": {"cpu": "100m", "memory": "100m"}
+                        },
                     ),
                     timeout=120,
                 )
