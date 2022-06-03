@@ -46,6 +46,7 @@ class KServeDeploymentConfig(ServiceConfig):
 
     model_uri: str = ""
     model_name: str = "default"
+    secret_name: Optional[str]
     predictor: str
     replicas: int = 1
     resources: Dict[str, Any]
@@ -234,12 +235,17 @@ class KServeDeploymentService(BaseService):
             return (ServiceState.INACTIVE, "No operational status available")
         status = "Unknown"
         for condition in deployment["status"].get("conditions", {}):
-            if condition.get("type", "") == "Ready":
+            if condition.get("type", "") == "PredictorReady":
                 status = condition.get("status", "Unknown")
                 if status.lower() == "true":
                     return (
                         ServiceState.ACTIVE,
                         f"Inference service '{name}' is available",
+                    )
+                elif status.lower() == "false":
+                    return (
+                        ServiceState.ERROR,
+                        f"Inference service '{name}' is not available: {condition.get('message', 'Unknown')}",
                     )
         return (
             ServiceState.PENDING_STARTUP,
@@ -335,7 +341,7 @@ class KServeDeploymentService(BaseService):
         except RuntimeError:
             raise ValueError(
                 f"Could not delete KServe instance '{name}' from namespace "
-                f"'{namespace}'"
+                f"'{namespace}: '"
             )
 
     def _get_deployment_logs(
@@ -361,7 +367,6 @@ class KServeDeploymentService(BaseService):
 
         client = self._get_client()
         namespace = self._get_namespace()
-        #name = self.crd_name
 
         logger.debug(f"Retrieving logs for InferenceService resource: {name}")
         try:
@@ -389,8 +394,7 @@ class KServeDeploymentService(BaseService):
             container = "default"
             if container not in containers:
                 container = containers[0]
-            # some containers might not be running yet and have no logs to show,
-            # so we need to filter them out
+
             if not container_statuses[container]:
                 container = init_containers[0]
 
@@ -447,7 +451,6 @@ class KServeDeploymentService(BaseService):
             follow=follow,
             tail=tail,
         )
-        # TODO[HIGH]: Implement KServe log retrieval
 
     @property
     def prediction_url(self) -> Optional[str]:

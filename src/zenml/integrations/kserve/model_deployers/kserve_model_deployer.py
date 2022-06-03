@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-import datetime
-import json
 import re
 from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
@@ -12,9 +9,7 @@ from kserve import (  # type: ignore[import]
     utils,
 )
 from kubernetes import client
-from kserve import ApiClient
-import six
-from zenml.integrations import kserve
+
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
@@ -23,24 +18,13 @@ from zenml.integrations.kserve.services.kserve_deployment import (
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.repository import Repository
+from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 
 logger = get_logger(__name__)
 
 DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
-api = ApiClient()
-
-PRIMITIVE_TYPES = (float, bool, bytes, six.text_type) + six.integer_types
-NATIVE_TYPES_MAPPING = {
-    'int': int,
-    'float': float,
-    'str': str,
-    'bool': bool,
-    'date': datetime.date,
-    'datetime': datetime.datetime,
-    'object': object,
-}
 
 class KServeModelDeployer(BaseModelDeployer):
     """Kserve model deployer stack component implementation.
@@ -68,6 +52,7 @@ class KServeModelDeployer(BaseModelDeployer):
     kubernetes_context: Optional[str]
     kubernetes_namespace: Optional[str]
     base_url: str
+    secret: Optional[str]
 
     # private attributes
     _client: Optional[KServeClient] = None
@@ -133,6 +118,34 @@ class KServeModelDeployer(BaseModelDeployer):
             )
         return self._client
 
+    def _set_credentials(self) -> Optional[str]:
+        """Set the credentials for the given service instance."""
+        if self.secret:
+
+            secret_manager = Repository(  # type: ignore [call-arg]
+                skip_repository_check=True
+            ).active_stack.secrets_manager
+
+            if not secret_manager or not isinstance(
+                secret_manager, BaseSecretsManager
+            ):
+                raise RuntimeError(
+                    f"The active stack doesn't have a secret manager component. "
+                    f"The ZenML secret specified in the Seldon Core Model "
+                    f"Deployer configuration cannot be fetched: {self.secret}."
+                )
+
+            try:
+                zenml_secret = secret_manager.get_secret(self.secret)
+                self._client.set_credentials(**zenml_secret)  # type: ignore
+            except KeyError:
+                raise RuntimeError(
+                    f"The ZenML secret '{self.secret}' specified in the "
+                    f"KServe Model Deployer configuration was not found "
+                    f"in the active stack's secret manager."
+                )
+        return self.secret
+
     def deploy_model(
         self,
         config: ServiceConfig,
@@ -189,6 +202,8 @@ class KServeModelDeployer(BaseModelDeployer):
         """
         config = cast(KServeDeploymentConfig, config)
         service = None
+
+        config.secret_name = config.secret_name or self._set_credentials()
 
         # if replace is True, find equivalent Kserve deployments
         if replace is True:
@@ -272,10 +287,12 @@ class KServeModelDeployer(BaseModelDeployer):
         if isinstance(obj, (str, int, float)):
             return obj
         if isinstance(obj, dict):
+            assert obj is not None
             new = obj.__class__()
             for k, v in obj.items():
                 new[self._convert_to_snake(k)] = self._camel_to_snake(v)
         elif isinstance(obj, (list, set, tuple)):
+            assert obj is not None
             new = obj.__class__(self._camel_to_snake(v) for v in obj)
         else:
             return obj

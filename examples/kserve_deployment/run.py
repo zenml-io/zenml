@@ -12,9 +12,9 @@ def main():
     model_deployer.deploy_model(
         config=KServeDeploymentConfig(
             model_uri="gs://kfserving-samples/models/tensorflow/flowers",
-            model_name="flower2",
+            model_name="flower3",
             predictor="tensorflow",
-            resources={"requests": {"cpu": "200m"}},
+            resources={"requests": {"cpu": "100m"}},
         ),
         replace=True,
     )
