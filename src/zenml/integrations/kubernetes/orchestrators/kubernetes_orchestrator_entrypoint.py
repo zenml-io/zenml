@@ -18,7 +18,9 @@ import argparse
 import json
 import logging
 import sys
+import threading
 from collections import defaultdict
+from typing import Dict, List
 
 from zenml.integrations.kubernetes.orchestrators import tfx_kube_utils
 from zenml.integrations.kubernetes.orchestrators.utils import (
@@ -71,9 +73,48 @@ def main():
         image_name=args.image_name,
     )
 
+    class StepDependencies:
+        """Class to wrap step_dependencies for multi-threading."""
+
+        def __init__(self, step_dependencies: Dict[str, List[str]]) -> None:
+            self.step_dependencies = step_dependencies
+            self._lock = threading.Lock()
+
+        def get_dependencies(self, step_name) -> List[str]:
+            """Get a list of all dependencies of a step."""
+            with self._lock:
+                return self.step_dependencies[step_name]
+
+        def remove_dependency(self, step_name: str, dependency: str) -> None:
+            """Remove a dependency of a step."""
+            with self._lock:
+                self.step_dependencies[step_name].remove(dependency)
+
+    # wrap step dependencies in a class to enable multi-threaded updates.
+    step_dependencies = StepDependencies(step_dependencies)
+
+    class ThreadDict(dict):
+        """Thread-safe dict used to keep track of all threads per step."""
+
+        def __init__(self) -> None:
+            super().__init__()
+            self._lock = threading.Lock()
+
+        def __setitem__(self, __k, __v):
+            with self._lock:
+                super().__setitem__(__k, __v)
+
+        def __delitem__(self, __k):
+            with self._lock:
+                super().__delitem__(__k)
+
+    # dict {step: thread} to keep track of currently running threads
+    thread_dict = ThreadDict()
+
     def _can_run(step_name):
-        """Returns whether a step has no more dependencies and can run now."""
-        return len(step_dependencies[step_name]) == 0
+        """Return whether a step has no dependencies and can run now."""
+        dependencies = step_dependencies.get_dependencies(step_name)
+        return len(dependencies) == 0
 
     def _run_step(step_name):
         """Run a single step."""
@@ -113,22 +154,33 @@ def main():
 
         # Remove current step from all dependencies and start next steps.
         for successor_step_name in step_successors[step_name]:
-            step_dependencies[successor_step_name].remove(step_name)
+            step_dependencies.remove_dependency(successor_step_name, step_name)
             if _can_run(successor_step_name):
-                _run_step(successor_step_name)
+                _run_step_in_thread(successor_step_name)
+
+        del thread_dict[step_name]  # remove current thread
+
+    def _run_step_in_thread(step_name):
+        thread = threading.Thread(target=_run_step, args=(step_name,))
+        thread_dict[step_name] = thread
+        thread.start()
 
     # Run all steps that have no dependencies and can be started immediately.
     # These will, in turn, start other steps once all of their respective
     # dependencies have run.
     source_steps = [step for step in sorted_steps if _can_run(step)]
     for step_name in source_steps:
-        _run_step(step_name)
+        _run_step_in_thread(step_name)
+
+    # Wait till all steps have run
+    while len(thread_dict) > 0:
+        logging.debug(f"Waiting for threads: {thread_dict}")
 
     logging.info("Orchestration complete.")
 
     # Make sure all steps were run, otherwise print a warning.
-    for step_name, deps in step_dependencies.items():
-        if len(deps) != 0:
+    for step_name in sorted_steps:
+        if not _can_run(step_name):
             logging.warning(
                 f"Step {step_name} was never run, because it still had the "
                 f"following dependencies: {deps}"
