@@ -35,7 +35,7 @@ class NeuralProphetConfig(BaseStepConfig):
 
 @step
 def data_loader() -> Output(df_train=pd.DataFrame, df_test=pd.DataFrame):
-    """Return the renewable energy dataset as pandas dataframes."""
+    """Return the renewable energy dataset as Pandas DataFrames."""
     sf_pv_df = pd.read_csv(DATA_LOCATION + "energy/SF_PV.csv")
     df_train, df_test = NeuralProphet().split_df(
         sf_pv_df, freq="H", valid_p=1.0 / 12

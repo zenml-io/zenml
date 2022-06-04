@@ -207,8 +207,8 @@ zenml stack register local_mlflow_stack \
   -a default \
   -o default \
   -d mlflow_deployer \
-  -e mlflow_tracker
-zenml stack set local_mlflow_stack
+  -e mlflow_tracker \
+  --set
 ```
 
 ### ▶️ Run the Code
@@ -317,6 +317,8 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-If you want to learn more about deployment in zenml in general or about how to 
-build your own deployer steps in zenml check out our 
-[docs](docs.zenml.io/stack-components/model_deployer).
+Our docs regarding the MLflow deployment integration can be found [here](https://docs.zenml.io/advanced-guide/continuous-training-and-deployment).
+
+If you want to learn more about deployment in ZenML in general or about how to 
+build your own deployer steps in ZenML check out our 
+[docs](https://docs.zenml.io/extending-zenml/model-deployer).

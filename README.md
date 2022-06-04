@@ -1,28 +1,36 @@
 <div align="center">
-    <img src="https://zenml.io/assets/social/github.svg">
+    <img src="docs/book/assets/oss-header.svg">
 </div>
 
-# ⏲️ Join the ZenML team on the MLOps Day
+# :family_man_woman_boy_boy: ZenML: Meet the Team
 
-We are hosting a MLOps day where we'll be building a vendor-agnostic MLOps pipeline from scratch.
+Hi ZenCommunity! Did you ever have a question that's too hard to express on our Slack? Is it just too much effort to say everything on a 
+long GitHub issue? Or are you just curious what ZenML has been up to in the past week? Well, register now for the ZenML Office 
+(Half) Hour to get your answers and more!
 
-Sign up [here](https://www.eventbrite.com/e/zenml-mlops-day-join-us-in-building-a-vendor-agnostic-mlops-pipeline-tickets-336331515617) to join the entire ZenML team in showcasing the latest release, answering the community's questions, and live-coding vendor agnostic MLOps features with the ZenML framework!
+Every week, part of the ZenML core team will pop in for 30 minutes to interact directly with the community. Sometimes we'll be presenting a 
+feature, other times just taking questions, and having fun. Join us if you are curious about ZenML, or just want to talk shop about MLOps.
+
+We will host the gathering every Wednesday 8:30AM PT (5:30PM CET). Register now through [this link](https://www.eventbrite.com/e/zenml-meet-the-community-tickets-354426688767), 
+or subscribe to the [public events calendar](https://calendar.google.com/calendar/u/0/r?cid=Y19iaDJ0Zm44ZzdodXBlbnBzaWplY3UwMmNjZ0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t) to get notified 
+before every community gathering.
 
 # 👀 What is ZenML?
 
-**ZenML** is an extensible, open-source MLOps framework to create
-production-ready machine learning pipelines. Built for data scientists, it has a
-simple, flexible syntax, is cloud- and tool-agnostic, and has
-interfaces/abstractions that are catered towards ML workflows.
+**ZenML** is an extensible, open-source MLOps framework for creating 
+portable, production-ready MLOps pipelines. Built to enable collaboration among data scientists, ML Engineers, and MLOps Developers,
+it has a simple, flexible syntax, is **cloud-** and 
+**tool-agnostic**, and has interfaces/abstractions that are thoughtfully designed for 
+ML workflows. 
 
 At its core, **ZenML pipelines execute ML-specific workflows** from sourcing
-data to splitting, preprocessing, training, all the way to the evaluation of
-results and even serving. There are many built-in batteries to support common ML
-development tasks. ZenML is not here to replace the great tools that solve these
-individual problems. Rather, it offers an **extensible framework** and a
+data to splitting, preprocessing, training, all the way to serving and monitoring 
+ML models in production. There are many built-in features to support
+common ML development tasks. ZenML is not here to replace the great tools that
+solve these individual problems. Rather, it offers an **extensible framework** and a
 standard abstraction to write and build your workflows.
 
-🎉 **Version 0.8.0 out now!** [Check out the release notes
+🎉 **Version 0.8.1 out now!** [Check out the release notes
 here](https://github.com/zenml-io/zenml/releases).
 
 [![PyPI - Python
@@ -72,7 +80,7 @@ your project, you get the following benefits:
 | 🧘‍♀️ **[ZenML 101]** | New to ZenML? Here's everything you need to know! |
 | ⚛️ **[Core Concepts]** | Some key terms and concepts we use. |
 | 🗃 **[Functional API Guide]** | Build production ML pipelines with simple functions. |
-| 🚀 **[New in v0.8.0]** | New features, bug fixes. |
+| 🚀 **[New in v0.8.1]** | New features, bug fixes. |
 | 🗳 **[Vote for Features]** | Pick what we work on next! |
 | 📓 **[Docs]** | Full documentation for creating your own ZenML pipelines. |
 | 📒 **[API Reference]** | The detailed reference for ZenML's API. |
@@ -89,7 +97,7 @@ your project, you get the following benefits:
 [ZenML 101]: https://docs.zenml.io/
 [Core Concepts]: https://docs.zenml.io/core-concepts
 [Functional API Guide]: https://docs.zenml.io/v/docs/guides/functional-api
-[New in v0.8.0]: https://github.com/zenml-io/zenml/releases
+[New in v0.8.1]: https://github.com/zenml-io/zenml/releases
 [Vote for Features]: https://zenml.io/discussion
 [Docs]: https://docs.zenml.io/
 [API Reference]: https://apidocs.zenml.io/
@@ -107,8 +115,6 @@ your project, you get the following benefits:
 
 ### 1. 💪 Write local, run anywhere
 
-<details>
-
 You only need to write your core machine learning workflow code once, but you
 can run it anywhere. We decouple your code from the environment and
 infrastructure on which this code runs.
@@ -122,11 +128,7 @@ CLI tool.
 ![You can run your pipelines locally or in the
 cloud](docs/book/assets/core_concepts/concepts-3.png)
 
-</details>
-
 ### 2. 🌈 All your MLOps stacks in one place
-
-<details>
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with [powerful
@@ -144,11 +146,7 @@ to see how they work.
 
 ![ZenML is the glue](docs/book/assets/stack-list.png)
 
-</details>
-
 ### 3. 🛠 Extensibility
-
-<details>
 
 ZenML's Stack Components are built to support most machine learning use cases.
 We offer a batteries-included initial installation that should serve many needs
@@ -158,11 +156,7 @@ framework making it easy to extend and build out whatever you need.
 
 ![ZenML is fully extensible](docs/book/assets/extensibility.gif)
 
-</details>
-
 ### 4. 🔍 Automated metadata tracking
-
-<details>
 
 ZenML tracks metadata for all the pipelines you run. This ensures that:
 
@@ -177,11 +171,7 @@ blogpost](https://blog.zenml.io/caching-ml-pipelines/) to learn more!)
 
 ![Visualize your pipeline steps](docs/book/assets/dag-visualizer.png)
 
-</details>
-
 ### 5. ➿ Continuous Training and Continuous Deployment (CT/CD)
-
-<details>
 
 Continuous Training (CT) refers to the paradigm where a team deploys training pipelines 
 that run automatically to train models on new (fresh) data. Continuous Deployment (CD) 
@@ -202,13 +192,11 @@ zenml served-models list
 
 Read more about CT/CD in ZenML [here](https://blog.zenml.io/ci-ct-cd-with-zenml/).
 
-</details>
-
 # 🤸 Getting Started
 
 ## 💾 Install ZenML
 
-*Requirements*: ZenML supports Python 3.7 and 3.8.
+*Requirements*: ZenML supports Python 3.7, 3.8, and 3.9.
 
 ZenML is available for easy installation into your environment via PyPI:
 
@@ -230,6 +218,15 @@ command to get started in a bash environment:
 ```shell
 docker run -it zenmldocker/zenml /bin/bash
 ```
+
+### 🐛 Known installation issues for M1 Mac Users
+
+If you have a M1 Mac machine and you are encountering an error while trying to install ZenML, 
+please try to setup `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
+aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you @Reid Falconer) :
+
+- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
+- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
 
 ## 🚅 Quickstart
 
@@ -325,6 +322,8 @@ manage and switch between your stacks. The ZenML Server handles all the
 interaction and sharing and you can host it wherever you'd like.
 
 ```
+# Make sure to install ZenML with all necessary requirements for the ZenServer
+pip install zenml[server]
 zenml server up
 ```
 
@@ -375,15 +374,12 @@ label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). If you
 would like to contribute, please review our [Contributing
 Guide](CONTRIBUTING.md) for all relevant details.
 
-<details><summary>See Contributer Analytics</summary>
-
 <br>
 
 ![Repobeats analytics
 image](https://repobeats.axiom.co/api/embed/635c57b743efe649cadceba6a2e6a956663f96dd.svg
 "Repobeats analytics image")
 
-</details>
 
 # 🆘 Where to get help
 

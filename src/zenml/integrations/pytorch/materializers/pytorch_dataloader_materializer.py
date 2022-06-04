@@ -27,7 +27,7 @@ CHECKPOINT_FILENAME = "checkpoint.pt"
 
 
 class PyTorchDataLoaderMaterializer(BaseMaterializer):
-    """Materializer to read/write Pytorch dataloaders."""
+    """Materializer to read/write PyTorch dataloaders."""
 
     ASSOCIATED_TYPES = (DataLoader,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)

@@ -40,7 +40,7 @@ class GcpIntegration(Integration):
         return [
             FlavorWrapper(
                 name=GCP_ARTIFACT_STORE_FLAVOR,
-                source="zenml.integrations.gcp.artifact_stores.GCSArtifactStore",
+                source="zenml.integrations.gcp.artifact_stores.GCPArtifactStore",
                 type=StackComponentType.ARTIFACT_STORE,
                 integration=cls.NAME,
             )

@@ -31,7 +31,7 @@ documentation](https://www.mlflow.org/docs/latest/tracking.html#scenario-1-mlflo
 for details.
 
 ## 🧰 How the example is implemented
-Adding MLFlow tracking to a step is a simple as adding the mlflow decorator. Now you're free to log anything from within 
+Adding MLflow tracking to a step is a simple as adding the mlflow decorator. Now you're free to log anything from within 
 the step to mlflow. 
 
 ZenML ties all the logs from all steps within a pipeline run together into one mlflow run so that you can see everything
@@ -79,8 +79,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install mlflow
-zenml integration install tensorflow
+zenml integration install mlflow tensorflow
 
 # pull example
 zenml example pull mlflow_tracking
@@ -89,16 +88,14 @@ cd zenml_examples/mlflow_tracking
 # Initialize ZenML repo
 zenml init
 
-# Create the stack with the mlflow experiment tracker component
+# Create and activate the stack with the mlflow experiment tracker component
 zenml experiment-tracker register mlflow_tracker --type=mlflow
 zenml stack register mlflow_stack \
     -m default \
     -a default \
     -o default \
     -e mlflow_tracker
-    
-# Activate the newly created stack
-zenml stack set mlflow_stack
+    --set
 ```
 
 ### ▶️ Run the Code
@@ -134,7 +131,5 @@ rm -rf <SPECIFIC_MLRUNS_PATH_GOES_HERE>
 
 # 📜 Learn more
 
-Our docs regarding the mlflow tracking integration can be found [here](TODO: Link to docs).
-
-If you want to learn more about the implementation in general or about how to build your own decorators in zenml
-check out our [docs](TODO: Link to docs)
+If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
+check out our [docs](https://docs.zenml.io/extending-zenml/experiment-tracker).

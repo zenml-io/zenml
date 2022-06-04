@@ -11,9 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-ZenML CLI
-==================
+"""ZenML CLI.
 
 The ZenML CLI tool is usually downloaded and installed via PyPI and a
 ``pip install zenml`` command. Please see the Installation & Setup
@@ -552,10 +550,18 @@ zenml stack register STACK_NAME \
        -a ARTIFACT_STORE_NAME \
        -o ORCHESTRATOR_NAME
 ```
+
 Each corresponding argument should be the name you passed in as an
 identifier for the artifact store, metadata store or orchestrator when
 you originally registered it. (If you want to use your secrets manager, you
 should pass its name in with the `-x` option flag.)
+
+If you want to immediately set this newly created stack as your active stack,
+simply pass along the `--set` flag.
+
+```bash
+zenml stack register STACK_NAME -m METADATA_STORE_NAME ... --set
+```
 
 To list the stacks that you have registered within your current ZenML
 project, type:

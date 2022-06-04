@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base functionality for the CLI."""
+
 import os
 import subprocess
 import tempfile
@@ -19,6 +21,7 @@ from typing import Optional
 
 import click
 
+from zenml import __version__ as zenml_version
 from zenml.cli.cli import cli
 from zenml.cli.utils import confirmation, declare, error, warning
 from zenml.config.global_config import GlobalConfiguration
@@ -26,7 +29,6 @@ from zenml.console import console
 from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.exceptions import GitNotFoundError, InitializationException
 from zenml.io import fileio
-from zenml.io.utils import copy_dir, get_global_config_directory
 from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.utils.analytics_utils import (
@@ -34,6 +36,7 @@ from zenml.utils.analytics_utils import (
     identify_user,
     track_event,
 )
+from zenml.utils.io_utils import copy_dir, get_global_config_directory
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -54,10 +57,7 @@ def init(path: Optional[Path]) -> None:
     """Initialize ZenML on given path.
 
     Args:
-      path: Path to the repository.
-
-    Raises:
-        InitializationException: If the repo is already initialized.
+        path: Path to the repository.
     """
     if path is None:
         path = Path.cwd()
@@ -85,7 +85,8 @@ def _delete_local_files(force_delete: bool = False) -> None:
     """Delete local files corresponding to the active stack.
 
     Args:
-      force_delete: Whether to force delete the files."""
+        force_delete: Whether to force delete the files.
+    """
     if not force_delete:
         confirm = confirmation(
             "DANGER: This will completely delete metadata, artifacts and so on associated with all active stack components. \n\n"
@@ -131,8 +132,8 @@ def clean(yes: bool = False, local: bool = False) -> None:
     This is a destructive operation, primarily intended for use in development.
 
     Args:
-      yes (flag; default value = False): If you don't want a confirmation prompt.
-      local (flag; default value = False): If you want to delete local files associated with the active stack.
+        yes: If you don't want a confirmation prompt.
+        local: If you want to delete local files associated with the active stack.
     """
     if local:
         _delete_local_files(force_delete=yes)
@@ -179,7 +180,11 @@ def clean(yes: bool = False, local: bool = False) -> None:
 
 @cli.command("go")
 def go() -> None:
-    """Quickly explore ZenML with this walkthrough."""
+    """Quickly explore ZenML with this walkthrough.
+
+    Raises:
+        GitNotFoundError: If git is not installed.
+    """
     from zenml.cli.text_utils import (
         zenml_go_notebook_tutorial_message,
         zenml_go_privacy_message,
@@ -222,7 +227,11 @@ def go() -> None:
             with console.status(
                 "Cloning tutorial. This sometimes takes a minute..."
             ):
-                Repo.clone_from(TUTORIAL_REPO, tmp_cloned_dir)
+                Repo.clone_from(
+                    TUTORIAL_REPO,
+                    tmp_cloned_dir,
+                    branch=f"release/{zenml_version}",
+                )
             example_dir = os.path.join(tmp_cloned_dir, "examples/quickstart")
             copy_dir(example_dir, zenml_tutorial_path)
     else:
@@ -230,18 +239,29 @@ def go() -> None:
             f"{zenml_tutorial_path} already exists! Continuing without cloning."
         )
 
-    ipynb_files = [
-        fi for fi in os.listdir(zenml_tutorial_path) if fi.endswith(".ipynb")
-    ]
+    # get list of all .ipynb files in zenml_tutorial_path
+    ipynb_files = []
+    for dirpath, _, filenames in os.walk(zenml_tutorial_path):
+        for filename in filenames:
+            if filename.endswith(".ipynb"):
+                ipynb_files.append(os.path.join(dirpath, filename))
+
     ipynb_files.sort()
     console.print(zenml_go_notebook_tutorial_message(ipynb_files), width=80)
     input("Press ENTER to continue...")
-    subprocess.check_call(["jupyter", "notebook"], cwd=zenml_tutorial_path)
+    notebook_path = os.path.join(zenml_tutorial_path, "notebooks")
+    subprocess.check_call(["jupyter", "notebook"], cwd=notebook_path)
 
 
 def _prompt_email(gc: GlobalConfiguration) -> bool:
-    """Ask the user to give their email address. Returns
-    True if email is given, else False."""
+    """Ask the user to give their email address.
+
+    Args:
+        gc (GlobalConfiguration): The global configuration object.
+
+    Returns:
+        bool: True if the user gave an email address, False otherwise.
+    """
     from zenml.cli.text_utils import (
         zenml_go_email_prompt,
         zenml_go_thank_you_message,
@@ -261,5 +281,5 @@ def _prompt_email(gc: GlobalConfiguration) -> bool:
 
             gc.user_metadata = {"email": email}
             identify_user({"email": email})
-        return True
+            return True
     return False

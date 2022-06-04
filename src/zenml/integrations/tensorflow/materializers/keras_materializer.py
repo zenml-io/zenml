@@ -11,7 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import os
 import tempfile
 from typing import Any, Type
 
@@ -20,8 +19,7 @@ from tensorflow import keras
 from zenml.artifacts import ModelArtifact
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
-
-DEFAULT_FILENAME = "model.hdf5"
+from zenml.utils import io_utils
 
 
 class KerasMaterializer(BaseMaterializer):
@@ -31,26 +29,24 @@ class KerasMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> keras.Model:
-        """Reads and returns a Keras model after copying it to temporary file.
+        """Reads and returns a Keras model after copying it to temporary path.
 
         Returns:
             A tf.keras.Model model.
         """
         super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
-        # Create a temporary folder
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+        # Create a temporary directory to store the model
+        temp_dir = tempfile.TemporaryDirectory()
 
-        # Copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
+        # Copy from artifact store to temporary directory
+        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
 
-        # Load the model from the temporary file
-        model = keras.models.load_model(temp_file)
+        # Load the model from the temporary directory
+        model = keras.models.load_model(temp_dir.name)
 
         # Cleanup and return
-        fileio.rmtree(temp_dir)
+        fileio.rmtree(temp_dir.name)
 
         return model
 
@@ -61,15 +57,11 @@ class KerasMaterializer(BaseMaterializer):
             model: A tf.keras.Model model.
         """
         super().handle_return(model)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
-        # Create a temporary file to store the model
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".hdf5", delete=False
-        ) as f:
-            model.save(f.name)
-            fileio.copy(f.name, filepath)
+        # Create a temporary directory to store the model
+        temp_dir = tempfile.TemporaryDirectory()
+        model.save(temp_dir.name)
+        io_utils.copy_dir(temp_dir.name, self.artifact.uri)
 
-        # Close and remove the temporary file
-        f.close()
-        fileio.remove(f.name)
+        # Remove the temporary directory
+        fileio.rmtree(temp_dir.name)

@@ -36,7 +36,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow wandb -y
+zenml integration install tensorflow wandb
 
 # pull example
 zenml example pull wandb_tracking
@@ -67,10 +67,8 @@ zenml stack register wandb_stack \
     -m default \
     -a default \
     -o default \
-    -e wandb_tracker
-    
-# Activate the newly created stack
-zenml stack set wandb_stack
+    -e wandb_tracker \
+    --set
 ```
 
 ### ▶ Run the project
@@ -133,7 +131,5 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the wandb integration can be found [here](TODO: Link to docs).
-
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
-check out our [docs](TODO: Link to docs)
+If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
+check out our [docs](https://docs.zenml.io/extending-zenml/experiment-tracker).

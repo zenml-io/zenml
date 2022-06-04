@@ -7,7 +7,7 @@ is an awesome project that helps users visualize large amounts of data in a cohe
 Here, we are using the [Boston Housing Price Regression](https://keras.io/api/datasets/boston_housing/) dataset. 
 We create a simple pipeline that returns two pd.DataFrames, one for the training data and one for the test data. 
 In the post-execution workflow we then plug in the visualization class that visualizes the statistics of these 
-dataframes for us. 
+DataFrames for us. 
 
 This visualization is produced with the following code:
 
@@ -75,10 +75,3 @@ In order to clean up, delete the remaining ZenML references.
 ```shell
 rm -rf zenml_examples
 ```
-
-# 📜 Learn more
-
-Our docs regarding the facets integration can be found [here](TODO: Link to docs).
-
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
-check out our [docs](TODO: Link to docs)

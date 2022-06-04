@@ -29,15 +29,15 @@ from typing import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
-from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
     RuntimeConfiguration,
 )
-from zenml.utils import string_utils
+from zenml.utils import io_utils, string_utils
 
 if TYPE_CHECKING:
+    from zenml.alerter import BaseAlerter
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
     from zenml.experiment_trackers.base_experiment_tracker import (
@@ -79,6 +79,7 @@ class Stack:
         feature_store: Optional["BaseFeatureStore"] = None,
         model_deployer: Optional["BaseModelDeployer"] = None,
         experiment_tracker: Optional["BaseExperimentTracker"] = None,
+        alerter: Optional["BaseAlerter"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -95,6 +96,7 @@ class Stack:
         self._feature_store = feature_store
         self._model_deployer = model_deployer
         self._experiment_tracker = experiment_tracker
+        self._alerter = alerter
 
     @classmethod
     def from_components(
@@ -113,6 +115,7 @@ class Stack:
             TypeError: If a required component is missing or a component
                 doesn't inherit from the expected base class.
         """
+        from zenml.alerter import BaseAlerter
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
         from zenml.experiment_trackers import BaseExperimentTracker
@@ -185,6 +188,10 @@ class Stack:
         ):
             _raise_type_error(experiment_tracker, BaseExperimentTracker)
 
+        alerter = components.get(StackComponentType.ALERTER)
+        if alerter is not None and not isinstance(alerter, BaseAlerter):
+            _raise_type_error(alerter, BaseAlerter)
+
         return Stack(
             name=name,
             orchestrator=orchestrator,
@@ -196,6 +203,7 @@ class Stack:
             feature_store=feature_store,
             model_deployer=model_deployer,
             experiment_tracker=experiment_tracker,
+            alerter=alerter,
         )
 
     @classmethod
@@ -213,7 +221,7 @@ class Stack:
             "local_stores",
             str(artifact_store_uuid),
         )
-        utils.create_dir_recursive_if_not_exists(artifact_store_path)
+        io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
         artifact_store = LocalArtifactStore(
             name="default",
             uuid=artifact_store_uuid,
@@ -247,6 +255,7 @@ class Stack:
                 self.feature_store,
                 self.model_deployer,
                 self.experiment_tracker,
+                self.alerter,
             ]
             if component is not None
         }
@@ -300,6 +309,11 @@ class Stack:
     def experiment_tracker(self) -> Optional["BaseExperimentTracker"]:
         """The experiment tracker of the stack."""
         return self._experiment_tracker
+
+    @property
+    def alerter(self) -> Optional["BaseAlerter"]:
+        """The alerter of the stack."""
+        return self._alerter
 
     @property
     def runtime_options(self) -> Dict[str, Any]:

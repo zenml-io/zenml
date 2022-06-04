@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-The ``config`` module contains classes and functions that manage user-specific
-configuration. ZenML's configuration is stored in a file called
+"""The `config` module contains classes and functions that manage user-specific configuration.
+
+ZenML's configuration is stored in a file called
 ``config.yaml``, located on the user's directory for configuration files.
 (The exact location differs from operating system to operating system.)
 

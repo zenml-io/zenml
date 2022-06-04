@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to install or uninstall ZenML integrations via the CLI."""
 
 from typing import Optional, Tuple
 
@@ -65,7 +66,12 @@ def list_integrations() -> None:
 )
 @click.argument("integration_name", required=False, default=None)
 def get_requirements(integration_name: Optional[str] = None) -> None:
-    """List all requirements for the chosen integration."""
+    """List all requirements for the chosen integration.
+
+    Args:
+        integration_name: The name of the integration to list the requirements
+            for.
+    """
     from zenml.integrations.registry import integration_registry
 
     try:
@@ -120,9 +126,18 @@ def install(
     force: bool = False,
     old_force: bool = False,
 ) -> None:
-    """Installs the required packages for a given integration. If no integration
-    is specified all required packages for all integrations are installed
-    using pip"""
+    """Installs the required packages for a given integration.
+
+    If no integration is specified all required packages for all integrations
+    are installed using pip.
+
+    Args:
+        integrations: The name of the integration to install the requirements
+            for.
+        ignore_integration: List of integrations to ignore explicitly.
+        force: Force the installation of the required packages.
+        old_force: DEPRECATED: Force the installation of the required packages.
+    """
     from zenml.integrations.registry import integration_registry
 
     if old_force:
@@ -203,9 +218,18 @@ def install(
 def uninstall(
     integrations: Tuple[str], force: bool = False, old_force: bool = False
 ) -> None:
-    """Installs the required packages for a given integration. If no integration
-    is specified all required packages for all integrations are installed
-    using pip"""
+    """Installs the required packages for a given integration.
+
+    If no integration is specified all required packages for all integrations
+    are installed using pip.
+
+    Args:
+        integrations: The name of the integration to install the requirements
+            for.
+        force: Force the uninstallation of the required packages.
+        old_force: DEPRECATED: Force the uninstallation of the required
+            packages.
+    """
     from zenml.integrations.registry import integration_registry
 
     if old_force:

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """
 The mlflow integrations currently enables you to use mlflow tracking as a
-convenient way to visualize your experiment runs within the mlflow ui
+convenient way to visualize your experiment runs within the mlflow UI
 """
 from typing import List
 
@@ -31,7 +31,7 @@ class MlflowIntegration(Integration):
 
     NAME = MLFLOW
     REQUIREMENTS = [
-        "mlflow>=1.2.0",
+        "mlflow>=1.2.0,<1.26.0",
         "mlserver>=0.5.3",
         "mlserver-mlflow>=0.5.3",
     ]

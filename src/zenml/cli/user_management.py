@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to administer users of the ZenML CLI and server."""
 
 from typing import Optional, Tuple
 
@@ -38,7 +39,11 @@ def get_user() -> None:
 @user.command("set")
 @click.argument("user_name", type=str)
 def set_user(user_name: str) -> None:
-    """Set the active user."""
+    """Set the active user.
+
+    Args:
+        user_name: The name of the user to set as active.
+    """
     cli_utils.print_active_profile()
     repo = Repository()
     try:
@@ -69,7 +74,11 @@ def list_users() -> None:
 # @click.option("--email", type=str, required=True)
 # @click.password_option("--password", type=str, required=True)
 def create_user(user_name: str) -> None:
-    """Create a new user."""
+    """Create a new user.
+
+    Args:
+        user_name: The name of the user to create.
+    """
     cli_utils.print_active_profile()
     Repository().zen_store.create_user(user_name=user_name)
 
@@ -77,7 +86,11 @@ def create_user(user_name: str) -> None:
 @user.command("delete")
 @click.argument("user_name", type=str, required=True)
 def delete_user(user_name: str) -> None:
-    """Delete a user."""
+    """Delete a user.
+
+    Args:
+        user_name: The name of the user to delete.
+    """
     cli_utils.print_active_profile()
     try:
         Repository().zen_store.delete_user(user_name=user_name)
@@ -105,7 +118,11 @@ def list_teams() -> None:
 @team.command("describe")
 @click.argument("team_name", type=str, required=True)
 def describe_team(team_name: str) -> None:
-    """Print details of a team."""
+    """Print details of a team.
+
+    Args:
+        team_name: The name of the team to describe.
+    """
     cli_utils.print_active_profile()
     try:
         users = Repository().zen_store.get_users_for_team(team_name=team_name)
@@ -120,7 +137,11 @@ def describe_team(team_name: str) -> None:
 @team.command("create")
 @click.argument("team_name", type=str, required=True)
 def create_team(team_name: str) -> None:
-    """Create a new team."""
+    """Create a new team.
+
+    Args:
+        team_name: Name of the team to create.
+    """
     cli_utils.print_active_profile()
     Repository().zen_store.create_team(team_name=team_name)
 
@@ -128,7 +149,11 @@ def create_team(team_name: str) -> None:
 @team.command("delete")
 @click.argument("team_name", type=str, required=True)
 def delete_team(team_name: str) -> None:
-    """Delete a team."""
+    """Delete a team.
+
+    Args:
+        team_name (str): The name of the team to delete.
+    """
     cli_utils.print_active_profile()
     try:
         Repository().zen_store.delete_team(team_name=team_name)
@@ -140,7 +165,12 @@ def delete_team(team_name: str) -> None:
 @click.argument("team_name", type=str, required=True)
 @click.option("--user", "user_names", type=str, required=True, multiple=True)
 def add_users(team_name: str, user_names: Tuple[str]) -> None:
-    """Add users to a team."""
+    """Add users to a team.
+
+    Args:
+        team_name: Name of the team.
+        user_names: Names of the users to add to the team.
+    """
     cli_utils.print_active_profile()
     for user_name in user_names:
         cli_utils.declare(f"Adding user '{user_name}' to team '{team_name}'.")
@@ -158,7 +188,12 @@ def add_users(team_name: str, user_names: Tuple[str]) -> None:
 @click.argument("team_name", type=str, required=True)
 @click.option("--user", "user_names", type=str, required=True, multiple=True)
 def remove_users(team_name: str, user_names: Tuple[str]) -> None:
-    """Remove users from a team."""
+    """Remove users from a team.
+
+    Args:
+        team_name: Name of the team.
+        user_names: Names of the users.
+    """
     cli_utils.print_active_profile()
     for user_name in user_names:
         cli_utils.declare(
@@ -205,7 +240,12 @@ def list_projects() -> None:
 def create_project(
     project_name: str, description: Optional[str] = None
 ) -> None:
-    """Create a new project."""
+    """Create a new project.
+
+    Args:
+        project_name: The name of the project.
+        description: A description of the project.
+    """
     cli_utils.print_active_profile()
     try:
         Repository().zen_store.create_project(
@@ -247,7 +287,11 @@ def get_project() -> None:
 @project.command("set")
 @click.argument("project_name", type=str, required=True)
 def set_project(project_name: str) -> None:
-    """Set the project for the current repository."""
+    """Set the project for the current repository.
+
+    Args:
+        project_name: The name of the project to set as active.
+    """
     cli_utils.print_active_profile()
     if Repository.find_repository() is None:
         cli_utils.error(
@@ -269,7 +313,7 @@ def set_project(project_name: str) -> None:
 
 @project.command("unset")
 def unset_project() -> None:
-    """Unset the active project from current repository"""
+    """Unset the active project from current repository."""
     cli_utils.print_active_profile()
     if not Repository.find_repository():
         cli_utils.error(
@@ -288,7 +332,13 @@ def unset_project() -> None:
     required=True,
 )
 def delete_project(project_name: str) -> None:
-    """Delete a project. If name isn't specified, delete current project."""
+    """Delete a project.
+
+    If name isn't specified, delete current project.
+
+    Args:
+        project_name (str): Name of project to delete.
+    """
     cli_utils.print_active_profile()
     active_project = Repository().active_project
 
@@ -323,7 +373,11 @@ def list_roles() -> None:
 @role.command("create")
 @click.argument("role_name", type=str, required=True)
 def create_role(role_name: str) -> None:
-    """Create a new role."""
+    """Create a new role.
+
+    Args:
+        role_name: Name of the role to create.
+    """
     cli_utils.print_active_profile()
     Repository().zen_store.create_role(role_name=role_name)
 
@@ -331,7 +385,11 @@ def create_role(role_name: str) -> None:
 @role.command("delete")
 @click.argument("role_name", type=str, required=True)
 def delete_role(role_name: str) -> None:
-    """Delete a role."""
+    """Delete a role.
+
+    Args:
+        role_name (str): Name of the role to delete.
+    """
     cli_utils.print_active_profile()
     try:
         Repository().zen_store.delete_role(role_name=role_name)
@@ -350,7 +408,14 @@ def assign_role(
     team_names: Tuple[str],
     project_name: Optional[str] = None,
 ) -> None:
-    """Assign a role."""
+    """Assign a role.
+
+    Args:
+        role_name (str): Name of the role to assign.
+        user_names (Tuple[str]): Names of users to assign the role to.
+        team_names (Tuple[str]): Names of teams to assign the role to.
+        project_name (Optional[str]): Name of the project to assign the role to.
+    """
     cli_utils.print_active_profile()
     for user_name in user_names:
         cli_utils.declare(
@@ -398,7 +463,14 @@ def revoke_role(
     team_names: Tuple[str],
     project_name: Optional[str] = None,
 ) -> None:
-    """Revoke a role."""
+    """Revoke a role.
+
+    Args:
+        role_name: Name of the role to revoke.
+        user_names: Names of the users to revoke the role from.
+        team_names: Names of the teams to revoke the role from.
+        project_name: Name of the project to revoke the role from.
+    """
     cli_utils.print_active_profile()
     for user_name in user_names:
         cli_utils.declare(
