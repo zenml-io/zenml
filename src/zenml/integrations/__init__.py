@@ -51,3 +51,4 @@ from zenml.integrations.vertex import VertexIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa
+from zenml.integrations.vault import VaultSecretManagerIntegration  # noqa
