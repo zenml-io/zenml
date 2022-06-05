@@ -12,9 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """
-## Seldon Secret Schemas
+## Kserve Secret Schemas
 
-These are secret schemas that can be used to authenticate Seldon to the
+These are secret schemas that can be used to authenticate Kserve to the
 Artifact Store used to store served ML models.
 """
 from zenml.integrations.kserve.secret_schemas.secret_schemas import (
