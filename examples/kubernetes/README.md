@@ -1,37 +1,99 @@
-## Setup k8s Orchestrator on EKS
-- AWS_REGION = "us-east-1"
-- AWS_EKS_CLUSTER = "native-kubernetes-orchestrator"
-- KUBE_CONTEXT = "zenml-kubernetes" 
-- `aws eks --region {AWS_REGION} update-kubeconfig --name {AWS_EKS_CLUSTER} --alias {KUBE_CONTEXT}`
-- (kubectl config current-context)
-- zenml orchestrator register k8s_orchestrator --flavor=kubernetes --kubernetes_context={KUBE_CONTEXT} --synchronous=True
+# :dango: Pipeline Orchestration on Kubernetes
 
-## Setup Metadata Store
-- `kubectl apply -k src/zenml/integrations/kubernetes/orchestrators/yaml`
-- `zenml metadata-store register kubernetes_store -f mysql --host=mysql --port=3306 --database=mysql --username=root --password=''`
+This example will demonstrate how to orchestrate pipelines using the ZenML Kubernetes-native orchestrator. We will build a simple pipeline consisting of four steps and orchestrate it in an Amazon EKS Kubernetes cluster.
 
-## Setup ECR
-- AWS_REGION = "us-east-1"
-- ECR_REGISTRY_NAME = "715803424590.dkr.ecr.us-east-1.amazonaws.com"
-- `aws ecr get-login-password --region {AWS_REGION} | docker login --username AWS --password-stdin {ECR_REGISTRY_NAME}`
-- `zenml container-registry register ecr_registry --flavor=default --uri={ECR_REGISTRY_NAME}`
+## :heavy_check_mark: Requirements
 
-## Setup Artifact Store
-- S3_BUCKET_NAME = "s3://zenbytes-bucket"
-- `zenml artifact-store register s3_store --flavor=s3 --path={S3_BUCKET_NAME}`
+In order to follow this tutorial you need to first spin up an Amazon EKS cluster, an ECR container registry, as well as a S3 bucket 
+for artifact storage. 
 
-## Register Stack
-- zenml stack register aws_kubernetes_stack -m kubernetes_store -a s3_store -o k8s_orchestrator -c ecr_registry
+Furthermore, you need to have kubectl and Docker installed locally.
 
-## Run pipeline
+### Setup and Register Kubernetes Orchestrator on EKS
+After spinning up your EKS cluster, run the following command to grant access to your local kubectl.
 
-- `python run.py`
-- `kubectl get pods` -> find "evaluator" pod
-- `kubectl logs {EVALUATOR_POD}`  -> you should see "Test accuracy: ..." in outputs
+```bash
+AWS_REGION = "eu-central-1"
+AWS_EKS_CLUSTER = "native-kubernetes-orchestrator"
+KUBE_CONTEXT = "zenml-kubernetes" 
+aws eks --region {AWS_REGION} update-kubeconfig --name {AWS_EKS_CLUSTER} --alias {KUBE_CONTEXT}
+```
 
-## Output
+Next, run the following command to register your Kubernetes orchestrator:
 
-Steps can run in parallel
+```bash
+zenml orchestrator register k8s_orchestrator 
+    --flavor=kubernetes 
+    --kubernetes_context={KUBE_CONTEXT} 
+    --synchronous=True
+```
+
+### Setup and Register Metadata Store
+
+
+For metadata storage, we will use a MySQL database that we deploy within the EKS cluster. Run the following command to spin up the MySQL pod in your EKS cluster:
+
+```bash
+kubectl apply -k src/zenml/integrations/kubernetes/orchestrators/yaml
+```
+
+Now we can register the database as a metadata store as follows:
+```bash
+zenml metadata-store register kubernetes_store 
+    --flavor=mysql
+    --host=mysql 
+    --port=3306 
+    --database=mysql 
+    --username=root 
+    --password=''
+```
+
+### Register ECR Container Registry
+Next, you need to login to your ECR via Docker so you can push images to your container registry:
+
+```bash
+AWS_REGION = "us-east-1"
+ECR_REGISTRY_NAME = "715803424590.dkr.ecr.us-east-1.amazonaws.com"
+aws ecr get-login-password --region {AWS_REGION} | docker login --username AWS --password-stdin {ECR_REGISTRY_NAME}
+```
+
+Now you can register your ECR in ZenML like this:
+```bash
+zenml container-registry register ecr_registry 
+    --flavor=default 
+    --uri={ECR_REGISTRY_NAME}
+```
+
+### Setup Artifact Store
+Lastly, we also need to register our S3 bucket as artifact store:
+
+```bash
+S3_BUCKET_NAME = "s3://zenbytes-bucket"
+zenml artifact-store register s3_store 
+    --flavor=s3 
+    --path={S3_BUCKET_NAME}
+```
+
+### Register Stack
+
+Finally, let us bring everything together and register our stack:
+```bash
+zenml stack register aws_kubernetes_stack 
+    -m kubernetes_store 
+    -a s3_store 
+    -o k8s_orchestrator 
+    -c ecr_registry
+```
+
+## :computer: Run Pipeline Locally
+Now that our stack is set up, all of our ML code will automatically be executed on the EKS cluster. Let's run the example pipeline:
+
+```bash
+python run.py
+```
+
+You should now see the following output (which are the logs of the kubernetes orchestrator pod):
+
 ```
 INFO:root:Starting orchestration...
 INFO:root:Running step importer...
@@ -49,5 +111,36 @@ INFO:root:Step evaluator finished.
 INFO:root:Orchestration complete.
 ```
 
-## Clean Up
-- `kubectl delete pod -l pipeline=digits_pipeline`
+Note that the `skew_comparison` and `svc_trainer` steps were run in parallel, as they both only depend on the `importer` step.
+
+### Check Result
+
+After orchestration is complete, run the following command to list all Kubernetes pods that were created to run this example:
+
+```
+kubectl get pods -l pipeline=parallelizable_pipeline
+```
+
+You should see that all your steps have status `Completed`. If not, wait for the remaining jobs to finish. Once every step is completed, find the pod corresponding to the `evaluator` step and print it's logs:
+
+```bash
+kubectl get pods -l step=evaluator
+EVALUATOR_POD = ...
+kubectl logs {EVALUATOR_POD}
+```
+
+If everything went well, you should be able to see the test accuracy printed in the logs.
+
+## :sponge: Clean Up
+
+Run the following commands to delete all pods and other Kubernetes units we created during this example:
+
+### Delete Run Pods
+```bash
+kubectl delete -k src/zenml/integrations/kubernetes/orchestrators/yaml
+```
+
+### Delete MySQL Metadata Store
+```bash
+kubectl delete pod -l pipeline=parallelizable_pipeline
+```
