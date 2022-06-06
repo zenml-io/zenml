@@ -11,12 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, ClassVar, Dict, List, Optional
-
-import hvac 
 import re
+from typing import Any, ClassVar, List, Optional, Set
+
+import hvac
+
 from zenml.exceptions import SecretDoesNotExistError, SecretExistsError
-from zenml.integrations.gcp_secrets_manager import VAULT_SECRETS_MANAGER_FLAVOR
+from zenml.integrations.vault import VAULT_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -30,10 +31,9 @@ ZENML_PATH = "zenml"
 
 def sanitize_secret_name(secret_name: str) -> str:
     """Sanitize the secret name to be used in Vault."""
-    return re.sub(r"[^0-9a-zA-Z_\.]+", "_", secret_name).strip(
-                "-_."
-            )
-    
+    return re.sub(r"[^0-9a-zA-Z_\.]+", "_", secret_name).strip("-_.")
+
+
 def prepend_secret_schema_to_secret_name(secret: BaseSecretSchema) -> str:
     """This function adds the secret group name to the keys of each
     secret key-value pair to allow using the same key across multiple
@@ -43,13 +43,12 @@ def prepend_secret_schema_to_secret_name(secret: BaseSecretSchema) -> str:
         secret: The ZenML Secret schema
     """
     secret_name = sanitize_secret_name(secret.name)
-    secret_schema_name = secret.__name__
+    secret_schema_name = secret.TYPE
     return f"{secret_schema_name}-{secret_name}"
 
 
 def remove_secret_schema_name(combined_secret_name: str) -> str:
-    """
-    """
+    """ """
     if "-" in combined_secret_name:
         return combined_secret_name.split("-")[1]
     else:
@@ -58,9 +57,9 @@ def remove_secret_schema_name(combined_secret_name: str) -> str:
             f"Secret_schema name on it."
         )
 
+
 def get_secret_schema_name(combined_secret_name: str) -> str:
-    """
-    """
+    """ """
     if "-" in combined_secret_name:
         return combined_secret_name.split("-")[0]
     else:
@@ -68,6 +67,7 @@ def get_secret_schema_name(combined_secret_name: str) -> str:
             f"Secret name `{combined_secret_name}` does not have a "
             f"Secret_schema name on it."
         )
+
 
 class VaultSecretsManager(BaseSecretsManager):
     """Class to interact with the GCP secrets manager.
@@ -77,108 +77,137 @@ class VaultSecretsManager(BaseSecretsManager):
                      The project_id of your GCP project space that contains
                      the Secret Manager.
     """
-    
-    # Class configuration
-    FLAVOR: ClassVar[str] = "vault"
 
-    url: Optional[str]
-    token: Optional[str]
+    # Class configuration
+    FLAVOR: ClassVar[str] = VAULT_SECRETS_MANAGER_FLAVOR
+    CLIENT: ClassVar[Any] = None
+
+    url: str
+    token: str
     cert: Optional[str]
     verify: Optional[str]
     namespace: Optional[str]
     mount_point: Optional[str] = "secret"
 
-    #private attribute 
-    _client: Optional[hvac.Client] = None
+    @classmethod
+    def _ensure_client_connected(cls, url: str, token: str) -> None:
 
-
-    @property
-    def hvac_client(self) -> hvac.Client:
-        """ 
-        
-        """
-        if not self._client:
-            self._client = hvac.Client(
-                url=self.url,
-                token=self.token,
+        if cls.CLIENT is None:
+            # Create a Vault Secrets Manager client
+            cls.CLIENT = hvac.Client(
+                url=url,
+                token=token,
             )
 
-        return self._client
-                
-             
-        
+    def _ensure_client_is_authenticated(self) -> None:
+        """Ensure the client is authenticated."""
+
+        self._ensure_client_connected(url=self.url, token=self.token)
+
+        if not self.CLIENT:
+            raise RuntimeError("Vault client is not authenticated.")
+        else:
+            if not self.CLIENT.is_authenticated():
+                raise RuntimeError("Vault client is not authenticated.")
+            else:
+                pass
+
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
 
         Args:
             secret: The secret to register.
         """
-        if not self._client.is_authenticated():
-            raise RuntimeError("Vault client is not authenticated.")
+        self._ensure_client_is_authenticated()
 
         secret_name = prepend_secret_schema_to_secret_name(secret=secret)
-        
+
         if secret_name in self.get_all_secret_keys():
             raise SecretExistsError(
                 f"A Secret with the name '{secret_name}' already exists."
             )
 
-        self._client.secrets.kv.v2.create_or_update_secret(
+        self.CLIENT.secrets.kv.v2.create_or_update_secret(
             path=f"{ZENML_PATH}/{secret_name}",
-            secret=secret.content.items(),
-            )
-        
-        logger.debug("Created created secret: %s", f"{ZENML_PATH}/{secret_name}")
+            secret=secret.content,
+        )
+
+        logger.debug("Created secret: %s", f"{ZENML_PATH}/{secret_name}")
         logger.debug("Added value to secret.")
-       
+
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Gets the value of a secret.
 
         Args:
             secret_name: The name of the secret to get.
         """
-        # 
-        secrets_keys = self.get_all_secret_keys()
+
+        try:
+            vault_secret_name = self.vault_secret_name(secret_name)
+        except SecretDoesNotExistError:
+            raise SecretDoesNotExistError(
+                f"The secret {secret_name} does not exist."
+            )
+
+        secret_items = (
+            self.CLIENT.secrets.kv.v2.read_secret_version(
+                path=f"{ZENML_PATH}/{vault_secret_name}",
+                mount_point=self.mount_point,
+            )
+            .get("data", {})
+            .get("data", {})
+        )
+
+        secret_schema = SecretSchemaClassRegistry.get_class(
+            secret_schema=get_secret_schema_name(vault_secret_name)
+        )
+        secret_items["name"] = sanitize_secret_name(secret_name)
+        return secret_schema(**secret_items)
+
+    def vaul_list_secrets(self) -> List[str]:
+        """Get all secret keys."""
+
+        self._ensure_client_is_authenticated()
+
+        set_of_secrets: Set[str] = set()
+        try:
+            secrets = self.CLIENT.secrets.kv.v2.list_secrets(
+                path=f"{ZENML_PATH}/", mount_point=self.mount_point
+            )
+        except hvac.exceptions.InvalidPath:
+            print(
+                f"There are no secrets created within the path `{ZENML_PATH}` "
+            )
+            return list(set_of_secrets)
+
+        secrets_keys = secrets.get("data", {}).get("keys", [])
+        for secret_key in secrets_keys:
+            set_of_secrets.add(secret_key)
+        return list(set_of_secrets)
+
+    def vault_secret_name(self, secret_name: str) -> str:
+        """Get Vault the name of the secret."""
+
+        self._ensure_client_is_authenticated()
+
+        secrets_keys = self.vaul_list_secrets()
 
         for secret_key in secrets_keys:
-            if sanitize_secret_name(secret_name) == remove_secret_schema_name(secret_key):    
-                try : 
-                    secret_items = self._client.secrets.kv.v2.read_secret_version(
-                        path=f"{ZENML_PATH}/{secret_key}",mount_point=self.mount_point
-                    ).get("data", {}).get("data", {})
-                except hvac.exceptions.InvalidPath:
-                    raise (
-                        f"The secret {secret_name} does not exist."
-                    )
-                    secret_schema = SecretSchemaClassRegistry.get_class(
-                        secret_schema=get_secret_schema_name(secret_key)
-                    )
-                    return secret_schema(**secret_items)
-        return(
-                f"the secret {secret_name} does not exist."
-            )    
-        
+            sanitized_secret_name = sanitize_secret_name(secret_name)
+            secret_name_without_schema = remove_secret_schema_name(secret_key)
+            if sanitized_secret_name == secret_name_without_schema:
+                return secret_key
+        raise SecretDoesNotExistError(
+            f"The secret {secret_name} does not exist."
+        )
 
     def get_all_secret_keys(self) -> List[str]:
         """Get all secret keys."""
 
-        if not self._client.is_authenticated():
-            raise RuntimeError("Vault client is not authenticated.")
-
-        set_of_secrets = set()
-        try:
-            secrets = self._client.secrets.kv.v2.list_secrets(path=ZENML_PATH, mount_point=self.mount_point)
-        except hvac.exceptions.InvalidPath:
-            return(
-                f"There are no secrets created within the path `{ZENML_PATH}` "
-            )
-        
-        secrets_keys = secrets.get("data", {}).get("keys", [])
-        for secret_key in secrets_keys:
-            secret_key = remove_secret_schema_name(secret_key)
-            set_of_secrets.add(secret_key)
-        return list(set_of_secrets)
-
+        return [
+            remove_secret_schema_name(secret_key)
+            for secret_key in self.vaul_list_secrets()
+        ]
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
         """Update an existing secret.
@@ -186,22 +215,23 @@ class VaultSecretsManager(BaseSecretsManager):
         Args:
             secret: The secret to update.
         """
-        if not self._client.is_authenticated():
-            raise RuntimeError("Vault client is not authenticated.")
 
-        if secret.name in self.get_all_secret_keys():
+        self._ensure_client_is_authenticated()
+
+        secret_name = prepend_secret_schema_to_secret_name(secret=secret)
+
+        if secret_name in self.vaul_list_secrets():
+            self.CLIENT.secrets.kv.v2.create_or_update_secret(
+                path=f"{ZENML_PATH}/{secret.name}",
+                secret=secret.content.items(),
+            )
+        else:
             raise SecretDoesNotExistError(
                 f"A Secret with the name '{secret.name}' does not exist."
             )
-        
-        self._client.secrets.kv.v2.create_or_update_secret(
-            path=f"{ZENML_PATH}/{secret.name}",
-            secret=secret.content.items(),
-            )
-        
+
         logger.debug("Updated secret: %s", f"{ZENML_PATH}/{secret.name}")
         logger.debug("Added value to secret.")
-        
 
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret.
@@ -209,20 +239,21 @@ class VaultSecretsManager(BaseSecretsManager):
         Args:
             secret_name: The name of the secret to delete.
         """
-        if not self._client.is_authenticated():
-            raise RuntimeError("Vault client is not authenticated.")
 
-        if secret_name in self.get_all_secret_keys():
+        self._ensure_client_is_authenticated()
+
+        try:
+            vault_secret_name = self.vault_secret_name(secret_name)
+        except SecretDoesNotExistError:
             raise SecretDoesNotExistError(
-                f"A Secret with the name '{secret_name}' does not exist."
+                f"The secret {secret_name} does not exist."
             )
-        
-        self._client.secrets.kv.v2.delete_secret_versions(
-            path=f"{ZENML_PATH}/{secret_name}",
-            )
-        
+
+        self.CLIENT.secrets.kv.v2.delete_metadata_and_all_versions(
+            path=f"{ZENML_PATH}/{vault_secret_name}",
+        )
+
         logger.debug("Deleted secret: %s", f"{ZENML_PATH}/{secret_name}")
-    
 
     def delete_all_secrets(self, force: bool = False) -> None:
         """Delete all existing secrets.
@@ -230,7 +261,14 @@ class VaultSecretsManager(BaseSecretsManager):
         Args:
             force: Whether to force deletion of secrets.
         """
-        
-        for secret_name in self.get_all_secret_keys():
-            self.delete_secret(secret_name=secret_name)
-        
+        self._ensure_client_is_authenticated()
+
+        try:
+            self.CLIENT.secrets.kv.v2.delete_metadata_and_all_versions(
+                path=f"{ZENML_PATH}",
+            )
+        except hvac.exceptions.InvalidPath:
+            print(
+                f"There are no secrets created within the path `{ZENML_PATH}` "
+            )
+            return
