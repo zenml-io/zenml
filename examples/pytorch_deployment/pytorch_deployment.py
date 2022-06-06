@@ -67,7 +67,7 @@ class TrainerConfig(BaseStepConfig):
     shuffle: bool = True
 
 
-@step()
+@step
 def torch_trainer(
     config: TrainerConfig,
 ) -> nn.Module:

@@ -1,212 +1,309 @@
-# 🏃 Run pipelines in production using Kubeflow Pipelines
+# 🚀 ZenML continuous model deployment with Seldon Core
 
-When developing ML models, you probably develop your pipelines on your local
-machine initially as this allows for quicker iteration and debugging. However,
-at a certain point when you are finished with its design, you might want to 
-transition to a more production-ready setting and deploy the pipeline to a more
-robust environment.
+[Seldon Core](https://github.com/SeldonIO/seldon-core) is a production grade
+open source model serving platform. It packs a wide range of features built
+around deploying models to REST/GRPC microservices that include monitoring and
+logging, model explainers, outlier detectors and various continuous deployment
+strategies such as A/B testing, canary deployments and more.
 
-In this tutorial, we will try to run a continous training, deployment pipeline in kubernetes-grade environment. Using the kubeflow and seldon integration we will go through the steps to setup a s3 compatible storage, setup seldon on the kubernetes cluster and finally run and deploy the pipeline and the model.
+Seldon Core also comes equipped with a set of built-in model server
+implementations designed to work with standard formats for packaging ML models
+that greatly simplify the process of serving models for real-time inference.
 
-You can also watch a video of this example [here](https://www.youtube.com/watch?v=b5TXRYkdL3w).
+This example demonstrates how easy it is to build a continuous deployment
+pipeline that trains a model and then serves it with Seldon Core as the
+industry-ready model deployment tool of choice.
 
-# 🖥 Setup the environment
+After [serving models locally with MLflow](../mlflow_deployment), switching to
+a ZenML MLOps stack that features Seldon Core as a model deployer component
+makes for a seamless transition from running experiments locally to deploying
+models in production.
 
-This tutorial will go through the steps to setup a kubernetes-grade environment. Link the different components of the environment and then run the pipeline.
+## 🗺 Overview
 
-If you are looking to run pipelines with the kubeflow without the seldon deployment, you can use the [kubeflow_pipelines_orchestration example]().
+The example uses the
+[Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset to
+train a classifier using either [Tensorflow (Keras)](https://www.tensorflow.org/)
+or [scikit-learn](https://scikit-learn.org/stable/). Different
+hyperparameter values (e.g. the number of epochs and learning rate for the Keras
+model, solver and penalty for the scikit-learn logical regression) can be
+supplied as command line arguments to the `run.py` Python script.
 
+The example consists of two individual pipelines:
 
-## 📄 Prerequisites
-In order to run this example, we have to install a few tools that allow ZenML to
-spin up a local Kubeflow Pipelines 
-setup:
+  * a deployment pipeline that implements a continuous deployment workflow. It
+  ingests and processes input data, trains a model and then (re)deploys the
+  prediction server that serves the model if it meets some evaluation
+  criteria
+  * an inference pipeline that interacts with the prediction server deployed
+  by the continuous deployment pipeline to get online predictions based on live
+  data
 
-* [K3D](https://k3d.io/v5.2.1/#installation) to spin up a local Kubernetes
-cluster
-* The Kubernetes command-line tool [Kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
-to deploy Kubeflow Pipelines
-* [Docker](https://docs.docker.com/get-docker/) to build docker images that run
-your pipeline in Kubernetes pods (**Note**: the local Kubeflow Pipelines
-deployment requires more than 2 GB of RAM, so if you're using Docker Desktop
-make sure to update the resource limits in the preferences)
-* [Helm Chart](https://helm.sh/docs/) to use seldon core as our deployment integration, we need to install it in our local cluster (**Note**: Helm is an open source package manager for Kubernetes. It provides the ability to provide, share, and use software built for Kubernetes.)
+You can control which pipeline to run by passing the `--config deploy` or the 
+`--config predict` option to the `run.py` launcher. The default is 
+`--config deploy_and_predict` which does both.
 
-Next, we will install ZenML, get the code for this example and initialize a
-ZenML repository:
+In the deployment pipeline, ZenML's Seldon Core integration is used to serve
+the trained model directly from the Artifact Store where it is automatically
+saved as an artifact by the training step. A Seldon Core deployment server
+is launched to serve the latest model version if its accuracy is above a
+configured threshold (also customizable through a command line argument).
 
-```bash
-# Install python dependencies
+The Seldon Core deployment server is provisioned remotely as a Kubernetes
+resource that continues to run after the deployment pipeline run is complete.
+Subsequent runs of the deployment pipeline will reuse the existing deployment
+server and merely update it to serve the more recent model version.
+
+The deployment pipeline has caching enabled to avoid re-training and
+re-deploying the model if the training data and hyperparameter values don't
+change. When a new model is trained that passes the accuracy threshold
+validation, the pipeline automatically updates the currently running Seldon Core
+deployment server so that the new model is being served instead of the old one.
+
+The inference pipeline simulates loading data from a dynamic external source,
+then uses that data to perform online predictions using the running Seldon
+Core prediction server.
+
+# 🖥 Run it locally
+
+### 📄 Prerequisites 
+
+For the ZenML Seldon Core deployer to work, three basic things are required:
+
+1. access to a Kubernetes cluster. The example accepts a `--kubernetes-context`
+command line argument. This Kubernetes context needs to point to the Kubernetes
+cluster where Seldon Core model servers will be deployed. If the context is not
+explicitly supplied to the example, it defaults to using the locally active
+context.
+
+2. Seldon Core needs to be preinstalled and running in the target Kubernetes
+cluster (read below for a brief explanation of how to do that).
+
+3. models deployed with Seldon Core need to be stored in some form of
+persistent shared storage that is accessible from the Kubernetes cluster where
+Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
+
+In order to run this example, you need to install and initialize ZenML:
+
+```shell
+# install CLI
 pip install zenml
-pip install notebook  # if you want to run the example on the notebook
 
-# Install ZenML integrations
-zenml integration install kubeflow tensorflow s3 seldon
+# install ZenML integrations
+zenml integration install tensorflow sklearn seldon
 
-# Pull the kubeflow example
-zenml example pull local_kubeflow_seldon
-cd zenml_examples/local_kubeflow_seldon
+# pull example
+zenml example pull seldon_deployment
+cd zenml_examples/seldon_deployment
 
-# Initialize a ZenML repository
+# initialize a local ZenML Repository
 zenml init
 ```
 
-## 💾 Minio Server - S3 compatible artifact storage
+#### Installing Seldon Core (e.g. in an EKS cluster)
 
-The first thing we need to setup is a storage for our pipeline artifacts. We will use the [Minio](https://minio.io/) server as our storage.
-The Minio server is a simple S3 compatible server that runs on your local machine.
+This section is a trimmed up version of the
+[official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup)
+applied to a particular type of Kubernetes cluster, EKS in this case. It assumes
+that an EKS cluster is already set up and configured with IAM access.
 
-```bash
-# Start the minio server
-docker run -p 9000:9000 -p 9001:9001 --name minio \ 
-    -d -v ~/minio/data:/data -e "MINIO_ROOT_USER=minio" \
-    -e "MINIO_ROOT_PASSWORD=zenmlminio" minio/minio server \
-    --console-address :9001 /data
-
-"""
-> docker ps
-CONTAINER ID   IMAGE         COMMAND                  CREATED         STATUS         PORTS                              NAMES
-f34ed5832cfd   minio/minio   "/usr/bin/docker-ent…"   6 seconds ago   Up 6 seconds   0.0.0.0:9000-9001->9000-9001/tcp   minio
-"""
-```
-In order to have one adress for the minio server and make it accessible from the local machine and from the kubernetes cluster, we need to to add the following line to the `etc/hosts` file:
-```bash
-# Add the minio server to your hosts file etc/hosts
-127.0.0.1 host.k3d.internal
-```
-
-After that, we want to access the minio server dashboard interface with the following adressess:
-`http://host.k3d.internal:9001`. then create a bucket to store the artifacts:
-
-![Access and login minio dashboard](assets/minio-login.png)
-![Create new bucket with name zenml-bucket](assets/minio-bucket-create.png)
-![List buckets](assets/minio-bucket-list.png)
-
-## 🥞 Create a local Kubeflow Pipelines Stack
-Now with all the installation and initialization out of the way, all that's left
-to do is configuring our ZenML [stack](https://docs.zenml.io/core-concepts). For
-this example, the stack we create consists of the following four parts:
-* The **minio artifact store** stores step outputs on your hard disk. 
-* The **local metadata store** stores metadata like the pipeline name and step
-parameters inside a local SQLite database.
-* The docker images that are created to run your pipeline are stored in a local
-docker **container registry**.
-* The **Kubeflow orchestrator** is responsible for running your ZenML pipeline
-in Kubeflow Pipelines.
-* The **local secrets manager** is responsible for storing and managing secrets in a 
-local secret store.
-* The **Seldon model deployer** is responsible for deploying models to kubernetes
-with Seldon. we will add this to the stack later. After the stack is created we have 
-a ready to go Kubeflow Pipelines environment.
+To configure EKS cluster access locally, e.g:
 
 ```bash
-# Register new artifact store
-zenml artifact-store register local_minio --flavor=s3 --path=s3://zenml-bucket/ --key="minio" --secret="zenmlminio" --client_kwargs='{"endpoint_url": "http://host.k3d.internal:9000"}'
-
-# Make sure to create the local registry on port 5000 for it to work 
-zenml container-registry register local_registry --flavor=default --uri=localhost:5000
-
-# Register the kubeflow orchestrator
-zenml orchestrator register kubeflow_orchestrator --flavor=kubeflow
-
-# Register local secrets manager
-zenml secrets-manager register local_secrets_manager --flavor=local
-
-# Register the stack
-zenml stack register local_kubeflow_seldon_stack \
-    -m default \
-    -a local_minio \
-    -o kubeflow_orchestrator \
-    -c local_registry \
-    -x local_secrets_manager
-
-# Activate the newly created stack
-zenml stack set local_kubeflow_seldon_stack
-
-# Provion the stack and start k3d cluster
-zenml stack up
+aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
 ```
 
-## 🏁 Start up Kubeflow Pipelines locally
-
-ZenML takes care of setting up and configuring the local Kubeflow Pipelines
-deployment. All we need to do is run:
+Install Istio 1.5.0 (required for the latest Seldon Core version):
 
 ```bash
-zenml stack up
+curl -L [https://istio.io/downloadIstio](https://istio.io/downloadIstio) | ISTIO_VERSION=1.5.0 sh -
+cd istio-1.5.0/
+bin/istioctl manifest apply --set profile=demo
 ```
 
-When the setup is finished, you should see a local URL which you can access in
-your browser and take a look at the Kubeflow Pipelines UI.
-
-### ▶️ Run the pipeline
-We can now try run the mnist pipeline by simply executing the python script:
-
-```bash
-python run.py
-```
-
-This will build a docker image containing all the necessary python packages and
-files, push it to the local container registry and schedule a pipeline run in
-Kubeflow Pipelines. Once the script is finished, you should be able to see the
-pipeline run [here](http://localhost:8080/#/runs).
-
-The Tensorboard logs for the model trained in every pipeline run can be viewed
-directly in the Kubeflow Pipelines UI by clicking on the "Visualization" tab
-and then clicking on the "Open Tensorboard" button.
-
-![Tensorboard Kubeflow Visualization](assets/mnist-pipeline-kubeflow.png)
-
-
-## ☁️ Install Seldon Core in local cluster
-
-In order to install Seldon Core in your local cluster, you need to install the istio service mesh. After that, you can install Seldon Core in your local cluster.
-For more information about How to setup Seldon Core locally, please visit [Local Seldon Core](https://docs.seldon.io/projects/seldon-core/en/latest/install/kind.html/).
-
-Now that we have istio installed in our local cluster, we need to set Seldon Core to use Istio’s features to manage cluster traffic.
+Set up an Istio gateway for Seldon Core:
 
 ```bash
 curl https://raw.githubusercontent.com/SeldonIO/seldon-core/master/notebooks/resources/seldon-gateway.yaml | kubectl apply -f -
 ```
 
-let's setup install seldon using the following commands:
+Finally, install Seldon Core:
 
 ```bash
-kubectl create ns seldon-system
-
 helm install seldon-core seldon-core-operator \
     --repo https://storage.googleapis.com/seldon-charts \
     --set usageMetrics.enabled=true \
     --set istio.enabled=true \
     --namespace seldon-system
-
-# You can check that your Seldon Controller is running by doing:
-kubectl get pods -n seldon-system
-````
-
-Now that we have seldon installed in our local cluster, the next thing is to extract the URL where the model server exposes its prediction API 
-
-```bash
-# Get the Ingress Host Address
-kubectl port-forward -n istio-system svc/istio-ingressgateway 8081:80
-
-export INGRESS_HOST=127.0.0.1:8081
 ```
 
-## 🥞 Register Model Deployer and update stack
+To test that the installation is functional, you can use this sample Seldon
+deployment:
 
-To deploy our module on Seldon core, we will register a new model deployer and add it to the current stack.
+```yaml
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: iris-model
+  namespace: default
+spec:
+  name: iris
+  predictors:
+  - graph:
+      implementation: SKLEARN_SERVER
+      modelUri: gs://seldon-models/v1.14.0-dev/sklearn/iris
+      name: classifier
+    name: default
+    replicas: 1
+```
 
-```bash:
-# Get current kubernetes context
-kubectl config current-context
-    
-# Register new model deployer
-zenml model-deployer register seldon_local --flavor=seldon \
-  --kubernetes_context=k3d-zenml-kubeflow-2a941dd1 --kubernetes_namespace=kubeflow \
+```bash
+kubectl apply -f iris.yaml
+```
+
+Extract the URL where the model server exposes its prediction API:
+
+```bash
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+```
+
+Use curl to send a test prediction API request to the server:
+
+```bash
+curl -X POST http://$INGRESS_HOST/seldon/default/iris-model/api/v1.0/predictions \
+         -H 'Content-Type: application/json' \
+         -d '{ "data": { "ndarray": [[1,2,3,4]] } }'
+```
+
+You should see something like this as the prediction response:
+
+```json
+{"data":{"names":["t:0","t:1","t:2"],"ndarray":[[0.0006985194531162835,0.00366803903943666,0.995633441507447]]},"meta":{"requestPath":{"classifier":"seldonio/sklearnserver:1.13.1"}}}
+```
+
+### 🥞 Setting up the ZenML Stack
+
+Before you run the example, a ZenML Stack needs to be set up with all the proper
+components. Two different examples of stacks featuring AWS infrastructure
+components are described in this document, but similar stacks may be set up
+using different backends and used to run the example as long as the basic Stack
+prerequisites are met.
+
+#### Local orchestrator with S3 artifact store and EKS Seldon Core installation
+
+This stack consists of the following components:
+
+* an AWS S3 artifact store
+* the local orchestrator
+* the local metadata store
+* a Seldon Core model deployer
+* a local secret manager used to store the credentials needed by Seldon Core to
+access the AWS S3 artifact store
+
+To have access to the AWS S3 artifact store from your local workstation, the
+AWS client credentials needs to be properly set up locally as documented in
+[the official AWS documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
+In addition to the stack components, Seldon Core must be installed in a
+Kubernetes cluster that is locally accessible through a Kubernetes configuration
+context. The reference used in this example is a Seldon Core installation
+running in an EKS cluster, but any other type of Kubernetes cluster can be used,
+managed or otherwise.
+
+To configure EKS cluster access locally, e.g:
+
+```bash
+aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
+```
+
+Set up a namespace for ZenML Seldon Core workloads:
+
+```bash
+kubectl create ns zenml-workloads
+```
+
+Extract the URL where the Seldon Core model server exposes its prediction API, e.g.:
+
+```bash
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+```
+
+Configuring the stack can be done like this:
+
+```shell
+zenml integration install s3 seldon
+zenml model-deployer register seldon_eks --flavor=seldon \
+  --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
   --base_url=http://$INGRESS_HOST \
-  --secret=minio-store
+  --secret=s3-store
+zenml artifact-store register aws --flavor=s3 --path s3://mybucket
+zenml secrets-manager register local --flavor=local
+zenml stack register local_with_aws_storage -m default -a aws -o default -d seldon_eks -x local --set
+```
 
+As the last step in setting up the stack, we need to configure a ZenML secret
+with the credentials needed by Seldon Core to access the Artifact Store. This is
+covered in the [Managing Seldon Core Credentials section](#managing-seldon-core-credentials).
+
+#### Full AWS stack
+
+This stack has all components running in the AWS cloud:
+
+* an AWS S3 artifact store
+* a Kubeflow orchestrator installed in an AWS EKS Kubernetes cluster
+* a metadata store that uses the same database as the Kubeflow deployment as
+a backend
+* an AWS ECR container registry
+* an AWS secret manager used to store the credentials needed by Seldon Core to
+access the AWS S3 artifact store
+* a Seldon Core model deployer pointing to the AWS EKS cluster
+
+
+To have access to the AWS S3 artifact store from your local workstation, the
+AWS client credentials needs to be properly set up locally as documented in
+[the official AWS documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
+In addition to the stack components, Seldon Core must be installed in *the same*
+Kubernetes cluster as Kubeflow. The cluster must also be locally accessible
+through a Kubernetes configuration context. The reference used in this example
+is a Kubeflow and Seldon Core installation running in an EKS cluster, but any
+other type of Kubernetes cluster can be used, managed or otherwise.
+
+To configure EKS cluster access locally, run e.g:
+
+```bash
+aws eks --region us-east-1 update-kubeconfig --name zenml-cluster --alias zenml-eks
+```
+
+To configure ECR registry access locally, run e.g.:
+
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS \
+  --password-stdin 715803424590.dkr.ecr.us-east-1.amazonaws.com
+```
+
+Extract the URL where the Seldon Core model server exposes its prediction API, e.g.:
+
+```bash
+export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+```
+
+Configuring the stack can be done like this:
+
+```shell
+zenml integration install s3 aws kubeflow seldon
+
+zenml artifact-store register aws --flavor=s3 --path=s3://mybucket
+zenml model-deployer register seldon_aws --flavor=seldon \
+  --kubernetes_context=zenml-eks --kubernetes_namespace=kubeflow \
+  --base_url=http://$INGRESS_HOST \
+  --secret=s3-store
+zenml container-registry register aws --flavor=default --uri=715803424590.dkr.ecr.us-east-1.amazonaws.com
+zenml metadata-store register aws --flavor=kubeflow
+zenml orchestrator register aws --flavor=kubeflow --kubernetes_context=zenml-eks --synchronous=True
+zenml secrets-manager register aws --flavor=aws
+zenml stack register aws -m aws -a aws -o aws -c aws -d seldon_aws -x aws --set
 ```
 
 ZenML will manage the Seldon Core deployments inside the same `kubeflow`
@@ -218,8 +315,6 @@ update and delete secrets. You can do so with the below command:
 ```bash
 kubectl -n kubeflow patch role pipeline-runner --type='json' -p='[{"op": "add", "path": "/rules/0", "value": {"apiGroups": [""], "resources": ["secrets"], "verbs": ["*"]}}]'
 ```
-
-## 🔎 Manage Seldon Core Credentials
 
 As the last step in setting up the stack, we need to configure a ZenML secret
 with the credentials needed by Seldon Core to access the Artifact Store. This is
@@ -247,33 +342,275 @@ you can also use `seldon_gs` for GCS and `seldon_az` for Azure. To read more abo
 secrets, secret schemas and how they are used in ZenML, please refer to the
 [ZenML documentation](https://docs.zenml.io/features/secrets).
 
-##### Seldon S3 authentication
+The next sections cover two cases involving AWS authentication: with and without
+IAM role access.  Please look up the variables relevant to your use-case in the
+[official Seldon Core documentation](https://docs.seldon.io/projects/seldon-core/en/latest/servers/overview.html#handling-credentials)
+and set them accordingly for your ZenML secret.
 
-you will need to set up credentials explicitly in the ZenML secret,
-using the built-in `seldon_s3` secret schema.
+##### AWS Authentication with Implicit IAM Access
+
+If the EKS cluster where Seldon Core is running already has
+[IAM access](https://docs.aws.amazon.com/eks/latest/userguide/security-iam.html)
+configured to grant the EKS nodes access to the AWS S3 bucket, you won't need to
+save any explicit AWS credentials in the ZenML secret. You just have to set the
+`rclone_config_s3_env_auth` attribute value to `True` and leave everything else
+as is:
+
+```bash
+$ zenml secret register -s seldon_s3 s3-store --rclone_config_s3_env_auth=True
+The following secret will be registered.
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃        SECRET_KEY         │ SECRET_VALUE ┃
+┠───────────────────────────┼──────────────┨
+┃   rclone_config_s3_type   │ ***          ┃
+┃ rclone_config_s3_provider │ ***          ┃
+┃ rclone_config_s3_env_auth │ ***          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+
+$ zenml secret get s3-store
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃        SECRET_KEY         │ SECRET_VALUE ┃
+┠───────────────────────────┼──────────────┨
+┃   rclone_config_s3_type   │ s3           ┃
+┃ rclone_config_s3_provider │ aws          ┃
+┃ rclone_config_s3_env_auth │ True         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+```
+
+##### AWS Authentication with Explicit Credentials
+
+If IAM access is not configured for your EKS cluster, or you don't know how to
+configure it, you will need to set up credentials explicitly in the ZenML secret,
 e.g.:
 
 ```bash
-zenml secret register -s seldon_s3 minio-store \
+$ zenml secret register -s seldon_s3 s3-store \
     --rclone_config_s3_env_auth=False \
-    --rclone_config_s3_access_key_id='minio' \
-    --rclone_config_s3_secret_access_key='zenmlminio' \
-    --rclone_config_s3_endpoint='http://host.k3d.internal:9000'
+    --rclone_config_s3_access_key_id='ASAK2NSJVO4HDQC7Z25F' \ --rclone_config_s3_secret_access_key='AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscsaf+' \
+    --rclone_config_s3_session_token=@./aws_session_token.txt \
+    --rclone_config_s3_region=us-east-1
+Expanding argument value rclone_config_s3_session_token to contents of file ./aws_session_token.txt.
+The following secret will be registered.
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
+┃             SECRET_KEY             │ SECRET_VALUE ┃
+┠────────────────────────────────────┼──────────────┨
+┃       rclone_config_s3_type        │ ***          ┃
+┃     rclone_config_s3_provider      │ ***          ┃
+┃     rclone_config_s3_env_auth      │ ***          ┃
+┃   rclone_config_s3_access_key_id   │ ***          ┃
+┃ rclone_config_s3_secret_access_key │ ***          ┃
+┃   rclone_config_s3_session_token   │ ***          ┃
+┃      rclone_config_s3_region       │ ***          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+
+$ zenml secret get s3-store
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃             SECRET_KEY             │ SECRET_VALUE                           ┃
+┠────────────────────────────────────┼────────────────────────────────────────┨
+┃       rclone_config_s3_type        │ s3                                     ┃
+┃     rclone_config_s3_provider      │ aws                                    ┃
+┃     rclone_config_s3_env_auth      │ False                                  ┃
+┃   rclone_config_s3_access_key_id   │ ASAK2NSJVO4HDQC7Z25F                   ┃
+┃ rclone_config_s3_secret_access_key │ AhkFSfhjj23fSDFfjklsdfj34hkls32SDfscs… ┃
+┃   rclone_config_s3_session_token   │ FwoGZXIvYXdzEG4aDHogqi7YRrJyVJUVfSKpA… ┃
+┃                                    │                                        ┃
+┃      rclone_config_s3_region       │ us-east-1                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
 ### 🏃️Run the code
 To run the continuous deployment pipeline:
 
 ```shell
-python run.py --deploy
+python run.py --config deploy
 ```
 
 Example output when run with the local orchestrator stack:
 
 ```shell
-python run.py --deploy --min-accuracy 0.80
+examples/seldon_deployment$ python run.py --config deploy --min-accuracy 0.80 --model-flavor sklearn
 ```
 
+```shell
+2022-04-06 15:40:28.903233: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
+2022-04-06 15:40:28.903253: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+Creating run for pipeline: `continuous_deployment_pipeline`
+Cache disabled for pipeline `continuous_deployment_pipeline`
+Using stack `local_with_aws_storage` to run pipeline `continuous_deployment_pipeline`...
+Step `importer_mnist` has started.
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+Step `importer_mnist` has finished in 20.012s.
+Step `normalizer` has started.
+Step `normalizer` has finished in 24.177s.
+Step `sklearn_trainer` has started.
+Step `sklearn_trainer` has finished in 23.150s.
+Step `sklearn_evaluator` has started.
+Step `sklearn_evaluator` has finished in 10.511s.
+Step `deployment_trigger` has started.
+Step `deployment_trigger` has finished in 4.965s.
+Step `seldon_model_deployer` has started.
+INFO:asyncio:Loading last service deployed by step model_deployer and pipeline continuous_deployment_pipeline...
+Creating a new Seldon deployment service
+Seldon deployment service started and reachable at:
+    http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-1
+6241824-7e17-42d8-bed3-070b51ba29d2/api/v0.1/predictions
 
-That's it! If everything went as planned this pipeline should now be running in the cloud, and we are one step 
-closer to a production pipeline!
+Step `seldon_model_deployer` has finished in 39.095s.
+Pipeline run `continuous_deployment_pipeline-06_Apr_22-15_40_31_886832` has finished in 2m2s.
+The Seldon prediction server is running remotely as a Kubernetes service and accepts inference requests at:
+    http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-1
+6241824-7e17-42d8-bed3-070b51ba29d2/api/v0.1/predictions
+To stop the service, re-run the same command and supply the `--stop-service` argument.
+```
+
+Example Kubeflow pipeline when run with the remote Kubeflow stack:
+
+![Kubeflow Deployment Pipeline](assets/kubeflow-deployment.png)
+
+
+Re-running the example with different hyperparameter values will re-train
+the model and update the deployment server to serve the new model:
+
+```shell
+python run.py --config deploy --epochs=10 --lr=0.1
+```
+
+If the input hyperparameter argument values are not changed, the pipeline
+caching feature will kick in, a new model will not be re-trained and the Seldon
+Core deployment will not be updated with the new model. Similarly, if a new model
+is trained in the deployment pipeline but the model accuracy doesn't exceed the
+configured accuracy threshold, the new model will not be deployed.
+
+The inference pipeline will use the currently running Seldon Core deployment
+server to perform an online prediction. To run the inference pipeline:
+
+```shell
+python run.py --config predict
+```
+
+Example output when run with the local orchestrator stack:
+
+```shell
+examples/seldon_deployment$ python run.py --config predict --model-flavor sklearn
+```
+
+```shell
+2022-04-06 15:48:02.346731: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
+2022-04-06 15:48:02.346762: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+Creating run for pipeline: `inference_pipeline`
+Cache disabled for pipeline `inference_pipeline`
+Using stack `local_with_aws_storage` to run pipeline `inference_pipeline`...
+Step `dynamic_importer` has started.
+INFO:botocore.credentials:Found credentials in shared credentials file: ~/.aws/credentials
+Step `dynamic_importer` has finished in 6.284s.
+Step `prediction_service_loader` has started.
+Step `prediction_service_loader` has finished in 7.104s.
+Step `sklearn_predict_preprocessor` has started.
+Step `sklearn_predict_preprocessor` has finished in 5.180s.
+Step `predictor` has started.
+Prediction:  [7 2 1 0 4 1 4 9 6 9 0 6 9 0 1 5 9 7 3 4 9 6 6 5 4 0 7 4 0 1 3 1 3 6 7 2 7
+ 1 2 1 1 7 4 2 3 5 1 2 4 4 6 3 5 5 6 0 4 1 9 5 7 8 9 2 7 4 7 4 3 0 7 0 2 9
+ 1 7 3 2 9 7 7 6 2 7 8 4 7 3 6 1 3 6 9 3 1 4 1 7 6 9]
+Step `predictor` has finished in 8.009s.
+Pipeline run `inference_pipeline-06_Apr_22-15_48_05_308089` has finished in 26.702s.
+The Seldon prediction server is running remotely as a Kubernetes service and accepts inference requests at:
+    http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-162
+41824-7e17-42d8-bed3-070b51ba29d2/api/v0.1/predictions
+To stop the service, re-run the same command and supply the `--stop-service` argument.
+```
+
+Example Kubeflow pipeline when run with the remote Kubeflow stack:
+
+![Kubeflow Inference Pipeline](assets/kubeflow-prediction.png)
+
+To switch from Tensorflow to sklearn as the libraries used for model
+training and the Seldon Core model server implementation, the `--model-flavor`
+command line argument can be used:
+
+```
+python run.py --model-flavor sklearn --penalty=l2
+```
+
+The `zenml served-models list` CLI command can be run to list the active model servers:
+
+```shell
+$ zenml served-models list
+┏━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ STATUS │ UUID                                 │ PIPELINE_NAME                  │ PIPELINE_STEP_NAME         ┃
+┠────────┼──────────────────────────────────────┼────────────────────────────────┼────────────────────────────┨
+┃   ✅   │ 8cbe671b-9fce-4394-a051-68e001f92765 │ continuous_deployment_pipeline │ seldon_model_deployer_step ┃
+┗━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+To get more information about a specific model server, such as the prediction URL,
+the `zenml served-models describe <uuid>` CLI command can be run:
+
+```shell
+$ zenml served-models describe 8cbe671b-9fce-4394-a051-68e001f92765
+                          Properties of Served Model 8cbe671b-9fce-4394-a051-68e001f92765                          
+┏━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ MODEL SERVICE PROPERTY │ VALUE                                                                                  ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ MODEL_NAME             │ mnist                                                                                  ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ MODEL_URI              │ s3://zenfiles/seldon_model_deployer_step/output/884/seldon                             ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_NAME          │ continuous_deployment_pipeline                                                         ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_RUN_ID        │ continuous_deployment_pipeline-11_Apr_22-09_39_27_648527                               ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PIPELINE_STEP_NAME     │ seldon_model_deployer_step                                                             ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ PREDICTION_URL         │ http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/… ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ SELDON_DEPLOYMENT      │ zenml-8cbe671b-9fce-4394-a051-68e001f92765                                             ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ STATUS                 │ ✅                                                                                     ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ STATUS_MESSAGE         │ Seldon Core deployment 'zenml-8cbe671b-9fce-4394-a051-68e001f92765' is available       ┃
+┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────┨
+┃ UUID                   │ 8cbe671b-9fce-4394-a051-68e001f92765                                                   ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+```
+
+The prediction URL can sometimes be more difficult to make out in the detailed
+output, so there is a separate CLI command available to retrieve it:
+
+```shell
+$ zenml served-models get-url 8cbe671b-9fce-4394-a051-68e001f92765
+  Prediction URL of Served Model 8cbe671b-9fce-4394-a051-68e001f92765 is:
+  http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com/seldon/zenml-workloads/zenml-8cbe67
+1b-9fce-4394-a051-68e001f92765/api/v0.1/predictions
+```
+
+Finally, a model server can be deleted with the `zenml served-models delete <uuid>`
+CLI command:
+
+```shell
+$ zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
+```
+
+### 🧽 Clean up
+
+To stop any prediction servers running in the background, use the `zenml model-server list`
+and `zenml model-server delete <uuid>` CLI commands.:
+
+```shell
+zenml served-models delete 8cbe671b-9fce-4394-a051-68e001f92765
+```
+
+Then delete the remaining ZenML references.
+
+```shell
+rm -rf zenml_examples
+```
+
+# 📜 Learn more
+
+Our docs regarding the seldon deployment integration can be found [here](https://docs.zenml.io/advanced-guide/continuous-training-and-deployment).
+
+If you want to learn more about deployment in ZenML in general or about how to build your own deployer steps in ZenML
+check out our [docs](https://docs.zenml.io/extending-zenml/model-deployer).
