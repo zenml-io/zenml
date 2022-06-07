@@ -31,8 +31,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          role-to-assume: arn:aws:iam::907999144431:role/github_actions_test_sandbox_role
-          role-session-name: samplerolesession
+          role-to-assume: arn:aws:iam::907999144431:role/limited_kubeflow_tests_role
+          role-session-name: Kubeflow_Test_Session
           aws-region: us-east-1
 
       - name: Setup environment with Poetry
