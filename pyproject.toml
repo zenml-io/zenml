@@ -65,12 +65,15 @@ rich = {extras = ["jupyter"], version = "^12.0.0"}
 httplib2 = "<0.20,>=0.19.1"
 pyparsing = "<3,>=2.4.0"
 sqlmodel = "~0.0.6"
-fastapi = "~0.75.0"
-uvicorn = { extras = ["standard"], version = "~0.17.5" }
-semver = "^2.13.0"
 markupsafe = "1.1.1"
 nbconvert = "6.4.4"
 
+# Optional dependencies for the ZenServer
+fastapi = { version = "~0.75.0", optional = true }
+uvicorn = { extras = ["standard"], version = "~0.17.5" , optional = true}
+
+[tool.poetry.extras]
+server = ["fastapi", "uvicorn"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.4"
@@ -89,6 +92,9 @@ typing-extensions = ">=3.7.4"
 
 # pytest dev dependencies
 pytest-randomly = "^3.10.1"
+pytest-mock = "^3.6.1"
+codespell = "^2.1.0"
+darglint = "^1.8.1"
 pytest-clarity = "^1.0.1"
 
 # mkdocs including plugins
@@ -98,7 +104,6 @@ mkdocs-awesome-pages-plugin="^2.6.1"
 mkdocstrings="^0.17.0"
 pydocstyle="^6.1.1"
 mike="^1.1.2"
-
 
 # mypy type stubs
 types-certifi = "^2021.10.8.0"
@@ -116,8 +121,7 @@ types-setuptools = "^57.4.2"
 types-six = "^1.16.2"
 types-termcolor = "^1.1.2"
 types-psutil = "^5.8.13"
-pytest-mock = "^3.6.1"
-codespell = "^2.1.0"
+flake8-docstrings = "^1.6.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -238,6 +242,8 @@ module = [
     "boto3.*",
     "botocore.*",
     "jupyter_dash.*",
+    "slack_sdk.*",
+    "azure-keyvault-keys.*"
 ]
 ignore_missing_imports = true
 
@@ -256,6 +262,7 @@ exclude = '''
 | build
 )/
 '''
+
 
 [tool.interrogate]
 ignore-init-method = true

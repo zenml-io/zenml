@@ -9,7 +9,14 @@ Business logic is what defines
 a step and the pipeline. Step and pipeline configurations are used to
 dynamically set parameters at runtime.
 
-## Step configuration
+You can configure your pipelines at runtime in the following ways:
+
+* Configure from within the code: Do this when you are quickly iterating on your code 
+and don't want to change your actual step code. This is useful in the development phase.
+* Configure from the CLI and a YAML config: Do this when you want to launch pipeline runs 
+without modifying the code at all. This is most useful in production scenarios.
+
+## Configuring from within code
 
 You can easily add a configuration to a step by creating your configuration as a
 subclass to the BaseStepConfig.
@@ -43,7 +50,7 @@ first_pipeline(step_1=my_first_step(),
                ).run()
 ```
 
-This functionality is based on [Step Fixtures](#step-fixtures) which you will
+This functionality is based on [Step Fixtures](./step-fixtures.md) which you will
 learn more about below.
 
 ### Setting step parameters using a config file
@@ -81,7 +88,7 @@ first_pipeline(step_1=my_first_step(),
                ).with_config("path_to_config.yaml").run()
 ```
 
-## Run from CLI
+## Configuring from the CLI and a YAML config file
 
 In case you want to have control to configure and run your pipeline from outside
 your code. For this you can use the
@@ -111,7 +118,7 @@ name: <name_of_your_pipeline>
 
 In case you defined your pipeline using decorators this name is the name of the
 decorated function. If you used the
-[Class Based API](#class-based-api), it will be the name of your class.
+[Class Based API](./class-based-api.md), it will be the name of your class.
 
 ```python
 from zenml.pipelines import pipeline, BasePipeline
@@ -149,7 +156,7 @@ In total the step functions can be supplied with 3 arguments here:
 {% hint style="info" %}
 Materializers are responsible for reading and writing. You can learn more about
 Materializers in the
-[materializer section](materializer.md).
+[materializer section](./materializer.md).
 {% endhint %}
 
 ```yaml
@@ -307,90 +314,3 @@ way you ensure each run is directly
 associated with an associated code version.
 {% endhint %}
 
-## Pipeline Run Name
-
-When running a pipeline by calling `my_pipeline.run()`, ZenML uses the current
-date and time as the name for the
-pipeline run. In order to change the name for a run, simply pass it as a
-parameter to the `run()` function:
-
-```python
-first_pipeline_instance.run(run_name="custom_pipeline_run_name")
-```
-
-{% hint style="warning" %}
-Pipeline run names must be unique, so make sure to compute it dynamically if you
-plan to run your pipeline multiple
-times.
-{% endhint %}
-
-Once the pipeline run is finished we can easily access this specific run during
-our post-execution workflow:
-
-```python
-from zenml.repository import Repository
-
-repo = Repository()
-pipeline = repo.get_pipeline(pipeline_name="first_pipeline")
-run = pipeline.get_run("custom_pipeline_run_name")
-```
-
-### Summary in Code
-
-<details>
-    <summary>Code Example for this Section</summary>
-
-```python
-from zenml.steps import step, Output, BaseStepConfig
-from zenml.pipelines import pipeline
-
-
-@step
-def my_first_step() -> Output(output_int=int, output_float=float):
-    """Step that returns a pre-defined integer and float"""
-    return 7, 0.1
-
-
-class SecondStepConfig(BaseStepConfig):
-    """Trainer params"""
-    multiplier: int = 4
-
-
-@step
-def my_second_step(config: SecondStepConfig, input_int: int,
-                   input_float: float
-                   ) -> Output(output_int=int, output_float=float):
-    """Step that multiply the inputs"""
-    return config.multiplier * input_int, config.multiplier * input_float
-
-
-@pipeline
-def first_pipeline(
-        step_1,
-        step_2
-):
-    output_1, output_2 = step_1()
-    step_2(output_1, output_2)
-
-
-# Set configuration when executing
-first_pipeline(step_1=my_first_step(),
-               step_2=my_second_step(SecondStepConfig(multiplier=3))
-               ).run(run_name="custom_pipeline_run_name")
-
-# Set configuration  based on yml
-first_pipeline(step_1=my_first_step(),
-               step_2=my_second_step()
-               ).with_config("config.yml").run()
-```
-
-With config.yml looking like this
-
-```yaml
-steps:
-  step_2:
-    parameters:
-      multiplier: 3
-```
-
-</details>

@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base class for all ZenML alerters."""
 
 from abc import ABC
-from typing import Any, ClassVar, Optional
+from typing import ClassVar, Optional
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
@@ -37,13 +38,13 @@ class BaseAlerter(StackComponent, ABC):
             config: Optional runtime configuration of this function.
 
         Returns:
-            True if operation succeeded, else False
+            True if operation succeeded, else False.
         """
         return True
 
     def ask(
         self, question: str, config: Optional[BaseAlerterStepConfig]
-    ) -> Any:
+    ) -> bool:
         """Ask a question and get a synchronous response.
 
         Args:
@@ -53,4 +54,4 @@ class BaseAlerter(StackComponent, ABC):
         Returns:
             The response from the request.
         """
-        return None
+        return True

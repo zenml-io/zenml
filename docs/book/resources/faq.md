@@ -48,7 +48,7 @@ helpful.
 #### How can I make ZenML work with my custom tool? How can I extend or build on ZenML?
 
 This depends on the tool and its respective MLOps category. We have a full guide
-on this over [here](../advanced-guide/stacks-components-flavors)!
+on this over [here](../advanced-guide/stacks-components-flavors.md)!
 
 #### Why did you build ZenML?
 

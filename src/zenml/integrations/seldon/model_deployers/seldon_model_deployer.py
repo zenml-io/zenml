@@ -334,7 +334,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
     ) -> List[BaseService]:
-        """Find one or more Seldon Core model services that match th given
+        """Find one or more Seldon Core model services that match the given
         criteria.
 
         The Seldon Core deployment services that meet the search criteria are

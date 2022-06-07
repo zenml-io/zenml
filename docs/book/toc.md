@@ -3,7 +3,7 @@
 * [Introduction](index.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Core Concepts](introduction/core-concepts.md)
-* [Examples](introduction/zenml-example-cli.md)
+* [Examples & Use-cases](introduction/zenml-example-cli.md)
 
 ## Developer Guide
 
@@ -11,7 +11,7 @@
 * [Steps & Pipelines](developer-guide/steps-and-pipelines.md)
 * [Runtime Configuration](developer-guide/runtime-configuration.md)
 * [Post-Execution Workflow](developer-guide/post-execution-workflow.md)
-* [Materializer](developer-guide/materializer.md)
+* [Materializers](developer-guide/materializer.md)
 * [Caching](developer-guide/caching.md)
 * [Step Fixture](developer-guide/step-fixtures.md)
 * [Fetching Historic Runs](developer-guide/fetching-historic-runs.md)
@@ -58,7 +58,7 @@
 	* [Integrations Examples](https://github.com/zenml-io/zenml/tree/main/examples)
 	* [Learn MLOps with ZenBytes](https://github.com/zenml-io/zenbytes)
 	* [ZenML in Practice](https://github.com/zenml-io/zenfiles)
-	* [Learn more on Youtube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
+	* [Learn more on YouTube](https://www.youtube.com/channel/UCi79n61eV2sVyYxJOqk\_bMw)
 	* [Slack Community](https://zenml.io/slack-invite/)
 * [Resources]()
   * [Best Practices](resources/best-practices.md)

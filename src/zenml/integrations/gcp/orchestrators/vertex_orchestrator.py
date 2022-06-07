@@ -49,12 +49,12 @@ from zenml.integrations.vertex.orchestrators.vertex_entrypoint_configuration imp
     VertexEntrypointConfiguration,
 )
 from zenml.io import fileio
-from zenml.io.utils import get_global_config_directory
 from zenml.logger import get_logger
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.repository import Repository
 from zenml.stack.stack_validator import StackValidator
 from zenml.utils.docker_utils import get_image_digest
+from zenml.utils.io_utils import get_global_config_directory
 from zenml.utils.source_utils import get_source_root_path
 
 if TYPE_CHECKING:

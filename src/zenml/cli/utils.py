@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility functions for the CLI."""
+
 import base64
 import datetime
 import os
@@ -26,6 +28,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Type,
     TypeVar,
     Union,
 )
@@ -49,7 +52,7 @@ logger = get_logger(__name__)
 if TYPE_CHECKING:
     from zenml.config.profile_config import ProfileConfiguration
     from zenml.enums import StackComponentType
-    from zenml.integrations.integration import IntegrationMeta
+    from zenml.integrations.integration import Integration
     from zenml.model_deployers import BaseModelDeployer
     from zenml.secret import BaseSecretSchema
     from zenml.services import BaseService
@@ -60,7 +63,7 @@ def title(text: str) -> None:
     """Echo a title formatted string on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
     """
     console.print(text.upper(), style=zenml_style_defaults["title"])
 
@@ -69,9 +72,9 @@ def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
     """Echo a confirmation string on the CLI.
 
     Args:
-      text: Input text string.
-      *args: Args to be passed to click.confirm().
-      **kwargs: Kwargs to be passed to click.confirm().
+        text: Input text string.
+        *args: Args to be passed to click.confirm().
+        **kwargs: Kwargs to be passed to click.confirm().
 
     Returns:
         Boolean based on user response.
@@ -100,10 +103,10 @@ def error(text: str) -> NoReturn:
     """Echo an error string on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
 
     Raises:
-        click.ClickException: when called.
+        ClickException: when called.
     """
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
 
@@ -129,7 +132,8 @@ def pretty_print(obj: Any) -> None:
     """Pretty print an object on the CLI using `rich.print`.
 
     Args:
-      obj: Any object with a __str__ method defined.
+        obj: Any object with a __str__ method defined.
+
     # TODO: [LOW] check whether this needs to be converted to a string first
     # TODO: [LOW] use rich prettyprint for this instead
     """
@@ -137,14 +141,15 @@ def pretty_print(obj: Any) -> None:
 
 
 def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
-    """Prints the list of dicts in a table format. The input object should be a
-    List of Dicts. Each item in that list represent a line in the Table. Each
-    dict should have the same keys. The keys of the dict will be used as
-    headers of the resulting table.
+    """Prints the list of dicts in a table format.
+
+    The input object should be a List of Dicts. Each item in that list represent
+    a line in the Table. Each dict should have the same keys. The keys of the
+    dict will be used as headers of the resulting table.
 
     Args:
-      obj: A List containing dictionaries.
-      columns: Optional column configurations to be used in the table.
+        obj: A List containing dictionaries.
+        columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
@@ -183,7 +188,7 @@ def print_pydantic_models(
     """Prints the list of Pydantic models in a table.
 
     Args:
-        models: List of pydantic models that will be represented as a row in
+        models: List of Pydantic models that will be represented as a row in
             the table.
         columns: Optionally specify subset and order of columns to display.
         exclude_columns: Optionally specify columns to exclude. (Note: `columns`
@@ -193,7 +198,14 @@ def print_pydantic_models(
     """
 
     def __dictify(model: M) -> Dict[str, str]:
-        """Helper function to map over the list to turn Models into dicts."""
+        """Helper function to map over the list to turn Models into dicts.
+
+        Args:
+            model: Pydantic model.
+
+        Returns:
+            Dict of model attributes.
+        """
         items = (
             {
                 key: str(value)
@@ -214,18 +226,28 @@ def print_pydantic_models(
 
 
 def format_integration_list(
-    integrations: List[Tuple[str, "IntegrationMeta"]]
+    integrations: List[Tuple[str, Type["Integration"]]]
 ) -> List[Dict[str, str]]:
-    """Formats a list of integrations into a List of Dicts. This list of dicts
-    can then be printed in a table style using cli_utils.print_table."""
+    """Formats a list of integrations into a List of Dicts.
+
+    This list of dicts can then be printed in a table style using
+    cli_utils.print_table.
+
+    Args:
+        integrations: List of tuples containing the name of the integration and
+            the integration metadata.
+
+    Returns:
+        List of Dicts containing the name of the integration and the integration
+    """
     list_of_dicts = []
     for name, integration_impl in integrations:
-        is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
+        is_installed = integration_impl.check_installation()
         list_of_dicts.append(
             {
                 "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
+                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
             }
         )
     return list_of_dicts
@@ -267,7 +289,13 @@ def print_stack_component_list(
 def print_stack_configuration(
     config: Dict["StackComponentType", str], active: bool, stack_name: str
 ) -> None:
-    """Prints the configuration options of a stack."""
+    """Prints the configuration options of a stack.
+
+    Args:
+        config: Configuration options of the stack.
+        active: Whether the stack is active.
+        stack_name: Name of the stack.
+    """
     stack_caption = f"'{stack_name}' stack"
     if active:
         stack_caption += " (ACTIVE)"
@@ -294,7 +322,12 @@ def print_flavor_list(
     flavors: List["FlavorWrapper"],
     component_type: "StackComponentType",
 ) -> None:
-    """Prints the list of flavors."""
+    """Prints the list of flavors.
+
+    Args:
+        flavors: List of flavors to print.
+        component_type: Type of component the flavors belong to.
+    """
     from zenml.integrations.registry import integration_registry
     from zenml.utils.source_utils import validate_flavor_source
 
@@ -345,7 +378,13 @@ def print_flavor_list(
 def print_stack_component_configuration(
     component: "ComponentWrapper", display_name: str, active_status: bool
 ) -> None:
-    """Prints the configuration options of a stack component."""
+    """Prints the configuration options of a stack component.
+
+    Args:
+        component: The stack component to print.
+        display_name: The name of the stack component.
+        active_status: Whether the stack component is active.
+    """
     title = f"{component.type.value.upper()} Component Configuration"
     if active_status:
         title += " (ACTIVE)"
@@ -434,8 +473,8 @@ def format_date(
     """Format a date into a string.
 
     Args:
-      dt: Datetime object to be formatted.
-      format: The format in string you want the datetime formatted to.
+        dt: Datetime object to be formatted.
+        format: The format in string you want the datetime formatted to.
 
     Returns:
         Formatted string according to specification.
@@ -459,8 +498,7 @@ MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
 def _expand_argument_value_from_file(name: str, value: str) -> str:
-    """Expands the value of an argument pointing to a file into the contents of
-    that file.
+    """Expands the value of an argument pointing to a file into the contents of that file.
 
     Args:
         name: Name of the argument. Used solely for logging purposes.
@@ -548,7 +586,7 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
     """Parse unknown options from the CLI.
 
     Args:
-      args: A list of strings from the CLI.
+        args: A list of strings from the CLI.
 
     Returns:
         List of parsed args.
@@ -566,7 +604,11 @@ def parse_unknown_component_attributes(args: List[str]) -> List[str]:
 
 
 def install_packages(packages: List[str]) -> None:
-    """Installs pypi packages into the current environment with pip"""
+    """Installs pypi packages into the current environment with pip.
+
+    Args:
+        packages: List of packages to install.
+    """
     command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
@@ -579,7 +621,11 @@ def install_packages(packages: List[str]) -> None:
 
 
 def uninstall_package(package: str) -> None:
-    """Uninstalls pypi package from the current environment with pip"""
+    """Uninstalls pypi package from the current environment with pip.
+
+    Args:
+        package: The package to uninstall.
+    """
     subprocess.check_call(
         [
             sys.executable,
@@ -596,7 +642,7 @@ def uninstall_package(package: str) -> None:
 def pretty_print_secret(
     secret: "BaseSecretSchema", hide_secret: bool = True
 ) -> None:
-    """Given a secret set print all key value pairs associated with the secret
+    """Given a secret set, print all key-value pairs associated with the secret.
 
     Args:
         secret: Secret of type BaseSecretSchema
@@ -663,8 +709,7 @@ def get_service_status_emoji(service: "BaseService") -> str:
 def pretty_print_model_deployer(
     model_services: List["BaseService"], model_deployer: "BaseModelDeployer"
 ) -> None:
-    """Given a list of served_models print all key value pairs associated with
-    the secret
+    """Given a list of served_models, print all key-value pairs associated with the secret.
 
     Args:
         model_services: list of model deployment services

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base class for all ZenML model deployers."""
+
 from abc import ABC, abstractmethod
 from typing import ClassVar, Dict, Generator, List, Optional
 from uuid import UUID
@@ -37,7 +39,7 @@ class BaseModelDeployer(StackComponent, ABC):
     previous version of the same model instead of creating a new model server
     for every new model version (see the `deploy_model` abstract method).
     This functionality can be consumed directly from ZenML pipeline steps, but
-    it can also be used outside of the pipeline to deploy ad-hoc models. It is
+    it can also be used outside of the pipeline to deploy ad hoc models. It is
     also usually coupled with a standard model deployer step, implemented by
     each integration, that hides the details of the deployment process away from
     the user.
@@ -49,7 +51,7 @@ class BaseModelDeployer(StackComponent, ABC):
     persisted externally, alongside or even part of the remote model server
     configuration itself. For example, for model servers that are implemented as
     Kubernetes resources, the BaseService instances can be serialized and saved
-    as Kubernetes resourece annotations. This allows the model deployer to keep
+    as Kubernetes resource annotations. This allows the model deployer to keep
     track of all externally running model servers and to re-create their
     corresponding BaseService instance representations at any given time.
     The model deployer also defines methods that implement basic life-cycle
@@ -100,11 +102,13 @@ class BaseModelDeployer(StackComponent, ABC):
     def get_model_server_info(
         service: BaseService,
     ) -> Dict[str, Optional[str]]:
-        """Give implementation specific way to extract relevant model server
-        properties for the user
+        """Give implementation specific way to extract relevant model server properties for the user.
 
         Args:
             service: Integration-specific service instance
+
+        Returns:
+            A dictionary containing the relevant model server properties.
         """
 
     @abstractmethod
@@ -119,8 +123,7 @@ class BaseModelDeployer(StackComponent, ABC):
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
     ) -> List[BaseService]:
-        """Abstract method to find one or more a model servers that match the
-        given criteria.
+        """Abstract method to find one or more a model servers that match the given criteria.
 
         Args:
             running: If true, only running services will be returned.
@@ -188,7 +191,7 @@ class BaseModelDeployer(StackComponent, ABC):
     ) -> None:
         """Abstract method to delete a model server.
 
-        This operation is irreversable. A deleted model server must no longer
+        This operation is irreversible. A deleted model server must no longer
         show up in the list of model servers returned by `find_model_server`.
 
         Args:
@@ -211,6 +214,12 @@ class BaseModelDeployer(StackComponent, ABC):
             uuid: UUID of the model server to get the logs of.
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
+
+        Returns:
+            A generator that yields the logs of the model server.
+
+        Raises:
+            RuntimeError: if the model server is not found.
         """
         services = self.find_model_server(service_uuid=uuid)
         if len(services) == 0:

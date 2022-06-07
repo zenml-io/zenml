@@ -73,11 +73,11 @@ We can now run the pipeline by simply executing the python script:
 python run.py
 ```
 
-The script will run the pipeline locally and will start a Tensorboard
+The script will run the pipeline locally and will start a TensorBoard
 server that can be accessed to visualize the information for the trained model.
 
 Re-running the example with different hyperparameter values will re-train
-the model and the Tensorboard server will be updated automatically to include
+the model and the TensorBoard server will be updated automatically to include
 the new model information, e.g.:
 
 ```shell
@@ -85,13 +85,13 @@ python run.py --lr=0.02
 python run.py --epochs=10
 ```
 
-![Tensorboard 01](assets/tensorboard-01.png)
-![Tensorboard 02](assets/tensorboard-02.png)
-![Tensorboard 03](assets/tensorboard-03.png)
+![TensorBoard 01](assets/tensorboard-01.png)
+![TensorBoard 02](assets/tensorboard-02.png)
+![TensorBoard 03](assets/tensorboard-03.png)
 
 ### 🧽 Clean up
 
-Once you're done experimenting, you can stop the Tensorboard server running
+Once you're done experimenting, you can stop the TensorBoard server running
 in the background by running the command below. However, you may want to keep
 it running if you want to continue on to the next step and run the same
 pipeline on a local Kubeflow Pipelines deployment.
@@ -151,19 +151,19 @@ files, push it to the local container registry and schedule a pipeline run in
 Kubeflow Pipelines. Once the script is finished, you should be able to see the
 pipeline run [here](http://localhost:8080/#/runs).
 
-The Tensorboard logs for the model trained in every pipeline run can be viewed
+The TensorBoard logs for the model trained in every pipeline run can be viewed
 directly in the Kubeflow Pipelines UI by clicking on the "Visualization" tab
-and then clicking on the "Open Tensorboard" button.
+and then clicking on the "Open TensorBoard" button.
 
-![Tensorboard Kubeflow Visualization](assets/tensorboard-kubeflow-vis.png)
-![Tensorboard Kubeflow UI](assets/tensorboard-kubeflow-ui.png)
+![TensorBoard Kubeflow Visualization](assets/tensorboard-kubeflow-vis.png)
+![TensorBoard Kubeflow UI](assets/tensorboard-kubeflow-ui.png)
 
-At the same time, the script will start a local Tensorboard server that can be
+At the same time, the script will start a local TensorBoard server that can be
 accessed to visualize the information for all past and future versions of the
 trained model.
 
 Re-running the example with different hyperparameter values will re-train
-the model and the Tensorboard server will be updated automatically to include
+the model and the TensorBoard server will be updated automatically to include
 the new model information, e.g.:
 
 ```shell
@@ -172,7 +172,7 @@ python run.py --epochs=10
 ```
 
 ### 🧽 Clean up
-Once you're done experimenting, you can stop the Tensorboard server running
+Once you're done experimenting, you can stop the TensorBoard server running
 in the background with the command:
 
 ```bash
@@ -183,7 +183,7 @@ You can delete the local Kubernetes cluster and all associated resources by
 calling:
 
 ```bash
-zenml stack down --yes
+zenml stack down --force
 ```
 
 ## ☁️ Run the same pipeline on Kubeflow Pipelines deployed to GCP
@@ -214,7 +214,7 @@ To run our pipeline on Kubeflow Pipelines deployed to GCP, we will create a new 
   We need to configure it with the right kubernetes context so ZenML can run pipelines in your GCP cluster. 
 
 When running the upcoming commands, make sure to replace `<PATH_TO_YOUR_CONTAINER_REGISTRY>` and 
-`<PATH_TO_YOUR_GCP_BUCKET>` with the actual URI's of your container registry and bucket. You will also need to replace
+`<PATH_TO_YOUR_GCP_BUCKET>` with the actual URIs of your container registry and bucket. You will also need to replace
 `<NAME_OF_GCP_KUBERNETES_CONTEXT>` with the kubernetes context pointing to your gcp cluster.
 
 ```bash
@@ -253,7 +253,7 @@ closer to a production pipeline!
 Once you're done experimenting, you can stop the port forwarding and delete the example files by calling:
 
 ```bash
-zenml stack down --yes
+zenml stack down --force
 rm -rf zenml_examples
 ```
 

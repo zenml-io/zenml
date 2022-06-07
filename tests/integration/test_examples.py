@@ -101,7 +101,7 @@ examples = [
         ),
     ),
     # TODO [ENG-858]: Create Integration tests for lightgbm
-    # TODO [ENG-859]: Create Integration tests for MLFlow Deployment
+    # TODO [ENG-859]: Create Integration tests for MLflow Deployment
     ExampleIntegrationTestConfiguration(
         name="mlflow_tracking",
         validation_function=mlflow_tracking_example_validation,
