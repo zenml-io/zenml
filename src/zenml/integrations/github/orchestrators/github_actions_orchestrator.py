@@ -64,6 +64,8 @@ logger = get_logger(__name__)
 
 # Git remote URL prefixes that indicate a GitHub repository.
 GITHUB_REMOTE_URL_PREFIXES = ["git@github.com", "https://github.com"]
+# Name of the GitHub Action used to login to docker
+DOCKER_LOGIN_ACTION = "docker/login-action@v1"
 
 
 class GitHubActionsOrchestrator(BaseOrchestrator):
@@ -153,16 +155,16 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                     "container registries."
                 )
 
-            # for component in stack.components.values():
-            #     if component.local_path:
-            #         return False, (
-            #             "The GitHub Actions orchestrator runs pipelines on "
-            #             "remote GitHub Actions runners, but the "
-            #             f"'{component.name}' {component.TYPE.value} of your "
-            #             "active stack is a local component. Please make sure "
-            #             "to only use remote stack components in combination "
-            #             "with the GitHub Actions orchestrator. "
-            #         )
+            for component in stack.components.values():
+                if component.local_path:
+                    return False, (
+                        "The GitHub Actions orchestrator runs pipelines on "
+                        "remote GitHub Actions runners, but the "
+                        f"'{component.name}' {component.TYPE.value} of your "
+                        "active stack is a local component. Please make sure "
+                        "to only use remote stack components in combination "
+                        "with the GitHub Actions orchestrator. "
+                    )
 
             return True, ""
 
@@ -207,7 +209,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
         return {
             "name": "Authenticate with the container registry",
-            "uses": "docker/login-action@v1",
+            "uses": DOCKER_LOGIN_ACTION,
             "with": {
                 "registry": container_registry.uri,
                 "username": username,
@@ -320,7 +322,6 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
         schedule = runtime_configuration.schedule
         if schedule:
-            valid_cron_expression_example = ""
             if not schedule.cron_expression:
                 raise ValueError(
                     "GitHub Action workflows can only be scheduled using cron "
