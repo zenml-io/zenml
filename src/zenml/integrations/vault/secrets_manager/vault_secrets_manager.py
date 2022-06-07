@@ -37,10 +37,10 @@ def sanitize_secret_name(secret_name: str) -> str:
 def prepend_secret_schema_to_secret_name(secret: BaseSecretSchema) -> str:
     """
     Prepend the secret schema name to the secret name.
-    
+
     Args:
         secret: The secret to prepend the secret schema name to.
-        
+
     Returns:
         The secret name with the secret schema name prepended.
     """
@@ -52,10 +52,10 @@ def prepend_secret_schema_to_secret_name(secret: BaseSecretSchema) -> str:
 def remove_secret_schema_name(combined_secret_name: str) -> str:
     """
     Remove the secret schema name from the secret name.
-    
+
     Args:
         combined_secret_name: The secret name to remove the secret schema name from.
-        
+
     Returns:
         The secret name with the secret schema name removed.
     """
@@ -71,10 +71,10 @@ def remove_secret_schema_name(combined_secret_name: str) -> str:
 def get_secret_schema_name(combined_secret_name: str) -> str:
     """
     Get the secret schema name from the secret name.
-    
+
     Args:
         combined_secret_name: The secret name to get the secret schema name from.
-    
+
     Returns:
         The secret schema name.
     """
@@ -123,9 +123,9 @@ class VaultSecretsManager(BaseSecretsManager):
     def _ensure_client_is_authenticated(self) -> None:
         """
         Ensure the client is authenticated.
-        
+
         Raises:
-            RuntimeError: If the client is not initialised or authenticated.
+            RuntimeError: If the client is not initialized or authenticated.
         """
 
         self._ensure_client_connected(url=self.url, token=self.token)
@@ -143,7 +143,7 @@ class VaultSecretsManager(BaseSecretsManager):
 
         Args:
             secret: The secret to register.
-        
+
         Raises:
             SecretExistsError: If the secret already exists.
         """
@@ -172,7 +172,7 @@ class VaultSecretsManager(BaseSecretsManager):
 
         Returns:
             The secret.
-        
+
         Raises:
             SecretDoesNotExistError: If the secret does not exist.
         """
@@ -199,7 +199,6 @@ class VaultSecretsManager(BaseSecretsManager):
         secret_items["name"] = sanitize_secret_name(secret_name)
         return secret_schema(**secret_items)
 
-
     def vaul_list_secrets(self) -> List[str]:
         """
         List all secrets in the secrets manager without any reformatting.
@@ -207,9 +206,9 @@ class VaultSecretsManager(BaseSecretsManager):
 
         Returns:
             A list of all secrets in the secrets manager.
-        
+
         Raises:
-            RuntimeError: If the client is not initialised or authenticated.
+            RuntimeError: If the client is not initialized or authenticated.
             InvalidPath: If the path is invalid.
         """
 
@@ -231,7 +230,6 @@ class VaultSecretsManager(BaseSecretsManager):
             set_of_secrets.add(secret_key)
         return list(set_of_secrets)
 
-
     def vault_secret_name(self, secret_name: str) -> str:
         """
         Get the secret name in the Vault secrets manager, without any reformatting.
@@ -242,7 +240,7 @@ class VaultSecretsManager(BaseSecretsManager):
 
         Returns:
             The secret name in the Vault secrets manager.
-        
+
         Raises:
             SecretDoesNotExistError: If the secret does not exist.
         """
@@ -300,13 +298,12 @@ class VaultSecretsManager(BaseSecretsManager):
         logger.debug("Updated secret: %s", f"{ZENML_PATH}/{secret.name}")
         logger.debug("Added value to secret.")
 
-
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret.
 
         Args:
             secret_name: The name of the secret to delete.
-        
+
         Raises:
             SecretDoesNotExistError: If the secret does not exist.
         """
