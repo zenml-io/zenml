@@ -30,7 +30,7 @@ RUN apt-get update && \
 
 RUN curl -sSL https://install.python-poetry.org | python
 
-# copy project requirement files here to ensure they will be cached.
+# copy project requirement files here to ensure they will be cached. If poetry.lock file is present it is also copied.
 COPY pyproject.toml poetry.loc[k] /zenml/
 
 ENV ZENML_DEBUG=true
