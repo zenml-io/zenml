@@ -185,6 +185,7 @@ MLServer
 MLflow
 MNIST
 MSI
+MYSQLSecretSchema
 MacOS
 MachineSpec
 MadeWithML
