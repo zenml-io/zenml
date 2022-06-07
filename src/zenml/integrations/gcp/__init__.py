@@ -41,9 +41,11 @@ class GcpIntegration(Integration):
     """Definition of Google Cloud Platform integration for ZenML."""
 
     NAME = GCP
-    REQUIREMENTS = ["gcsfs",
-                    "google-cloud-secret-manager",
-                    "google-cloud-aiplatform>=1.11.0"]
+    REQUIREMENTS = [
+        "gcsfs",
+        "google-cloud-secret-manager",
+        "google-cloud-aiplatform>=1.11.0",
+    ]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
@@ -52,28 +54,28 @@ class GcpIntegration(Integration):
             FlavorWrapper(
                 name=GCP_ARTIFACT_STORE_FLAVOR,
                 source="zenml.integrations.gcp.artifact_stores"
-                       ".GCPArtifactStore",
+                ".GCPArtifactStore",
                 type=StackComponentType.ARTIFACT_STORE,
                 integration=cls.NAME,
             ),
             FlavorWrapper(
                 name=GCP_SECRETS_MANAGER_FLAVOR,
                 source="zenml.integrations.gcp.secrets_manager."
-                       "GCPSecretsManager",
+                "GCPSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),
             FlavorWrapper(
                 name=GCP_VERTEX_ORCHESTRATOR_FLAVOR,
                 source="zenml.integrations.gcp.orchestrators"
-                       ".VertexOrchestrator",
+                ".VertexOrchestrator",
                 type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,
             ),
             FlavorWrapper(
                 name=GCP_VERTEX_STEP_OPERATOR_FLAVOR,
                 source="zenml.integrations.gcp.step_operators"
-                       ".VertexStepOperator",
+                ".VertexStepOperator",
                 type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
             ),

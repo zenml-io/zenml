@@ -38,7 +38,7 @@ class AzureIntegration(Integration):
         "adlfs==2021.10.0",
         "azure-keyvault-keys",
         "azure-identity",
-        "azureml-core==1.39.0.post1"
+        "azureml-core==1.39.0.post1",
     ]
 
     @classmethod
@@ -48,7 +48,7 @@ class AzureIntegration(Integration):
             FlavorWrapper(
                 name=AZURE_ARTIFACT_STORE_FLAVOR,
                 source="zenml.integrations.azure.artifact_stores"
-                       ".AzureArtifactStore",
+                ".AzureArtifactStore",
                 type=StackComponentType.ARTIFACT_STORE,
                 integration=cls.NAME,
             ),
@@ -61,10 +61,10 @@ class AzureIntegration(Integration):
             FlavorWrapper(
                 name=AZUREML_STEP_OPERATOR_FLAVOR,
                 source="zenml.integrations.azure.step_operators"
-                       ".AzureMLStepOperator",
+                ".AzureMLStepOperator",
                 type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
-            )
+            ),
         ]
 
 

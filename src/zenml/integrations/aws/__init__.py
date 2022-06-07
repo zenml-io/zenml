@@ -54,17 +54,17 @@ class AWSIntegration(Integration):
             FlavorWrapper(
                 name=AWS_CONTAINER_REGISTRY_FLAVOR,
                 source="zenml.integrations.aws.container_registries"
-                       ".AWSContainerRegistry",
+                ".AWSContainerRegistry",
                 type=StackComponentType.CONTAINER_REGISTRY,
                 integration=cls.NAME,
             ),
             FlavorWrapper(
                 name=AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR,
                 source="zenml.integrations.aws.step_operators"
-                       ".SagemakerStepOperator",
+                ".SagemakerStepOperator",
                 type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
-            )
+            ),
         ]
 
 
