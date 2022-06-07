@@ -2,6 +2,8 @@
 
 from typing import Any, Dict, List
 
+from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
+
 
 def build_base_pod_manifest(
     run_name: str, pipeline_name: str, image_name: str
@@ -37,6 +39,12 @@ def build_base_pod_manifest(
                     "image": image_name,
                     "command": None,  # to be set in update_pod_manifest
                     "args": None,  # to be set in update_pod_manifest
+                    "env": [
+                        {
+                            "name": ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
+                            "value": "False",
+                        }
+                    ],
                 }
             ],
         },
