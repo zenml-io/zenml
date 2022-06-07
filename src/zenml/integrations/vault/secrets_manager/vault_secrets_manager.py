@@ -35,12 +35,14 @@ def sanitize_secret_name(secret_name: str) -> str:
 
 
 def prepend_secret_schema_to_secret_name(secret: BaseSecretSchema) -> str:
-    """This function adds the secret group name to the keys of each
-    secret key-value pair to allow using the same key across multiple
-    secrets.
-
+    """
+    Prepend the secret schema name to the secret name.
+    
     Args:
-        secret: The ZenML Secret schema
+        secret: The secret to prepend the secret schema name to.
+        
+    Returns:
+        The secret name with the secret schema name prepended.
     """
     secret_name = sanitize_secret_name(secret.name)
     secret_schema_name = secret.TYPE
@@ -48,7 +50,15 @@ def prepend_secret_schema_to_secret_name(secret: BaseSecretSchema) -> str:
 
 
 def remove_secret_schema_name(combined_secret_name: str) -> str:
-    """ """
+    """
+    Remove the secret schema name from the secret name.
+    
+    Args:
+        combined_secret_name: The secret name to remove the secret schema name from.
+        
+    Returns:
+        The secret name with the secret schema name removed.
+    """
     if "-" in combined_secret_name:
         return combined_secret_name.split("-")[1]
     else:
@@ -59,7 +69,15 @@ def remove_secret_schema_name(combined_secret_name: str) -> str:
 
 
 def get_secret_schema_name(combined_secret_name: str) -> str:
-    """ """
+    """
+    Get the secret schema name from the secret name.
+    
+    Args:
+        combined_secret_name: The secret name to get the secret schema name from.
+    
+    Returns:
+        The secret schema name.
+    """
     if "-" in combined_secret_name:
         return combined_secret_name.split("-")[0]
     else:
@@ -70,12 +88,15 @@ def get_secret_schema_name(combined_secret_name: str) -> str:
 
 
 class VaultSecretsManager(BaseSecretsManager):
-    """Class to interact with the GCP secrets manager.
+    """Class to interact with the Vault secrets manager - Key/value Engine.
 
     Attributes:
-        project_id:  This is necessary to access the correct GCP project.
-                     The project_id of your GCP project space that contains
-                     the Secret Manager.
+        url: The url of the Vault server.
+        token: The token to use to authenticate with Vault.
+        cert: The path to the certificate to use to authenticate with Vault.
+        verify: Whether to verify the certificate or not.
+        mount_point: The mount point of the secrets manager.
+        namespace: The namespace of the secrets manager.
     """
 
     # Class configuration
@@ -100,12 +121,17 @@ class VaultSecretsManager(BaseSecretsManager):
             )
 
     def _ensure_client_is_authenticated(self) -> None:
-        """Ensure the client is authenticated."""
+        """
+        Ensure the client is authenticated.
+        
+        Raises:
+            RuntimeError: If the client is not initialised or authenticated.
+        """
 
         self._ensure_client_connected(url=self.url, token=self.token)
 
         if not self.CLIENT:
-            raise RuntimeError("Vault client is not authenticated.")
+            raise RuntimeError("Vault client is not initialized.")
         else:
             if not self.CLIENT.is_authenticated():
                 raise RuntimeError("Vault client is not authenticated.")
@@ -117,6 +143,9 @@ class VaultSecretsManager(BaseSecretsManager):
 
         Args:
             secret: The secret to register.
+        
+        Raises:
+            SecretExistsError: If the secret already exists.
         """
         self._ensure_client_is_authenticated()
 
@@ -140,6 +169,12 @@ class VaultSecretsManager(BaseSecretsManager):
 
         Args:
             secret_name: The name of the secret to get.
+
+        Returns:
+            The secret.
+        
+        Raises:
+            SecretDoesNotExistError: If the secret does not exist.
         """
 
         try:
@@ -164,8 +199,19 @@ class VaultSecretsManager(BaseSecretsManager):
         secret_items["name"] = sanitize_secret_name(secret_name)
         return secret_schema(**secret_items)
 
+
     def vaul_list_secrets(self) -> List[str]:
-        """Get all secret keys."""
+        """
+        List all secrets in the secrets manager without any reformatting.
+        All secrets names stored in Vault in the format: <secret_schema>-<secret_name>
+
+        Returns:
+            A list of all secrets in the secrets manager.
+        
+        Raises:
+            RuntimeError: If the client is not initialised or authenticated.
+            InvalidPath: If the path is invalid.
+        """
 
         self._ensure_client_is_authenticated()
 
@@ -185,8 +231,21 @@ class VaultSecretsManager(BaseSecretsManager):
             set_of_secrets.add(secret_key)
         return list(set_of_secrets)
 
+
     def vault_secret_name(self, secret_name: str) -> str:
-        """Get Vault the name of the secret."""
+        """
+        Get the secret name in the Vault secrets manager, without any reformatting.
+        The secret name should be in the format `<secret_schema_name>-<secret_name>`.
+
+        Args:
+            secret_name: The name of the secret to get.
+
+        Returns:
+            The secret name in the Vault secrets manager.
+        
+        Raises:
+            SecretDoesNotExistError: If the secret does not exist.
+        """
 
         self._ensure_client_is_authenticated()
 
@@ -202,7 +261,12 @@ class VaultSecretsManager(BaseSecretsManager):
         )
 
     def get_all_secret_keys(self) -> List[str]:
-        """Get all secret keys."""
+        """
+        Get all secret keys in the secrets manager.
+
+        Returns:
+            A list of all secret keys in the secrets manager.
+        """
 
         return [
             remove_secret_schema_name(secret_key)
@@ -214,6 +278,9 @@ class VaultSecretsManager(BaseSecretsManager):
 
         Args:
             secret: The secret to update.
+
+        Raises:
+            SecretDoesNotExistError: If the secret does not exist.
         """
 
         self._ensure_client_is_authenticated()
@@ -233,11 +300,15 @@ class VaultSecretsManager(BaseSecretsManager):
         logger.debug("Updated secret: %s", f"{ZENML_PATH}/{secret.name}")
         logger.debug("Added value to secret.")
 
+
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret.
 
         Args:
             secret_name: The name of the secret to delete.
+        
+        Raises:
+            SecretDoesNotExistError: If the secret does not exist.
         """
 
         self._ensure_client_is_authenticated()
