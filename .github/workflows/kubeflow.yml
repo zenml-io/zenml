@@ -56,14 +56,14 @@ jobs:
         # lockfile that was generated in the previous step
         run: docker build -t test-base-image:latest -f docker/base-test.Dockerfile .
 
-      - name: Setup tmate session
-        if: ${{ github.event.inputs.tags }}
-        uses: mxschmitt/action-tmate@v3
-
       - name: Install Prerequisites
         run: |
           source $VENV
           zenml integration install mlflow s3 kubeflow sklearn xgboost -f
+
+      - name: Setup tmate session
+        # if: ${{ github.event.inputs.tags }}
+        uses: mxschmitt/action-tmate@v3
 
       - name: Run tests
         run: |
