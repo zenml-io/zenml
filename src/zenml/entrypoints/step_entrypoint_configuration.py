@@ -14,7 +14,6 @@
 """Abstract base class for entrypoint configurations that run a single step."""
 
 import argparse
-import base64
 import importlib
 import json
 import logging
@@ -35,7 +34,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps import utils as step_utils
-from zenml.utils import source_utils
+from zenml.utils import source_utils, string_utils
 
 DEFAULT_SINGLE_STEP_CONTAINER_ENTRYPOINT_COMMAND = [
     "python",
@@ -49,20 +48,6 @@ MAIN_MODULE_SOURCE_OPTION = "main_module_source"
 STEP_SOURCE_OPTION = "step_source"
 INPUT_ARTIFACT_SOURCES_OPTION = "input_artifact_sources"
 MATERIALIZER_SOURCES_OPTION = "materializer_sources"
-
-
-def _b64_encode(input_: str) -> str:
-    """Returns a base 64 encoded string of the input string."""
-    json_bytes = input_.encode()
-    encoded_bytes = base64.b64encode(json_bytes)
-    return encoded_bytes.decode()
-
-
-def _b64_decode(input_: str) -> str:
-    """Returns a decoded string of the base 64 encoded input string."""
-    encoded_bytes = input_.encode()
-    decoded_bytes = base64.b64decode(encoded_bytes)
-    return decoded_bytes.decode()
 
 
 class StepEntrypointConfiguration(ABC):
@@ -401,11 +386,11 @@ class StepEntrypointConfiguration(ABC):
             # Base64 encode the json strings to make sure there are no issues
             # when passing these arguments
             f"--{PIPELINE_JSON_OPTION}",
-            _b64_encode(json_format.MessageToJson(pb2_pipeline)),
+            string_utils.b64_encode(json_format.MessageToJson(pb2_pipeline)),
             f"--{INPUT_ARTIFACT_SOURCES_OPTION}",
-            _b64_encode(json.dumps(input_artifact_sources)),
+            string_utils.b64_encode(json.dumps(input_artifact_sources)),
             f"--{MATERIALIZER_SOURCES_OPTION}",
-            _b64_encode(json.dumps(materializer_sources)),
+            string_utils.b64_encode(json.dumps(materializer_sources)),
         ]
 
         custom_arguments = cls.get_custom_entrypoint_arguments(
@@ -546,7 +531,7 @@ class StepEntrypointConfiguration(ABC):
         # the step. See `get_entrypoint_options()` for an in-depth explanation
         # of all these arguments.
         pb2_pipeline = Pb2Pipeline()
-        pb2_pipeline_json = _b64_decode(
+        pb2_pipeline_json = string_utils.b64_decode(
             self.entrypoint_args[PIPELINE_JSON_OPTION]
         )
         json_format.Parse(pb2_pipeline_json, pb2_pipeline)
@@ -554,10 +539,14 @@ class StepEntrypointConfiguration(ABC):
         main_module_source = self.entrypoint_args[MAIN_MODULE_SOURCE_OPTION]
         step_source = self.entrypoint_args[STEP_SOURCE_OPTION]
         input_artifact_sources = json.loads(
-            _b64_decode(self.entrypoint_args[INPUT_ARTIFACT_SOURCES_OPTION])
+            string_utils.b64_decode(
+                self.entrypoint_args[INPUT_ARTIFACT_SOURCES_OPTION]
+            )
         )
         materializer_sources = json.loads(
-            _b64_decode(self.entrypoint_args[MATERIALIZER_SOURCES_OPTION])
+            string_utils.b64_decode(
+                self.entrypoint_args[MATERIALIZER_SOURCES_OPTION]
+            )
         )
 
         # Get some common values that will be used throughout the remainder of

@@ -320,13 +320,15 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
         schedule = runtime_configuration.schedule
         if schedule:
+            valid_cron_expression_example = ""
             if not schedule.cron_expression:
                 raise ValueError(
                     "GitHub Action workflows can only be scheduled using cron "
                     "expressions and not using a periodic schedule. If you "
                     "want to schedule pipelines using this GitHub Action "
                     "orchestrator, please include a cron expression in your "
-                    "schedule object."
+                    "schedule object. For more information on GitHub workflow "
+                    "schedules check out https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule."
                 )
 
             # GitHub workflows requires a schedule interval of at least 5
@@ -337,7 +339,10 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 raise ValueError(
                     "GitHub workflows requires a schedule interval of at "
                     "least 5 minutes which is incompatible with your cron "
-                    "expression '{schedule.cron_expression}'."
+                    "expression '{schedule.cron_expression}'. An example of a "
+                    "valid cron expression would be '15 * * * *' to run every "
+                    "15 minutes. For more information on GitHub workflow "
+                    "schedules check out https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule."
                 )
 
             logger.warning(

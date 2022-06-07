@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import base64
 
 
 def get_human_readable_time(seconds: float) -> str:
@@ -42,3 +43,17 @@ def get_human_readable_filesize(bytes_: int) -> str:
         size /= 1024.0
 
     return f"{size:.2f} {unit}"
+
+
+def b64_encode(input_: str) -> str:
+    """Returns a base 64 encoded string of the input string."""
+    input_bytes = input_.encode()
+    encoded_bytes = base64.b64encode(input_bytes)
+    return encoded_bytes.decode()
+
+
+def b64_decode(input_: str) -> str:
+    """Returns a decoded string of the base 64 encoded input string."""
+    encoded_bytes = input_.encode()
+    decoded_bytes = base64.b64decode(encoded_bytes)
+    return decoded_bytes.decode()

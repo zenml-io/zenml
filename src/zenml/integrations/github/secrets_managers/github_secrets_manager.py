@@ -18,15 +18,12 @@ from typing import ClassVar, List, Optional
 import requests
 from requests.auth import HTTPBasicAuth
 
-from zenml.entrypoints.step_entrypoint_configuration import (
-    _b64_decode,
-    _b64_encode,
-)
 from zenml.integrations.github import GITHUB_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+from zenml.utils import string_utils
 
 logger = get_logger(__name__)
 
@@ -101,12 +98,13 @@ class GitHubSecretsManager(BaseSecretsManager):
             raise KeyError(
                 f"Unable to find secret '{secret_name}'. Please check the "
                 "GitHub UI to see if a **Repository** secret called "
-                f"'{GITHUB_SECRET_PREFIX}{secret_name}' exists. (The "
-                f"'{GITHUB_SECRET_PREFIX}' to differentiate them from other "
-                "GitHub secrets)"
+                f"'{GITHUB_SECRET_PREFIX}{secret_name}' exists. (ZenML "
+                "uses the "
+                f"'{GITHUB_SECRET_PREFIX}' to differentiate ZenML "
+                "secrets from other GitHub secrets)"
             )
 
-        json_string = _b64_decode(value)
+        json_string = string_utils.b64_decode(value)
         secret_dict = json.loads(json_string)
 
         schema_class = SecretSchemaClassRegistry.get_class(
@@ -149,7 +147,7 @@ class GitHubSecretsManager(BaseSecretsManager):
 
         secret_dict = {"secret_schema": secret.TYPE, "values": secret.content}
         json_string = json.dumps(secret_dict)
-        secret_value = _b64_encode(json_string)
+        secret_value = string_utils.b64_encode(json_string)
 
         public_key_response = requests.get(
             f"{self.secrets_api_url}/public-key",
