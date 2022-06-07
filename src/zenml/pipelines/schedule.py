@@ -28,7 +28,7 @@ class Schedule(BaseModel):
 
     Attributes:
         cron_expression: Cron expression for the pipeline schedule. If a value
-            for this is set it takes precendence over the start time + interval.
+            for this is set it takes precedence over the start time + interval.
         start_time: datetime object to indicate when to start the schedule.
         end_time: datetime object to indicate when to end the schedule.
         interval_second: datetime timedelta indicating the seconds between two
@@ -52,7 +52,7 @@ class Schedule(BaseModel):
     def _ensure_cron_or_periodic_schedule_configured(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Ensures that the cron expression or start time + inverval are set."""
+        """Ensures that the cron expression or start time + interval are set."""
 
         cron_expression = values.get("cron_expression")
         periodic_schedule = values.get("start_time") and values.get(

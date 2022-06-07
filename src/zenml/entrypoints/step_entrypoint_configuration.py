@@ -398,8 +398,8 @@ class StepEntrypointConfiguration(ABC):
             main_module_source,
             f"--{STEP_SOURCE_OPTION}",
             step_source,
-            # Base64 encode the jsons to make sure there are no issues when
-            # passing these arguments
+            # Base64 encode the json strings to make sure there are no issues
+            # when passing these arguments
             f"--{PIPELINE_JSON_OPTION}",
             _b64_encode(json_format.MessageToJson(pb2_pipeline)),
             f"--{INPUT_ARTIFACT_SOURCES_OPTION}",

@@ -429,7 +429,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         logger.info("Wrote GitHub workflow file to %s", workflow_path)
 
         if self.push:
-            # Add, commit and push the pipeline worflow yaml
+            # Add, commit and push the pipeline workflow yaml
             self.git_repo.index.add(workflow_path)
             self.git_repo.index.commit(
                 "[ZenML GitHub Actions Orchestrator] Add github workflow for "
