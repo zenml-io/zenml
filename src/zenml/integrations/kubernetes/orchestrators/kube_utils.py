@@ -23,9 +23,12 @@ import re
 import time
 from typing import Callable, Dict, List, Optional
 
-from absl import logging
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
+
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class PodPhase(enum.Enum):
@@ -244,41 +247,71 @@ def wait_pod(
     condition_description: str,
     timeout_sec: int = 0,
     exponential_backoff: bool = False,
+    stream_logs: bool = False,
 ) -> k8s_client.V1Pod:
     """Wait for a Pod to meet an exit condition.
+
     Args:
-      core_api: Client of Core V1 API of Kubernetes API.
-      pod_name: The name of the Pod.
-      namespace: The namespace of the Pod.
-      exit_condition_lambda: A lambda which will be called intervally to wait for
-        a Pod to exit. The function returns True to exit.
-      condition_description: The description of the exit condition which will be
-        set in the error message if the wait times out.
-      timeout_sec: Timeout in seconds to wait for pod to reach exit condition, or
-        0 to wait for an unlimited duration. Defaults to unlimited.
-      exponential_backoff: Whether to use exponential back off for polling.
-        Defaults to False.
-    Returns:
-      The Pod object which meets the exit condition.
+        core_api (k8s_client.CoreV1Api): Client of Core V1 API of Kubernetes API.
+        pod_name (str): The name of the Pod.
+        namespace (str): The namespace of the Pod.
+        exit_condition_lambda (Callable[[k8s_client.V1Pod], bool]): A lambda
+            which will be called intervally to wait for a Pod to exit. The
+            function returns True to exit.
+        condition_description (str): The description of the exit condition
+            which will be set in the error message if the wait times out.
+        timeout_sec (int): _description_. Timeout in seconds to wait
+            for pod to reach exit condition, or 0 to wait for an unlimited
+            duration. Defaults to unlimited.
+        exponential_backoff (bool): _description_. Whether to use
+            exponential back off for polling. Defaults to False.
+        stream_logs (bool): Whether to stream the pod logs to
+            `zenml.logger.info()`. Defaults to False.
+
     Raises:
-      RuntimeError: when the function times out.
+        RuntimeError: when the function times out.
+
+    Returns:
+        k8s_client.V1Pod: The Pod object which meets the exit condition.
     """
     start_time = datetime.datetime.utcnow()
+
     # Link to exponential back-off algorithm used here:
     # https://cloud.google.com/storage/docs/exponential-backoff
     backoff_interval = 1
     maximum_backoff = 32
+
+    logged_lines = 0
+
     while True:
         resp = get_pod(core_api, pod_name, namespace)
-        logging.info(resp.status.phase)  # type: ignore
+
+        # Stream logs to `zenml.logger.info()`.
+        # TODO: can we do this without parsing all logs every time?
+        if stream_logs and pod_is_not_pending(resp):
+            response = core_api.read_namespaced_pod_log(
+                name=pod_name,
+                namespace=namespace,
+            )
+            logs = response.splitlines()
+            if len(logs) > logged_lines:
+                for line in logs[logged_lines:]:
+                    logger.info(line)
+                logged_lines = len(logs)
+
+        # Check if pod finished.
         if exit_condition_lambda(resp):
             return resp
+
+        # Check if wait timed out.
         elapse_time = datetime.datetime.utcnow() - start_time
         if elapse_time.seconds >= timeout_sec and timeout_sec != 0:
             raise RuntimeError(
                 'Pod "%s:%s" does not reach "%s" within %s seconds.'
                 % (namespace, pod_name, condition_description, timeout_sec)
             )
+
+        # Wait (using exponential backoff).
         time.sleep(backoff_interval)
         if exponential_backoff and backoff_interval < maximum_backoff:
             backoff_interval *= 2

@@ -423,14 +423,15 @@ class KubernetesOrchestrator(BaseOrchestrator):
             namespace=self.kubernetes_namespace,
             body=pod_manifest,
         )
-        logger.info("Kubernetes orchestrator pod started.")
+        logger.info("Waiting for Kubernetes orchestrator pod...")
 
-        # Wait for the orchestrator pod to finish.
+        # Wait for the orchestrator pod to finish and stream logs.
         kube_utils.wait_pod(
             core_api,
             pod_name,
             namespace=self.kubernetes_namespace,
             exit_condition_lambda=kube_utils.pod_is_done,
             condition_description="done state",
+            stream_logs=True,
         )
         logger.info("Pipeline run finished.")

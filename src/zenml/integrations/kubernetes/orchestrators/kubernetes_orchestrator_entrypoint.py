@@ -16,9 +16,8 @@
 
 import argparse
 import json
-import logging
-import sys
 import threading
+import time
 from collections import defaultdict
 from typing import Any, Dict, List
 
@@ -27,6 +26,9 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_base_pod_manifest,
     update_pod_manifest,
 )
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,9 +49,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     """Entrypoint of the k8s master/orchestrator pod."""
     # Log to the container's stdout so it can be streamed by the client.
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    logging.getLogger().setLevel(logging.INFO)
-    logging.info("Starting orchestration...")
+    logger.info("Kubernetes orchestrator pod started.")
 
     # Parse / extract args.
     args = parse_args()
@@ -160,22 +160,22 @@ def main() -> None:
         )
 
         # Create and run pod.
-        logging.info(f"Running step {step_name}...")
         core_api.create_namespaced_pod(
             namespace=args.kubernetes_namespace,
             body=pod_manifest,
         )
 
         # Wait for pod to finish.
-        logging.info(f"Waiting for step {step_name}...")
+        logger.info(f"Waiting for pod of step `{step_name}` to start...")
         kube_utils.wait_pod(
             core_api,
             pod_name,
             namespace=args.kubernetes_namespace,
             exit_condition_lambda=kube_utils.pod_is_done,
             condition_description="done state",
+            stream_logs=True,
         )
-        logging.info(f"Step {step_name} finished.")
+        logger.info(f"Pod of step `{step_name}` completed.")
 
         # Remove current step from all dependencies and start next steps.
         for successor_step_name in step_successors[step_name]:
@@ -204,17 +204,18 @@ def main() -> None:
 
     # Wait till all steps have run
     while len(thread_dict) > 0:
-        logging.debug(f"Waiting for threads: {thread_dict}")
-
-    logging.info("Orchestration complete.")
+        logger.debug(f"Waiting for threads: {thread_dict}")
+        time.sleep(1)
 
     # Make sure all steps were run, otherwise print a warning.
     for step_name in sorted_steps:
         if not _can_run(step_name):
-            logging.warning(
-                f"Step {step_name} was never run, because it still had the "
-                f"following dependencies: {deps}"
+            logger.warning(
+                f"Step `{step_name}` was never run, because it still had the "
+                f"following dependencies: `{deps}`."
             )
+
+    logger.info("Orchestration pod completed.")
 
 
 if __name__ == "__main__":
