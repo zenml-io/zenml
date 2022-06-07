@@ -84,6 +84,7 @@ modules, such as the `AirflowOrchestrator` in the `airflow` integration and the
 | [LocalOrchestrator](https://apidocs.zenml.io/latest/api_docs/orchestrators/#zenml.orchestrators.local.local_orchestrator.LocalOrchestrator)                         | local     | `built-in`  |
 | [AirflowOrchestrator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator)     | airflow   | airflow     |
 | [KubeflowOrchestrator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator) | kubeflow  | kubeflow    |
+| [KubernetesOrchestrator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator.KubernetesOrchestrator) | kubernetes  | kubernetes    |
 
 If you would like to see the available flavors for artifact stores, you can
 use the command:
