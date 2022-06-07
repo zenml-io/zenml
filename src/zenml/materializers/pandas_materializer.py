@@ -37,7 +37,7 @@ class PandasMaterializer(BaseMaterializer):
     )
 
     def handle_input(self, data_type: Type[Any]) -> Union[pd.DataFrame, pd.Series]:
-        """Reads pd.DataFrame from a parquet file."""
+        """Reads pd.DataFrame or pd.Series from a parquet file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
@@ -60,10 +60,10 @@ class PandasMaterializer(BaseMaterializer):
         return df
 
     def handle_return(self, df: Union[pd.DataFrame, pd.Series]) -> None:
-        """Writes a pandas dataframe to the specified filename.
+        """Writes a pandas dataframe or series to the specified filename.
 
         Args:
-            df: The pandas dataframe to write.
+            df: The pandas dataframe or series to write.
         """
         super().handle_return(df)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
