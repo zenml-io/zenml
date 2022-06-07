@@ -24,14 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install K3D and kubectl
-        run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-          source $VENV
-          zenml integration install kubeflow -y
-
       - name: Install Linux System Dependencies
         if: runner.os=='Linux'
         run: sudo apt install graphviz
@@ -42,13 +34,21 @@ jobs:
           role-to-assume: arn:aws:iam::907999144431:role/github_actions_sandbox_role
           aws-region: us-east-1
 
-      - name: Perform docker login and get Kubecontext
-        run: bash scripts/setup_kubeflow_aws_connection.sh
-
       - name: Setup environment with Poetry
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+
+      - name: Install K3D and kubectl
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+          source $VENV
+          zenml integration install kubeflow -y
+
+      - name: Perform docker login and get Kubecontext
+        run: bash scripts/setup_kubeflow_aws_connection.sh
 
       - name: Build docker image
         # this step can be much faster if we use an image that copies the
