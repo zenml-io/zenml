@@ -1,146 +1,187 @@
 # :dango: Pipeline Orchestration on Kubernetes
 
-This example will demonstrate how to orchestrate pipelines using the ZenML Kubernetes-native orchestrator. We will build a simple pipeline consisting of four steps and orchestrate it in an Amazon EKS Kubernetes cluster.
+This example will demonstrate how to orchestrate pipelines using the ZenML
+Kubernetes-native orchestrator.
+We will build a simple pipeline consisting of four steps and orchestrate it in
+a Kubernetes cluster running in the cloud.
 
 ## :heavy_check_mark: Requirements
 
-In order to follow this tutorial you need to first spin up an Amazon EKS cluster, an ECR container registry, as well as a S3 bucket 
-for artifact storage. 
+In this example, we will use an AWS cloud stack, consisting of an EKS cluster,
+an ECR container registry, and a S3 bucket for artifact storage.
 
-Furthermore, you need to have kubectl and Docker installed locally.
+If you want to follow this example line by line, you need to spin up each of
+the corresponding AWS services first.
+Alternatively, you can can also use any other cloud provider and adjust all
+`zenml ... register` commands below accordingly.
 
-### Setup and Register Kubernetes Orchestrator on EKS
-After spinning up your EKS cluster, run the following command to grant access to your local kubectl.
+Regardless of your cloud provider choice, you will also need to have kubectl
+and Docker installed locally.
+
+### Setup and Register Kubernetes Orchestrator
+After spinning up your Kubernetes cluster in the cloud, you will first need
+to connect it to your local kubectl as a new kubernetes context.
+
+How to do this depends on your cloud provider. For AWS EKS, you can do the
+following:
 
 ```bash
-AWS_REGION = "eu-central-1"
-AWS_EKS_CLUSTER = "native-kubernetes-orchestrator"
-KUBE_CONTEXT = "zenml-kubernetes" 
-aws eks --region {AWS_REGION} update-kubeconfig --name {AWS_EKS_CLUSTER} --alias {KUBE_CONTEXT}
+aws eks --region <AWS_REGION> update-kubeconfig
+    --name <AWS_EKS_CLUSTER>
+    --alias <KUBE_CONTEXT>
 ```
 
-Next, run the following command to register your Kubernetes orchestrator:
+**Note:** It does not matter what you use as KUBE_CONTEXT here, as long as it
+is a unique name.
+
+Next, register your Kubernetes orchestrator with the respective kubernetes 
+context:
 
 ```bash
-zenml orchestrator register k8s_orchestrator 
-    --flavor=kubernetes 
-    --kubernetes_context={KUBE_CONTEXT} 
+zenml orchestrator register k8s_orchestrator
+    --flavor=kubernetes
+    --kubernetes_context=<KUBE_CONTEXT>
     --synchronous=True
 ```
 
 ### Setup and Register Metadata Store
 
-
-For metadata storage, we will use a MySQL database that we deploy within the EKS cluster. Run the following command to spin up the MySQL pod in your EKS cluster:
+For metadata storage, we will use a MySQL database that we deploy within the
+Kubernetes cluster. 
+Run the following command to spin up the MySQL pod in your Kubernetes cluster:
 
 ```bash
 kubectl apply -k src/zenml/integrations/kubernetes/orchestrators/yaml
 ```
 
 Now we can register the database as a metadata store as follows:
+
 ```bash
 zenml metadata-store register kubernetes_store 
     --flavor=mysql
-    --host=mysql 
-    --port=3306 
-    --database=mysql 
-    --username=root 
+    --host=mysql
+    --port=3306
+    --database=mysql
+    --username=root
     --password=''
 ```
 
-### Register ECR Container Registry
-Next, you need to login to your ECR via Docker so you can push images to your container registry:
+### Register Container Registry
+Next, we need to register a container registry where the Docker images for all
+Kubernetes pods will be stored.
+
+To do so, we first need to authorize our local Docker to access the registry.
+This is again specific to your cloud provider. 
+For Amazon ECR, you could do the following:
 
 ```bash
-AWS_REGION = "us-east-1"
-ECR_REGISTRY_NAME = "715803424590.dkr.ecr.us-east-1.amazonaws.com"
-aws ecr get-login-password --region {AWS_REGION} | docker login --username AWS --password-stdin {ECR_REGISTRY_NAME}
+aws ecr get-login-password --region <AWS_REGION> | docker login 
+    --username AWS 
+    --password-stdin 
+    <ECR_REGISTRY_NAME>
 ```
 
-Now you can register your ECR in ZenML like this:
+Now we can register the container registry like this:
+
 ```bash
 zenml container-registry register ecr_registry 
     --flavor=default 
-    --uri={ECR_REGISTRY_NAME}
+    --uri=<ECR_REGISTRY_NAME>
 ```
 
 ### Setup Artifact Store
-Lastly, we also need to register our S3 bucket as artifact store:
+Lastly, we also need to register a remote artifact store (e.g. Amazon S3):
 
 ```bash
-S3_BUCKET_NAME = "s3://zenbytes-bucket"
 zenml artifact-store register s3_store 
     --flavor=s3 
-    --path={S3_BUCKET_NAME}
+    --path=<REMOTE_ARTIFACT_STORE_PATH>
 ```
 
 ### Register Stack
 
 Finally, let us bring everything together and register our stack:
+
 ```bash
-zenml stack register aws_kubernetes_stack 
+zenml stack register kubernetes_stack 
     -m kubernetes_store 
     -a s3_store 
     -o k8s_orchestrator 
     -c ecr_registry
+zenml stack set kubernetes_stack
 ```
 
 ## :computer: Run Pipeline Locally
-Now that our stack is set up, all of our ML code will automatically be executed on the EKS cluster. Let's run the example pipeline:
+Now that our stack is set up, all of our ML code will automatically be executed
+on the Kubernetes cluster in the cloud. Let's run the example pipeline:
 
 ```bash
 python run.py
 ```
 
-You should now see the following output (which are the logs of the kubernetes orchestrator pod):
+If all went well, you should now see the logs of all k8s pods in your terminal,
+similar to what is shown below.
+
+For the output below, note that the `skew_comparison` and `svc_trainer` steps
+are run in parallel, so the order of messages might differ when you run it
+yourself.
 
 ```
-INFO:root:Starting orchestration...
-INFO:root:Running step importer...
-INFO:root:Waiting for step importer...
-INFO:root:Step importer finished.
-INFO:root:Running step skew_comparison...
-INFO:root:Running step svc_trainer...
-INFO:root:Waiting for step skew_comparison...
-INFO:root:Waiting for step svc_trainer...
-INFO:root:Step svc_trainer finished.
-INFO:root:Running step evaluator...
-INFO:root:Waiting for step evaluator...
-INFO:root:Step skew_comparison finished.
-INFO:root:Step evaluator finished.
-INFO:root:Orchestration complete.
+Using stack default to run pipeline parallelizable_pipeline...
+Waiting for Kubernetes orchestrator pod...
+Kubernetes orchestrator pod started.
+Waiting for pod of step importer to start...
+Step importer has started.
+Step importer has finished in 8.501s.
+Pod of step importer completed.
+Waiting for pod of step svc_trainer to start...
+Waiting for pod of step skew_comparison to start...
+Step skew_comparison has started.
+Step svc_trainer has started.
+Step svc_trainer has finished in 5.178s.
+Pod of step svc_trainer completed.
+Step skew_comparison has finished in 7.154s.
+Waiting for pod of step evaluator to start...
+Pod of step skew_comparison completed.
+Step evaluator has started.
+Test accuracy: 0.9688542825361512
+Step evaluator has finished in 6.219s.
+Pod of step evaluator completed.
+Orchestration pod completed.
+Pipeline run finished.
+Pipeline run parallelizable_pipeline-07_Jun_22-14_26_14_450641 has finished in 1m57s.
 ```
 
-Note that the `skew_comparison` and `svc_trainer` steps were run in parallel, as they both only depend on the `importer` step.
+### Interacting with pods via kubectl
 
-### Check Result
+For debugging, it can sometimes be handy to interact with the k8s pods directly
+via kubectl. To make this easier, we have added the following labels to all
+pods:
+- `run`: the name of the ZenML run.
+- `pipeline`: the name of the ZenML pipeline associated with this run.
 
-After orchestration is complete, run the following command to list all Kubernetes pods that were created to run this example:
+E.g., you can use these labels to get a list of all pods related to the 
+pipeline used in this example by running the following:
 
 ```
 kubectl get pods -l pipeline=parallelizable_pipeline
 ```
 
-You should see that all your steps have status `Completed`. If not, wait for the remaining jobs to finish. Once every step is completed, find the pod corresponding to the `evaluator` step and print it's logs:
-
-```bash
-kubectl get pods -l step=evaluator
-EVALUATOR_POD = ...
-kubectl logs {EVALUATOR_POD}
-```
-
-If everything went well, you should be able to see the test accuracy printed in the logs.
-
 ## :sponge: Clean Up
 
-Run the following commands to delete all pods and other Kubernetes units we created during this example:
+You can run the following commands to delete all pods and other Kubernetes
+units we created during this example.
 
 ### Delete Run Pods
 ```bash
-kubectl delete -k src/zenml/integrations/kubernetes/orchestrators/yaml
+kubectl delete pod -l pipeline=parallelizable_pipeline
 ```
 
 ### Delete MySQL Metadata Store
+
+**WARNING**: This will permanently delete your metadata store, so all metadata
+will be lost. Never do this for production settings!
+
 ```bash
-kubectl delete pod -l pipeline=parallelizable_pipeline
+kubectl delete -k src/zenml/integrations/kubernetes/orchestrators/yaml
 ```
