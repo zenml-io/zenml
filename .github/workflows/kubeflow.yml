@@ -24,28 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
-      # as the TF images are too large for the GH action runner disk
-      - name: Free disk space
-        run: |
-          echo "Available storage:"
-          df -h
-          echo
-          echo -n "  Removing: .NET (frees ~22GB)"
-          sudo rm -rf /usr/share/dotnet
-          echo "... done"
-          echo -n "  Removing: Android"
-          sudo rm -rf /usr/local/lib/android
-          echo "... done"
-          echo
-          echo "Available storage:"
-          df -h
-
-      - name: Setup environment with Poetry
-        uses: ./.github/actions/setup_environment
-        with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-
       - name: Install K3D and kubectl
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
@@ -66,6 +44,11 @@ jobs:
 
       - name: Perform docker login and get Kubecontext
         run: bash scripts/setup_kubeflow_aws_connection.sh
+
+      - name: Setup environment with Poetry
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
 
       - name: Build docker image
         # this step can be much faster if we use an image that copies the
