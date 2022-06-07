@@ -18,7 +18,7 @@ from within you ZenML Pipeline runs.
 from typing import List
 
 from zenml.enums import StackComponentType
-from zenml.integrations.constants import VAULT_SECRETS_MANAGER
+from zenml.integrations.constants import VAULT
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
@@ -29,7 +29,7 @@ class VaultSecretManagerIntegration(Integration):
     """Definition of the Secrets Manager for the HashiCorp Vault
     integration with ZenML."""
 
-    NAME = VAULT_SECRETS_MANAGER
+    NAME = VAULT
     REQUIREMENTS = ["hvac>=0.11.2"]
 
     @classmethod
