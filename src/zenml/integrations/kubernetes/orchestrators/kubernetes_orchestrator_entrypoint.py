@@ -172,7 +172,6 @@ def main() -> None:
             pod_name,
             namespace=args.kubernetes_namespace,
             exit_condition_lambda=kube_utils.pod_is_done,
-            condition_description="done state",
             stream_logs=True,
         )
         logger.info(f"Pod of step `{step_name}` completed.")

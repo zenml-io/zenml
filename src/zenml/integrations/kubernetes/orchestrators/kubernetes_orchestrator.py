@@ -431,7 +431,6 @@ class KubernetesOrchestrator(BaseOrchestrator):
             pod_name,
             namespace=self.kubernetes_namespace,
             exit_condition_lambda=kube_utils.pod_is_done,
-            condition_description="done state",
             stream_logs=True,
         )
         logger.info("Pipeline run finished.")

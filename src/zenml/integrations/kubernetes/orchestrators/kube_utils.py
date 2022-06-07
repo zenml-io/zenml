@@ -43,10 +43,6 @@ class PodPhase(enum.Enum):
     FAILED = "Failed"
     UNKNOWN = "Unknown"
 
-    @property
-    def is_done(self) -> bool:
-        return self in (self.SUCCEEDED, self.FAILED)  # type: ignore
-
 
 class RestartPolicy(enum.Enum):
     """Restart policy of the Kubernetes Pod container.
@@ -146,8 +142,12 @@ def pod_is_not_pending(resp: k8s_client.V1Pod) -> bool:
     return resp.status.phase != PodPhase.PENDING.value  # type: ignore
 
 
+def pod_failed(resp: k8s_client.V1Pod) -> bool:
+    return resp.status.phase == PodPhase.FAILED.value
+
+
 def pod_is_done(resp: k8s_client.V1Pod) -> bool:
-    return PodPhase(resp.status.phase).is_done
+    return resp.status.phase == PodPhase.SUCCEEDED.value
 
 
 def make_core_v1_api() -> k8s_client.CoreV1Api:
@@ -244,7 +244,6 @@ def wait_pod(
     pod_name: str,
     namespace: str,
     exit_condition_lambda: Callable[[k8s_client.V1Pod], bool],
-    condition_description: str,
     timeout_sec: int = 0,
     exponential_backoff: bool = False,
     stream_logs: bool = False,
@@ -299,7 +298,11 @@ def wait_pod(
                     logger.info(line)
                 logged_lines = len(logs)
 
-        # Check if pod finished.
+        # Raise an error if the pod failed.
+        if pod_failed(resp):
+            raise RuntimeError(f"Pod `{namespace}:{pod_name}` failed.")
+
+        # Check if pod is in desired state (e.g. finished / running / ...).
         if exit_condition_lambda(resp):
             return resp
 
@@ -307,8 +310,8 @@ def wait_pod(
         elapse_time = datetime.datetime.utcnow() - start_time
         if elapse_time.seconds >= timeout_sec and timeout_sec != 0:
             raise RuntimeError(
-                'Pod "%s:%s" does not reach "%s" within %s seconds.'
-                % (namespace, pod_name, condition_description, timeout_sec)
+                f"Waiting for pod `{namespace}:{pod_name}` timed out after "
+                f"{timeout_sec} seconds."
             )
 
         # Wait (using exponential backoff).
