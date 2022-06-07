@@ -22,8 +22,8 @@ from zenml.integrations.constants import SPARK
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-SPARK_STEP_OPERATOR = "spark"
-
+SPARK_STANDALONE_STEP_OPERATOR = "spark-standalone"
+SPARK_KUBERNETES_STEP_OPERATOR = "spark-k8s"
 
 class SparkIntegration(Integration):
     """Definition of Spark integration for ZenML."""
@@ -38,11 +38,17 @@ class SparkIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Sagemaker integration."""
+        """Declare the stack component flavors for the Spark integration."""
         return [
             FlavorWrapper(
-                name=SPARK_STEP_OPERATOR,
+                name=SPARK_STANDALONE_STEP_OPERATOR,
                 source="zenml.integrations.spark.step_operators.StandaloneSparkStepOperator",
+                type=StackComponentType.STEP_OPERATOR,
+                integration=cls.NAME,
+            ),
+            FlavorWrapper(
+                name=SPARK_KUBERNETES_STEP_OPERATOR,
+                source="zenml.integrations.spark.step_operators.KubernetesSparkStepOperator",
                 type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
             )

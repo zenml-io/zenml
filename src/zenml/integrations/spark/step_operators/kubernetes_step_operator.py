@@ -13,22 +13,43 @@
 #  permissions and limitations under the License.
 import subprocess
 from typing import List, ClassVar
-
-from zenml.integrations.spark import SPARK_STANDALONE_STEP_OPERATOR
+from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
 from zenml.integrations.spark.step_operators import spark_entrypoint
 from zenml.step_operators import BaseStepOperator
+from zenml.utils.docker_utils import build_docker_image
+from zenml.utils.source_utils import get_source_root_path
 
 ENTRYPOINT = spark_entrypoint.__file__
 
 
-class StandaloneSparkStepOperator(BaseStepOperator):
+class KubernetesSparkStepOperator(BaseStepOperator):
     # Instance parameters
     master: str
-    deploy_mode: str = 'client'
+    deploy_mode: str = 'cluster'
     configuration_properties: List[str] = []
 
     # Class configuration
-    FLAVOR: ClassVar[str] = SPARK_STANDALONE_STEP_OPERATOR
+    FLAVOR: ClassVar[str] = SPARK_KUBERNETES_STEP_OPERATOR
+
+    def _build_docker_image(
+            self,
+            pipeline_name,
+            requirements,
+    ):
+        """Create the proper image to use for spark on k8s."""
+        image_name = f"zenml-k8s:{pipeline_name}"
+        self.configuration_properties.extend(
+            [f"spark.kubernetes.container.image={image_name}",
+             "spark.kubernetes.context=minikube",
+             "spark.kubernetes.file.upload.path=/tmp",
+             "spark.ui.enabled=false"]
+        )
+        build_docker_image(
+            build_context_path=get_source_root_path(),
+            image_name=image_name,
+            requirements=requirements,
+            base_image="spark-py:pyspark"
+        )
 
     def _create_base_command(self):
         """Create the base command for spark-submit."""
@@ -65,13 +86,15 @@ class StandaloneSparkStepOperator(BaseStepOperator):
         return command
 
     def launch(
-        self,
-        pipeline_name: str,
-        run_name: str,
-        requirements: List[str],
-        entrypoint_command: List[str],
+            self,
+            pipeline_name: str,
+            run_name: str,
+            requirements: List[str],
+            entrypoint_command: List[str],
     ) -> None:
         """Launch the spark job with spark-submit."""
+        # Build the docker image to use for spark on Kubernetes
+        self._build_docker_image(pipeline_name, requirements)
 
         # Base command
         base_command = self._create_base_command()
