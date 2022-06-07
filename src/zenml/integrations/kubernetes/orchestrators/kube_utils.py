@@ -21,7 +21,7 @@ import datetime
 import enum
 import re
 import time
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Optional
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -33,6 +33,7 @@ logger = get_logger(__name__)
 
 class PodPhase(enum.Enum):
     """Phase of the Kubernetes Pod.
+
     Pod phases are defined in
     https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase.
     """
@@ -46,6 +47,7 @@ class PodPhase(enum.Enum):
 
 class RestartPolicy(enum.Enum):
     """Restart policy of the Kubernetes Pod container.
+
     Restart policies are defined in
     https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy
     """
@@ -57,6 +59,7 @@ class RestartPolicy(enum.Enum):
 
 class PersistentVolumeAccessMode(enum.Enum):
     """Access mode of the Kubernetes Persistent Volume.
+
     Access modes are defined in
     https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
     """
@@ -75,21 +78,27 @@ class _KubernetesClientFactory:
 
     @property
     def inside_cluster(self) -> bool:
-        """Whether current environment is inside the kubernetes cluster."""
+        """Whether current environment is inside the kubernetes cluster.
+
+        Returns:
+            bool: True if inside the cluster else False.
+        """
         if not self._config_loaded:
             self._LoadConfig()
         return self._inside_cluster
 
     def _LoadConfig(self) -> None:  # pylint: disable=invalid-name
         """Load the kubernetes client config.
+
         Depending on the environment (whether it is inside the running kubernetes
         cluster or remote host), different location will be searched for the config
         file. The loaded config will be used as a default value for the clients this
         factory is creating.
         If config is already loaded, it is a no-op.
+
         Raises:
-          kubernetes.config.ConfigException: If fails to locate configuration in
-              current environment.
+            kubernetes.config.ConfigException: If fails to locate configuration in
+                current environment.
         """
         try:
             # If this code is running inside Kubernetes Pod, service account admission
@@ -115,7 +124,11 @@ class _KubernetesClientFactory:
     def MakeCoreV1Api(
         self,
     ) -> k8s_client.CoreV1Api:  # pylint: disable=invalid-name
-        """Make a kubernetes CoreV1Api client."""
+        """Make a kubernetes CoreV1Api client.
+
+        Returns:
+            k8s_client.CoreV1Api: client.
+        """
         if not self._config_loaded:
             self._LoadConfig()
         return k8s_client.CoreV1Api()
@@ -123,7 +136,11 @@ class _KubernetesClientFactory:
     def MakeBatchV1Api(
         self,
     ) -> k8s_client.BatchV1Api:  # pylint: disable=invalid-name
-        """Make a kubernetes BatchV1Api client."""
+        """Make a kubernetes BatchV1Api client.
+
+        Returns:
+            k8s_client.BatchV1Api: client.
+        """
         if not self._config_loaded:
             self._LoadConfig()
         return k8s_client.BatchV1Api()
@@ -133,86 +150,79 @@ _factory = _KubernetesClientFactory()
 
 
 def sanitize_pod_name(pod_name: str) -> str:
+    """Sanitize pod names so they conform to kubernetes pod naming convention.
+
+    Args:
+        pod_name (str): Arbitrary input pod name.
+
+    Returns:
+        str: Sanitized pod name.
+    """
     pod_name = re.sub(r"[^a-z0-9-]", "-", pod_name.lower())
     pod_name = re.sub(r"^[-]+", "", pod_name)
     return re.sub(r"[-]+", "-", pod_name)
 
 
-def pod_is_not_pending(resp: k8s_client.V1Pod) -> bool:
-    return resp.status.phase != PodPhase.PENDING.value  # type: ignore
+def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
+    """Check if pod status is not 'Pending'.
+
+    Args:
+        pod (k8s_client.V1Pod): kubernetes pod.
+
+    Returns:
+        bool: False if the pod status is 'Pending' else True.
+    """
+    return pod.status.phase != PodPhase.PENDING.value  # type: ignore
 
 
-def pod_failed(resp: k8s_client.V1Pod) -> bool:
-    return resp.status.phase == PodPhase.FAILED.value
+def pod_failed(pod: k8s_client.V1Pod) -> bool:
+    """Check if pod status is 'Failed'.
+
+    Args:
+        pod (k8s_client.V1Pod): kubernetes pod.
+
+    Returns:
+        bool: True if pod status is 'Failed' else False.
+    """
+    return pod.status.phase == PodPhase.FAILED.value
 
 
-def pod_is_done(resp: k8s_client.V1Pod) -> bool:
-    return resp.status.phase == PodPhase.SUCCEEDED.value
+def pod_is_done(pod: k8s_client.V1Pod) -> bool:
+    """Check if pod status is 'Succeeded'.
+
+    Args:
+        pod (k8s_client.V1Pod): kubernetes pod.
+
+    Returns:
+        bool: True if pod status is 'Succeeded' else False.
+    """
+    return pod.status.phase == PodPhase.SUCCEEDED.value
 
 
 def make_core_v1_api() -> k8s_client.CoreV1Api:
-    """Make a kubernetes CoreV1Api client."""
+    """Make a kubernetes CoreV1Api client.
+
+    Returns:
+        k8s_client.CoreV1Api: client.
+    """
     return _factory.MakeCoreV1Api()
 
 
 def make_batch_v1_api() -> k8s_client.BatchV1Api:
-    """Make a kubernetes BatchV1Api client."""
+    """Make a kubernetes BatchV1Api client.
+
+    Returns:
+        k8s_client.BatchV1Api: client.
+    """
     return _factory.MakeBatchV1Api()
 
 
-def make_job_object(
-    name: str,
-    container_image: str,
-    command: List[str],
-    namespace: str = "default",
-    container_name: str = "jobcontainer",
-    pod_labels: Optional[Dict[str, str]] = None,
-    service_account_name: str = "default",
-) -> k8s_client.V1Job:
-    """Make a Kubernetes Job object with a single pod.
-    See
-    https://kubernetes.io/docs/concepts/workloads/controllers/job/#writing-a-job-spec
-    Args:
-      name: Name of job.
-      container_image: Name of container image.
-      command: Command to run.
-      namespace: Kubernetes namespace to contain this Job.
-      container_name: Name of the container.
-      pod_labels: Dictionary of metadata labels for the pod.
-      service_account_name: Name of the service account for this Job.
-    Returns:
-      `kubernetes.client.V1Job` object.
-    """
-    pod_labels = pod_labels or {}
-    return k8s_client.V1Job(
-        api_version="batch/v1",
-        kind="Job",
-        metadata=k8s_client.V1ObjectMeta(
-            namespace=namespace,
-            name=sanitize_pod_name(name),
-        ),
-        status=k8s_client.V1JobStatus(),
-        spec=k8s_client.V1JobSpec(
-            template=k8s_client.V1PodTemplateSpec(
-                metadata=k8s_client.V1ObjectMeta(labels=pod_labels),
-                spec=k8s_client.V1PodSpec(
-                    containers=[
-                        k8s_client.V1Container(
-                            name=container_name,
-                            image=container_image,
-                            command=command,
-                        ),
-                    ],
-                    service_account_name=service_account_name,
-                    restart_policy=RestartPolicy.NEVER.value,
-                ),
-            )
-        ),
-    )
-
-
 def is_inside_cluster() -> bool:
-    """Whether current running environment is inside the kubernetes cluster."""
+    """Whether current running environment is inside the kubernetes cluster.
+
+    Returns:
+        bool: True if inside Kubernetes cluster else False.
+    """
     return _factory.inside_cluster
 
 
@@ -220,14 +230,17 @@ def get_pod(
     core_api: k8s_client.CoreV1Api, pod_name: str, namespace: str
 ) -> Optional[k8s_client.V1Pod]:
     """Get a pod from Kubernetes metadata API.
+
     Args:
-      core_api: Client of Core V1 API of Kubernetes API.
-      pod_name: The name of the Pod.
-      namespace: The namespace of the Pod.
-    Returns:
-      The found Pod object. None if it's not found.
+        core_api (k8s_client.CoreV1Api): Client of Core V1 API of Kubernetes API.
+        pod_name (str): The name of the Pod.
+        namespace (str): The namespace of the Pod.
+
     Raises:
-      RuntimeError: When it sees unexpected errors from Kubernetes API.
+        RuntimeError: When it sees unexpected errors from Kubernetes API.
+
+    Returns:
+        Optional[k8s_client.V1Pod]: The found Pod object. None if it's not found.
     """
     try:
         return core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
