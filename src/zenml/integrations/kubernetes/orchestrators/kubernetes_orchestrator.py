@@ -45,7 +45,7 @@ from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypoint_configuration import (
     KubernetesOrchestratorEntrypointConfiguration,
 )
-from zenml.integrations.kubernetes.orchestrators.utils import (
+from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_base_pod_manifest,
     update_pod_manifest,
 )
