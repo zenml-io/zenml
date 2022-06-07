@@ -11,15 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Utilities for the kubernetes related functions.
+"""Utilities for Kubernetes related functions.
 
 Internal interface: no backwards compatibility guarantees.
-Taken from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils.py.
+Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils.py.
 """
 
 import datetime
 import enum
-import os
 import re
 import time
 from typing import Callable, Dict, List, Optional
@@ -27,18 +26,6 @@ from typing import Callable, Dict, List, Optional
 from absl import logging
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
-
-# Name of the main container that Argo workflow launches. As KFP internally uses
-# Argo, container name for the KFP Pod is also the same.
-# https://github.com/argoproj/argo/blob/master/workflow/common/common.go#L14
-ARGO_MAIN_CONTAINER_NAME = "main"
-
-# Set of environment variables that are set in the KubeFlow Pipelines pods.
-KFP_POD_NAME = "KFP_POD_NAME"
-KFP_NAMESPACE = "KFP_NAMESPACE"
-
-# Service account with edit ClusterRoleBinding for native orchestration.
-TFX_SERVICE_ACCOUNT = "tfx-service-account"
 
 
 class PodPhase(enum.Enum):
@@ -224,50 +211,6 @@ def make_job_object(
 def is_inside_cluster() -> bool:
     """Whether current running environment is inside the kubernetes cluster."""
     return _factory.inside_cluster
-
-
-def is_inside_kfp() -> bool:
-    """Whether current running environment is inside the KFP runtime."""
-    return (
-        is_inside_cluster()
-        and KFP_POD_NAME in os.environ
-        and KFP_NAMESPACE in os.environ
-    )
-
-
-def get_kfp_namespace() -> str:
-    """Get kubernetes namespace for the KFP.
-    Raises:
-      RuntimeError: If KFP pod cannot be determined from the environment, i.e.
-          this program is not running inside the KFP.
-    Returns:
-      The namespace of the KFP app, to which the pod this program is running on
-      belongs.
-    """
-    try:
-        return os.environ[KFP_NAMESPACE]
-    except KeyError:
-        raise RuntimeError(
-            "Cannot determine KFP namespace from the environment."
-        )
-
-
-def get_current_kfp_pod(client: k8s_client.CoreV1Api) -> k8s_client.V1Pod:
-    """Get manifest of the KFP pod in which this program is running.
-    Args:
-      client: A kubernetes CoreV1Api client.
-    Raises:
-      RuntimeError: If KFP pod cannot be determined from the environment, i.e.
-          this program is not running inside the KFP.
-    Returns:
-      The manifest of the pod this program is running on.
-    """
-    try:
-        namespace = os.environ[KFP_NAMESPACE]
-        pod_name = os.environ[KFP_POD_NAME]
-        return client.read_namespaced_pod(name=pod_name, namespace=namespace)
-    except KeyError:
-        raise RuntimeError("Cannot determine KFP pod from the environment.")
 
 
 def get_pod(

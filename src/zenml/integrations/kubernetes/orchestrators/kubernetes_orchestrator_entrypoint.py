@@ -22,7 +22,7 @@ import threading
 from collections import defaultdict
 from typing import Any, Dict, List
 
-from zenml.integrations.kubernetes.orchestrators import tfx_kube_utils
+from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.utils import (
     build_base_pod_manifest,
     update_pod_manifest,
@@ -67,7 +67,7 @@ def main() -> None:
             step_successors[previous_step_name].append(step_name)
 
     # Get k8s Core API for running kubectl commands later.
-    core_api = tfx_kube_utils.make_core_v1_api()
+    core_api = kube_utils.make_core_v1_api()
 
     # Build base pod manifest.
     base_pod_manifest = build_base_pod_manifest(
@@ -146,7 +146,7 @@ def main() -> None:
         """
         # Define k8s pod name.
         pod_name = f"{args.run_name}-{step_name}"
-        pod_name = tfx_kube_utils.sanitize_pod_name(pod_name)
+        pod_name = kube_utils.sanitize_pod_name(pod_name)
 
         # Build list of args for this step.
         step_args = [*fixed_step_args, *step_specific_args[step_name]]
@@ -168,11 +168,11 @@ def main() -> None:
 
         # Wait for pod to finish.
         logging.info(f"Waiting for step {step_name}...")
-        tfx_kube_utils.wait_pod(
+        kube_utils.wait_pod(
             core_api,
             pod_name,
             namespace=args.kubernetes_namespace,
-            exit_condition_lambda=tfx_kube_utils.pod_is_done,
+            exit_condition_lambda=kube_utils.pod_is_done,
             condition_description="done state",
         )
         logging.info(f"Step {step_name} finished.")
