@@ -24,6 +24,8 @@ AutoTokenizer
 AzureML
 Backend
 Backpropagation
+BaseAlerter
+BaseAlerterStepConfig
 BaseArtifact
 BaseArtifactStore
 BaseContainerRegistry
