@@ -16,7 +16,7 @@ from typing import Any, ClassVar, List, Optional, Set
 
 import hvac
 
-from zenml.exceptions import SecretDoesNotExistError, SecretExistsError
+from zenml.exceptions import SecretExistsError
 from zenml.integrations.vault import VAULT_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
@@ -174,15 +174,10 @@ class VaultSecretsManager(BaseSecretsManager):
             The secret.
 
         Raises:
-            SecretDoesNotExistError: If the secret does not exist.
+            KeyError: If the secret does not exist.
         """
-
-        try:
-            vault_secret_name = self.vault_secret_name(secret_name)
-        except SecretDoesNotExistError:
-            raise SecretDoesNotExistError(
-                f"The secret {secret_name} does not exist."
-            )
+        
+        vault_secret_name = self.vault_secret_name(secret_name)
 
         secret_items = (
             self.CLIENT.secrets.kv.v2.read_secret_version(
@@ -199,7 +194,7 @@ class VaultSecretsManager(BaseSecretsManager):
         secret_items["name"] = sanitize_secret_name(secret_name)
         return secret_schema(**secret_items)
 
-    def vaul_list_secrets(self) -> List[str]:
+    def vault_list_secrets(self) -> List[str]:
         """
         List all secrets in the secrets manager without any reformatting.
         All secrets names stored in Vault in the format: <secret_schema>-<secret_name>
@@ -220,7 +215,7 @@ class VaultSecretsManager(BaseSecretsManager):
                 path=f"{ZENML_PATH}/", mount_point=self.mount_point
             )
         except hvac.exceptions.InvalidPath:
-            print(
+            logger.debug(
                 f"There are no secrets created within the path `{ZENML_PATH}` "
             )
             return list(set_of_secrets)
@@ -242,19 +237,19 @@ class VaultSecretsManager(BaseSecretsManager):
             The secret name in the Vault secrets manager.
 
         Raises:
-            SecretDoesNotExistError: If the secret does not exist.
+            KeyError: If the secret does not exist.
         """
 
         self._ensure_client_is_authenticated()
 
-        secrets_keys = self.vaul_list_secrets()
+        secrets_keys = self.vault_list_secrets()
 
         for secret_key in secrets_keys:
             sanitized_secret_name = sanitize_secret_name(secret_name)
             secret_name_without_schema = remove_secret_schema_name(secret_key)
             if sanitized_secret_name == secret_name_without_schema:
                 return secret_key
-        raise SecretDoesNotExistError(
+        raise KeyError(
             f"The secret {secret_name} does not exist."
         )
 
@@ -268,7 +263,7 @@ class VaultSecretsManager(BaseSecretsManager):
 
         return [
             remove_secret_schema_name(secret_key)
-            for secret_key in self.vaul_list_secrets()
+            for secret_key in self.vault_list_secrets()
         ]
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
@@ -278,20 +273,20 @@ class VaultSecretsManager(BaseSecretsManager):
             secret: The secret to update.
 
         Raises:
-            SecretDoesNotExistError: If the secret does not exist.
+            KeyError: If the secret does not exist.
         """
 
         self._ensure_client_is_authenticated()
 
         secret_name = prepend_secret_schema_to_secret_name(secret=secret)
 
-        if secret_name in self.vaul_list_secrets():
+        if secret_name in self.vault_list_secrets():
             self.CLIENT.secrets.kv.v2.create_or_update_secret(
                 path=f"{ZENML_PATH}/{secret.name}",
                 secret=secret.content.items(),
             )
         else:
-            raise SecretDoesNotExistError(
+            raise KeyError(
                 f"A Secret with the name '{secret.name}' does not exist."
             )
 
@@ -305,15 +300,15 @@ class VaultSecretsManager(BaseSecretsManager):
             secret_name: The name of the secret to delete.
 
         Raises:
-            SecretDoesNotExistError: If the secret does not exist.
+            KeyError: If the secret does not exist.
         """
 
         self._ensure_client_is_authenticated()
 
         try:
             vault_secret_name = self.vault_secret_name(secret_name)
-        except SecretDoesNotExistError:
-            raise SecretDoesNotExistError(
+        except KeyError:
+            raise KeyError(
                 f"The secret {secret_name} does not exist."
             )
 
@@ -331,12 +326,8 @@ class VaultSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_is_authenticated()
 
-        try:
-            self.CLIENT.secrets.kv.v2.delete_metadata_and_all_versions(
-                path=f"{ZENML_PATH}",
-            )
-        except hvac.exceptions.InvalidPath:
-            print(
-                f"There are no secrets created within the path `{ZENML_PATH}` "
-            )
-            return
+        for secret_name in self.get_all_secret_keys():
+            self.delete_secret(secret_name)
+        
+        logger.debug("Deleted all secrets.")
+        

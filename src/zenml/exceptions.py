@@ -212,10 +212,6 @@ class SecretExistsError(ZenMLBaseException):
     already exists."""
 
 
-class SecretDoesNotExistError(ZenMLBaseException):
-    """Raised when trying to register a secret with a name that
-    already exists."""
-
 
 class StackValidationError(ZenMLBaseException):
     """Raised when a stack configuration is not valid."""
