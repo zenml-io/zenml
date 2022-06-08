@@ -11,3 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
+
+model_deployer = mlflow_model_deployer_step()
