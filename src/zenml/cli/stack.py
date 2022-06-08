@@ -1041,3 +1041,33 @@ def import_stack(
 
     # register new stack
     ctx.invoke(register_stack, stack_name=stack_name, **component_names)
+
+
+@stack.command("copy")
+@click.argument("source_name", type=str, required=True)
+@click.argument("target_name", type=str, required=True)
+def copy_stack(source_name: str, target_name: str) -> None:
+    """Copy a stack.
+
+    Args:
+        source_name: The name of the stack to copy.
+        target_name: Name of the copied stack.
+    """
+    track_event(AnalyticsEvent.COPIED_STACK)
+
+    with console.status(f"Copying stack `{source_name}`...\n"):
+        repo = Repository()
+        try:
+            stack_ = repo.get_stack(source_name)
+        except KeyError:
+            cli_utils.error(
+                f"Stack `{source_name}` cannot be copied as it does not exist."
+            )
+
+        if target_name in repo.stack_configurations:
+            cli_utils.error(
+                f"Can't copy stack as a stack with the name '{target_name}' "
+                "already exists."
+            )
+        stack_._name = target_name
+        Repository().register_stack(stack_)
