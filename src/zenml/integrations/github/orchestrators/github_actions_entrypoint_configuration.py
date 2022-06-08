@@ -21,7 +21,7 @@ RUN_NAME_OPTION = "run_name"
 
 
 class GitHubActionsEntrypointConfiguration(StepEntrypointConfiguration):
-    """Entrypoint configuration for running steps on GitHub Action runners."""
+    """Entrypoint configuration for running steps on GitHub Actions runners."""
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
@@ -34,7 +34,7 @@ class GitHubActionsEntrypointConfiguration(StepEntrypointConfiguration):
     ) -> List[str]:
         """Adds a run name argument for the entrypoint."""
         # These placeholders in the workflow file will be replaced with
-        # concrete values by the GH action runner
+        # concrete values by the GitHub Actions runner
         run_name = kwargs["pipeline_name"] + (
             "-${{ github.run_id }}_${{ github.run_number }}_"
             "${{ github.run_attempt }}"
