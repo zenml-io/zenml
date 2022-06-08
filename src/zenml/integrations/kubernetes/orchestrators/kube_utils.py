@@ -95,10 +95,6 @@ class _KubernetesClientFactory:
         file. The loaded config will be used as a default value for the clients this
         factory is creating.
         If config is already loaded, it is a no-op.
-
-        Raises:
-            kubernetes.config.ConfigException: If fails to locate configuration in
-                current environment.
         """
         try:
             # If this code is running inside Kubernetes Pod, service account admission
@@ -172,7 +168,7 @@ def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
     Returns:
         bool: False if the pod status is 'Pending' else True.
     """
-    return pod.status.phase != PodPhase.PENDING.value  # type: ignore
+    return pod.status.phase != PodPhase.PENDING.value  # type: ignore[no-any-return]
 
 
 def pod_failed(pod: k8s_client.V1Pod) -> bool:
@@ -184,7 +180,7 @@ def pod_failed(pod: k8s_client.V1Pod) -> bool:
     Returns:
         bool: True if pod status is 'Failed' else False.
     """
-    return pod.status.phase == PodPhase.FAILED.value
+    return pod.status.phase == PodPhase.FAILED.value  # type: ignore[no-any-return]
 
 
 def pod_is_done(pod: k8s_client.V1Pod) -> bool:
@@ -196,7 +192,7 @@ def pod_is_done(pod: k8s_client.V1Pod) -> bool:
     Returns:
         bool: True if pod status is 'Succeeded' else False.
     """
-    return pod.status.phase == PodPhase.SUCCEEDED.value
+    return pod.status.phase == PodPhase.SUCCEEDED.value  # type: ignore[no-any-return]
 
 
 def make_core_v1_api() -> k8s_client.CoreV1Api:
@@ -270,8 +266,6 @@ def wait_pod(
         exit_condition_lambda (Callable[[k8s_client.V1Pod], bool]): A lambda
             which will be called intervally to wait for a Pod to exit. The
             function returns True to exit.
-        condition_description (str): The description of the exit condition
-            which will be set in the error message if the wait times out.
         timeout_sec (int): _description_. Timeout in seconds to wait
             for pod to reach exit condition, or 0 to wait for an unlimited
             duration. Defaults to unlimited.

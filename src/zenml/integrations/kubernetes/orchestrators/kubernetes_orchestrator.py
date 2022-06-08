@@ -93,11 +93,14 @@ class KubernetesOrchestrator(BaseOrchestrator):
     FLAVOR: ClassVar[str] = KUBERNETES_ORCHESTRATOR_FLAVOR
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
-        """Get the list of configured Kubernetes contexts and the active
-        context.
+        """Get list of configured Kubernetes contexts and the active context.
 
         Raises:
-            RuntimeError: if the Kubernetes configuration cannot be loaded
+            RuntimeError: if the Kubernetes configuration cannot be loaded.
+
+        Returns:
+            context_name: List of configured Kubernetes contexts
+            active_context_name: Name of the active Kubernetes context.
         """
         try:
             contexts, active_context = k8s_config.list_kube_config_contexts()
@@ -112,11 +115,22 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a container registry and that
-        requirements are met for local components."""
+        """Defines the validator that checks whether the stack is valid.
+
+        Returns:
+            Optional[StackValidator]: validator.
+        """
 
         def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
+            """Validates that the stack contains no local components.
 
+            Args:
+                stack: The stack.
+
+            Returns:
+                bool: Whether the stack is valid or not..
+                str: An explanation why the stack is invalid, if applicable.
+            """
             container_registry = stack.container_registry
 
             # should not happen, because the stack validation takes care of
@@ -185,8 +199,14 @@ class KubernetesOrchestrator(BaseOrchestrator):
         )
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name including registry and tag."""
+        """Return the full docker image name including registry and tag.
 
+        Args:
+            pipeline_name: Name of a ZenML pipeline.
+
+        Returns:
+            str: Docker image name.
+        """
         container_registry = Repository().active_stack.container_registry
         assert container_registry
         registry_uri = container_registry.uri.rstrip("/")
@@ -198,8 +218,12 @@ class KubernetesOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Builds a docker image for the current environment and uploads it to
-        a container registry if configured.
+        """Build a docker image and upload it to the container registry.
+
+        Args:
+            pipeline: A ZenML pipeline.
+            stack: A ZenML stack.
+            runtime_configuration: The runtime configuration of the pipeline.
         """
         from zenml.utils import docker_utils
 
@@ -236,17 +260,16 @@ class KubernetesOrchestrator(BaseOrchestrator):
         """Run pipeline in Kubernetes.
 
         Args:
-            sorted_steps (List[BaseStep]): List of steps in execution order.
-            pipeline (BasePipeline): ZenML pipeline.
-            pb2_pipeline (Pb2Pipeline): ZenML pipeline in TFX pb2 format.
-            stack (Stack): ZenML stack.
-            runtime_configuration (RuntimeConfiguration): _description_
+            sorted_steps: List of steps in execution order.
+            pipeline: ZenML pipeline.
+            pb2_pipeline: ZenML pipeline in TFX pb2 format.
+            stack: ZenML stack.
+            runtime_configuration: The runtime configuration of the pipeline.
 
         Raises:
-            RuntimeError: if trying to run from a Jupyter notebook.
+            RuntimeError: If trying to run from a Jupyter notebook.
         """
-
-        # First check whether the code running in a notebook
+        # First check whether the code is running in a notebook.
         if Environment.in_notebook():
             raise RuntimeError(
                 "The Kubernetes orchestrator cannot run pipelines in a notebook "
