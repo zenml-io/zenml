@@ -565,10 +565,9 @@ def parse_unknown_options(
     )
 
     assert all(a.startswith("--") for a in args), warning_message
-    assert all(len(a.split("=")) == 2 for a in args), warning_message
+    assert all("=" in a for a in args), warning_message
 
-    p_args = [a.lstrip("--").split("=") for a in args]
-
+    p_args = [a.lstrip("-").split("=", maxsplit=1) for a in args]
     assert all(k.isidentifier() for k, _ in p_args), warning_message
 
     r_args = {k: _expand_argument_value_from_file(k, v) for k, v in p_args}
