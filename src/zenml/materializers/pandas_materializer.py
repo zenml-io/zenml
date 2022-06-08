@@ -69,7 +69,7 @@ class PandasMaterializer(BaseMaterializer):
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
         if type(df) == pd.Series:
-            df = df.to_frame()
+            df = df.to_frame(name="series")
         
         # Create a temporary file to store the model
         with tempfile.NamedTemporaryFile(
