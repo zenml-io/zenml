@@ -398,11 +398,13 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         for step in sorted_steps:
             steps = []
 
+            # Copy the shared dicts here to avoid creating yaml anchors (which
+            # are currently not supported in GitHub workflow yaml files)
             if write_env_file_step:
-                steps.append(write_env_file_step)
+                steps.append(write_env_file_step.copy())
 
             if docker_login_step:
-                steps.append(docker_login_step)
+                steps.append(docker_login_step.copy())
 
             entrypoint_args = (
                 GitHubActionsEntrypointConfiguration.get_entrypoint_arguments(
