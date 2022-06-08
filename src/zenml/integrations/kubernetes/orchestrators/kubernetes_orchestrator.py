@@ -32,10 +32,8 @@
 # inspired by the kubernetes dag runner implementation of tfx
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
-from uuid import UUID
 
 from kubernetes import config as k8s_config
-from pydantic import root_validator
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.enums import StackComponentType
@@ -84,59 +82,15 @@ class KubernetesOrchestrator(BaseOrchestrator):
             If not provided, `default` namespace will be used.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Kubernetes.
-        skip_local_validations: If `True`, the local validations will be
-            skipped.
-        skip_cluster_provisioning: If `True`, the k3d cluster provisioning will
-            be skipped.
     """
 
     custom_docker_base_image_name: Optional[str] = None
     kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "default"
     synchronous: bool = False
-    skip_local_validations: bool = False
-    skip_cluster_provisioning: bool = False
 
     # Class Configuration
     FLAVOR: ClassVar[str] = KUBERNETES_ORCHESTRATOR_FLAVOR
-
-    @staticmethod
-    def _get_k3d_cluster_name(uuid: UUID) -> str:
-        """Returns the k3d cluster name corresponding to the orchestrator
-        UUID."""
-        # k3d only allows cluster names with up to 32 characters; use the
-        # first 8 chars of the orchestrator UUID as identifier
-        return f"zenml-kubernetes-{str(uuid)[:8]}"
-
-    @staticmethod
-    def _get_k3d_kubernetes_context(uuid: UUID) -> str:
-        """Returns the name of the kubernetes context associated with the k3d
-        cluster managed locally by ZenML corresponding to the orchestrator
-        UUID."""
-        return f"k3d-{KubernetesOrchestrator._get_k3d_cluster_name(uuid)}"
-
-    @root_validator(skip_on_failure=True)
-    def set_default_kubernetes_context(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Pydantic root_validator that sets the default `kubernetes_context`
-        value to the value that is used to create the locally managed k3d
-        cluster, if not explicitly set.
-
-        Args:
-            values: Values passed to the object constructor
-
-        Returns:
-            Values passed to the Pydantic constructor
-        """
-        if not values.get("kubernetes_context"):
-            # not likely, due to Pydantic validation, but mypy complains
-            assert "uuid" in values
-            values["kubernetes_context"] = cls._get_k3d_kubernetes_context(
-                values["uuid"]
-            )
-
-        return values
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get the list of configured Kubernetes contexts and the active
@@ -172,16 +126,15 @@ class KubernetesOrchestrator(BaseOrchestrator):
             contexts, active_context = self.get_kubernetes_contexts()
 
             if self.kubernetes_context not in contexts:
-                if not self.is_local:
-                    return False, (
-                        f"Could not find a Kubernetes context named "
-                        f"'{self.kubernetes_context}' in the local Kubernetes "
-                        f"configuration. Please make sure that the Kubernetes "
-                        f"cluster is running and that the kubeconfig file is "
-                        f"configured correctly. To list all configured "
-                        f"contexts, run:\n\n"
-                        f"  `kubectl config get-contexts`\n"
-                    )
+                return False, (
+                    f"Could not find a Kubernetes context named "
+                    f"'{self.kubernetes_context}' in the local Kubernetes "
+                    f"configuration. Please make sure that the Kubernetes "
+                    f"cluster is running and that the kubeconfig file is "
+                    f"configured correctly. To list all configured "
+                    f"contexts, run:\n\n"
+                    f"  `kubectl config get-contexts`\n"
+                )
             elif self.kubernetes_context != active_context:
                 logger.warning(
                     f"The Kubernetes context '{self.kubernetes_context}' "
@@ -201,83 +154,28 @@ class KubernetesOrchestrator(BaseOrchestrator):
                     f"{self.kubernetes_context}`\n"
                 )
 
-            silence_local_validations_msg = (
-                f"To silence this warning, set the "
-                f"`skip_local_validations` attribute to True in the "
-                f"orchestrator configuration by running:\n\n"
-                f"  'zenml orchestrator update {self.name} "
-                f"--skip_local_validations=True'\n"
-            )
-
-            if not self.skip_local_validations and not self.is_local:
-
-                # if the orchestrator is not running in a local k3d cluster,
-                # we cannot have any other local components in our stack,
-                # because we cannot mount the local path into the container.
-                # This may result in problems when running the pipeline, because
-                # the local components will not be available inside the
-                # Kubernetes containers.
-
-                # go through all stack components and identify those that
-                # advertise a local path where they persist information that
-                # they need to be available when running pipelines.
-                for stack_comp in stack.components.values():
-                    local_path = stack_comp.local_path
-                    if not local_path:
-                        continue
+            # Check that all stack components are non-local.
+            for stack_comp in stack.components.values():
+                if stack_comp.local_path:
                     return False, (
-                        f"The Kubernetes orchestrator is configured to run "
-                        f"pipelines in a remote Kubernetes cluster designated "
-                        f"by the '{self.kubernetes_context}' configuration "
-                        f"context, but the '{stack_comp.name}' "
-                        f"{stack_comp.TYPE.value} is a local stack component "
-                        f"and will not be available in the Kubernetes pipeline "
-                        f"step.\nPlease ensure that you always use non-local "
-                        f"stack components with a remote Kubernetes orchestrator, "
-                        f"otherwise you may run into pipeline execution "
-                        f"problems. You should use a flavor of "
-                        f"{stack_comp.TYPE.value} other than "
-                        f"'{stack_comp.FLAVOR}'.\n"
-                        + silence_local_validations_msg
+                        f"The Kubernetes orchestrator currently only supports "
+                        f"remote stacks, but the '{stack_comp.name}' "
+                        f"{stack_comp.TYPE.value} is a local component. "
+                        f"Please make sure to only use non-local stack "
+                        f"components with a Kubernetes orchestrator."
                     )
 
-                # if the orchestrator is remote, the container registry must
-                # also be remote.
-                if container_registry.is_local:
-                    return False, (
-                        f"The Kubernetes orchestrator is configured to run "
-                        f"pipelines in a remote Kubernetes cluster designated "
-                        f"by the '{self.kubernetes_context}' configuration "
-                        f"context, but the '{container_registry.name}' "
-                        f"container registry URI '{container_registry.uri}' "
-                        f"points to a local container registry. Please ensure "
-                        f"that you always use non-local stack components with "
-                        f"a remote Kubernetes orchestrator, otherwise you will "
-                        f"run into problems. You should use a flavor of "
-                        f"container registry other than "
-                        f"'{container_registry.FLAVOR}'.\n"
-                        + silence_local_validations_msg
-                    )
-
-            if not self.skip_local_validations and self.is_local:
-
-                # if the orchestrator is local, the container registry must
-                # also be local.
-                if not container_registry.is_local:
-                    return False, (
-                        f"The Kubernetes orchestrator is configured to run "
-                        f"pipelines in a local k3d Kubernetes cluster "
-                        f"designated by the '{self.kubernetes_context}' "
-                        f"configuration context, but the container registry "
-                        f"URI '{container_registry.uri}' doesn't match the "
-                        f"expected format 'localhost:$PORT'. "
-                        f"The local Kubernetes orchestrator only works with a "
-                        f"local container registry because it cannot "
-                        f"currently authenticate to external container "
-                        f"registries. You should use a flavor of container "
-                        f"registry other than '{container_registry.FLAVOR}'.\n"
-                        + silence_local_validations_msg
-                    )
+            # if the orchestrator is remote, the container registry must
+            # also be remote.
+            if container_registry.is_local:
+                return False, (
+                    f"The Kubernetes orchestrator requires a remote container "
+                    f"registry, but the '{container_registry.name}' container "
+                    f"registry of your active stack points to a local URI "
+                    f"'{container_registry.uri}'. Please make sure stacks "
+                    f"with a Kubernetes orchestrator always contain remote "
+                    f"container registries."
+                )
 
             return True, ""
 
@@ -289,23 +187,10 @@ class KubernetesOrchestrator(BaseOrchestrator):
     def get_docker_image_name(self, pipeline_name: str) -> str:
         """Returns the full docker image name including registry and tag."""
 
-        base_image_name = f"zenml-kubernetes:{pipeline_name}"
         container_registry = Repository().active_stack.container_registry
-
-        if container_registry:
-            registry_uri = container_registry.uri.rstrip("/")
-            return f"{registry_uri}/{base_image_name}"
-        else:
-            return base_image_name
-
-    @property
-    def is_local(self) -> bool:
-        """Returns `True` if the k8s orchestrator is running locally (i.e. in
-        the local k3d cluster managed by ZenML).
-        """
-        return self.kubernetes_context == self._get_k3d_kubernetes_context(
-            self.uuid
-        )
+        assert container_registry
+        registry_uri = container_registry.uri.rstrip("/")
+        return f"{registry_uri}/zenml-kubernetes:{pipeline_name}"
 
     def prepare_pipeline_deployment(
         self,
@@ -382,7 +267,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         image_name = get_image_digest(image_name) or image_name
 
         # Get pipeline DAG as dict {"step": ["upstream_step_1", ...], ...}
-        pipeline_dag : Dict[str, List[str]] = {
+        pipeline_dag: Dict[str, List[str]] = {
             step.name: self.get_upstream_step_names(step, pb2_pipeline)
             for step in sorted_steps
         }
