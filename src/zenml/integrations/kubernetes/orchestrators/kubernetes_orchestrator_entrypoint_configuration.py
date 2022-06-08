@@ -125,7 +125,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
         kubernetes_namespace: str,
         pb2_pipeline: Pb2Pipeline,
         sorted_steps: List[BaseStep],
-        step_dependencies: Dict[str, List[str]],
+        pipeline_dag: Dict[str, List[str]],
     ) -> List[str]:
         """Gets all arguments that the entrypoint command should be called with.
 
@@ -136,7 +136,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
             kubernetes_namespace (str): Name of the Kubernetes namespace.
             pb2_pipeline (Pb2Pipeline): ZenML pipeline in TFX pb2 format.
             sorted_steps (List[BaseStep]): List of steps in execution order.
-            step_dependencies (Dict[str, List[str]]): For each step, list of
+            pipeline_dag (Dict[str, List[str]]): For each step, list of
                 steps that need to run before it.
 
         Returns:
@@ -178,7 +178,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
             "step_command": step_command,
             "fixed_step_args": fixed_step_args,
             "step_specific_args": step_specific_args,
-            "step_dependencies": step_dependencies,
+            "pipeline_dag": pipeline_dag,
         }
         pipeline_config_json = json.dumps(pipeline_config)
 

@@ -381,8 +381,8 @@ class KubernetesOrchestrator(BaseOrchestrator):
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
-        # Get step dependencies, e.g., {"step": ["upstream_step_1", ...], ...}
-        step_dependencies = {
+        # Get pipeline DAG as dict {"step": ["upstream_step_1", ...], ...}
+        pipeline_dag : Dict[str, List[str]] = {
             step.name: self.get_upstream_step_names(step, pb2_pipeline)
             for step in sorted_steps
         }
@@ -399,7 +399,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
             kubernetes_namespace=self.kubernetes_namespace,
             pb2_pipeline=pb2_pipeline,
             sorted_steps=sorted_steps,
-            step_dependencies=step_dependencies,
+            pipeline_dag=pipeline_dag,
         )
 
         # Build manifest for the orchestrator pod.

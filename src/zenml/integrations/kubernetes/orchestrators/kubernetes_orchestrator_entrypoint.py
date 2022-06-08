@@ -58,13 +58,13 @@ def main() -> None:
     sorted_steps = pipeline_config["sorted_steps"]
     fixed_step_args = pipeline_config["fixed_step_args"]
     step_specific_args = pipeline_config["step_specific_args"]
-    step_dependencies = pipeline_config["step_dependencies"]
+    pipeline_dag = pipeline_config["pipeline_dag"]
 
-    # Revert step dependencies so we can easily get subsequent steps of a step.
-    step_successors = defaultdict(list)
-    for step_name, deps in step_dependencies.items():
-        for previous_step_name in deps:
-            step_successors[previous_step_name].append(step_name)
+    # Revert DAG so we can easily get subsequent steps of a step.
+    reversed_pipeline_dag = defaultdict(list)
+    for step_name, upstream_steps in pipeline_dag.items():
+        for upstream_step_name in upstream_steps:
+            reversed_pipeline_dag[upstream_step_name].append(step_name)
 
     # Get k8s Core API for running kubectl commands later.
     core_api = kube_utils.make_core_v1_api()
@@ -76,37 +76,39 @@ def main() -> None:
         image_name=args.image_name,
     )
 
-    class StepDependencies:
-        """Class to wrap step_dependencies for multi-threading."""
+    class PipelineDag:
+        """Class to wrap pipeline_dag for multi-threading."""
 
-        def __init__(self, step_dependencies: Dict[str, List[str]]) -> None:
-            self.step_dependencies = step_dependencies
+        def __init__(self, pipeline_dag: Dict[str, List[str]]) -> None:
+            self.pipeline_dag = pipeline_dag
             self._lock = threading.Lock()
 
-        def get_dependencies(self, step_name: str) -> List[str]:
-            """Get a list of all dependencies of a step.
+        def get_upstream_steps(self, step_name: str) -> List[str]:
+            """Get a list of all upstream steps of a step.
 
-            Args:
-                step_name (str): Name of the step whose dependencies to get.
-
-            Returns:
-                List[str]: List of step names on which the given step depends.
-            """
-            with self._lock:
-                return self.step_dependencies[step_name]
-
-        def remove_dependency(self, step_name: str, dependency: str) -> None:
-            """Remove a dependency of a step.
+            These are all the steps that need to run before this one.
 
             Args:
                 step_name (str): Name of the step.
-                dependency (str): Name of the dependency (other step).
+
+            Returns:
+                List[str]: List of upstream steps.
             """
             with self._lock:
-                self.step_dependencies[step_name].remove(dependency)
+                return self.pipeline_dag[step_name]
 
-    # wrap step dependencies in a class to enable multi-threaded updates.
-    step_dependencies = StepDependencies(step_dependencies)
+        def remove_edge(self, step_name: str, upstream_step_name: str) -> None:
+            """Remove an edge (upstream_step, step) from the DAG.
+
+            Args:
+                step_name (str): Name of the downstream step.
+                upstream_step_name (str): Name of upstream step.
+            """
+            with self._lock:
+                self.pipeline_dag[step_name].remove(upstream_step_name)
+
+    # wrap pipeline_dag in a class to enable multi-threaded updates.
+    pipeline_dag = PipelineDag(pipeline_dag)
 
     class ThreadDict(dict):  # type: ignore[type-arg]
         """Thread-safe dict used to keep track of all threads per step."""
@@ -127,7 +129,7 @@ def main() -> None:
     thread_dict = ThreadDict()
 
     def _can_run(step_name: str) -> bool:
-        """Return whether a step has no dependencies and can run now.
+        """Return whether a step is ready to be run now.
 
         Args:
             step_name (str): Name of the step.
@@ -135,8 +137,8 @@ def main() -> None:
         Returns:
             bool: True if step can run now else False.
         """
-        dependencies = step_dependencies.get_dependencies(step_name)
-        return len(dependencies) == 0
+        upstream_steps = pipeline_dag.get_upstream_steps(step_name)
+        return len(upstream_steps) == 0
 
     def _run_step(step_name: str) -> None:
         """Run a single step.
@@ -176,9 +178,9 @@ def main() -> None:
         )
         logger.info(f"Pod of step `{step_name}` completed.")
 
-        # Remove current step from all dependencies and start next steps.
-        for successor_step_name in step_successors[step_name]:
-            step_dependencies.remove_dependency(successor_step_name, step_name)
+        # Remove current step from the DAG and start next steps.
+        for successor_step_name in reversed_pipeline_dag[step_name]:
+            pipeline_dag.remove_edge(successor_step_name, step_name)
             if _can_run(successor_step_name):
                 _run_step_in_thread(successor_step_name)
 
@@ -194,9 +196,9 @@ def main() -> None:
         thread_dict[step_name] = thread
         thread.start()
 
-    # Run all steps that have no dependencies and can be started immediately.
+    # Run all steps that can be started immediately.
     # These will, in turn, start other steps once all of their respective
-    # dependencies have run.
+    # upstream steps have run.
     source_steps = [step for step in sorted_steps if _can_run(step)]
     for step_name in source_steps:
         _run_step_in_thread(step_name)
@@ -209,9 +211,10 @@ def main() -> None:
     # Make sure all steps were run, otherwise print a warning.
     for step_name in sorted_steps:
         if not _can_run(step_name):
+            upstream_steps = pipeline_dag.get_upstream_steps(step_name)
             logger.warning(
-                f"Step `{step_name}` was never run, because it still had the "
-                f"following dependencies: `{deps}`."
+                f"Step `{step_name}` was never run, because it was still"
+                f" waiting for the following steps: `{upstream_steps}`."
             )
 
     logger.info("Orchestration pod completed.")
