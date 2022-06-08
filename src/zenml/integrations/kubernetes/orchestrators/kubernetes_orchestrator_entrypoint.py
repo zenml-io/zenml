@@ -17,9 +17,8 @@
 import argparse
 import json
 import threading
-import time
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
@@ -29,6 +28,108 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+class ThreadedDagRunner:
+    """Class to wrap pipeline_dag for multi-threading."""
+
+    def __init__(self, dag: Dict[str, List[str]], run_fn) -> None:
+        self.dag = dag
+        self.reversed_dag = self.reverse_dag(dag)
+        self.run_fn = run_fn
+        self.nodes = dag.keys()
+        self.node_is_waiting = {node_name: True for node_name in self.nodes}
+        self.node_is_running = {node_name: False for node_name in self.nodes}
+        self.node_is_completed = {node_name: False for node_name in self.nodes}
+        self._lock = threading.Lock()
+
+    @staticmethod
+    def reverse_dag(dag):
+        """Reverse a DAG."""
+        reversed_dag = defaultdict(list)
+        for node_name, upstream_nodes in dag.items():
+            for upstream_node in upstream_nodes:
+                reversed_dag[upstream_node].append(node_name)
+        return reversed_dag
+
+    def _can_run(self, node: str) -> bool:
+        """Return whether a node is ready to be run.
+
+        This is the case if the node has not run yet and all of its upstream
+        node have already completed.
+
+        Args:
+            node (str): Name of the node.
+
+        Returns:
+            bool: True if node can run else False.
+        """
+        if not self.node_is_waiting[node]:
+            return False
+        for upstream_node in self.dag[node]:
+            if not self.node_is_completed[upstream_node]:
+                return False
+        return True
+
+    def _run_node(self, node):
+        # run the node using the user-defined run_fn
+        self.run_fn(node)
+
+        # finish node
+        self._finish_node(node)
+
+    def _run_node_in_thread(self, node):
+        # update node status to running
+        assert self.node_is_waiting[node]
+        with self._lock:
+            self.node_is_waiting[node] = False
+            self.node_is_running[node] = True
+
+        # run node in new thread
+        thread = threading.Thread(target=self._run_node, args=(node,))
+        thread.start()
+        return thread
+
+    def _finish_node(self, node):
+        # update node status to completed
+        assert self.node_is_running[node]
+        with self._lock:
+            self.node_is_running[node] = False
+            self.node_is_completed[node] = True
+
+        # run downstream nodes
+        threads = []
+        for downstram_node in self.reversed_dag[node]:
+            if self._can_run(downstram_node):
+                thread = self._run_node_in_thread(downstram_node)
+                threads.append(thread)
+
+        # wait for all downstream nodes to complete
+        for thread in threads:
+            thread.join()
+
+    def run(self):
+        # Run all nodes that can be started immediately.
+        # These will, in turn, start other nodes once all of their respective
+        # upstream nodes have run.
+        threads = []
+        for node in self.nodes:
+            if self._can_run(node):
+                thread = self._run_node_in_thread(node)
+                threads.append(thread)
+
+        # Wait till all nodes have completed.
+        for thread in threads:
+            thread.join()
+
+        # Make sure all nodes were run, otherwise print a warning.
+        for node in self.nodes:
+            if self.node_is_waiting[node]:
+                upstream_nodes = self.dag[node]
+                logger.warning(
+                    f"Node `{node}` was never run, because it was still"
+                    f" waiting for the following nodes: `{upstream_nodes}`."
+                )
 
 
 def parse_args() -> argparse.Namespace:
@@ -55,16 +156,9 @@ def main() -> None:
     args = parse_args()
     pipeline_config = args.pipeline_config
     step_command = pipeline_config["step_command"]
-    sorted_steps = pipeline_config["sorted_steps"]
     fixed_step_args = pipeline_config["fixed_step_args"]
     step_specific_args = pipeline_config["step_specific_args"]
     pipeline_dag = pipeline_config["pipeline_dag"]
-
-    # Revert DAG so we can easily get subsequent steps of a step.
-    reversed_pipeline_dag = defaultdict(list)
-    for step_name, upstream_steps in pipeline_dag.items():
-        for upstream_step_name in upstream_steps:
-            reversed_pipeline_dag[upstream_step_name].append(step_name)
 
     # Get k8s Core API for running kubectl commands later.
     core_api = kube_utils.make_core_v1_api()
@@ -76,72 +170,8 @@ def main() -> None:
         image_name=args.image_name,
     )
 
-    class PipelineDag:
-        """Class to wrap pipeline_dag for multi-threading."""
-
-        def __init__(self, pipeline_dag: Dict[str, List[str]]) -> None:
-            self.pipeline_dag = pipeline_dag
-            self._lock = threading.Lock()
-
-        def get_upstream_steps(self, step_name: str) -> List[str]:
-            """Get a list of all upstream steps of a step.
-
-            These are all the steps that need to run before this one.
-
-            Args:
-                step_name (str): Name of the step.
-
-            Returns:
-                List[str]: List of upstream steps.
-            """
-            with self._lock:
-                return self.pipeline_dag[step_name]
-
-        def remove_edge(self, step_name: str, upstream_step_name: str) -> None:
-            """Remove an edge (upstream_step, step) from the DAG.
-
-            Args:
-                step_name (str): Name of the downstream step.
-                upstream_step_name (str): Name of upstream step.
-            """
-            with self._lock:
-                self.pipeline_dag[step_name].remove(upstream_step_name)
-
-    # wrap pipeline_dag in a class to enable multi-threaded updates.
-    pipeline_dag = PipelineDag(pipeline_dag)
-
-    class ThreadDict(dict):  # type: ignore[type-arg]
-        """Thread-safe dict used to keep track of all threads per step."""
-
-        def __init__(self) -> None:
-            super().__init__()
-            self._lock = threading.Lock()
-
-        def __setitem__(self, __k: Any, __v: Any) -> None:
-            with self._lock:
-                super().__setitem__(__k, __v)
-
-        def __delitem__(self, __k: Any) -> None:
-            with self._lock:
-                super().__delitem__(__k)
-
-    # dict {step: thread} to keep track of currently running threads
-    thread_dict = ThreadDict()
-
-    def _can_run(step_name: str) -> bool:
-        """Return whether a step is ready to be run now.
-
-        Args:
-            step_name (str): Name of the step.
-
-        Returns:
-            bool: True if step can run now else False.
-        """
-        upstream_steps = pipeline_dag.get_upstream_steps(step_name)
-        return len(upstream_steps) == 0
-
-    def _run_step(step_name: str) -> None:
-        """Run a single step.
+    def run_step_on_kubernetes(step_name: str) -> None:
+        """Run a pipeline step in a separate Kubernetes pod.
 
         Args:
             step_name (str): Name of the step.
@@ -178,44 +208,7 @@ def main() -> None:
         )
         logger.info(f"Pod of step `{step_name}` completed.")
 
-        # Remove current step from the DAG and start next steps.
-        for successor_step_name in reversed_pipeline_dag[step_name]:
-            pipeline_dag.remove_edge(successor_step_name, step_name)
-            if _can_run(successor_step_name):
-                _run_step_in_thread(successor_step_name)
-
-        del thread_dict[step_name]  # remove current thread
-
-    def _run_step_in_thread(step_name: str) -> None:
-        """Call _run_step() in a separate thread.
-
-        Args:
-            step_name (str): Name of the step to run.
-        """
-        thread = threading.Thread(target=_run_step, args=(step_name,))
-        thread_dict[step_name] = thread
-        thread.start()
-
-    # Run all steps that can be started immediately.
-    # These will, in turn, start other steps once all of their respective
-    # upstream steps have run.
-    source_steps = [step for step in sorted_steps if _can_run(step)]
-    for step_name in source_steps:
-        _run_step_in_thread(step_name)
-
-    # Wait till all steps have run
-    while len(thread_dict) > 0:
-        logger.debug(f"Waiting for threads: {thread_dict}")
-        time.sleep(1)
-
-    # Make sure all steps were run, otherwise print a warning.
-    for step_name in sorted_steps:
-        if not _can_run(step_name):
-            upstream_steps = pipeline_dag.get_upstream_steps(step_name)
-            logger.warning(
-                f"Step `{step_name}` was never run, because it was still"
-                f" waiting for the following steps: `{upstream_steps}`."
-            )
+    ThreadedDagRunner(dag=pipeline_dag, run_fn=run_step_on_kubernetes).run()
 
     logger.info("Orchestration pod completed.")
 
