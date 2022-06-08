@@ -44,6 +44,8 @@ class KServeModelDeployer(BaseModelDeployer):
             (if running inside a pod).
         base_url: the base URL of the Kubernetes ingress used to expose the
             KServe inference services.
+        secret: the name of the secret containing the credentials for the
+            KServe inference services.
     """
 
     # Class Configuration
@@ -134,15 +136,15 @@ class KServeModelDeployer(BaseModelDeployer):
                     f"Deployer configuration cannot be fetched: {self.secret}."
                 )
             if self.kserve_client:
-                # try:
-                zenml_secret = secret_manager.get_secret(self.secret)
-                self.kserve_client.set_credentials(**zenml_secret.content)
-                # except KeyError:
-                #    raise RuntimeError(
-                #        f"The ZenML secret '{self.secret}' specified in the "
-                #        f"KServe Model Deployer configuration was not found "
-                #        f"in the active stack's secret manager."
-                #    )
+                try:
+                    zenml_secret = secret_manager.get_secret(self.secret)
+                except KeyError:
+                    raise RuntimeError(
+                        f"The ZenML secret '{self.secret}' specified in the "
+                        f"Seldon Core Model Deployer configuration was not found "
+                        f"in the active stack's secret manager."
+                )
+                self.kserve_client.set_credentials(**zenml_secret.content)                
             else:
                 raise RuntimeError(
                     f"The Kserve client is not available. The ZenML secret "
