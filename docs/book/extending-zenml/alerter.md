@@ -2,9 +2,10 @@
 description: Sending alerts through specified channels.
 ---
 
-Alerters allow you to send messages to ChatOps tools from within your pipeline.
-This is especially useful for immediately getting notified when failures happen
-and for general monitoring/reporting.
+Alerters allow you to send messages to chat services (like Slack, Discord, 
+Mattermost, etc.) from within your pipeline.
+This is useful for immediately getting notified when failures happen,
+for general monitoring/reporting, and also for building human-in-the-loop ML.
 
 {% hint style="warning" %}
 Before reading this chapter, make sure that you are familiar with the 
@@ -15,10 +16,10 @@ concept of [stacks, stack components and their flavors](../advanced-guide/stacks
 
 The base abstraction for alerters is very simple, as it only defines two
 abstract methods that subclasses should implement:
-- `post()` takes a string, posts it to the desired ChatOps tool, and returns 
+- `post()` takes a string, posts it to the desired chat service, and returns 
 `True` if the operation succeeded, else `False`.
-- `ask()` does the same as post, but after sending the message, it waits
-until someone approves or rejects the operation from within the ChatOps tool
+- `ask()` does the same as `post()`, but after sending the message, it waits
+until someone approves or rejects the operation from within the chat service
 (e.g., by sending "approve" / "reject" to the bot as response).
 `ask()` then only returns `True` if the operation succeeded and was approved,
 else `False`.
@@ -32,19 +33,19 @@ class BaseAlerter(StackComponent, ABC):
     def post(
         self, message: str, config: Optional[BaseAlerterStepConfig]
     ) -> bool:
-        """Post a message to a ChatOps service."""
+        """Post a message to a chat service."""
         return True
 
     def ask(
         self, question: str, config: Optional[BaseAlerterStepConfig]
     ) -> bool:
-        """Post a message to a ChatOps service and wait for approval."""
+        """Post a message to a chat service and wait for approval."""
         return True
 ```
 
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation.
-To see the full docstrings and imports, please check the source code on GitHub.
+To see the full docstrings and imports, please check [the source code on GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/alerter/base_alerter.py).
 {% endhint %}
 
 ## List of available alerters
@@ -55,7 +56,7 @@ dedicated bot account of a Slack app linked to the channel.
 
 |                | Flavor | Integration |
 |----------------|--------|-------------|
-| [SlackAlerter](https://apidocs.zenml.io/0.8.1/api_docs/integrations/#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter)   | slack  | slack       |
+| [SlackAlerter](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.slack.alerters.slack_alerter.SlackAlerter)   | slack  | slack       |
 
 If you would like to see the available flavors for alerters, you can use the 
 command:

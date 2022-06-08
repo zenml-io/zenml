@@ -173,6 +173,7 @@ LocalDaemonService
 LocalDaemonServiceConfig
 LocalExample
 LogRecord
+Mattermost
 MERCHANTABILITY
 MLFlowDeployerConfig
 MLFlowDeploymentConfig

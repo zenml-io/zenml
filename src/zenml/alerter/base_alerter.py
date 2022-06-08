@@ -31,7 +31,7 @@ class BaseAlerter(StackComponent, ABC):
     def post(
         self, message: str, config: Optional[BaseAlerterStepConfig]
     ) -> bool:
-        """Post a message to a ChatOps service.
+        """Post a message to a chat service.
 
         Args:
             message (str): Message to be posted.
@@ -46,7 +46,7 @@ class BaseAlerter(StackComponent, ABC):
     def ask(
         self, question: str, config: Optional[BaseAlerterStepConfig]
     ) -> bool:
-        """Post a message to a ChatOps service and wait for approval.
+        """Post a message to a chat service and wait for approval.
 
         This can be useful to easily get a human in the loop, e.g., when
         deploying models.
