@@ -55,6 +55,9 @@ class PandasMaterializer(BaseMaterializer):
         fileio.rmtree(temp_dir)
 
         if issubclass(data_type, pd.Series):
+            # Taking the first column if its a series as the assumption
+            # is that there will only be one
+            assert len(df.columns) == 1
             df = df[df.columns[0]]
 
         return df
