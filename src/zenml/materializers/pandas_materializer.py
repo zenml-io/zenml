@@ -68,7 +68,7 @@ class PandasMaterializer(BaseMaterializer):
         super().handle_return(df)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
-        if type(df) == pd.Series:
+        if isinstance(df, pd.Series):
             df = df.to_frame(name="series")
         
         # Create a temporary file to store the model
