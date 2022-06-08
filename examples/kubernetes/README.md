@@ -1,9 +1,17 @@
 # :dango: Pipeline Orchestration on Kubernetes
 
 This example will demonstrate how to orchestrate pipelines using the ZenML
-Kubernetes-native orchestrator.
-We will build a simple pipeline consisting of four steps and orchestrate it in
-a Kubernetes cluster running in the cloud.
+Kubernetes-native orchestrator, which is a lightweight alternative to other
+distributed orchestrators like Airflow or Kubeflow.
+
+Overall, the Kubernetes orchestrator is quite similar to the Kubeflow
+orchestrator in that it runs each step of the pipeline in a separate
+Kubernetes pod. However, the orchestration of the different pods is not done
+by Kubeflow, but by a separate master pod that orchestrates the step execution
+via topological sort.
+
+In this example, we will build a simple pipeline consisting of four steps and
+orchestrate it in a Kubernetes cluster running in the cloud.
 
 ## :heavy_check_mark: Requirements
 
