@@ -20,6 +20,7 @@ from requests.auth import HTTPBasicAuth
 
 from zenml.integrations.github import GITHUB_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
@@ -224,9 +225,25 @@ class GitHubSecretsManager(BaseSecretsManager):
             )
 
         if not inside_github_action_environment():
+            stack_name = Repository().active_stack_name
+            commands = [
+                f"zenml stack copy {stack_name} <NEW_STACK_NAME>",
+                "zenml secrets_manager register <NEW_SECRETS_MANAGER_NAME> "
+                "--flavor=local",
+                "zenml stack update <NEW_STACK_NAME> "
+                "--secrets_manager=<NEW_SECRETS_MANAGER_NAME>",
+                "zenml stack set <NEW_STACK_NAME>",
+                f"zenml secret register {secret_name} ...",
+            ]
+
             raise RuntimeError(
                 "Getting GitHub secrets is only possible within a GitHub "
-                "Actions workflow."
+                "Actions workflow. If you need this secret to access "
+                "stack components (e.g. your metadata store to fetch pipelines "
+                "during the post-execution workflow) locally, you need to "
+                "register this secret in a different secrets manager. "
+                "You can do this by running the following commands: \n\n"
+                + "\n".join(commands)
             )
 
         # If we're running inside an GitHub Actions environment using the a
