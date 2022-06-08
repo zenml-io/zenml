@@ -10,14 +10,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-    EvidentlyProfileStep,
-)
+from zenml.steps import step
 
-drift_detector = EvidentlyProfileStep(
-    EvidentlyProfileConfig(
-        column_mapping=None,
-        profile_sections=["datadrift"],
-    )
-)
+
+@step
+def analyze_drift(
+    input: dict,
+) -> bool:
+    """Analyze the Evidently drift report and return a true/false value
+    indicating whether data drift was detected."""
+    return input["data_drift"]["data"]["metrics"]["dataset_drift"]

@@ -18,8 +18,8 @@ from pipelines.drift_detection_pipeline.drift_detection_pipeline import (
 from rich import print
 from steps.data_loader.data_loader_step import data_loader
 from steps.data_splitter.data_splitter_step import data_splitter
-from steps.drift_analyzer.drift_analyzer_step import drift_detector
-from steps.drift_detector.drift_detector_step import analyze_drift
+from steps.drift_analyzer.drift_analyzer_step import analyze_drift
+from steps.drift_detector.drift_detector_step import drift_detector
 
 from zenml.integrations.evidently.visualizers import EvidentlyVisualizer
 from zenml.repository import Repository
