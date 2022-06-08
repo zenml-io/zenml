@@ -1,4 +1,4 @@
-# 🏃 Run pipeline in production with Airflow
+# 🏃 Run pipelines in production with Airflow
 
 ZenML pipelines can be executed natively as Airflow DAGs. This brings together
 the power of the Airflow orchestration with the ML-specific benefits of ZenML
