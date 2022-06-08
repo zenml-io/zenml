@@ -16,8 +16,8 @@ from typing import Any, ClassVar, Dict, List, Union
 
 import pandas as pd
 import redis
-from feast import FeatureStore  # type: ignore[import]
-from feast.registry import Registry  # type: ignore[import]
+from feast import FeatureStore
+from feast.registry import Registry
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
 from zenml.integrations.feast import FEAST_FEATURE_STORE_FLAVOR
@@ -178,7 +178,7 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The registry.
         """
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs: FeatureStore = FeatureStore(repo_path=self.feast_repo)
         return fs.registry
 
     def get_feast_version(self) -> str:

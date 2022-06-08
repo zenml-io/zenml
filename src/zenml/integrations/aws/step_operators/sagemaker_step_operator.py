@@ -17,7 +17,7 @@ from typing import ClassVar, List, Optional, Tuple
 import sagemaker
 
 from zenml.enums import StackComponentType
-from zenml.integrations.sagemaker import SAGEMAKER_STEP_OPERATOR_FLAVOR
+from zenml.integrations.aws import AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 from zenml.repository import Repository
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
@@ -53,7 +53,7 @@ class SagemakerStepOperator(BaseStepOperator):
     experiment_name: Optional[str] = None
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = SAGEMAKER_STEP_OPERATOR_FLAVOR
+    FLAVOR: ClassVar[str] = AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR
 
     @property
     def validator(self) -> Optional[StackValidator]:

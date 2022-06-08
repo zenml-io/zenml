@@ -23,6 +23,7 @@ from pydantic import validator as property_validator
 
 from zenml import __version__
 from zenml.enums import StackComponentType
+from zenml.integrations.gcp import GCP_VERTEX_STEP_OPERATOR_FLAVOR
 from zenml.integrations.gcp.constants import (
     CONNECTION_ERROR_RETRY_LIMIT,
     POLLING_INTERVAL_IN_SECONDS,
@@ -30,8 +31,7 @@ from zenml.integrations.gcp.constants import (
     VERTEX_JOB_STATES_COMPLETED,
     VERTEX_JOB_STATES_FAILED,
 )
-from zenml.integrations.vertex import VERTEX_STEP_OPERATOR_FLAVOR
-from zenml.integrations.vertex.google_credentials_mixin import (
+from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
 from zenml.logger import get_logger
@@ -74,7 +74,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
     encryption_spec_key_name: Optional[str] = None
 
     # Class configuration
-    FLAVOR: ClassVar[str] = VERTEX_STEP_OPERATOR_FLAVOR
+    FLAVOR: ClassVar[str] = GCP_VERTEX_STEP_OPERATOR_FLAVOR
 
     @property
     def validator(self) -> Optional[StackValidator]:

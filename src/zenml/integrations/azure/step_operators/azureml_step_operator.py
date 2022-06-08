@@ -31,7 +31,7 @@ from azureml.core.conda_dependencies import CondaDependencies
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.environment import Environment as ZenMLEnvironment
-from zenml.integrations.azureml import AZUREML_STEP_OPERATOR_FLAVOR
+from zenml.integrations.azure import AZUREML_STEP_OPERATOR_FLAVOR
 from zenml.io import fileio
 from zenml.step_operators import BaseStepOperator
 from zenml.utils.docker_utils import CONTAINER_ZENML_CONFIG_DIR

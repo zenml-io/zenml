@@ -39,12 +39,14 @@ from kfp.v2 import dsl as dslv2
 from kfp.v2.compiler import Compiler as KFPV2Compiler
 
 from zenml.enums import StackComponentType
-from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
-from zenml.integrations.vertex import VERTEX_ORCHESTRATOR_FLAVOR
-from zenml.integrations.vertex.google_credentials_mixin import (
+from zenml.integrations.gcp import (
+    GCP_ARTIFACT_STORE_FLAVOR,
+    GCP_VERTEX_ORCHESTRATOR_FLAVOR,
+)
+from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
-from zenml.integrations.vertex.orchestrators.vertex_entrypoint_configuration import (
+from zenml.integrations.gcp.orchestrators.vertex_entrypoint_configuration import (
     VERTEX_JOB_ID_OPTION,
     VertexEntrypointConfiguration,
 )
@@ -64,7 +66,6 @@ if TYPE_CHECKING:
     from zenml.runtime_configuration import RuntimeConfiguration
     from zenml.stack import Stack
     from zenml.steps import BaseStep
-
 
 logger = get_logger(__name__)
 
@@ -87,33 +88,44 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
     Attributes:
         custom_docker_base_image_name: Name of the Docker image that should be
             used as the base for the image that will be used to execute each of
-            the steps. If no custom base image is given, a basic image of the active
+            the steps. If no custom base image is given, a basic image of the
+            active
             ZenML version will be used. **Note**: This image needs to have ZenML
-            installed, otherwise the pipeline execution will fail. For that reason,
+            installed, otherwise the pipeline execution will fail. For that
+            reason,
             might want to extend the ZenML Docker images found here:
             https://hub.docker.com/r/zenmldocker/zenml/
         project: GCP project name. If `None`, the project will be inferred from
             the environment.
         location: Name of GCP region where the pipeline job will be executed.
             Vertex AI Pipelines is available in the following regions:
-            https://cloud.google.com/vertex-ai/docs/general/locations#feature-availability
-        pipeline_root: a Cloud Storage URI that will be used by the Vertex AI Pipelines.
+            https://cloud.google.com/vertex-ai/docs/general/locations#feature
+            -availability
+        pipeline_root: a Cloud Storage URI that will be used by the Vertex AI
+        Pipelines.
             If not provided but the artifact store in the stack used to execute
-            the pipeline is a `zenml.integrations.gcp.artifact_stores.GCPArtifactStore`,
+            the pipeline is a
+            `zenml.integrations.gcp.artifact_stores.GCPArtifactStore`,
             then a subdirectory of the artifact store will be used.
-        encryption_spec_key_name: The Cloud KMS resource identifier of the customer
+        encryption_spec_key_name: The Cloud KMS resource identifier of the
+        customer
             managed encryption key used to protect the job. Has the form:
-            `projects/my-project/locations/my-region/keyRings/my-kr/cryptoKeys/my-key`.
+            `projects/my-project/locations/my-region/keyRings/my-kr
+            /cryptoKeys/my-key`.
             The key needs to be in the same region as where the compute resource
             is created.
-        workload_service_account: the service account for workload run-as account.
-            Users submitting jobs must have act-as permission on this run-as account.
+        workload_service_account: the service account for workload run-as
+        account.
+            Users submitting jobs must have act-as permission on this run-as
+            account.
             If not provided, the default service account will be used.
-        network: the full name of the Compute Engine Network to which the job should
+        network: the full name of the Compute Engine Network to which the job
+        should
             be peered. For example, `projects/12345/global/networks/myVPC`
             If not provided, the job will not be peered with any network.
         synchronous: If `True`, running a pipeline using this orchestrator will
-            block until all steps finished running on Vertex AI Pipelines service.
+            block until all steps finished running on Vertex AI Pipelines
+            service.
     """
 
     custom_docker_base_image_name: Optional[str] = None
@@ -128,7 +140,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
     _pipeline_root: str
 
-    FLAVOR: ClassVar[str] = VERTEX_ORCHESTRATOR_FLAVOR
+    FLAVOR: ClassVar[str] = GCP_VERTEX_ORCHESTRATOR_FLAVOR
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -142,8 +154,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             container_registry = stack.container_registry
             if container_registry and container_registry.is_local:
                 return False, (
-                    f"The Vertex orchestrator does not support local container registries. "
-                    f"You should replace the component '{container_registry.name}' "
+                    f"The Vertex orchestrator does not support local "
+                    f"container registries. "
+                    f"You should replace the component '"
+                    f"{container_registry.name}' "
                     f"{container_registry.TYPE.value} to a remote one."
                 )
 
@@ -153,12 +167,17 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 if not local_path:
                     continue
                 return False, (
-                    f"The '{stack_comp.name}' {stack_comp.TYPE.value} is a local "
-                    f"stack component. The Vertex AI Pipelines orchestrator requires "
+                    f"The '{stack_comp.name}' {stack_comp.TYPE.value} is a "
+                    f"local "
+                    f"stack component. The Vertex AI Pipelines orchestrator "
+                    f"requires "
                     f"that all the components in the stack used to execute the "
-                    f"pipeline have to be not local, because there is no way for "
-                    f"Vertex to connect to your local machine. You should use a "
-                    f"flavor of {stack_comp.TYPE.value} other than '{stack_comp.FLAVOR}'."
+                    f"pipeline have to be not local, because there is no way "
+                    f"for "
+                    f"Vertex to connect to your local machine. You should use "
+                    f"a "
+                    f"flavor of {stack_comp.TYPE.value} other than '"
+                    f"{stack_comp.FLAVOR}'."
                 )
 
             # If the `pipeline_root` has not been defined in the orchestrator
@@ -169,12 +188,18 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 and stack.artifact_store.FLAVOR != GCP_ARTIFACT_STORE_FLAVOR
             ):
                 return False, (
-                    f"The attribute `pipeline_root` has not been set and it cannot "
-                    f"be generated using the path of the artifact store because "
-                    f"it is not a `zenml.integrations.gcp.artifact_store.GCPArtifactStore`. "
-                    f"To solve this issue, set the `pipeline_root` attribute manually "
+                    f"The attribute `pipeline_root` has not been set and it "
+                    f"cannot "
+                    f"be generated using the path of the artifact store "
+                    f"because "
+                    f"it is not a "
+                    f"`zenml.integrations.gcp.artifact_store.GCPArtifactStore"
+                    f"`. "
+                    f"To solve this issue, set the `pipeline_root` attribute "
+                    f"manually "
                     f"executing the following command: "
-                    f'`zenml orchestrator update {stack.orchestrator.name} --pipeline_root="<Cloud Storage URI>"`.'
+                    f"`zenml orchestrator update {stack.orchestrator.name} "
+                    f'--pipeline_root="<Cloud Storage URI>"`.'
                 )
 
             return True, ""
@@ -198,7 +223,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
     @property
     def root_directory(self) -> str:
-        """Returns path to the root directory for all files concerning this orchestrator."""
+        """Returns path to the root directory for all files concerning this
+        orchestrator."""
         return os.path.join(
             get_global_config_directory(), "vertex", str(self.uuid)
         )
@@ -251,7 +277,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """Creates a KFP JSON pipeline as intermediary representation of the pipeline
+        """Creates a KFP JSON pipeline as intermediary representation of the
+        pipeline
         which is then deployed to Vertex AI Pipelines service.
 
         How it works:
@@ -260,18 +287,23 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         builds a Docker image that contains the code for the pipeline, all steps
         the context around these files.
 
-        Based on this Docker image a callable is created which builds container_ops
-        for each step (`_construct_kfp_pipeline`). The function `kfp.components.load_component_from_text`
+        Based on this Docker image a callable is created which builds
+        container_ops
+        for each step (`_construct_kfp_pipeline`). The function
+        `kfp.components.load_component_from_text`
         is used to create the `ContainerOp`, because using the `dsl.ContainerOp`
         class directly is deprecated when using the Kubeflow SDK v2. The step
-        entrypoint command with the entrypoint arguments is the command that will
+        entrypoint command with the entrypoint arguments is the command that
+        will
         be executed by the container created using the previously created Docker
         image.
 
-        This callable is then compiled into a JSON file that is used as the intermediary
+        This callable is then compiled into a JSON file that is used as the
+        intermediary
         representation of the Kubeflow pipeline.
 
-        This file then is submitted to the Vertex AI Pipelines service for execution.
+        This file then is submitted to the Vertex AI Pipelines service for
+        execution.
 
         Args:
             sorted_steps: List of sorted steps.
@@ -281,27 +313,36 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             runtime_configuration: The Runtime configuration of the current run.
 
         Raises:
-            ValueError: If the attribute `pipeline_root` is not set and it can be
+            ValueError: If the attribute `pipeline_root` is not set and it
+            can be
                 not generated using the path of the artifact store in the stack
-                because it is not a `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
+                because it is not a
+                `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
 
-        # If the `pipeline_root` has not been defined in the orchestrator configuration,
-        # try to create it from the artifact store if it is a `GCPArtifactStore`.
+        # If the `pipeline_root` has not been defined in the orchestrator
+        # configuration,
+        # try to create it from the artifact store if it is a
+        # `GCPArtifactStore`.
         if not self.pipeline_root:
             artifact_store = stack.artifact_store
             self._pipeline_root = f"{artifact_store.path.rstrip('/')}/vertex_pipeline_root/{pipeline.name}/{runtime_configuration.run_name}"
             logger.info(
-                "The attribute `pipeline_root` has not been set in the orchestrator "
-                "configuration. One has been generated automatically based on the "
-                "path of the `GCPArtifactStore` artifact store in the stack used "
-                "to execute the pipeline. The generated `pipeline_root` is `%s`.",
+                "The attribute `pipeline_root` has not been set in the "
+                "orchestrator "
+                "configuration. One has been generated automatically based on "
+                "the "
+                "path of the `GCPArtifactStore` artifact store in the stack "
+                "used "
+                "to execute the pipeline. The generated `pipeline_root` is "
+                "`%s`.",
                 self._pipeline_root,
             )
         else:
             self._pipeline_root = self.pipeline_root
 
-        # Build the Docker image that will be used to run the steps of the pipeline.
+        # Build the Docker image that will be used to run the steps of the
+        # pipeline.
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
@@ -313,8 +354,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             Additionally, this gives each `ContainerOp` information about its
             direct downstream steps.
 
-            If this callable is passed to the `compile()` method of `KFPV2Compiler`
-            all `dsl.ContainerOp` instances will be automatically added to a singular
+            If this callable is passed to the `compile()` method of
+            `KFPV2Compiler`
+            all `dsl.ContainerOp` instances will be automatically added to a
+            singular
             `dsl.Pipeline` instance.
             """
             step_name_to_container_op: Dict[str, dsl.ContainerOp] = {}
@@ -332,7 +375,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                     **{VERTEX_JOB_ID_OPTION: dslv2.PIPELINE_JOB_ID_PLACEHOLDER},
                 )
 
-                # Create the `ContainerOp` for the step. Using the `dsl.ContainerOp`
+                # Create the `ContainerOp` for the step. Using the
+                # `dsl.ContainerOp`
                 # class directly is deprecated when using the Kubeflow SDK v2.
                 container_op = kfp.components.load_component_from_text(
                     f"""
@@ -367,7 +411,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         # to generate a JSON representation of the pipeline that can be later
         # upload to Vertex AI Pipelines service.
         logger.debug(
-            "Compiling pipeline using Kubeflow SDK V2 compiler and saving it to `%s`",
+            "Compiling pipeline using Kubeflow SDK V2 compiler and saving it "
+            "to `%s`",
             pipeline_file_path,
         )
         KFPV2Compiler().compile(
@@ -376,7 +421,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             pipeline_name=_clean_pipeline_name(pipeline.name),
         )
 
-        # Using the Google Cloud AIPlatform client, upload and execute the pipeline
+        # Using the Google Cloud AIPlatform client, upload and execute the
+        # pipeline
         # on the Vertex AI Pipelines service.
         self._upload_and_run_pipeline(
             pipeline_name=pipeline.name,
@@ -408,14 +454,17 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         assert runtime_configuration.run_name
         job_id = _clean_pipeline_name(runtime_configuration.run_name)
 
-        # Warn the user that the scheduling is not available using the Vertex Orchestrator
+        # Warn the user that the scheduling is not available using the Vertex
+        # Orchestrator
         if runtime_configuration.schedule:
             logger.warning(
-                "Pipeline scheduling configuration was provided, but Vertex AI Pipelines "
+                "Pipeline scheduling configuration was provided, but Vertex "
+                "AI Pipelines "
                 "do not have capabilities for scheduling yet."
             )
 
-        # Get the credentials that would be used to create the Vertex AI Pipelines
+        # Get the credentials that would be used to create the Vertex AI
+        # Pipelines
         # job.
         credentials, project_id = self._get_authentication()
         if self.project and self.project != project_id:
@@ -446,7 +495,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         )
 
         logger.info(
-            "Submitting pipeline job with job_id `%s` to Vertex AI Pipelines service.",
+            "Submitting pipeline job with job_id `%s` to Vertex AI Pipelines "
+            "service.",
             job_id,
         )
 
@@ -454,14 +504,16 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         try:
             if self.workload_service_account:
                 logger.info(
-                    "The Vertex AI Pipelines job workload will be executed using `%s` "
+                    "The Vertex AI Pipelines job workload will be executed "
+                    "using `%s` "
                     "service account.",
                     self.workload_service_account,
                 )
 
             if self.network:
                 logger.info(
-                    "The Vertex AI Pipelines job will be peered with `%s` network.",
+                    "The Vertex AI Pipelines job will be peered with `%s` "
+                    "network.",
                     self.network,
                 )
 

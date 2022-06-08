@@ -16,7 +16,7 @@ from typing import Any, ClassVar, Dict, List
 from google.cloud import secretmanager
 
 from zenml.exceptions import SecretExistsError
-from zenml.integrations.gcp_secrets_manager import GCP_SECRETS_MANAGER_FLAVOR
+from zenml.integrations.gcp import GCP_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
