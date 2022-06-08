@@ -54,7 +54,7 @@ class PandasMaterializer(BaseMaterializer):
         # Cleanup and return
         fileio.rmtree(temp_dir)
 
-        if data_type == pd.Series:
+        if issubclass(data_type, pd.Series):
             df = df[df.columns[0]]
 
         return df
