@@ -396,15 +396,15 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
         jobs = {}
         for step in sorted_steps:
-            steps = []
+            job_steps = []
 
             # Copy the shared dicts here to avoid creating yaml anchors (which
             # are currently not supported in GitHub workflow yaml files)
             if write_env_file_step:
-                steps.append(write_env_file_step.copy())
+                job_steps.append(write_env_file_step.copy())
 
             if docker_login_step:
-                steps.append(docker_login_step.copy())
+                job_steps.append(docker_login_step.copy())
 
             entrypoint_args = (
                 GitHubActionsEntrypointConfiguration.get_entrypoint_arguments(
@@ -420,13 +420,13 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 "run": " ".join(command),
             }
 
-            steps.append(docker_run_step)
+            job_steps.append(docker_run_step)
             job_dict = {
                 "runs-on": "ubuntu-latest",
                 "needs": self.get_upstream_step_names(
                     step=step, pb2_pipeline=pb2_pipeline
                 ),
-                "steps": steps,
+                "steps": job_steps,
             }
             jobs[step.name] = job_dict
 
