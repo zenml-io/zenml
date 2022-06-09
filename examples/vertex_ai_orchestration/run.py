@@ -11,13 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Secrets Manager
-The GCP Secrets Manager allows your pipeline to directly access the GCP
-secrets manager and use the secrets within during runtime.
-"""
-from zenml.integrations.gcp.secrets_manager.gcp_secrets_manager import (
-    GCPSecretsManager
-)
 
-__all__ = ["GCPSecretsManager"]
+from pipelines.first_pipeline.vertex_example_pipeline import (
+    vertex_example_pipeline
+)
+from steps.first_step.first_step import get_first_num
+from steps.second_step.second_step import get_random_int
+from steps.third_step.third_step import subtract_numbers
+
+
+if __name__ == '__main__':
+    # Initialize a new pipeline run
+    p = vertex_example_pipeline(
+        first_step=get_first_num(),
+        second_step=get_random_int(),
+        third_step=subtract_numbers(),
+    )
+
+    # Run the new pipeline
+    p.run()

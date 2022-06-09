@@ -1,0 +1,14 @@
+name: vertex_example_pipeline
+steps:
+  first_step:
+    source:
+      file: steps/first_step/first_step
+      name: get_first_num
+  second_step:
+    source:
+      file: steps/second_step/second_step
+      name: get_random_int
+  third_step:
+    source:
+      file: steps/third_step/third_step
+      name: subtract_numbers
