@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Materializer for Pandas."""
 
 import os
 import tempfile
@@ -37,7 +38,14 @@ class PandasMaterializer(BaseMaterializer):
     )
 
     def handle_input(self, data_type: Type[Any]) -> pd.DataFrame:
-        """Reads pd.DataFrame from a parquet file."""
+        """Reads pd.DataFrame from a parquet file.
+
+        Args:
+            data_type: The type of the data to read.
+
+        Returns:
+            The pandas dataframe.
+        """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a MySQL metadata store."""
+
 from pathlib import Path
 from typing import Any, ClassVar, Optional, Union
 
@@ -43,7 +45,14 @@ class MySQLMetadataStore(BaseMetadataStore):
         metadata_store_pb2.ConnectionConfig,
         metadata_store_pb2.MetadataStoreClientConfig,
     ]:
-        """Return tfx metadata config for MySQL metadata store."""
+        """Return tfx metadata config for MySQL metadata store.
+
+        Returns:
+            The tfx metadata config.
+
+        Raises:
+            RuntimeError: If you have configured your metadata store incorrectly.
+        """
         config = MySQLDatabaseConfig(
             host=self.host,
             port=self.port,
@@ -116,7 +125,14 @@ class MySQLMetadataStore(BaseMetadataStore):
         return metadata_store_pb2.ConnectionConfig(mysql=config)
 
     def _get_mysql_secret(self) -> Any:
-        """Method which returns a MySQL secret from the secrets manager."""
+        """Method which returns a MySQL secret from the secrets manager.
+
+        Returns:
+            Any: The MySQL secret.
+
+        Raises:
+            RuntimeError: If you don't have an secrets manager as part of your stack.
+        """
         if self.secret:
             active_stack = Repository().active_stack
             secret_manager = active_stack.secrets_manager

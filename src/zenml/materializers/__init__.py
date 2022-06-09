@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of ZenML materializers.
+
 Materializers are used to convert a ZenML artifact into a specific format. They
 are most often used to handle the input or output of ZenML steps, and can be
 extended by building on the `BaseMaterializer` class.

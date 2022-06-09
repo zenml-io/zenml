@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base implementation of a metadata store."""
+
 import json
 from abc import ABC, abstractmethod
 from collections import OrderedDict
@@ -57,7 +59,11 @@ class BaseMetadataStore(StackComponent, ABC):
 
     @property
     def store(self) -> metadata_store.MetadataStore:
-        """General property that hooks into TFX metadata store."""
+        """General property that hooks into TFX metadata store.
+
+        Returns:
+            metadata_store.MetadataStore: TFX metadata store.
+        """
         if self._store is None:
             config = self.get_tfx_metadata_config()
             self._store = metadata_store.MetadataStore(
@@ -74,12 +80,20 @@ class BaseMetadataStore(StackComponent, ABC):
         metadata_store_pb2.ConnectionConfig,
         metadata_store_pb2.MetadataStoreClientConfig,
     ]:
-        """Return tfx metadata config."""
+        """Return tfx metadata config.
+
+        Returns:
+            tfx metadata config.
+        """
         raise NotImplementedError
 
     @property
     def step_type_mapping(self) -> Dict[int, str]:
-        """Maps type_id's to step names."""
+        """Maps type_ids to step names.
+
+        Returns:
+            Dict[int, str]: a mapping.
+        """
         return {
             type_.id: type_.name for type_ in self.store.get_execution_types()
         }
@@ -89,8 +103,15 @@ class BaseMetadataStore(StackComponent, ABC):
         executions: List[proto.Execution],
         pipeline: PipelineView,
     ) -> bool:
-        """Returns `True` if the executions are associated with the pipeline
-        context."""
+        """Returns `True` if the executions are associated with the pipeline context.
+
+        Args:
+            executions: List of executions.
+            pipeline: PipelineView.
+
+        Returns:
+            `True` if the executions are associated with the pipeline context.
+        """
         for execution in executions:
             associated_contexts = self.store.get_contexts_by_execution(
                 execution.id
@@ -110,6 +131,9 @@ class BaseMetadataStore(StackComponent, ABC):
 
         Returns:
             Original `StepView` derived from the proto.Execution.
+
+        Raises:
+            KeyError: If the execution is not associated with a step.
         """
         impl_name = self.step_type_mapping[execution.type_id].split(".")[-1]
 
@@ -188,7 +212,11 @@ class BaseMetadataStore(StackComponent, ABC):
         )
 
     def get_pipelines(self) -> List[PipelineView]:
-        """Returns a list of all pipelines stored in this metadata store."""
+        """Returns a list of all pipelines stored in this metadata store.
+
+        Returns:
+            List[PipelineView]: a list of all pipelines stored in this metadata store.
+        """
         pipelines = []
         for pipeline_context in self.store.get_contexts_by_type(
             PIPELINE_CONTEXT_TYPE_NAME
@@ -204,7 +232,14 @@ class BaseMetadataStore(StackComponent, ABC):
         return pipelines
 
     def get_pipeline(self, pipeline_name: str) -> Optional[PipelineView]:
-        """Returns a pipeline for the given name."""
+        """Returns a pipeline for the given name.
+
+        Args:
+            pipeline_name: Name of the pipeline.
+
+        Returns:
+            PipelineView if found, None otherwise.
+        """
         pipeline_context = self.store.get_context_by_type_and_name(
             PIPELINE_CONTEXT_TYPE_NAME, pipeline_name
         )
@@ -222,7 +257,14 @@ class BaseMetadataStore(StackComponent, ABC):
     def get_pipeline_runs(
         self, pipeline: PipelineView
     ) -> Dict[str, PipelineRunView]:
-        """Gets all runs for the given pipeline."""
+        """Gets all runs for the given pipeline.
+
+        Args:
+            pipeline: PipelineView.
+
+        Returns:
+            A dictionary of pipeline run names to PipelineRunView.
+        """
         all_pipeline_runs = self.store.get_contexts_by_type(
             PIPELINE_RUN_CONTEXT_TYPE_NAME
         )
@@ -252,7 +294,15 @@ class BaseMetadataStore(StackComponent, ABC):
     def get_pipeline_run(
         self, pipeline: PipelineView, run_name: str
     ) -> Optional[PipelineRunView]:
-        """Gets a specific run for the given pipeline."""
+        """Gets a specific run for the given pipeline.
+
+        Args:
+            pipeline: The pipeline for which to get the run.
+            run_name: The name of the run to get.
+
+        Returns:
+            The pipeline run with the given name.
+        """
         run = self.store.get_context_by_type_and_name(
             PIPELINE_RUN_CONTEXT_TYPE_NAME, run_name
         )
@@ -277,7 +327,14 @@ class BaseMetadataStore(StackComponent, ABC):
     def get_pipeline_run_steps(
         self, pipeline_run: PipelineRunView
     ) -> Dict[str, StepView]:
-        """Gets all steps for the given pipeline run."""
+        """Gets all steps for the given pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to get the steps for.
+
+        Returns:
+            A dictionary of step names to step views.
+        """
         steps: Dict[str, StepView] = OrderedDict()
         # reverse the executions as they get returned in reverse chronological
         # order from the metadata store
@@ -294,12 +351,26 @@ class BaseMetadataStore(StackComponent, ABC):
         return steps
 
     def get_step_by_id(self, step_id: int) -> StepView:
-        """Gets a `StepView` by its ID"""
+        """Gets a `StepView` by its ID.
+
+        Args:
+            step_id (int): The ID of the step to get.
+
+        Returns:
+            StepView: The `StepView` with the given ID.
+        """
         execution = self.store.get_executions_by_id([step_id])[0]
         return self._get_step_view_from_execution(execution)
 
     def get_step_status(self, step: StepView) -> ExecutionStatus:
-        """Gets the execution status of a single step."""
+        """Gets the execution status of a single step.
+
+        Args:
+            step (StepView): The step to get the status for.
+
+        Returns:
+            ExecutionStatus: The status of the step.
+        """
         proto = self.store.get_executions_by_id([step._id])[0]  # noqa
         state = proto.last_known_state
 
