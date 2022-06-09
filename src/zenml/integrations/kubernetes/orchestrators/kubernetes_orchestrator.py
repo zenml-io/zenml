@@ -121,7 +121,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         """Defines the validator that checks whether the stack is valid.
 
         Returns:
-            Optional[StackValidator]: validator.
+            Stack validator.
         """
 
         def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:

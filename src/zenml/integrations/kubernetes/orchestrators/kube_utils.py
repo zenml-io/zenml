@@ -116,10 +116,10 @@ class _KubernetesClientFactory:
             self._inside_cluster = True
             k8s_config.load_incluster_config()
         except k8s_config.ConfigException:
-            # If loading incluster config fails, it means we're not running the code
-            # inside Kubernetes cluster. We try to load ~/.kube/config file, or the
+            # If loading config in cluster fails, it means we're not running the code
+            # inside Kubernetes cluster. We try to load `~/.kube/config` file, or the
             # filename from the KUBECONFIG environment variable.
-            # It will raise kubernetes.config.ConfigException if no kube config file
+            # It will raise `kubernetes.config.ConfigException` if no config file
             # is found.
             self._inside_cluster = False
             k8s_config.load_kube_config()
@@ -129,10 +129,10 @@ class _KubernetesClientFactory:
     def MakeCoreV1Api(
         self,
     ) -> k8s_client.CoreV1Api:  # pylint: disable=invalid-name
-        """Make a kubernetes CoreV1Api client.
+        """Make a kubernetes `CoreV1Api` client.
 
         Returns:
-            k8s_client.CoreV1Api: client.
+            `CoreV1Api` client.
         """
         if not self._config_loaded:
             self._LoadConfig()
@@ -141,10 +141,10 @@ class _KubernetesClientFactory:
     def MakeBatchV1Api(
         self,
     ) -> k8s_client.BatchV1Api:  # pylint: disable=invalid-name
-        """Make a kubernetes BatchV1Api client.
+        """Make a Kubernetes `BatchV1Api` client.
 
         Returns:
-            k8s_client.BatchV1Api: client.
+            `BatchV1Api` client.
         """
         if not self._config_loaded:
             self._LoadConfig()
@@ -205,19 +205,19 @@ def pod_is_done(pod: k8s_client.V1Pod) -> bool:
 
 
 def make_core_v1_api() -> k8s_client.CoreV1Api:
-    """Make a kubernetes CoreV1Api client.
+    """Make a kubernetes `CoreV1Api` client.
 
     Returns:
-        k8s_client.CoreV1Api: client.
+        `CoreV1Api` client.
     """
     return _factory.MakeCoreV1Api()
 
 
 def make_batch_v1_api() -> k8s_client.BatchV1Api:
-    """Make a kubernetes BatchV1Api client.
+    """Make a kubernetes `BatchV1Api` client.
 
     Returns:
-        k8s_client.BatchV1Api: client.
+        `BatchV1Api` client.
     """
     return _factory.MakeBatchV1Api()
 
@@ -237,15 +237,15 @@ def get_pod(
     """Get a pod from Kubernetes metadata API.
 
     Args:
-        core_api (k8s_client.CoreV1Api): Client of Core V1 API of Kubernetes API.
-        pod_name (str): The name of the Pod.
-        namespace (str): The namespace of the Pod.
+        core_api: Client of `CoreV1Api` of Kubernetes API.
+        pod_name: The name of the Pod.
+        namespace: The namespace of the Pod.
 
     Raises:
         RuntimeError: When it sees unexpected errors from Kubernetes API.
 
     Returns:
-        Optional[k8s_client.V1Pod]: The found Pod object. None if it's not found.
+        The found Pod object. None if it's not found.
     """
     try:
         return core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
@@ -269,25 +269,25 @@ def wait_pod(
     """Wait for a Pod to meet an exit condition.
 
     Args:
-        core_api (k8s_client.CoreV1Api): Client of Core V1 API of Kubernetes API.
-        pod_name (str): The name of the Pod.
-        namespace (str): The namespace of the Pod.
-        exit_condition_lambda (Callable[[k8s_client.V1Pod], bool]): A lambda
-            which will be called intervally to wait for a Pod to exit. The
+        core_api: Client of `CoreV1Api` of Kubernetes API.
+        pod_name: The name of the Pod.
+        namespace: The namespace of the Pod.
+        exit_condition_lambda: A lambda
+            which will be called periodically to wait for a Pod to exit. The
             function returns True to exit.
-        timeout_sec (int): _description_. Timeout in seconds to wait
-            for pod to reach exit condition, or 0 to wait for an unlimited
-            duration. Defaults to unlimited.
-        exponential_backoff (bool): _description_. Whether to use
-            exponential back off for polling. Defaults to False.
-        stream_logs (bool): Whether to stream the pod logs to
+        timeout_sec: Timeout in seconds to wait for pod to reach exit 
+            condition, or 0 to wait for an unlimited duration. 
+            Defaults to unlimited.
+        exponential_backoff: Whether to use exponential back off for polling. 
+            Defaults to False.
+        stream_logs: Whether to stream the pod logs to
             `zenml.logger.info()`. Defaults to False.
 
     Raises:
         RuntimeError: when the function times out.
 
     Returns:
-        k8s_client.V1Pod: The Pod object which meets the exit condition.
+        The Pod object which meets the exit condition.
     """
     start_time = datetime.datetime.utcnow()
 
@@ -418,13 +418,13 @@ def create_mysql_deployment(
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
         namespace: Kubernetes namespace. Defaults to "default".
-        storage_capacity: Storage capacity of the database. Defaults to "10Gi".
+        storage_capacity: Storage capacity of the database. Defaults to `"10Gi"`.
         deployment_name: Name of the deployment. Defaults to "mysql".
         service_name: Name of the service. Defaults to "mysql".
         volume_name: Name of the persistent volume.
-            Defaults to "mysql-pv-volume".
+            Defaults to `"mysql-pv-volume"`.
         volume_claim_name: Name of the persistent volume claim.
-            Defaults to "mysql-pv-claim".
+            Defaults to `"mysql-pv-claim"`.
     """
     pvc_manifest = build_persistent_volume_claim_manifest(
         name=volume_claim_name,

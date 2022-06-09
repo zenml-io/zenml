@@ -86,7 +86,7 @@ def build_persistent_volume_claim_manifest(
     Args:
         name: Name of the persistent volume claim.
         namespace: Kubernetes namespace. Defaults to "default".
-        storage_request: Size of the storage to request. Defaults to "10Gi".
+        storage_request: Size of the storage to request. Defaults to `"10Gi"`.
 
     Returns:
         Manifest for a persistent volume claim.
@@ -121,8 +121,8 @@ def build_persistent_volume_manifest(
     Args:
         name: Name of the persistent volume.
         namespace: Kubernetes namespace. Defaults to "default".
-        storage_capacity: Storage capacity of the volume. Defaults to "10Gi".
-        path: Path where the volume is mounted. Defaults to "/mnt/data".
+        storage_capacity: Storage capacity of the volume. Defaults to `"10Gi"`.
+        path: Path where the volume is mounted. Defaults to `"/mnt/data"`.
 
     Returns:
         Manifest for a persistent volume.
@@ -157,7 +157,7 @@ def build_mysql_deployment_manifest(
         namespace: Kubernetes namespace. Defaults to "default".
         port: Port where MySQL is running. Defaults to 3306.
         pv_claim_name: Name of the required persistent volume claim.
-            Defaults to "mysql-pv-claim".
+            Defaults to `"mysql-pv-claim"`.
 
     Returns:
         Manifest for deploying a MySQL database.

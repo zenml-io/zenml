@@ -39,7 +39,7 @@ aws eks --region <AWS_REGION> update-kubeconfig
     --alias <KUBE_CONTEXT>
 ```
 
-**Note:** It does not matter what you use as KUBE_CONTEXT here, as long as it
+**Note:** It does not matter what you use as `KUBE_CONTEXT` here, as long as it
 is a unique name.
 
 Next, register your Kubernetes orchestrator with the respective kubernetes 
