@@ -158,9 +158,6 @@ class SlackAlerter(BaseAlerter):
     ) -> bool:
         """Post a message to a Slack channel and wait for approval.
 
-        This can be useful, e.g. to easily get a human in the loop when
-        deploying models.
-
         Args:
             message: Initial message to be posted.
             config: Optional runtime configuration.
