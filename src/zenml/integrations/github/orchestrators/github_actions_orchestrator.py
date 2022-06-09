@@ -14,16 +14,7 @@
 
 import os
 import re
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
@@ -155,6 +146,15 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                     "container registries."
                 )
 
+            if container_registry.requires_authentication:
+                return False, (
+                    "The GitHub Actions orchestrator currently only works with "
+                    "GitHub container registries or public container "
+                    f"registries, but your {container_registry.FLAVOR} "
+                    f"container registry '{container_registry.name}' requires "
+                    "authentication."
+                )
+
             for component in stack.components.values():
                 if component.local_path:
                     return False, (
@@ -201,9 +201,11 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             # specifies automatic token authentication
             username = "{{ github.actor }}"
             password = "{{ secrets.GITHUB_TOKEN }}"
-        elif container_registry.requires_authentication:
-            username = cast(str, container_registry.username)
-            password = cast(str, container_registry.password)
+        # TODO: Uncomment these lines once we support different private
+        #  container registries in GitHub Actions
+        # elif container_registry.requires_authentication:
+        #     username = cast(str, container_registry.username)
+        #     password = cast(str, container_registry.password)
         else:
             return None
 
