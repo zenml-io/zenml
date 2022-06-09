@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Constants for the VertexAI integration."""
 
 from google.cloud.aiplatform_v1.types.job_state import JobState
 

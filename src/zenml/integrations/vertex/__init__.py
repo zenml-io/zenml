@@ -11,8 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-The Vertex integration submodule provides a way to run ZenML pipelines in a 
+"""Initialization for the VertexAI integration.
+
+The Vertex integration submodule provides a way to run ZenML pipelines in
 Vertex AI environment.
 """
 
@@ -35,7 +36,11 @@ class VertexIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Vertex integration."""
+        """Declare the stack component flavors for the Vertex integration.
+
+        Returns:
+            List[FlavorWrapper]: List of stack component flavors.
+        """
         return [
             FlavorWrapper(
                 name=VERTEX_ORCHESTRATOR_FLAVOR,

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the TensorFlow dataset materializer."""
+
 import os
 from typing import Any, Type
 
@@ -29,13 +31,24 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> Any:
-        """Reads data into tf.data.Dataset"""
+        """Reads data into tf.data.Dataset.
+
+        Args:
+            data_type: The type of the data to read.
+
+        Returns:
+            A tf.data.Dataset object.
+        """
         super().handle_input(data_type)
         path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         return tf.data.experimental.load(path)
 
     def handle_return(self, dataset: tf.data.Dataset) -> None:
-        """Persists a tf.data.Dataset object."""
+        """Persists a tf.data.Dataset object.
+
+        Args:
+            dataset: The tf.data.Dataset object to persist.
+        """
         super().handle_return(dataset)
         path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         tf.data.experimental.save(
