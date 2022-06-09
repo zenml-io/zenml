@@ -39,6 +39,7 @@ BaseModel
 BaseModelDeployer
 BaseOrchestrator
 BasePipeline
+BasePipelineRunVisualizer
 BasePipelineVisualizer
 BaseSecretSchema
 BaseSecretsManager
