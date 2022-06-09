@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the pipeline run lineage visualizer."""
 
 from typing import Any, Collection, Dict, List, Union
 
@@ -97,9 +98,7 @@ STYLESHEET = [
 
 
 class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
-    """Implementation of a lineage diagram via the [dash](
-    https://plotly.com/dash/) and [dash-cytoscape](
-    https://dash.plotly.com/cytoscape) library."""
+    """Implementation of a lineage diagram via the [dash](https://plotly.com/dash/) and [dash-cytoscape](https://dash.plotly.com/cytoscape) library."""
 
     ARTIFACT_PREFIX = "artifact_"
     STEP_PREFIX = "step_"
@@ -117,8 +116,18 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         *args: Any,
         **kwargs: Any,
     ) -> dash.Dash:
-        """Method to visualize pipeline runs via the Dash library. The layout
-        puts every layer of the dag in a column.
+        """Method to visualize pipeline runs via the Dash library.
+
+        The layout puts every layer of the dag in a column.
+
+        Args:
+            object: The pipeline run to visualize.
+            magic: If True, the visualization is rendered in a magic mode.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            The Dash application.
         """
         external_stylesheets = [
             dbc.themes.BOOTSTRAP,
@@ -323,7 +332,14 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
             Input("cytoscape", "selectedNodeData"),
         )
         def display_data(data_list: List[Dict[str, Any]]) -> str:
-            """Callback for the text area below the graph"""
+            """Callback for the text area below the graph.
+
+            Args:
+                data_list (List[Dict[str, Any]]): The selected node data.
+
+            Returns:
+                str: The selected node data.
+            """
             if data_list is None:
                 return "Click on a node in the diagram."
 
@@ -358,7 +374,14 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
         def reset_layout(
             n_clicks: int,
         ) -> List[Union[int, List[Dict[str, Collection[str]]]]]:
-            """Resets the layout"""
+            """Resets the layout.
+
+            Args:
+                n_clicks: The number of clicks on the reset button.
+
+            Returns:
+                The zoom and the elements.
+            """
             logger.debug(n_clicks, "clicked in reset button.")
             return [1, edges + nodes]
 
