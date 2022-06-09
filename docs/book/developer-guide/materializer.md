@@ -8,7 +8,7 @@ step should be considered as its very own process that reads and writes its
 inputs and outputs from and to the artifact store. This is where
 **materializers** come into play.
 
-# Materializers: Serializing and deseralizing your artifacts
+# Materializers: Serializing and deserializing your artifacts
 
 A materializer dictates how a given artifact can be written to and retrieved
 from the artifact store. It contains all serialization and deserialization
