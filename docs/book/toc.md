@@ -3,7 +3,7 @@
 * [Introduction](index.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
 * [Core Concepts](introduction/core-concepts.md)
-* [Examples](introduction/zenml-example-cli.md)
+* [Examples & Use-cases](introduction/zenml-example-cli.md)
 
 ## Developer Guide
 
@@ -11,7 +11,7 @@
 * [Steps & Pipelines](developer-guide/steps-and-pipelines.md)
 * [Runtime Configuration](developer-guide/runtime-configuration.md)
 * [Post-Execution Workflow](developer-guide/post-execution-workflow.md)
-* [Materializer](developer-guide/materializer.md)
+* [Materializers](developer-guide/materializer.md)
 * [Caching](developer-guide/caching.md)
 * [Step Fixture](developer-guide/step-fixtures.md)
 * [Fetching Historic Runs](developer-guide/fetching-historic-runs.md)
@@ -30,6 +30,7 @@
 * [Perform Drift Detection](advanced-guide/drift-detection.md)
 * [Manage External Services](advanced-guide/services.md)
 * [Track your Experiments](advanced-guide/experiment-tracking.md)
+* [Send Automated Chat Alerts](advanced-guide/alerts.md)
 
 ## Extending ZenML
 

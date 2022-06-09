@@ -24,6 +24,8 @@ AutoTokenizer
 AzureML
 Backend
 Backpropagation
+BaseAlerter
+BaseAlerterStepConfig
 BaseArtifact
 BaseArtifactStore
 BaseContainerRegistry
@@ -173,6 +175,7 @@ LocalDaemonService
 LocalDaemonServiceConfig
 LocalExample
 LogRecord
+Mattermost
 MERCHANTABILITY
 MLFlowDeployerConfig
 MLFlowDeploymentConfig
@@ -187,6 +190,7 @@ MLServer
 MLflow
 MNIST
 MSI
+MYSQLSecretSchema
 MacOS
 MachineSpec
 MadeWithML

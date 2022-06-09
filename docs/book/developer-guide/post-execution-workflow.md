@@ -7,7 +7,7 @@ description: Inspect a Finished Pipeline Run.
 After executing a pipeline, the user needs to be able to fetch it from history and perform certain tasks. This page 
 captures these workflows at an orbital level.
 
-### Accessing past pipeline runs
+## Accessing past pipeline runs
 
 In the context of a post-execution workflow, there is an implied hierarchy of some basic ZenML components:
 
@@ -17,7 +17,7 @@ repository -> pipelines -> runs -> steps -> outputs
 # where -> implies a 1-many relationship.
 ```
 
-#### Repository
+### Repository
 
 The highest level `Repository` object is where to start from.
 
@@ -27,7 +27,7 @@ from zenml.repository import Repository
 repo = Repository()
 ```
 
-#### Pipelines
+### Pipelines
 
 The repository contains a collection of all created pipelines with at least one run sorted by the time of their first 
 run from oldest to newest.
@@ -59,7 +59,7 @@ Be careful when accessing pipelines by index. Even if you just ran a pipeline it
 fact that the pipelines are sorted by time of `first` run. As such it is recommended to access the pipeline by its name
 {% endhint %}
 
-#### Runs
+### Runs
 
 Each pipeline can be executed many times. You can easily get a list of all runs like this
 
@@ -73,7 +73,7 @@ run = runs[-1]
 run = pipeline_x.get_run(run_name=...)
 ```
 
-#### Steps
+### Steps
 
 Within a given pipeline run you can now zoom in further on the individual steps.
 
@@ -102,7 +102,7 @@ def this_is_the_step_name():
     ...
 ```
 
-#### Outputs
+### Outputs
 
 Most of your steps will probably create outputs. You'll be able to inspect these outputs like this:
 
