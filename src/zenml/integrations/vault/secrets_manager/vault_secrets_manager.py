@@ -130,13 +130,12 @@ class VaultSecretsManager(BaseSecretsManager):
 
         self._ensure_client_connected(url=self.url, token=self.token)
 
-        if not self.CLIENT:
-            raise RuntimeError("Vault client is not initialized.")
+        if not self.CLIENT.is_authenticated():
+            raise RuntimeError(
+                "There was an error authenticating with Vault. Please check your configuration."
+            )
         else:
-            if not self.CLIENT.is_authenticated():
-                raise RuntimeError("Vault client is not authenticated.")
-            else:
-                pass
+            pass
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
@@ -176,7 +175,7 @@ class VaultSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: If the secret does not exist.
         """
-        
+
         vault_secret_name = self.vault_secret_name(secret_name)
 
         secret_items = (
@@ -249,9 +248,7 @@ class VaultSecretsManager(BaseSecretsManager):
             secret_name_without_schema = remove_secret_schema_name(secret_key)
             if sanitized_secret_name == secret_name_without_schema:
                 return secret_key
-        raise KeyError(
-            f"The secret {secret_name} does not exist."
-        )
+        raise KeyError(f"The secret {secret_name} does not exist.")
 
     def get_all_secret_keys(self) -> List[str]:
         """
@@ -308,9 +305,7 @@ class VaultSecretsManager(BaseSecretsManager):
         try:
             vault_secret_name = self.vault_secret_name(secret_name)
         except KeyError:
-            raise KeyError(
-                f"The secret {secret_name} does not exist."
-            )
+            raise KeyError(f"The secret {secret_name} does not exist.")
 
         self.CLIENT.secrets.kv.v2.delete_metadata_and_all_versions(
             path=f"{ZENML_PATH}/{vault_secret_name}",
@@ -328,6 +323,5 @@ class VaultSecretsManager(BaseSecretsManager):
 
         for secret_name in self.get_all_secret_keys():
             self.delete_secret(secret_name)
-        
+
         logger.debug("Deleted all secrets.")
-        
