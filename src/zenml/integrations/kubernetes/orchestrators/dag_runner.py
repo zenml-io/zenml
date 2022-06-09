@@ -22,6 +22,30 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
+def reverse_dag(dag: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    """Reverse a DAG.
+
+    Args:
+        dag: Adjacency list representation of a DAG.
+
+    Returns:
+        Adjacency list representation of the reversed DAG.
+    """
+    reversed_dag = defaultdict(list)
+
+    # Reverse all edges in the graph.
+    for node, upstream_nodes in dag.items():
+        for upstream_node in upstream_nodes:
+            reversed_dag[upstream_node].append(node)
+
+    # Add nodes without incoming edges back in.
+    for node in dag:
+        if node not in reversed_dag:
+            reversed_dag[node] = []
+
+    return reversed_dag
+
+
 class ThreadedDagRunner:
     """Multi-threaded DAG Runner."""
 
@@ -37,29 +61,13 @@ class ThreadedDagRunner:
             run_fn: A function `run_fn(node)` that runs a single node
         """
         self.dag = dag
-        self.reversed_dag = self.reverse_dag(dag)
+        self.reversed_dag = reverse_dag(dag)
         self.run_fn = run_fn
         self.nodes = dag.keys()
-        self.node_is_waiting = {node_name: True for node_name in self.nodes}
-        self.node_is_running = {node_name: False for node_name in self.nodes}
-        self.node_is_completed = {node_name: False for node_name in self.nodes}
+        self.node_is_waiting = {node: True for node in self.nodes}
+        self.node_is_running = {node: False for node in self.nodes}
+        self.node_is_completed = {node: False for node in self.nodes}
         self._lock = threading.Lock()
-
-    @staticmethod
-    def reverse_dag(dag: Dict[str, List[str]]) -> Dict[str, List[str]]:
-        """Reverse a DAG.
-
-        Args:
-            dag: Adjacency list representation of a DAG.
-
-        Returns:
-            Adjacency list representation of the reversed DAG.
-        """
-        reversed_dag = defaultdict(list)
-        for node_name, upstream_nodes in dag.items():
-            for upstream_node in upstream_nodes:
-                reversed_dag[upstream_node].append(node_name)
-        return reversed_dag
 
     def _can_run(self, node: str) -> bool:
         """Determine whether a node is ready to be run.
