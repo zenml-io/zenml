@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the AWS container registry integration."""
+
 import re
 from typing import ClassVar, List, Optional
 
@@ -35,7 +37,17 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
     @validator("uri")
     def validate_aws_uri(cls, uri: str) -> str:
-        """Validates that the URI is in the correct format."""
+        """Validates that the URI is in the correct format.
+
+        Args:
+            uri: URI to validate.
+
+        Returns:
+            URI in the correct format.
+
+        Raises:
+            ValueError: If the URI contains a backslash character.
+        """
         if "/" in uri:
             raise ValueError(
                 "Property `uri` can not contain a `/`. An example of a valid "
@@ -45,8 +57,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
         return uri
 
     def prepare_image_push(self, image_name: str) -> None:
-        """Logs a warning message if trying to push an image for which no
-        repository exists.
+        """Logs warning message if trying to push an image for which no repository exists.
 
         Args:
             image_name: Name of the docker image that will be pushed.
@@ -83,8 +94,11 @@ class AWSContainerRegistry(BaseContainerRegistry):
 
     @property
     def post_registration_message(self) -> Optional[str]:
-        """Optional message that will be printed after the stack component is
-        registered."""
+        """Optional message printed after the stack component is registered.
+
+        Returns:
+            The message.
+        """
         return (
             "Amazon ECR requires you to create a repository before you can "
             "push an image to it. If you want to for example run a pipeline "
