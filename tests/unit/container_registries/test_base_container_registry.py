@@ -32,28 +32,16 @@ def test_base_container_registry_removes_trailing_slashes():
     assert StubContainerRegistry(name="", uri="test/").uri == "test"
 
 
-def test_base_container_registry_requires_authentication_if_username_and_password_set():
-    """Tests that the base container registry requires authentication if both
-    the username and password are set.
+def test_base_container_registry_requires_authentication_if_secret_provided():
+    """Tests that the base container registry requires authentication if a
+    secret name is provided.
     """
     assert (
         StubContainerRegistry(name="", uri="").requires_authentication is False
     )
     assert (
         StubContainerRegistry(
-            name="", uri="", username="username"
-        ).requires_authentication
-        is False
-    )
-    assert (
-        StubContainerRegistry(
-            name="", uri="", password="password"
-        ).requires_authentication
-        is False
-    )
-    assert (
-        StubContainerRegistry(
-            name="", uri="", username="username", password="password"
+            name="", uri="", authentication_secret="secret"
         ).requires_authentication
         is True
     )

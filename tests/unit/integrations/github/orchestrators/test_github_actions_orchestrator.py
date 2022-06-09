@@ -50,6 +50,9 @@ def test_github_actions_orchestrator_stack_validation() -> None:
     local_container_registry = DefaultContainerRegistry(
         name="", uri="localhost:5000"
     )
+    container_registry_that_requires_authentication = DefaultContainerRegistry(
+        name="", uri="localhost:5000", authentication_secret="some_secret"
+    )
     remote_container_registry = DefaultContainerRegistry(
         name="", uri="gcr.io/my-project"
     )
@@ -83,6 +86,16 @@ def test_github_actions_orchestrator_stack_validation() -> None:
             metadata_store=remote_metadata_store,
             artifact_store=remote_artifact_store,
             container_registry=local_container_registry,
+        ).validate()
+
+    with pytest.raises(StackValidationError):
+        # Stack with container registry that requires authentication
+        Stack(
+            name="",
+            orchestrator=orchestrator,
+            metadata_store=remote_metadata_store,
+            artifact_store=remote_artifact_store,
+            container_registry=container_registry_that_requires_authentication,
         ).validate()
 
     with pytest.raises(StackValidationError):
