@@ -82,12 +82,15 @@ class KubernetesOrchestrator(BaseOrchestrator):
             If not provided, `default` namespace will be used.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Kubernetes.
+        skip_context_checks: If `True`, don't validate the kubernetes context.
+            This is mainly useful for unit testing.
     """
 
     custom_docker_base_image_name: Optional[str] = None
     kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "default"
     synchronous: bool = False
+    skip_context_checks = False
 
     # Class Configuration
     FLAVOR: ClassVar[str] = KUBERNETES_ORCHESTRATOR_FLAVOR
@@ -139,34 +142,35 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
             contexts, active_context = self.get_kubernetes_contexts()
 
-            if self.kubernetes_context not in contexts:
-                return False, (
-                    f"Could not find a Kubernetes context named "
-                    f"'{self.kubernetes_context}' in the local Kubernetes "
-                    f"configuration. Please make sure that the Kubernetes "
-                    f"cluster is running and that the kubeconfig file is "
-                    f"configured correctly. To list all configured "
-                    f"contexts, run:\n\n"
-                    f"  `kubectl config get-contexts`\n"
-                )
-            elif self.kubernetes_context != active_context:
-                logger.warning(
-                    f"The Kubernetes context '{self.kubernetes_context}' "
-                    f"configured for the Kubernetes orchestrator is not the "
-                    f"same as the active context in the local Kubernetes "
-                    f"configuration. If this is not deliberate, you should "
-                    f"update the orchestrator's `kubernetes_context` field by "
-                    f"running:\n\n"
-                    f"  `zenml orchestrator update {self.name} "
-                    f"--kubernetes_context={active_context}`\n"
-                    f"To list all configured contexts, run:\n\n"
-                    f"  `kubectl config get-contexts`\n"
-                    f"To set the active context to be the same as the one "
-                    f"configured in the Kubernetes orchestrator and silence "
-                    f"this warning, run:\n\n"
-                    f"  `kubectl config use-context "
-                    f"{self.kubernetes_context}`\n"
-                )
+            if not self.skip_context_checks:
+                if self.kubernetes_context not in contexts:
+                    return False, (
+                        f"Could not find a Kubernetes context named "
+                        f"'{self.kubernetes_context}' in the local Kubernetes "
+                        f"configuration. Please make sure that the Kubernetes "
+                        f"cluster is running and that the kubeconfig file is "
+                        f"configured correctly. To list all configured "
+                        f"contexts, run:\n\n"
+                        f"  `kubectl config get-contexts`\n"
+                    )
+                if self.kubernetes_context != active_context:
+                    logger.warning(
+                        f"The Kubernetes context '{self.kubernetes_context}' "
+                        f"configured for the Kubernetes orchestrator is not "
+                        f"the same as the active context in the local "
+                        f"Kubernetes configuration. If this is not deliberate,"
+                        f" you should update the orchestrator's "
+                        f"`kubernetes_context` field by running:\n\n"
+                        f"  `zenml orchestrator update {self.name} "
+                        f"--kubernetes_context={active_context}`\n"
+                        f"To list all configured contexts, run:\n\n"
+                        f"  `kubectl config get-contexts`\n"
+                        f"To set the active context to be the same as the one "
+                        f"configured in the Kubernetes orchestrator and "
+                        f"silence this warning, run:\n\n"
+                        f"  `kubectl config use-context "
+                        f"{self.kubernetes_context}`\n"
+                    )
 
             # Check that all stack components are non-local.
             for stack_comp in stack.components.values():
