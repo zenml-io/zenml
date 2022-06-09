@@ -27,13 +27,12 @@ class MySQLMetadataStore(BaseMetadataStore):
     """MySQL backend for ZenML metadata store."""
 
     port: int = 3306
-    username: Optional[str] = "root"
-    password: Optional[str] = None
     host: str
     database: str
-
     secret: Optional[str] = None
-
+    username: Optional[str] = None
+    password: Optional[str] = None
+ 
     # Class Configuration
     FLAVOR: ClassVar[str] = "mysql"
 
