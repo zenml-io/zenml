@@ -107,7 +107,7 @@ class BaseMetadataStore(StackComponent, ABC):
 
         Args:
             executions: List of executions.
-            pipeline: PipelineView.
+            pipeline: Pipeline to check.
 
         Returns:
             `True` if the executions are associated with the pipeline context.
@@ -260,7 +260,7 @@ class BaseMetadataStore(StackComponent, ABC):
         """Gets all runs for the given pipeline.
 
         Args:
-            pipeline: PipelineView.
+            pipeline: a Pipeline object for which you want the runs.
 
         Returns:
             A dictionary of pipeline run names to PipelineRunView.
