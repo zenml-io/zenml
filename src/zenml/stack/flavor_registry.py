@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML flavor registry."""
+
 from collections import defaultdict
 from typing import DefaultDict, Dict
 
@@ -91,7 +93,14 @@ class FlavorRegistry:
         self,
         flavor: FlavorWrapper,
     ) -> None:
-        """Registers a stack component flavor."""
+        """Registers a stack component flavor.
+
+        Args:
+            flavor: The flavor to register.
+
+        Raises:
+            KeyError: If the flavor is already registered.
+        """
         flavors = self._flavors[flavor.type]
 
         if flavor.name in flavors:
@@ -108,7 +117,14 @@ class FlavorRegistry:
     def get_flavors_by_type(
         self, component_type: StackComponentType
     ) -> Dict[str, FlavorWrapper]:
-        """Return the list of flavors with given type."""
+        """Return the list of flavors with given type.
+
+        Args:
+            component_type: The type of the stack component.
+
+        Returns:
+            The list of flavors with the given type.
+        """
         return self._flavors[component_type]
 
 
