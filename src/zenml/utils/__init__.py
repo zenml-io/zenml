@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-"""
+"""Initialization of the utils module.
+
 The `utils` module contains utility functions handling analytics, reading and
 writing YAML data as well as other general purpose functions.
 """

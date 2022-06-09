@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the BasePipelineVisualizer."""
 
 from abc import abstractmethod
 from typing import Any
@@ -27,4 +28,10 @@ class BasePipelineVisualizer(BaseVisualizer):
 
     @abstractmethod
     def visualize(self, object: PipelineView, *args: Any, **kwargs: Any) -> Any:
-        """Method to visualize pipelines."""
+        """Method to visualize pipelines.
+
+        Args:
+            object: The pipeline to visualize.
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
