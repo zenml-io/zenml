@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the PyTorch Module materializer."""
 
 import os
 from typing import Any, Type
@@ -27,15 +28,22 @@ CHECKPOINT_FILENAME = "checkpoint.pt"
 
 
 class PyTorchModuleMaterializer(BaseMaterializer):
-    """Materializer to read/write Pytorch models. Inspired by the guide:
-    https://pytorch.org/tutorials/beginner/saving_loading_models.html"""
+    """Materializer to read/write Pytorch models.
+
+    Inspired by the guide:
+    https://pytorch.org/tutorials/beginner/saving_loading_models.html
+    """
 
     ASSOCIATED_TYPES = (Module,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> Module:
-        """Reads and returns a PyTorch model. Only loads the model, not
-        the checkpoint.
+        """Reads and returns a PyTorch model.
+
+        Only loads the model, not the checkpoint.
+
+        Args:
+            data_type: The type of the model to load.
 
         Returns:
             A loaded pytorch model.
