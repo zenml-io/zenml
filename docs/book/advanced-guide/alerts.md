@@ -5,7 +5,7 @@ description: Send automated alerts to chat services.
 # :speech_balloon: Send Automated Chat Alerts
 
 Many developer teams use real-time chat services like Slack for their
-day-to-day communication. Sometimes it can also be desired to have automated
+day-to-day communication. Members of those teams might also want to have automated
 notifications be sent to those chat services from within ML pipelines,
 e.g., to quickly and conveniently get notified about the state of
 each pipeline, or even to build human-in-the-loop ML systems.
