@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Step output class."""
 
 from typing import Any, Iterator, NamedTuple, Tuple, Type
 
@@ -19,10 +20,19 @@ class Output(object):
     """A named tuple with a default name that cannot be overridden."""
 
     def __init__(self, **kwargs: Type[Any]):
+        """Initializes the output.
+
+        Args:
+            **kwargs: The output values.
+        """
         # TODO [ENG-161]: do we even need the named tuple here or is
         #  a list of tuples (name, Type) sufficient?
         self.outputs = NamedTuple("ZenOutput", **kwargs)  # type: ignore[misc]
 
     def items(self) -> Iterator[Tuple[str, Type[Any]]]:
-        """Yields a tuple of type (output_name, output_type)."""
+        """Yields a tuple of type (output_name, output_type).
+
+        Yields:
+            A tuple of type (output_name, output_type).
+        """
         yield from self.outputs.__annotations__.items()

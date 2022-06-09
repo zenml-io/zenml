@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Logger implementation."""
 
 import logging
 import os
@@ -93,7 +94,11 @@ LOG_FILE = f"{APP_NAME}_logs.log"
 
 
 def get_logging_level() -> LoggingLevels:
-    """Get logging level from the env variable."""
+    """Get logging level from the env variable.
+
+    Returns:
+        The logging level.
+    """
     verbosity = ZENML_LOGGING_VERBOSITY.upper()
     if verbosity not in LoggingLevels.__members__:
         raise KeyError(
@@ -120,7 +125,11 @@ def set_root_verbosity() -> None:
 
 
 def get_console_handler() -> Any:
-    """Get console handler for logging."""
+    """Get console handler for logging.
+
+    Returns:
+        A console handler.
+    """
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(CustomFormatter())
     return console_handler
@@ -132,7 +141,11 @@ def get_console_handler() -> Any:
 
 
 def get_file_handler() -> Any:
-    """Return a file handler for logging."""
+    """Return a file handler for logging.
+
+    Returns:
+        A file handler.
+    """
     file_handler = TimedRotatingFileHandler(LOG_FILE, when="midnight")
     file_handler.setFormatter(CustomFormatter())
     return file_handler
@@ -142,11 +155,10 @@ def get_logger(logger_name: str) -> logging.Logger:
     """Main function to get logger name,.
 
     Args:
-      logger_name: Name of logger to initialize.
+        logger_name: Name of logger to initialize.
 
     Returns:
         A logger object.
-
     """
     logger = logging.getLogger(logger_name)
     logger.setLevel(get_logging_level().value)

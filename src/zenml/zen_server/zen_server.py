@@ -1,3 +1,18 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Zen Server implementation."""
+
 import os
 from typing import Any, Dict, Optional, Union
 
@@ -53,6 +68,11 @@ class ZenServerEndpoint(LocalDaemonServiceEndpoint):
 
     @property
     def endpoint_uri(self) -> Optional[str]:
+        """Return the endpoint URI.
+
+        Returns:
+            The endpoint URI or None if the endpoint is not available.
+        """
         uri = self.status.uri
         if not uri:
             return None
@@ -99,6 +119,12 @@ class ZenServer(LocalDaemonService):
         config: Union[ZenServerConfig, Dict[str, Any]],
         **attrs: Any,
     ) -> None:
+        """Initialize the ZenServer.
+
+        Args:
+            config: service configuration
+            attrs: additional attributes
+        """
         # ensure that the endpoint is created before the service is initialized
         if isinstance(config, ZenServerConfig) and "endpoint" not in attrs:
 
@@ -124,6 +150,11 @@ class ZenServer(LocalDaemonService):
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
+        """Run the ZenServer.
+
+        Raises:
+            ValueError: if unable to find the profile.
+        """
         profile = GlobalConfiguration().get_profile(self.config.profile_name)
         if profile is None:
             raise ValueError(
@@ -165,7 +196,7 @@ class ZenServer(LocalDaemonService):
 
         Returns:
             The URI where the service can be contacted for requests,
-             or None, if the service isn't running.
+                or None, if the service isn't running.
         """
         if not self.is_running:
             return None

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""User management models implementation."""
+
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, Optional, Set
@@ -144,7 +146,14 @@ class RoleAssignment(BaseModel):
 
     @root_validator
     def ensure_single_entity(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Validates that either `user_id` or `team_id` is set."""
+        """Validates that either `user_id` or `team_id` is set.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+        """
 
         user_id = values.get("user_id", None)
         team_id = values.get("team_id", None)

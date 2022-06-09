@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base Zen Store implementation."""
+
 import base64
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -116,19 +118,34 @@ class BaseZenStore(ABC):
     @staticmethod
     @abstractmethod
     def is_valid_url(url: str) -> bool:
-        """Check if the given url is valid."""
+        """Check if the given url is valid.
+
+        Args:
+            url: The url to check.
+
+        Returns:
+            True if the url is valid, False otherwise.
+        """
 
     # Public Interface:
 
     @property
     @abstractmethod
     def type(self) -> StoreType:
-        """The type of zen store."""
+        """The type of zen store.
+
+        Returns:
+            The type of zen store.
+        """
 
     @property
     @abstractmethod
     def url(self) -> str:
-        """Get the repository URL."""
+        """Get the repository URL.
+
+        Returns:
+            The repository URL.
+        """
 
     @property
     @abstractmethod
@@ -137,6 +154,9 @@ class BaseZenStore(ABC):
 
         The implementation of this method should check if the store is empty
         without having to load all the stacks from the persistent storage.
+
+        Returns:
+            True if the store is empty, False otherwise.
         """
 
     @abstractmethod
@@ -335,7 +355,7 @@ class BaseZenStore(ABC):
             team_name: Unique team name.
 
         Returns:
-             The newly created team.
+            The newly created team.
 
         Raises:
             EntityExistsError: If a team with the given name already exists.
@@ -424,7 +444,7 @@ class BaseZenStore(ABC):
             description: Optional project description.
 
         Returns:
-             The newly created project.
+            The newly created project.
 
         Raises:
             EntityExistsError: If a project with the given name already exists.
@@ -481,7 +501,7 @@ class BaseZenStore(ABC):
             role_name: Unique role name.
 
         Returns:
-             The newly created role.
+            The newly created role.
 
         Raises:
             EntityExistsError: If a role with the given name already exists.
@@ -686,7 +706,7 @@ class BaseZenStore(ABC):
             stack_component_type: the corresponding StackComponentType.
 
         Returns:
-             The newly created flavor.
+            The newly created flavor.
 
         Raises:
             EntityExistsError: If a flavor with the given name and type
@@ -730,7 +750,11 @@ class BaseZenStore(ABC):
 
     @property
     def stacks(self) -> List[StackWrapper]:
-        """All stacks registered in this zen store."""
+        """All stacks registered in this zen store.
+
+        Returns:
+            A list of all stacks registered in this zen store.
+        """
         return [
             self._stack_from_dict(name, conf)
             for name, conf in self.stack_configurations.items()
@@ -840,6 +864,14 @@ class BaseZenStore(ABC):
         def __check_component(
             component: ComponentWrapper,
         ) -> Tuple[StackComponentType, str]:
+            """Try to register a stack component, if it doesn't exist.
+
+            Args:
+                component: StackComponentWrapper to register.
+
+            Returns:
+                The type and name of the component.
+            """
             try:
                 _ = self.get_stack_component(
                     component_type=component.type, name=component.name
@@ -861,6 +893,13 @@ class BaseZenStore(ABC):
         self, component_type: StackComponentType, name: str
     ) -> ComponentWrapper:
         """Get a registered stack component.
+
+        Args:
+            component_type: The type of the component.
+            name: The name of the component.
+
+        Returns:
+            The component.
 
         Raises:
             KeyError: If no component with the requested type and name exists.
@@ -946,6 +985,15 @@ class BaseZenStore(ABC):
         event: Union[str, AnalyticsEvent],
         metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
+        """Track an analytics event.
+
+        Args:
+            event: The event to track.
+            metadata: Additional metadata to track with the event.
+
+        Returns:
+            True if the event was successfully tracked, False otherwise.
+        """
         if self._track_analytics:
             return track_event(event, metadata)
         return False
@@ -953,7 +1001,15 @@ class BaseZenStore(ABC):
     def _stack_from_dict(
         self, name: str, stack_configuration: Dict[StackComponentType, str]
     ) -> StackWrapper:
-        """Build a StackWrapper from stored configurations"""
+        """Build a StackWrapper from stored configurations.
+
+        Args:
+            name: The name of the stack.
+            stack_configuration: The configuration of the stack.
+
+        Returns:
+            A StackWrapper instance.
+        """
         stack_components = [
             self.get_stack_component(
                 component_type=component_type, name=component_name
@@ -1034,7 +1090,7 @@ class BaseZenStore(ABC):
             user_name: Unique username.
 
         Returns:
-             The newly created user.
+            The newly created user.
 
         Raises:
             EntityExistsError: If a user with the given name already exists.
@@ -1076,7 +1132,7 @@ class BaseZenStore(ABC):
             team_name: Unique team name.
 
         Returns:
-             The newly created team.
+            The newly created team.
 
         Raises:
             EntityExistsError: If a team with the given name already exists.
@@ -1136,7 +1192,7 @@ class BaseZenStore(ABC):
             description: Optional project description.
 
         Returns:
-             The newly created project.
+            The newly created project.
 
         Raises:
             EntityExistsError: If a project with the given name already exists.
@@ -1178,7 +1234,7 @@ class BaseZenStore(ABC):
             role_name: Unique role name.
 
         Returns:
-             The newly created role.
+            The newly created role.
 
         Raises:
             EntityExistsError: If a role with the given name already exists.
@@ -1212,13 +1268,12 @@ class BaseZenStore(ABC):
             stack_component_type: the corresponding StackComponentType.
 
         Returns:
-             The newly created flavor.
+            The newly created flavor.
 
         Raises:
             EntityExistsError: If a flavor with the given name and type
                 already exists.
         """
-
         analytics_metadata = {
             "type": stack_component_type.value,
         }

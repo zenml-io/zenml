@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Zen Server API."""
+
 import os
 from typing import Any, Dict, List, Optional
 
@@ -88,6 +90,8 @@ zen_store: BaseZenStore = Repository.create_store(
 
 
 class ErrorModel(BaseModel):
+    """Base class for error responses."""
+
     detail: Any
 
 
@@ -104,6 +108,9 @@ def authorize(credentials: HTTPBasicCredentials = Depends(security)) -> None:
 
     Args:
         credentials: HTTP basic auth credentials passed to the request.
+
+    Raises:
+        HTTPException: If the username is not registered in the ZenStore.
     """
     try:
         zen_store.get_user(credentials.username)
@@ -124,35 +131,69 @@ authed = APIRouter(
 
 
 def error_detail(error: Exception) -> List[str]:
-    """Convert an Exception to API representation."""
+    """Convert an Exception to API representation.
+
+    Args:
+        error: Exception to convert.
+
+    Returns:
+        List of strings representing the error.
+    """
     return [type(error).__name__] + [str(a) for a in error.args]
 
 
 def not_found(error: Exception) -> HTTPException:
-    """Convert an Exception to a HTTP 404 response."""
+    """Convert an Exception to a HTTP 404 response.
+
+    Args:
+        error: Exception to convert.
+
+    Returns:
+        HTTPException with status code 404.
+    """
     return HTTPException(status_code=404, detail=error_detail(error))
 
 
 def conflict(error: Exception) -> HTTPException:
-    """Convert an Exception to a HTTP 409 response."""
+    """Convert an Exception to a HTTP 409 response.
+
+    Args:
+        error: Exception to convert.
+
+    Returns:
+        HTTPException with status code 409.
+    """
     return HTTPException(status_code=409, detail=error_detail(error))
 
 
 @authed.get("/", response_model=ProfileConfiguration)
 async def service_info() -> ProfileConfiguration:
-    """Returns the profile configuration for this service."""
+    """Returns the profile configuration for this service.
+
+    Returns:
+        Profile configuration for this service.
+    """
     return profile
 
 
 @app.head("/health")
 @app.get("/health")
 async def health() -> str:
+    """Get health status of the server.
+
+    Returns:
+        String representing the health status of the server.
+    """
     return "OK"
 
 
 @authed.get(STACKS_EMPTY, response_model=bool)
 async def stacks_empty() -> bool:
-    """Returns whether stacks are registered or not."""
+    """Returns whether stacks are registered or not.
+
+    Returns:
+        True if there are no stacks registered, False otherwise.
+    """
     return zen_store.stacks_empty
 
 
@@ -162,7 +203,17 @@ async def stacks_empty() -> bool:
     responses={404: error_response},
 )
 async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
-    """Returns the configuration for the requested stack."""
+    """Returns the configuration for the requested stack.
+
+    Args:
+        name: Name of the stack.
+
+    Returns:
+        Configuration for the requested stack.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_stack_configuration(name)
     except KeyError as error:
@@ -174,7 +225,11 @@ async def get_stack_configuration(name: str) -> Dict[StackComponentType, str]:
     response_model=Dict[str, Dict[StackComponentType, str]],
 )
 async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
-    """Returns configurations for all stacks."""
+    """Returns configurations for all stacks.
+
+    Returns:
+        Configurations for all stacks.
+    """
     return zen_store.stack_configurations
 
 
@@ -182,7 +237,14 @@ async def stack_configurations() -> Dict[str, Dict[StackComponentType, str]]:
 async def register_stack_component(
     component: ComponentWrapper,
 ) -> None:
-    """Registers a stack component."""
+    """Registers a stack component.
+
+    Args:
+        component: Stack component to register.
+
+    Raises:
+        conflict: when the component already exists
+    """
     try:
         zen_store.register_stack_component(component)
     except StackComponentExistsError as error:
@@ -191,7 +253,14 @@ async def register_stack_component(
 
 @authed.delete(STACKS + "/{name}", responses={404: error_response})
 async def deregister_stack(name: str) -> None:
-    """Deregisters a stack."""
+    """Deregisters a stack.
+
+    Args:
+        name: Name of the stack to deregister.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         zen_store.deregister_stack(name)
     except KeyError as error:
@@ -200,7 +269,11 @@ async def deregister_stack(name: str) -> None:
 
 @authed.get(STACKS, response_model=List[StackWrapper])
 async def stacks() -> List[StackWrapper]:
-    """Returns all stacks."""
+    """Returns all stacks.
+
+    Returns:
+        All stacks.
+    """
     return zen_store.stacks
 
 
@@ -210,7 +283,17 @@ async def stacks() -> List[StackWrapper]:
     responses={404: error_response},
 )
 async def get_stack(name: str) -> StackWrapper:
-    """Returns the requested stack."""
+    """Returns the requested stack.
+
+    Args:
+        name: Name of the stack.
+
+    Returns:
+        The requested stack.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_stack(name)
     except KeyError as error:
@@ -222,7 +305,14 @@ async def get_stack(name: str) -> StackWrapper:
     responses={409: error_response},
 )
 async def register_stack(stack: StackWrapper) -> None:
-    """Registers a stack."""
+    """Registers a stack.
+
+    Args:
+        stack: Stack to register.
+
+    Raises:
+        conflict: when a stack with the same name is already registered
+    """
     try:
         zen_store.register_stack(stack)
     except (StackExistsError, StackComponentExistsError) as error:
@@ -234,7 +324,15 @@ async def register_stack(stack: StackWrapper) -> None:
     responses={404: error_response},
 )
 async def update_stack(stack: StackWrapper, name: str) -> None:
-    """Updates a stack."""
+    """Updates a stack.
+
+    Args:
+        stack: Stack to update.
+        name: Name of the stack.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         zen_store.update_stack(name, stack)
     except DoesNotExistException as error:
@@ -251,7 +349,19 @@ async def update_stack_component(
     component_type: StackComponentType,
     component: ComponentWrapper,
 ) -> Dict[str, str]:
-    """Updates a stack component."""
+    """Updates a stack component.
+
+    Args:
+        name: Name of the stack component.
+        component_type: Type of the stack component.
+        component: Stack component to update.
+
+    Returns:
+        Updated stack component.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.update_stack_component(name, component_type, component)
     except KeyError as error:
@@ -266,7 +376,18 @@ async def update_stack_component(
 async def get_stack_component(
     component_type: StackComponentType, name: str
 ) -> ComponentWrapper:
-    """Returns the requested stack component."""
+    """Returns the requested stack component.
+
+    Args:
+        component_type: Type of the stack component.
+        name: Name of the stack component.
+
+    Returns:
+        The requested stack component.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_stack_component(component_type, name=name)
     except KeyError as error:
@@ -280,7 +401,14 @@ async def get_stack_component(
 async def get_stack_components(
     component_type: StackComponentType,
 ) -> List[ComponentWrapper]:
-    """Returns all stack components for the requested type."""
+    """Returns all stack components for the requested type.
+
+    Args:
+        component_type: Type of the stack components.
+
+    Returns:
+        All stack components for the requested type.
+    """
     return zen_store.get_stack_components(component_type)
 
 
@@ -291,7 +419,19 @@ async def get_stack_components(
 async def deregister_stack_component(
     component_type: StackComponentType, name: str
 ) -> None:
-    """Deregisters a stack component."""
+    """Deregisters a stack component.
+
+    Args:
+        component_type: Type of the stack component.
+        name: Name of the stack component.
+
+    Returns:
+        None
+
+    Raises:
+        not_found: when none are found
+        conflict: when the stack component is still in use
+    """
     try:
         return zen_store.deregister_stack_component(component_type, name=name)
     except KeyError as error:
@@ -302,13 +442,27 @@ async def deregister_stack_component(
 
 @authed.get(USERS, response_model=List[User])
 async def users() -> List[User]:
-    """Returns all users."""
+    """Returns all users.
+
+    Returns:
+        All users.
+    """
     return zen_store.users
 
 
 @authed.get(USERS + "/{name}", responses={404: error_response})
 async def get_user(name: str) -> User:
-    """Gets a specific user."""
+    """Gets a specific user.
+
+    Args:
+        name: Name of the user.
+
+    Returns:
+        The requested user.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_user(user_name=name)
     except KeyError as error:
@@ -321,7 +475,16 @@ async def get_user(name: str) -> User:
     responses={409: error_response},
 )
 async def create_user(user: User) -> User:
-    """Creates a user."""
+    """Creates a user.
+
+    # noqa: DAR401
+
+    Args:
+        user: User to create.
+
+    Returns:
+        The created user.
+    """
     try:
         return zen_store.create_user(user.name)
     except EntityExistsError as error:
@@ -330,7 +493,14 @@ async def create_user(user: User) -> User:
 
 @authed.delete(USERS + "/{name}", responses={404: error_response})
 async def delete_user(name: str) -> None:
-    """Deletes a user."""
+    """Deletes a user.
+
+    Args:
+        name: Name of the user.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         zen_store.delete_user(user_name=name)
     except KeyError as error:
@@ -343,7 +513,17 @@ async def delete_user(name: str) -> None:
     responses={404: error_response},
 )
 async def teams_for_user(name: str) -> List[Team]:
-    """Returns all teams for a user."""
+    """Returns all teams for a user.
+
+    Args:
+        name: Name of the user.
+
+    Returns:
+        All teams for the user.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_teams_for_user(user_name=name)
     except KeyError as error:
@@ -358,7 +538,18 @@ async def teams_for_user(name: str) -> List[Team]:
 async def role_assignments_for_user(
     name: str, project_name: Optional[str] = None
 ) -> List[RoleAssignment]:
-    """Returns all role assignments for a user."""
+    """Returns all role assignments for a user.
+
+    Args:
+        name: Name of the user.
+        project_name: Name of the project.
+
+    Returns:
+        All role assignments for the user.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_role_assignments_for_user(
             user_name=name, project_name=project_name, include_team_roles=False
@@ -369,13 +560,27 @@ async def role_assignments_for_user(
 
 @authed.get(TEAMS, response_model=List[Team])
 async def teams() -> List[Team]:
-    """Returns all teams."""
+    """Returns all teams.
+
+    Returns:
+        All teams.
+    """
     return zen_store.teams
 
 
 @authed.get(TEAMS + "/{name}", responses={404: error_response})
 async def get_team(name: str) -> Team:
-    """Gets a specific team."""
+    """Gets a specific team.
+
+    Args:
+        name: Name of the team.
+
+    Returns:
+        The requested team.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_team(team_name=name)
     except KeyError as error:
@@ -388,7 +593,17 @@ async def get_team(name: str) -> Team:
     responses={409: error_response},
 )
 async def create_team(team: Team) -> Team:
-    """Creates a team."""
+    """Creates a team.
+
+    Args:
+        team: Team to create.
+
+    Returns:
+        The created team.
+
+    Raises:
+        conflict: when the team already exists
+    """
     try:
         return zen_store.create_team(team.name)
     except EntityExistsError as error:
@@ -397,7 +612,14 @@ async def create_team(team: Team) -> Team:
 
 @authed.delete(TEAMS + "/{name}", responses={404: error_response})
 async def delete_team(name: str) -> None:
-    """Deletes a team."""
+    """Deletes a team.
+
+    Args:
+        name: Name of the team.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         zen_store.delete_team(team_name=name)
     except KeyError as error:
@@ -410,7 +632,17 @@ async def delete_team(name: str) -> None:
     responses={404: error_response},
 )
 async def users_for_team(name: str) -> List[User]:
-    """Returns all users for a team."""
+    """Returns all users for a team.
+
+    Args:
+        name: Name of the team.
+
+    Returns:
+        All users for the team.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_users_for_team(team_name=name)
     except KeyError as error:
@@ -419,7 +651,15 @@ async def users_for_team(name: str) -> List[User]:
 
 @authed.post(TEAMS + "/{name}/users", responses={404: error_response})
 async def add_user_to_team(name: str, user: User) -> None:
-    """Adds a user to a team."""
+    """Adds a user to a team.
+
+    Args:
+        name: Name of the team.
+        user: User to add to the team.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         zen_store.add_user_to_team(team_name=name, user_name=user.name)
     except KeyError as error:
@@ -430,7 +670,15 @@ async def add_user_to_team(name: str, user: User) -> None:
     TEAMS + "/{team_name}/users/{user_name}", responses={404: error_response}
 )
 async def remove_user_from_team(team_name: str, user_name: str) -> None:
-    """Removes a user from a team."""
+    """Removes a user from a team.
+
+    Args:
+        team_name: Name of the team.
+        user_name: Name of the user.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         zen_store.remove_user_from_team(
             team_name=team_name, user_name=user_name
@@ -447,7 +695,18 @@ async def remove_user_from_team(team_name: str, user_name: str) -> None:
 async def role_assignments_for_team(
     name: str, project_name: Optional[str] = None
 ) -> List[RoleAssignment]:
-    """Gets all role assignments for a team."""
+    """Gets all role assignments for a team.
+
+    Args:
+        name: Name of the team.
+        project_name: Name of the project.
+
+    Returns:
+        All role assignments for the team.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_role_assignments_for_team(
             team_name=name, project_name=project_name
@@ -458,7 +717,11 @@ async def role_assignments_for_team(
 
 @authed.get(PROJECTS, response_model=List[Project])
 async def projects() -> List[Project]:
-    """Returns all projects."""
+    """Returns all projects.
+
+    Returns:
+        All projects.
+    """
     return zen_store.projects
 
 
@@ -468,7 +731,16 @@ async def projects() -> List[Project]:
     responses={404: error_response},
 )
 async def get_project(project_name: str) -> Project:
-    """Get a project for given name."""
+    """Get a project for given name.
+
+    # noqa: DAR401
+
+    Args:
+        project_name: Name of the project.
+
+    Returns:
+        The requested project.
+    """
     try:
         return zen_store.get_project(project_name)
     except KeyError as error:
@@ -481,7 +753,16 @@ async def get_project(project_name: str) -> Project:
     responses={409: error_response},
 )
 async def create_project(project: Project) -> Project:
-    """Creates a project."""
+    """Creates a project.
+
+    # noqa: DAR401
+
+    Args:
+        project: Project to create.
+
+    Returns:
+        The created project.
+    """
     try:
         return zen_store.create_project(
             project_name=project.name, description=project.description
@@ -492,7 +773,14 @@ async def create_project(project: Project) -> Project:
 
 @authed.delete(PROJECTS + "/{name}", responses={404: error_response})
 async def delete_project(name: str) -> None:
-    """Deletes a project."""
+    """Deletes a project.
+
+    Args:
+        name: Name of the project.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         zen_store.delete_project(project_name=name)
     except KeyError as error:
@@ -501,13 +789,27 @@ async def delete_project(name: str) -> None:
 
 @authed.get(ROLES, response_model=List[Role])
 async def roles() -> List[Role]:
-    """Returns all roles."""
+    """Returns all roles.
+
+    Returns:
+        All roles.
+    """
     return zen_store.roles
 
 
 @authed.get(ROLES + "/{name}", responses={404: error_response})
 async def get_role(name: str) -> Role:
-    """Gets a specific role."""
+    """Gets a specific role.
+
+    Args:
+        name: Name of the role.
+
+    Returns:
+        The requested role.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_role(role_name=name)
     except KeyError as error:
@@ -520,7 +822,16 @@ async def get_role(name: str) -> Role:
     responses={409: error_response},
 )
 async def create_role(role: Role) -> Role:
-    """Creates a role."""
+    """Creates a role.
+
+    # noqa: DAR401
+
+    Args:
+        role: Role to create.
+
+    Returns:
+        The created role.
+    """
     try:
         return zen_store.create_role(role.name)
     except EntityExistsError as error:
@@ -529,7 +840,14 @@ async def create_role(role: Role) -> Role:
 
 @authed.delete(ROLES + "/{name}", responses={404: error_response})
 async def delete_role(name: str) -> None:
-    """Deletes a role."""
+    """Deletes a role.
+
+    Args:
+        name: Name of the role.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         zen_store.delete_role(role_name=name)
     except KeyError as error:
@@ -538,7 +856,11 @@ async def delete_role(name: str) -> None:
 
 @authed.get(ROLE_ASSIGNMENTS, response_model=List[RoleAssignment])
 async def role_assignments() -> List[RoleAssignment]:
-    """Returns all role assignments."""
+    """Returns all role assignments.
+
+    Returns:
+        All role assignments.
+    """
     return zen_store.role_assignments
 
 
@@ -547,7 +869,14 @@ async def role_assignments() -> List[RoleAssignment]:
     responses={404: error_response},
 )
 async def assign_role(data: Dict[str, Any]) -> None:
-    """Assigns a role."""
+    """Assigns a role.
+
+    Args:
+        data: Data containing the role assignment.
+
+    Raises:
+        not_found: when none are found
+    """
     role_name = data["role_name"]
     entity_name = data["entity_name"]
     project_name = data.get("project_name")
@@ -566,7 +895,14 @@ async def assign_role(data: Dict[str, Any]) -> None:
 
 @authed.delete(ROLE_ASSIGNMENTS, responses={404: error_response})
 async def revoke_role(data: Dict[str, Any]) -> None:
-    """Revokes a role."""
+    """Revokes a role.
+
+    Args:
+        data: Data containing the role assignment.
+
+    Raises:
+        not_found: when none are found
+    """
     role_name = data["role_name"]
     entity_name = data["entity_name"]
     project_name = data.get("project_name")
@@ -589,7 +925,15 @@ async def revoke_role(data: Dict[str, Any]) -> None:
 async def pipeline_runs(
     pipeline_name: str, project_name: Optional[str] = None
 ) -> List[PipelineRunWrapper]:
-    """Returns all runs for a pipeline."""
+    """Returns all runs for a pipeline.
+
+    Args:
+        pipeline_name: Name of the pipeline.
+        project_name: Name of the project.
+
+    Returns:
+        All runs for a pipeline.
+    """
     return zen_store.get_pipeline_runs(
         pipeline_name=pipeline_name, project_name=project_name
     )
@@ -603,7 +947,19 @@ async def pipeline_runs(
 async def pipeline_run(
     pipeline_name: str, run_name: str, project_name: Optional[str] = None
 ) -> PipelineRunWrapper:
-    """Returns a single pipeline run."""
+    """Returns a single pipeline run.
+
+    Args:
+        pipeline_name: Name of the pipeline.
+        run_name: Name of the run.
+        project_name: Name of the project.
+
+    Returns:
+        The requested pipeline run.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_pipeline_run(
             pipeline_name=pipeline_name,
@@ -619,7 +975,16 @@ async def pipeline_run(
     responses={409: error_response},
 )
 async def register_pipeline_run(pipeline_run: PipelineRunWrapper) -> None:
-    """Registers a pipeline run."""
+    """Registers a pipeline run.
+
+    # noqa: DAR401
+
+    Args:
+        pipeline_run: Pipeline run to register.
+
+    Returns:
+        None
+    """
     try:
         return zen_store.register_pipeline_run(pipeline_run)
     except EntityExistsError as error:
@@ -628,6 +993,11 @@ async def register_pipeline_run(pipeline_run: PipelineRunWrapper) -> None:
 
 @authed.get(FLAVORS, response_model=List[FlavorWrapper])
 async def flavors() -> List[FlavorWrapper]:
+    """Get all flavors.
+
+    Returns:
+        All flavors.
+    """
     return zen_store.flavors
 
 
@@ -637,7 +1007,16 @@ async def flavors() -> List[FlavorWrapper]:
     responses={409: error_response},
 )
 async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
-    """Creates a flavor."""
+    """Creates a flavor.
+
+    # noqa: DAR401
+
+    Args:
+        flavor: Flavor to create.
+
+    Returns:
+        The created flavor.
+    """
     try:
         return zen_store.create_flavor(
             name=flavor.name,
@@ -652,6 +1031,17 @@ async def create_flavor(flavor: FlavorWrapper) -> FlavorWrapper:
 async def get_flavor_by_type(
     component_type: StackComponentType,
 ) -> List[FlavorWrapper]:
+    """Returns all flavors of a given type.
+
+    Args:
+        component_type: Type of the component.
+
+    Returns:
+        The requested flavors.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_flavors_by_type(component_type=component_type)
     except KeyError as error:
@@ -664,6 +1054,18 @@ async def get_flavor_by_type(
 async def get_flavor_by_type_and_name(
     component_type: StackComponentType, name: str
 ) -> FlavorWrapper:
+    """Returns a flavor of a given type and name.
+
+    Args:
+        component_type: Type of the component
+        name: Name of the flavor.
+
+    Returns:
+        The requested flavor.
+
+    Raises:
+        not_found: when none are found
+    """
     try:
         return zen_store.get_flavor_by_name_and_type(
             component_type=component_type, flavor_name=name

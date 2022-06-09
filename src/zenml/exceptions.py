@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML specific exception definitions"""
+"""ZenML specific exception definitions."""
+
 import textwrap
 from typing import TYPE_CHECKING, List, Optional, Type
 
@@ -58,12 +59,20 @@ class DoesNotExistException(ZenMLBaseException):
     action is being done that requires it to be present."""
 
     def __init__(self, message: str):
+        """Initializes the exception.
+
+        Args:
+            message: Message with details of exception.
+        """
         super().__init__(message)
 
 
 class AlreadyExistsException(ZenMLBaseException):
-    """Raises exception when the `name` already exist in the system but an
-    action is trying to create a resource with the same name."""
+    """Raises exception when the `name` already exists in the system
+
+    This happens when an action is trying to create a resource with the same
+    name.
+    """
 
     def __init__(
         self,
@@ -71,20 +80,32 @@ class AlreadyExistsException(ZenMLBaseException):
         name: str = "",
         resource_type: str = "",
     ):
+        """Initializes the exception.
+
+        Args:
+            message: Message with details of exception.
+            name: Name of the resource that already exists.
+            resource_type: Type of the resource that already exists.
+        """
         if message is None:
             message = f"{resource_type} `{name}` already exists!"
         super().__init__(message)
 
 
 class PipelineNotSucceededException(ZenMLBaseException):
-    """Raises exception when trying to fetch artifacts from a not succeeded
-    pipeline."""
+    """Raises exception when trying to fetch artifacts from a not succeeded pipeline."""
 
     def __init__(
         self,
         name: str = "",
         message: str = "{} is not yet completed successfully.",
     ):
+        """Initializes the exception.
+
+        Args:
+            name: Name of the pipeline.
+            message: Message with details of exception.
+        """
         super().__init__(message.format(name))
 
 
@@ -97,6 +118,11 @@ class GitException(ZenMLBaseException):
         "Please make sure that all relevant files "
         "are committed.",
     ):
+        """Initializes the exception.
+
+        Args:
+            message: Message with details of exception.
+        """
         super().__init__(message)
 
 
@@ -189,6 +215,11 @@ class DuplicateRunNameError(RuntimeError):
         message: str = "Unable to run a pipeline with a run name that "
         "already exists.",
     ):
+        """Initializes the exception.
+
+        Args:
+            message: Message with details of exception.
+        """
         super().__init__(message)
 
 

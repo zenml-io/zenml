@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""REST Zen Store implementation."""
+
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
@@ -59,7 +61,7 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
 class RestZenStore(BaseZenStore):
-    """ZenStore implementation for accessing data from a REST api."""
+    """ZenStore implementation for accessing data from a REST API."""
 
     def initialize(
         self,
@@ -107,10 +109,10 @@ class RestZenStore(BaseZenStore):
         """Get a local URL for a given local path.
 
         Args:
-             path: the path string to build a URL out of.
+            path: the path string to build a URL out of.
 
         Returns:
-            Url pointing to the path for the store type.
+            URL pointing to the path for the store type.
 
         Raises:
             NotImplementedError: always
@@ -119,7 +121,14 @@ class RestZenStore(BaseZenStore):
 
     @staticmethod
     def is_valid_url(url: str) -> bool:
-        """Check if the given url is a valid local path."""
+        """Check if the given url is a valid local path.
+
+        Args:
+            url: The url to check.
+
+        Returns:
+            True, if the url is a valid local path, False otherwise.
+        """
         scheme = re.search("^([a-z0-9]+://)", url)
         return (
             scheme is not None
@@ -131,12 +140,20 @@ class RestZenStore(BaseZenStore):
 
     @property
     def type(self) -> StoreType:
-        """The type of stack store."""
+        """The type of stack store.
+
+        Returns:
+            The type of the stack store.
+        """
         return StoreType.REST
 
     @property
     def url(self) -> str:
-        """Get the stack store URL."""
+        """Get the stack store URL.
+
+        Returns:
+            The URL of the stack store.
+        """
         return self._url
 
     @property
@@ -145,6 +162,9 @@ class RestZenStore(BaseZenStore):
 
         The implementation of this method should check if the store is empty
         without having to load all the stacks from the persistent storage.
+
+        Returns:
+            True, if the store is empty, False otherwise.
         """
         empty = self.get(STACKS_EMPTY)
         if not isinstance(empty, bool):
@@ -257,7 +277,11 @@ class RestZenStore(BaseZenStore):
 
     @property
     def stacks(self) -> List[StackWrapper]:
-        """All stacks registered in this repository."""
+        """All stacks registered in this repository.
+
+        Returns:
+            List[StackWrapper] of all stacks registered in this repository.
+        """
         body = self.get(STACKS)
         if not isinstance(body, list):
             raise ValueError(
@@ -395,7 +419,7 @@ class RestZenStore(BaseZenStore):
             user_name: Unique username.
 
         Returns:
-             The newly created user.
+            The newly created user.
 
         Raises:
             EntityExistsError: If a user with the given name already exists.
@@ -452,7 +476,7 @@ class RestZenStore(BaseZenStore):
             team_name: Unique team name.
 
         Returns:
-             The newly created team.
+            The newly created team.
 
         Raises:
             EntityExistsError: If a team with the given name already exists.
@@ -537,7 +561,7 @@ class RestZenStore(BaseZenStore):
             description: Optional project description.
 
         Returns:
-             The newly created project.
+            The newly created project.
 
         Raises:
             EntityExistsError: If a project with the given name already exists.
@@ -614,7 +638,7 @@ class RestZenStore(BaseZenStore):
             role_name: Unique role name.
 
         Returns:
-             The newly created role.
+            The newly created role.
 
         Raises:
             EntityExistsError: If a role with the given name already exists.
@@ -886,25 +910,53 @@ class RestZenStore(BaseZenStore):
     def _create_stack(
         self, name: str, stack_configuration: Dict[StackComponentType, str]
     ) -> None:
-        """Add a stack to storage"""
+        """Add a stack to storage.
+
+        Args:
+            name: Name of the stack.
+            stack_configuration: Configuration of the stack.
+
+        Raises:
+            NotImplementedError: If this method is called.
+        """
         raise NotImplementedError("Not to be accessed directly in client!")
 
     def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str
     ) -> Tuple[str, bytes]:
-        """Fetch the flavor and configuration for a stack component."""
+        """Fetch the flavor and configuration for a stack component.
+
+        Args:
+            component_type: Type of the component.
+            name: Name of the component.
+
+        Raises:
+            NotImplementedError: If the component type is not supported.
+        """
         raise NotImplementedError("Not to be accessed directly in client!")
 
     def _get_stack_component_names(
         self, component_type: StackComponentType
     ) -> List[str]:
-        """Get names of all registered stack components of a given type."""
+        """Get names of all registered stack components of a given type.
+
+        Args:
+            component_type: Type of the components.
+
+        Raises:
+            NotImplementedError.
+        """
         raise NotImplementedError("Not to be accessed directly in client!")
 
     def _delete_stack_component(
         self, component_type: StackComponentType, name: str
     ) -> None:
-        """Remove a StackComponent from storage."""
+        """Remove a StackComponent from storage.
+
+        Args:
+            component_type: Type of the component.
+            name: Name of the component.
+        """
         raise NotImplementedError("Not to be accessed directly in client!")
 
     # Handling stack component flavors
@@ -937,7 +989,7 @@ class RestZenStore(BaseZenStore):
             stack_component_type: the corresponding StackComponentType.
 
         Returns:
-             The newly created flavor.
+            The newly created flavor.
 
         Raises:
             EntityExistsError: If a flavor with the given name and type
@@ -995,7 +1047,14 @@ class RestZenStore(BaseZenStore):
     def _parse_stack_configuration(
         self, to_parse: Json
     ) -> Dict[StackComponentType, str]:
-        """Parse an API response into `Dict[StackComponentType, str]`."""
+        """Parse an API response into `Dict[StackComponentType, str]`.
+
+        Args:
+            to_parse: The response to parse.
+
+        Returns:
+
+        """
         if not isinstance(to_parse, dict):
             raise ValueError(
                 f"Bad API Response. Expected dict, got {type(to_parse)}."
@@ -1006,7 +1065,11 @@ class RestZenStore(BaseZenStore):
         }
 
     def _handle_response(self, response: requests.Response) -> Json:
-        """Handle API response, translating http status codes to Exception."""
+        """Handle API response, translating http status codes to Exception.
+
+        Args:
+            response: The response to handle.
+        """
         if response.status_code >= 200 and response.status_code < 300:
             try:
                 payload: Json = response.json()
@@ -1054,25 +1117,50 @@ class RestZenStore(BaseZenStore):
 
     @staticmethod
     def _get_authentication() -> Tuple[str, str]:
-        """Gets HTTP basic auth credentials."""
+        """Gets HTTP basic auth credentials.
+
+        Returns:
+            A tuple of the username and password.
+        """
         from zenml.repository import Repository
 
         return Repository().active_user_name, ""
 
     def get(self, path: str) -> Json:
-        """Make a GET request to the given endpoint path."""
+        """Make a GET request to the given endpoint path.
+
+        Args:
+            path: The path to the endpoint.
+
+        Returns:
+            The response body.
+        """
         return self._handle_response(
             requests.get(self.url + path, auth=self._get_authentication())
         )
 
     def delete(self, path: str) -> Json:
-        """Make a DELETE request to the given endpoint path."""
+        """Make a DELETE request to the given endpoint path.
+
+        Args:
+            path: The path to the endpoint.
+
+        Returns:
+            The response body.
+        """
         return self._handle_response(
             requests.delete(self.url + path, auth=self._get_authentication())
         )
 
     def post(self, path: str, body: BaseModel) -> Json:
-        """Make a POST request to the given endpoint path."""
+        """Make a POST request to the given endpoint path.
+
+        Args:
+            path: The path to the endpoint.
+
+        Returns:
+            The response body.
+        """
         endpoint = self.url + path
         return self._handle_response(
             requests.post(
@@ -1081,7 +1169,15 @@ class RestZenStore(BaseZenStore):
         )
 
     def put(self, path: str, body: BaseModel) -> Json:
-        """Make a PUT request to the given endpoint path."""
+        """Make a PUT request to the given endpoint path.
+
+        Args:
+            path: The path to the endpoint.
+            body: The body to send.
+
+        Returns:
+            The response body.
+        """
         endpoint = self.url + path
         return self._handle_response(
             requests.put(

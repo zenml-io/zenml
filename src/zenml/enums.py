@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML enums."""
 
 import logging
 from enum import Enum
@@ -54,7 +55,11 @@ class StackComponentType(StrEnum):
 
     @property
     def plural(self) -> str:
-        """Returns the plural of the enum value."""
+        """Returns the plural of the enum value.
+
+        Returns:
+            The plural of the enum value.
+        """
         if self == StackComponentType.CONTAINER_REGISTRY:
             return "container_registries"
 

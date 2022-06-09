@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""SQL Zen Store implementation."""
+
 import datetime as dt
 import json
 from datetime import datetime
@@ -52,7 +54,11 @@ logger = get_logger(__name__)
 
 
 def _sqlmodel_uuid() -> UUID:
-    """Generates a UUID whose hex string does not start with a '0'."""
+    """Generates a UUID whose hex string does not start with a '0'.
+
+    Returns:
+        A UUID whose hex string does not start with a '0'.
+    """
     # SQLModel crashes when a UUID hex string starts with '0'
     # (see: https://github.com/tiangolo/sqlmodel/issues/25)
     uuid = uuid4()
@@ -62,17 +68,23 @@ def _sqlmodel_uuid() -> UUID:
 
 
 class ZenUser(SQLModel, table=True):
+    """SQL Model for users."""
+
     id: int = Field(primary_key=True)
     name: str
 
 
 class ZenStack(SQLModel, table=True):
+    """SQL Model for stacks."""
+
     name: str = Field(primary_key=True)
     created_by: int
     create_time: Optional[dt.datetime] = Field(default_factory=dt.datetime.now)
 
 
 class ZenStackComponent(SQLModel, table=True):
+    """SQL Model for stack components."""
+
     component_type: StackComponentType = Field(primary_key=True)
     name: str = Field(primary_key=True)
     component_flavor: str
@@ -80,6 +92,8 @@ class ZenStackComponent(SQLModel, table=True):
 
 
 class ZenFlavor(SQLModel, table=True):
+    """SQL Model for flavors."""
+
     type: StackComponentType = Field(primary_key=True)
     name: str = Field(primary_key=True)
     source: str
@@ -87,7 +101,10 @@ class ZenFlavor(SQLModel, table=True):
 
 
 class ZenStackDefinition(SQLModel, table=True):
-    """Join table between Stacks and StackComponents"""
+    """SQL Model for stack definitions.
+
+    Join table between Stacks and StackComponents.
+    """
 
     stack_name: str = Field(primary_key=True, foreign_key="zenstack.name")
     component_type: StackComponentType = Field(
@@ -99,30 +116,42 @@ class ZenStackDefinition(SQLModel, table=True):
 
 
 class UserTable(User, SQLModel, table=True):
+    """SQL Model for users."""
+
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
 
 
 class TeamTable(Team, SQLModel, table=True):
+    """SQL Model for teams."""
+
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
 
 
 class ProjectTable(Project, SQLModel, table=True):
+    """SQL Model for projects."""
+
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     creation_date: datetime = Field(default_factory=datetime.now)
 
 
 class RoleTable(SQLModel, table=True):
+    """SQL Model for roles."""
+
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     creation_date: datetime = Field(default_factory=datetime.now)
     name: str
 
 
 class TeamAssignmentTable(SQLModel, table=True):
+    """SQL Model for team assignments."""
+
     user_id: UUID = Field(primary_key=True, foreign_key="usertable.id")
     team_id: UUID = Field(primary_key=True, foreign_key="teamtable.id")
 
 
 class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
+    """SQL Model for role assignments."""
+
     id: UUID = Field(primary_key=True, default_factory=_sqlmodel_uuid)
     role_id: UUID = Field(foreign_key="roletable.id")
     user_id: Optional[UUID] = Field(default=None, foreign_key="usertable.id")
@@ -133,6 +162,8 @@ class RoleAssignmentTable(RoleAssignment, SQLModel, table=True):
 
 
 class PipelineRunTable(SQLModel, table=True):
+    """SQL Model for pipeline runs."""
+
     name: str = Field(primary_key=True)
     zenml_version: str
     git_sha: Optional[str]
@@ -151,6 +182,14 @@ class PipelineRunTable(SQLModel, table=True):
     def from_pipeline_run_wrapper(
         cls, wrapper: PipelineRunWrapper
     ) -> "PipelineRunTable":
+        """Creates a PipelineRunTable from a PipelineRunWrapper.
+
+        Args:
+            wrapper: The PipelineRunWrapper to create the PipelineRunTable from.
+
+        Returns:
+            A PipelineRunTable.
+        """
         return PipelineRunTable(
             name=wrapper.name,
             zenml_version=wrapper.zenml_version,
@@ -164,6 +203,11 @@ class PipelineRunTable(SQLModel, table=True):
         )
 
     def to_pipeline_run_wrapper(self) -> PipelineRunWrapper:
+        """Creates a PipelineRunWrapper from a PipelineRunTable.
+
+        Returns:
+            A PipelineRunWrapper.
+        """
         return PipelineRunWrapper(
             name=self.name,
             zenml_version=self.zenml_version,
@@ -190,6 +234,7 @@ class SqlZenStore(BaseZenStore):
         Args:
             url: odbc path to a database.
             args, kwargs: additional parameters for SQLModel.
+
         Returns:
             The initialized zen store instance.
         """
@@ -223,12 +268,20 @@ class SqlZenStore(BaseZenStore):
 
     @property
     def type(self) -> StoreType:
-        """The type of zen store."""
+        """The type of zen store.
+
+        Returns:
+            The type of zen store.
+        """
         return StoreType.SQL
 
     @property
     def url(self) -> str:
-        """URL of the repository."""
+        """URL of the repository.
+
+        Returns:
+            The URL of the repository.
+        """
         if not self._url:
             raise RuntimeError(
                 "SQL zen store has not been initialized. Call `initialize` "
@@ -263,12 +316,26 @@ class SqlZenStore(BaseZenStore):
 
     @staticmethod
     def get_local_url(path: str) -> str:
-        """Get a local SQL url for a given local path."""
+        """Get a local SQL url for a given local path.
+
+        Args:
+            path: The path to the local sqlite file.
+
+        Returns:
+            The local SQL url for the given path.
+        """
         return f"sqlite:///{path}/zenml.db"
 
     @staticmethod
     def is_valid_url(url: str) -> bool:
-        """Check if the given url is a valid SQL url."""
+        """Check if the given url is a valid SQL url.
+
+        Args:
+            url: The url to check.
+
+        Returns:
+            True if the url is a valid SQL url, False otherwise.
+        """
         try:
             make_url(url)
         except ArgumentError:
@@ -279,7 +346,11 @@ class SqlZenStore(BaseZenStore):
 
     @property
     def stacks_empty(self) -> bool:
-        """Check if the zen store is empty."""
+        """Check if the zen store is empty.
+
+        Returns:
+            True if the zen store is empty, False otherwise.
+        """
         with Session(self.engine) as session:
             return session.exec(select(ZenStack)).first() is None
 
@@ -631,7 +702,7 @@ class SqlZenStore(BaseZenStore):
             user_name: Unique username.
 
         Returns:
-             The newly created user.
+            The newly created user.
 
         Raises:
             EntityExistsError: If a user with the given name already exists.
@@ -722,7 +793,7 @@ class SqlZenStore(BaseZenStore):
             team_name: Unique team name.
 
         Returns:
-             The newly created team.
+            The newly created team.
 
         Raises:
             EntityExistsError: If a team with the given name already exists.
@@ -868,7 +939,7 @@ class SqlZenStore(BaseZenStore):
             description: Optional project description.
 
         Returns:
-             The newly created project.
+            The newly created project.
 
         Raises:
             EntityExistsError: If a project with the given name already exists.
@@ -971,7 +1042,7 @@ class SqlZenStore(BaseZenStore):
             role_name: Unique role name.
 
         Returns:
-             The newly created role.
+            The newly created role.
 
         Raises:
             EntityExistsError: If a role with the given name already exists.
@@ -1491,12 +1562,20 @@ class SqlZenStore(BaseZenStore):
 
     @property
     def stack_names(self) -> List[str]:
-        """Names of all stacks registered in this ZenStore."""
+        """Names of all stacks registered in this ZenStore.
+
+        Returns:
+            List of all stack names.
+        """
         with Session(self.engine) as session:
             return [s.name for s in session.exec(select(ZenStack))]
 
     def _delete_query_results(self, query: Any) -> None:
-        """Deletes all rows returned by the input query."""
+        """Deletes all rows returned by the input query.
+
+        Args:
+            query: The query to execute.
+        """
         with Session(self.engine) as session:
             for result in session.exec(query).all():
                 session.delete(result)

@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-"""
+"""Utility functions for Steps.
+
 The collection of utility functions/classes are inspired by their original
 implementation of the Tensorflow Extended team, which can be found here:
 
@@ -102,6 +103,12 @@ def resolve_type_annotation(obj: Any) -> Any:
 
     Example: if the input object is `typing.Dict`, this method will return the
     concrete class `dict`.
+
+    Args:
+        obj: The object to resolve.
+
+    Returns:
+        The non-generic class for generic aliases of the typing module.
     """
     from typing import _GenericAlias  # type: ignore[attr-defined]
 
@@ -215,6 +222,7 @@ def generate_component_class(
 
 class _PropertyDictWrapper(json_utils.Jsonable):
     """Helper class to wrap inputs/outputs from TFX nodes.
+
     Currently, this class is read-only (setting properties is not implemented).
     Internal class: no backwards compatibility guarantees.
     Code Credit: https://github.com/tensorflow/tfx/blob
@@ -236,17 +244,38 @@ class _PropertyDictWrapper(json_utils.Jsonable):
         self._compat_aliases = compat_aliases or {}
 
     def __iter__(self) -> Iterator[str]:
-        """Returns a generator that yields keys of the wrapped dictionary."""
+        """Returns a generator that yields keys of the wrapped dictionary.
+
+        Yields:
+            Keys of the wrapped dictionary.
+        """
         yield from self._data
 
     def __getitem__(self, key: str) -> Channel:
-        """Returns the dictionary value for the specified key."""
+        """Returns the dictionary value for the specified key.
+
+        Args:
+            key: The key to look up.
+
+        Returns:
+            The dictionary value for the specified key.
+        """
         if key in self._compat_aliases:
             key = self._compat_aliases[key]
         return self._data[key]
 
     def __getattr__(self, key: str) -> Channel:
-        """Returns the dictionary value for the specified key."""
+        """Returns the dictionary value for the specified key.
+
+        Args:
+            key: The key to look up.
+
+        Returns:
+            The dictionary value for the specified key.
+
+        Raises:
+            AttributeError: If the key is not found.
+        """
         if key in self._compat_aliases:
             key = self._compat_aliases[key]
         try:
@@ -255,23 +284,43 @@ class _PropertyDictWrapper(json_utils.Jsonable):
             raise AttributeError
 
     def __repr__(self) -> str:
-        """Returns the representation of the wrapped dictionary."""
+        """Returns the representation of the wrapped dictionary.
+
+        Returns:
+            The representation of the wrapped dictionary.
+        """
         return repr(self._data)
 
     def get_all(self) -> Dict[str, Channel]:
-        """Returns the wrapped dictionary."""
+        """Returns the wrapped dictionary.
+
+        Returns:
+            The wrapped dictionary.
+        """
         return self._data
 
     def keys(self) -> KeysView[str]:
-        """Returns the keys of the wrapped dictionary."""
+        """Returns the keys of the wrapped dictionary.
+
+        Returns:
+            The keys of the wrapped dictionary.
+        """
         return self._data.keys()
 
     def values(self) -> ValuesView[Channel]:
-        """Returns the values of the wrapped dictionary."""
+        """Returns the values of the wrapped dictionary.
+
+        Returns:
+            The values of the wrapped dictionary.
+        """
         return self._data.values()
 
     def items(self) -> ItemsView[str, Channel]:
-        """Returns the items of the wrapped dictionary."""
+        """Returns the items of the wrapped dictionary.
+
+        Returns:
+            The items of the wrapped dictionary.
+        """
         return self._data.items()
 
 
@@ -280,12 +329,16 @@ class _ZenMLSimpleComponent(_SimpleComponent):
 
     @property
     def outputs(self) -> _PropertyDictWrapper:  # type: ignore[override]
-        """Returns the wrapped spec outputs."""
+        """Returns the wrapped spec outputs.
+
+        Returns:
+            The wrapped spec outputs.
+        """
         return _PropertyDictWrapper(self.spec.outputs)
 
 
 class _FunctionExecutor(BaseExecutor):
-    """Base TFX Executor class which is compatible with ZenML steps"""
+    """Base TFX Executor class which is compatible with ZenML steps."""
 
     _FUNCTION = staticmethod(lambda: None)
     materializers: ClassVar[
@@ -304,9 +357,12 @@ class _FunctionExecutor(BaseExecutor):
         Returns:
             The right materializer based on the defaults or optionally the one
             set by the user.
+
+        Raises:
+            ValueError: If the materializer is not found.
         """
         if not self.materializers:
-            raise ValueError("Materializers are missing is not set!")
+            raise ValueError("Materializers are not set!")
 
         materializer_class = self.materializers[param_name]
         return materializer_class
@@ -314,8 +370,9 @@ class _FunctionExecutor(BaseExecutor):
     def resolve_input_artifact(
         self, artifact: BaseArtifact, data_type: Type[Any]
     ) -> Any:
-        """Resolves an input artifact, i.e., reading it from the Artifact Store
-        to a pythonic object.
+        """Resolves an input artifact.
+
+        This method reads it from the Artifact Store to a Pythonic object.
 
         Args:
             artifact: A TFX artifact type.
@@ -344,8 +401,10 @@ class _FunctionExecutor(BaseExecutor):
     def resolve_output_artifact(
         self, param_name: str, artifact: BaseArtifact, data: Any
     ) -> None:
-        """Resolves an output artifact, i.e., writing it to the Artifact Store.
-        Calls `handle_return(return_values)` of the selected materializer.
+        """Resolves an output artifact.
+
+        This writes it to the Artifact Store. Calls
+        `handle_return(return_values)` of the selected materializer.
 
         Args:
             param_name: Name of output param.
@@ -371,10 +430,10 @@ class _FunctionExecutor(BaseExecutor):
         Args:
             output_value: Value of output.
             specified_type: What the type of output should be as defined in the
-            signature.
+                signature.
 
         Raises:
-            ValueError if types do not match.
+            ValueError: if types do not match.
         """
         # TODO [ENG-160]: Include this check when we figure out the logic of
         #  slightly different subclasses.
@@ -391,12 +450,17 @@ class _FunctionExecutor(BaseExecutor):
         output_dict: Dict[str, List[BaseArtifact]],
         exec_properties: Dict[str, Any],
     ) -> None:
-        """Main block for the execution of the step
+        """Main block for the execution of the step.
 
         Args:
             input_dict: dictionary containing the input artifacts
             output_dict: dictionary containing the output artifacts
             exec_properties: dictionary containing the execution parameters
+
+        Raises:
+            MissingStepParameterError: if a required parameter is missing.
+            RuntimeError: if the step fails.
+            StepInterfaceError: if the step interface is not implemented.
         """
         step_name = getattr(self, PARAM_STEP_NAME)
 

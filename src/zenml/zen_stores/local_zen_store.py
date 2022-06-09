@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Local Zen Store implementation."""
+
 import base64
 import itertools
 import os
@@ -60,7 +62,6 @@ E = TypeVar(
 def _get_unique_entity(
     entity_name: str, collection: Sequence[E], ensure_exists: bool = True
 ) -> E:
-    """Type annotations in case of `ensure_exists=True`."""
     ...
 
 
@@ -68,7 +69,6 @@ def _get_unique_entity(
 def _get_unique_entity(
     entity_name: str, collection: Sequence[E], ensure_exists: bool = False
 ) -> Optional[E]:
-    """Type annotations in case of `ensure_exists=False`."""
     ...
 
 
@@ -150,12 +150,20 @@ class LocalZenStore(BaseZenStore):
 
     @property
     def type(self) -> StoreType:
-        """The type of zen store."""
+        """The type of zen store.
+
+        Returns:
+            The type of zen store.
+        """
         return StoreType.LOCAL
 
     @property
     def url(self) -> str:
-        """URL of the repository."""
+        """URL of the repository.
+
+        Returns:
+            The URL of the repository.
+        """
         return self._url
 
     # Static methods:
@@ -177,18 +185,36 @@ class LocalZenStore(BaseZenStore):
 
     @staticmethod
     def get_local_url(path: str) -> str:
-        """Get a local URL for a given local path."""
+        """Get a local URL for a given local path.
+
+        Args:
+            path: The path to get the local URL for.
+
+        Returns:
+            The local URL for the path.
+        """
         return f"file://{path}"
 
     @staticmethod
     def is_valid_url(url: str) -> bool:
-        """Check if the given url is a valid local path."""
+        """Check if the given url is a valid local path.
+
+        Args:
+            url: The url to check.
+
+        Returns:
+            `True` if the url is a valid local url or path.
+        """
         scheme = re.search("^([a-z0-9]+://)", url)
         return not scheme or scheme.group() == "file://"
 
     @property
     def stacks_empty(self) -> bool:
-        """Check if the zen store is empty."""
+        """Check if the zen store is empty.
+
+        Returns:
+            `True` if the zen store is empty.
+        """
         return len(self.__store.stacks) == 0
 
     def get_stack_configuration(
@@ -390,7 +416,14 @@ class LocalZenStore(BaseZenStore):
     def _get_stack_component_names(
         self, component_type: StackComponentType
     ) -> List[str]:
-        """Get names of all registered stack components of a given type."""
+        """Get names of all registered stack components of a given type.
+
+        Args:
+            component_type: The type of the stack components to fetch.
+
+        Returns:
+            List of names of all registered stack components of the given type.
+        """
         return list(self.__store.stack_components[component_type])
 
     def _delete_stack_component(
@@ -517,7 +550,7 @@ class LocalZenStore(BaseZenStore):
             team_name: Unique team name.
 
         Returns:
-             The newly created team.
+            The newly created team.
 
         Raises:
             EntityExistsError: If a team with the given name already exists.
@@ -619,7 +652,7 @@ class LocalZenStore(BaseZenStore):
             description: Optional project description.
 
         Returns:
-             The newly created project.
+            The newly created project.
 
         Raises:
             EntityExistsError: If a project with the given name already exists.
@@ -697,7 +730,7 @@ class LocalZenStore(BaseZenStore):
             role_name: Unique role name.
 
         Returns:
-             The newly created role.
+            The newly created role.
 
         Raises:
             EntityExistsError: If a role with the given name already exists.
@@ -1113,7 +1146,11 @@ class LocalZenStore(BaseZenStore):
 
     @property
     def root(self) -> Path:
-        """The root directory of the zen store."""
+        """The root directory of the zen store.
+
+        Returns:
+
+        """
         if not self._root:
             raise RuntimeError(
                 "Local zen store has not been initialized. Call `initialize` "
@@ -1124,7 +1161,15 @@ class LocalZenStore(BaseZenStore):
     def _get_stack_component_config_path(
         self, component_type: StackComponentType, name: str
     ) -> str:
-        """Path to the configuration file of a stack component."""
+        """Path to the configuration file of a stack component.
+
+        Args:
+            component_type: The type of the stack component.
+            name: The name of the stack component.
+
+        Returns:
+            The path to the configuration file of the stack component.
+        """
         path = self.root / component_type.plural / f"{name}.yaml"
         return str(path)
 
