@@ -222,6 +222,7 @@ NeuralProphet
 Ng
 NotFoundError
 NotImplementedError
+NumPy
 OAuth
 OneRing
 OpFunc
