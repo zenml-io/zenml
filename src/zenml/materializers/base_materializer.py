@@ -29,7 +29,7 @@ from zenml.materializers.default_materializer_registry import (
 class BaseMaterializerMeta(type):
     """Metaclass responsible for registering different BaseMaterializer subclasses.
 
-    This is for the purposes of reading/writing artifacts.
+    Materializers are used for reading/writing artifacts.
     """
 
     def __new__(
