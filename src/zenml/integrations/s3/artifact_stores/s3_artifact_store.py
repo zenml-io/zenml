@@ -100,7 +100,9 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         else:
             raise TypeError(f"{value} is not a json string or a dictionary.")
 
-    def _get_credentials(self) -> Tuple[str, str, str]:
+    def _get_credentials(
+        self,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Gets authentication credentials.
 
         If an authentication secret is configured, the secret values are

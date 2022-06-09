@@ -26,5 +26,26 @@ class GCPSecretSchema(BaseSecretSchema):
     token: str
 
     def get_credential_dict(self) -> Dict[str, Any]:
-        """Gets a dictionary of credentials for authenticating to GCP."""
-        return json.loads(self.token)
+        """Gets a dictionary of credentials for authenticating to GCP.
+
+        Returns:
+            A dictionary representing GCP credentials.
+
+        Raises:
+            ValueError: If the token value is not a JSON string of a dictionary.
+        """
+        try:
+            dict_ = json.loads(self.token)
+        except json.JSONDecodeError:
+            raise ValueError(
+                "Failed to parse GCP secret token. The token value is not a "
+                "valid JSON string."
+            )
+
+        if not isinstance(dict_, Dict):
+            raise ValueError(
+                "Failed to parse GCP secret token. The token value does not "
+                "represent a GCP credential dictionary."
+            )
+
+        return dict_
