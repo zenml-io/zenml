@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility functions for the integrations module."""
+
 import importlib
 import inspect
 import sys
@@ -19,13 +21,21 @@ from typing import List, Optional, Type, cast
 from zenml.integrations.integration import Integration, IntegrationMeta
 
 
-def get_integration_for_module(module_name: str) -> Optional[Type[Integration]]:
+def get_integration_for_module(
+    module_name: str,
+) -> Optional[Type[Integration]]:
     """Gets the integration class for a module inside an integration.
 
     If the module given by `module_name` is not part of a ZenML integration,
     this method will return `None`. If it is part of a ZenML integration,
     it will return the integration class found inside the integration
     __init__ file.
+
+    Args:
+        module_name: The name of the module to get the integration for.
+
+    Returns:
+        The integration class for the module.
     """
     integration_prefix = "zenml.integrations."
     if not module_name.startswith(integration_prefix):
@@ -55,6 +65,12 @@ def get_requirements_for_module(module_name: str) -> List[str]:
     this method will return an empty list. If it is part of a ZenML integration,
     it will return the list of requirements specified inside the integration
     class found inside the integration __init__ file.
+
+    Args:
+        module_name: The name of the module to get requirements for.
+
+    Returns:
+        A list of requirements for the module.
     """
     integration = get_integration_for_module(module_name)
     return integration.REQUIREMENTS if integration else []

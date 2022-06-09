@@ -30,7 +30,11 @@ class AzureMLIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the AzureML integration."""
+        """Declare the stack component flavors for the AzureML integration.
+
+        Returns:
+            List of stack component flavors.
+        """
         return [
             FlavorWrapper(
                 name=AZUREML_STEP_OPERATOR_FLAVOR,
