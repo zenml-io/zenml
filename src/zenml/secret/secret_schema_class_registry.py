@@ -21,6 +21,7 @@ from zenml.secret.schemas import (
     AWSSecretSchema,
     AzureSecretSchema,
     BasicAuthSecretSchema,
+    GCPSecretSchema,
 )
 
 logger = get_logger(__name__)
@@ -122,4 +123,5 @@ SecretSchemaClassRegistry.register_class(ArbitrarySecretSchema)
 SecretSchemaClassRegistry.register_class(AWSSecretSchema)
 SecretSchemaClassRegistry.register_class(AzureSecretSchema)
 SecretSchemaClassRegistry.register_class(BasicAuthSecretSchema)
+SecretSchemaClassRegistry.register_class(GCPSecretSchema)
 SecretSchemaClassRegistry.register_class(MYSQLSecretSchema)

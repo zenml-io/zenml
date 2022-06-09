@@ -11,15 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import json
+from typing import Any, ClassVar, Dict
 
-from zenml.secret.schemas.aws_secret_schema import AWSSecretSchema
-from zenml.secret.schemas.azure_secret_schema import AzureSecretSchema
-from zenml.secret.schemas.basic_auth_secret_schema import BasicAuthSecretSchema
-from zenml.secret.schemas.gcp_secret_schema import GCPSecretSchema
+from zenml.secret.base_secret import BaseSecretSchema
 
-__all__ = [
-    "AWSSecretSchema",
-    "AzureSecretSchema",
-    "BasicAuthSecretSchema",
-    "GCPSecretSchema",
-]
+GCP_SECRET_SCHEMA_TYPE = "gcp"
+
+
+class GCPSecretSchema(BaseSecretSchema):
+
+    TYPE: ClassVar[str] = GCP_SECRET_SCHEMA_TYPE
+
+    token: str
+
+    def get_credential_dict(self) -> Dict[str, Any]:
+        """Gets a dictionary of credentials for authenticating to GCP."""
+        return json.loads(self.token)

@@ -30,12 +30,14 @@ import gcsfs
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
+from zenml.secret.schemas import GCPSecretSchema
+from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
 
 
-class GCPArtifactStore(BaseArtifactStore):
+class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
     _filesystem: Optional[gcsfs.GCSFileSystem] = None
@@ -48,7 +50,12 @@ class GCPArtifactStore(BaseArtifactStore):
     def filesystem(self) -> gcsfs.GCSFileSystem:
         """The gcsfs filesystem to access this artifact store."""
         if not self._filesystem:
-            self._filesystem = gcsfs.GCSFileSystem()
+            secret = self.get_authentication_secret(
+                expected_schema_type=GCPSecretSchema
+            )
+            token = secret.get_credential_dict() if secret else None
+            self._filesystem = gcsfs.GCSFileSystem(token=token)
+
         return self._filesystem
 
     def open(self, path: PathType, mode: str = "r") -> Any:
