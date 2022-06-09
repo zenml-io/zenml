@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Huggingface datasets materializer."""
 
 import os
 from tempfile import TemporaryDirectory
@@ -33,7 +34,14 @@ class HFDatasetMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> Dataset:
-        """Reads Dataset"""
+        """Reads Dataset.
+
+        Args:
+            data_type: The type of the dataset to read.
+
+        Returns:
+            The dataset read from the specified dir.
+        """
         super().handle_input(data_type)
 
         return load_from_disk(
@@ -42,8 +50,9 @@ class HFDatasetMaterializer(BaseMaterializer):
 
     def handle_return(self, ds: Type[Any]) -> None:
         """Writes a Dataset to the specified dir.
+
         Args:
-            Dataset: The Dataset to write.
+            ds: The Dataset to write.
         """
         super().handle_return(ds)
         temp_dir = TemporaryDirectory()

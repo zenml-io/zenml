@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Huggingface PyTorch model materializer."""
 
 import importlib
 import os
@@ -33,7 +34,14 @@ class HFPTModelMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> PreTrainedModel:
-        """Reads HFModel"""
+        """Reads HFModel.
+
+        Args:
+            data_type: The type of the model to read.
+
+        Returns:
+            The model read from the specified dir.
+        """
         super().handle_input(data_type)
 
         config = AutoConfig.from_pretrained(
@@ -49,8 +57,9 @@ class HFPTModelMaterializer(BaseMaterializer):
 
     def handle_return(self, model: Type[Any]) -> None:
         """Writes a Model to the specified dir.
+
         Args:
-            PreTrainedModel: The Torch Model to write.
+            model: The Torch Model to write.
         """
         super().handle_return(model)
         temp_dir = TemporaryDirectory()
