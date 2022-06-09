@@ -11,13 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Secret Schema
 
-...
-"""
-from zenml.integrations.aws.secret_schemas.aws_secret_schema import (
-    AWSSecretSchema,
-)
+from zenml.secret.schemas.aws_secret_schema import AWSSecretSchema
+from zenml.secret.schemas.azure_secret_schema import AzureSecretSchema
+from zenml.secret.schemas.basic_auth_secret_schema import BasicAuthSecretSchema
 
-__all__ = ["AWSSecretSchema"]
+__all__ = [
+    "AWSSecretSchema",
+    "AzureSecretSchema",
+    "BasicAuthSecretSchema",
+]

@@ -27,7 +27,6 @@ from zenml.secret.arbitrary_secret_schema import (
     ArbitrarySecretSchema,
 )
 from zenml.secret.base_secret import BaseSecretSchema
-from zenml.secret.basic_auth_secret_schema import BasicAuthSecretSchema
 from zenml.secret.secret_schema_class_registry import (
     SecretSchemaClassRegistry,
     register_secret_schema_class,
@@ -37,7 +36,6 @@ __all__ = [
     "ARBITRARY_SECRET_SCHEMA_TYPE",
     "ArbitrarySecretSchema",
     "BaseSecretSchema",
-    "BasicAuthSecretSchema",
     "SecretSchemaClassRegistry",
     "register_secret_schema_class",
 ]

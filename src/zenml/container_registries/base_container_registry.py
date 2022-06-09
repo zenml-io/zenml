@@ -17,7 +17,7 @@ from typing import ClassVar, Optional, Tuple
 from pydantic import validator
 
 from zenml.enums import StackComponentType
-from zenml.secret import BasicAuthSecretSchema
+from zenml.secret.schemas import BasicAuthSecretSchema
 from zenml.stack import StackComponent
 from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils import docker_utils

@@ -30,12 +30,14 @@ import adlfs
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.azure import AZURE_ARTIFACT_STORE_FLAVOR
+from zenml.secret.schemas import AzureSecretSchema
+from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
 
 
-class AzureArtifactStore(BaseArtifactStore):
+class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for Microsoft Azure based artifacts."""
 
     _filesystem: Optional[adlfs.AzureBlobFileSystem] = None
@@ -48,7 +50,13 @@ class AzureArtifactStore(BaseArtifactStore):
     def filesystem(self) -> adlfs.AzureBlobFileSystem:
         """The adlfs filesystem to access this artifact store."""
         if not self._filesystem:
+            secret = self.get_authentication_secret(
+                expected_schema_type=AzureSecretSchema
+            )
+            credentials = secret.content if secret else {}
+
             self._filesystem = adlfs.AzureBlobFileSystem(
+                **credentials,
                 anon=False,
                 use_listings_cache=False,
             )
