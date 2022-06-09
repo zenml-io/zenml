@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization for the post-execution artifact class."""
 
 from typing import TYPE_CHECKING, Any, Optional, Type
 
@@ -26,8 +27,10 @@ logger = get_logger(__name__)
 
 
 class ArtifactView:
-    """Post-execution artifact class which can be used to read
-    artifact data that was created during a pipeline execution.
+    """Post-execution artifact class.
+
+    This can be used to read artifact data that was created during a pipeline
+    execution.
     """
 
     def __init__(
@@ -68,40 +71,69 @@ class ArtifactView:
 
     @property
     def id(self) -> int:
-        """Returns the artifact id."""
+        """Returns the artifact id.
+
+        Returns:
+            The artifact id.
+        """
         return self._id
 
     @property
     def type(self) -> str:
-        """Returns the artifact type."""
+        """Returns the artifact type.
+
+        Returns:
+            The artifact type.
+        """
         return self._type
 
     @property
     def data_type(self) -> str:
-        """Returns the data type of the artifact."""
+        """Returns the data type of the artifact.
+
+        Returns:
+            The data type of the artifact.
+        """
         return self._data_type
 
     @property
     def uri(self) -> str:
-        """Returns the URI where the artifact data is stored."""
+        """Returns the URI where the artifact data is stored.
+
+        Returns:
+            The URI where the artifact data is stored.
+        """
         return self._uri
 
     @property
     def parent_step_id(self) -> int:
-        """Returns the ID of the parent step. This need not be equivalent to
-        the ID of the producer step."""
+        """Returns the ID of the parent step.
+
+        This need not be equivalent to the ID of the producer step.
+
+        Returns:
+            The ID of the parent step.
+        """
         return self._parent_step_id
 
     @property
     def producer_step(self) -> "StepView":
-        """Returns the original StepView that produced the artifact."""
+        """Returns the original StepView that produced the artifact.
+
+        Returns:
+            The original StepView that produced the artifact.
+        """
         # TODO [ENG-174]: Replace with artifact.id instead of passing self if
         #  required.
         return self._metadata_store.get_producer_step_from_artifact(self)
 
     @property
     def is_cached(self) -> bool:
-        """Returns True if artifact was cached in a previous run, else False."""
+        """Returns True if artifact was cached in a previous run, else False.
+
+        Returns:
+            True if artifact was cached in a previous run, else False.
+        """
         # self._metadata_store.
         return self.producer_step.id != self.parent_step_id
 
@@ -121,9 +153,11 @@ class ArtifactView:
                 artifact during execution of the pipeline.
 
         Returns:
-              The materialized data.
-        """
+            The materialized data.
 
+        Raises:
+            ModuleNotFoundError: If the materializer class could not be found.
+        """
         if not materializer_class:
             try:
                 materializer_class = source_utils.load_source_path_class(
@@ -165,7 +199,11 @@ class ArtifactView:
         return materializer.handle_input(output_data_type)
 
     def __repr__(self) -> str:
-        """Returns a string representation of this artifact."""
+        """Returns a string representation of this artifact.
+
+        Returns:
+            A string representation of this artifact.
+        """
         return (
             f"{self.__class__.__qualname__}(id={self._id}, "
             f"type='{self._type}', uri='{self._uri}', "
@@ -173,8 +211,15 @@ class ArtifactView:
         )
 
     def __eq__(self, other: Any) -> bool:
-        """Returns whether the other object is referring to the
-        same artifact."""
+        """Returns whether the other object is referring to the same artifact.
+
+        Args:
+            other: The other object to compare to.
+
+        Returns:
+            True if the other object is referring to the same artifact, else
+            False.
+        """
         if isinstance(other, ArtifactView):
             return self._id == other._id and self._uri == other._uri
         return NotImplemented
