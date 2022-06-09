@@ -17,6 +17,7 @@ from zenml.logger import get_logger
 from zenml.metadata_stores.mysql_secret_schema import MYSQLSecretSchema
 from zenml.secret import BaseSecretSchema
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
+from zenml.secret.basic_auth_secret_schema import BasicAuthSecretSchema
 
 logger = get_logger(__name__)
 
@@ -115,3 +116,4 @@ def register_secret_schema_class(cls: Type[C]) -> Type[C]:
 
 SecretSchemaClassRegistry.register_class(ArbitrarySecretSchema)
 SecretSchemaClassRegistry.register_class(MYSQLSecretSchema)
+SecretSchemaClassRegistry.register_class(BasicAuthSecretSchema)

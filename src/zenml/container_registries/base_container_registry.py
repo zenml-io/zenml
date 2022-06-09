@@ -12,27 +12,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import re
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Tuple
 
 from pydantic import validator
 
 from zenml.enums import StackComponentType
+from zenml.secret import BasicAuthSecretSchema
 from zenml.stack import StackComponent
+from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils import docker_utils
 
 
-class BaseContainerRegistry(StackComponent):
+class BaseContainerRegistry(StackComponent, AuthenticationMixin):
     """Base class for all ZenML container registries.
 
     Attributes:
         uri: The URI of the container registry.
-        username: Username to authenticate with the container registry.
-        password: Password to authenticate with the container registry.
     """
 
     uri: str
-    username: Optional[str] = None
-    password: Optional[str] = None
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
@@ -45,7 +43,23 @@ class BaseContainerRegistry(StackComponent):
     @property
     def requires_authentication(self) -> bool:
         """Returns whether the container registry requires authentication."""
-        return bool(self.username) and bool(self.password)
+        return bool(self.authentication_secret)
+
+    @property
+    def credentials(self) -> Optional[Tuple[str, str]]:
+        """Username and password to authenticate with this container registry.
+
+        Returns:
+            Tuple with username and password if this container registry
+            requires authentication, `None` otherwise.
+        """
+        secret = self.get_authentication_secret(
+            expected_schema_type=BasicAuthSecretSchema
+        )
+        if secret:
+            return secret.username, secret.password
+
+        return None
 
     @property
     def is_local(self) -> bool:
