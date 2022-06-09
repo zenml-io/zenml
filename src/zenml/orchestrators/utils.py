@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility functions for the orchestrator."""
 
 import json
 from typing import TYPE_CHECKING, List, cast
@@ -37,7 +38,15 @@ logger = get_logger(__name__)
 def create_tfx_pipeline(
     zenml_pipeline: "BasePipeline", stack: "Stack"
 ) -> tfx_pipeline.Pipeline:
-    """Creates a tfx pipeline from a ZenML pipeline."""
+    """Creates a tfx pipeline from a ZenML pipeline.
+
+    Args:
+        zenml_pipeline: The ZenML pipeline.
+        stack: The stack.
+
+    Returns:
+        The tfx pipeline.
+    """
     # Connect the inputs/outputs of all steps in the pipeline
     zenml_pipeline.connect(**zenml_pipeline.steps)
 
@@ -64,7 +73,7 @@ def get_cache_status(
         execution_info: The execution info of a `tfx` step.
 
     Raises:
-        AttributeError: If the execution info is `None`.
+        RuntimeError: If no active stack is configured for the repository.
         KeyError: If no pipeline info is found in the `execution_info`.
 
     Returns:
@@ -107,7 +116,18 @@ def get_cache_status(
 
 
 def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:
-    """Finds the matching step for a tfx pipeline node."""
+    """Finds the matching step for a tfx pipeline node.
+
+    Args:
+        node: The tfx pipeline node.
+        steps: The list of steps.
+
+    Returns:
+        The matching step.
+
+    Raises:
+        RuntimeError: If no matching step is found.
+    """
     step_name = node.node_info.id
     try:
         return next(step for step in steps if step.name == step_name)
