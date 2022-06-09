@@ -1,7 +1,0 @@
-resources:
-- namespace.yaml
-- jupyter.yaml
-- mysql.yaml
-- mysql-pv.yaml
-- roles.yaml
-- service-account.yaml

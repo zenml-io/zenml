@@ -21,11 +21,20 @@ import datetime
 import enum
 import re
 import time
-from typing import Callable, Optional
+from typing import Any, Callable, Dict, Optional
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 
+from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+    build_cluster_role_binding_manifest_for_service_account,
+    build_mysql_deployment_manifest,
+    build_mysql_service_manifest,
+    build_namespace_manifest,
+    build_persistent_volume_claim_manifest,
+    build_persistent_volume_manifest,
+    build_service_account_manifest,
+)
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -325,3 +334,78 @@ def wait_pod(
         time.sleep(backoff_interval)
         if exponential_backoff and backoff_interval < maximum_backoff:
             backoff_interval *= 2
+
+
+def create_cluster_role_binding(body: Dict[str, Any]) -> None:
+    with k8s_client.ApiClient() as api_client:
+        api_instance = k8s_client.RbacAuthorizationV1Api(api_client)
+        api_instance.create_cluster_role_binding(body=body)
+
+
+def create_deployment(body: Dict[str, Any], namespace: str = "default") -> None:
+    with k8s_client.ApiClient() as api_client:
+        api_instance = k8s_client.AppsV1Api(api_client)
+        api_instance.create_namespaced_deployment(
+            namespace=namespace, body=body
+        )
+
+
+def create_edit_service_account(
+    core_api: k8s_client.CoreV1Api,
+    service_account_name: str,
+    namespace: str = "default",
+):
+    crb_manifest = build_cluster_role_binding_manifest_for_service_account(
+        namespace=namespace,
+        service_account_name=service_account_name,
+    )
+    create_cluster_role_binding(body=crb_manifest)
+
+    sa_manifest = build_service_account_manifest(
+        name=service_account_name, namespace=namespace
+    )
+    core_api.create_namespaced_service_account(
+        namespace=namespace,
+        body=sa_manifest,
+    )
+
+
+def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str):
+    manifest = build_namespace_manifest(namespace)
+    core_api.create_namespace(body=manifest)
+
+
+def create_mysql_deployment(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str = "default",
+    storage_capacity: str = "10Gi",
+    deployment_name: str = "mysql",
+    service_name: str = "mysql",
+    volume_name: str = "mysql-pv-volume",
+    volume_claim_name: str = "mysql-pv-claim",
+):
+    pvc_manifest = build_persistent_volume_claim_manifest(
+        name=volume_claim_name,
+        namespace=namespace,
+        storage_request=storage_capacity,
+    )
+    core_api.create_namespaced_persistent_volume_claim(
+        namespace=namespace,
+        body=pvc_manifest,
+    )
+    pv_manifest = build_persistent_volume_manifest(
+        name=volume_name, storage_capacity=storage_capacity
+    )
+    core_api.create_persistent_volume(body=pv_manifest)
+    deployment_manifest = build_mysql_deployment_manifest(
+        name=deployment_name,
+        namespace=namespace,
+        pv_claim_name=volume_claim_name,
+    )
+    create_deployment(body=deployment_manifest, namespace=namespace)
+    service_manifest = build_mysql_service_manifest(
+        name=service_name, namespace=namespace
+    )
+    core_api.create_namespaced_service(
+        namespace=namespace, body=service_manifest
+    )

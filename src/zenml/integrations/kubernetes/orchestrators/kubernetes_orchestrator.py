@@ -323,10 +323,18 @@ class KubernetesOrchestrator(BaseOrchestrator):
             command=command,
             args=args,
         )
-        pod_manifest["spec"]["serviceAccountName"] = "zenml-service-account"
+
+        # Authorize orchestrator pod to run k8s commands inside the cluster.
+        service_account_name = "zenml-service-account"
+        core_api = kube_utils.make_core_v1_api()
+        kube_utils.create_edit_service_account(
+            core_api=core_api,
+            service_account_name=service_account_name,
+            namespace=self.kubernetes_namespace,
+        )
+        pod_manifest["spec"]["serviceAccountName"] = service_account_name
 
         # Create and run the orchestrator pod.
-        core_api = kube_utils.make_core_v1_api()
         core_api.create_namespaced_pod(
             namespace=self.kubernetes_namespace,
             body=pod_manifest,
