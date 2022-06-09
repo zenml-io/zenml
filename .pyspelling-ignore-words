@@ -140,6 +140,7 @@ Graphviz
 HDQC
 HFModel
 HFTokenizer
+HTTPError
 Hacky
 HelpFormatter
 HuggingFace
@@ -459,6 +460,7 @@ configmaps
 configs
 conll
 copyfile
+cp
 cprf
 cpu
 creationTimestamp
@@ -658,6 +660,7 @@ metaclass
 microservices
 microsoft
 minio
+mixin
 mkdir
 mkdocs
 mlflow

@@ -68,7 +68,7 @@ def _convert_secret_name(
 
     Args:
         secret_name: The secret name to convert.
-        add_prefix: If `True`, the ZenML GitHub secret prefix is prepended to
+        add_prefix: If `True`, the ZenML GitHub secret prefix is added to
             the secret name.
         remove_prefix: If `True`, the ZenML GitHub secret prefix is removed
             from the secret name.
@@ -161,7 +161,7 @@ class GitHubSecretsManager(BaseSecretsManager):
         return response
 
     def _encrypt_secret(self, secret_value: str) -> Tuple[str, str]:
-        """Encryts a secret value.
+        """Encrypts a secret value.
 
         This method first fetches a public key from the GitHub API and then uses
         this key to encrypt the secret value. This is needed in order to
@@ -270,7 +270,7 @@ class GitHubSecretsManager(BaseSecretsManager):
 
         Args:
             include_prefix: Whether or not the internal prefix that is used to
-                differentiate ZenML secrets from other GitHUb secrets should be
+                differentiate ZenML secrets from other GitHub secrets should be
                 included in the returned names.
         """
         if inside_github_action_environment():
