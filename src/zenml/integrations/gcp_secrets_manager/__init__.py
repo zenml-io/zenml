@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-The GCP secrets manager integration submodule provides a way to access the gcp secrets manager
-from within you ZenML Pipeline runs.
+"""Initialization of the GCP Secrets Manager.
+
+The GCP secrets manager integration submodule provides a way to access the GCP
+secrets manager from within your ZenML Pipeline runs.
 """
 from typing import List
 
@@ -26,15 +27,18 @@ GCP_SECRETS_MANAGER_FLAVOR = "gcp_secrets_manager"
 
 
 class GcpSecretManagerIntegration(Integration):
-    """Definition of the Secrets Manager for the Google Cloud Platform
-    integration with ZenML."""
+    """Definition of the Secrets Manager for the GCP integration."""
 
     NAME = GCP_SECRETS_MANAGER
     REQUIREMENTS = ["google-cloud-secret-manager"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the GCP integration."""
+        """Declare the stack component flavors for the GCP integration.
+
+        Returns:
+            A list of FlavorWrapper objects.
+        """
         return [
             FlavorWrapper(
                 name=GCP_SECRETS_MANAGER_FLAVOR,
