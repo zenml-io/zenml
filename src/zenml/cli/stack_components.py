@@ -35,7 +35,7 @@ from zenml.zen_stores.models.component_wrapper import ComponentWrapper
 
 
 def _get_required_attributes(
-        component_class: Type[StackComponent],
+    component_class: Type[StackComponent],
 ) -> List[str]:
     """Gets the required properties for a stack component.
 
@@ -50,12 +50,12 @@ def _get_required_attributes(
         field_name
         for field_name, field in component_class.__fields__.items()
         if (field.required is True)
-           and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
+        and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
     ]
 
 
 def _get_available_attributes(
-        component_class: Type[StackComponent],
+    component_class: Type[StackComponent],
 ) -> List[str]:
     """Gets the available non-mandatory properties for a stack component.
 
@@ -74,7 +74,7 @@ def _get_available_attributes(
 
 
 def _get_optional_attributes(
-        component_class: Type[StackComponent],
+    component_class: Type[StackComponent],
 ) -> List[str]:
     """Gets the optional properties for a stack component.
 
@@ -89,12 +89,12 @@ def _get_optional_attributes(
         field_name
         for field_name, field in component_class.__fields__.items()
         if field.required is False
-           and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
+        and field_name not in MANDATORY_COMPONENT_ATTRIBUTES
     ]
 
 
 def _component_display_name(
-        component_type: StackComponentType, plural: bool = False
+    component_type: StackComponentType, plural: bool = False
 ) -> str:
     """Human-readable name for a stack component.
 
@@ -110,8 +110,8 @@ def _component_display_name(
 
 
 def _get_stack_component_wrapper(
-        component_type: StackComponentType,
-        component_name: Optional[str] = None,
+    component_type: StackComponentType,
+    component_name: Optional[str] = None,
 ) -> Tuple[Optional[ComponentWrapper], bool]:
     """Gets a stack component for a given type and name.
 
@@ -145,8 +145,8 @@ def _get_stack_component_wrapper(
                     component_type, name=component_name
                 ),
                 (
-                        active_component is not None
-                        and component_name == active_component.name
+                    active_component is not None
+                    and component_name == active_component.name
                 ),
             )
         except KeyError:
@@ -165,7 +165,7 @@ def _get_stack_component_wrapper(
 
 
 def generate_stack_component_get_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[], None]:
     """Generates a `get` command for the specific stack component type.
 
@@ -196,7 +196,7 @@ def generate_stack_component_get_command(
 
 
 def generate_stack_component_describe_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[Optional[str]], None]:
     """Generates a `describe` command for the specific stack component type.
 
@@ -236,7 +236,7 @@ def generate_stack_component_describe_command(
 
 
 def generate_stack_component_list_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[], None]:
     """Generates a `list` command for the specific stack component type.
 
@@ -273,10 +273,10 @@ def generate_stack_component_list_command(
 
 
 def _register_stack_component(
-        component_type: StackComponentType,
-        component_name: str,
-        component_flavor: str,
-        **kwargs: Any,
+    component_type: StackComponentType,
+    component_name: str,
+    component_flavor: str,
+    **kwargs: Any,
 ) -> None:
     """Register a stack component.
 
@@ -295,7 +295,7 @@ def _register_stack_component(
 
 
 def generate_stack_component_register_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[str, str, str, List[str]], None]:
     """Generates a `register` command for the specific stack component type.
 
@@ -328,7 +328,7 @@ def generate_stack_component_register_command(
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def register_stack_component_command(
-            name: str, flavor: str, old_flavor: str, args: List[str]
+        name: str, flavor: str, old_flavor: str, args: List[str]
     ) -> None:
         """Registers a stack component.
 
@@ -361,7 +361,6 @@ def generate_stack_component_register_command(
                 f"{display_name} you want to register."
             )
 
-        # with console.status(f"Registering {display_name} '{name}'...\n"):
         try:
             parsed_args = cli_utils.parse_unknown_options(args)
         except AssertionError as e:
@@ -369,13 +368,14 @@ def generate_stack_component_register_command(
             return
 
         try:
-            _register_stack_component(
-                component_type=component_type,
-                component_name=name,
-                component_flavor=flavor,
-                **parsed_args,
-            )
-        except ValidationError as e:
+            with console.status(f"Registering {display_name} '{name}'...\n"):
+                _register_stack_component(
+                    component_type=component_type,
+                    component_name=name,
+                    component_flavor=flavor,
+                    **parsed_args,
+                )
+        except ValidationError:
             cli_utils.warning(
                 f"You did not set all required fields for a "
                 f"{flavor} {display_name}. You'll be guided through the "
@@ -386,21 +386,28 @@ def generate_stack_component_register_command(
             flavor_class = repo.get_flavor(
                 name=flavor, component_type=component_type
             )
-            missing_fields = [k for k, v in flavor_class.__fields__.items()
-                              if v.required and v.name not in
-                              ['name', 'uuid', *parsed_args.keys()]]
+            missing_fields = [
+                k
+                for k, v in flavor_class.__fields__.items()
+                if v.required
+                and v.name not in ["name", "uuid", *parsed_args.keys()]
+            ]
 
             completed_fields = parsed_args.copy()
             for field in missing_fields:
                 completed_fields[field] = click.prompt(f"{field}:")
 
             try:
-                _register_stack_component(
-                    component_type=component_type,
-                    component_name=name,
-                    component_flavor=flavor,
-                    **completed_fields,
-                )
+                with console.status(
+                    f"Registering {display_name} '{name}'" f"...\n"
+                ):
+
+                    _register_stack_component(
+                        component_type=component_type,
+                        component_name=name,
+                        component_flavor=flavor,
+                        **completed_fields,
+                    )
             except Exception as e:
                 cli_utils.error(str(e))
 
@@ -413,7 +420,7 @@ def generate_stack_component_register_command(
 
 
 def generate_stack_component_flavor_register_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[str], None]:
     """Generates a `register` command for the flavors of a stack component.
 
@@ -486,7 +493,7 @@ def generate_stack_component_flavor_register_command(
 
 
 def generate_stack_component_flavor_list_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[], None]:
     """Generates a `list` command for the flavors of a stack component.
 
@@ -523,7 +530,7 @@ def generate_stack_component_flavor_list_command(
 
 
 def generate_stack_component_update_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[str, List[str]], None]:
     """Generates an `update` command for the specific stack component type.
 
@@ -542,7 +549,7 @@ def generate_stack_component_update_command(
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def update_stack_component_command(
-            name: Optional[str], args: Sequence[str]
+        name: Optional[str], args: Sequence[str]
     ) -> None:
         """Updates a stack component.
 
@@ -588,7 +595,7 @@ def generate_stack_component_update_command(
             available_properties = _get_available_attributes(component_class)
             for prop in parsed_args.keys():
                 if (prop not in available_properties) and (
-                        len(available_properties) > 0
+                    len(available_properties) > 0
                 ):
                     cli_utils.error(
                         f"You cannot update the {display_name} "
@@ -619,10 +626,9 @@ def generate_stack_component_update_command(
 
 
 def generate_stack_component_remove_attribute_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[str, List[str]], None]:
-    """Generates an `remove_attribute` command for the specific stack
-    component type.
+    """Generates `remove_attribute` command for a specific stack component type.
 
     Args:
         component_type: Type of the component to generate the command for.
@@ -639,7 +645,7 @@ def generate_stack_component_remove_attribute_command(
     )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def remove_attribute_stack_component_command(
-            name: str, args: List[str]
+        name: str, args: List[str]
     ) -> None:
         """Removes one or more attributes from a stack component.
 
@@ -669,8 +675,8 @@ def generate_stack_component_remove_attribute_command(
 
             for arg in parsed_args:
                 if (
-                        arg in required_attributes
-                        or arg in MANDATORY_COMPONENT_ATTRIBUTES
+                    arg in required_attributes
+                    or arg in MANDATORY_COMPONENT_ATTRIBUTES
                 ):
                     cli_utils.error(
                         f"Cannot remove mandatory attribute '{arg}' of "
@@ -698,7 +704,7 @@ def generate_stack_component_remove_attribute_command(
 
 
 def generate_stack_component_rename_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[str, str], None]:
     """Generates a `rename` command for the specific stack component type.
 
@@ -763,7 +769,7 @@ def generate_stack_component_rename_command(
 
 
 def generate_stack_component_delete_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[str], None]:
     """Generates a `delete` command for the specific stack component type.
 
@@ -795,7 +801,7 @@ def generate_stack_component_delete_command(
 
 
 def generate_stack_component_up_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[Optional[str]], None]:
     """Generates a `up` command for the specific stack component type.
 
@@ -856,7 +862,7 @@ def generate_stack_component_up_command(
 
 
 def generate_stack_component_down_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[Optional[str], bool], None]:
     """Generates a `down` command for the specific stack component type.
 
@@ -881,12 +887,12 @@ def generate_stack_component_down_command(
         "old_force",
         is_flag=True,
         help="DEPRECATED: Deprovisions local resources instead of suspending "
-             "them. Use `-y/--yes` instead.",
+        "them. Use `-y/--yes` instead.",
     )
     def down_stack_component_command(
-            name: Optional[str] = None,
-            force: bool = False,
-            old_force: bool = False,
+        name: Optional[str] = None,
+        force: bool = False,
+        old_force: bool = False,
     ) -> None:
         """Stops/Tears down the local deployment of a stack component.
 
@@ -951,7 +957,7 @@ def generate_stack_component_down_command(
 
 
 def generate_stack_component_logs_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[Optional[str], bool], None]:
     """Generates a `logs` command for the specific stack component type.
 
@@ -970,7 +976,7 @@ def generate_stack_component_logs_command(
         help="Follow the log file instead of just displaying the current logs.",
     )
     def stack_component_logs_command(
-            name: Optional[str] = None, follow: bool = False
+        name: Optional[str] = None, follow: bool = False
     ) -> None:
         """Displays stack component logs.
 
@@ -1022,7 +1028,7 @@ def generate_stack_component_logs_command(
 
 
 def generate_stack_component_explain_command(
-        component_type: StackComponentType,
+    component_type: StackComponentType,
 ) -> Callable[[], None]:
     """Generates an `explain` command for the specific stack component type.
 
@@ -1052,7 +1058,7 @@ def generate_stack_component_explain_command(
 
 
 def register_single_stack_component_cli_commands(
-        component_type: StackComponentType, parent_group: click.Group
+    component_type: StackComponentType, parent_group: click.Group
 ) -> None:
     """Registers all basic stack component CLI commands.
 
@@ -1106,8 +1112,7 @@ def register_single_stack_component_cli_commands(
         "flavor", help=f"Commands to interact with {plural_display_name}."
     )
     def flavor_group() -> None:
-        """Group commands for handling the flavors of single stack component
-        type."""
+        """Group commands to handle flavors for a stack component type."""
 
     # zenml stack-component flavor register
     register_flavor_command = generate_stack_component_flavor_register_command(
@@ -1164,7 +1169,7 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "up",
         help=f"Provisions or resumes local resources for the "
-             f"{singular_display_name} if possible.",
+        f"{singular_display_name} if possible.",
     )(up_command)
 
     # zenml stack-component down
@@ -1172,7 +1177,7 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "down",
         help=f"Suspends resources of the local {singular_display_name} "
-             f"deployment.",
+        f"deployment.",
     )(down_command)
 
     # zenml stack-component logs
