@@ -30,6 +30,7 @@
 * [Perform Drift Detection](advanced-guide/drift-detection.md)
 * [Manage External Services](advanced-guide/services.md)
 * [Track your Experiments](advanced-guide/experiment-tracking.md)
+* [Send Automated Chat Alerts](advanced-guide/alerts.md)
 
 ## Extending ZenML
 

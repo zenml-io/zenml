@@ -21,7 +21,7 @@ class BaseAlerterStepConfig(BaseStepConfig):
 
 
 class BaseAlerterStep(BaseStep):
-    """Send a message to the configured ChatOps tool."""
+    """Send a message to the configured chat service."""
 
     @abstractmethod
     def entrypoint(  # type: ignore[override]

@@ -24,6 +24,8 @@ AutoTokenizer
 AzureML
 Backend
 Backpropagation
+BaseAlerter
+BaseAlerterStepConfig
 BaseArtifact
 BaseArtifactStore
 BaseContainerRegistry
@@ -171,6 +173,7 @@ LocalDaemonService
 LocalDaemonServiceConfig
 LocalExample
 LogRecord
+Mattermost
 MERCHANTABILITY
 MLFlowDeployerConfig
 MLFlowDeploymentConfig
