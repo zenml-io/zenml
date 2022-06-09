@@ -130,7 +130,7 @@ class MySQLMetadataStore(BaseMetadataStore):
             Any: The MySQL secret.
 
         Raises:
-            RuntimeError: If you don't have an secrets manager as part of your stack.
+            RuntimeError: If you don't have a secrets manager as part of your stack.
         """
         if self.secret:
             active_stack = Repository().active_stack
