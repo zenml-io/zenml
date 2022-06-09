@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the GCP ZenML integration.
+
 The GCP integration submodule provides a way to run ZenML pipelines in a cloud
 environment. Specifically, it allows the use of cloud artifact stores, metadata
 stores, and an `io` module to handle file operations on Google Cloud Storage
@@ -36,7 +37,11 @@ class GcpIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the GCP integration."""
+        """Declare the stack component flavors for the GCP integration.
+
+        Returns:
+            A list of FlavorWrapper objects.
+        """
         return [
             FlavorWrapper(
                 name=GCP_ARTIFACT_STORE_FLAVOR,
