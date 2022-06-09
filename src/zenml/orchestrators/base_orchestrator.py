@@ -51,7 +51,11 @@ from zenml.enums import MetadataContextTypes, StackComponentType
 from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
 from zenml.orchestrators import context_utils
-from zenml.orchestrators.utils import create_tfx_pipeline, get_step_for_node
+from zenml.orchestrators.utils import (
+    create_tfx_pipeline,
+    get_cache_status,
+    get_step_for_node,
+)
 from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.steps import BaseStep
@@ -331,10 +335,8 @@ class BaseOrchestrator(StackComponent, ABC):
         logger.info(f"Step `{pipeline_step_name}` has started.")
         try:
             execution_info = tfx_launcher.launch()
-            # An execution output URI is only provided if the step needs to be
-            # executed (= is not cached)
-            is_cached = execution_info.execution_output_uri is None
-            if execution_info and is_cached:
+
+            if execution_info and get_cache_status(execution_info):
                 if execution_info.exec_properties:
                     step_name = json.loads(
                         execution_info.exec_properties[step_name_param]

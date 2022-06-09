@@ -12,9 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
 import tfx.orchestration.pipeline as tfx_pipeline
+from tfx.orchestration.portable import data_types
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
 from zenml.logger import get_logger
@@ -56,3 +57,22 @@ def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:
         return next(step for step in steps if step.name == step_name)
     except StopIteration:
         raise RuntimeError(f"Unable to find step with name '{step_name}'.")
+
+
+def get_cache_status(
+    execution_info: Optional[data_types.ExecutionInfo],
+) -> bool:
+    """Returns whether a cached execution was used or not.
+
+    Args:
+        execution_info: The execution info.
+
+    Returns:
+        `True` if the execution was cached, `False` otherwise.
+    """
+    # An execution output URI is only provided if the step needs to be
+    # executed (= is not cached)
+    if execution_info and execution_info.execution_output_uri is None:
+        return True
+    else:
+        return False
