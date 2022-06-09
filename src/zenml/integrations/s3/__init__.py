@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the S3 integration.
+
 The S3 integration allows the use of cloud artifact stores and file
 operations on S3 buckets.
 """
@@ -33,7 +34,11 @@ class S3Integration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the s3 integration."""
+        """Declare the stack component flavors for the s3 integration.
+
+        Returns:
+            List[FlavorWrapper]: The list of stack component flavors.
+        """
         return [
             FlavorWrapper(
                 name=S3_ARTIFACT_STORE_FLAVOR,
