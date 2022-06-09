@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the Seldon integration.
+
 The Seldon Core integration allows you to use the Seldon Core model serving
 platform to implement continuous model deployment.
 """
@@ -41,7 +42,11 @@ class SeldonIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Seldon Core."""
+        """Declare the stack component flavors for the Seldon Core.
+
+        Returns:
+            List[FlavorWrapper]: The list of flavor wrappers.
+        """
         return [
             FlavorWrapper(
                 name=SELDON_MODEL_DEPLOYER_FLAVOR,

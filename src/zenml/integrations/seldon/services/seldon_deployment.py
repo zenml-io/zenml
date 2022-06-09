@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implentation for the Seldon Deployment step."""
 
 import os
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
@@ -65,8 +66,7 @@ class SeldonDeploymentConfig(ServiceConfig):
     extra_args: Dict[str, Any] = Field(default_factory=dict)
 
     def get_seldon_deployment_labels(self) -> Dict[str, str]:
-        """Generate the labels for the Seldon Core deployment from the
-        service configuration.
+        """Generate labels for the Seldon Core deployment from the service configuration.
 
         These labels are attached to the Seldon Core deployment resource
         and may be used as label selectors in lookup operations.
@@ -91,8 +91,7 @@ class SeldonDeploymentConfig(ServiceConfig):
         return labels
 
     def get_seldon_deployment_annotations(self) -> Dict[str, str]:
-        """Generate the annotations for the Seldon Core deployment from the
-        service configuration.
+        """Generate annotations for the Seldon Core deployment from the service configuration.
 
         The annotations are used to store additional information about the
         Seldon Core service that is associated with the deployment that is
@@ -153,7 +152,6 @@ class SeldonDeploymentServiceStatus(ServiceStatus):
 class SeldonDeploymentService(BaseService):
     """A service that represents a Seldon Core deployment server.
 
-
     Attributes:
         config: service configuration.
         status: service status.
@@ -187,8 +185,7 @@ class SeldonDeploymentService(BaseService):
         return model_deployer.seldon_client
 
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the Seldon Core
-        deployment.
+        """Check the the current operational state of the Seldon Core deployment.
 
         Returns:
             The operational state of the Seldon Core deployment and a message
@@ -223,8 +220,9 @@ class SeldonDeploymentService(BaseService):
 
     @property
     def seldon_deployment_name(self) -> str:
-        """Get the name of the Seldon Core deployment that uniquely
-        corresponds to this service instance
+        """Get the name of the Seldon Core deployment.
+
+        It should return the one that uniquely corresponds to this service instance.
 
         Returns:
             The name of the Seldon Core deployment.
@@ -232,8 +230,7 @@ class SeldonDeploymentService(BaseService):
         return f"zenml-{str(self.uuid)}"
 
     def _get_seldon_deployment_labels(self) -> Dict[str, str]:
-        """Generate the labels for the Seldon Core deployment from the
-        service configuration.
+        """Generate the labels for the Seldon Core deployment from the service configuration.
 
         Returns:
             The labels for the Seldon Core deployment.
@@ -247,8 +244,9 @@ class SeldonDeploymentService(BaseService):
     def create_from_deployment(
         cls, deployment: SeldonDeployment
     ) -> "SeldonDeploymentService":
-        """Recreate a Seldon Core service from a Seldon Core
-        deployment resource and update their operational status.
+        """Recreate a Seldon Core service from a Seldon Core deployment resource.
+
+        It should then update their operational status.
 
         Args:
             deployment: the Seldon Core deployment resource.
@@ -256,6 +254,10 @@ class SeldonDeploymentService(BaseService):
         Returns:
             The Seldon Core service corresponding to the given
             Seldon Core deployment resource.
+
+        Raises:
+            ValueError: if the given deployment resource does not contain
+                the expected service_uuid label.
         """
         config = SeldonDeploymentConfig.create_from_deployment(deployment)
         uuid = deployment.metadata.labels.get("zenml.service_uuid")
@@ -269,8 +271,9 @@ class SeldonDeploymentService(BaseService):
         return service
 
     def provision(self) -> None:
-        """Provision or update the remote Seldon Core deployment instance to
-        match the current configuration.
+        """Provision or update remote Seldon Core deployment instance.
+
+        This should then match the current configuration.
         """
         client = self._get_client()
 
@@ -363,6 +366,10 @@ class SeldonDeploymentService(BaseService):
 
         Returns:
             A numpy array representing the prediction returned by the service.
+
+        Raises:
+            Exception: if the service is not yet ready.
+            ValueError: if the prediction_url is not set.
         """
         if not self.is_running:
             raise Exception(

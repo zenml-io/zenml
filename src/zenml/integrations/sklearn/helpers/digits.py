@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Helper functions for the sklearn digits dataset."""
 
 from typing import TYPE_CHECKING, Tuple
 
@@ -30,8 +31,11 @@ def get_digits() -> Tuple[
     "NDArray[np.int64]",
     "NDArray[np.int64]",
 ]:
-    """Returns the digits dataset in the form of a tuple of numpy
-    arrays."""
+    """Returns the digits dataset in the form of a tuple of numpy arrays.
+
+    Returns:
+        A tuple of numpy arrays.
+    """
     digits = load_digits()
     # flatten the images
     n_samples = len(digits.images)
@@ -45,5 +49,9 @@ def get_digits() -> Tuple[
 
 
 def get_digits_model() -> ClassifierMixin:
-    """Creates a support vector classifier for digits dataset."""
+    """Creates a support vector classifier for digits dataset.
+
+    Returns:
+        A support vector classifier.
+    """
     return SVC(gamma=0.001)
