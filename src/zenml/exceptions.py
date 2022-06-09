@@ -28,7 +28,7 @@ class ZenMLBaseException(Exception):
         message: Optional[str] = None,
         url: Optional[str] = None,
     ):
-        """BaseException used to format messages displayed to the user.
+        """The BaseException used to format messages displayed to the user.
 
         Args:
             message: Message with details of exception. This message
@@ -45,18 +45,15 @@ class ZenMLBaseException(Exception):
 
 
 class InitializationException(ZenMLBaseException):
-    """Raised when an error occurred during initialization of a ZenML
-    repository."""
+    """Raised when an error occurred during initialization of a ZenML repository."""
 
 
 class ForbiddenRepositoryAccessError(ZenMLBaseException, RuntimeError):
-    """Raised when trying to access a ZenML repository instance while a step
-    is executed."""
+    """Raised when trying to access a ZenML repository instance while a step is executed."""
 
 
 class DoesNotExistException(ZenMLBaseException):
-    """Raises exception when the entity does not exist in the system but an
-    action is being done that requires it to be present."""
+    """Raises exception when the entity does not exist in the system but an action is being done that requires it to be present."""
 
     def __init__(self, message: str):
         """Initializes the exception.
@@ -127,48 +124,39 @@ class GitException(ZenMLBaseException):
 
 
 class StepInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Step interface
-    in an unsupported way."""
+    """Raises exception when interacting with the Step interface in an unsupported way."""
 
 
 class MaterializerInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Materializer interface
-    in an unsupported way."""
+    """Raises exception when interacting with the Materializer interface in an unsupported way."""
 
 
 class StepContextError(ZenMLBaseException):
-    """Raises exception when interacting with a StepContext
-    in an unsupported way."""
+    """Raises exception when interacting with a StepContext in an unsupported way."""
 
 
 class PipelineInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Pipeline interface
-    in an unsupported way."""
+    """Raises exception when interacting with the Pipeline interface in an unsupported way."""
 
 
 class ArtifactInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Artifact interface
-    in an unsupported way."""
+    """Raises exception when interacting with the Artifact interface in an unsupported way."""
 
 
 class StackComponentInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the stack components
-    in an unsupported way."""
+    """Raises exception when interacting with the stack components in an unsupported way."""
 
 
 class ArtifactStoreInterfaceError(ZenMLBaseException):
-    """Raises exception when interacting with the Artifact Store interface
-    in an unsupported way."""
+    """Raises exception when interacting with the Artifact Store interface in an unsupported way."""
 
 
 class PipelineConfigurationError(ZenMLBaseException):
-    """Raises exceptions when a pipeline configuration contains
-    invalid values."""
+    """Raises exceptions when a pipeline configuration contains invalid values."""
 
 
 class MissingStepParameterError(ZenMLBaseException):
-    """Raises exceptions when a step parameter is missing when running a
-    pipeline."""
+    """Raises exceptions when a step parameter is missing when running a pipeline."""
 
     def __init__(
         self,
@@ -224,23 +212,19 @@ class DuplicateRunNameError(RuntimeError):
 
 
 class StackExistsError(ZenMLBaseException):
-    """Raised when trying to register a stack with a name that already
-    exists."""
+    """Raised when trying to register a stack with a name that already exists."""
 
 
 class StackComponentExistsError(ZenMLBaseException):
-    """Raised when trying to register a stack component with a name that
-    already exists."""
+    """Raised when trying to register a stack component with a name that already exists."""
 
 
 class EntityExistsError(ZenMLBaseException):
-    """Raised when trying to register a user-management entity with a name that
-    already exists."""
+    """Raised when trying to register a user-management entity with a name that already exists."""
 
 
 class SecretExistsError(ZenMLBaseException):
-    """Raised when trying to register a secret with a name that
-    already exists."""
+    """Raised when trying to register a secret with a name that already exists."""
 
 
 class StackValidationError(ZenMLBaseException):
@@ -248,14 +232,12 @@ class StackValidationError(ZenMLBaseException):
 
 
 class ProvisioningError(ZenMLBaseException):
-    """Raised when an error occurs when provisioning resources for a
-    StackComponent."""
+    """Raised when an error occurs when provisioning resources for a StackComponent."""
 
 
 class GitNotFoundError(ImportError):
-    """Raised when ZenML CLI is used to interact with examples on a machine
-    with no git installation"""
+    """Raised when ZenML CLI is used to interact with examples on a machine with no git installation"""
 
 
 class DuplicatedConfigurationError(ZenMLBaseException):
-    """Raised when a configuration parameter is set twice"""
+    """Raised when a configuration parameter is set twice."""

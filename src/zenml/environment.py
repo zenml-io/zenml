@@ -55,7 +55,7 @@ def get_system_details() -> str:
     """Returns OS, python and ZenML information.
 
     Returns:
-
+        str: OS, python and ZenML information
     """
     from zenml.integrations.registry import integration_registry
 
@@ -270,8 +270,7 @@ class Environment(metaclass=SingletonMetaClass):
         return self._components.copy()
 
     def has_component(self, name: str) -> bool:
-        """Check if the environment component with a known name is currently
-        available.
+        """Check if the environment component with a known name is currently available.
 
         Args:
             name: the environment component name.
@@ -326,8 +325,7 @@ _BASE_ENVIRONMENT_COMPONENT_NAME = "base_environment_component"
 
 
 class EnvironmentComponentMeta(type):
-    """Metaclass responsible for registering different EnvironmentComponent
-    instances in the global Environment"""
+    """Metaclass responsible for registering different EnvironmentComponent instances in the global Environment."""
 
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
@@ -437,8 +435,7 @@ class BaseEnvironmentComponent(metaclass=EnvironmentComponentMeta):
         self._active = False
 
     def activate(self) -> None:
-        """Activate the environment component and register it in the global
-        Environment.
+        """Activate the environment component and register it in the global Environment.
 
         Raises:
             RuntimeError: if the component is already active.
@@ -451,8 +448,7 @@ class BaseEnvironmentComponent(metaclass=EnvironmentComponentMeta):
         self._active = True
 
     def deactivate(self) -> None:
-        """Deactivate the environment component and deregister it from the
-        global Environment.
+        """Deactivate the environment component and deregister it from the global Environment.
 
         Raises:
             RuntimeError: if the component is not active.

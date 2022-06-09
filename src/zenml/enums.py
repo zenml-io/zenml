@@ -67,14 +67,14 @@ class StackComponentType(StrEnum):
 
 
 class MetadataContextTypes(Enum):
-    """All possible types that contexts can have within pipeline nodes"""
+    """All possible types that contexts can have within pipeline nodes."""
 
     STACK = "stack"
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
 
 
 class StoreType(StrEnum):
-    """Repository Store Backend Types"""
+    """Repository Store Backend Types."""
 
     LOCAL = "local"
     SQL = "sql"
@@ -94,6 +94,7 @@ class ContainerRegistryFlavor(StrEnum):
 
 class CliCategories(StrEnum):
     """All possible categories for CLI commands.
+
     Note: The order of the categories is important. The same
     order is used to sort the commands in the CLI help output.
     """

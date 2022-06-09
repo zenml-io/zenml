@@ -75,6 +75,8 @@ class RepositoryConfiguration(FileSyncModel):
 
 
 class LegacyRepositoryConfig(BaseModel):
+    """Pydantic object used for serializing legacy repository configuration options."""
+
     version: str
     active_stack_name: Optional[str]
     stacks: Dict[str, Dict[StackComponentType, Optional[str]]]
@@ -272,7 +274,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 searching in the parent directories of the current working
                 directory.
         """
-
         self._root = self.find_repository(root, enable_warnings=True)
 
         global_cfg = GlobalConfiguration()
@@ -315,8 +316,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def _set_active_profile(
         self, profile: "ProfileConfiguration", new_profile: bool = False
     ) -> None:
-        """Set the supplied configuration profile as the active profile for
-        this repository.
+        """Set the supplied configuration profile as the active profile for this repository.
 
         This method initializes the repository store associated with the
         supplied profile and also initializes it with the default stack
@@ -416,8 +416,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def _migrate_legacy_repository(
         config_file: str,
     ) -> Optional["ProfileConfiguration"]:
-        """Migrate a legacy repository configuration to the new format and
-        create a new Profile out of it.
+        """Migrate a legacy repository configuration to the new format and create a new Profile out of it.
 
         Args:
             config_file: Path to the legacy repository configuration file.
@@ -503,7 +502,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             Loaded repository configuration or None if the repository does not
             have an active root.
         """
-
         config_path = self._config_path()
         if not config_path:
             return None
@@ -551,8 +549,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         track_analytics: bool = True,
         skip_migration: bool = False,
     ) -> "BaseZenStore":
-        """Create the repository persistence back-end store from a configuration
-        profile.
+        """Create repository persistence back-end store from a configuration profile.
 
         If the configuration profile doesn't specify all necessary configuration
         options (e.g. the type or URL), a default configuration will be used.
@@ -614,6 +611,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             root: The root directory where the repository should be created.
                 If None, the current working directory is used.
+
         Raises:
             InitializationException: If the root directory already contains a
                 ZenML repository.
@@ -870,7 +868,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             stack: The new stack to use as the updated version.
 
         Raises:
-            KeyError: If no stack exists for the given name."""
+            KeyError: If no stack exists for the given name.
+        """
         from zenml.zen_stores.models import StackWrapper
 
         stack.validate()
@@ -915,7 +914,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             component: The new component to update with.
 
         Raises:
-            KeyError: If no such stack component exists."""
+            KeyError: If no such stack component exists.
+        """
         from zenml.zen_stores.models import ComponentWrapper
 
         self.zen_store.update_stack_component(
