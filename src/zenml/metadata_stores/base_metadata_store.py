@@ -92,7 +92,7 @@ class BaseMetadataStore(StackComponent, ABC):
         """Maps type_ids to step names.
 
         Returns:
-            Dict[int, str]: a mapping.
+            Dict[int, str]: a mapping from type_ids to step names.
         """
         return {
             type_.id: type_.name for type_ in self.store.get_execution_types()
