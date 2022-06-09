@@ -26,7 +26,7 @@ from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
 AZURE_ARTIFACT_STORE_FLAVOR = "azure"
-AZURE_SECRETS_MANAGER_FLAVOR = "azure_secrets_manager"
+AZURE_SECRETS_MANAGER_FLAVOR = "azure"
 AZUREML_STEP_OPERATOR_FLAVOR = "azureml"
 
 
