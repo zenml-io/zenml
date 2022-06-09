@@ -278,7 +278,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             untracked_files=True
         ):
             raise RuntimeError(
-                "Trying to run a pipeline from within a dirty git repository."
+                "Trying to run a pipeline from within a dirty (=containing "
+                "untracked/uncommitted files) git repository."
                 "If you want this orchestrator to skip the dirty repo check in "
                 f"the future, run\n `zenml orchestrator update {self.name} "
                 "--prevent_dirty_repository=false`"
