@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the Kubeflow integration for ZenML.
+
 The Kubeflow integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Kubeflow orchestrator with
 the CLI tool.
@@ -35,7 +36,11 @@ class KubeflowIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Kubeflow integration."""
+        """Declare the stack component flavors for the Kubeflow integration.
+
+        Returns:
+            List[FlavorWrapper]: List of stack component flavors.
+        """
         return [
             FlavorWrapper(
                 name=KUBEFLOW_METADATA_STORE_FLAVOR,
