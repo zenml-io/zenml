@@ -77,10 +77,20 @@ def update_pod_manifest(
 
 
 def build_persistent_volume_claim_manifest(
-    name: str = "mysql-pv-claim",
+    name: str,
     namespace: str = "default",
     storage_request: str = "10Gi",
 ) -> Dict[str, Any]:
+    """Build a manifest for a persistent volume claim.
+
+    Args:
+        name: Name of the persistent volume claim.
+        namespace: Kubernetes namespace. Defaults to "default".
+        storage_request: Size of the storage to request. Defaults to "10Gi".
+
+    Returns:
+        Manifest for a persistent volume claim.
+    """
     return {
         "apiVersion": "v1",
         "kind": "PersistentVolumeClaim",
@@ -101,11 +111,22 @@ def build_persistent_volume_claim_manifest(
 
 
 def build_persistent_volume_manifest(
-    name: str = "mysql-pv-volume",
+    name: str,
     namespace: str = "default",
     storage_capacity: str = "10Gi",
     path: str = "/mnt/data",
 ) -> Dict[str, Any]:
+    """Build a manifest for a persistent volume.
+
+    Args:
+        name: Name of the persistent volume.
+        namespace: Kubernetes namespace. Defaults to "default".
+        storage_capacity: Storage capacity of the volume. Defaults to "10Gi".
+        path: Path where the volume is mounted. Defaults to "/mnt/data".
+
+    Returns:
+        Manifest for a persistent volume.
+    """
     return {
         "apiVersion": "v1",
         "kind": "PersistentVolume",
@@ -126,9 +147,21 @@ def build_persistent_volume_manifest(
 def build_mysql_deployment_manifest(
     name: str = "mysql",
     namespace: str = "default",
-    port: int = 3306,  # MYSQL default port; don't change!
+    port: int = 3306,
     pv_claim_name: str = "mysql-pv-claim",
 ) -> Dict[str, Any]:
+    """Build a manifest for deploying a MySQL database.
+
+    Args:
+        name: Name of the deployment. Defaults to "mysql".
+        namespace: Kubernetes namespace. Defaults to "default".
+        port: Port where MySQL is running. Defaults to 3306.
+        pv_claim_name: Name of the required persistent volume claim.
+            Defaults to "mysql-pv-claim".
+
+    Returns:
+        Manifest for deploying a MySQL database.
+    """
     return {
         "apiVersion": "apps/v1",
         "kind": "Deployment",
@@ -183,8 +216,18 @@ def build_mysql_deployment_manifest(
 def build_mysql_service_manifest(
     name: str = "mysql",
     namespace: str = "default",
-    port: int = 3306,  # MYSQL default port; don't change!
+    port: int = 3306,
 ) -> Dict[str, Any]:
+    """Build a manifest for a service relating to a deployed MySQL database.
+
+    Args:
+        name: Name of the service. Defaults to "mysql".
+        namespace: Kubernetes namespace. Defaults to "default".
+        port: Port where MySQL is running. Defaults to 3306.
+
+    Returns:
+        Manifest for the MySQL service.
+    """
     return {
         "apiVersion": "v1",
         "kind": "Service",
@@ -201,12 +244,22 @@ def build_mysql_service_manifest(
 
 
 def build_cluster_role_binding_manifest_for_service_account(
-    name: str = "zenml-edit",
+    name: str,
+    role_name: str,
+    service_account_name: str,
     namespace: str = "default",
-    service_account_name: str = "zenml-service-account",
-    role_name: str = "edit",
 ) -> Dict[str, Any]:
+    """Build a manifest for a cluster role binding of a service account.
 
+    Args:
+        name: Name of the cluster role binding.
+        role_name: Name of the role.
+        service_account_name: Name of the service account.
+        namespace: Kubernetes namespace. Defaults to "default".
+
+    Returns:
+        Manifest for a cluster role binding of a service account.
+    """
     return {
         "apiVersion": "rbac.authorization.k8s.io/v1",
         "kind": "ClusterRoleBinding",
@@ -227,8 +280,17 @@ def build_cluster_role_binding_manifest_for_service_account(
 
 
 def build_service_account_manifest(
-    name: str = "zenml-service-account", namespace: str = "default"
+    name: str, namespace: str = "default"
 ) -> Dict[str, Any]:
+    """Build the manifest for a service account.
+
+    Args:
+        name: Name of the service account.
+        namespace: Kubernetes namespace. Defaults to "default".
+
+    Returns:
+        Manifest for a service account.
+    """
     return {
         "apiVersion": "v1",
         "metadata": {
@@ -238,13 +300,19 @@ def build_service_account_manifest(
     }
 
 
-def build_namespace_manifest(
-    namespace: str = "zenml"
-):
+def build_namespace_manifest(namespace: str) -> Dict[str, Any]:
+    """Build the manifest for a new namespace.
+
+    Args:
+        namespace: Kubernetes namespace.
+
+    Returns:
+        Manifest of the new namespace.
+    """
     return {
         "apiVersion": "v1",
         "kind": "Namespace",
         "metadata": {
             "name": namespace,
-        }
+        },
     }

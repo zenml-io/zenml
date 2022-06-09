@@ -337,12 +337,23 @@ def wait_pod(
 
 
 def create_cluster_role_binding(body: Dict[str, Any]) -> None:
+    """Create a k8s cluster role binding.
+
+    Args:
+        body: Manifest for creating a cluster role binding.
+    """
     with k8s_client.ApiClient() as api_client:
         api_instance = k8s_client.RbacAuthorizationV1Api(api_client)
         api_instance.create_cluster_role_binding(body=body)
 
 
 def create_deployment(body: Dict[str, Any], namespace: str = "default") -> None:
+    """Create a k8s deployment.
+
+    Args:
+        body: Manifest for creating a deployment.
+        namespace: Kubernetes namespace. Defaults to "default".
+    """
     with k8s_client.ApiClient() as api_client:
         api_instance = k8s_client.AppsV1Api(api_client)
         api_instance.create_namespaced_deployment(
@@ -354,10 +365,22 @@ def create_edit_service_account(
     core_api: k8s_client.CoreV1Api,
     service_account_name: str,
     namespace: str = "default",
-):
+    cluster_role_binding_name: str = "zenml-edit",
+) -> None:
+    """Create a new k8s service account with "edit" rights.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        service_account_name: Name of the service account.
+        namespace: Kubernetes namespace. Defaults to "default".
+        cluster_role_binding_name: Name of the cluster role binding.
+            Defaults to "zenml-edit".
+    """
     crb_manifest = build_cluster_role_binding_manifest_for_service_account(
-        namespace=namespace,
+        name=cluster_role_binding_name,
+        role_name="edit",
         service_account_name=service_account_name,
+        namespace=namespace,
     )
     create_cluster_role_binding(body=crb_manifest)
 
@@ -370,7 +393,13 @@ def create_edit_service_account(
     )
 
 
-def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str):
+def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str) -> None:
+    """Create a k8s namespace.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: Kubernetes namespace. Defaults to "default".
+    """
     manifest = build_namespace_manifest(namespace)
     core_api.create_namespace(body=manifest)
 
@@ -383,7 +412,20 @@ def create_mysql_deployment(
     service_name: str = "mysql",
     volume_name: str = "mysql-pv-volume",
     volume_claim_name: str = "mysql-pv-claim",
-):
+) -> None:
+    """Create a k8s deployment with a MySQL database running on it.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: Kubernetes namespace. Defaults to "default".
+        storage_capacity: Storage capacity of the database. Defaults to "10Gi".
+        deployment_name: Name of the deployment. Defaults to "mysql".
+        service_name: Name of the service. Defaults to "mysql".
+        volume_name: Name of the persistent volume.
+            Defaults to "mysql-pv-volume".
+        volume_claim_name: Name of the persistent volume claim.
+            Defaults to "mysql-pv-claim".
+    """
     pvc_manifest = build_persistent_volume_claim_manifest(
         name=volume_claim_name,
         namespace=namespace,

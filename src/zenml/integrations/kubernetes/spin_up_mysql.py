@@ -1,3 +1,5 @@
+"""Spin up a MySQL database in a Kubernetes pod."""
+
 import argparse
 
 from zenml.integrations.kubernetes.orchestrators.kube_utils import (
@@ -8,6 +10,11 @@ from zenml.integrations.kubernetes.orchestrators.kube_utils import (
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse arguments.
+
+    Returns:
+        Parsed arguments.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--deployment_name", type=str, required=False, default="mysql"
@@ -21,7 +28,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main():
+def main() -> None:
+    """Spin up a MySQL database in a Kubernetes pod."""
     args = parse_args()
     core_api = make_core_v1_api()
     create_namespace(core_api=core_api, namespace=args.namespace)
