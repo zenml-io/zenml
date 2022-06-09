@@ -61,6 +61,7 @@ CamelCase
 ChatOps
 ClassVar
 ClickException
+CloudSQL
 Colab
 ComponentWrapper
 ComputeTarget
@@ -69,6 +70,7 @@ ConnectionError
 ContainerOp
 ContainerOps
 Contextmanager
+cryptoKeys
 CustomFormatter
 DAGs
 DMatrix
@@ -99,6 +101,7 @@ Evidently's
 EvidentlyProfileConfig
 EvidentlyProfileStep
 EvidentlyVisualizer
+eu
 ExampleSecretSchema
 ExamplesRepo
 ExperimentTracker
@@ -161,6 +164,8 @@ KMS
 KServe
 Keras
 KeyError
+keyRings
+kr
 Kubeflow
 KubeflowMetadataStore
 Kubernetes
@@ -690,6 +695,7 @@ numericaltargetdrift
 numpy
 odbc
 onerror
+orch
 orchestrator
 orchestrators
 os
@@ -757,6 +763,8 @@ sdk
 seldon
 sepc
 serializable
+serverless
+serviceacc
 serviceAccountName
 setFormatter
 setattr
