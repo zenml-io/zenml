@@ -9,7 +9,7 @@ for many different ZenML abstractions.
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with powerful integrations on multiple
-[MLOps stacks](../introduction/core-concepts.md). There are lots of moving parts
+[MLOps stacks](../core-concepts.md). There are lots of moving parts
 for all the MLOps tooling and infrastructure you require for ML in production
 and ZenML aims to bring it all together under one roof.
 

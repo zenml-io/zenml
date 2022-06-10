@@ -280,7 +280,7 @@ pipeline, you will sometimes need to have a completely non-materialized artifact
 in a step.
 
 A non-materialized artifact is a `BaseArtifact` (or any of its subclasses) and
-has a property `uri` that points to the unique path in the [artifact store](../introduction/core-concepts.md) where the artifact is stored. One
+has a property `uri` that points to the unique path in the [artifact store](../core-concepts.md) where the artifact is stored. One
 can use a non-materialized artifact by simply specifying it as the type in the
 step:
 

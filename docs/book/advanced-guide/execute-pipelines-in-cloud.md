@@ -9,7 +9,7 @@ to a public cloud cluster. We will start with some pre-requisites and then move
 on to show the integration of your cloud provider's components with your ZenML
 stack. In addition to configuring the stack components in this guide, you can
 optionally run a pipeline step on a specialized cloud backend too. Check out the
-step operators [guide](step-operators.md) for that!
+step operators [guide](run-steps-on-specialized-hardware.md) for that!
 
 ## Pre-requisites
 

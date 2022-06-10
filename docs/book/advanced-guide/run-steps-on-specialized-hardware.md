@@ -170,7 +170,7 @@ zenml step-operator register sagemaker \
 
 * A container registry has to be configured in the stack. This registry will be
   used by ZenML to push your job images
-  that Vertex will use. Check out the [cloud guide](guide-aws-gcp-azure.md) to
+  that Vertex will use. Check out the [cloud guide](execute-pipelines-in-cloud.md) to
   learn how you can set up an GCP container
   registry.
 
