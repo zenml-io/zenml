@@ -14,7 +14,7 @@ black $SRC  --check
 
 # check for docstrings
 interrogate $SRC_NO_TESTS -c pyproject.toml
-pydocstyle $SRC_NO_TESTS -e --count --convention=google
+pydocstyle $SRC_NO_TESTS -e --count --convention=google --add-ignore=D403
 darglint -v 2 $SRC_NO_TESTS
 
 # check type annotations
