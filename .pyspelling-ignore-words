@@ -256,8 +256,8 @@ PipelineInterfaceError
 PipelineNode
 PipelineRun
 PipelineRunTable
-PipelineRunWrapper
 PipelineRunView
+PipelineRunWrapper
 PipelineView
 PipelineWrapper
 Pipelining
