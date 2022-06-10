@@ -26,14 +26,26 @@ class GitHubActionsEntrypointConfiguration(StepEntrypointConfiguration):
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
-        """GitHub Actions specific entrypoint options."""
+        """GitHub Actions specific entrypoint options.
+
+        Returns:
+            Set with the custom run name option.
+        """
         return {RUN_NAME_OPTION}
 
     @classmethod
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, **kwargs: Any
     ) -> List[str]:
-        """Adds a run name argument for the entrypoint."""
+        """Adds a run name argument for the entrypoint.
+
+        Args:
+            step: Step for which the arguments are passed.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            GitHub Actions placeholder for the run name option.
+        """
         # These placeholders in the workflow file will be replaced with
         # concrete values by the GitHub Actions runner
         run_name = kwargs["pipeline_name"] + (
@@ -43,5 +55,12 @@ class GitHubActionsEntrypointConfiguration(StepEntrypointConfiguration):
         return [f"--{RUN_NAME_OPTION}", run_name]
 
     def get_run_name(self, pipeline_name: str) -> str:
-        """Returns the pipeline run name."""
+        """Returns the pipeline run name.
+
+        Args:
+            pipeline_name: Name of the pipeline which will run.
+
+        Returns:
+            The run name.
+        """
         return cast(str, self.entrypoint_args[RUN_NAME_OPTION])

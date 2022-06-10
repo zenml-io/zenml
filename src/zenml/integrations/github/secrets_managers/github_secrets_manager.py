@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the GitHub Secrets Manager."""
 
+import base64
 import json
 import os
 from typing import Any, ClassVar, List, NoReturn, Optional, Tuple, cast
@@ -20,6 +21,7 @@ from typing import Any, ClassVar, List, NoReturn, Optional, Tuple, cast
 import requests
 from requests.auth import HTTPBasicAuth
 
+from zenml.exceptions import SecretExistsError
 from zenml.integrations.github import GITHUB_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.repository import Repository
@@ -107,13 +109,24 @@ class GitHubSecretsManager(BaseSecretsManager):
 
     @property
     def post_registration_message(self) -> Optional[str]:
-        """Info message regarding the required environment variables to
-        authenticate with the GitHub API."""
+        """Info message regarding GitHub API authentication env variables.
+
+        Returns:
+            The info message.
+        """
         return AUTHENTICATION_CREDENTIALS_MESSAGE
 
     @property
     def session(self) -> requests.Session:
-        """Session to send requests to the GitHub API."""
+        """Session to send requests to the GitHub API.
+
+        Returns:
+            Session to use for GitHub API calls.
+
+        Raises:
+            RuntimeError: If authentication credentials for the GitHub API are
+                not set.
+        """
         if not self._session:
             session = requests.Session()
             github_username = os.getenv(ENV_GITHUB_USERNAME)
@@ -146,6 +159,8 @@ class GitHubSecretsManager(BaseSecretsManager):
         Returns:
             HTTP response.
 
+        # noqa: DAR402
+
         Raises:
             HTTPError: If the request failed due to a client or server error.
         """
@@ -175,8 +190,6 @@ class GitHubSecretsManager(BaseSecretsManager):
         Returns:
             The encrypted secret value and the key id of the GitHub public key.
         """
-        import base64
-
         from nacl.encoding import Base64Encoder
         from nacl.public import PublicKey, SealedBox
 
@@ -209,6 +222,9 @@ class GitHubSecretsManager(BaseSecretsManager):
 
         Args:
             secret_name: The name of the secret to get.
+
+        Returns:
+            The secret.
 
         Raises:
             KeyError: If a secret with this name doesn't exist.
@@ -274,6 +290,9 @@ class GitHubSecretsManager(BaseSecretsManager):
             include_prefix: Whether or not the internal prefix that is used to
                 differentiate ZenML secrets from other GitHub secrets should be
                 included in the returned names.
+
+        Returns:
+            List of all secret keys.
         """
         if inside_github_action_environment():
             potential_secret_keys = list(os.environ)
@@ -302,9 +321,12 @@ class GitHubSecretsManager(BaseSecretsManager):
 
         Args:
             secret: The secret to register.
+
+        Raises:
+            SecretExistsError: If a secret with this name already exists.
         """
         if self._has_secret(secret.name):
-            raise KeyError(
+            raise SecretExistsError(
                 f"A secret with name '{secret.name}' already exists for this "
                 "GitHub repository. If you want to register a new value for "
                 f"this secret, please run `zenml secret delete {secret.name}` "

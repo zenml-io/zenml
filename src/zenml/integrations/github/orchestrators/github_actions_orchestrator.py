@@ -21,10 +21,8 @@ from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
-from zenml.container_registries.base_container_registry import (
+from zenml.container_registries import (
     BaseContainerRegistry,
-)
-from zenml.integrations.github.container_registries import (
     GitHubContainerRegistry,
 )
 from zenml.integrations.github.orchestrators.github_actions_entrypoint_configuration import (
@@ -93,6 +91,9 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
     def git_repo(self) -> Repo:
         """Returns the git repository for the current working directory.
 
+        Returns:
+            Git repository for the current working directory.
+
         Raises:
             RuntimeError: If there is no git repository for the current working
                 directory or the repository remote is not pointing to GitHub.
@@ -124,14 +125,24 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
     @property
     def workflow_directory(self) -> str:
-        """Returns path to the github workflows directory."""
+        """Returns path to the GitHub workflows directory.
+
+        Returns:
+            The GitHub workflows directory.
+        """
         assert self.git_repo.working_dir
         return os.path.join(self.git_repo.working_dir, ".github", "workflows")
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a container registry and only
-        remote components."""
+        """Validator that ensures that the stack is compatible.
+
+        Makes sure that the stack contains a container registry and only
+        remote components.
+
+        Returns:
+            The stack validator.
+        """
 
         def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
             container_registry = stack.container_registry
@@ -175,7 +186,15 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         )
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name including registry and tag."""
+        """Returns the full docker image name including registry and tag.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to generate a docker
+                image name.
+
+        Returns:
+            The docker image name.
+        """
         container_registry = Repository().active_stack.container_registry
         assert container_registry  # should never happen due to validation
         return f"{container_registry.uri}/zenml-github-actions:{pipeline_name}"
@@ -229,8 +248,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
         Args:
             file_name: Name of the environment file that should be written.
-            secret_names: List of GitHub secret names that should be included
-                in the environment file.
+            secrets_manager: Secrets manager that will be used to read secrets
+                during pipeline execution.
 
         Returns:
             Dictionary specifying the GitHub Actions step for writing the
@@ -272,8 +291,16 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Builds a docker image for the current environment and uploads it to
-        a container registry if configured.
+        """Builds and uploads a docker image.
+
+        Args:
+            pipeline: The pipeline for which the image is built.
+            stack: The stack on which the pipeline will be executed.
+            runtime_configuration: Runtime configuration for the pipeline run.
+
+        Raises:
+            RuntimeError: If the orchestrator should only run in a clean git
+                repository and the repository is dirty.
         """
         if self.prevent_dirty_repository and self.git_repo.is_dirty(
             untracked_files=True
@@ -316,8 +343,20 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         pb2_pipeline: Pb2Pipeline,
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
-    ) -> Any:
-        """Writes a GitHub Action workflow yaml and optionally pushes it."""
+    ) -> None:
+        """Writes a GitHub Action workflow yaml and optionally pushes it.
+
+        Args:
+             sorted_steps: List of sorted steps
+             pipeline: Zenml Pipeline instance
+             pb2_pipeline: Protobuf Pipeline instance
+             stack: The stack the pipeline was run on
+             runtime_configuration: The Runtime configuration of the current run
+
+        Raises:
+            ValueError: If a schedule without a cron expression or with an
+                invalid cron expression is passed.
+        """
         workflow_path = os.path.join(
             self.workflow_directory, f"{pipeline.name}.yaml"
         )

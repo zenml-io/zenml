@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the GitHub ZenML integration.
+
 The GitHub integration provides a way to orchestrate pipelines using GitHub 
 Actions.
 """
@@ -30,11 +31,15 @@ class GitHubIntegration(Integration):
     """Definition of GitHub integration for ZenML."""
 
     NAME = GITHUB
-    REQUIREMENTS: List[str] = ["PyNaCl==1.5.0"]
+    REQUIREMENTS: List[str] = ["PyNaCl~=1.5.0"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the GitHub integration."""
+        """Declare the stack component flavors for the GitHub integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=GITHUB_ORCHESTRATOR_FLAVOR,
