@@ -33,7 +33,7 @@ class AzureMLIntegration(Integration):
         """Declare the stack component flavors for the AzureML integration.
 
         Returns:
-            List of stack component flavors.
+            List of stack component flavors for this integration.
         """
         return [
             FlavorWrapper(
