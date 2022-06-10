@@ -94,12 +94,18 @@ class AirflowOrchestrator(BaseOrchestrator):
             Airflow configuration dict.
         """
         if schedule:
-            return {
-                "schedule_interval": schedule.interval_second,
-                "start_date": schedule.start_time,
-                "end_date": schedule.end_time,
-                "catchup": schedule.catchup,
-            }
+            if schedule.cron_expression:
+                return {
+                    "schedule_interval": schedule.cron_expression,
+                }
+            else:
+                return {
+                    "schedule_interval": schedule.interval_second,
+                    "start_date": schedule.start_time,
+                    "end_date": schedule.end_time,
+                    "catchup": schedule.catchup,
+                }
+
         return {
             "schedule_interval": "@once",
             # set the a start time in the past and disable catchup so airflow runs the dag immediately

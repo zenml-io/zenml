@@ -31,11 +31,6 @@ class AWSIntegration(Integration):
     REQUIREMENTS = ["boto3==1.21.21"]
 
     @classmethod
-    def activate(cls) -> None:
-        """Activates the integration."""
-        from zenml.integrations.aws import secret_schemas  # noqa
-
-    @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
         """Declare the stack component flavors for the AWS integration.
 

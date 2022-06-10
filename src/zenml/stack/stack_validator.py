@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML Stack Validator."""
+
 from typing import TYPE_CHECKING, AbstractSet, Callable, Optional, Tuple
 
 from zenml.enums import StackComponentType
@@ -56,6 +58,9 @@ class StackValidator:
 
         Checks if the stack contains all the required components and passes
         the custom validation function of the validator.
+
+        Args:
+            stack: The stack to validate.
 
         Raises:
             StackValidationError: If the stack does not meet all the

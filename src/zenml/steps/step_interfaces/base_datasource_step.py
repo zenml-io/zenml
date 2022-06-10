@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base datasource step."""
 
 from abc import abstractmethod
 
@@ -19,11 +20,11 @@ from zenml.steps import BaseStep, BaseStepConfig, StepContext
 
 
 class BaseDatasourceConfig(BaseStepConfig):
-    """Base class for datasource configs to inherit from"""
+    """Base class for datasource configs to inherit from."""
 
 
 class BaseDatasourceStep(BaseStep):
-    """Base step implementation for any datasource step implementation on ZenML"""
+    """Base step implementation for any datasource step implementation."""
 
     @abstractmethod
     def entrypoint(  # type: ignore[override]
@@ -31,4 +32,12 @@ class BaseDatasourceStep(BaseStep):
         config: BaseDatasourceConfig,
         context: StepContext,
     ) -> DataArtifact:
-        """Base entrypoint for any datasource implementation"""
+        """Base entrypoint for any datasource implementation.
+
+        Args:
+            config: The configuration for the step.
+            context: The context for the step.
+
+        Returns:
+            The dataset.
+        """

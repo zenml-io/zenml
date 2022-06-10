@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the BaseStepVisualizer."""
 
 from abc import abstractmethod
 from typing import Any
@@ -27,4 +28,10 @@ class BaseStepVisualizer(BaseVisualizer):
 
     @abstractmethod
     def visualize(self, object: StepView, *args: Any, **kwargs: Any) -> Any:
-        """Method to visualize steps."""
+        """Method to visualize steps.
+
+        Args:
+            object: The step to visualize.
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
