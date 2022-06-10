@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Secret schema for MySQL metadata store."""
+
 from typing import ClassVar, Optional
 
 from zenml.secret.base_secret import BaseSecretSchema
@@ -19,6 +21,8 @@ MYSQL_METADATA_STORE_SCHEMA_TYPE = "mysql"
 
 
 class MYSQLSecretSchema(BaseSecretSchema):
+    """MySQL secret schema."""
+
     TYPE: ClassVar[str] = MYSQL_METADATA_STORE_SCHEMA_TYPE
 
     user: Optional[str]

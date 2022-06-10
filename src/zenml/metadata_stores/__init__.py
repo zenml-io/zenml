@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of ZenML's metadata stores.
+
 The configuration of each pipeline, step, backend, and produced artifacts are
 all tracked within the metadata store. The metadata store is an SQL database,
 and can be `sqlite` or `mysql`.

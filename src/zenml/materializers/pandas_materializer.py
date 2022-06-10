@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Materializer for Pandas."""
 
 import os
 import tempfile
@@ -39,7 +40,14 @@ class PandasMaterializer(BaseMaterializer):
     def handle_input(
         self, data_type: Type[Any]
     ) -> Union[pd.DataFrame, pd.Series]:
-        """Reads pd.DataFrame or pd.Series from a parquet file."""
+        """Reads pd.DataFrame or pd.Series from a parquet file.
+
+        Args:
+            data_type: The type of the data to read.
+
+        Returns:
+            The pandas dataframe or series.
+        """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
