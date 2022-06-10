@@ -1,6 +1,6 @@
 import random
 
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 
 @step(enable_cache=False)

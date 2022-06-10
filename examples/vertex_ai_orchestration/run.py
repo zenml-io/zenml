@@ -13,14 +13,13 @@
 #  permissions and limitations under the License.
 
 from pipelines.first_pipeline.vertex_example_pipeline import (
-    vertex_example_pipeline
+    vertex_example_pipeline,
 )
 from steps.first_step.first_step import get_first_num
 from steps.second_step.second_step import get_random_int
 from steps.third_step.third_step import subtract_numbers
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Initialize a new pipeline run
     p = vertex_example_pipeline(
         first_step=get_first_num(),

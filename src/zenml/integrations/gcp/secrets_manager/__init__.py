@@ -17,7 +17,7 @@ The GCP Secrets Manager allows your pipeline to directly access the GCP
 secrets manager and use the secrets within during runtime.
 """
 from zenml.integrations.gcp.secrets_manager.gcp_secrets_manager import (
-    GCPSecretsManager
+    GCPSecretsManager,
 )
 
 __all__ = ["GCPSecretsManager"]
