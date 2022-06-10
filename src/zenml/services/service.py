@@ -80,7 +80,7 @@ class BaseServiceMeta(BaseTypedModelMeta):
             the created BaseServiceMeta class.
 
         Raises:
-            TypeError: if the 'service_type' reserved attribute name is used
+            TypeError: if the 'service_type' reserved attribute name is used.
         """
         service_type = dct.get("SERVICE_TYPE", None)
 
