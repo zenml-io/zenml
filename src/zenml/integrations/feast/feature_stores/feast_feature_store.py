@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Feast Feature Store for ZenML."""
 
 from typing import Any, ClassVar, Dict, List, Union
 
@@ -39,7 +40,7 @@ class FeastFeatureStore(BaseFeatureStore):
         """Validates the connection to the feature store.
 
         Raises:
-            RuntimeError: If the online component (Redis) is not available.
+            ConnectionError: If the online component (Redis) is not available.
         """
         client = redis.Redis(host=self.online_host, port=self.online_port)
         try:

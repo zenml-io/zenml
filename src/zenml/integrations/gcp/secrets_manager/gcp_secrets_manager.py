@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the GCP Secrets Manager."""
+
 from typing import Any, ClassVar, Dict, List
 
 from google.cloud import secretmanager
@@ -29,25 +31,31 @@ ZENML_GROUP_KEY = "zenml-group-key"
 
 
 def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict[str, str]:
-    """This function adds the secret group name to the keys of each
-    secret key-value pair to allow using the same key across multiple
-    secrets.
+    """Adds the secret group name to the keys of each secret key-value pair.
+
+    This allows using the same key across multiple secrets.
 
     Args:
         secret: The ZenML Secret schema
+
+    Returns:
+        A dictionary with the keys prepended with the group name
     """
     return {f"{secret.name}_{k}": v for k, v in secret.content.items()}
 
 
 def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
-    """This function serves to remove the secret group name from the secret
-    key.
+    """Removes the secret group name from the secret key.
 
     Args:
         combined_key_name: Full name as it is within the gcp secrets manager
         group_name: Group name (the ZenML Secret name)
+
     Returns:
         The cleaned key
+
+    Raises:
+        RuntimeError: If the group name is not found in the key
     """
     if combined_key_name.startswith(group_name + "_"):
         return combined_key_name[len(group_name + "_") :]
@@ -81,14 +89,22 @@ class GCPSecretsManager(BaseSecretsManager):
 
     @property
     def parent_name(self) -> str:
-        """Construct the GCP parent path to the secret manager"""
+        """Construct the GCP parent path to the secret manager.
+
+        Returns:
+            The parent path to the secret manager
+        """
         return f"projects/{self.project_id}"
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
 
         Args:
-            secret: the secret to register"""
+            secret: the secret to register
+
+        Raises:
+            SecretExistsError: if the secret already exists
+        """
         self._ensure_client_connected()
 
         if secret.name in self.get_all_secret_keys():
@@ -135,7 +151,8 @@ class GCPSecretsManager(BaseSecretsManager):
             The secret.
 
         Raises:
-            RuntimeError: if the secret does not exist"""
+            RuntimeError: if the secret does not exist
+        """
         self._ensure_client_connected()
 
         secret_contents = {}
@@ -180,7 +197,8 @@ class GCPSecretsManager(BaseSecretsManager):
         """Get all secret keys.
 
         Returns:
-            A list of all secret keys."""
+            A list of all secret keys
+        """
         self._ensure_client_connected()
 
         set_of_secrets = set()
@@ -196,11 +214,11 @@ class GCPSecretsManager(BaseSecretsManager):
         return list(set_of_secrets)
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
-        """Update an existing secret by creating new versions of the existing
-        secrets.
+        """Update an existing secret by creating new versions of the existing secrets.
 
         Args:
-            secret: the secret to update"""
+            secret: the secret to update
+        """
         self._ensure_client_connected()
 
         adjusted_content = prepend_group_name_to_keys(secret)
@@ -216,13 +234,16 @@ class GCPSecretsManager(BaseSecretsManager):
             )
 
     def delete_secret(self, secret_name: str) -> None:
-        """Delete an existing secret. by name. In GCP a secret is a single k-v
+        """Delete an existing secret by name.
+
+        In GCP a secret is a single k-v
         pair. Within ZenML a secret is a collection of k-v pairs. As such,
         deleting a secret will iterate through all secrets and delete the ones
         with the secret_name as label.
 
         Args:
-            secret_name: the name of the secret to delete"""
+            secret_name: the name of the secret to delete
+        """
         self._ensure_client_connected()
 
         # Go through all gcp secrets and delete the ones with the secret_name
@@ -240,7 +261,8 @@ class GCPSecretsManager(BaseSecretsManager):
         """Delete all existing secrets.
 
         Args:
-            force: whether to force delete all secrets"""
+            force: whether to force delete all secrets
+        """
         self._ensure_client_connected()
 
         # List all secrets.

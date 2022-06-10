@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a TensorFlow trainer step."""
+
 from typing import List, Tuple
 
 import pandas as pd
@@ -23,7 +25,7 @@ from zenml.steps.step_interfaces.base_trainer_step import (
 
 
 class TensorflowBinaryClassifierConfig(BaseTrainerConfig):
-    """Config class for the tensorflow trainer
+    """Config class for the tensorflow trainer.
 
     target_column: the name of the label column
     layers: the number of units in the fully connected layers
@@ -44,8 +46,10 @@ class TensorflowBinaryClassifierConfig(BaseTrainerConfig):
 
 
 class TensorflowBinaryClassifier(BaseTrainerStep):
-    """Simple step implementation which creates a simple tensorflow feedforward
-    neural network and trains it on a given pd.DataFrame dataset
+    """A TensorFlow binary classifier.
+
+    This simple step implementation creates a simple tensorflow feedforward
+    neural network and trains it on a given pd.DataFrame dataset.
     """
 
     def entrypoint(  # type: ignore[override]
@@ -54,12 +58,13 @@ class TensorflowBinaryClassifier(BaseTrainerStep):
         validation_dataset: pd.DataFrame,
         config: TensorflowBinaryClassifierConfig,
     ) -> tf.keras.Model:
-        """Main entrypoint for the tensorflow trainer
+        """Main entrypoint for the tensorflow trainer.
 
         Args:
             train_dataset: pd.DataFrame, the training dataset
             validation_dataset: pd.DataFrame, the validation dataset
             config: the configuration of the step
+
         Returns:
             the trained tf.keras.Model
         """

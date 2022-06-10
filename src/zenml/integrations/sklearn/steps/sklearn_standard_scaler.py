@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the sklearn standard scaler step."""
+
 from typing import List
 
 import pandas as pd
@@ -27,7 +29,7 @@ logger = get_logger(__name__)
 
 
 class SklearnStandardScalerConfig(BasePreprocessorConfig):
-    """Config class for the sklearn standard scaler
+    """Config class for the sklearn standard scaler.
 
     ignore_columns: a list of column names which should not be scaled
     exclude_columns: a list of column names to be excluded from the dataset
@@ -38,8 +40,11 @@ class SklearnStandardScalerConfig(BasePreprocessorConfig):
 
 
 class SklearnStandardScaler(BasePreprocessorStep):
-    """Simple step implementation which utilizes the StandardScaler from sklearn
-    to transform the numeric columns of a pd.DataFrame"""
+    """Simple StandardScaler step implementation.
+
+    This uses the StandardScaler from sklearn to transform the numeric columns
+    of a pd.DataFrame.
+    """
 
     def entrypoint(  # type: ignore[override]
         self,
@@ -54,7 +59,7 @@ class SklearnStandardScaler(BasePreprocessorStep):
         test_transformed=pd.DataFrame,
         validation_transformed=pd.DataFrame,
     ):
-        """Main entrypoint function for the StandardScaler
+        """Main entrypoint function for the StandardScaler.
 
         Args:
             train_dataset: pd.DataFrame, the training dataset
@@ -63,9 +68,9 @@ class SklearnStandardScaler(BasePreprocessorStep):
             statistics: pd.DataFrame, the statistics over the train dataset
             schema: pd.DataFrame, the detected schema of the dataset
             config: the configuration for the step
+
         Returns:
-             the transformed train, test and validation datasets as
-             pd.DataFrames
+            the transformed train, test and validation datasets as pd.DataFrames
         """
         schema_dict = {k: v[0] for k, v in schema.to_dict().items()}
 

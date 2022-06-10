@@ -11,8 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Secrets Manager
+"""ZenML integration for GCP Secrets Manager.
+
 The GCP Secrets Manager allows your pipeline to directly access the GCP
 secrets manager and use the secrets within during runtime.
 """

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the MLflow StepDecorator."""
+
 import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
@@ -39,13 +41,11 @@ S = TypeVar("S", bound=Type[BaseStep])
 def enable_mlflow(
     _step: S,
 ) -> S:
-    """Type annotations for mlflow step decorator in case of no arguments."""
     ...
 
 
 @overload
 def enable_mlflow() -> Callable[[S], S]:
-    """Type annotations for mlflow step decorator in case of arguments."""
     ...
 
 

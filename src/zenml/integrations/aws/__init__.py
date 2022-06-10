@@ -42,7 +42,11 @@ class AWSIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the AWS integration."""
+        """Declare the stack component flavors for the AWS integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=AWS_SECRET_MANAGER_FLAVOR,
