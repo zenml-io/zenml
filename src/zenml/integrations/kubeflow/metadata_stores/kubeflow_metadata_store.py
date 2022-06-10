@@ -314,7 +314,8 @@ class KubeflowMetadataStore(BaseMetadataStore):
     ) -> None:
         """Waits until the metadata store connection is ready.
 
-        An irrecoverable error occurs or the timeout expires.
+        Potentially an irrecoverable error could occur or the timeout could
+        expire, so it checks for this.
 
         Args:
             timeout: The maximum time to wait for the metadata store to be
