@@ -14,7 +14,7 @@
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import Any, Type, Union
 
 import pandas as pd
 
@@ -29,15 +29,15 @@ COMPRESSION_TYPE = "gzip"
 class PandasMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
 
-    ASSOCIATED_TYPES = (pd.DataFrame,)
+    ASSOCIATED_TYPES = (pd.DataFrame, pd.Series)
     ASSOCIATED_ARTIFACT_TYPES = (
         DataArtifact,
         StatisticsArtifact,
         SchemaArtifact,
     )
 
-    def handle_input(self, data_type: Type[Any]) -> pd.DataFrame:
-        """Reads pd.DataFrame from a parquet file."""
+    def handle_input(self, data_type: Type[Any]) -> Union[pd.DataFrame, pd.Series]:
+        """Reads pd.DataFrame or pd.Series from a parquet file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
@@ -54,17 +54,26 @@ class PandasMaterializer(BaseMaterializer):
         # Cleanup and return
         fileio.rmtree(temp_dir)
 
+        if issubclass(data_type, pd.Series):
+            # Taking the first column if its a series as the assumption
+            # is that there will only be one
+            assert len(df.columns) == 1
+            df = df[df.columns[0]]
+
         return df
 
-    def handle_return(self, df: pd.DataFrame) -> None:
-        """Writes a pandas dataframe to the specified filename.
+    def handle_return(self, df: Union[pd.DataFrame, pd.Series]) -> None:
+        """Writes a pandas dataframe or series to the specified filename.
 
         Args:
-            df: The pandas dataframe to write.
+            df: The pandas dataframe or series to write.
         """
         super().handle_return(df)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
+        if isinstance(df, pd.Series):
+            df = df.to_frame(name="series")
+        
         # Create a temporary file to store the model
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".gzip", delete=False
