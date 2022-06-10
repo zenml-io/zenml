@@ -370,7 +370,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns path to the root directory for all files concerning this orchestrator.
 
         Returns:
-            str: path to the root directory
+            Path to the root directory.
         """
         return os.path.join(
             io_utils.get_global_config_directory(),
