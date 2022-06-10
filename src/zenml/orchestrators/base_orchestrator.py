@@ -264,7 +264,7 @@ class BaseOrchestrator(StackComponent, ABC):
             pb2_pipeline: Protobuf Pipeline instance
 
         Returns:
-            The execution info of the step
+            The execution info of the step.
         """
         # Substitute the runtime parameter to be a concrete run_id, it is
         # important for this to be unique for each run.
