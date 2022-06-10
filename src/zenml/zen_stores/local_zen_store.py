@@ -128,6 +128,9 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The initialized ZenStore instance.
+
+        Raises:
+            ValueError: If the given URL is invalid.
         """
         if not self.is_valid_url(url):
             raise ValueError(f"Invalid URL for local store: {url}")
@@ -179,6 +182,9 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The path from the URL.
+
+        Raises:
+            ValueError: If the URL is invalid.
         """
         if not LocalZenStore.is_valid_url(url):
             raise ValueError(f"Invalid URL for local store: {url}")
@@ -306,8 +312,13 @@ class LocalZenStore(BaseZenStore):
             component_type: The type of the stack component to update.
             component: The new component to update with.
 
+        Returns:
+            The updated stack component.
+
         Raises:
             KeyError: If no stack component exists with the given name.
+            StackComponentExistsError: If a stack component with the same type
+                and name already exists.
         """
         components = self.__store.stack_components[component_type]
         if name not in components:
@@ -356,9 +367,6 @@ class LocalZenStore(BaseZenStore):
 
         Args:
             name: The name of the stack to be deleted.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
         """
         del self.__store.stacks[name]
         self.__store.write_config()
@@ -436,9 +444,6 @@ class LocalZenStore(BaseZenStore):
         Args:
             component_type: The type of component to delete.
             name: Then name of the component to delete.
-
-        Raises:
-            KeyError: If no component exists for given type and name.
         """
         component_config_path = self._get_stack_component_config_path(
             component_type=component_type, name=name
@@ -470,9 +475,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         return _get_unique_entity(user_name, collection=self.__store.users)
 
@@ -505,9 +507,6 @@ class LocalZenStore(BaseZenStore):
 
         Args:
             user_name: Name of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         user = _get_unique_entity(user_name, collection=self.__store.users)
         self.__store.users.remove(user)
@@ -539,9 +538,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The requested team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         return _get_unique_entity(team_name, collection=self.__store.teams)
 
@@ -574,9 +570,6 @@ class LocalZenStore(BaseZenStore):
 
         Args:
             team_name: Name of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         team = _get_unique_entity(team_name, collection=self.__store.teams)
         self.__store.teams.remove(team)
@@ -595,9 +588,6 @@ class LocalZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
         """
         team = _get_unique_entity(team_name, self.__store.teams)
         user = _get_unique_entity(user_name, self.__store.users)
@@ -610,9 +600,6 @@ class LocalZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
         """
         team = _get_unique_entity(team_name, self.__store.teams)
         user = _get_unique_entity(user_name, self.__store.users)
@@ -636,9 +623,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The requested project if one was found.
-
-        Raises:
-            KeyError: If there is no such project.
         """
         return _get_unique_entity(
             project_name, collection=self.__store.projects
@@ -676,9 +660,6 @@ class LocalZenStore(BaseZenStore):
 
         Args:
             project_name: Name of the project to delete.
-
-        Raises:
-            KeyError: If no project with the given name exists.
         """
         project = _get_unique_entity(
             project_name, collection=self.__store.projects
@@ -719,9 +700,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
         """
         return _get_unique_entity(role_name, collection=self.__store.roles)
 
@@ -754,9 +732,6 @@ class LocalZenStore(BaseZenStore):
 
         Args:
             role_name: Name of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given name exists.
         """
         role = _get_unique_entity(role_name, collection=self.__store.roles)
         self.__store.roles.remove(role)
@@ -784,9 +759,6 @@ class LocalZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
         """
         role = _get_unique_entity(role_name, collection=self.__store.roles)
         project_id: Optional[UUID] = None
@@ -824,9 +796,6 @@ class LocalZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
         """
         role = _get_unique_entity(role_name, collection=self.__store.roles)
 
@@ -864,9 +833,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         team = _get_unique_entity(team_name, collection=self.__store.teams)
         user_names = self.__store.team_assignments[team.name]
@@ -880,9 +846,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         user = _get_unique_entity(user_name, collection=self.__store.users)
         team_names = [
@@ -909,9 +872,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of role assignments for this user.
-
-        Raises:
-            KeyError: If no user or project with the given names exists.
         """
         user = _get_unique_entity(user_name, collection=self.__store.users)
         project_id = (
@@ -946,9 +906,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of role assignments for this team.
-
-        Raises:
-            KeyError: If no team or project with the given names exists.
         """
         team = _get_unique_entity(team_name, collection=self.__store.teams)
         project_id = (
@@ -977,6 +934,9 @@ class LocalZenStore(BaseZenStore):
             run_name: Name of the pipeline run to get.
             project_name: Optional name of the project from which to get the
                 pipeline run.
+
+        Returns:
+            Pipeline run.
 
         Raises:
             KeyError: If no pipeline run (or project) with the given name
@@ -1009,6 +969,9 @@ class LocalZenStore(BaseZenStore):
             pipeline_name: Name of the pipeline for which to get runs.
             project_name: Optional name of the project from which to get the
                 pipeline runs.
+
+        Returns:
+            List of pipeline runs.
         """
         runs = self.__pipeline_store.pipeline_runs[pipeline_name]
         if project_name:
@@ -1080,7 +1043,6 @@ class LocalZenStore(BaseZenStore):
             EntityExistsError: If a flavor with the given name and type
                 already exists.
         """
-
         if _get_unique_entity(
             name,
             collection=self.get_flavors_by_type(stack_component_type),
@@ -1132,10 +1094,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             Flavor instance if it exists
-
-        Raises:
-            KeyError: If no flavor exists with the given name and type
-                or there are more than one instances
         """
         matches = self.get_flavors_by_type(component_type)
         return _get_unique_entity(
@@ -1152,6 +1110,9 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The root directory of the zen store.
+
+        Raises:
+            RuntimeError: If the local ZenStore has not been initialized.
         """
         if not self._root:
             raise RuntimeError(

@@ -37,7 +37,14 @@ class BaseContainerRegistry(StackComponent):
 
     @validator("uri")
     def strip_trailing_slash(cls, uri: str) -> str:
-        """Removes trailing slashes from the URI."""
+        """Removes trailing slashes from the URI.
+
+        Args:
+            uri: The URI to be stripped.
+
+        Returns:
+            The URI without trailing slashes.
+        """
         return uri.rstrip("/")
 
     @property

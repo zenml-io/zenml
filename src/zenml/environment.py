@@ -292,8 +292,7 @@ class Environment(metaclass=SingletonMetaClass):
             given name.
 
         Raises:
-            KeyError: if no environment component is registered for the given
-            name.
+            KeyError: if no environment component is registered for the given name.
         """
         if name in self._components:
             return self._components[name]

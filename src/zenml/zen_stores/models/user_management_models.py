@@ -155,6 +155,9 @@ class RoleAssignment(BaseModel):
 
         Returns:
             The validated values.
+
+        Raises:
+            ValueError: If neither `user_id` nor `team_id` is set.
         """
         user_id = values.get("user_id", None)
         team_id = values.get("team_id", None)

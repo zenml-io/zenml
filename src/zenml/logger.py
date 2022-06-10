@@ -98,6 +98,9 @@ def get_logging_level() -> LoggingLevels:
 
     Returns:
         The logging level.
+
+    Raises:
+        KeyError: If the logging level is not found.
     """
     verbosity = ZENML_LOGGING_VERBOSITY.upper()
     if verbosity not in LoggingLevels.__members__:
@@ -225,6 +228,9 @@ def disable_logging(log_level: int) -> Iterator[None]:
     Args:
         log_level: All logs below this level will be disabled for the duration
             of this contextmanager.
+
+    Yields:
+        None.
     """
     old_level = logging.root.manager.disable
     try:

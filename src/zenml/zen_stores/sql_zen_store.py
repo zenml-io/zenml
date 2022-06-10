@@ -233,10 +233,14 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             url: odbc path to a database.
-            args, kwargs: additional parameters for SQLModel.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
 
         Returns:
             The initialized zen store instance.
+
+        Raises:
+            ValueError: If the database is not found.
         """
         if not self.is_valid_url(url):
             raise ValueError(f"Invalid URL for SQL store: {url}")
@@ -281,6 +285,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The URL of the repository.
+
+        Raises:
+            RuntimeError: If the SQL zen store is not initialized.
         """
         if not self._url:
             raise RuntimeError(
@@ -306,6 +313,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The path extracted from the URL, or None, if the URL does not
             point to a local sqlite file.
+
+        Raises:
+            ValueError: If the URL is not a valid SQLite URL.
         """
         if not SqlZenStore.is_valid_url(url):
             raise ValueError(f"Invalid URL for SQL store: {url}")
@@ -454,8 +464,13 @@ class SqlZenStore(BaseZenStore):
             component_type: The type of the stack component to update.
             component: The new component to update with.
 
+        Returns:
+            The updated stack component.
+
         Raises:
             KeyError: If no stack component exists with the given name.
+            StackComponentExistsError: If a stack component with the same type
+                and name already exists.
         """
         with Session(self.engine) as session:
             updated_component = session.exec(
@@ -1361,6 +1376,9 @@ class SqlZenStore(BaseZenStore):
             project_name: Optional name of the project from which to get the
                 pipeline run.
 
+        Returns:
+            Pipeline run.
+
         Raises:
             KeyError: If no pipeline run (or project) with the given name
                 exists.
@@ -1392,6 +1410,12 @@ class SqlZenStore(BaseZenStore):
             pipeline_name: Name of the pipeline for which to get runs.
             project_name: Optional name of the project from which to get the
                 pipeline runs.
+
+        Returns:
+            List of pipeline runs.
+
+        Raises:
+            KeyError: If no pipeline with the given name exists.
         """
         with Session(self.engine) as session:
             try:
@@ -1467,10 +1491,9 @@ class SqlZenStore(BaseZenStore):
             source: the source path to the implemented flavor.
             name: the name of the flavor.
             stack_component_type: the corresponding StackComponentType.
-            integration: the name of the integration.
 
         Returns:
-             The newly created flavor.
+            The newly created flavor.
 
         Raises:
             EntityExistsError: If a flavor with the given name and type

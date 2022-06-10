@@ -83,6 +83,9 @@ class FlavorWrapper(BaseModel):
 
         Returns:
             the class of the flavor
+
+        Raises:
+            ImportError: if the flavor is not able to be imported.
         """
         try:
             return load_source_path_class(source=self.source)  # noqa

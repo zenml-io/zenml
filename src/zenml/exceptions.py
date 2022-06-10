@@ -235,7 +235,7 @@ class ProvisioningError(ZenMLBaseException):
 
 
 class GitNotFoundError(ImportError):
-    """Raised when ZenML CLI is used to interact with examples on a machine with no git installation"""
+    """Raised when ZenML CLI is used to interact with examples on a machine with no git installation."""
 
 
 class DuplicatedConfigurationError(ZenMLBaseException):

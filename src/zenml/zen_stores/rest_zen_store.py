@@ -78,6 +78,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The initialized zen store instance.
+
+        Raises:
+            ValueError: if the url is not a valid URL.
         """
         if not self.is_valid_url(url.strip("/")):
             raise ValueError("Invalid URL for REST store: {url}")
@@ -110,9 +113,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             path: the path string to build a URL out of.
-
-        Returns:
-            URL pointing to the path for the store type.
 
         Raises:
             NotImplementedError: always
@@ -165,6 +165,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             True, if the store is empty, False otherwise.
+
+        Raises:
+            ValueError: if the response is not a boolean.
         """
         empty = self.get(STACKS_EMPTY)
         if not isinstance(empty, bool):
@@ -183,9 +186,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             Dict[StackComponentType, str] for the requested stack name.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
         """
         return self._parse_stack_configuration(
             self.get(f"{STACK_CONFIGURATIONS}/{name}")
@@ -197,6 +197,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             Dictionary mapping stack names to Dict[StackComponentType, str]'s
+
+        Raises:
+            ValueError: If the API response is not a dict.
         """
         body = self.get(STACK_CONFIGURATIONS)
         if not isinstance(body, dict):
@@ -216,10 +219,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             component: The component to register.
-
-        Raises:
-            KeyError: If a stack component with the same type
-                and name already exists.
         """
         self.post(STACK_COMPONENTS, body=component)
 
@@ -236,8 +235,11 @@ class RestZenStore(BaseZenStore):
             component_type: The type of the stack component to update.
             component: The new component to update with.
 
+        Returns:
+            The updated component.
+
         Raises:
-            KeyError: If no stack component exists with the given name.
+            ValueError: in cases of a bad API response.
         """
         body = self.put(
             f"{STACK_COMPONENTS}/{component_type}/{name}", body=component
@@ -254,9 +256,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             name: The name of the stack to be deleted.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
         """
         self.delete(f"{STACKS}/{name}")
 
@@ -270,6 +269,9 @@ class RestZenStore(BaseZenStore):
         Args:
             name: The name to save the stack as.
             stack_configuration: Dict[StackComponentType, str] to persist.
+
+        Raises:
+            NotImplementedError: always
         """
         raise NotImplementedError
 
@@ -281,6 +283,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             List[StackWrapper] of all stacks registered in this repository.
+
+        Raises:
+            ValueError: If the API response is not a list of stacks.
         """
         body = self.get(STACKS)
         if not isinstance(body, list):
@@ -297,9 +302,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             StackWrapper instance if the stack exists.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
         """
         return StackWrapper.parse_obj(self.get(f"{STACKS}/{name}"))
 
@@ -311,12 +313,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             stack: The stack to register.
-
-        Raises:
-            StackExistsError: If a stack with the same name already exists.
-            StackComponentExistsError: If a component of the stack wasn't
-                registered and a different component with the same name
-                already exists.
         """
         self.post(STACKS, stack)
 
@@ -339,8 +335,12 @@ class RestZenStore(BaseZenStore):
     ) -> ComponentWrapper:
         """Get a registered stack component.
 
-        Raises:
-            KeyError: If no component with the requested type and name exists.
+        Args:
+            component_type: The type of the component to retrieve.
+            name: The name of the component to retrieve.
+
+        Returns:
+            ComponentWrapper instance if the component exists.
         """
         return ComponentWrapper.parse_obj(
             self.get(f"{STACK_COMPONENTS}/{component_type}/{name}")
@@ -356,6 +356,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of StackComponentConfiguration instances.
+
+        Raises:
+            ValueError: If the API response is not a list of components.
         """
         body = self.get(f"{STACK_COMPONENTS}/{component_type}")
         if not isinstance(body, list):
@@ -372,10 +375,6 @@ class RestZenStore(BaseZenStore):
         Args:
             component_type: The type of the component to deregister.
             name: The name of the component to deregister.
-
-        Raises:
-            ValueError: if trying to deregister a component that's part
-                of a stack.
         """
         self.delete(f"{STACK_COMPONENTS}/{component_type}/{name}")
 
@@ -406,9 +405,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The requested user, if it was found.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         return User.parse_obj(self.get(f"{USERS}/{user_name}"))
 
@@ -420,9 +416,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created user.
-
-        Raises:
-            EntityExistsError: If a user with the given name already exists.
         """
         user = User(name=user_name)
         return User.parse_obj(self.post(USERS, body=user))
@@ -432,9 +425,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             user_name: Name of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         self.delete(f"{USERS}/{user_name}")
 
@@ -463,9 +453,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The requested team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         return Team.parse_obj(self.get(f"{TEAMS}/{team_name}"))
 
@@ -477,9 +464,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created team.
-
-        Raises:
-            EntityExistsError: If a team with the given name already exists.
         """
         team = Team(name=team_name)
         return Team.parse_obj(self.post(TEAMS, body=team))
@@ -489,9 +473,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             team_name: Name of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         self.delete(f"{TEAMS}/{team_name}")
 
@@ -501,9 +482,6 @@ class RestZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
         """
         user = User(name=user_name)
         self.post(f"{TEAMS}/{team_name}/users", user)
@@ -514,9 +492,6 @@ class RestZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
         """
         self.delete(f"{TEAMS}/{team_name}/users/{user_name}")
 
@@ -545,9 +520,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The requested project if one was found.
-
-        Raises:
-            KeyError: If there is no such project.
         """
         return Project.parse_obj(self.get(f"{PROJECTS}/{project_name}"))
 
@@ -562,9 +534,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created project.
-
-        Raises:
-            EntityExistsError: If a project with the given name already exists.
         """
         project = Project(name=project_name, description=description)
         return Project.parse_obj(self.post(PROJECTS, body=project))
@@ -574,9 +543,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             project_name: Name of the project to delete.
-
-        Raises:
-            KeyError: If no project with the given name exists.
         """
         self.delete(f"{PROJECTS}/{project_name}")
 
@@ -625,9 +591,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
         """
         return Role.parse_obj(self.get(f"{ROLES}/{role_name}"))
 
@@ -639,9 +602,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created role.
-
-        Raises:
-            EntityExistsError: If a role with the given name already exists.
         """
         role = Role(name=role_name)
         return Role.parse_obj(self.post(ROLES, body=role))
@@ -651,9 +611,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             role_name: Name of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given name exists.
         """
         self.delete(f"{ROLES}/{role_name}")
 
@@ -672,9 +629,6 @@ class RestZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
         """
         data = {
             "role_name": role_name,
@@ -705,9 +659,6 @@ class RestZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
         """
         data = {
             "role_name": role_name,
@@ -733,7 +684,6 @@ class RestZenStore(BaseZenStore):
             List of users that are part of the team.
 
         Raises:
-            KeyError: If no team with the given name exists.
             ValueError: In case of a bad API response.
         """
         body = self.get(f"{TEAMS}/{team_name}/users")
@@ -753,7 +703,6 @@ class RestZenStore(BaseZenStore):
             List of teams that the user is part of.
 
         Raises:
-            KeyError: If no user with the given name exists.
             ValueError: In case of a bad API response.
         """
         body = self.get(f"{USERS}/{user_name}/teams")
@@ -782,7 +731,6 @@ class RestZenStore(BaseZenStore):
             List of role assignments for this user.
 
         Raises:
-            KeyError: If no user or project with the given names exists.
             ValueError: In case of a bad API response.
         """
         path = f"{USERS}/{user_name}/role_assignments"
@@ -821,7 +769,6 @@ class RestZenStore(BaseZenStore):
             List of role assignments for this team.
 
         Raises:
-            KeyError: If no user or project with the given names exists.
             ValueError: In case of a bad API response.
         """
         path = f"{TEAMS}/{team_name}/role_assignments"
@@ -854,9 +801,8 @@ class RestZenStore(BaseZenStore):
             project_name: Optional name of the project from which to get the
                 pipeline run.
 
-        Raises:
-            KeyError: If no pipeline run (or project) with the given name
-                exists.
+        Returns:
+            A pipeline run object.
         """
         path = f"{PIPELINE_RUNS}/{pipeline_name}/{run_name}"
         if project_name:
@@ -874,6 +820,12 @@ class RestZenStore(BaseZenStore):
             pipeline_name: Name of the pipeline for which to get runs.
             project_name: Optional name of the project from which to get the
                 pipeline runs.
+
+        Returns:
+            List of pipeline runs.
+
+        Raises:
+            ValueError: In case of a bad API response.
         """
         path = f"{PIPELINE_RUNS}/{pipeline_name}"
         if project_name:
@@ -894,10 +846,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             pipeline_run: The pipeline run to register.
-
-        Raises:
-            EntityExistsError: If a pipeline run with the same name already
-                exists.
         """
         self.post(PIPELINE_RUNS, body=pipeline_run)
 
@@ -944,7 +892,7 @@ class RestZenStore(BaseZenStore):
             component_type: Type of the components.
 
         Raises:
-            NotImplementedError.
+            NotImplementedError: always
         """
         raise NotImplementedError("Not to be accessed directly in client!")
 
@@ -956,6 +904,9 @@ class RestZenStore(BaseZenStore):
         Args:
             component_type: Type of the component.
             name: Name of the component.
+
+        Raises:
+            NotImplementedError: always
         """
         raise NotImplementedError("Not to be accessed directly in client!")
 
@@ -967,6 +918,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of all registered flavors.
+
+        Raises:
+            ValueError: If the API response is not a list.
         """
         body = self.get(FLAVORS)
         if not isinstance(body, list):
@@ -990,10 +944,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             The newly created flavor.
-
-        Raises:
-            EntityExistsError: If a flavor with the given name and type
-                already exists.
         """
         flavor = FlavorWrapper(
             name=name,
@@ -1012,6 +962,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             List of all the flavors for the given stack component type.
+
+        Raises:
+            ValueError: If a list of flavors is not returned.
         """
         body = self.get(f"{FLAVORS}/{component_type}")
         if not isinstance(body, list):
@@ -1033,10 +986,6 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             Flavor instance if it exists
-
-        Raises:
-            KeyError: If no flavor exists with the given name and type
-                or there are more than one instances
         """
         return FlavorWrapper.parse_obj(
             self.get(f"{FLAVORS}/{component_type}/{flavor_name}")
@@ -1055,6 +1004,9 @@ class RestZenStore(BaseZenStore):
         Returns:
             A dictionary mapping the component type to the path to the
             configuration.
+
+        Raises:
+            ValueError: If the response is not a dictionary.
         """
         if not isinstance(to_parse, dict):
             raise ValueError(
@@ -1070,6 +1022,27 @@ class RestZenStore(BaseZenStore):
 
         Args:
             response: The response to handle.
+
+        Returns:
+            The parsed response.
+
+        Raises:
+            DoesNotExistException: If the response indicates that the
+                requested entity does not exist.
+            EntityExistsError: If the response indicates that the requested
+                entity already exists.
+            HTTPError: If the response indicates that the requested entity
+                does not exist.
+            KeyError: If the response indicates that the requested entity
+                does not exist.
+            RuntimeError: If the response indicates that the requested entity
+                does not exist.
+            StackComponentExistsError: If the response indicates that the
+                requested entity already exists.
+            StackExistsError: If the response indicates that the requested
+                entity already exists.
+            ValueError: If the response indicates that the requested entity
+                does not exist.
         """
         if response.status_code >= 200 and response.status_code < 300:
             try:
@@ -1158,6 +1131,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             path: The path to the endpoint.
+            body: The body to send.
 
         Returns:
             The response body.
