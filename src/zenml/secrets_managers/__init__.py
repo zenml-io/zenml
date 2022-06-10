@@ -11,11 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Secret Manager
+"""Initialization for the ZenML secrets manager module."""
 
-...
-"""
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,

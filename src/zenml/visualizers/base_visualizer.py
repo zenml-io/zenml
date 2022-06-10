@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the base class for all ZenML visualizers."""
 
 from abc import abstractmethod
 from typing import Any
@@ -25,4 +26,10 @@ class BaseVisualizer:
 
     @abstractmethod
     def visualize(self, object: Any, *args: Any, **kwargs: Any) -> None:
-        """Method to visualize objects."""
+        """Method to visualize objects.
+
+        Args:
+            object: The object to visualize.
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """

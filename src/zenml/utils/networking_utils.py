@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility functions for networking."""
+
 import socket
 from typing import Optional, cast
 
@@ -42,7 +44,11 @@ def port_available(port: int) -> bool:
 
 
 def find_available_port() -> int:
-    """Finds a local random unoccupied TCP port."""
+    """Finds a local random unoccupied TCP port.
+
+    Returns:
+        A random unoccupied TCP port.
+    """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         _, port = s.getsockname()
@@ -58,6 +64,7 @@ def scan_for_available_port(
     Args:
         start: the beginning of the port range value to scan
         stop: the (inclusive) end of the port range value to scan
+
     Returns:
         The first available port in the given range, or None if no available
         port is found.

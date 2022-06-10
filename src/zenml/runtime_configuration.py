@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Runtime configuration."""
+
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 from zenml.logger import get_logger
@@ -54,12 +56,20 @@ class RuntimeConfiguration(Dict[str, Any]):
 
     @property
     def run_name(self) -> Optional[str]:
-        """Name of the pipeline run."""
+        """Name of the pipeline run.
+
+        Returns:
+            The name of the pipeline run.
+        """
         return cast(Optional[str], self[RUN_NAME_OPTION_KEY])
 
     @property
     def schedule(self) -> Optional["Schedule"]:
-        """Schedule of the pipeline run."""
+        """Schedule of the pipeline run.
+
+        Returns:
+            The schedule of the pipeline run.
+        """
         from zenml.pipelines import Schedule
 
         return cast(Optional[Schedule], self[SCHEDULE_OPTION_KEY])

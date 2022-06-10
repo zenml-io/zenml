@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML enums."""
 
 import logging
 from enum import Enum
@@ -54,7 +55,11 @@ class StackComponentType(StrEnum):
 
     @property
     def plural(self) -> str:
-        """Returns the plural of the enum value."""
+        """Returns the plural of the enum value.
+
+        Returns:
+            The plural of the enum value.
+        """
         if self == StackComponentType.CONTAINER_REGISTRY:
             return "container_registries"
 
@@ -62,14 +67,14 @@ class StackComponentType(StrEnum):
 
 
 class MetadataContextTypes(Enum):
-    """All possible types that contexts can have within pipeline nodes"""
+    """All possible types that contexts can have within pipeline nodes."""
 
     STACK = "stack"
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
 
 
 class StoreType(StrEnum):
-    """Repository Store Backend Types"""
+    """Repository Store Backend Types."""
 
     LOCAL = "local"
     SQL = "sql"
@@ -89,6 +94,7 @@ class ContainerRegistryFlavor(StrEnum):
 
 class CliCategories(StrEnum):
     """All possible categories for CLI commands.
+
     Note: The order of the categories is important. The same
     order is used to sort the commands in the CLI help output.
     """
