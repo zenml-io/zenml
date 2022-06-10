@@ -37,7 +37,7 @@ class S3Integration(Integration):
         """Declare the stack component flavors for the s3 integration.
 
         Returns:
-            List[FlavorWrapper]: The list of stack component flavors.
+            List of stack component flavors for this integration.
         """
         return [
             FlavorWrapper(
