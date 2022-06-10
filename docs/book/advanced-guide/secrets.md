@@ -305,7 +305,7 @@ then register your secrets manager in the following way:
 
 ```shell
 zenml integration install azure
-zenml secrets-manager register AZURE_SECRETS_MANAGER_NAME -f azure_secrets_manager \ 
+zenml secrets-manager register AZURE_SECRETS_MANAGER_NAME -f azure \ 
     --key_vault_name=<YOUR_KEY_VAULT_NAME>
 
 # update your default stack, for example
