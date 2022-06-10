@@ -74,10 +74,10 @@ def serialize_pydantic_object(
             """Default encoding for pydantic objects.
 
             Args:
-                o: the object to encode
+                o: the object to encode.
 
             Returns:
-                the encoded object
+                the encoded object.
             """
             try:
                 return cast(Callable[[Any], str], obj.__json_encoder__)(o)
