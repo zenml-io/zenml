@@ -34,7 +34,7 @@ class WandbIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the MLflow integration.
+        """Declare the stack component flavors for the Weights and Biases integration.
 
         Returns:
             List of stack component flavors for this integration.
