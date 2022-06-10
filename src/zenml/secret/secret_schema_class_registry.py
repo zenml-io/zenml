@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML SecretSchema Class Registry."""
+
 from typing import ClassVar, Dict, Type, TypeVar
 
 from zenml.logger import get_logger

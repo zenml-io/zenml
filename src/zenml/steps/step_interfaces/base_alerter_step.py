@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base alerter step."""
+
 from abc import abstractmethod
 
 from zenml.steps import BaseStep, BaseStepConfig, StepContext
@@ -30,4 +32,13 @@ class BaseAlerterStep(BaseStep):
         config: BaseAlerterStepConfig,
         context: StepContext,
     ) -> bool:
-        """Entrypoint for an Alerter step."""
+        """Entrypoint for an Alerter step.
+
+        Args:
+            message: The message to send.
+            config: The configuration for the step.
+            context: The context for the step.
+
+        Returns:
+            True if the message was sent successfully.
+        """

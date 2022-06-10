@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a base container registry class."""
+
 import re
 from typing import ClassVar
 
@@ -35,7 +37,14 @@ class BaseContainerRegistry(StackComponent):
 
     @validator("uri")
     def strip_trailing_slash(cls, uri: str) -> str:
-        """Removes trailing slashes from the URI."""
+        """Removes trailing slashes from the URI.
+
+        Args:
+            uri: The URI to be stripped.
+
+        Returns:
+            The URI without trailing slashes.
+        """
         return uri.rstrip("/")
 
     @property
@@ -48,8 +57,7 @@ class BaseContainerRegistry(StackComponent):
         return bool(re.fullmatch(r"localhost:[0-9]{4,5}", self.uri))
 
     def prepare_image_push(self, image_name: str) -> None:
-        """Method that subclasses can overwrite to do any necessary checks or
-        preparations before an image gets pushed.
+        """Method that subclasses can overwrite to do any necessary checks or preparations before an image gets pushed.
 
         Args:
             image_name: Name of the docker image that will be pushed.

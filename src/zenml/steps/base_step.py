@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base Step for ZenML."""
 
 import collections
 import inspect
@@ -79,7 +80,19 @@ class BaseStepMeta(type):
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BaseStepMeta":
-        """Set up a new class with a qualified spec."""
+        """Set up a new class with a qualified spec.
+
+        Args:
+            name: The name of the class.
+            bases: The base classes of the class.
+            dct: The attributes of the class.
+
+        Returns:
+            The new class.
+
+        Raises:
+            StepInterfaceError: When unable to create the step.
+        """
         dct.setdefault("PARAM_SPEC", {})
         dct.setdefault("INPUT_SPEC", {})
         dct.setdefault("OUTPUT_SPEC", {})
@@ -236,6 +249,12 @@ class BaseStep(metaclass=BaseStepMeta):
     INSTANCE_CONFIGURATION: Dict[str, Any] = {}
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initializes a step.
+
+        Args:
+            *args: Positional arguments passed to the step.
+            **kwargs: Keyword arguments passed to the step.
+        """
         self.name = self.__class__.__name__
         self.pipeline_parameter_name: Optional[str] = None
 
@@ -279,7 +298,15 @@ class BaseStep(metaclass=BaseStepMeta):
 
     @abstractmethod
     def entrypoint(self, *args: Any, **kwargs: Any) -> Any:
-        """Abstract method for core step logic."""
+        """Abstract method for core step logic.
+
+        Args:
+            *args: Positional arguments passed to the step.
+            **kwargs: Keyword arguments passed to the step.
+
+        Returns:
+            The output of the step.
+        """
 
     @classmethod
     def _created_by_functional_api(cls) -> bool:
@@ -344,7 +371,11 @@ class BaseStep(metaclass=BaseStepMeta):
 
     @property
     def _internal_execution_parameters(self) -> Dict[str, Any]:
-        """ZenML internal execution parameters for this step."""
+        """Internal ZenML execution parameters for this step.
+
+        Returns:
+            A dictionary containing the ZenML internal execution parameters
+        """
         parameters = {
             PARAM_PIPELINE_PARAMETER_NAME: self.pipeline_parameter_name,
             PARAM_CUSTOM_STEP_OPERATOR: self.custom_step_operator,
@@ -485,8 +516,6 @@ class BaseStep(metaclass=BaseStepMeta):
         Raises:
             MissingStepParameterError: If no value could be found for one or
                 more config parameters.
-            StepInterfaceError: If a config parameter value couldn't be
-                serialized to json.
         """
         if self.CONFIG_CLASS:
             # we need to store a value for all config keys inside the
@@ -595,7 +624,20 @@ class BaseStep(metaclass=BaseStepMeta):
     def __call__(
         self, *artifacts: Channel, **kw_artifacts: Channel
     ) -> Union[Channel, List[Channel]]:
-        """Generates a component when called."""
+        """Generates a component when called.
+
+        Args:
+            *artifacts: Positional input artifacts passed to
+                the __call__ method.
+            **kw_artifacts: Keyword input artifacts passed to
+                the __call__ method.
+
+        Returns:
+            A single output artifact or a list of output artifacts.
+
+        Raises:
+            StepInterfaceError: If the step has already been called.
+        """
         if self._has_been_called:
             raise StepInterfaceError(
                 f"Step {self.name} has already been called. A ZenML step "
@@ -665,7 +707,15 @@ class BaseStep(metaclass=BaseStepMeta):
 
     @property
     def component(self) -> _ZenMLSimpleComponent:
-        """Returns a TFX component."""
+        """Returns a TFX component.
+
+        Returns:
+            A TFX component.
+
+        Raises:
+            StepInterfaceError: If you are trying to access the step component
+                before creating it.
+        """
         if not self._component:
             raise StepInterfaceError(
                 "Trying to access the step component "
@@ -675,7 +725,11 @@ class BaseStep(metaclass=BaseStepMeta):
 
     @property
     def executor_operator(self) -> Type[BaseExecutorOperator]:
-        """Executor operator class that should be used to run this step."""
+        """Executor operator class that should be used to run this step.
+
+        Returns:
+            A TFX executor operator class.
+        """
         if self.custom_step_operator:
             return StepExecutorOperator
         else:
@@ -705,8 +759,14 @@ class BaseStep(metaclass=BaseStepMeta):
         """
 
         def _is_materializer_class(value: Any) -> bool:
-            """Checks whether the given object is a `BaseMaterializer`
-            subclass."""
+            """Checks whether the given object is a `BaseMaterializer` subclass.
+
+            Args:
+                value: The object to check.
+
+            Returns:
+                True if the object is a `BaseMaterializer` subclass, False otherwise.
+            """
             is_class = isinstance(value, type)
             return is_class and issubclass(value, BaseMaterializer)
 
