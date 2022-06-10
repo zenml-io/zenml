@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the Evidently integration.
+
 The Evidently integration provides a way to monitor your models in production.
 It includes a way to detect data drift and different kinds of model performance
 issues.
@@ -26,8 +27,7 @@ from zenml.integrations.integration import Integration
 
 
 class EvidentlyIntegration(Integration):
-    """Definition of [Evidently](https://github.com/evidentlyai/evidently) integration
-    for ZenML."""
+    """[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML."""
 
     NAME = EVIDENTLY
     REQUIREMENTS = ["evidently==v0.1.41.dev0"]

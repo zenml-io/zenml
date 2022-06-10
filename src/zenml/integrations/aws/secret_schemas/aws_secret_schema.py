@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""AWS Secret Schema definition for ZenML integration."""
+
 from typing import ClassVar, Optional
 
 from zenml.secret import register_secret_schema_class
@@ -21,6 +23,7 @@ AWS_SECRET_SCHEMA_TYPE = "aws"
 
 @register_secret_schema_class
 class AWSSecretSchema(BaseSecretSchema):
+    """AWS Secret Schema definition for ZenML integration."""
 
     TYPE: ClassVar[str] = AWS_SECRET_SCHEMA_TYPE
 

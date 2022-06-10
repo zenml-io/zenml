@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the whylogs profiler step."""
+
 import datetime
 from typing import Dict, Optional, cast
 
@@ -34,7 +36,6 @@ class WhylogsProfilerConfig(BaseAnalyzerConfig):
     """Config class for the WhylogsProfiler step.
 
     Attributes:
-
         dataset_name: the name of the dataset (Optional). If not specified,
             the pipeline step name is used
         dataset_timestamp: timestamp to associate with the generated
@@ -51,8 +52,7 @@ class WhylogsProfilerConfig(BaseAnalyzerConfig):
 
 
 class WhylogsProfilerStep(BaseAnalyzerStep):
-    """Simple step implementation which generates a whylogs data profile from a
-    a given pd.DataFrame"""
+    """Generates a whylogs data profile from a given pd.DataFrame."""
 
     def entrypoint(  # type: ignore[override]
         self,
@@ -60,12 +60,13 @@ class WhylogsProfilerStep(BaseAnalyzerStep):
         config: WhylogsProfilerConfig,
         context: StepContext,
     ) -> DatasetProfile:
-        """Main entrypoint function for the whylogs profiler
+        """Main entrypoint function for the whylogs profiler.
 
         Args:
             dataset: pd.DataFrame, the given dataset
             config: the configuration of the step
             context: the context of the step
+
         Returns:
             whylogs profile with statistics generated for the input dataset
         """
@@ -98,10 +99,10 @@ def whylogs_profiler_step(
             dataset profile (Optional). The current time is used if not
             supplied.
         tags: custom metadata tags associated with the whylogs profile
+
     Returns:
         a WhylogsProfilerStep step instance
     """
-
     # enable cache explicitly to compensate for the fact that this step
     # takes in a context object
     if enable_cache is None:

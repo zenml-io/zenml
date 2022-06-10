@@ -13,6 +13,7 @@ Alerters
 AmazonRDS
 AmazonS
 Anys
+ApiException
 Argo
 Args
 ArtifactStore
@@ -99,6 +100,7 @@ EntityExistsError
 EntityExistsError
 Enum
 EnvironmentComponent
+EnvironmentError
 Evidently
 Evidently's
 EvidentlyProfileConfig
@@ -106,6 +108,7 @@ EvidentlyProfileStep
 EvidentlyVisualizer
 ExampleSecretSchema
 ExamplesRepo
+ExecutionStatus
 ExperimentTracker
 FacetStatisticsVisualizer
 FastAPI
@@ -157,6 +160,8 @@ IPython
 ISTIO
 InitializationException
 Initializations
+IntegrationError
+Intitialization
 Istio
 Itemwise
 Iterable
@@ -170,6 +175,7 @@ Keras
 KeyError
 Kubeflow
 KubeflowMetadataStore
+KubeflowOrchestrator
 Kubernetes
 LLC
 LegacyVersion
@@ -199,8 +205,10 @@ MYSQLSecretSchema
 MacOS
 MachineSpec
 MadeWithML
+MaterializerInterfaceError
 MaterializerName
 Mattermost
+MetadataStore
 MiB
 Microsoft
 MissingStepParameterError
@@ -228,6 +236,7 @@ NeuralProphet
 Ng
 NotFoundError
 NotImplementedError
+NumPy
 OAuth
 OneRing
 OpFunc
@@ -248,6 +257,8 @@ PipelineNode
 PipelineRun
 PipelineRunTable
 PipelineRunWrapper
+PipelineRunView
+PipelineView
 PipelineWrapper
 Pipelining
 Plotly
@@ -329,11 +340,13 @@ StackComponentWrapper
 StackComponents
 StackExistsError
 StackValidationError
+StackValidator
 StackWrapper
 StandaloneCommand
 StandardScaler
 StepContext
 StepContextError
+StepDecorator
 StepEntrypointConfiguration
 StepExecutorOperator
 StepInterfaceError
@@ -370,6 +383,7 @@ Util
 VPC
 VRAM
 ValueError
+VertexAI
 WandbCallback
 WandbExperimentTracker
 WhyLabs
@@ -531,10 +545,12 @@ dirmatch
 dirs
 distilbert
 dl
+dmatrix
 dockerfile
 dockerignore
 docstring
 docstrings
+ds
 dsl
 dst
 dt
@@ -678,6 +694,7 @@ metaclass
 microservices
 microsoft
 minio
+mixin
 mkdir
 mkdocs
 mlflow
@@ -727,6 +744,7 @@ pre
 prem
 premiumsupport
 prepend
+prepended
 prepending
 prepends
 preprocessing

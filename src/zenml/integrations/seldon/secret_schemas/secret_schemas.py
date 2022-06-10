@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation for Seldon secret schemas."""
+
 from typing import ClassVar, Optional
 
 from typing_extensions import Literal
@@ -63,7 +65,6 @@ class SeldonGSSecretSchema(BaseSecretSchema):
     Based on: https://rclone.org/googlecloudstorage/
 
     Attributes:
-
         rclone_config_gs_type: the rclone config type. Must be set to "google
             cloud storage" for this schema.
         rclone_config_gs_client_id: OAuth client id.
@@ -100,7 +101,6 @@ class SeldonAzureSecretSchema(BaseSecretSchema):
     Based on: https://rclone.org/azureblob/
 
     Attributes:
-
         rclone_config_azureblob_type: the rclone config type. Must be set to
             "azureblob" for this schema.
         rclone_config_azureblob_account: storage Account Name. Leave blank to
