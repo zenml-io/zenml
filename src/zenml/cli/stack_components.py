@@ -340,7 +340,7 @@ def generate_stack_component_register_command(
         flavor: str,
         old_flavor: str,
         interactive: bool,
-        args: List[str]
+        args: List[str],
     ) -> None:
         """Registers a stack component.
 
@@ -421,7 +421,7 @@ def generate_stack_component_register_command(
                         user_input = click.prompt(f"{field}")
                     else:
                         prompt = f"{field} (Optional)'"
-                        user_input = click.prompt(prompt, default='')
+                        user_input = click.prompt(prompt, default="")
                     if user_input:
                         completed_fields[field] = user_input
 
