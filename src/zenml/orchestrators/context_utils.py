@@ -62,11 +62,11 @@ def serialize_pydantic_object(
     """Convert a pydantic object to a dict of strings.
 
     Args:
-        obj: a pydantic object
-        skip_errors: if True, ignore errors when serializing the object
+        obj: a pydantic object.
+        skip_errors: if True, ignore errors when serializing the object.
 
     Returns:
-        a dictionary of strings
+        a dictionary of strings.
     """
 
     class PydanticEncoder(json.JSONEncoder):
