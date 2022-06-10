@@ -39,7 +39,7 @@ class VertexIntegration(Integration):
         """Declare the stack component flavors for the Vertex integration.
 
         Returns:
-            List[FlavorWrapper]: List of stack component flavors.
+            List of stack component flavors for this integration.
         """
         return [
             FlavorWrapper(

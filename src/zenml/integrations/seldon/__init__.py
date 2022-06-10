@@ -45,7 +45,7 @@ class SeldonIntegration(Integration):
         """Declare the stack component flavors for the Seldon Core.
 
         Returns:
-            List[FlavorWrapper]: The list of flavor wrappers.
+            List of stack component flavors for this integration.
         """
         return [
             FlavorWrapper(

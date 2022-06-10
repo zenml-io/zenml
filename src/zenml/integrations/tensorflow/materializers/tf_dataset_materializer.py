@@ -47,7 +47,7 @@ class TensorflowDatasetMaterializer(BaseMaterializer):
         """Persists a tf.data.Dataset object.
 
         Args:
-            dataset: The tf.data.Dataset object to persist.
+            dataset: The dataset to persist.
         """
         super().handle_return(dataset)
         path = os.path.join(self.artifact.uri, DEFAULT_FILENAME)

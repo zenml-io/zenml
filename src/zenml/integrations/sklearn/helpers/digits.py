@@ -34,7 +34,7 @@ def get_digits() -> Tuple[
     """Returns the digits dataset in the form of a tuple of numpy arrays.
 
     Returns:
-        A tuple of numpy arrays.
+        Tuple of (training_images, testing_images, training_labels, testing_labels)
     """
     digits = load_digits()
     # flatten the images
