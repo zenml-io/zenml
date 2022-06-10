@@ -63,9 +63,18 @@ stack with all of these components.
   store.
 
 When running the upcoming commands, make sure to
-replace all the `<PLACEHOLDERS>` with the correct values from your GCP project.
+replace all the <PLACEHOLDERS> with the correct values from your GCP project.
 
 ```bash
+# install CLI
+pip install zenml
+
+# install ZenML integrations
+zenml integration install gcp
+
+# pull example
+zenml example pull huggingface
+cd zenml_examples/huggingface
 # Create a zenml root
 zenml init
  
@@ -81,19 +90,19 @@ zenml container-registry register gcp_registry --flavor=gcp --uri=<CONTAINER_REG
 #  The DB_NAME is the name of the database that you have created in GCP as the
 #  metadata store. The `mysql_secret` will be created once the secret manager
 #  is created and the stack is active.
-zenml metadata-store register gcp_metadata_store --flavor=mysql --host=`<DB_HOST_IP>` --port=`<DB_PORT>` --database=`<DB_NAME>` --secret=mysql_secret
+zenml metadata-store register gcp_metadata_store --flavor=mysql --host=<DB_HOST_IP> --port=<DB_PORT> --database=<DB_NAME> --secret=mysql_secret
   
 # The PATH_TO_YOUR_GCP_BUCKET is the path to your GCP bucket: gs://xxx
-zenml artifact-store register gcp_artifact_store --flavor=gcp --path=`<PATH_TO_YOUR_GCP_BUCKET>`
+zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
 
 # The orchestrator needs the PROJECT_ID and the GCP_LOCATION in which to
 #  run the vertex ai pipeline. Additionally you might need to set the 
 #  WORKLOAD_SERVICE_ACCOUNT to the service account you created with secret
 #  manager access, it will be in the format: xxx@xxx.iam.gserviceaccount.com
-zenml orchestrator register vertex_orch --flavor=vertex --project=`<PROJECT_ID>` --location=`<GCP_LOCATION>`
+zenml orchestrator register vertex_orch --flavor=vertex --project=<PROJECT_ID> --location=<GCP_LOCATION>
 
 # For the secret manager, all we'll need it the gcp PROJECT_ID
-zenml secrets-manager register gcp_vertex_secrets_manager --flavor=gcp --project_id=`<PROJECT_ID>`
+zenml secrets-manager register gcp_vertex_secrets_manager --flavor=gcp --project_id=<PROJECT_ID>
 
 # Now we're ready to assemble our stack
 zenml stack register gcp_vertex_stack -m gcp_metadata_store -a gcp_artifact_store -o vertex_orch -c gcp_registry -x gcp_vertex_secrets_manager --set
@@ -101,10 +110,10 @@ zenml stack register gcp_vertex_stack -m gcp_metadata_store -a gcp_artifact_stor
 # With the stack up and running, we can now supply the credentials for the 
 #  mysql metadata store. The SSL certificates have to be generated and downloaded
 #  from within the CloudSQL UI
-zenml secret register mysql_secret --schema=mysql --user=`<DB_USER>` --password=`<PWD>` \
-  --ssl_ca=@`</PATH/TO/DOWNLOADED/SERVER-CERT>` \
-  --ssl_cert=@`</PATH/TO/DOWNLOADED/CLIENT-CERT>` \
-  --ssl_key=@`</PATH/TO/DOWNLOADED/CLIENT-KEY>`
+zenml secret register mysql_secret --schema=mysql --user=<DB_USER> --password=<PWD> \
+  --ssl_ca=@</PATH/TO/DOWNLOADED/SERVER-CERT> \
+  --ssl_cert=@</PATH/TO/DOWNLOADED/CLIENT-CERT> \
+  --ssl_key=@</PATH/TO/DOWNLOADED/CLIENT-KEY>
 ```
 
 Your stack should look something like this when you're done:
