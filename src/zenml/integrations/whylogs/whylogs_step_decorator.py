@@ -106,8 +106,7 @@ def enable_whylogs(
     """
 
     def inner_decorator(_step: S) -> S:
-
-        source_fn = _step.entrypoint
+        source_fn = getattr(_step, STEP_INNER_FUNC_NAME)
         new_entrypoint = whylogs_entrypoint(project, pipeline, tags)(source_fn)
         if _step._created_by_functional_api():
             # If the step was created by the functional API, the old entrypoint
