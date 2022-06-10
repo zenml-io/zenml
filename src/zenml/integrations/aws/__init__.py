@@ -40,7 +40,7 @@ class AWSIntegration(Integration):
         """Declare the stack component flavors for the AWS integration.
 
         Returns:
-            List[FlavorWrapper]: The list of stack component flavors.
+            List of stack component flavors for this integration.
         """
         return [
             FlavorWrapper(
