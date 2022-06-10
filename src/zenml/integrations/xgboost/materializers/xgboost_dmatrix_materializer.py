@@ -39,7 +39,7 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
             data_type: The datatype which should be read.
 
         Returns:
-            A xgboost.DMatrix object.
+            Materialized xgboost matrix.
         """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
