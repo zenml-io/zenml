@@ -36,7 +36,7 @@ class XgboostDMatrixMaterializer(BaseMaterializer):
         """Reads a xgboost.DMatrix binary file and loads it.
 
         Args:
-            data_type: A xgboost.DMatrix type.
+            data_type: The datatype which should be read.
 
         Returns:
             A xgboost.DMatrix object.
