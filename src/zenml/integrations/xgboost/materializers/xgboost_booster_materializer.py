@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of an XGBoost booster materializer."""
 
 import os
 import tempfile
@@ -32,7 +33,14 @@ class XgboostBoosterMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> xgb.Booster:
-        """Reads a xgboost Booster model from a serialized JSON file."""
+        """Reads a xgboost Booster model from a serialized JSON file.
+
+        Args:
+            data_type: A xgboost Booster type.
+
+        Returns:
+            A xgboost Booster object.
+        """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 

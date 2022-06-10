@@ -11,9 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-The AzureML integration submodule provides a way to run ZenML steps in AzureML.
-"""
+"""The AzureML integration provides a way to run ZenML steps in AzureML."""
 from typing import List
 
 from zenml.enums import StackComponentType
@@ -32,7 +30,11 @@ class AzureMLIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the AzureML integration."""
+        """Declare the stack component flavors for the AzureML integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=AZUREML_STEP_OPERATOR_FLAVOR,
