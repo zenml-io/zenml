@@ -232,7 +232,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         """Returns path to a directory where kubeflow pipelines files are stored.
 
         Returns:
-            str: path to the directory
+            Path to the pipeline directory.
         """
         return os.path.join(self.root_directory, "pipelines")
 
