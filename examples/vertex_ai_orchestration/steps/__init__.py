@@ -11,21 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+## Exemplary Steps
 
-from pipelines import (
-    vertex_example_pipeline,
-)
-from steps import get_first_num
-from steps import get_random_int
-from steps import subtract_numbers
+Three very simple steps
+"""
+from .first_step.first_step import get_first_num
+from .second_step.second_step import get_random_int
+from .third_step.third_step import subtract_numbers
 
-if __name__ == "__main__":
-    # Initialize a new pipeline run
-    p = vertex_example_pipeline(
-        first_step=get_first_num(),
-        second_step=get_random_int(),
-        third_step=subtract_numbers(),
-    )
-
-    # Run the new pipeline
-    p.run()
+__all__ = ["get_first_num", "get_random_int", "subtract_numbers"]

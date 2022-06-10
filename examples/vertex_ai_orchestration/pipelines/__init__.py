@@ -11,21 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+## Vertex AI examples pipeline
 
-from pipelines import (
-    vertex_example_pipeline,
+Very simple pipeline to show a pipeline running on vertex ai
+"""
+from .vertex_example_pipeline.vertex_example_pipeline import (
+    vertex_example_pipeline
 )
-from steps import get_first_num
-from steps import get_random_int
-from steps import subtract_numbers
 
-if __name__ == "__main__":
-    # Initialize a new pipeline run
-    p = vertex_example_pipeline(
-        first_step=get_first_num(),
-        second_step=get_random_int(),
-        third_step=subtract_numbers(),
-    )
-
-    # Run the new pipeline
-    p.run()
+__all__ = ["vertex_example_pipeline"]
