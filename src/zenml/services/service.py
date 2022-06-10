@@ -72,7 +72,7 @@ class BaseServiceMeta(BaseTypedModelMeta):
         """Creates a BaseService class and registers it in the `ServiceRegistry`.
 
         Args:
-            name: name of the class
+            name: name of the class.
             bases: tuple of base classes
             dct: dictionary of class attributes
 
