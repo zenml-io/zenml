@@ -107,6 +107,8 @@ def _get_unique_entity(
 
 
 class LocalZenStore(BaseZenStore):
+    """Local Zen Store implementation."""
+
     def initialize(
         self,
         url: str,
@@ -1072,7 +1074,7 @@ class LocalZenStore(BaseZenStore):
             stack_component_type: the corresponding StackComponentType.
 
         Returns:
-             The newly created flavor.
+            The newly created flavor.
 
         Raises:
             EntityExistsError: If a flavor with the given name and type
@@ -1149,7 +1151,7 @@ class LocalZenStore(BaseZenStore):
         """The root directory of the zen store.
 
         Returns:
-
+            The root directory of the zen store.
         """
         if not self._root:
             raise RuntimeError(

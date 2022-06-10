@@ -59,6 +59,8 @@ class Permission(BaseModel):
     types: Set[PermissionType]
 
     class Config:
+        """Pydantic configuration."""
+
         # similar to non-mutable but also makes the object hashable
         frozen = True
 
@@ -154,7 +156,6 @@ class RoleAssignment(BaseModel):
         Returns:
             The validated values.
         """
-
         user_id = values.get("user_id", None)
         team_id = values.get("team_id", None)
         if user_id and team_id:

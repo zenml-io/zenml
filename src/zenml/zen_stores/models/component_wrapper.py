@@ -41,8 +41,7 @@ class ComponentWrapper(BaseModel):
 
     @classmethod
     def from_component(cls, component: "StackComponent") -> "ComponentWrapper":
-        """Creates a ComponentWrapper from an actual instance of a Stack
-        Component.
+        """Creates a ComponentWrapper from an instance of a Stack Component.
 
         Args:
             component: the instance of a StackComponent

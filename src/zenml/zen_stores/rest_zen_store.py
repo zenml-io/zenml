@@ -1053,7 +1053,8 @@ class RestZenStore(BaseZenStore):
             to_parse: The response to parse.
 
         Returns:
-
+            A dictionary mapping the component type to the path to the
+            configuration.
         """
         if not isinstance(to_parse, dict):
             raise ValueError(

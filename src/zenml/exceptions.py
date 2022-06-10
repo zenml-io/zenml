@@ -65,7 +65,7 @@ class DoesNotExistException(ZenMLBaseException):
 
 
 class AlreadyExistsException(ZenMLBaseException):
-    """Raises exception when the `name` already exists in the system
+    """Raises exception when the `name` already exists in the system.
 
     This happens when an action is trying to create a resource with the same
     name.
@@ -164,8 +164,7 @@ class MissingStepParameterError(ZenMLBaseException):
         missing_parameters: List[str],
         config_class: Type["BaseStepConfig"],
     ):
-        """
-        Initializes a MissingStepParameterError object.
+        """Initializes a MissingStepParameterError object.
 
         Args:
             step_name: Name of the step for which one or more parameters

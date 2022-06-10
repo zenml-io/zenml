@@ -221,7 +221,7 @@ class PipelineRunTable(SQLModel, table=True):
 
 
 class SqlZenStore(BaseZenStore):
-    """Repository Implementation that uses SQL database backend"""
+    """Repository Implementation that uses SQL database backend."""
 
     def initialize(
         self,

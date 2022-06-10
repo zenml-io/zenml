@@ -28,7 +28,8 @@ from zenml.utils.source_utils import (
 class FlavorWrapper(BaseModel):
     """Network serializable wrapper.
 
-    This represents the custom implementation of a stack component flavor."""
+    This represents the custom implementation of a stack component flavor.
+    """
 
     name: str
     type: StackComponentType

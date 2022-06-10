@@ -54,7 +54,7 @@ class ZenStorePipelineModel(FileSyncModel):
             pipeline_runs: the dictionary of pipeline runs
 
         Returns:
-
+            The defaultdict of pipeline runs
         """
         return defaultdict(list, pipeline_runs)
 
@@ -125,7 +125,7 @@ class ZenStoreModel(FileSyncModel):
     def _construct_team_assignments_defaultdict(
         cls, team_assignments: Dict[str, Set[str]]
     ) -> DefaultDict[str, Set[str]]:
-        """Ensures that `team_assignments` is a defaultdict
+        """Ensures that `team_assignments` is a defaultdict.
 
         This is so users of a new teams can be added without issues.
 
