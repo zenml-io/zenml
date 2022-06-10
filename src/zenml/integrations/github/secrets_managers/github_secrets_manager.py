@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the GitHub Secrets Manager."""
+
 import json
 import os
 from typing import Any, ClassVar, List, NoReturn, Optional, Tuple, cast
