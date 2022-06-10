@@ -43,7 +43,7 @@ class AzureIntegration(Integration):
         """Declares the flavors for the integration.
 
         Returns:
-            A list of FlavorWrapper objects.
+            List of stack component flavors for this integration.
         """
         return [
             FlavorWrapper(
