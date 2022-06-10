@@ -46,7 +46,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
             URI in the correct format.
 
         Raises:
-            ValueError: If the URI contains a backslash character.
+            ValueError: If the URI contains a slash character.
         """
         if "/" in uri:
             raise ValueError(
