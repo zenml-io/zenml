@@ -51,7 +51,7 @@ class ZenStorePipelineModel(FileSyncModel):
         This is so runs of a new pipeline can be added without issues.
 
         Args:
-            pipeline_runs: the dictionary of pipeline runs
+            pipeline_runs: the dictionary of pipeline runs.
 
         Returns:
             The defaultdict of pipeline runs
@@ -130,7 +130,7 @@ class ZenStoreModel(FileSyncModel):
         This is so users of a new teams can be added without issues.
 
         Args:
-            team_assignments: the dictionary of team assignments
+            team_assignments: the dictionary of team assignments.
 
         Returns:
             Team assignments dictionary.

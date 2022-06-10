@@ -243,7 +243,7 @@ async def register_stack_component(
         component: Stack component to register.
 
     Raises:
-        conflict: when the component already exists
+        conflict: when the component already exists.
     """
     try:
         zen_store.register_stack_component(component)
@@ -958,7 +958,7 @@ async def pipeline_run(
         The requested pipeline run.
 
     Raises:
-        not_found: when none are found
+        not_found: when none are found.
     """
     try:
         return zen_store.get_pipeline_run(
@@ -1040,7 +1040,7 @@ async def get_flavor_by_type(
         The requested flavors.
 
     Raises:
-        not_found: when none are found
+        not_found: when none are found.
     """
     try:
         return zen_store.get_flavors_by_type(component_type=component_type)

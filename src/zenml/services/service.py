@@ -110,15 +110,15 @@ class BaseServiceMeta(BaseTypedModelMeta):
         """Validate the creation of a service.
 
         Args:
-            *args: positional arguments
-            **kwargs: keyword arguments
+            *args: positional arguments.
+            **kwargs: keyword arguments.
 
         Returns:
-            the created BaseServiceMeta class
+            the created BaseServiceMeta class.
 
         Raises:
-            AttributeError: if the service UUID is untyped
-            ValueError: if the service UUID is not a UUID type
+            AttributeError: if the service UUID is untyped.
+            ValueError: if the service UUID is not a UUID type.
         """
         if not getattr(cls, "SERVICE_TYPE", None):
             raise AttributeError(
@@ -183,7 +183,7 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         """Initialize the service instance.
 
         Args:
-            **attrs: keyword arguments
+            **attrs: keyword arguments.
         """
         super().__init__(**attrs)
         self.config.name = self.config.name or self.__class__.__name__

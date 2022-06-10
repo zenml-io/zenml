@@ -122,7 +122,7 @@ class PipelineView:
 
         Returns:
             None if no run is found that completed the given step,
-                else the original pipeline_run
+                else the original pipeline_run.
 
         Raises:
             LookupError: If no run is found that completed the given step

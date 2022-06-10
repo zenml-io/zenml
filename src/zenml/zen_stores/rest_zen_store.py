@@ -271,7 +271,7 @@ class RestZenStore(BaseZenStore):
             stack_configuration: Dict[StackComponentType, str] to persist.
 
         Raises:
-            NotImplementedError: always
+            NotImplementedError: always.
         """
         raise NotImplementedError
 
@@ -906,7 +906,7 @@ class RestZenStore(BaseZenStore):
             name: Name of the component.
 
         Raises:
-            NotImplementedError: always
+            NotImplementedError: always.
         """
         raise NotImplementedError("Not to be accessed directly in client!")
 

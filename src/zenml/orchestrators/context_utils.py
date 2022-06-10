@@ -90,10 +90,10 @@ def serialize_pydantic_object(
         """Itemwise serialize each element in a dictionary.
 
         Args:
-            dictionary: a dictionary
+            dictionary: a dictionary.
 
         Yields:
-            a tuple of (key, value)
+            a tuple of (key, value).
 
         Raises:
             TypeError: if the value is not JSON serializable

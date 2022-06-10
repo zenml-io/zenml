@@ -93,7 +93,7 @@ def step(
 
         Args:
             func: types.FunctionType, this function will be used as the
-                "process" method of the generated Step
+                "process" method of the generated Step.
 
         Returns:
             The class of a newly generated ZenML Step.

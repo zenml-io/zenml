@@ -127,7 +127,7 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
         """Run a HTTP endpoint API healthcheck.
 
         Args:
-            endpoint: service endpoint to check
+            endpoint: service endpoint to check.
 
         Returns:
             The operational state of the external HTTP endpoint and an
@@ -143,7 +143,7 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
         ]:
             return (
                 ServiceState.ERROR,
-                "endpoint protocol is not HTTP nor HTTPS",
+                "endpoint protocol is not HTTP nor HTTPS.",
             )
 
         check_uri = self.get_healthcheck_uri(endpoint)
@@ -199,7 +199,7 @@ class TCPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
         """Run a TCP endpoint healthcheck.
 
         Args:
-            endpoint: service endpoint to check
+            endpoint: service endpoint to check.
 
         Returns:
             The operational state of the external TCP endpoint and an

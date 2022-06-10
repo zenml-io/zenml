@@ -1072,7 +1072,7 @@ class BaseZenStore(ABC):
             name: The name of the stack to be deleted.
 
         Returns:
-            None
+            None.
         """
         # No tracking events, here for consistency
         return self._deregister_stack(name)
@@ -1096,7 +1096,7 @@ class BaseZenStore(ABC):
             user_name: Name of the user to delete.
 
         Returns:
-            None
+            None.
         """
         self._track_event(AnalyticsEvent.DELETED_USER)
         return self._delete_user(user_name)
@@ -1183,7 +1183,7 @@ class BaseZenStore(ABC):
             project_name: Name of the project to delete.
 
         Returns:
-            None
+            None.
         """
         self._track_event(AnalyticsEvent.DELETED_PROJECT)
         return self._delete_project(project_name)
@@ -1219,7 +1219,7 @@ class BaseZenStore(ABC):
             role_name: Name of the role to delete
 
         Returns:
-            None
+            None.
         """
         self._track_event(AnalyticsEvent.DELETED_ROLE)
         return self._delete_role(role_name)
@@ -1277,7 +1277,7 @@ class BaseZenStore(ABC):
             stack: The new stack to use in the update.
 
         Returns:
-            None
+            None.
         """
         metadata = {c.type.value: c.flavor for c in stack.components}
         metadata["store_type"] = self.type.value

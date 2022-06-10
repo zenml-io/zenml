@@ -110,8 +110,8 @@ class BaseServiceEndpoint(BaseTypedModel):
         """Initialize the service endpoint.
 
         Args:
-            *args: positional arguments
-            **kwargs: keyword arguments
+            *args: positional arguments.
+            **kwargs: keyword arguments.
         """
         super().__init__(*args, **kwargs)
         self.config.name = self.config.name or self.__class__.__name__

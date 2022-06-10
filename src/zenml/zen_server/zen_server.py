@@ -122,8 +122,8 @@ class ZenServer(LocalDaemonService):
         """Initialize the ZenServer.
 
         Args:
-            config: service configuration
-            attrs: additional attributes
+            config: service configuration.
+            attrs: additional attributes.
         """
         # ensure that the endpoint is created before the service is initialized
         if isinstance(config, ZenServerConfig) and "endpoint" not in attrs:
