@@ -1,7 +1,7 @@
 # 🏃 Run pipelines in production using Vertex AI
 
 [Vertex Ai Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
-are a serverless ML Workflow tool running on the Google Cloud Platform. They are
+is a serverless ML Workflow tool running on the Google Cloud Platform. It is
 an easy way to quickly run your code in a production ready, repeatable 
 cloud orchestrator that requires minimal setup without provisioning and paying 
 for standby compute. 
@@ -28,7 +28,7 @@ gcloud auth login
 ```
 
 Then you will need to
-[authorized](https://cloud.google.com/container-registry/docs/advanced-authentication)
+[authorize](https://cloud.google.com/container-registry/docs/advanced-authentication)
 your local docker client to have access the GCP container registry.
 
 ```shell
@@ -50,7 +50,7 @@ Save these, you will need them at a later point.
 
 ## 🥞 Create a GCP Kubeflow Pipelines stack
 
-Once everything is done on the gcp side, we will need to configure a
+Once everything is done on the GCP side, we will need to configure a
 stack with all of these components.
 
 * The **artifact store** to store step outputs in a GCP Bucket.
@@ -58,7 +58,7 @@ stack with all of these components.
 * The docker images that are created to run your pipeline are stored in GCP
   **container registry**.
 * The **Vertex orchestrator** is responsible for running your ZenML pipeline
-  in Vertex Ai.
+  in Vertex AI.
 * The **secrets manager** contains the secrets to allow access to the metadata
   store.
 
@@ -75,7 +75,8 @@ zenml integration install gcp
 # pull example
 zenml example pull huggingface
 cd zenml_examples/huggingface
-# Create a zenml root
+
+# Create a zenml repository
 zenml init
  
 # In order to create the GCP stack components, we'll need to install one 
@@ -129,7 +130,7 @@ python run.py
 ```
 
 That's it! If everything went as planned this pipeline should now be running in
-the cloud! You should be able to access the Vertex Ai Pipelines UI with the link
+the cloud! You should be able to access the Vertex AI Pipelines UI with the link
 returned to the run logs. It will look something like this:
 
 ![Vertex AI UI](assets/vertex_ai_ui.png)
