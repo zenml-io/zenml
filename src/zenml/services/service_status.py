@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ServiceStatus class."""
 
 from typing import Optional
 
@@ -32,9 +33,11 @@ class ServiceState(StrEnum):
 
 
 class ServiceStatus(BaseTypedModel):
-    """Information describing the operational status of an external process
-    or service tracked by ZenML (e.g. process, container, Kubernetes
-    deployment etc.).
+    """Information about the status of a service or process.
+
+    This information describes the operational status of an external process or
+    service tracked by ZenML. This could be a process, container, Kubernetes
+    deployment etc.
 
     Concrete service classes should extend this class and add additional
     attributes that make up the operational state of the service.
@@ -54,8 +57,7 @@ class ServiceStatus(BaseTypedModel):
         new_state: Optional[ServiceState] = None,
         error: str = "",
     ) -> None:
-        """Update the current operational state to reflect a new state
-        value and/or error.
+        """Update the current operational state to reflect a new state value and/or error.
 
         Args:
             new_state: new operational state discovered by the last service

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Step environment class."""
 
 from zenml.environment import BaseEnvironmentComponent
 
@@ -18,13 +19,13 @@ STEP_ENVIRONMENT_NAME = "step_environment"
 
 
 class StepEnvironment(BaseEnvironmentComponent):
-    """Provides additional information about a step runtime inside a step
-    function in the form of an Environment component.
+    """Added information about a step runtime inside a step function.
 
-    This class can be used from within a pipeline step implementation to
-    access additional information about the runtime parameters of a pipeline
-    step, such as the pipeline name, pipeline run ID and other pipeline runtime
-    information. To use it, access it inside your step function like this:
+    This takes the form of an Environment component. This class can be used from
+    within a pipeline step implementation to access additional information about
+    the runtime parameters of a pipeline step, such as the pipeline name,
+    pipeline run ID and other pipeline runtime information. To use it, access it
+    inside your step function like this:
 
     ```python
     from zenml.environment import Environment
@@ -34,7 +35,6 @@ class StepEnvironment(BaseEnvironmentComponent):
         env = Environment().step_environment
         do_something_with(env.pipeline_name, env.pipeline_run_id, env.step_name)
     ```
-
     """
 
     NAME = STEP_ENVIRONMENT_NAME
@@ -45,8 +45,7 @@ class StepEnvironment(BaseEnvironmentComponent):
         pipeline_run_id: str,
         step_name: str,
     ):
-        """Initialize the environment of the currently running
-        step.
+        """Initialize the environment of the currently running step.
 
         Args:
             pipeline_name: the name of the currently running pipeline
@@ -60,15 +59,27 @@ class StepEnvironment(BaseEnvironmentComponent):
 
     @property
     def pipeline_name(self) -> str:
-        """The name of the currently running pipeline."""
+        """The name of the currently running pipeline.
+
+        Returns:
+            The name of the currently running pipeline.
+        """
         return self._pipeline_name
 
     @property
     def pipeline_run_id(self) -> str:
-        """The ID of the current pipeline run."""
+        """The ID of the current pipeline run.
+
+        Returns:
+            The ID of the current pipeline run.
+        """
         return self._pipeline_run_id
 
     @property
     def step_name(self) -> str:
-        """The name of the currently running step."""
+        """The name of the currently running step.
+
+        Returns:
+            The name of the currently running step.
+        """
         return self._step_name

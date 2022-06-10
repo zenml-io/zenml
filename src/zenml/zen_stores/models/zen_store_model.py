@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Zen Store model."""
 
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Set
@@ -45,8 +46,16 @@ class ZenStorePipelineModel(FileSyncModel):
     def _construct_pipeline_runs_defaultdict(
         cls, pipeline_runs: Dict[str, List[PipelineRunWrapper]]
     ) -> DefaultDict[str, List[PipelineRunWrapper]]:
-        """Ensures that `pipeline_runs` is a defaultdict so runs
-        of a new pipeline can be added without issues."""
+        """Ensures that `pipeline_runs` is a defaultdict.
+
+        This is so runs of a new pipeline can be added without issues.
+
+        Args:
+            pipeline_runs: the dictionary of pipeline runs.
+
+        Returns:
+            The defaultdict of pipeline runs
+        """
         return defaultdict(list, pipeline_runs)
 
     class Config:
@@ -99,16 +108,33 @@ class ZenStoreModel(FileSyncModel):
     def _construct_stack_components_defaultdict(
         cls, stack_components: Dict[StackComponentType, Dict[str, str]]
     ) -> DefaultDict[StackComponentType, Dict[str, str]]:
-        """Ensures that `stack_components` is a defaultdict so stack
-        components of a new component type can be added without issues."""
+        """Ensures that `stack_components` is a defaultdict.
+
+        This is so stack components of a new component type can be added without
+        issues.
+
+        Args:
+            stack_components: the dictionary of stack components
+
+        Returns:
+            Stack components dictionary.
+        """
         return defaultdict(dict, stack_components)
 
     @validator("team_assignments")
     def _construct_team_assignments_defaultdict(
         cls, team_assignments: Dict[str, Set[str]]
     ) -> DefaultDict[str, Set[str]]:
-        """Ensures that `team_assignments` is a defaultdict so users
-        of a new teams can be added without issues."""
+        """Ensures that `team_assignments` is a defaultdict.
+
+        This is so users of a new teams can be added without issues.
+
+        Args:
+            team_assignments: the dictionary of team assignments.
+
+        Returns:
+            Team assignments dictionary.
+        """
         return defaultdict(set, team_assignments)
 
     class Config:

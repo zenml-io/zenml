@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Analytics code for ZenML"""
+"""Analytics code for ZenML."""
 
 from enum import Enum
 from typing import Any, Callable, Dict, Optional, Union
@@ -25,6 +25,8 @@ logger = get_logger(__name__)
 
 
 class AnalyticsEvent(str, Enum):
+    """Enum of events to track in segment."""
+
     # Pipelines
     RUN_PIPELINE = "Pipeline run"
     GET_PIPELINES = "Pipelines fetched"
@@ -97,10 +99,13 @@ def get_segment_key() -> str:
 
 
 def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
-    """Attach metadata to user directly
+    """Attach metadata to user directly.
 
     Args:
-        metadata: Dict of metadata to attach to the user.
+        user_metadata: Dict of metadata to attach to the user.
+
+    Returns:
+        True if event is sent successfully, False is not.
     """
     # TODO [ENG-857]: The identify_user function shares a lot of setup with
     #  track_event() - this duplicated code could be given its own function
@@ -146,8 +151,7 @@ def track_event(
     event: Union[str, AnalyticsEvent],
     metadata: Optional[Dict[str, Any]] = None,
 ) -> bool:
-    """
-    Track segment event if user opted-in.
+    """Track segment event if user opted-in.
 
     Args:
         event: Name of event to track in segment.
@@ -216,16 +220,39 @@ def parametrized(
     dec: Callable[..., Callable[..., Any]]
 ) -> Callable[..., Callable[[Callable[..., Any]], Callable[..., Any]]]:
     """This is a meta-decorator, that is, a decorator for decorators.
+
     As a decorator is a function, it actually works as a regular decorator
-    with arguments:"""
+    with arguments.
+
+    Args:
+        dec: Decorator to be applied to the function.
+
+    Returns:
+        Decorator that applies the given decorator to the function.
+    """
 
     def layer(
         *args: Any, **kwargs: Any
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-        """Internal layer"""
+        """Internal layer.
+
+        Args:
+            *args: Arguments to be passed to the decorator.
+            **kwargs: Keyword arguments to be passed to the decorator.
+
+        Returns:
+            Decorator that applies the given decorator to the function.
+        """
 
         def repl(f: Callable[..., Any]) -> Callable[..., Any]:
-            """Internal REPL"""
+            """Internal REPL.
+
+            Args:
+                f: Function to be decorated.
+
+            Returns:
+                Decorated function.
+            """
             return dec(f, *args, **kwargs)
 
         return repl
@@ -243,6 +270,9 @@ def track(
     Args:
         func: Function that is decorated.
         event: Event string to stamp with.
+
+    Returns:
+        Decorated function.
     """
     # Need to redefine the name for the event here in order for mypy
     # to recognize it's not an optional string anymore
@@ -251,7 +281,15 @@ def track(
     metadata: Dict[str, Any] = {}
 
     def inner_func(*args: Any, **kwargs: Any) -> Any:
-        """Inner decorator function."""
+        """Inner decorator function.
+
+        Args:
+            *args: Arguments to be passed to the function.
+            **kwargs: Keyword arguments to be passed to the function.
+
+        Returns:
+            Result of the function.
+        """
         track_event(event_name, metadata=metadata)
         result = func(*args, **kwargs)
         return result

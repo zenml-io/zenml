@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base trainer step."""
 
 from abc import abstractmethod
 
@@ -19,12 +20,11 @@ from zenml.steps import BaseStep, BaseStepConfig, StepContext
 
 
 class BaseTrainerConfig(BaseStepConfig):
-    """Base class for Trainer step configurations"""
+    """Base class for Trainer step configurations."""
 
 
 class BaseTrainerStep(BaseStep):
-    """Base step implementation for any Trainer step implementation on
-    ZenML"""
+    """Base step implementation for any Trainer step implementation."""
 
     @abstractmethod
     def entrypoint(  # type: ignore[override]
@@ -34,4 +34,14 @@ class BaseTrainerStep(BaseStep):
         config: BaseTrainerConfig,
         context: StepContext,
     ) -> ModelArtifact:
-        """Base entrypoint for any Trainer implementation"""
+        """Base entrypoint for any Trainer implementation.
+
+        Args:
+            train_dataset: The training dataset.
+            validation_dataset: The validation dataset.
+            config: The configuration for the step.
+            context: The context for the step.
+
+        Returns:
+            The trained model.
+        """
