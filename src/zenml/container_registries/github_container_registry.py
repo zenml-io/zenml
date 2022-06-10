@@ -16,7 +16,7 @@ from typing import ClassVar
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
-from zenml.integrations.github import GITHUB_CONTAINER_REGISTRY_FLAVOR
+from zenml.enums import ContainerRegistryFlavor
 
 
 class GitHubContainerRegistry(BaseContainerRegistry):
@@ -32,4 +32,4 @@ class GitHubContainerRegistry(BaseContainerRegistry):
     automatic_token_authentication: bool = False
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = GITHUB_CONTAINER_REGISTRY_FLAVOR
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITHUB

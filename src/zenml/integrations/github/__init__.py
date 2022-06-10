@@ -24,7 +24,6 @@ from zenml.zen_stores.models import FlavorWrapper
 
 GITHUB_SECRET_MANAGER_FLAVOR = "github"
 GITHUB_ORCHESTRATOR_FLAVOR = "github"
-GITHUB_CONTAINER_REGISTRY_FLAVOR = "github"
 
 
 class GitHubIntegration(Integration):
@@ -47,12 +46,6 @@ class GitHubIntegration(Integration):
                 name=GITHUB_SECRET_MANAGER_FLAVOR,
                 source="zenml.integrations.github.secrets_managers.GitHubSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,
-                integration=cls.NAME,
-            ),
-            FlavorWrapper(
-                name=GITHUB_CONTAINER_REGISTRY_FLAVOR,
-                source="zenml.integrations.github.container_registries.GitHubContainerRegistry",
-                type=StackComponentType.CONTAINER_REGISTRY,
                 integration=cls.NAME,
             ),
         ]
