@@ -199,7 +199,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         """Sets Airflow home according to orchestrator UUID.
 
         Args:
-            values: Dictionary containing the orchestrator UUID.
+            values: Dictionary containing all orchestrator attributes values.
 
         Returns:
             Dictionary containing the orchestrator UUID and the airflow home.
