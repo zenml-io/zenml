@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of ZenML's builtin materializer."""
+
 import os
 from typing import Any, Type
 
@@ -44,7 +46,14 @@ class BuiltInMaterializer(BaseMaterializer):
     )
 
     def handle_input(self, data_type: Type[Any]) -> Any:
-        """Reads basic primitive types from json."""
+        """Reads basic primitive types from json.
+
+        Args:
+            data_type: The type of the data to read.
+
+        Returns:
+            The data read.
+        """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         contents = yaml_utils.read_json(filepath)
@@ -57,7 +66,11 @@ class BuiltInMaterializer(BaseMaterializer):
         return contents
 
     def handle_return(self, data: Any) -> None:
-        """Handles basic built-in types and stores them as json"""
+        """Handles basic built-in types and stores them as json.
+
+        Args:
+            data: The data to store.
+        """
         super().handle_return(data)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         yaml_utils.write_json(filepath, data)

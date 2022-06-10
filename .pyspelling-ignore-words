@@ -103,6 +103,7 @@ EvidentlyProfileStep
 EvidentlyVisualizer
 ExampleSecretSchema
 ExamplesRepo
+ExecutionStatus
 ExperimentTracker
 FacetStatisticsVisualizer
 FastAPI
@@ -178,7 +179,6 @@ LocalDaemonService
 LocalDaemonServiceConfig
 LocalExample
 LogRecord
-Mattermost
 MERCHANTABILITY
 MLFlowDeployerConfig
 MLFlowDeploymentConfig
@@ -197,7 +197,10 @@ MYSQLSecretSchema
 MacOS
 MachineSpec
 MadeWithML
+MaterializerInterfaceError
 MaterializerName
+Mattermost
+MetadataStore
 MiB
 Microsoft
 MissingStepParameterError
@@ -224,6 +227,7 @@ NeuralProphet
 Ng
 NotFoundError
 NotImplementedError
+NumPy
 OAuth
 OneRing
 OpFunc
@@ -242,6 +246,8 @@ PipelineConfigurationError
 PipelineInterfaceError
 PipelineNode
 PipelineRun
+PipelineRunView
+PipelineView
 PipelineWrapper
 Pipelining
 Plotly
