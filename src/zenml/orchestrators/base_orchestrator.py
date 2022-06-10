@@ -164,11 +164,11 @@ class BaseOrchestrator(StackComponent, ABC):
         to get them.
 
         Args:
-            sorted_steps: List of sorted steps
-            pipeline: Zenml Pipeline instance
-            pb2_pipeline: Protobuf Pipeline instance
-            stack: The stack the pipeline was run on
-            runtime_configuration: The Runtime configuration of the current run
+            sorted_steps: List of sorted steps.
+            pipeline: Zenml Pipeline instance.
+            pb2_pipeline: Protobuf Pipeline instance.
+            stack: The stack the pipeline was run on.
+            runtime_configuration: The Runtime configuration of the current run.
 
         Returns:
             The optional return value from this method will be returned by the
