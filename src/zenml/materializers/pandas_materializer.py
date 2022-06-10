@@ -36,7 +36,9 @@ class PandasMaterializer(BaseMaterializer):
         SchemaArtifact,
     )
 
-    def handle_input(self, data_type: Type[Any]) -> Union[pd.DataFrame, pd.Series]:
+    def handle_input(
+        self, data_type: Type[Any]
+    ) -> Union[pd.DataFrame, pd.Series]:
         """Reads pd.DataFrame or pd.Series from a parquet file."""
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
@@ -73,7 +75,7 @@ class PandasMaterializer(BaseMaterializer):
 
         if isinstance(df, pd.Series):
             df = df.to_frame(name="series")
-        
+
         # Create a temporary file to store the model
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".gzip", delete=False
