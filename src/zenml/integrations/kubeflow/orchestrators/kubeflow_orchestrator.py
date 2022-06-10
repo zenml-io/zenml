@@ -880,7 +880,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns if a local k3d cluster for this orchestrator exists.
 
         Returns:
-            bool: True if a local k3d cluster exists, False otherwise.
+            True if a local k3d cluster exists, False otherwise.
         """
         if not local_deployment_utils.check_prerequisites(
             skip_k3d=self.skip_cluster_provisioning or not self.is_local,
@@ -911,7 +911,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Checks if the local k3d cluster and UI daemon are both stopped.
 
         Returns:
-            bool: True if the cluster and daemon for this orchestrator are both stopped, False otherwise.
+            True if the cluster and daemon for this orchestrator are both stopped, False otherwise.
         """
         return (
             self.is_provisioned
@@ -943,7 +943,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         this always returns True.
 
         Returns:
-            bool: True if the local k3d cluster is running, False otherwise.
+            True if the local k3d cluster is running, False otherwise.
         """
         if self.skip_cluster_provisioning or not self.is_local:
             return True
@@ -956,7 +956,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns if the local Kubeflow UI daemon for this orchestrator is running.
 
         Returns:
-            bool: True if the daemon is running, False otherwise.
+            True if the daemon is running, False otherwise.
         """
         if self.skip_ui_daemon_provisioning:
             return True
