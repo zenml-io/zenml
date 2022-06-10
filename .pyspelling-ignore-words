@@ -75,6 +75,7 @@ ConnectionError
 ContainerOp
 ContainerOps
 Contextmanager
+Cron
 CustomFormatter
 DAGs
 DMatrix
@@ -499,9 +500,11 @@ configmaps
 configs
 conll
 copyfile
+cp
 cprf
 cpu
 creationTimestamp
+cron
 csv
 ctx
 cuda

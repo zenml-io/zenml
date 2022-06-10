@@ -737,14 +737,20 @@ class KubeflowOrchestrator(BaseOrchestrator):
                 )
 
                 schedule = runtime_configuration.schedule
+                interval_seconds = (
+                    schedule.interval_second.seconds
+                    if schedule.interval_second
+                    else None
+                )
                 result = client.create_recurring_run(
                     experiment_id=experiment.id,
                     job_name=runtime_configuration.run_name,
                     pipeline_package_path=pipeline_file_path,
                     enable_caching=enable_cache,
+                    cron_expression=schedule.cron_expression,
                     start_time=schedule.utc_start_time,
                     end_time=schedule.utc_end_time,
-                    interval_second=schedule.interval_second.seconds,
+                    interval_second=interval_seconds,
                     no_catchup=not schedule.catchup,
                 )
 

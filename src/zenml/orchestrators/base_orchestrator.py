@@ -345,6 +345,7 @@ class BaseOrchestrator(StackComponent, ABC):
         logger.info(f"Step `{pipeline_step_name}` has started.")
         try:
             execution_info = tfx_launcher.launch()
+
             if execution_info and get_cache_status(execution_info):
                 if execution_info.exec_properties:
                     step_name = json.loads(

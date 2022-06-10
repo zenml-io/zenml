@@ -22,7 +22,16 @@ from zenml.enums import ContainerRegistryFlavor
 
 
 class GitHubContainerRegistry(BaseContainerRegistry):
-    """Class for GitHub Container Registry."""
+    """Class for GitHub Container Registry.
+
+    Attributes:
+        automatic_token_authentication: If `True`, use automatic token
+            authentication (https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow)
+            when trying to access this container registry from within a GitHub
+            Actions environment.
+    """
+
+    automatic_token_authentication: bool = False
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITHUB.value
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITHUB
