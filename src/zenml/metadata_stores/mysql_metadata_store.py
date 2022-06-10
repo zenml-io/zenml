@@ -34,7 +34,7 @@ class MySQLMetadataStore(BaseMetadataStore):
     secret: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
- 
+
     # Class Configuration
     FLAVOR: ClassVar[str] = "mysql"
 
