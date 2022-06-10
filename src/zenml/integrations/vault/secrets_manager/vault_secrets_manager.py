@@ -105,10 +105,10 @@ class VaultSecretsManager(BaseSecretsManager):
 
     url: str
     token: str
+    mount_point: str
     cert: Optional[str]
     verify: Optional[str]
     namespace: Optional[str]
-    mount_point: Optional[str] = "secret"
 
     @classmethod
     def _ensure_client_connected(cls, url: str, token: str) -> None:
@@ -150,13 +150,14 @@ class VaultSecretsManager(BaseSecretsManager):
 
         secret_name = prepend_secret_schema_to_secret_name(secret=secret)
 
-        if secret_name in self.get_all_secret_keys():
+        if secret.name in self.get_all_secret_keys():
             raise SecretExistsError(
-                f"A Secret with the name '{secret_name}' already exists."
+                f"A Secret with the name '{secret.name}' already exists."
             )
 
         self.CLIENT.secrets.kv.v2.create_or_update_secret(
             path=f"{ZENML_PATH}/{secret_name}",
+            mount_point=self.mount_point,
             secret=secret.content,
         )
 
@@ -279,8 +280,9 @@ class VaultSecretsManager(BaseSecretsManager):
 
         if secret_name in self.vault_list_secrets():
             self.CLIENT.secrets.kv.v2.create_or_update_secret(
-                path=f"{ZENML_PATH}/{secret.name}",
-                secret=secret.content.items(),
+                path=f"{ZENML_PATH}/{secret_name}",
+                mount_point=self.mount_point,
+                secret=secret.content,
             )
         else:
             raise KeyError(
@@ -309,6 +311,7 @@ class VaultSecretsManager(BaseSecretsManager):
 
         self.CLIENT.secrets.kv.v2.delete_metadata_and_all_versions(
             path=f"{ZENML_PATH}/{vault_secret_name}",
+            mount_point=self.mount_point,
         )
 
         logger.debug("Deleted secret: %s", f"{ZENML_PATH}/{secret_name}")
