@@ -326,9 +326,21 @@ def generate_stack_component_register_command(
         help=f"DEPRECATED: The flavor of the {display_name} to register.",
         type=str,
     )
+    @click.option(
+        "--interactive",
+        "-i",
+        "interactive",
+        is_flag=True,
+        help="Use interactive mode to update the secret values.",
+        type=click.BOOL,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def register_stack_component_command(
-        name: str, flavor: str, old_flavor: str, args: List[str]
+        name: str,
+        flavor: str,
+        old_flavor: str,
+        interactive: bool,
+        args: List[str]
     ) -> None:
         """Registers a stack component.
 
@@ -336,6 +348,7 @@ def generate_stack_component_register_command(
             name: Name of the component to register.
             flavor: Flavor of the component to register.
             old_flavor: DEPRECATED: The flavor of the component to register.
+            interactive: Use interactive mode to fill missing values.
             args: Additional arguments to pass to the component.
         """
         cli_utils.print_active_profile()
@@ -375,41 +388,56 @@ def generate_stack_component_register_command(
                     component_flavor=flavor,
                     **parsed_args,
                 )
-        except ValidationError:
-            cli_utils.warning(
-                f"You did not set all required fields for a "
-                f"{flavor} {display_name}. You'll be guided through the "
-                f"missing fields now. To cancel simply interrupt with CTRL+C."
-            )
+        except ValidationError as e:
+            if not interactive:
+                cli_utils.error(
+                    f"When you are registering a new {display_name} with the "
+                    f"flavor `{flavor}`, make sure that you are utilizing "
+                    f"the right attributes. Current problems:\n\n{e}"
+                )
+                return
+            else:
+                cli_utils.warning(
+                    f"You did not set all required fields for a "
+                    f"{flavor} {display_name}. You'll be guided through the "
+                    f"missing fields now. You'll be able to skip optional "
+                    f"fields by just pressing enter. To cancel simply interrupt"
+                    f" with CTRL+C."
+                )
 
-            repo = Repository()
-            flavor_class = repo.get_flavor(
-                name=flavor, component_type=component_type
-            )
-            missing_fields = [
-                k
-                for k, v in flavor_class.__fields__.items()
-                if v.required
-                and v.name not in ["name", "uuid", *parsed_args.keys()]
-            ]
+                repo = Repository()
+                flavor_class = repo.get_flavor(
+                    name=flavor, component_type=component_type
+                )
+                missing_fields = {
+                    k: v.required
+                    for k, v in flavor_class.__fields__.items()
+                    if v.name not in ["name", "uuid", *parsed_args.keys()]
+                }
 
-            completed_fields = parsed_args.copy()
-            for field in missing_fields:
-                completed_fields[field] = click.prompt(f"{field}:")
+                completed_fields = parsed_args.copy()
+                for field, field_req in missing_fields.items():
+                    if field_req:
+                        user_input = click.prompt(f"{field}")
+                    else:
+                        prompt = f"{field} (Optional)'"
+                        user_input = click.prompt(prompt, default='')
+                    if user_input:
+                        completed_fields[field] = user_input
 
-            try:
-                with console.status(
-                    f"Registering {display_name} '{name}'" f"...\n"
-                ):
+                try:
+                    with console.status(
+                        f"Registering {display_name} '{name}'" f"...\n"
+                    ):
 
-                    _register_stack_component(
-                        component_type=component_type,
-                        component_name=name,
-                        component_flavor=flavor,
-                        **completed_fields,
-                    )
-            except Exception as e:
-                cli_utils.error(str(e))
+                        _register_stack_component(
+                            component_type=component_type,
+                            component_name=name,
+                            component_flavor=flavor,
+                            **completed_fields,
+                        )
+                except Exception as e:
+                    cli_utils.error(str(e))
 
         except Exception as e:
             cli_utils.error(str(e))
