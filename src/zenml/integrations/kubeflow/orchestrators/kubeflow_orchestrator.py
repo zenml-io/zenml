@@ -358,7 +358,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Checks if the KFP orchestrator is running locally.
 
         Returns:
-            bool: `True` if the KFP orchestrator is running locally (i.e. in
+            `True` if the KFP orchestrator is running locally (i.e. in
             the local k3d cluster managed by ZenML).
         """
         return self.kubernetes_context == self._get_k3d_kubernetes_context(
