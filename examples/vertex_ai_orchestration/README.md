@@ -1,8 +1,10 @@
 # 🏃 Run pipelines in production using Vertex AI
 
 [Vertex Ai Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
-are a serverless ML Workflow tool running on the Google Cloud Platform.
-...
+are a serverless ML Workflow tool running on the Google Cloud Platform. They are
+an easy way to quickly run your code in a production ready, repeatable 
+cloud orchestrator that requires minimal setup without provisioning and paying 
+for standby compute. 
 
 ## 📄 Pre-requisites
 
@@ -119,7 +121,7 @@ python run.py
 
 That's it! If everything went as planned this pipeline should now be running in
 the cloud! You should be able to access the Vertex Ai Pipelines UI with the link
-returned in the run logs. It will look something like this:
+returned to the run logs. It will look something like this:
 
 ![Vertex AI UI](assets/vertex_ai_ui.png)
 
@@ -133,10 +135,13 @@ zenml stack down --force
 rm -rf zenml_examples
 ```
 
+Additionally, you might have to clean up your cloud resources to avoid running 
+costs for storage of artifacts, containers, metadata or secrets.
+
 # 📜 Learn more
 
-Our docs regarding the Kubeflow orchestrator integration can be
-found [here](https://docs.zenml.io/advanced-guide/guide-aws-gcp-azure).
+Our docs regarding the Vertex orchestrator integration can be
+found in our docs.
 
 If you want to learn more about orchestrators in general or about how to build
 your own orchestrators in ZenML
