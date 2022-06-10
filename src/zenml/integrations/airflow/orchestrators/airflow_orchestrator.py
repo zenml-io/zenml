@@ -137,7 +137,7 @@ class AirflowOrchestrator(BaseOrchestrator):
             sorted_steps: List of steps in the pipeline.
             pipeline: The pipeline to be executed.
             pb2_pipeline: The pipeline as a protobuf message.
-            stack: The stack to be executed.
+            stack: The stack on which the pipeline will be deployed.
             runtime_configuration: The runtime configuration.
 
         Returns:
