@@ -77,7 +77,7 @@ class BaseServiceMeta(BaseTypedModelMeta):
             dct: dictionary of class attributes
 
         Returns:
-            the created BaseServiceMeta class
+            the created BaseServiceMeta class.
 
         Raises:
             TypeError: if the 'service_type' reserved attribute name is used
