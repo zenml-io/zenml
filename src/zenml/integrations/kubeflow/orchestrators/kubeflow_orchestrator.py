@@ -383,7 +383,7 @@ class KubeflowOrchestrator(BaseOrchestrator):
         """Returns path to a directory in which the kubeflow pipeline files are stored.
 
         Returns:
-            str: path to the pipeline directory
+            Path to the pipeline directory.
         """
         return os.path.join(self.root_directory, "pipelines")
 
