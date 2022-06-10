@@ -97,7 +97,7 @@ class AWSContainerRegistry(BaseContainerRegistry):
         """Optional message printed after the stack component is registered.
 
         Returns:
-            The message.
+            Info message regarding docker repositories in AWS.
         """
         return (
             "Amazon ECR requires you to create a repository before you can "
