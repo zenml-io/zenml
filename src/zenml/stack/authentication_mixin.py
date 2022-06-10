@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Stack component mixin for authentication."""
 
 from typing import Optional, Type, TypeVar
 
@@ -26,7 +27,8 @@ class AuthenticationMixin(BaseModel):
     """Stack component mixin for authentication.
 
     Attributes:
-        secret: Name of the secret that stores the authentication credentials.
+        authentication_secret: Name of the secret that stores the
+            authentication credentials.
     """
 
     authentication_secret: Optional[str] = None

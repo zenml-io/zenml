@@ -60,7 +60,18 @@ def create_tfx_pipeline(
 
 
 def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:
-    """Finds the matching step for a tfx pipeline node."""
+    """Finds the matching step for a tfx pipeline node.
+
+    Args:
+        node: The tfx pipeline node.
+        steps: The list of steps.
+
+    Returns:
+        The matching step.
+
+    Raises:
+        RuntimeError: If no matching step is found.
+    """
     step_name = node.node_info.id
     try:
         return next(step for step in steps if step.name == step_name)

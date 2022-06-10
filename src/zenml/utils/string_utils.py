@@ -63,7 +63,7 @@ def get_human_readable_filesize(bytes_: int) -> str:
 
 def b64_encode(input_: str) -> str:
     """Returns a base 64 encoded string of the input string.
-    
+
     Args:
         input_: The input to encode.
 
@@ -77,7 +77,7 @@ def b64_encode(input_: str) -> str:
 
 def b64_decode(input_: str) -> str:
     """Returns a decoded string of the base 64 encoded input string.
-    
+
     Args:
         input_: Base64 encoded string.
 

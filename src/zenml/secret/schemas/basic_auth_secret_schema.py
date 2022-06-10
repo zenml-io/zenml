@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Basic Authentication Secret Schema definition."""
+
 from typing import ClassVar
 
 from zenml.secret.base_secret import BaseSecretSchema

@@ -51,7 +51,12 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
 
     @property
     def requires_authentication(self) -> bool:
-        """Returns whether the container registry requires authentication."""
+        """Returns whether the container registry requires authentication.
+
+        Returns:
+            `True` if the container registry requires authentication,
+            `False` otherwise.
+        """
         return bool(self.authentication_secret)
 
     @property

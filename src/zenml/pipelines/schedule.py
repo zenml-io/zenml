@@ -52,8 +52,18 @@ class Schedule(BaseModel):
     def _ensure_cron_or_periodic_schedule_configured(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Ensures that the cron expression or start time + interval are set."""
+        """Ensures that the cron expression or start time + interval are set.
 
+        Args:
+            values: All attributes of the schedule.
+
+        Returns:
+            All schedule attributes.
+
+        Raises:
+            ValueError: If no cron expression or start time + interval were
+                provided.
+        """
         cron_expression = values.get("cron_expression")
         periodic_schedule = values.get("start_time") and values.get(
             "interval_second"

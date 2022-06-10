@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Azure Authentication Secret Schema definition."""
+
 from typing import ClassVar, Optional
 
 from zenml.secret.base_secret import BaseSecretSchema
@@ -19,6 +21,8 @@ AZURE_SECRET_SCHEMA_TYPE = "azure"
 
 
 class AzureSecretSchema(BaseSecretSchema):
+    """Azure Authentication Secret Schema definition."""
+
     TYPE: ClassVar[str] = AZURE_SECRET_SCHEMA_TYPE
 
     account_name: Optional[str] = None

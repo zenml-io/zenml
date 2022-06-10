@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""GCP Authentication Secret Schema definition."""
+
 import json
 from typing import Any, ClassVar, Dict
 
@@ -20,6 +22,7 @@ GCP_SECRET_SCHEMA_TYPE = "gcp"
 
 
 class GCPSecretSchema(BaseSecretSchema):
+    """GCP Authentication Secret Schema definition."""
 
     TYPE: ClassVar[str] = GCP_SECRET_SCHEMA_TYPE
 
