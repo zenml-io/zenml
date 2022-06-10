@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility functions for the orchestrator."""
 
 from typing import TYPE_CHECKING, List, Optional
 
@@ -31,7 +32,15 @@ logger = get_logger(__name__)
 def create_tfx_pipeline(
     zenml_pipeline: "BasePipeline", stack: "Stack"
 ) -> tfx_pipeline.Pipeline:
-    """Creates a tfx pipeline from a ZenML pipeline."""
+    """Creates a tfx pipeline from a ZenML pipeline.
+
+    Args:
+        zenml_pipeline: The ZenML pipeline.
+        stack: The stack.
+
+    Returns:
+        The tfx pipeline.
+    """
     # Connect the inputs/outputs of all steps in the pipeline
     zenml_pipeline.connect(**zenml_pipeline.steps)
 

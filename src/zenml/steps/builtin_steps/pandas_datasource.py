@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Pandas datasource step."""
+
 from typing import List, Optional, Union
 
 import pandas as pd
@@ -22,7 +24,7 @@ from zenml.steps.step_interfaces.base_datasource_step import (
 
 
 class PandasDatasourceConfig(BaseDatasourceConfig):
-    """Config class for the pandas csv datasource"""
+    """Config class for the pandas csv datasource."""
 
     path: str
     sep: str = ","
@@ -32,15 +34,17 @@ class PandasDatasourceConfig(BaseDatasourceConfig):
 
 
 class PandasDatasource(BaseDatasourceStep):
-    """Simple step implementation to ingest from a csv file using pandas"""
+    """Simple step implementation to ingest from a csv file using pandas."""
 
     def entrypoint(  # type: ignore[override]
         self,
         config: PandasDatasourceConfig,
     ) -> pd.DataFrame:
-        """Main entrypoint method for the PandasDatasource
+        """Main entrypoint method for the PandasDatasource.
+
         Args:
             config: the configuration of the step
+
         Returns:
             the resulting dataframe
         """

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Pipeline models implementation."""
+
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -36,6 +38,10 @@ def get_git_sha(clean: bool = True) -> Optional[str]:
     Args:
         clean: If `True` and there any untracked files or files in the index or
             working tree, this function will return `None`.
+
+    Returns:
+        The current git HEAD SHA or `None` if the current working directory is
+        not inside a git repo.
     """
     try:
         from git.exc import InvalidGitRepositoryError
@@ -66,7 +72,14 @@ class StepWrapper(BaseModel):
 
     @classmethod
     def from_step(cls, step: "BaseStep") -> "StepWrapper":
-        """Creates a StepWrapper from a step instance."""
+        """Creates a StepWrapper from a step instance.
+
+        Args:
+            step: The step instance.
+
+        Returns:
+            A StepWrapper instance.
+        """
         return cls(
             name=step.name,
             docstring=step.__doc__,
@@ -88,7 +101,14 @@ class PipelineWrapper(BaseModel):
 
     @classmethod
     def from_pipeline(cls, pipeline: "BasePipeline") -> "PipelineWrapper":
-        """Creates a PipelineWrapper from a pipeline instance."""
+        """Creates a PipelineWrapper from a pipeline instance.
+
+        Args:
+            pipeline: The pipeline instance.
+
+        Returns:
+            A PipelineWrapper instance.
+        """
         steps = [
             StepWrapper.from_step(step) for step in pipeline.steps.values()
         ]

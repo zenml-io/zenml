@@ -82,7 +82,7 @@ def find_files(dir_path: PathType, pattern: str) -> Iterable[str]:
         pattern: pattern like *.png.
 
     Yields:
-         All matching filenames if found.
+        All matching filenames if found.
     """
     for root, dirs, files in walk(dir_path):
         for basename in files:
@@ -113,7 +113,6 @@ def create_file_if_not_exists(
     Args:
         file_path: Local path in filesystem.
         file_contents: Contents of file.
-
     """
     full_path = Path(file_path)
     if not exists(file_path):

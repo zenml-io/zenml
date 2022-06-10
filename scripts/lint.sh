@@ -5,11 +5,6 @@ set -x
 SRC=${1:-"src/zenml tests examples"}
 SRC_NO_TESTS=${1:-"src/zenml"}
 
-# separate env variable while incrementally completing the docstring task.
-# add modules to this list as/when they are completed.
-# When we're done we can remove this and just use `SRC_NO_TESTS`.
-DOCSTRING_SRC=${1:-"src/zenml/alerter src/zenml/artifact_stores src/zenml/artifacts src/zenml/config src/zenml/io src/zenml/model_deployers src/zenml/cli src/zenml/entrypoints src/zenml/experiment_trackers src/zenml/materializers src/zenml/metadata_stores src/zenml/integrations"}
-
 export ZENML_DEBUG=1
 export ZENML_ANALYTICS_OPT_IN=false
 flake8 $SRC
@@ -19,8 +14,8 @@ black $SRC  --check
 
 # check for docstrings
 interrogate $SRC_NO_TESTS -c pyproject.toml
-pydocstyle $DOCSTRING_SRC -e --count --convention=google --add-ignore=D403
-darglint -v 2 $DOCSTRING_SRC
+pydocstyle $SRC_NO_TESTS -e --count --convention=google --add-ignore=D403
+darglint -v 2 $SRC_NO_TESTS
 
 # check type annotations
 mypy $SRC_NO_TESTS

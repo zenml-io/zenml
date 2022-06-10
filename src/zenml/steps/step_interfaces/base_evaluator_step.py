@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base Evaluator step."""
 
 from abc import abstractmethod
 
@@ -19,11 +20,11 @@ from zenml.steps import BaseStep, BaseStepConfig, StepContext
 
 
 class BaseEvaluatorConfig(BaseStepConfig):
-    """Base class for evaluator step configurations"""
+    """Base class for evaluator step configurations."""
 
 
 class BaseEvaluatorStep(BaseStep):
-    """Base step implementation for any evaluator step implementation on ZenML"""
+    """Base step implementation for any evaluator step implementation."""
 
     @abstractmethod
     def entrypoint(  # type: ignore[override]
@@ -33,4 +34,14 @@ class BaseEvaluatorStep(BaseStep):
         config: BaseEvaluatorConfig,
         context: StepContext,
     ) -> DataArtifact:
-        """Base entrypoint for any evaluator implementation"""
+        """Base entrypoint for any evaluator implementation.
+
+        Args:
+            dataset: The dataset.
+            model: The model.
+            config: The configuration for the step.
+            context: The context for the step.
+
+        Returns:
+            The result of the evaluator.
+        """
