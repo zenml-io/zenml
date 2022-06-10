@@ -12,12 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines import (
-    vertex_example_pipeline,
-)
-from steps import get_first_num
-from steps import get_random_int
-from steps import subtract_numbers
+from pipelines import vertex_example_pipeline
+from steps import get_first_num, get_random_int, subtract_numbers
 
 if __name__ == "__main__":
     # Initialize a new pipeline run

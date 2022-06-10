@@ -17,7 +17,7 @@
 Very simple pipeline to show a pipeline running on vertex ai
 """
 from .vertex_example_pipeline.vertex_example_pipeline import (
-    vertex_example_pipeline
+    vertex_example_pipeline,
 )
 
 __all__ = ["vertex_example_pipeline"]
