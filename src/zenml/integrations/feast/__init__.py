@@ -38,7 +38,7 @@ class FeastIntegration(Integration):
         """Declare the stack component flavors for the Feast integration.
 
         Returns:
-            List[FlavorWrapper]: List of flavor wrappers.
+            List of stack component flavors for this integration.
         """
         return [
             FlavorWrapper(
