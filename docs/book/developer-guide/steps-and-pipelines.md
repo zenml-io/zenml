@@ -44,7 +44,7 @@ Now we can go ahead and create a pipeline with our two steps to make sure they
 work.
 
 {% hint style="info" %}
-In case you want to run the step function outside the context of a zenml 
+In case you want to run the step function outside the context of a ZenML 
 pipeline, all you need to do is call the `.entrypoint()` method with the same
 input signature. For example:
 
@@ -55,7 +55,7 @@ my_second_step.entrypoint(input_int=1, input_float=0.9)
 
 ## Pipeline
 
-Here we define the pipeline. This is done implementation agnostic by simply
+Here we define the pipeline. This is done agnostic of implementation by simply
 routing outputs through the
 steps within the pipeline. You can think of this as a recipe for how we want
 data to flow through our steps.
