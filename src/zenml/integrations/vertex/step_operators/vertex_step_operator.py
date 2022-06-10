@@ -11,9 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Code heavily inspired by TFX Implementation:
+"""Implementation of a VertexAI step operator.
+
+Code heavily inspired by TFX Implementation:
 https://github.com/tensorflow/tfx/blob/master/tfx/extensions/
-google_cloud_ai_platform/training_clients.py"""
+google_cloud_ai_platform/training_clients.py
+"""
 
 import time
 from typing import ClassVar, List, Optional, Tuple
@@ -78,7 +81,11 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a container registry."""
+        """Validates that the stack contains a container registry.
+
+        Returns:
+            StackValidator: Validator for the stack.
+        """
 
         def _ensure_local_orchestrator(stack: Stack) -> Tuple[bool, str]:
             # For now this only works on local orchestrator and GCP artifact
@@ -99,6 +106,14 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
 
     @property_validator("accelerator_type")
     def validate_accelerator_enum(cls, accelerator_type: Optional[str]) -> None:
+        """Validates that the accelerator type is valid.
+
+        Args:
+            accelerator_type: Accelerator type
+
+        Raises:
+            ValueError: If the accelerator type is not valid.
+        """
         accepted_vals = list(
             aiplatform.gapic.AcceleratorType.__members__.keys()
         )
@@ -113,6 +128,19 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         requirements: List[str],
         entrypoint_command: List[str],
     ) -> str:
+        """Builds and pushes a docker image.
+
+        Args:
+            pipeline_name: Pipeline name
+            requirements: Requirements
+            entrypoint_command: Entrypoint command
+
+        Returns:
+            Docker image name
+
+        Raises:
+            RuntimeError: If no container registry is found in the stack.
+        """
         repo = Repository()
         container_registry = repo.active_stack.container_registry
 
@@ -149,6 +177,10 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             entrypoint_command: Command that executes the step.
             requirements: List of pip requirements that must be installed
                 inside the step operator environment.
+
+        Raises:
+            RuntimeError: If the run fails.
+            ConnectionError: If the run fails due to a connection error.
         """
         job_labels = {"source": f"zenml-{__version__.replace('.', '_')}"}
 

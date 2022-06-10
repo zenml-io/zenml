@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Huggingface tokenizer materializer."""
 
 import os
 from tempfile import TemporaryDirectory
@@ -33,7 +34,14 @@ class HFTokenizerMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> PreTrainedTokenizerBase:
-        """Reads Tokenizer"""
+        """Reads Tokenizer.
+
+        Args:
+            data_type: The type of the tokenizer to read.
+
+        Returns:
+            The tokenizer read from the specified dir.
+        """
         super().handle_input(data_type)
 
         return AutoTokenizer.from_pretrained(
@@ -42,8 +50,9 @@ class HFTokenizerMaterializer(BaseMaterializer):
 
     def handle_return(self, tokenizer: Type[Any]) -> None:
         """Writes a Tokenizer to the specified dir.
+
         Args:
-            PreTrainedTokenizerBase: The HFTokenizer to write.
+            tokenizer: The HFTokenizer to write.
         """
         super().handle_return(tokenizer)
         temp_dir = TemporaryDirectory()

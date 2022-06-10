@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the LightGBM materializer."""
 
 import os
 import tempfile
@@ -26,13 +27,20 @@ DEFAULT_FILENAME = "data.binary"
 
 
 class LightGBMDatasetMaterializer(BaseMaterializer):
-    """Materializer to read data to and from lightgbm.Dataset"""
+    """Materializer to read data to and from lightgbm.Dataset."""
 
     ASSOCIATED_TYPES = (lgb.Dataset,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> lgb.Dataset:
-        """Reads a lightgbm.Dataset binary file and loads it."""
+        """Reads a lightgbm.Dataset binary file and loads it.
+
+        Args:
+            data_type: A lightgbm.Dataset type.
+
+        Returns:
+            A lightgbm.Dataset object.
+        """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 

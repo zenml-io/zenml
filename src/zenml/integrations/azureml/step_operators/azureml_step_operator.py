@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML AzureML Step Operator."""
 
 import os
 from typing import ClassVar, List, Optional
@@ -81,6 +82,11 @@ class AzureMLStepOperator(BaseStepOperator):
     FLAVOR: ClassVar[str] = AZUREML_STEP_OPERATOR_FLAVOR
 
     def _get_authentication(self) -> Optional[AbstractAuthentication]:
+        """Returns the authentication object for the AzureML environment.
+
+        Returns:
+            The authentication object for the AzureML environment.
+        """
         if (
             self.tenant_id
             and self.service_principal_id
@@ -106,6 +112,9 @@ class AzureMLStepOperator(BaseStepOperator):
                 in the environment.
             run_name: The name of the pipeline run that can be used
                 for naming environments and runs.
+
+        Returns:
+            The AzureML Environment object.
         """
         if self.environment_name:
             environment = Environment.get(

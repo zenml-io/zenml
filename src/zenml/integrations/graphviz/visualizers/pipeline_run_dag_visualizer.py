@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Graphviz pipeline run DAG visualizer."""
 
 import tempfile
 from abc import abstractmethod
@@ -44,7 +45,16 @@ class PipelineRunDagVisualizer(BasePipelineRunVisualizer):
     def visualize(
         self, object: PipelineRunView, *args: Any, **kwargs: Any
     ) -> graphviz.Digraph:
-        """Creates a pipeline lineage diagram using graphviz."""
+        """Creates a pipeline lineage diagram using graphviz.
+
+        Args:
+            object: The pipeline run view to visualize.
+            *args: Additional arguments to pass to the visualization.
+            **kwargs: Additional keyword arguments to pass to the visualization.
+
+        Returns:
+            A graphviz digraph object.
+        """
         logger.warning(
             "This integration is not completed yet. Results might be unexpected."
         )

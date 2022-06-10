@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-The mlflow integrations currently enables you to use mlflow tracking as a
-convenient way to visualize your experiment runs within the mlflow UI
+"""Initialization for the ZenML MLflow integration.
+
+The MLflow integrations currently enables you to use MLflow tracking as a
+convenient way to visualize your experiment runs within the MLflow UI.
 """
 from typing import List
 
@@ -43,7 +44,11 @@ class MlflowIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the MLflow integration"""
+        """Declare the stack component flavors for the MLflow integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=MLFLOW_MODEL_DEPLOYER_FLAVOR,

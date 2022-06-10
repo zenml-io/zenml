@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization for Feast integration.
+
 The Feast integration offers a way to connect to a Feast Feature Store. ZenML
 implements a dedicated stack component that you can access as part of your ZenML
 steps in the usual ways.
@@ -34,7 +35,11 @@ class FeastIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Feast integration."""
+        """Declare the stack component flavors for the Feast integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=FEAST_FEATURE_STORE_FLAVOR,
