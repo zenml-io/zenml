@@ -4,12 +4,20 @@ description: Deploy pipelines to the public cloud.
 
 # Guide for cloud-specific deployments
 
-This guide will show how you can run your pipelines in Kubeflow Pipelines deployed
-to a public cloud cluster. We will start with some pre-requisites and then move
-on to show the integration of your cloud provider's components with your ZenML
-stack. In addition to configuring the stack components in this guide, you can
-optionally run a pipeline step on a specialized cloud backend too. Check out the
-step operators [guide](step-operators.md) for that!
+This guide will show how you can run your pipelines in Kubeflow Pipelines 
+deployed to a public cloud cluster. We will start with some prerequisites and 
+then move on to show the integration of your cloud provider's components with 
+your ZenML stack. In addition to configuring the stack components in this guide,
+you can optionally run a pipeline step on a specialized cloud backend too. 
+Check out the step operators [guide](step-operators.md) for that!
+
+{% hint style="info" %}
+We have recently also added a Vertex AI orchestrator to our arsenal of
+orchestrators (thanks @Gabriel Martin). So if you are running on GCP and want to
+try out a serverless alternative to Kubeflow, check out our example on how to
+run the Vertex AI Orchestrator 
+[here](https://github.com/zenml-io/zenml/tree/main/examples/vertex_ai_orchestration).
+{% endhint %}
 
 ## Pre-requisites
 
