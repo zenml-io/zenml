@@ -11,10 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-The AWS integration provides a way for our users to manage their secrets
-through AWS.
-"""
+"""AWS integration for ZenML."""
+
 from typing import List
 
 from zenml.enums import StackComponentType
@@ -34,7 +32,11 @@ class AWSIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the AWS integration."""
+        """Declare the stack component flavors for the AWS integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=AWS_SECRET_MANAGER_FLAVOR,

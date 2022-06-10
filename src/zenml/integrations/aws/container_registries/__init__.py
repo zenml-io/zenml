@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of AWS Container Registry integration."""
 
 from zenml.integrations.aws.container_registries.aws_container_registry import (  # noqa
     AWSContainerRegistry,

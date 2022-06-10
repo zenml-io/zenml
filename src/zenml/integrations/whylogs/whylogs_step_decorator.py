@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the whylogs step decorator."""
+
 import functools
 from typing import (
     Any,
@@ -40,7 +42,6 @@ S = TypeVar("S", bound=Type[BaseStep])
 def enable_whylogs(
     _step: S,
 ) -> S:
-    """Type annotations for whylogs step decorator in case of no arguments."""
     ...
 
 
@@ -51,7 +52,6 @@ def enable_whylogs(
     pipeline: Optional[str] = None,
     tags: Optional[Dict[str, str]] = None,
 ) -> Callable[[S], S]:
-    """Type annotations for whylogs step decorator in case of arguments."""
     ...
 
 

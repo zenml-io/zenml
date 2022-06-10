@@ -27,6 +27,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the VertexAI orchestrator."""
 
 import os
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
@@ -132,12 +133,24 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a container registry and that the
-        artifact store and metadata store used are not local."""
+        """Validates that the stack contains a container registry.
+
+        Also validates that the artifact store and metadata store used are not
+        local.
+
+        Returns:
+            A StackValidator instance.
+        """
 
         def _validate_stack_requirements(stack: "Stack") -> Tuple[bool, str]:
-            """Validates that all the stack components are not local."""
+            """Validates that all the stack components are not local.
 
+            Args:
+                stack: The stack to validate.
+
+            Returns:
+                A tuple of (is_valid, error_message).
+            """
             # Validate that the container registry is not local.
             container_registry = stack.container_registry
             if container_registry and container_registry.is_local:
@@ -185,8 +198,14 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         )
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name including registry and tag."""
+        """Returns the full docker image name including registry and tag.
 
+        Args:
+            pipeline_name: The name of the pipeline.
+
+        Returns:
+            The full docker image name including registry and tag.
+        """
         base_image_name = f"zenml-vertex:{pipeline_name}"
         container_registry = Repository().active_stack.container_registry
 
@@ -198,15 +217,23 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
     @property
     def root_directory(self) -> str:
-        """Returns path to the root directory for all files concerning this orchestrator."""
+        """Returns path to the root directory for all files concerning this orchestrator.
+
+        Returns:
+            The path to the root directory for all files concerning this
+            orchestrator.
+        """
         return os.path.join(
             get_global_config_directory(), "vertex", str(self.uuid)
         )
 
     @property
     def pipeline_directory(self) -> str:
-        """Returns path to a directory in which the kubeflow pipelines files are
-        stored."""
+        """Returns path to a directory where kubeflow pipelines files are stored.
+
+        Returns:
+            Path to the pipeline directory.
+        """
         return os.path.join(self.root_directory, "pipelines")
 
     def prepare_pipeline_deployment(
@@ -215,8 +242,18 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Build a Docker image for the current environment and uploads it to a
-        container registry if configured."""
+        """Build a Docker image for the current environment.
+
+        This uploads it to a container registry if configured.
+
+        Args:
+            pipeline: The pipeline to be deployed.
+            stack: The stack that will be used to deploy the pipeline.
+            runtime_configuration: The runtime configuration for the pipeline.
+
+        Raises:
+            RuntimeError: If the container registry is missing.
+        """
         from zenml.utils import docker_utils
 
         repo = Repository()
@@ -251,8 +288,12 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """Creates a KFP JSON pipeline as intermediary representation of the pipeline
-        which is then deployed to Vertex AI Pipelines service.
+        """Creates a KFP JSON pipeline.
+
+        # noqa: DAR402
+
+        This is an intermediary representation of the pipeline which is then
+        deployed to Vertex AI Pipelines service.
 
         How it works:
         -------------
@@ -285,7 +326,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 not generated using the path of the artifact store in the stack
                 because it is not a `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
-
         # If the `pipeline_root` has not been defined in the orchestrator configuration,
         # try to create it from the artifact store if it is a `GCPArtifactStore`.
         if not self.pipeline_root:
@@ -306,9 +346,10 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
         image_name = get_image_digest(image_name) or image_name
 
         def _construct_kfp_pipeline() -> None:
-            """Create a `ContainerOp` for each step which contains the name
-            of the Docker image and configures the entrypoint of the Docker
-            image to run the step.
+            """Create a `ContainerOp` for each step.
+
+            This should contain the name of the Docker image and configures the
+            entrypoint of the Docker image to run the step.
 
             Additionally, this gives each `ContainerOp` information about its
             direct downstream steps.
@@ -401,7 +442,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             runtime_configuration: Runtime configuration of the pipeline run.
             enable_cache: Whether caching is enabled for this pipeline run.
         """
-
         # We have to replace the hyphens in the pipeline name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
         # requires this format.

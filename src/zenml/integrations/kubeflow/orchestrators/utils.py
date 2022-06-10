@@ -27,7 +27,7 @@
 #  permissions and limitations under the License.
 
 # This file is copied in large parts from the tfx kubeflow entrypoint.
-
+"""Utils for ZenML Kubeflow orchestrators implementation."""
 import json
 import os
 import textwrap
@@ -52,15 +52,22 @@ def mount_config_map_op(
     config_map_name: str,
 ) -> Callable[[dsl.ContainerOp], None]:
     """Mounts all key-value pairs found in the named Kubernetes ConfigMap.
+
     All key-value pairs in the ConfigMap are mounted as environment variables.
+
     Args:
-      config_map_name: The name of the ConfigMap resource.
+        config_map_name: The name of the ConfigMap resource.
+
     Returns:
-      An OpFunc for mounting the ConfigMap.
+        An OpFunc for mounting the ConfigMap.
     """
 
     def mount_config_map(container_op: dsl.ContainerOp) -> None:
-        """Mounts all key-value pairs found in the Kubernetes ConfigMap."""
+        """Mounts all key-value pairs found in the Kubernetes ConfigMap.
+
+        Args:
+            container_op: The container op to mount the ConfigMap.
+        """
         config_map_ref = k8s_client.V1ConfigMapEnvSource(
             name=config_map_name, optional=True
         )
@@ -72,7 +79,14 @@ def mount_config_map_op(
 
 
 def _sanitize_underscore(name: str) -> Optional[str]:
-    """Sanitize the underscore in pythonic name for markdown visualization."""
+    """Sanitize the underscore in pythonic name for markdown visualization.
+
+    Args:
+        name: the name to be sanitized.
+
+    Returns:
+        the sanitized name.
+    """
     if name:
         return str(name).replace("_", "\\_")
     else:
@@ -90,12 +104,11 @@ def _render_channel_as_mdstr(input_channel: channel.Channel) -> str:
     ......
 
     Args:
-      input_channel: the channel to be rendered.
+        input_channel: the channel to be rendered.
 
     Returns:
-      a md-formatted string representation of the channel.
+        a md-formatted string representation of the channel.
     """
-
     md_str = "**Type**: {}\n\n".format(
         _sanitize_underscore(input_channel.type_name)
     )
@@ -118,10 +131,10 @@ def _render_artifact_as_mdstr(single_artifact: artifact.Artifact) -> str:
     ......
 
     Args:
-      single_artifact: the artifact to be rendered.
+        single_artifact: the artifact to be rendered.
 
     Returns:
-      a md-formatted string representation of the artifact.
+        a md-formatted string representation of the artifact.
     """
     span_str = "None"
     split_names_str = "None"
@@ -177,13 +190,13 @@ def dump_ui_metadata(
     """Dump KFP UI metadata json file for visualization purpose.
 
     For general components we just render a simple Markdown file for
-      exec_properties/inputs/outputs.
+        exec_properties/inputs/outputs.
 
     Args:
-      node: associated TFX node.
-      execution_info: runtime execution info for this component, including
-        materialized inputs/outputs/execution properties and id.
-      metadata_ui_path: path to dump ui metadata.
+        node: associated TFX node.
+        execution_info: runtime execution info for this component, including
+            materialized inputs/outputs/execution properties and id.
+        metadata_ui_path: path to dump ui metadata.
     """
     exec_properties_list = [
         "**{}**: {}".format(
@@ -202,11 +215,11 @@ def dump_ui_metadata(
         """Dump artifacts markdown string for inputs.
 
         Args:
-          node_inputs: maps from input name to input sepc proto.
-          name_to_artifacts: maps from input key to list of populated artifacts.
+            node_inputs: maps from input name to input sepc proto.
+            name_to_artifacts: maps from input key to list of populated    artifacts.
 
         Returns:
-          A list of dumped markdown string, each of which represents a channel.
+            A list of dumped markdown string, each of which represents a channel.
         """
         rendered_list = []
         for name, spec in node_inputs.items():
@@ -237,12 +250,12 @@ def dump_ui_metadata(
         """Dump artifacts markdown string for outputs.
 
         Args:
-          node_outputs: maps from output name to output sepc proto.
-          name_to_artifacts: maps from output key to list of populated
-          artifacts.
+            node_outputs: maps from output name to output sepc proto.
+            name_to_artifacts: maps from output key to list of populated
+                artifacts.
 
         Returns:
-          A list of dumped markdown string, each of which represents a channel.
+            A list of dumped markdown string, each of which represents a channel.
         """
         rendered_list = []
         for name, spec in node_outputs.items():
