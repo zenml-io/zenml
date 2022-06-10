@@ -74,7 +74,7 @@ class BaseServiceMeta(BaseTypedModelMeta):
         Args:
             name: name of the class.
             bases: tuple of base classes.
-            dct: dictionary of class attributes
+            dct: dictionary of class attributes.
 
         Returns:
             the created BaseServiceMeta class.
