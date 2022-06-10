@@ -26,14 +26,13 @@ from zenml.repository import Repository
 class MySQLMetadataStore(BaseMetadataStore):
     """MySQL backend for ZenML metadata store."""
 
+    port: int = 3306
+    host: str
+    database: str
+    secret: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
-    host: str
-    port: int
-    database: str
-
-    secret: Optional[str] = None
-
+ 
     # Class Configuration
     FLAVOR: ClassVar[str] = "mysql"
 
