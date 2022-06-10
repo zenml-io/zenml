@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility class to turn classes into singleton classes."""
 
 from typing import Any, Optional, cast
 
@@ -37,12 +38,25 @@ class SingletonMetaClass(type):
     """
 
     def __init__(cls, *args: Any, **kwargs: Any) -> None:
-        """Initialize a singleton class."""
+        """Initialize a singleton class.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         cls.__singleton_instance: Optional["SingletonMetaClass"] = None
 
     def __call__(cls, *args: Any, **kwargs: Any) -> "SingletonMetaClass":
-        """Create or return the singleton instance."""
+        """Create or return the singleton instance.
+
+        Args:
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            The singleton instance.
+        """
         if not cls.__singleton_instance:
             cls.__singleton_instance = cast(
                 "SingletonMetaClass", super().__call__(*args, **kwargs)

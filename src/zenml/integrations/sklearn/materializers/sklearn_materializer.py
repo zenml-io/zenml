@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the sklearn materializer."""
 
 import os
 import pickle
@@ -67,7 +68,14 @@ class SklearnMaterializer(BaseMaterializer):
         DensityMixin,
         TransformerMixin,
     ]:
-        """Reads a base sklearn model from a pickle file."""
+        """Reads a base sklearn model from a pickle file.
+
+        Args:
+            data_type: The type of the model.
+
+        Returns:
+            The model.
+        """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
         with fileio.open(filepath, "rb") as fid:

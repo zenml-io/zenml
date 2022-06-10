@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Decorator to restrict function from running inside a step."""
+
 from typing import Any
 
 from zenml.environment import Environment
@@ -37,7 +39,6 @@ def restrict_step_access(_func: Any) -> Any:
         ForbiddenRepositoryAccessError: If trying to create a `Repository`
             instance while a ZenML step is being executed.
     """
-
     if Environment().step_is_running:
         raise ForbiddenRepositoryAccessError(
             "Unable to access repository during step execution. If you "

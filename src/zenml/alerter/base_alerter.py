@@ -31,27 +31,32 @@ class BaseAlerter(StackComponent, ABC):
     def post(
         self, message: str, config: Optional[BaseAlerterStepConfig]
     ) -> bool:
-        """Post a message to some ChatOps service.
+        """Post a message to a chat service.
 
         Args:
-            message: Message to be posted.
-            config: Optional runtime configuration of this function.
+            message (str): Message to be posted.
+            config (Optional[BaseAlerterStepConfig]): Optional runtime
+                configuration of this function.
 
         Returns:
-            True if operation succeeded, else False.
+            bool: True if operation succeeded, else False.
         """
         return True
 
     def ask(
         self, question: str, config: Optional[BaseAlerterStepConfig]
     ) -> bool:
-        """Ask a question and get a synchronous response.
+        """Post a message to a chat service and wait for approval.
+
+        This can be useful to easily get a human in the loop, e.g., when
+        deploying models.
 
         Args:
-            question: Question to ask.
-            config: Optional runtime configuration of this function.
+            question (str): Question to ask (message to be posted).
+            config (Optional[BaseAlerterStepConfig]): Optional runtime
+                configuration of this function.
 
         Returns:
-            The response from the request.
+            bool: True if operation succeeded and was approved, else False.
         """
         return True

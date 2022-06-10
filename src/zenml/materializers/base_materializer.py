@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Metaclass implementation for registering ZenML BaseMaterializer subclasses."""
+
 import inspect
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Tuple, Type, cast
 
@@ -25,14 +27,27 @@ from zenml.materializers.default_materializer_registry import (
 
 
 class BaseMaterializerMeta(type):
-    """Metaclass responsible for registering different BaseMaterializer
-    subclasses for reading/writing artifacts."""
+    """Metaclass responsible for registering different BaseMaterializer subclasses.
+
+    Materializers are used for reading/writing artifacts.
+    """
 
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BaseMaterializerMeta":
-        """Creates a Materializer class and registers it at
-        the `MaterializerRegistry`."""
+        """Creates a Materializer class and registers it at the `MaterializerRegistry`.
+
+        Args:
+            name: The name of the class.
+            bases: The base classes of the class.
+            dct: The dictionary of the class.
+
+        Returns:
+            The BaseMaterializerMeta class.
+
+        Raises:
+            MaterializerInterfaceError: If the class was improperly defined.
+        """
         cls = cast(
             Type["BaseMaterializer"], super().__new__(mcs, name, bases, dct)
         )
@@ -85,11 +100,22 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = ()
 
     def __init__(self, artifact: "BaseArtifact"):
-        """Initializes a materializer with the given artifact."""
+        """Initializes a materializer with the given artifact.
+
+        Args:
+            artifact: The artifact to materialize.
+        """
         self.artifact = artifact
 
     def _can_handle_type(self, data_type: Type[Any]) -> bool:
-        """Whether the materializer can read/write a certain type."""
+        """Whether the materializer can read/write a certain type.
+
+        Args:
+            data_type: The type to check.
+
+        Returns:
+            Whether the materializer can read/write the given type.
+        """
         return any(
             issubclass(data_type, associated_type)
             for associated_type in self.ASSOCIATED_TYPES
@@ -100,9 +126,9 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
 
         Args:
             data_type: What type the input should be materialized as.
-        Returns:
-            Any object that is to be passed into the relevant artifact in the
-            step.
+
+        Raises:
+            TypeError: If the data is not of the correct type.
         """
         if not self._can_handle_type(data_type):
             raise TypeError(
@@ -116,6 +142,9 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
 
         Args:
             data: Any object that is specified as an input artifact of the step.
+
+        Raises:
+            TypeError: If the data is not of the correct type.
         """
         data_type = type(data)
         if not self._can_handle_type(data_type):

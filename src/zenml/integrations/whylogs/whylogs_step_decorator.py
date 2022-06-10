@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the whylogs step decorator."""
+
 import functools
 from typing import (
     Any,
@@ -40,7 +42,6 @@ S = TypeVar("S", bound=Type[BaseStep])
 def enable_whylogs(
     _step: S,
 ) -> S:
-    """Type annotations for whylogs step decorator in case of no arguments."""
     ...
 
 
@@ -51,7 +52,6 @@ def enable_whylogs(
     pipeline: Optional[str] = None,
     tags: Optional[Dict[str, str]] = None,
 ) -> Callable[[S], S]:
-    """Type annotations for whylogs step decorator in case of arguments."""
     ...
 
 
@@ -82,6 +82,17 @@ def enable_whylogs(
         return data, profile
     ```
 
+    You can also use this decorator with our class-based API like so:
+    ```
+    @enable_whylogs
+    class DataLoader(BaseStep):
+        def entrypoint(
+            self,
+            context: StepContext
+        ) -> Output(data=pd.DataFrame, profile=DatasetProfile,):
+            ...
+    ```
+
     Args:
         _step: The decorated step class.
         project: optional project name to use for the whylogs session
@@ -95,21 +106,15 @@ def enable_whylogs(
     """
 
     def inner_decorator(_step: S) -> S:
+        source_fn = getattr(_step, STEP_INNER_FUNC_NAME)
+        new_entrypoint = whylogs_entrypoint(project, pipeline, tags)(source_fn)
+        if _step._created_by_functional_api():
+            # If the step was created by the functional API, the old entrypoint
+            # was a static method -> make sure the new one is as well
+            new_entrypoint = staticmethod(new_entrypoint)
 
-        source_fn = _step.entrypoint
-        return cast(
-            S,
-            type(  # noqa
-                _step.__name__,
-                (_step,),
-                {
-                    STEP_INNER_FUNC_NAME: staticmethod(
-                        whylogs_entrypoint(project, pipeline, tags)(source_fn)
-                    ),
-                    "__module__": _step.__module__,
-                },
-            ),
-        )
+        setattr(_step, STEP_INNER_FUNC_NAME, new_entrypoint)
+        return _step
 
     if _step is None:
         return inner_decorator

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a TensorFlow visualizer step."""
 
 import os
 import sys
@@ -45,8 +46,13 @@ class TensorboardVisualizer(BaseStepVisualizer):
     def find_running_tensorboard_server(
         cls, logdir: str
     ) -> Optional[TensorBoardInfo]:
-        """Find a local TensorBoard server instance running for the supplied
-        logdir location and return its TCP port.
+        """Find a local TensorBoard server instance.
+
+        Finds when it is running for the supplied logdir location and return its
+        TCP port.
+
+        Args:
+            logdir: The logdir location where the TensorBoard server is running.
 
         Returns:
             The TensorBoardInfo describing the running TensorBoard server or
@@ -64,17 +70,21 @@ class TensorboardVisualizer(BaseStepVisualizer):
     def visualize(
         self,
         object: StepView,
-        *args: Any,
         height: int = 800,
+        *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Start a TensorBoard server to visualize all models logged as
-        artifacts by the indicated step. The server will monitor and display
-        all the models logged by past and future step runs.
+        """Start a TensorBoard server.
+
+        Allows for the visualization of all models logged as artifacts by the
+        indicated step. The server will monitor and display all the models
+        logged by past and future step runs.
 
         Args:
             object: StepView fetched from run.get_step().
             height: Height of the generated visualization.
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
         """
         for _, artifact_view in object.outputs.items():
             # filter out anything but model artifacts
@@ -121,7 +131,6 @@ class TensorboardVisualizer(BaseStepVisualizer):
             port: the TCP port where the TensorBoard server is listening for
                 requests.
             height: Height of the generated visualization.
-            logdir: The logdir location for the TensorBoard server.
         """
         if Environment.in_notebook():
 
@@ -179,6 +188,9 @@ def get_step(pipeline_name: str, step_name: str) -> StepView:
 
     Returns:
         The StepView for the specified pipeline and step name.
+
+    Raises:
+        RuntimeError: If the step is not found.
     """
     repo = Repository()
     pipeline = repo.get_pipeline(pipeline_name)
@@ -196,9 +208,11 @@ def get_step(pipeline_name: str, step_name: str) -> StepView:
 
 
 def visualize_tensorboard(pipeline_name: str, step_name: str) -> None:
-    """Start a TensorBoard server to visualize all models logged as output by
-    the named pipeline step. The server will monitor and display all the models
-    logged by past and future step runs.
+    """Start a TensorBoard server.
+
+    Allows for the visualization of all models logged as output by the named
+    pipeline step. The server will monitor and display all the models logged by
+    past and future step runs.
 
     Args:
         pipeline_name: the name of the pipeline

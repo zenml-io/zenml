@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML service registry."""
 
 import json
 from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
@@ -34,6 +35,7 @@ class ServiceRegistry(metaclass=SingletonMetaClass):
     """
 
     def __init__(self) -> None:
+        """Initialize the service registry."""
         self.service_types: Dict[ServiceType, Type["BaseService"]] = {}
         self.services: Dict[UUID, "BaseService"] = {}
 
@@ -42,6 +44,7 @@ class ServiceRegistry(metaclass=SingletonMetaClass):
 
         Args:
             cls: a BaseService subclass.
+
         Raises:
             TypeError: if the service type is already registered.
         """
@@ -76,21 +79,35 @@ class ServiceRegistry(metaclass=SingletonMetaClass):
     def get_service_types(
         self,
     ) -> Dict[ServiceType, Type["BaseService"]]:
-        """Get all registered service types."""
+        """Get all registered service types.
+
+        Returns:
+            Dictionary of service types indexed by their service type.
+        """
         return self.service_types.copy()
 
     def service_type_is_registered(self, service_type: ServiceType) -> bool:
-        """Check if a service type is registered."""
+        """Check if a service type is registered.
+
+        Args:
+            service_type: service type.
+
+        Returns:
+            True, if a service type is registered for the service type, False
+            otherwise.
+        """
         return service_type in self.service_types
 
     def register_service(self, service: "BaseService") -> None:
-        """Registers a new service instance
+        """Registers a new service instance.
 
         Args:
             service: a BaseService instance.
+
         Raises:
             TypeError: if the service instance has a service type that is not
                 registered.
+            Exception: if a preexisting service is found for that UUID.
         """
         service_type = service.SERVICE_TYPE
         if service_type not in self.service_types:
@@ -111,7 +128,7 @@ class ServiceRegistry(metaclass=SingletonMetaClass):
         """Get the service instance registered for a UUID.
 
         Args:
-            UUID: service instance identifier.
+            uuid: service instance identifier.
 
         Returns:
             `BaseService` instance that was registered for the UUID or
@@ -129,7 +146,15 @@ class ServiceRegistry(metaclass=SingletonMetaClass):
         return self.services.copy()
 
     def service_is_registered(self, uuid: UUID) -> bool:
-        """Check if a service instance is registered."""
+        """Check if a service instance is registered.
+
+        Args:
+            uuid: service instance identifier.
+
+        Returns:
+            True, if a service instance is registered for the UUID, False
+            otherwise.
+        """
         return uuid in self.services
 
     def load_service_from_dict(
@@ -150,6 +175,10 @@ class ServiceRegistry(metaclass=SingletonMetaClass):
 
         Returns:
             A new or existing ZenML service instance.
+
+        Raises:
+            TypeError: if the service type is not registered.
+            ValueError: if the service type is not valid.
         """
         service_type = service_dict.get("service_type")
         if not service_type:

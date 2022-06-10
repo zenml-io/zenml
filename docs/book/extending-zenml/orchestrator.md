@@ -67,7 +67,7 @@ class BaseOrchestrator(StackComponent, ABC):
 {% hint style="info" %}
 This is a slimmed-down version of the base implementation which aims to 
 highlight the abstraction layer. In order to see the full implementation 
-and get the complete docstrings, please check the source code on GitHub.
+and get the complete docstrings, please check [the source code on GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/orchestrators/base_orchestrator.py).
 {% endhint %}
 
 ## List of available orchestrators
