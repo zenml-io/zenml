@@ -1,4 +1,5 @@
 
+
 "\nTo"
 AIPlatform
 AKS
@@ -150,6 +151,7 @@ Graphviz
 HDQC
 HFModel
 HFTokenizer
+HTTPError
 HTTPException
 Hacky
 HelpFormatter
@@ -158,6 +160,7 @@ IAM
 IOError
 IPython
 ISTIO
+ImportError
 InitializationException
 Initializations
 IntegrationError
