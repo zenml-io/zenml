@@ -227,6 +227,7 @@ MyObj
 MyOrchestrator
 MySQLMetadataStore
 MyService
+MyStep
 MyStepEntrypointConfiguration
 NFS
 NLP
@@ -361,8 +362,10 @@ SuperQuick
 Symlink
 TBD
 TCP
+TFEvaluator
 TFPreTrainedModel
 TFRecords
+TFTrainer
 TFX
 TFX's
 TODO
