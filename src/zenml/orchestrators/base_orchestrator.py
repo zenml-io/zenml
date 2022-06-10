@@ -410,7 +410,7 @@ class BaseOrchestrator(StackComponent, ABC):
             PipelineNode instance
 
         Raises:
-            KeyError: If the step name is not found in the pipeline
+            KeyError: If the step name is not found in the pipeline.
         """
         for node in pb2_pipeline.nodes:
             if (
