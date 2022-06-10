@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the whylogs visualizer step."""
 
 import tempfile
 from typing import Any, List, Optional
@@ -46,17 +47,20 @@ class WhylogsVisualizer(BaseStepVisualizer):
     def visualize(
         self,
         object: StepView,
-        *args: Any,
         plots: Optional[List[WhylogsPlots]] = None,
+        *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Visualize all whylogs dataset profiles present as outputs in the
-        step view
+        """Visualize all whylogs dataset profiles present as outputs in the step view.
 
         Args:
             object: StepView fetched from run.get_step().
             plots: optional list of whylogs plots to visualize. Defaults to
                 using all available plot types if not set
+            *args: additional positional arguments to pass to the visualize
+                method
+            **kwargs: additional keyword arguments to pass to the visualize
+                method
         """
         whylogs_artifact_datatype = (
             f"{DatasetProfile.__module__}.{DatasetProfile.__name__}"
@@ -74,8 +78,9 @@ class WhylogsVisualizer(BaseStepVisualizer):
     def _get_plot_method(
         visualizer: ProfileVisualizer, plot: WhylogsPlots
     ) -> Any:
-        """Get the Whylogs ProfileVisualizer plot method corresponding to a
-        WhylogsPlots enum value.
+        """Get the Whylogs ProfileVisualizer plot method.
+
+        This will be the one corresponding to a WhylogsPlots enum value.
 
         Args:
             visualizer: a ProfileVisualizer instance

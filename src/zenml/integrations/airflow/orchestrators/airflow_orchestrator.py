@@ -28,6 +28,7 @@
 
 # Minor parts of the  `prepare_or_run_pipeline()` method of this file are
 # inspired by the airflow dag runner implementation of tfx
+"""Implementation of Airflow orchestrator integration."""
 
 import datetime
 import functools
@@ -67,7 +68,11 @@ class AirflowOrchestrator(BaseOrchestrator):
     FLAVOR: ClassVar[str] = AIRFLOW_ORCHESTRATOR_FLAVOR
 
     def __init__(self, **values: Any):
-        """Sets environment variables to configure airflow."""
+        """Sets environment variables to configure airflow.
+
+        Args:
+            **values: Values to set in the orchestrator.
+        """
         super().__init__(**values)
         self._set_env()
 
@@ -75,24 +80,32 @@ class AirflowOrchestrator(BaseOrchestrator):
     def _translate_schedule(
         schedule: Optional[Schedule] = None,
     ) -> Dict[str, Any]:
-        """Convert ZenML schedule into airflow schedule which uses slightly
-        different naming and needs some default entries for execution without a
-        schedule.
+        """Convert ZenML schedule into Airflow schedule.
+
+        The Airflow schedule uses slightly different naming and needs some
+        default entries for execution without a schedule.
 
         Args:
             schedule: Containing the interval, start and end date and
                 a boolean flag that defines if past runs should be caught up
                 on
+
         Returns:
             Airflow configuration dict.
         """
         if schedule:
-            return {
-                "schedule_interval": schedule.interval_second,
-                "start_date": schedule.start_time,
-                "end_date": schedule.end_time,
-                "catchup": schedule.catchup,
-            }
+            if schedule.cron_expression:
+                return {
+                    "schedule_interval": schedule.cron_expression,
+                }
+            else:
+                return {
+                    "schedule_interval": schedule.interval_second,
+                    "start_date": schedule.start_time,
+                    "end_date": schedule.end_time,
+                    "catchup": schedule.catchup,
+                }
+
         return {
             "schedule_interval": "@once",
             # set the a start time in the past and disable catchup so airflow runs the dag immediately
@@ -108,8 +121,9 @@ class AirflowOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """Create an airflow dag as the intermediate representation for the
-        pipeline. This dag will be loaded by airflow in the target environment
+        """Creates an Airflow DAG as the intermediate representation for the pipeline.
+
+        This DAG will be loaded by airflow in the target environment
         and used for orchestration of the pipeline.
 
         How it works:
@@ -124,8 +138,17 @@ class AirflowOrchestrator(BaseOrchestrator):
         configured.
 
         Finally, the dag is fully complete and can be returned.
-        """
 
+        Args:
+            sorted_steps: List of steps in the pipeline.
+            pipeline: The pipeline to be executed.
+            pb2_pipeline: The pipeline as a protobuf message.
+            stack: The stack on which the pipeline will be deployed.
+            runtime_configuration: The runtime configuration.
+
+        Returns:
+            The Airflow DAG.
+        """
         import airflow
         from airflow.operators import python as airflow_python
 
@@ -179,7 +202,17 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     @root_validator(skip_on_failure=True)
     def set_airflow_home(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Sets airflow home according to orchestrator UUID."""
+        """Sets Airflow home according to orchestrator UUID.
+
+        Args:
+            values: Dictionary containing all orchestrator attributes values.
+
+        Returns:
+            Dictionary containing all orchestrator attributes values and the airflow home.
+
+        Raises:
+            ValueError: If the orchestrator UUID is not set.
+        """
         if "uuid" not in values:
             raise ValueError("`uuid` needs to exist for AirflowOrchestrator.")
         values["airflow_home"] = os.path.join(
@@ -191,22 +224,38 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     @property
     def dags_directory(self) -> str:
-        """Returns path to the airflow dags directory."""
+        """Returns path to the airflow dags directory.
+
+        Returns:
+            Path to the airflow dags directory.
+        """
         return os.path.join(self.airflow_home, "dags")
 
     @property
     def pid_file(self) -> str:
-        """Returns path to the daemon PID file."""
+        """Returns path to the daemon PID file.
+
+        Returns:
+            Path to the daemon PID file.
+        """
         return os.path.join(self.airflow_home, "airflow_daemon.pid")
 
     @property
     def log_file(self) -> str:
-        """Returns path to the airflow log file."""
+        """Returns path to the airflow log file.
+
+        Returns:
+            str: Path to the airflow log file.
+        """
         return os.path.join(self.airflow_home, "airflow_orchestrator.log")
 
     @property
     def password_file(self) -> str:
-        """Returns path to the webserver password file."""
+        """Returns path to the webserver password file.
+
+        Returns:
+            Path to the webserver password file.
+        """
         return os.path.join(self.airflow_home, "standalone_admin_password.txt")
 
     def _set_env(self) -> None:
@@ -219,8 +268,7 @@ class AirflowOrchestrator(BaseOrchestrator):
         os.environ["AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL"] = "10"
 
     def _copy_to_dag_directory_if_necessary(self, dag_filepath: str) -> None:
-        """Copies the DAG module to the airflow DAGs directory if it's not
-        already located there.
+        """Copies DAG module to the Airflow DAGs directory if not already present.
 
         Args:
             dag_filepath: Path to the file in which the DAG is defined.
@@ -263,7 +311,11 @@ class AirflowOrchestrator(BaseOrchestrator):
         )
 
     def runtime_options(self) -> Dict[str, Any]:
-        """Runtime options for the airflow orchestrator."""
+        """Runtime options for the airflow orchestrator.
+
+        Returns:
+            Runtime options dictionary.
+        """
         return {DAG_FILEPATH_OPTION_KEY: None}
 
     def prepare_pipeline_deployment(
@@ -272,11 +324,15 @@ class AirflowOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Checks whether airflow is running and copies the DAG file to the
-        airflow DAGs directory.
+        """Checks Airflow is running and copies DAG file to the Airflow DAGs directory.
+
+        Args:
+            pipeline: Pipeline to be deployed.
+            stack: Stack to be deployed.
+            runtime_configuration: Runtime configuration for the pipeline.
 
         Raises:
-            RuntimeError: If airflow is not running or no DAG filepath runtime
+            RuntimeError: If Airflow is not running or no DAG filepath runtime
                           option is provided.
         """
         if not self.is_running:
@@ -298,7 +354,14 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     @property
     def is_running(self) -> bool:
-        """Returns whether the airflow daemon is currently running."""
+        """Returns whether the airflow daemon is currently running.
+
+        Returns:
+            True if the daemon is running, False otherwise.
+
+        Raises:
+            RuntimeError: If port 8080 is occupied.
+        """
         from airflow.cli.commands.standalone_command import StandaloneCommand
         from airflow.jobs.triggerer_job import TriggererJob
 
@@ -329,7 +392,11 @@ class AirflowOrchestrator(BaseOrchestrator):
 
     @property
     def is_provisioned(self) -> bool:
-        """Returns whether the airflow daemon is currently running."""
+        """Returns whether the airflow daemon is currently running.
+
+        Returns:
+            True if the airflow daemon is running, False otherwise.
+        """
         return self.is_running
 
     def provision(self) -> None:

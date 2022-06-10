@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""ZenML integrations module.
+
 The ZenML integrations module contains sub-modules for each integration that we
 support. This includes orchestrators like Apache Airflow, visualization tools
 like the ``facets`` library, as well as deep learning libraries like PyTorch.
@@ -29,6 +30,7 @@ from zenml.integrations.gcp import GcpIntegration  # noqa
 from zenml.integrations.gcp_secrets_manager import (  # noqa
     GcpSecretManagerIntegration,
 )
+from zenml.integrations.github import GitHubIntegration  # noqa
 from zenml.integrations.graphviz import GraphvizIntegration  # noqa
 from zenml.integrations.huggingface import HuggingfaceIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa

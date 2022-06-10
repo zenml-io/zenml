@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Facet Statistics Visualizer."""
 
 import base64
 import os
@@ -41,11 +42,13 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
     def visualize(
         self, object: StepView, magic: bool = False, *args: Any, **kwargs: Any
     ) -> None:
-        """Method to visualize components
+        """Method to visualize components.
 
         Args:
             object: StepView fetched from run.get_step().
             magic: Whether to render in a Jupyter notebook or not.
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
         """
         datasets = []
         for output_name, artifact_view in object.outputs.items():
@@ -85,11 +88,14 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
         return html_
 
     def generate_facet(self, html_: str, magic: bool = False) -> None:
-        """Generate a Facet Overview
+        """Generate a Facet Overview.
 
         Args:
             html_: HTML represented as a string.
             magic: Whether to magically materialize facet in a notebook.
+
+        Raises:
+            EnvironmentError: If magic is True and not in a notebook.
         """
         if magic:
             if not Environment.in_notebook() or Environment.in_google_colab():

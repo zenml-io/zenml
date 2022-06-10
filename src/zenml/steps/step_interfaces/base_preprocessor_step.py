@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base preprocessor step."""
 
 from abc import abstractmethod
 
@@ -19,12 +20,11 @@ from zenml.steps import BaseStep, BaseStepConfig, Output, StepContext
 
 
 class BasePreprocessorConfig(BaseStepConfig):
-    """Base class for Preprocessor step configurations"""
+    """Base class for Preprocessor step configurations."""
 
 
 class BasePreprocessorStep(BaseStep):
-    """Base step implementation for any Preprocessor step implementation on
-    ZenML"""
+    """Base step implementation for any Preprocessor step implementation."""
 
     @abstractmethod
     def entrypoint(  # type: ignore[override]
@@ -41,4 +41,17 @@ class BasePreprocessorStep(BaseStep):
         test_transformed=DataArtifact,
         validation_transformed=DataArtifact,
     ):
-        """Base entrypoint for any Preprocessor implementation"""
+        """Base entrypoint for any Preprocessor implementation.
+
+        Args:
+            train_dataset: The training dataset.
+            test_dataset: The test dataset.
+            validation_dataset: The validation dataset.
+            statistics: The statistics of the dataset.
+            schema: The schema of the dataset.
+            config: The configuration for the step.
+            context: The context for the step.
+
+        Returns:
+            The transformed datasets.
+        """

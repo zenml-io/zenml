@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML local orchestrator."""
 
 from typing import TYPE_CHECKING, Any, ClassVar, List
 
@@ -29,9 +30,11 @@ logger = get_logger(__name__)
 
 
 class LocalOrchestrator(BaseOrchestrator):
-    """Orchestrator responsible for running pipelines locally. This orchestrator
-    does not allow for concurrent execution of steps and also does not support
-    running on a schedule."""
+    """Orchestrator responsible for running pipelines locally.
+
+    This orchestrator does not allow for concurrent execution of steps and also
+    does not support running on a schedule.
+    """
 
     FLAVOR: ClassVar[str] = "local"
 
@@ -43,7 +46,15 @@ class LocalOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """This method iterates through all steps and executes them sequentially."""
+        """This method iterates through all steps and executes them sequentially.
+
+        Args:
+            sorted_steps: A list of steps in the pipeline.
+            pipeline: The pipeline object.
+            pb2_pipeline: The pipeline object in protobuf format.
+            stack: The stack object.
+            runtime_configuration: The runtime configuration object.
+        """
         if runtime_configuration.schedule:
             logger.warning(
                 "Local Orchestrator currently does not support the"

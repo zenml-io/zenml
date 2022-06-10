@@ -51,6 +51,32 @@ def my_second_step(config: SecondStepConfig, input_int: int,
 {% endtab %}
 {% endtabs %}
 
+
+### Use decorators to enhance your BaseStep subclasses
+
+ZenML allows you to easily add functionality like automated experiment tracking to your steps.
+To do so with the class-based API, simply decorate your `BaseStep` subclass as follows:
+
+```python
+from zenml.steps import BaseStep
+from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+
+@enable_mlflow
+class TFTrainer(BaseStep):
+    def entrypoint(
+        self,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+    ) -> tf.keras.Model:
+        mlflow.tensorflow.autolog()
+        ...
+```
+
+Check out our [MLflow](https://github.com/zenml-io/zenml/tree/main/examples/mlflow_tracking), 
+[Wandb](https://github.com/zenml-io/zenml/tree/main/examples/wandb_tracking) and 
+[whylogs](https://github.com/zenml-io/zenml/tree/main/examples/whylogs_data_profiling) 
+examples for more information on how to use the specific decorators.
+
 ### Subclassing the BasePipeline
 
 {% tabs %}
