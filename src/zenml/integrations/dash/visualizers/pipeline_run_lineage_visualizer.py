@@ -335,7 +335,7 @@ class PipelineRunLineageVisualizer(BasePipelineRunVisualizer):
             """Callback for the text area below the graph.
 
             Args:
-                data_list (List[Dict[str, Any]]): The selected node data.
+                data_list: The selected node data.
 
             Returns:
                 str: The selected node data.
