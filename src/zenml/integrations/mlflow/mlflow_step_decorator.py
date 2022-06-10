@@ -73,6 +73,20 @@ def enable_mlflow(
         return test_acc
     ```
 
+    You can also use this decorator with our class-based API like so:
+
+    ```
+    @enable_mlflow
+    class TFEvaluator(BaseStep):
+        def entrypoint(
+            self,
+            x_test: np.ndarray,
+            y_test: np.ndarray,
+            model: tf.keras.Model,
+        ) -> float:
+            ...
+    ```
+
     All MLflow artifacts and metrics logged from all the steps in a pipeline
     run are by default grouped under a single experiment named after the
     pipeline. To log MLflow artifacts and metrics from a step in a separate
@@ -98,19 +112,14 @@ def enable_mlflow(
                 "`step` decorated function or a BaseStep subclass."
             )
         source_fn = getattr(_step, STEP_INNER_FUNC_NAME)
-        return cast(
-            S,
-            type(  # noqa
-                _step.__name__,
-                (_step,),
-                {
-                    STEP_INNER_FUNC_NAME: staticmethod(
-                        mlflow_step_entrypoint()(source_fn)
-                    ),
-                    "__module__": _step.__module__,
-                },
-            ),
-        )
+        new_entrypoint = mlflow_step_entrypoint()(source_fn)
+        if _step._created_by_functional_api():
+            # If the step was created by the functional API, the old entrypoint
+            # was a static method -> make sure the new one is as well
+            new_entrypoint = staticmethod(new_entrypoint)
+
+        setattr(_step, STEP_INNER_FUNC_NAME, new_entrypoint)
+        return _step
 
     if _step is None:
         return inner_decorator
