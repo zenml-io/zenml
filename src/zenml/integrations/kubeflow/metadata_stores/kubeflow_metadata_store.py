@@ -124,7 +124,7 @@ class KubeflowMetadataStore(BaseMetadataStore):
         """Returns the Kubeflow orchestrator in the active stack.
 
         Returns:
-            KubeflowOrchestrator: The Kubeflow orchestrator in the active stack.
+            The Kubeflow orchestrator in the active stack.
         """
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
         return cast(KubeflowOrchestrator, repo.active_stack.orchestrator)
@@ -137,7 +137,7 @@ class KubeflowMetadataStore(BaseMetadataStore):
         are running.
 
         Returns:
-            str: The kubernetes context.
+            The kubernetes context.
         """
         kubernetes_context = self.kfp_orchestrator.kubernetes_context
 
@@ -156,7 +156,7 @@ class KubeflowMetadataStore(BaseMetadataStore):
         of it.
 
         Returns:
-            str: path to the root directory
+            Path to the root directory.
         """
         return os.path.join(
             self.kfp_orchestrator.root_directory,
@@ -169,7 +169,7 @@ class KubeflowMetadataStore(BaseMetadataStore):
         """Returns path to the daemon PID file.
 
         Returns:
-            str: path to the daemon PID file
+            Path to the daemon PID file.
         """
         return os.path.join(self.root_directory, "kubeflow_daemon.pid")
 
@@ -178,7 +178,7 @@ class KubeflowMetadataStore(BaseMetadataStore):
         """Path of the daemon log file.
 
         Returns:
-            str: path to the daemon log file
+            Path to the daemon log file.
         """
         return os.path.join(self.root_directory, "kubeflow_daemon.log")
 

@@ -37,7 +37,7 @@ class GcpSecretManagerIntegration(Integration):
         """Declare the stack component flavors for the GCP integration.
 
         Returns:
-            A list of FlavorWrapper objects.
+            List of stack component flavors for this integration.
         """
         return [
             FlavorWrapper(
