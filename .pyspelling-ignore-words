@@ -748,6 +748,7 @@ runtime
 sagemaker
 sam
 sas
+scalable
 scalability
 scaler
 schemas
@@ -757,6 +758,7 @@ sdk
 seldon
 sepc
 serializable
+serverless
 serviceAccountName
 setFormatter
 setattr
@@ -817,6 +819,7 @@ touchpoint
 traceback
 txt
 ui
+unencrypted
 uncomment
 unconfigured
 uninstallation
