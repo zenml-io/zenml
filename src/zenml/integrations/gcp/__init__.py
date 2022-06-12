@@ -19,9 +19,9 @@ stores, and an `io` module to handle file operations on Google Cloud Storage
 (GCS).
 
 Additionally, the GCP secrets manager integration submodule provides a
-way to access the gcp secrets manager from within you ZenML Pipeline runs.
+way to access the GCP secrets manager from within your ZenML Pipeline runs.
 
-The Vertex integration submodule provides a way to run ZenML pipelines in a
+The Vertex AI integration submodule provides a way to run ZenML pipelines in a
 Vertex AI environment.
 """
 

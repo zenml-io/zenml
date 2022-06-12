@@ -43,14 +43,14 @@ cd zenml_examples/step_operator_remote_training
 zenml init
 ```
 
-Each type of step operator has their own pre-requisites.
+Each type of step operator has their own prerequisites.
 
 Before running this example, you must set up the individual cloud providers in a
 certain way. The complete guide can be found in
 the [docs](https://docs.zenml.io/advanced-guide/cloud/step-operators).
 
-Please jump to the section of
-the step operator you would like to run on:
+Please jump to the section applicable to 
+the step operator you would like to use:
 
 ### 🌿 Sagemaker
 
@@ -165,7 +165,7 @@ The stack will consist of:
 * The **local orchestrator** which will be executing your pipelines steps.
 * A **GCP Bucket artifact store** which will be responsible for storing the
   artifacts of your pipeline.
-* The **Vertex AI step operator** which will be utilized to run the training
+* The **Vertex AI step operator** which will be used to run the training
   step
   on GCP.
 
@@ -220,7 +220,7 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the step operator integrations can be
+Our docs for the step operator integrations can be
 found [here](https://docs.zenml.io/advanced-guide/step-operators).
 
 If you want to learn more about step operators in general or about how to build

@@ -1,8 +1,8 @@
 # 🏃 Run pipelines in production using Vertex AI
 
-[Vertex Ai Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
-is a serverless ML Workflow tool running on the Google Cloud Platform. It is
-an easy way to quickly run your code in a production ready, repeatable 
+[Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
+is a serverless ML workflow tool running on the Google Cloud Platform. It is
+an easy way to quickly run your code in a production-ready, repeatable 
 cloud orchestrator that requires minimal setup without provisioning and paying 
 for standby compute. 
 
@@ -29,7 +29,7 @@ gcloud auth login
 
 Then you will need to
 [authorize](https://cloud.google.com/container-registry/docs/advanced-authentication)
-your local docker client to have access the GCP container registry.
+your local Docker client to have access the GCP container registry.
 
 ```shell
 gcloud auth configure-docker
@@ -38,14 +38,14 @@ gcloud auth configure-docker
 You will also need to 
 [create a service account](https://cloud.google.com/iam/docs/creating-managing-service-accounts).
 
-This Service account will need permissions to run vertex ai jobs, and access 
+This service account will need permissions to run Vertex AI jobs, and access 
 secrets as Admin. Additionally, your user account will need to have permissions to use the service 
 account.
 
 ![Grant user access to Service Account](assets/serviceacc3.png)
 
-For your CloudSQL Database it is also recommended to enable SSL authentication. 
-You will need to create a client certificate and download all 3 certificates. 
+For your CloudSQL database it is also recommended to enable SSL authentication. 
+You will need to create a client certificate and download all three certificates. 
 Save these, you will need them at a later point.
 
 ## 🥞 Create a GCP Kubeflow Pipelines stack
@@ -55,7 +55,7 @@ stack with all of these components.
 
 * The **artifact store** to store step outputs in a GCP Bucket.
 * The **metadata store** to track metadata inside a MySQL database.
-* The docker images that are created to run your pipeline are stored in GCP
+* The Docker images that are created to run your pipeline are stored in GCP
   **container registry**.
 * The **Vertex orchestrator** is responsible for running your ZenML pipeline
   in Vertex AI.
@@ -89,7 +89,7 @@ zenml container-registry register gcp_registry --flavor=gcp --uri=<CONTAINER_REG
 # The DB_HOST_IP is the public IP Address of your Database: xx.xx.xxx.xxx
 #  The DB_PORT is 3306 by default - set this in case this default does not apply
 #  The DB_NAME is the name of the database that you have created in GCP as the
-#  metadata store. The `mysql_secret` will be created once the secret manager
+#  metadata store. The `mysql_secret` will be created once the secrets manager
 #  is created and the stack is active.
 zenml metadata-store register gcp_metadata_store --flavor=mysql --host=<DB_HOST_IP> --port=<DB_PORT> --database=<DB_NAME> --secret=mysql_secret
   
@@ -97,12 +97,12 @@ zenml metadata-store register gcp_metadata_store --flavor=mysql --host=<DB_HOST_
 zenml artifact-store register gcp_artifact_store --flavor=gcp --path=<PATH_TO_YOUR_GCP_BUCKET>
 
 # The orchestrator needs the PROJECT_ID and the GCP_LOCATION in which to
-#  run the vertex ai pipeline. Additionally you might need to set the 
+#  run the Vertex AI pipeline. Additionally you might need to set the 
 #  WORKLOAD_SERVICE_ACCOUNT to the service account you created with secret
 #  manager access, it will be in the format: xxx@xxx.iam.gserviceaccount.com
 zenml orchestrator register vertex_orch --flavor=vertex --project=<PROJECT_ID> --location=<GCP_LOCATION>
 
-# For the secret manager, all we'll need it the gcp PROJECT_ID
+# For the secrets manager, all we'll need it the gcp PROJECT_ID
 zenml secrets-manager register gcp_vertex_secrets_manager --flavor=gcp --project_id=<PROJECT_ID>
 
 # Now we're ready to assemble our stack

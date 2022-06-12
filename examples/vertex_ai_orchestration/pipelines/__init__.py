@@ -14,7 +14,7 @@
 """
 ## Vertex AI examples pipeline
 
-Very simple pipeline to show a pipeline running on vertex ai
+Very simple pipeline to show a pipeline running on Vertex AI
 """
 from .vertex_example_pipeline.vertex_example_pipeline import (
     vertex_example_pipeline,
