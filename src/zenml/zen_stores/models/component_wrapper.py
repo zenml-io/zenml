@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Component wrapper implementation."""
 
 import base64
 import json
@@ -30,7 +31,7 @@ logger = get_logger(__name__)
 
 
 class ComponentWrapper(BaseModel):
-    """Serializable Configuration of a StackComponent"""
+    """Serializable Configuration of a StackComponent."""
 
     type: StackComponentType
     flavor: str
@@ -40,11 +41,13 @@ class ComponentWrapper(BaseModel):
 
     @classmethod
     def from_component(cls, component: "StackComponent") -> "ComponentWrapper":
-        """Creates a ComponentWrapper from an actual instance of a Stack
-        Component.
+        """Creates a ComponentWrapper from an instance of a Stack Component.
 
         Args:
             component: the instance of a StackComponent
+
+        Returns:
+            a ComponentWrapper
         """
         return cls(
             type=component.TYPE,
@@ -57,8 +60,11 @@ class ComponentWrapper(BaseModel):
         )
 
     def to_component(self) -> "StackComponent":
-        """Converts the ComponentWrapper into an actual instance of a Stack
-        Component."""
+        """Converts the ComponentWrapper into an actual instance of a Stack Component.
+
+        Returns:
+            a StackComponent
+        """
         from zenml.repository import Repository
 
         flavor = Repository(skip_repository_check=True).get_flavor(  # type: ignore[call-arg]

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility functions to help with YAML files and data."""
 
 import json
 from pathlib import Path
@@ -48,7 +49,15 @@ def write_yaml(
 
 
 def append_yaml(file_path: str, contents: Dict[Any, Any]) -> None:
-    """Append contents to a YAML file at file_path."""
+    """Append contents to a YAML file at file_path.
+
+    Args:
+        file_path: Path to YAML file.
+        contents: Contents of YAML file as dict.
+
+    Raises:
+        FileNotFoundError: if directory does not exist.
+    """
     file_contents = read_yaml(file_path) or {}
     file_contents.update(contents)
     if not io_utils.is_remote(file_path):
@@ -70,7 +79,6 @@ def read_yaml(file_path: str) -> Any:
     Raises:
         FileNotFoundError: if file does not exist.
     """
-
     if fileio.exists(file_path):
         contents = io_utils.read_file_contents_as_string(file_path)
         # TODO: [LOW] consider adding a default empty dict to be returned
@@ -81,7 +89,7 @@ def read_yaml(file_path: str) -> Any:
 
 
 def is_yaml(file_path: str) -> bool:
-    """Returns True if file_path is YAML, else False
+    """Returns True if file_path is YAML, else False.
 
     Args:
         file_path: Path to YAML file.
@@ -101,9 +109,6 @@ def write_json(file_path: str, contents: Dict[str, Any]) -> None:
         file_path: Path to JSON file.
         contents: Contents of JSON file as dict.
 
-    Returns:
-        Contents of the file in a dict.
-
     Raises:
         FileNotFoundError: if directory does not exist.
     """
@@ -120,6 +125,12 @@ def read_json(file_path: str) -> Any:
 
     Args:
         file_path: Path to JSON file.
+
+    Returns:
+        Contents of the file in a dict.
+
+    Raises:
+        FileNotFoundError: if file does not exist.
     """
     if fileio.exists(file_path):
         contents = io_utils.read_file_contents_as_string(file_path)
@@ -129,7 +140,17 @@ def read_json(file_path: str) -> Any:
 
 
 class UUIDEncoder(json.JSONEncoder):
+    """JSON encoder for UUID objects."""
+
     def default(self, obj: Any) -> Any:
+        """Default UUID encoder for JSON.
+
+        Args:
+            obj: Object to encode.
+
+        Returns:
+            Encoded object.
+        """
         if isinstance(obj, UUID):
             # if the obj is uuid, we simply return the value of uuid
             return obj.hex

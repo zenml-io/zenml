@@ -120,6 +120,22 @@ def my_step(
     ...
 ```
 
+If you want to use this decorator with our class-based API, simply decorate your step class as follows:
+```python
+import wandb
+
+@enable_wandb(wandb.Settings(magic=True))
+class MyStep(BaseStep):
+    def entrypoint(
+        self,
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        model: tf.keras.Model,
+    ) -> float:
+        """Everything in this step is autologged"""
+        ...
+```
+
 Doing the above auto-magically logs all the data, metrics, and results within the step, no further action required!
 
 ### 🧽 Clean up

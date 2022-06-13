@@ -275,10 +275,10 @@ def wait_pod(
         exit_condition_lambda: A lambda
             which will be called periodically to wait for a Pod to exit. The
             function returns True to exit.
-        timeout_sec: Timeout in seconds to wait for pod to reach exit 
-            condition, or 0 to wait for an unlimited duration. 
+        timeout_sec: Timeout in seconds to wait for pod to reach exit
+            condition, or 0 to wait for an unlimited duration.
             Defaults to unlimited.
-        exponential_backoff: Whether to use exponential back off for polling. 
+        exponential_backoff: Whether to use exponential back off for polling.
             Defaults to False.
         stream_logs: Whether to stream the pod logs to
             `zenml.logger.info()`. Defaults to False.

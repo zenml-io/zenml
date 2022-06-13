@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Seldon Deployer step."""
 
 import os
 from typing import cast
@@ -40,7 +41,7 @@ logger = get_logger(__name__)
 
 
 class SeldonDeployerStepConfig(BaseStepConfig):
-    """Seldon model deployer step configuration
+    """Seldon model deployer step configuration.
 
     Attributes:
         service_config: Seldon Core deployment service configuration.
@@ -62,7 +63,7 @@ def seldon_model_deployer_step(
     context: StepContext,
     model: ModelArtifact,
 ) -> SeldonDeploymentService:
-    """Seldon Core model deployer pipeline step
+    """Seldon Core model deployer pipeline step.
 
     This step can be used in a pipeline to implement continuous
     deployment for a ML model with Seldon Core.
@@ -71,6 +72,7 @@ def seldon_model_deployer_step(
         deploy_decision: whether to deploy the model or not
         config: configuration for the deployer step
         model: the model artifact to deploy
+        context: the step context
 
     Returns:
         Seldon Core deployment service
@@ -89,8 +91,9 @@ def seldon_model_deployer_step(
     config.service_config.pipeline_step_name = step_name
 
     def prepare_service_config(model_uri: str) -> SeldonDeploymentConfig:
-        """Prepare the model files for model serving and create and return a
-        Seldon service configuration for the model.
+        """Prepare the model files for model serving.
+
+        This creates and returns a Seldon service configuration for the model.
 
         This function ensures that the model files are in the correct format
         and file structure required by the Seldon Core server implementation
@@ -101,6 +104,9 @@ def seldon_model_deployer_step(
 
         Returns:
             The URL to the model ready for serving.
+
+        Raises:
+            RuntimeError: if the model files were not found
         """
         served_model_uri = os.path.join(
             context.get_output_artifact_uri(), "seldon"

@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of the whylogs integration."""
+
 from zenml.integrations.constants import WHYLOGS
 from zenml.integrations.integration import Integration
 
 
 class WhylogsIntegration(Integration):
-    """Definition of [whylogs](https://github.com/whylabs/whylogs)
-    integration for ZenML."""
+    """Definition of [whylogs](https://github.com/whylabs/whylogs) integration for ZenML."""
 
     NAME = WHYLOGS
     REQUIREMENTS = ["whylogs<=0.7.9", "pybars3>=0.9.7"]

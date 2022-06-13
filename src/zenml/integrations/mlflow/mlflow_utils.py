@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of utils specific to the MLflow integration."""
 
 from mlflow import (  # type: ignore[import]
     ActiveRun,
@@ -32,8 +33,11 @@ logger = get_logger(__name__)
 
 
 def get_missing_mlflow_experiment_tracker_error() -> ValueError:
-    """Returns a detailed error that describes how to add an MLflow experiment
-    tracker component to your stack."""
+    """Returns description of how to add an MLflow experiment tracker to your stack.
+
+    Returns:
+        ValueError: If no MLflow experiment tracker is registered in the active stack.
+    """
     return ValueError(
         "The active stack needs to have a MLflow experiment tracker "
         "component registered to be able to track experiments using "
@@ -47,15 +51,12 @@ def get_missing_mlflow_experiment_tracker_error() -> ValueError:
 
 
 def get_tracking_uri() -> str:
-    """Gets the MLflow tracking URI from the active experiment tracking stack
-    component.
+    """Gets the MLflow tracking URI from the active experiment tracking stack component.
+
+    # noqa: DAR401
 
     Returns:
         MLflow tracking URI.
-
-    Raises:
-        ValueError: If the active stack contains no MLflow experiment tracking
-            component.
     """
     tracker = Repository().active_stack.experiment_tracker
     if tracker is None or not isinstance(tracker, MLFlowExperimentTracker):

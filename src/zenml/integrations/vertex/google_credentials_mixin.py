@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""Implementation of the Google credentials mixin."""
 
 from typing import TYPE_CHECKING, Optional, Tuple
 
@@ -34,9 +34,10 @@ class GoogleCredentialsMixin(BaseModel):
     service_account_path: Optional[str] = None
 
     def _get_authentication(self) -> Tuple["Credentials", str]:
-        """Get the Google Cloud Platform credentials and the project ID associated
-        with the credentials. If `service_account_path` is provided, then the credentials
-        will be loaded from the file at that path. Otherwise, the default credentials
+        """Get GCP credentials and the project ID associated with the credentials.
+
+        If `service_account_path` is provided, then the credentials will be
+        loaded from the file at that path. Otherwise, the default credentials
         will be used.
 
         Returns:

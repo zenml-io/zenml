@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the Sagemaker integration.
+
 The Sagemaker integration submodule provides a way to run ZenML steps in
 Sagemaker.
 """
@@ -35,7 +36,11 @@ class SagemakerIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Sagemaker integration."""
+        """Declare the stack component flavors for the Sagemaker integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=SAGEMAKER_STEP_OPERATOR_FLAVOR,

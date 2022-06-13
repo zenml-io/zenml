@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Base SecretSchema class."""
+
 from abc import ABC
 from typing import Any, ClassVar, Dict, List
 
@@ -18,14 +20,18 @@ from pydantic import BaseModel
 
 
 class BaseSecretSchema(BaseModel, ABC):
+    """Base class for all Secret Schemas."""
+
     name: str
     TYPE: ClassVar[str]
 
     @property
     def content(self) -> Dict[str, Any]:
-        """The concept of SecretSchemas supports strongly typed
-        secret schemas as well as arbitrary collections of key-value pairs.
-        This property unifies all attributes into a content dictionary.
+        """A dictionary for the content of the SecretSchema.
+
+        The concept of SecretSchemas supports strongly typed secret schemas as
+        well as arbitrary collections of key-value pairs. This property unifies
+        all attributes into a content dictionary.
 
         Returns:
             A dictionary containing the content of the SecretSchema.
@@ -40,13 +46,13 @@ class BaseSecretSchema(BaseModel, ABC):
     @classmethod
     def get_schema_keys(cls) -> List[str]:
         """Get all attribute keys that are not part of the ignored set.
-        These schema keys can be used to define all
-        required key-value pairs of a secret schema
+
+        These schema keys can be used to define all required key-value pairs of
+        a secret schema.
 
         Returns:
             A list of all attribute keys that are not part of the ignored set.
         """
-
         ignored_keys = ["name", "arbitrary_kv_pairs"]
         return [
             schema_key
