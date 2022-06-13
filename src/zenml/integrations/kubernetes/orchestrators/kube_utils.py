@@ -21,10 +21,11 @@ import datetime
 import enum
 import re
 import time
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
+from kubernetes.client.rest import ApiException
 
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_cluster_role_binding_manifest_for_service_account,
@@ -336,6 +337,32 @@ def wait_pod(
             backoff_interval *= 2
 
 
+FuncT = TypeVar("FuncT", bound=Callable[..., Any])
+
+
+def _if_not_exists(create_fn: FuncT) -> FuncT:
+    """Wrap a kubernetes function to handle creation if already exists.
+
+    Args:
+        create_fn: kubernetes function to be wrapped.
+
+    Returns:
+        Wrapped kubernetes function.
+    """
+
+    def create_if_not_exists(*args: Any, **kwargs: Any) -> None:
+        try:
+            create_fn(*args, **kwargs)
+        except ApiException as exc:
+            if exc.status != 409:
+                raise
+            logger.debug(
+                f"Didn't execute {create_fn.__name__} because already exists."
+            )
+
+    return cast(FuncT, create_if_not_exists)
+
+
 def create_cluster_role_binding(body: Dict[str, Any]) -> None:
     """Create a k8s cluster role binding.
 
@@ -382,12 +409,12 @@ def create_edit_service_account(
         service_account_name=service_account_name,
         namespace=namespace,
     )
-    create_cluster_role_binding(body=crb_manifest)
+    _if_not_exists(create_cluster_role_binding)(body=crb_manifest)
 
     sa_manifest = build_service_account_manifest(
         name=service_account_name, namespace=namespace
     )
-    core_api.create_namespaced_service_account(
+    _if_not_exists(core_api.create_namespaced_service_account)(
         namespace=namespace,
         body=sa_manifest,
     )
@@ -401,7 +428,7 @@ def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str) -> None:
         namespace: Kubernetes namespace. Defaults to "default".
     """
     manifest = build_namespace_manifest(namespace)
-    core_api.create_namespace(body=manifest)
+    _if_not_exists(core_api.create_namespace)(body=manifest)
 
 
 def create_mysql_deployment(
@@ -431,23 +458,25 @@ def create_mysql_deployment(
         namespace=namespace,
         storage_request=storage_capacity,
     )
-    core_api.create_namespaced_persistent_volume_claim(
+    _if_not_exists(core_api.create_namespaced_persistent_volume_claim)(
         namespace=namespace,
         body=pvc_manifest,
     )
     pv_manifest = build_persistent_volume_manifest(
         name=volume_name, storage_capacity=storage_capacity
     )
-    core_api.create_persistent_volume(body=pv_manifest)
+    _if_not_exists(core_api.create_persistent_volume)(body=pv_manifest)
     deployment_manifest = build_mysql_deployment_manifest(
         name=deployment_name,
         namespace=namespace,
         pv_claim_name=volume_claim_name,
     )
-    create_deployment(body=deployment_manifest, namespace=namespace)
+    _if_not_exists(create_deployment)(
+        body=deployment_manifest, namespace=namespace
+    )
     service_manifest = build_mysql_service_manifest(
         name=service_name, namespace=namespace
     )
-    core_api.create_namespaced_service(
+    _if_not_exists(core_api.create_namespaced_service)(
         namespace=namespace, body=service_manifest
     )
