@@ -92,7 +92,7 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             the steps. If no custom base image is given, a basic image of the
             active ZenML version will be used. **Note**: This image needs to
             have ZenML installed, otherwise the pipeline execution will fail.
-            For that reason, might want to extend the ZenML Docker images found
+            For that reason, you might want to extend the ZenML Docker images found
             here: https://hub.docker.com/r/zenmldocker/zenml/
         project: GCP project name. If `None`, the project will be inferred from
             the environment.
