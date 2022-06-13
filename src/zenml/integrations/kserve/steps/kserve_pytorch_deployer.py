@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the KServe Deployer step."""
+"""Implementation of the KServe Pytorch Deployer step."""
 
 import os
 import tempfile
@@ -50,9 +50,12 @@ class KServePytorchDeployerStepConfig(BaseStepConfig):
 
     Attributes:
         service_config: KServe deployment service configuration.
-        model_file:     Path to python file containing model architecture.
+        model_class_file:     Path to python file containing model architecture.
         handler:        TorchServe's handler file to handle custom TorchServe inference logic.
         extra_files:    Comma separated path to extra dependency files.
+        model_version: Model version.
+        requirements_file: Path to requirements file.
+        torch_config: TorchServe configuration file path.
     """
 
     service_config: KServeDeploymentConfig
@@ -66,14 +69,20 @@ class KServePytorchDeployerStepConfig(BaseStepConfig):
 
 
 class TorchModelArchiver(BaseModel):
-    """The Kubernetes status condition entry for a KServe Deployment.
-
+    """Model archiver for Pytorch models.
+    
     Attributes:
-        type: Type of runtime condition.
-        status: Status of the condition.
-        reason: Brief CamelCase string containing reason for the condition's last transition.
-        message: Human-readable message indicating details about last transition.
-    """
+        model_name: Model name.
+        model_version: Model version.
+        serialized_file: Serialized model file.
+        handler: TorchServe's handler file to handle custom TorchServe inference logic.
+        extra_files: Comma separated path to extra dependency files.
+        requirements_file: Path to requirements file.
+        export_path: Path to export model.
+        runtime: Runtime of the model.
+        version: Version of the model.
+        force: Force export of the model.
+        archive_format: Archive format."""
 
     model_name: str
     serialized_file: str
@@ -96,10 +105,10 @@ def kserve_pytorch_model_deployer_step(
     context: StepContext,
     model: ModelArtifact,
 ) -> KServeDeploymentService:
-    """KServe model deployer pipeline step.
+    """KServe pytorch model deployer pipeline step.
 
     This step can be used in a pipeline to implement continuous
-    deployment for a ML model with KServe.
+    deployment for a ML model with KServe for pytorch models.
 
     Args:
         deploy_decision: whether to deploy the model or not

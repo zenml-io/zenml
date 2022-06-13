@@ -47,7 +47,7 @@ In the deployment pipeline, ZenML's Seldon Core integration is used to serve
 the trained model directly from the Artifact Store where it is automatically
 saved as an artifact by the training step. A Seldon Core deployment server
 is launched to serve the latest model version if its accuracy is above a
-configured threshold (also customizable through a command line argument).
+configured threshold (also customizable through a command-line argument).
 
 The Seldon Core deployment server is provisioned remotely as a Kubernetes
 resource that continues to run after the deployment pipeline run is complete.
