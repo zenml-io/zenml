@@ -15,6 +15,7 @@
 
 import os
 import re
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 
 from git.exc import InvalidGitRepositoryError
@@ -363,13 +364,21 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             ValueError: If a schedule without a cron expression or with an
                 invalid cron expression is passed.
         """
-        workflow_path = os.path.join(
-            self.workflow_directory, f"{pipeline.name}.yaml"
-        )
-
-        workflow_dict: Dict[str, Any] = {"name": pipeline.name}
-
         schedule = runtime_configuration.schedule
+
+        workflow_name = pipeline.name
+        if schedule:
+            # Add a suffix to the workflow filename so we don't overwrite
+            # scheduled pipeline by future schedules or single pipeline runs.
+            datetime_string = datetime.now().strftime("%y_%m_%d_%H_%M_%S")
+            workflow_name += f"-scheduled-{datetime_string}"
+
+        workflow_path = os.path.join(
+            self.workflow_directory,
+            f"{workflow_name}.yaml",
+        )
+        workflow_dict: Dict[str, Any] = {"name": workflow_name}
+
         if schedule:
             if not schedule.cron_expression:
                 raise ValueError(
@@ -389,9 +398,9 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 raise ValueError(
                     "GitHub workflows requires a schedule interval of at "
                     "least 5 minutes which is incompatible with your cron "
-                    "expression '{schedule.cron_expression}'. An example of a "
-                    "valid cron expression would be '15 * * * *' to run every "
-                    "15 minutes. For more information on GitHub workflow "
+                    f"expression '{schedule.cron_expression}'. An example of a "
+                    "valid cron expression would be '* 1 * * *' to run "
+                    "every hour. For more information on GitHub workflow "
                     "schedules check out https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule."
                 )
 
@@ -459,7 +468,6 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 GitHubActionsEntrypointConfiguration.get_entrypoint_arguments(
                     step=step,
                     pb2_pipeline=pb2_pipeline,
-                    pipeline_name=pipeline.name,
                 )
             )
 
