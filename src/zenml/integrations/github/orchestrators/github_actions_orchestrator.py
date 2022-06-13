@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the GitHub Actions Orchestrator."""
 
+import copy
 import os
 import re
 from datetime import datetime
@@ -226,8 +227,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         ):
             # Use GitHub Actions specific placeholder if the container registry
             # specifies automatic token authentication
-            username = "{{ github.actor }}"
-            password = "{{ secrets.GITHUB_TOKEN }}"
+            username = "${{ github.actor }}"
+            password = "${{ secrets.GITHUB_TOKEN }}"
         # TODO: Uncomment these lines once we support different private
         #  container registries in GitHub Actions
         # elif container_registry.requires_authentication:
@@ -459,10 +460,10 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             # Copy the shared dicts here to avoid creating yaml anchors (which
             # are currently not supported in GitHub workflow yaml files)
             if write_env_file_step:
-                job_steps.append(write_env_file_step.copy())
+                job_steps.append(copy.deepcopy(write_env_file_step))
 
             if docker_login_step:
-                job_steps.append(docker_login_step.copy())
+                job_steps.append(copy.deepcopy(docker_login_step))
 
             entrypoint_args = (
                 GitHubActionsEntrypointConfiguration.get_entrypoint_arguments(
