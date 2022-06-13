@@ -47,10 +47,10 @@ class KServeDeployerStepConfig(BaseStepConfig):
     Attributes:
         service_config: KServe deployment service configuration.
         secrets: a list of ZenML secrets containing additional configuration
-            parameters for the Seldon Core deployment (e.g. credentials to
+            parameters for the KServe deployment (e.g. credentials to
             access the Artifact Store where the models are stored). If supplied,
-            the information fetched from these secrets is passed to the Seldon
-            Core deployment server as a list of environment variables.
+            the information fetched from these secrets is passed to the KServe
+            deployment server as a list of environment variables.
     """
 
     service_config: KServeDeploymentConfig
@@ -64,10 +64,10 @@ def kserve_model_deployer_step(
     context: StepContext,
     model: ModelArtifact,
 ) -> KServeDeploymentService:
-    """Seldon Core model deployer pipeline step.
+    """KServe model deployer pipeline step.
 
     This step can be used in a pipeline to implement continuous
-    deployment for a ML model with Seldon Core.
+    deployment for a ML model with KServe.
 
     Args:
         deploy_decision: whether to deploy the model or not
@@ -76,7 +76,7 @@ def kserve_model_deployer_step(
         context: the step context
 
     Returns:
-        Seldon Core deployment service
+        KServe deployment service
     """
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
@@ -95,7 +95,7 @@ def kserve_model_deployer_step(
         """Prepare the model files for model serving.
 
         This function ensures that the model files are in the correct format
-        and file structure required by the Seldon Core server implementation
+        and file structure required by the KServe server implementation
         used for model serving.
 
         Args:
@@ -114,13 +114,13 @@ def kserve_model_deployer_step(
 
         # TODO [ENG-773]: determine how to formalize how models are organized into
         #   folders and sub-folders depending on the model type/format and the
-        #   Seldon Core protocol used to serve the model.
+        #   KServe protocol used to serve the model.
 
         # TODO [ENG-791]: auto-detect built-in kserve server implementation
         #   from the model artifact type
 
         # TODO [ENG-792]: validate the model artifact type against the
-        #   supported built-in Seldon server implementations
+        #   supported built-in KServe server implementations
         if config.service_config.predictor == "tensorflow":
             # the TensorFlow server expects model artifacts to be
             # stored in numbered subdirectories, each representing a model
@@ -174,7 +174,7 @@ def kserve_model_deployer_step(
             service.start(timeout=config.timeout)
         return service
 
-    # invoke the Seldon Core model deployer to create a new service
+    # invoke the KServe model deployer to create a new service
     # or update an existing one that was previously deployed for the same
     # model
     service_config = prepare_service_config(model.uri)
@@ -186,7 +186,7 @@ def kserve_model_deployer_step(
     )
 
     logger.info(
-        f"Seldon deployment service started and reachable at:\n"
+        f"KServe deployment service started and reachable at:\n"
         f"    {service.prediction_url}\n"
     )
 

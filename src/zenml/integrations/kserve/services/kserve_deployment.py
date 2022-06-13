@@ -391,10 +391,10 @@ class KServeDeploymentService(BaseService):
         follow: bool = False,
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
-        """Get the logs of a Seldon Core deployment resource.
+        """Get the logs of a KServe deployment resource.
 
         Args:
-            name: the name of the Seldon Core deployment to get logs for.
+            name: the name of the KServe deployment to get logs for.
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
 
