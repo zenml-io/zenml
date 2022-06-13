@@ -25,7 +25,7 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.azure.artifact_stores import AzureArtifactStore
 from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
-from zenml.integrations.vertex.orchestrators import VertexOrchestrator
+from zenml.integrations.gcp.orchestrators import VertexOrchestrator
 from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
 from zenml.stack import Stack
 
@@ -57,7 +57,7 @@ def test_vertex_orchestrator_stack_validation() -> None:
     )
 
     local_metadata_store = SQLiteMetadataStore(name="", uri="./metadata.db")
-    local_artifact_store = LocalArtifactStore(name="", path=".")
+    local_artifact_store = LocalArtifactStore(name="", path="")
     mysql_metadata_store = MySQLMetadataStore(
         name="mysql_metadata_store",
         username="zenml",
