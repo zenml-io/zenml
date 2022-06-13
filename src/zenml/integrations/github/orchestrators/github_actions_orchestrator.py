@@ -69,9 +69,11 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             ZenML installed, otherwise the pipeline execution will fail. For
             that reason, you might want to extend the ZenML docker images
             found here: https://hub.docker.com/r/zenmldocker/zenml/
-        prevent_dirty_repository: If `True`, this orchestrator will raise an
-            exception when trying to run a pipeline while there are still
-            untracked/uncommitted files in the git repository.
+        skip_dirty_repository_check: If `True`, this orchestrator will not
+            raise an exception when trying to run a pipeline while there are
+            still untracked/uncommitted files in the git repository.
+        skip_github_repository_check: If `True`, the orchestrator will not check
+            if your git repository is pointing to a GitHub remote.
         push: If `True`, this orchestrator will automatically commit and push
             the GitHub workflow file when running a pipeline. If `False`, the
             workflow file will be written to the correct location but needs to
@@ -79,7 +81,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
     """
 
     custom_docker_base_image_name: Optional[str] = None
-    prevent_dirty_repository: bool = True
+    skip_dirty_repository_check: bool = False
+    skip_github_repository_check: bool = False
     push: bool = False
 
     _git_repo: Optional[Repo] = None
@@ -112,13 +115,16 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 remote_url.startswith(prefix)
                 for prefix in GITHUB_REMOTE_URL_PREFIXES
             )
-            if not is_github_repo:
+            if not (is_github_repo or self.skip_github_repository_check):
                 raise RuntimeError(
                     f"The remote URL '{remote_url}' of your git repo "
                     f"({self._git_repo.git_dir}) is not pointing to a GitHub "
                     "repository. The GitHub Actions orchestrator runs "
                     "pipelines using GitHub Actions and therefore only works "
-                    "with GitHub repositories."
+                    "with GitHub repositories. If you want to skip this check "
+                    "and run this orchestrator anyway, run: \n"
+                    f"`zenml orchestrator update {self.name} "
+                    "--skip_github_repository_check=true`"
                 )
 
         return self._git_repo
@@ -302,7 +308,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             RuntimeError: If the orchestrator should only run in a clean git
                 repository and the repository is dirty.
         """
-        if self.prevent_dirty_repository and self.git_repo.is_dirty(
+        if not self.skip_dirty_repository_check and self.git_repo.is_dirty(
             untracked_files=True
         ):
             raise RuntimeError(
@@ -310,7 +316,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 "untracked/uncommitted files) git repository."
                 "If you want this orchestrator to skip the dirty repo check in "
                 f"the future, run\n `zenml orchestrator update {self.name} "
-                "--prevent_dirty_repository=false`"
+                "--skip_dirty_repository_check=true`"
             )
 
         image_name = self.get_docker_image_name(pipeline.name)
@@ -397,7 +403,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 "default branch for this scheduled pipeline to run."
             )
             workflow_dict["on"] = {
-                "schedule": {"cron": schedule.cron_expression}
+                "schedule": [{"cron": schedule.cron_expression}]
             }
         else:
             # The pipeline should only run once. The only fool-proof way to
