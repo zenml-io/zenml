@@ -21,12 +21,14 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
+from google.protobuf import json_format
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
 from zenml.container_registries import (
     BaseContainerRegistry,
     GitHubContainerRegistry,
 )
+from zenml.entrypoints.step_entrypoint_configuration import PIPELINE_JSON_OPTION
 from zenml.integrations.github.orchestrators.github_actions_entrypoint_configuration import (
     GitHubActionsEntrypointConfiguration,
 )
@@ -40,7 +42,7 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.utils import yaml_utils
+from zenml.utils import string_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -58,6 +60,8 @@ logger = get_logger(__name__)
 GITHUB_REMOTE_URL_PREFIXES = ["git@github.com", "https://github.com"]
 # Name of the GitHub Action used to login to docker
 DOCKER_LOGIN_ACTION = "docker/login-action@v1"
+# Name of the environment variable that holds the encoded pb2 pipeline
+ENV_ENCODED_ZENML_PIPELINE = "ENCODED_ZENML_PIPELINE"
 
 
 class GitHubActionsOrchestrator(BaseOrchestrator):
@@ -378,7 +382,17 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             self.workflow_directory,
             f"{workflow_name}.yaml",
         )
-        workflow_dict: Dict[str, Any] = {"name": workflow_name}
+
+        # Store the encoded pb2 pipeline once as an environment variable.
+        # We will replace the entrypoint argument later to reduce the size
+        # of the workflow file.
+        encoded_pb2_pipeline = string_utils.b64_encode(
+            json_format.MessageToJson(pb2_pipeline)
+        )
+        workflow_dict: Dict[str, Any] = {
+            "name": workflow_name,
+            "env": {ENV_ENCODED_ZENML_PIPELINE: encoded_pb2_pipeline},
+        }
 
         if schedule:
             if not schedule.cron_expression:
@@ -471,6 +485,11 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                     pb2_pipeline=pb2_pipeline,
                 )
             )
+
+            # Replace the encoded string by a global environement variable to
+            # keep the workflow file small
+            index = entrypoint_args.index(f"--{PIPELINE_JSON_OPTION}")
+            entrypoint_args[index + 1] = ENV_ENCODED_ZENML_PIPELINE
 
             command = base_command + entrypoint_args
             docker_run_step = {
