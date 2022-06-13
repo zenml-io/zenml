@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Evidently Profile Step."""
 
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple, Union
 
 import pandas as pd
 from evidently.dashboard import Dashboard  # type: ignore
@@ -127,6 +127,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
         config: EvidentlyProfileConfig,
+        ignored_columns: Union[None, List[str]]
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str
     ):
@@ -137,6 +138,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             comparison_dataset: a Pandas DataFrame of new data you wish to
                 compare against the reference data
             config: the configuration for the step
+            select_columns: a list of columns to be ignored
 
         Returns:
             profile: dictionary report extracted from an Evidently Profile
@@ -144,6 +146,9 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             dashboard: HTML report extracted from an Evidently Dashboard
               generated for the data drift
         """
+        if ignored_columns is not None:
+            reference_dataset = reference_dataset.drop(labels=ignored_columns, axis =1)
+            comparison_dataset = comparison_dataset.drop(labels=ignored_columns, axis =1)
         sections, tabs = config.get_profile_sections_and_tabs()
         data_drift_dashboard = Dashboard(tabs=tabs)
         data_drift_dashboard.calculate(
