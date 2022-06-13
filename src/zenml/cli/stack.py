@@ -1043,7 +1043,10 @@ def import_stack(
     ctx.invoke(register_stack, stack_name=stack_name, **component_names)
 
 
-@stack.command("copy")
+@stack.command(
+    "copy",
+    help="SOURCE_NAME: The name of the stack to copy.\n\nTARGET_NAME: Name of the copied stack.",
+)
 @click.argument("source_name", type=str, required=True)
 @click.argument("target_name", type=str, required=True)
 def copy_stack(source_name: str, target_name: str) -> None:

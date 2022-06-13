@@ -296,7 +296,7 @@ def _register_stack_component(
 
 def generate_stack_component_register_command(
     component_type: StackComponentType,
-) -> Callable[[str, str, str, List[str]], None]:
+) -> Callable[[str, str, str, bool, List[str]], None]:
     """Generates a `register` command for the specific stack component type.
 
     Args:
@@ -326,9 +326,21 @@ def generate_stack_component_register_command(
         help=f"DEPRECATED: The flavor of the {display_name} to register.",
         type=str,
     )
+    @click.option(
+        "--interactive",
+        "-i",
+        "interactive",
+        is_flag=True,
+        help="Use interactive mode to update the secret values.",
+        type=click.BOOL,
+    )
     @click.argument("args", nargs=-1, type=click.UNPROCESSED)
     def register_stack_component_command(
-        name: str, flavor: str, old_flavor: str, args: List[str]
+        name: str,
+        flavor: str,
+        old_flavor: str,
+        interactive: bool,
+        args: List[str],
     ) -> None:
         """Registers a stack component.
 
@@ -336,6 +348,7 @@ def generate_stack_component_register_command(
             name: Name of the component to register.
             flavor: Flavor of the component to register.
             old_flavor: DEPRECATED: The flavor of the component to register.
+            interactive: Use interactive mode to fill missing values.
             args: Additional arguments to pass to the component.
         """
         cli_utils.print_active_profile()
@@ -361,28 +374,73 @@ def generate_stack_component_register_command(
                 f"{display_name} you want to register."
             )
 
-        with console.status(f"Registering {display_name} '{name}'...\n"):
-            try:
-                parsed_args = cli_utils.parse_unknown_options(args)
-            except AssertionError as e:
-                cli_utils.error(str(e))
-                return
+        try:
+            parsed_args = cli_utils.parse_unknown_options(args)
+        except AssertionError as e:
+            cli_utils.error(str(e))
+            return
 
-            try:
+        try:
+            with console.status(f"Registering {display_name} '{name}'...\n"):
                 _register_stack_component(
                     component_type=component_type,
                     component_name=name,
                     component_flavor=flavor,
                     **parsed_args,
                 )
-            except ValidationError as e:
+        except ValidationError as e:
+            if not interactive:
                 cli_utils.error(
                     f"When you are registering a new {display_name} with the "
                     f"flavor `{flavor}`, make sure that you are utilizing "
                     f"the right attributes. Current problems:\n\n{e}"
                 )
-            except Exception as e:
-                cli_utils.error(str(e))
+                return
+            else:
+                cli_utils.warning(
+                    f"You did not set all required fields for a "
+                    f"{flavor} {display_name}. You'll be guided through the "
+                    f"missing fields now. You'll be able to skip optional "
+                    f"fields by just pressing enter. To cancel simply interrupt"
+                    f" with CTRL+C."
+                )
+
+                repo = Repository()
+                flavor_class = repo.get_flavor(
+                    name=flavor, component_type=component_type
+                )
+                missing_fields = {
+                    k: v.required
+                    for k, v in flavor_class.__fields__.items()
+                    if v.name not in ["name", "uuid", *parsed_args.keys()]
+                }
+
+                completed_fields = parsed_args.copy()
+                for field, field_req in missing_fields.items():
+                    if field_req:
+                        user_input = click.prompt(f"{field}")
+                    else:
+                        prompt = f"{field} (Optional)'"
+                        user_input = click.prompt(prompt, default="")
+                    if user_input:
+                        completed_fields[field] = user_input
+
+                try:
+                    with console.status(
+                        f"Registering {display_name} '{name}'" f"...\n"
+                    ):
+
+                        _register_stack_component(
+                            component_type=component_type,
+                            component_name=name,
+                            component_flavor=flavor,
+                            **completed_fields,
+                        )
+                except Exception as e:
+                    cli_utils.error(str(e))
+
+        except Exception as e:
+            cli_utils.error(str(e))
 
         cli_utils.declare(f"Successfully registered {display_name} `{name}`.")
 
@@ -435,7 +493,9 @@ def generate_stack_component_flavor_register_command(
                     "Please make sure your source is either importable from an "
                     "installed package or create a ZenML repository by running "
                     "`zenml init` and specify the source relative to the "
-                    "repository directory. Check out https://docs.zenml.io/developer-guide/repo-and-config#the-zenml-repository "
+                    "repository directory. Check out "
+                    "https://docs.zenml.io/developer-guide/repo-and-config"
+                    "#the-zenml-repository "
                     "for more information."
                 )
 
@@ -596,7 +656,7 @@ def generate_stack_component_update_command(
 def generate_stack_component_remove_attribute_command(
     component_type: StackComponentType,
 ) -> Callable[[str, List[str]], None]:
-    """Generates an `remove_attribute` command for the specific stack component type.
+    """Generates `remove_attribute` command for a specific stack component type.
 
     Args:
         component_type: Type of the component to generate the command for.
@@ -1080,7 +1140,7 @@ def register_single_stack_component_cli_commands(
         "flavor", help=f"Commands to interact with {plural_display_name}."
     )
     def flavor_group() -> None:
-        """Group commands for handling the flavors of single stack component type."""
+        """Group commands to handle flavors for a stack component type."""
 
     # zenml stack-component flavor register
     register_flavor_command = generate_stack_component_flavor_register_command(

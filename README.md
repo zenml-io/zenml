@@ -38,7 +38,7 @@ Version](https://img.shields.io/pypi/pyversions/zenml)](https://pypi.org/project
 [![PyPI Status](https://pepy.tech/badge/zenml)](https://pepy.tech/project/zenml)
 ![GitHub](https://img.shields.io/github/license/zenml-io/zenml)
 [![Codecov](https://codecov.io/gh/zenml-io/zenml/branch/main/graph/badge.svg)](https://codecov.io/gh/zenml-io/zenml)
-[![Interrogate](docs/interrogate.svg)](https://interrogate.readthedocs.io/en/latest/)
+[![Interrogate](docs/book/assets/interrogate.svg)](https://interrogate.readthedocs.io/en/latest/)
 [![Main Workflow
 Tests](https://github.com/zenml-io/zenml/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/zenml-io/zenml/actions/workflows/ci.yml)
 
