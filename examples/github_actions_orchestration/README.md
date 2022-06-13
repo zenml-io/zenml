@@ -1,11 +1,17 @@
-# 🏃 Run pipelines in GitHub Actions
+# 🏃 Run pipelines using GitHub Actions
 
-# 🖥 Run it locally
+[GitHub Actions](https://docs.github.com/en/actions) is a platform that allows you to execute
+arbitrary software development workflows right in your GitHub repository. It's most commonly used for CI/CD pipelines, but using the **GitHubActionsOrchestrator** ZenML now enables you to easily run and schedule 
+your machine learning pipelines as GitHub Actions workflows.
 
-## 👣 Step-by-Step
-### 📄 Prerequisites 
+## 📄 Prerequisites 
 
-In order to run this example, you need to install and initialize ZenML.
+In order to run your ZenML pipelines using GitHub Actions, we need to set up a few things first:
+
+* First you'll need a [GitHub](https://github.com) account and a cloned repository.
+* You'll also need to create a GitHub personal access token that allows you read/write GitHub secrets and push docker images to your GitHub container registry. To do so, please follow [this guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) and make sure to assign your token the **repo** and **write:packages** scopes.
+* A MySQL database that ZenML will use to store metadata. See [here](https://github.com/schustmi/github-orchestrator-test/actions/workflows/github_pipeline.yaml) for more information on how to set one up on AWS/GCP/Azure.
+* An artifact store to save the outputs of your pipeline steps. See [here](https://docs.zenml.io/advanced-guide/guide-aws-gcp-azure#artifact-store) for more information on how to set one up on AWS/GCP/Azure.
 
 ```bash
 pip install zenml
@@ -13,46 +19,73 @@ pip install zenml
 # Install ZenML integrations: choose one of s3/gcp/azure depending on where your artifact store is hosted
 zenml integration install github <s3/gcp/azure>
 
-cd <ROOT_OF_YOUR_GITHUB_REPOSITORY>
+# Change the current working directory to a path inside your cloned GitHub repository
+cd <PATH_INSIDE_GITHUB_REPOSITORY>
 
-
-# If your git repository does not contain an existing ZenML pipeline, we can use the sample pipeline from this example
-zenml example pull github_actions_orchestration
-cp zenml_examples/github_actions_orchestration/run.py .
-rm -rf zenml_examples
-git add run.py
+# If your git repository already contains a ZenML pipeline, you can skip these next few commands
+zenml example pull github_actions_orchestration --path=.
+git add github_actions_orchestration
 git commit -m "Add ZenML example pipeline"
+cd github_actions_orchestration
+
+# Set environment variables for your GitHub username as well as the personal access token that you created earlier.
+# These will be used to authenticate with the GitHub API in order to store credentials as GitHub secrets.
+export GITHUB_USERNAME=<GITHUB_USERNAME>
+export GITHUB_AUTHENTICATION_TOKEN=<GITHUB_AUTHENTICATION_TOKEN>
+
+# Login to the GitHub container registry so we can push the docker images required to run your ZenML pipeline.
+echo $GITHUB_AUTHENTICATION_TOKEN | docker login ghcr.io -u $GITHUB_USERNAME --password-stdin
 ```
 
-### 🥞 Create a new GitHub Actions Stack
+## 🥞 Create a new GitHub Actions Stack
+
+Once we have finished all the external setup, we can create a ZenML stack that 
+connects all these elements together:
 
 ```bash
-export GITHUB_USERNAME=<>
-export GITHUB_AUTHENTICATION_TOKEN=<>
+# We configure the orchestrator to automatically commit and push the GitHub workflow file. If you want to disable this behavior, simply remove the `--push=true` argument
+zenml orchestrator register github_orchestrator --flavor=github --push=true  
 
-zenml orchestrator register github_orchestrator --flavor=github
-zenml container-registry register github_container_registry --flavor=github --uri=<CR_URI> --automatic_token_authentication=true
+# You can find the repository owner and repository name from the URL of your GitHub repository,
+# for example https://github.com/zenml-io/zenml -> The owner would be `zenml-io` and the repository name `zenml`
+zenml secrets_manager register github_secrets_manager \
+    --flavor=github \
+    --owner=<GITHUB_REPOSITORY_OWNER> \
+    --repository=<GITHUB_REPOSITORY_NAME>
 
-zenml secrets_manager register github_secrets_manager --flavor=github --owner=<GITHUB_REPOSITORY_OWNER> --repository=<GITHUB_REPOSITORY_NAME>
+# The GITHUB_CONTAINER_REGISTRY_URI format will be like this: ghcr.io/GITHUB_REPOSITORY_OWNER
+zenml container-registry register github_container_registry \
+    --flavor=github \
+    --automatic_token_authentication=true \
+    --uri=<GITHUB_CONTAINER_REGISTRY_URI>
 
-# Register a metadata store and a secret to connect to it
-zenml secret register mysql_secret --schema=mysql --user=<USERNAME> --password=<PASSWORD> --ssl_ca=<> --ssl_cert=<> --ssl_key=<>
-zenml metadata-store register cloud_metadata_store --flavor=mysql --host=<HOST> --database=<DATABASE_NAME> --secret=mysql_secret
+# Register a metadata store (we will create the authentication secret later)
+# - HOST is the public IP address of your MySQL database
+# - DATABASE_NAME is the name of the database in which ZenML should store metadata
+zenml metadata-store register cloud_metadata_store \
+    --flavor=mysql \
+    --secret=mysql_secret \
+    --host=<HOST> \
+    --database=<DATABASE_NAME> \
 
-# Register one of the three following artifact stores and a secret to connect to it
-# 1) AWS
-zenml secret register s3_store_auth --schema=aws --aws_access_key_id=<ACCESS_KEY_ID> --aws_secret_access_key=<SECRET_ACCESS_KEY>
-zenml artifact-store register cloud_artifact_store --flavor=s3 --path=<YOUR_S3_BUCKET_PATH> --authentication_secret=s3_store_auth
+# Register one of the three following artifact stores (we will create the authentication secrets later)
+# AWS:
+zenml artifact-store register cloud_artifact_store \
+    --flavor=s3 \
+    --authentication_secret=s3_store_auth \
+    --path=<S3_BUCKET_PATH>
+# GCP:
+zenml artifact-store register cloud_artifact_store \
+    --flavor=gcp \
+    --authentication_secret=gcp_store_auth \
+    --path=<GCP_BUCKET_PATH>
+# AZURE:
+zenml artifact-store register cloud_artifact_store \
+    --flavor=azure \
+    --authentication_secret=azure_store_auth \
+    --path=<AZURE_BUCKET_PATH>
 
-# 2) GCP
-zenml secret register gcp_store_auth --schema=gcp ...
-zenml artifact-store register cloud_artifact_store --flavor=gcp --path=<YOUR_GCP_BUCKET_PATH> --authentication_secret=gcp_store_auth
-
-# 3) AZURE
-zenml secret register azure_store_auth --schema=azure ...
-zenml artifact-store register cloud_artifact_store --flavor=azure --path=<YOUR_AZURE_BUCKET_PATH> --authentication_secret=azure_store_auth
-
-
+# Register and activate the stack
 zenml stack register github_stack \
     -o github_orchestrator \
     -s github_secrets_manager \
@@ -60,9 +93,39 @@ zenml stack register github_stack \
     -m cloud_metadata_store \
     -a cloud_artifact_store \
     --set
+
+# Now that the stack is active, we can register the secrets needed to connect to our metadata and artifact store:
+zenml secret register mysql_secret \
+    --schema=mysql \
+    --user=<USERNAME> \
+    --password=<PASSWORD> \
+    --ssl_ca=@<PATH_TO_SSL_SERVER_CERTIFICATE> \
+    --ssl_cert=@<PATH_TO_SSL_CLIENT_CERTIFICATE> \
+    --ssl_key=@<PATH_TO_SSL_CLIENT_KEY>
+
+# Register one of the following secrets depending on the flavor of artifact store that you've registered
+# AWS: See https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html for how to
+# create the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to authenticate with your S3 bucket
+zenml secret register s3_store_auth \
+    --schema=aws \
+    --aws_access_key_id=<AWS_ACCESS_KEY_ID> \
+    --aws_secret_access_key=<AWS_SECRET_ACCESS_KEY>
+# GCP: The PATH_TO_GCP_TOKEN can be either a token generated by the `gcloud` CLI utility 
+# (e.g. ~/.config/gcloud/application_default_credentials.json) or a service account file
+zenml secret register gcp_store_auth \
+    --schema=gcp \
+    --token=@<PATH_TO_GCP_TOKEN>
+# AZURE: See https://docs.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage?tabs=azure-portal
+# for how to find your AZURE_ACCOUNT_NAME and AZURE_ACCOUNT_KEY
+zenml secret register azure_store_auth \
+    --schema=azure \
+    --account_name=<AZURE_ACCOUNT_NAME> \
+    --account_key=<AZURE_ACCOUNT_KEY>
 ```
 
-### 📆 Run or schedule the pipeline
+## ▶️ Run the pipeline
+
+Now that we're done with all the tedious setup, it's time to run the example pipeline. To do so, simply call
 
 ```bash
 python run.py
