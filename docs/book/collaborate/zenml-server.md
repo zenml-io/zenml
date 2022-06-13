@@ -6,7 +6,7 @@ description: Use ZenML in a Collaborative Setting with the ZenServer.
 
 Sometimes, you may need to exchange or collaborate on Stack configurations with
 other developers or even just have your Stacks available on multiple machines.
-While you can always zip up your Profile files or check [the local ZenStore](./profiles.md)
+While you can always zip up your Profile files or check [the local ZenStore](share-with-profiles.md)
 files into version control, a more elegant solution is to have some kind of service
 accessible from anywhere in your network that provides a REST API that can be
 used to store and access your Stacks over the network.
@@ -38,7 +38,7 @@ security and robustness.
 
 ## Interacting with a Remote ZenServer
 
-The [ZenML Profile and ZenStore](./profiles.md) are the main configuration
+The [ZenML Profile and ZenStore](share-with-profiles.md) are the main configuration
 concepts behind the ZenServer architecture. To connect your ZenML client to a
 remote ZenServer instance, you need the URL of the ZenServer REST API and
 [a user that has been configured on the server](#zenserver-user-management).
