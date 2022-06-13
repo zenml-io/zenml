@@ -76,9 +76,9 @@ zenml stack register secrets_stack -m default -o default -a default -x gcp_secre
 
 ### 🥞 Set up your stack for Azure
 
-To get going with azure you will need to install and configure the 
-[azure cli](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
-with the correct credentials to access the azure secrets manager.
+To get going with Azure you will need to install and configure the 
+[Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+with the correct credentials to access the Azure secrets manager.
 
 ```shell
 zenml integration install azure
