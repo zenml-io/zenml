@@ -11,22 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""AWS Secret Schema definition for ZenML integration."""
+"""AWS Authentication Secret Schema definition."""
 
 from typing import ClassVar, Optional
 
-from zenml.secret import register_secret_schema_class
 from zenml.secret.base_secret import BaseSecretSchema
 
 AWS_SECRET_SCHEMA_TYPE = "aws"
 
 
-@register_secret_schema_class
 class AWSSecretSchema(BaseSecretSchema):
-    """AWS Secret Schema definition for ZenML integration."""
+    """AWS Authentication Secret Schema definition."""
 
     TYPE: ClassVar[str] = AWS_SECRET_SCHEMA_TYPE
 
     aws_access_key_id: str
     aws_secret_access_key: str
-    aws_session_token: Optional[str]
+    aws_session_token: Optional[str] = None

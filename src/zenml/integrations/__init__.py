@@ -26,6 +26,7 @@ from zenml.integrations.evidently import EvidentlyIntegration  # noqa
 from zenml.integrations.facets import FacetsIntegration  # noqa
 from zenml.integrations.feast import FeastIntegration  # noqa
 from zenml.integrations.gcp import GcpIntegration  # noqa
+from zenml.integrations.github import GitHubIntegration  # noqa
 from zenml.integrations.graphviz import GraphvizIntegration  # noqa
 from zenml.integrations.huggingface import HuggingfaceIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa

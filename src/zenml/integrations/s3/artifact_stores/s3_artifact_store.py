@@ -33,12 +33,14 @@ from pydantic import validator
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.s3 import S3_ARTIFACT_STORE_FLAVOR
+from zenml.secret.schemas import AWSSecretSchema
+from zenml.stack.authentication_mixin import AuthenticationMixin
 from zenml.utils.io_utils import convert_to_str
 
 PathType = Union[bytes, str]
 
 
-class S3ArtifactStore(BaseArtifactStore):
+class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for S3 based artifacts.
 
     All attributes of this class except `path` will be passed to the
@@ -103,6 +105,30 @@ class S3ArtifactStore(BaseArtifactStore):
         else:
             raise TypeError(f"{value} is not a json string or a dictionary.")
 
+    def _get_credentials(
+        self,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """Gets authentication credentials.
+
+        If an authentication secret is configured, the secret values are
+        returned. Otherwise we fallback to the plain text component attributes.
+
+        Returns:
+            Tuple (key, secret, token) of credentials used to authenticate with
+            the S3 filesystem.
+        """
+        secret = self.get_authentication_secret(
+            expected_schema_type=AWSSecretSchema
+        )
+        if secret:
+            return (
+                secret.aws_access_key_id,
+                secret.aws_secret_access_key,
+                secret.aws_session_token,
+            )
+        else:
+            return self.key, self.secret, self.token
+
     @property
     def filesystem(self) -> s3fs.S3FileSystem:
         """The s3 filesystem to access this artifact store.
@@ -111,10 +137,12 @@ class S3ArtifactStore(BaseArtifactStore):
             The s3 filesystem.
         """
         if not self._filesystem:
+            key, secret, token = self._get_credentials()
+
             self._filesystem = s3fs.S3FileSystem(
-                key=self.key,
-                secret=self.secret,
-                token=self.token,
+                key=key,
+                secret=secret,
+                token=token,
                 client_kwargs=self.client_kwargs,
                 config_kwargs=self.config_kwargs,
                 s3_additional_kwargs=self.s3_additional_kwargs,

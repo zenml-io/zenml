@@ -26,18 +26,13 @@ you please.
 In order to run this example, you need to install and initialize ZenML. Within 
 this example You'll be able to choose between using the
 local yaml based secrets manager, 
-the [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/) 
-and the [GCP Secret Manager](https://cloud.google.com/secret-manager).:
+the [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/), 
+the [GCP Secret Manager](https://cloud.google.com/secret-manager) or
+the [Azure Key Vault](https://azure.microsoft.com/en-us/services/key-vault/#product-overview)
 
 ```shell
 # install CLI
 pip install zenml
-
-# either install the aws integrations
-zenml integration install aws
-
-# or alternatively the gcp integration
-zenml integration install gcp
 
 # pull example
 zenml example pull cloud_secrets_manager
@@ -56,6 +51,8 @@ to make sure everything is
 set up properly.
 
 ```shell
+zenml integration install aws
+
 zenml secrets-manager register aws_secrets_manager --flavor=aws
 zenml stack register secrets_stack -m default -o default -a default -x aws_secrets_manager --set
 ```
@@ -71,15 +68,30 @@ and get the `project_id` which will need to be specified when you register the
 secrets manager.
 
 ```shell
-zenml secrets-manager register gcp_secrets_manager --flavor=gcp --project_id=PROJECT_ID
+zenml integration install gcp
+
+zenml secrets-manager register gcp_secrets_manager --flavor=gcp_secrets_manager --project_id=PROJECT_ID
 zenml stack register secrets_stack -m default -o default -a default -x gcp_secrets_manager --set
+```
+
+### 🥞 Set up your stack for Azure
+
+To get going with azure you will need to install and configure the 
+[azure cli](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+with the correct credentials to access the azure secrets manager.
+
+```shell
+zenml integration install azure
+
+zenml secrets-manager register azure_key_vault --flavor=azure_key_vault --key_vault_name=<VAULT-NAME>
+zenml stack register secrets_stack -m default -o default -a default -x azure_key_vault --set
 ```
 
 ### Or stay on a local stack
 
 In case you run into issues with either of the clouds, feel free to use a local 
-secret manager. Just replace `--flavor=aws`/`--flavor=gcp` with `--flavor=local` to
-use a file based version of a secret manager. Be aware that this is not 
+secret manager. Just replace `--flavor=aws`/`--flavor=gcp_secrets_manager`/`--flavor=azure_key_vault`
+with `--flavor=local` to use a file based version of a secret manager. Be aware that this is not 
 a recommended location to store sensitive information.
 
 
@@ -90,7 +102,7 @@ key-value pair:
 {example_secret_key: example_secret_value}
 
 ```shell
-zenml secret register example_secret -k example_secret_key -v example_secret_value
+zenml secret register example_secret --example_secret_key=example_secret_value
 ```
 
 ### ▶️ Run the Code
@@ -106,7 +118,7 @@ python run.py
 In order to clean up, delete the example secret:
 
 ```shell
-  zenml secret delete example_secret -k example_secret_key -v example_secret_value
+  zenml secret delete example_secret
 ```
 
 and the remaining ZenML references.
