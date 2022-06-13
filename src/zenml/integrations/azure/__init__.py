@@ -60,7 +60,7 @@ class AzureIntegration(Integration):
             FlavorWrapper(
                 name=AZURE_SECRETS_MANAGER_FLAVOR,
                 source="zenml.integrations.azure.secrets_managers"
-                       ".AzureSecretsManager",
+                ".AzureSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),
