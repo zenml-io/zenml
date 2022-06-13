@@ -342,7 +342,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
                 because it is not a
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
-
         # If the `pipeline_root` has not been defined in the orchestrator
         # configuration,
         # try to create it from the artifact store if it is a
@@ -466,7 +465,6 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
             runtime_configuration: Runtime configuration of the pipeline run.
             enable_cache: Whether caching is enabled for this pipeline run.
         """
-
         # We have to replace the hyphens in the pipeline name with underscores
         # and lower case the string, because the Vertex AI Pipelines service
         # requires this format.

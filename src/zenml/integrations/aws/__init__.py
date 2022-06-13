@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Integrates multiple AWS Tools as Stack Components.
+
 The AWS integration provides a way for our users to manage their secrets
 through AWS, a way to use the aws container registry. Additionally, the
 Sagemaker integration submodule provides a way to run ZenML steps in
