@@ -4,7 +4,7 @@
 arbitrary software development workflows right in your GitHub repository. It's most commonly used for CI/CD pipelines, but using the **GitHubActionsOrchestrator** ZenML now enables you to easily run and schedule 
 your machine learning pipelines as GitHub Actions workflows.
 
-## 📄 Prerequisites 
+## 📄 Prerequisites
 
 In order to run your ZenML pipelines using GitHub Actions, we need to set up a few things first:
 
@@ -130,6 +130,11 @@ Now that we're done with all the tedious setup, it's time to run the example pip
 ```bash
 python run.py
 ```
+
+That's it! If everything went as planned this pipeline should now be running in
+GitHub Actions and you should be able to access it from the GitHub UI. It will look something like this:
+
+![GitHub Actions UI](assets/github_actions_ui.png)
 
 # 📜 Learn more
 
