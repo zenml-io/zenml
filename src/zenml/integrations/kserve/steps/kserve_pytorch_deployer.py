@@ -11,13 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the KServe Deployer step."""
 
 import os
 import tempfile
 from typing import Optional, cast
 
-from model_archiver.model_packaging import package_model
-from model_archiver.model_packaging_utils import ModelExportUtils
+from model_archiver.model_packaging import package_model  # type: ignore[import]
+from model_archiver.model_packaging_utils import ModelExportUtils  # type: ignore[import]
 from pydantic import BaseModel
 
 from zenml.artifacts.model_artifact import ModelArtifact
@@ -45,20 +46,12 @@ logger = get_logger(__name__)
 
 
 class KServePytorchDeployerStepConfig(BaseStepConfig):
-    """KServe pytorch model deployer step configuration
+    """KServe pytorch model deployer step configuration.
 
     Attributes:
-
         service_config: KServe deployment service configuration.
-
         model_file:     Path to python file containing model architecture.
-                        This parameter is mandatory for eager mode models.
-                        The model architecture file must contain only one
-                        class definition extended from torch.nn.modules.
-
-        handler:        TorchServe's default handler name  or handler python
-                        file path to handle custom TorchServe inference logic.
-
+        handler:        TorchServe's handler file to handle custom TorchServe inference logic.
         extra_files:    Comma separated path to extra dependency files.
     """
 
@@ -76,13 +69,10 @@ class TorchModelArchiver(BaseModel):
     """The Kubernetes status condition entry for a Seldon Deployment.
 
     Attributes:
-
         type: Type of runtime condition.
         status: Status of the condition.
-        reason: Brief CamelCase string containing reason for the condition's
-            last transition.
-        message: Human-readable message indicating details about last
-            transition.
+        reason: Brief CamelCase string containing reason for the condition's last transition.
+        message: Human-readable message indicating details about last transition.
     """
 
     model_name: str
@@ -106,7 +96,7 @@ def kserve_pytorch_model_deployer_step(
     context: StepContext,
     model: ModelArtifact,
 ) -> KServeDeploymentService:
-    """Seldon Core model deployer pipeline step
+    """Seldon Core model deployer pipeline step.
 
     This step can be used in a pipeline to implement continuous
     deployment for a ML model with Seldon Core.
@@ -115,6 +105,7 @@ def kserve_pytorch_model_deployer_step(
         deploy_decision: whether to deploy the model or not
         config: configuration for the deployer step
         model: the model artifact to deploy
+        context: the step context
 
     Returns:
         Seldon Core deployment service
@@ -133,8 +124,7 @@ def kserve_pytorch_model_deployer_step(
     config.service_config.pipeline_step_name = step_name
 
     def prepare_service_config(model_uri: str) -> KServeDeploymentConfig:
-        """Prepare the model files for model serving and create and return a
-        Seldon service configuration for the model.
+        """Prepare the pytorch model files for model serving.
 
         This function ensures that the model files are in the correct format
         and file structure required by the Seldon Core server implementation
@@ -145,6 +135,9 @@ def kserve_pytorch_model_deployer_step(
 
         Returns:
             The URL to the model ready for serving.
+
+        Raises:
+            RuntimeError: if the model files cannot be prepared.
         """
         deployment_folder_uri = os.path.join(
             context.get_output_artifact_uri(), "kserve"

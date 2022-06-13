@@ -1,3 +1,18 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Implementation of the KServe Model Deployer."""
+
 import re
 from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
@@ -61,12 +76,15 @@ class KServeModelDeployer(BaseModelDeployer):
 
     @staticmethod
     def get_model_server_info(  # type: ignore[override]
-        service_instance: KServeDeploymentService,
+        service_instance: "KServeDeploymentService",
     ) -> Dict[str, Optional[str]]:
-        """Return implementation specific information on the model server
+        """Return implementation specific information on the model server.
 
         Args:
             service_instance: KServe deployment service object
+
+        Returns:
+            A dictionary containing the model server information.
         """
         return {
             "PREDICTION_URL": service_instance.prediction_url,
@@ -81,6 +99,7 @@ class KServeModelDeployer(BaseModelDeployer):
 
         Returns:
             The KServe model deployer registered in the active stack.
+
         Raises:
             TypeError: if the KServe model deployer is not available.
         """
@@ -109,10 +128,6 @@ class KServeModelDeployer(BaseModelDeployer):
 
         Returns:
             The KServeclient.
-
-        Raises:
-            KSevrClientError: if the Kubernetes client configuration cannot be
-                found.
         """
         if not self._client:
             self._client = KServeClient(
@@ -120,8 +135,15 @@ class KServeModelDeployer(BaseModelDeployer):
             )
         return self._client
 
+    # TODO[High]: Save ZenML Secrets in a temp file and load them into
+    # the Kserve credentials
     def _set_credentials(self) -> None:
-        """Set the credentials for the given service instance."""
+        """Set the credentials for the given service instance.
+
+        Raises:
+            RuntimeError: if the credentials are not available.
+            ValueError: if the credentials are not valid.
+        """
         if self.secret:
             secret_manager = Repository(  # type: ignore [call-arg]
                 skip_repository_check=True
@@ -132,7 +154,7 @@ class KServeModelDeployer(BaseModelDeployer):
             ):
                 raise RuntimeError(
                     f"The active stack doesn't have a secret manager component. "
-                    f"The ZenML secret specified in the Seldon Core Model "
+                    f"The ZenML secret specified in the KServe Model "
                     f"Deployer configuration cannot be fetched: {self.secret}."
                 )
             if self.kserve_client:
@@ -141,10 +163,10 @@ class KServeModelDeployer(BaseModelDeployer):
                 except KeyError:
                     raise RuntimeError(
                         f"The ZenML secret '{self.secret}' specified in the "
-                        f"Seldon Core Model Deployer configuration was not found "
+                        f"KServe Model Deployer configuration was not found "
                         f"in the active stack's secret manager."
-                )
-                self.kserve_client.set_credentials(**zenml_secret.content)                
+                    )
+                self.kserve_client.set_credentials(**zenml_secret.content)
             else:
                 raise RuntimeError(
                     f"The Kserve client is not available. The ZenML secret "
@@ -163,8 +185,7 @@ class KServeModelDeployer(BaseModelDeployer):
         replace: bool = False,
         timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BaseService:
-        """Create a new Kserve deployment or update an existing one to
-        serve the supplied model and deployment configuration.
+        """Create a new KServe deployment or update an existing one.
 
         This method has two modes of operation, depending on the `replace`
         argument value:
@@ -204,12 +225,6 @@ class KServeModelDeployer(BaseModelDeployer):
         Returns:
             The ZenML Kserve deployment service object that can be used to
             interact with the remote Kserve server.
-
-        Raises:
-            RuntimeError: if `timeout` is set to a positive value that is
-                exceeded while waiting for the Kserve deployment server
-                to start, or if an operational failure is encountered before
-                it reaches a ready state.
         """
         config = cast(KServeDeploymentConfig, config)
         service = None
@@ -260,6 +275,17 @@ class KServeModelDeployer(BaseModelDeployer):
     def get_kserve_deployments(
         self, labels: Dict[str, str]
     ) -> List[V1beta1InferenceService]:
+        """Get a list of Kserve deployments that match the supplied labels.
+
+        Args:
+            labels: a dictionary of labels to match against Kserve deployments.
+
+        Returns:
+            A list of Kserve deployments that match the supplied labels.
+
+        Raises:
+            RuntimeError: if an operational failure is encountered while
+        """
         labels = labels or {}
         label_selector = (
             ",".join(f"{k}={v}" for k, v in labels.items()) if labels else None
@@ -289,7 +315,6 @@ class KServeModelDeployer(BaseModelDeployer):
         # TODO[CRITICAL]: de-serialize each item into a complete
         #   V1beta1InferenceService object recursively using the openapi
         #   schema (this doesn't work right now)
-
         inference_services: List[V1beta1InferenceService] = []
         for item in response.get("items", []):
             snake_case_item = self._camel_to_snake(item)
@@ -327,8 +352,7 @@ class KServeModelDeployer(BaseModelDeployer):
         model_type: Optional[str] = None,
         predictor: Optional[str] = None,
     ) -> List[BaseService]:
-        """Abstract method to find one or more a model servers that match the
-        given criteria.
+        """Find one or more KServe model services that match the given criteria.
 
         Args:
             running: If true, only running services will be returned.
@@ -344,6 +368,7 @@ class KServeModelDeployer(BaseModelDeployer):
             model_uri: URI of the deployed model.
             model_type: the implementation specific type/format of the deployed
                 model.
+            predictor: the name of the predictor that was used to deploy the model.
 
         Returns:
             One or more Service objects representing model servers that match
@@ -361,23 +386,9 @@ class KServeModelDeployer(BaseModelDeployer):
         labels = config.get_kubernetes_labels()
 
         if service_uuid:
-            # the service UUID is not a label covered by the KServe
-            # deployment service configuration, so we need to add it
-            # separately
             labels["zenml.service_uuid"] = str(service_uuid)
 
         deployments = self.get_kserve_deployments(labels=labels)
-
-        # sort the deployments in descending order of their creation time
-        # deployments.sort(
-        #     key=lambda deployment: datetime.strptime(
-        #         deployment.metadata.creationTimestamp,
-        #         "%Y-%m-%dT%H:%M:%SZ",
-        #     )
-        #     if deployment.metadata.creationTimestamp
-        #     else datetime.min,
-        #     reverse=True,
-        # )
 
         services: List[BaseService] = []
         for deployment in deployments:
@@ -399,14 +410,43 @@ class KServeModelDeployer(BaseModelDeployer):
         timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
         force: bool = False,
     ) -> None:
-        raise NotImplementedError("stop_model_server")
+        """Stop a KServe model server.
+
+        Args:
+            uuid: UUID of the model server to stop.
+            timeout: timeout in seconds to wait for the service to stop.
+            force: if True, force the service to stop.
+
+        Raises:
+            NotImplementedError: stopping on KServe model servers is not
+                supported.
+        """
+        raise NotImplementedError(
+            "Stopping KServe model servers is not implemented. Try "
+            "deleting the KServe model server instead."
+        )
 
     def start_model_server(
         self,
         uuid: UUID,
         timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> None:
-        raise NotImplementedError("start_model_server")
+        """Start a KServe model deployment server.
+
+        Args:
+            uuid: UUID of the model server to start.
+            timeout: timeout in seconds to wait for the service to become
+                active. . If set to 0, the method will return immediately after
+                provisioning the service, without waiting for it to become
+                active.
+
+        Raises:
+            NotImplementedError: since we don't support starting KServe
+                model servers
+        """
+        raise NotImplementedError(
+            "Starting KServe model servers is not implemented"
+        )
 
     def delete_model_server(
         self,
@@ -414,6 +454,15 @@ class KServeModelDeployer(BaseModelDeployer):
         timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT,
         force: bool = False,
     ) -> None:
+        """Delete a KServe model deployment server.
+
+        Args:
+            uuid: UUID of the model server to delete.
+            timeout: timeout in seconds to wait for the service to stop. If
+                set to 0, the method will return immediately after
+                deprovisioning the service, without waiting for it to stop.
+            force: if True, force the service to stop.
+        """
         services = self.find_model_server(service_uuid=uuid)
         if len(services) == 0:
             return

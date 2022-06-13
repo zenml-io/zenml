@@ -1,3 +1,18 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Implementation for the KServe inference service."""
+
 import os
 import re
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
@@ -56,8 +71,11 @@ class KServeDeploymentConfig(ServiceConfig):
         """Update the label values to be valid Kubernetes labels.
 
         See: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+
+        Args:
+            labels: The labels to sanitize.
         """
-        # TODO[MEDIUM]: Move k8s label sanitization to a common module.
+        # TODO[MEDIUM]: Move k8s label sanitization to a common module with all K8s utils.
         for key, value in labels.items():
             # Kubernetes labels must be alphanumeric, no longer than
             # 63 characters, and must begin and end with an alphanumeric
@@ -67,8 +85,7 @@ class KServeDeploymentConfig(ServiceConfig):
             )
 
     def get_kubernetes_labels(self) -> Dict[str, str]:
-        """Generate the labels for the KServe inference service CRD from the
-        service configuration.
+        """Generate the labels for the KServe inference CRD from the service configuration.
 
         These labels are attached to the KServe inference service CRD
         and may be used as label selectors in lookup operations.
@@ -76,9 +93,6 @@ class KServeDeploymentConfig(ServiceConfig):
         Returns:
             The labels for the KServe inference service CRD.
         """
-        # The convention used to differentiate between KServe CRD instances
-        # that are managed by ZenML and those that are not is to set the `app`
-        # label value to `zenml`.
         labels = {"app": "zenml"}
         if self.pipeline_name:
             labels["zenml.pipeline_name"] = self.pipeline_name
@@ -96,8 +110,7 @@ class KServeDeploymentConfig(ServiceConfig):
         return labels
 
     def get_kubernetes_annotations(self) -> Dict[str, str]:
-        """Generate the annotations for the KServe inference service CRD from
-        the service configuration.
+        """Generate the annotations for the KServe inference CRD the service configuration.
 
         The annotations are used to store additional information about the
         KServe ZenML service associated with the deployment that is
@@ -119,8 +132,7 @@ class KServeDeploymentConfig(ServiceConfig):
     def create_from_deployment(
         cls, deployment: V1beta1InferenceService
     ) -> "KServeDeploymentConfig":
-        """Recreate the configuration of a KServe ZenML Service from a deployed
-        KServe inference service instance.
+        """Recreate a KServe service from a KServe deployment resource.
 
         Args:
             deployment: the KServe inference service CRD.
@@ -180,14 +192,21 @@ class KServeDeploymentService(BaseService):
             The active KServeModelDeployer.
 
         Raises:
-            TypeError: if a KServe model deployer is not present in the
-            active stack.
+            TypeError: if the current stack has no KServeModelDeployer.
         """
         from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
             KServeModelDeployer,
         )
 
-        return KServeModelDeployer.get_active_model_deployer()
+        try:
+            model_deployer = KServeModelDeployer.get_active_model_deployer()
+        except TypeError:
+            raise TypeError(
+                "No active KServe model deployer is present in the active "
+                "stack. Please make sure that a KServe model deployer is "
+                "present in the active stack."
+            )  # type: ignore
+        return model_deployer
 
     def _get_client(self) -> KServeClient:
         """Get the KServe client from the active KServe model deployer.
@@ -207,12 +226,12 @@ class KServeDeploymentService(BaseService):
         return self._get_model_deployer().kubernetes_namespace
 
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the external KServe
-        inference service and translate it into a `ServiceState` value and
-        a printable message.
+        """Check the state of the KServe inference service.
 
-        This method should be overridden by subclasses that implement
-        concrete service tracking functionality.
+        This method Checks the the current operational state of the external KServe
+        inference service and translate it into a `ServiceState` value and a printable message.
+
+        This method should be overridden by subclasses that implement concrete service tracking functionality.
 
         Returns:
             The operational state of the external service and a message
@@ -254,8 +273,7 @@ class KServeDeploymentService(BaseService):
 
     @property
     def crd_name(self) -> str:
-        """Get the name of the KServe inference service CRD that uniquely
-        corresponds to this service instance
+        """Get the name of the KServe inference service CRD that uniquely corresponds to this service instance.
 
         Returns:
             The name of the KServe inference service CRD.
@@ -263,8 +281,7 @@ class KServeDeploymentService(BaseService):
         return f"zenml-{str(self.uuid)[:8]}"
 
     def _get_kubernetes_labels(self) -> Dict[str, str]:
-        """Generate the labels for the KServe inference service CRD from the
-        service configuration.
+        """Generate the labels for the KServe inference service CRD from the service configuration.
 
         Returns:
             The labels for the KServe inference service.
@@ -278,6 +295,20 @@ class KServeDeploymentService(BaseService):
     def create_from_deployment(
         cls, deployment: V1beta1InferenceService
     ) -> "KServeDeploymentService":
+        """Recreate the configuration of a KServe Service from a deployed instance.
+
+        Args:
+            deployment: the KServe deployment resource.
+
+        Returns:
+            The KServe service configuration corresponding to the given
+            KServe deployment resource.
+
+        Raises:
+            ValueError: if the given deployment resource does not contain
+                the expected annotations or it contains an invalid or
+                incompatible KServe service configuration.
+        """
         config = KServeDeploymentConfig.create_from_deployment(deployment)
         uuid = deployment.metadata.get("labels").get("zenml.service_uuid")
         if not uuid:
@@ -290,7 +321,10 @@ class KServeDeploymentService(BaseService):
         return service
 
     def provision(self) -> None:
+        """Provision or update remote KServe deployment instance.
 
+        This should then match the current configuration.
+        """
         client = self._get_client()
         namespace = self._get_namespace()
 
@@ -329,7 +363,15 @@ class KServeDeploymentService(BaseService):
             client.create(isvc)
 
     def deprovision(self, force: bool = False) -> None:
-        """Deprovisions all resources used by the service."""
+        """Deprovisions all resources used by the service.
+
+        Args:
+            force: if True, the service will be deprovisioned even if it is
+                still in use.
+
+        Raises:
+            ValueError: if the service is still in use and force is False.
+        """
         client = self._get_client()
         namespace = self._get_namespace()
         name = self.crd_name
@@ -340,8 +382,7 @@ class KServeDeploymentService(BaseService):
             client.delete(name=name, namespace=namespace)
         except RuntimeError:
             raise ValueError(
-                f"Could not delete KServe instance '{name}' from namespace "
-                f"'{namespace}: '"
+                f"Could not delete KServe instance '{name}' from namespace: '{namespace}'."
             )
 
     def _get_deployment_logs(
@@ -361,10 +402,11 @@ class KServeDeploymentService(BaseService):
             A generator that can be acccessed to get the service logs.
 
         Raises:
-            Exception: if an unknown error occurs while fetching
-                the logs.
-        """
+            Exception: if an unknown error occurs while fetching the logs.
 
+        Yields:
+            The logs of the given deployment.
+        """
         client = self._get_client()
         namespace = self._get_namespace()
 
@@ -439,13 +481,12 @@ class KServeDeploymentService(BaseService):
         """Retrieve the logs from the remote KServe inference service instance.
 
         Args:
-            follow: if True, the logs will be streamed as they are written
+            follow: if True, the logs will be streamed as they are written.
             tail: only retrieve the last NUM lines of log output.
 
         Returns:
             A generator that can be accessed to get the service logs.
         """
-
         return self._get_deployment_logs(
             self.crd_name,
             follow=follow,

@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the KServe integration for ZenML.
+
 The KServe integration allows you to use the KServe model serving
 platform to implement continuous model deployment.
 """
@@ -44,7 +45,11 @@ class KServeIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for KServe."""
+        """Declare the stack component flavors for KServe.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=KSERVE_MODEL_DEPLOYER_FLAVOR,

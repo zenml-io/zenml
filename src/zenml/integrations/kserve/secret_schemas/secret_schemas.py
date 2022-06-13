@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation for KServe secret schemas."""
+
 from typing import ClassVar, Optional
 
 from typing_extensions import Literal
@@ -59,7 +61,6 @@ class KServeGSSecretSchema(BaseSecretSchema):
     Based on: https://rclone.org/googlecloudstorage/
 
     Attributes:
-
         storage_type: the storage type. Must be set to "GCS" for this schema.
         namespace: the namespace.
         credentials_file: the credentials file.
@@ -81,7 +82,6 @@ class KServeAzureSecretSchema(BaseSecretSchema):
     Based on: https://rclone.org/azureblob/
 
     Attributes:
-
         storage_type: the storage type. Must be set to "GCS" for this schema.
         namespace: the namespace.
         credentials_file: the credentials file.

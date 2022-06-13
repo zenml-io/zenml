@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of the KServe Model Deployer."""
+
 from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
     KServeModelDeployer,
 )
