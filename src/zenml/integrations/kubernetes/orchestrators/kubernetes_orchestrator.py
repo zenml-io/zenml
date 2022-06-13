@@ -44,8 +44,7 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypo
     KubernetesOrchestratorEntrypointConfiguration,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
-    build_base_pod_manifest,
-    update_pod_manifest,
+    build_pod_manifest,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator
@@ -316,14 +315,11 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
         # Build manifest for the orchestrator pod.
         pod_name = kube_utils.sanitize_pod_name(run_name)
-        pod_manifest = build_base_pod_manifest(
+        pod_manifest = build_pod_manifest(
+            pod_name=pod_name,
             run_name=run_name,
             pipeline_name=pipeline_name,
             image_name=image_name,
-        )
-        pod_manifest = update_pod_manifest(
-            base_pod_manifest=pod_manifest,
-            pod_name=pod_name,
             command=command,
             args=args,
         )

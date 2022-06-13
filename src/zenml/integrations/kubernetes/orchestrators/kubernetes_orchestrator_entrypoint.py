@@ -22,8 +22,7 @@ from zenml.integrations.kubernetes.orchestrators.dag_runner import (
     ThreadedDagRunner,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
-    build_base_pod_manifest,
-    update_pod_manifest,
+    build_pod_manifest,
 )
 from zenml.logger import get_logger
 
@@ -61,13 +60,6 @@ def main() -> None:
     # Get k8s Core API for running kubectl commands later.
     core_api = kube_utils.make_core_v1_api()
 
-    # Build base pod manifest.
-    base_pod_manifest = build_base_pod_manifest(
-        run_name=args.run_name,
-        pipeline_name=args.pipeline_name,
-        image_name=args.image_name,
-    )
-
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
 
@@ -82,9 +74,11 @@ def main() -> None:
         step_args = [*fixed_step_args, *step_specific_args[step_name]]
 
         # Define k8s pod manifest.
-        pod_manifest = update_pod_manifest(
-            base_pod_manifest=base_pod_manifest,
+        pod_manifest = build_pod_manifest(
             pod_name=pod_name,
+            run_name=args.run_name,
+            pipeline_name=args.pipeline_name,
+            image_name=args.image_name,
             command=step_command,
             args=step_args,
         )

@@ -5,27 +5,32 @@ from typing import Any, Dict, List
 from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 
 
-def build_base_pod_manifest(
-    run_name: str, pipeline_name: str, image_name: str
+def build_pod_manifest(
+    pod_name: str,
+    run_name: str,
+    pipeline_name: str,
+    image_name: str,
+    command: List[str],
+    args: List[str],
 ) -> Dict[str, Any]:
-    """Build a basic k8s pod manifest.
-
-    This includes only the data that stays the same for each step manifest.
-    To add in the step-specific data, use `update_pod_manifest()` after.
+    """Build a kubernetes pod manifest for a ZenML run or step.
 
     Args:
-        run_name (str): Name of the ZenML run.
-        pipeline_name (str): Name of the ZenML pipeline.
-        image_name (str): Name of the Docker image.
+        pod_name: Name of the pod.
+        run_name: Name of the ZenML run.
+        pipeline_name: Name of the ZenML pipeline.
+        image_name: Name of the Docker image.
+        command: Command to execute the entrypoint in the pod.
+        args: Arguments provided to the entrypoint command.
 
     Returns:
-        Dict[str, Any]: Base pod manifest.
+        Pod manifest.
     """
     return {
         "apiVersion": "v1",
         "kind": "Pod",
         "metadata": {
-            "name": None,  # to be set in update_pod_manifest
+            "name": pod_name,
             "labels": {
                 "run": run_name,
                 "pipeline": pipeline_name,
@@ -37,8 +42,8 @@ def build_base_pod_manifest(
                 {
                     "name": "main",
                     "image": image_name,
-                    "command": None,  # to be set in update_pod_manifest
-                    "args": None,  # to be set in update_pod_manifest
+                    "command": command,  # to be set in update_pod_manifest
+                    "args": args,  # to be set in update_pod_manifest
                     "env": [
                         {
                             "name": ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
@@ -49,31 +54,6 @@ def build_base_pod_manifest(
             ],
         },
     }
-
-
-def update_pod_manifest(
-    base_pod_manifest: Dict[str, Any],
-    pod_name: str,
-    command: List[str],
-    args: List[str],
-) -> Dict[str, Any]:
-    """Add step-specific arguments to a k8s pod manifest.
-
-    Args:
-        base_pod_manifest (Dict[str, Any]): General pod manifest created by
-            `build_base_pod_manifest()`.
-        pod_name (str): Name of the pod.
-        command (List[str]): Command to execute the entrypoint in the pod.
-        args (List[str]): Arguments provided to the entrypoint command.
-
-    Returns:
-        Dict[str, Any]: Updated pod manifest.
-    """
-    pod_manifest = base_pod_manifest.copy()
-    pod_manifest["metadata"]["name"] = pod_name
-    pod_manifest["spec"]["containers"][0]["command"] = command
-    pod_manifest["spec"]["containers"][0]["args"] = args
-    return pod_manifest
 
 
 def build_persistent_volume_claim_manifest(
