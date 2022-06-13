@@ -125,7 +125,18 @@ zenml secret register azure_store_auth \
 
 ## ▶️ Run the pipeline
 
-Now that we're done with all the tedious setup, it's time to run the example pipeline. To do so, simply call
+We're almost done now, but there is one additional step we need to do after our first pipeline ran (and failed). To do so, simply call
+
+```bash
+python run.py
+```
+
+Running your first pipeline using the ZenML GitHubActions orchestrator will create a [GitHub package](https://github.com/features/packages) called **zenml-github-actions** which by default won't be accessible by GitHub Actions.
+Luckily it doesn't take much effort to resolve this problem: Head to `https://github.com/users/<GITHUB_REPOSITORY_OWNER>/packages/container/package/zenml-github-actions` (replace <GITHUB_REPOSITORY_OWNER> with the value you passed earlier during stack configuration) and click on `Package settings` on the right side. In there you can either
+* change the package visibility to `public`
+* give your repository permissions to access this package using GitHub Actions in the `Manage Actions access` section
+
+After this final step we can try again, and this time it should work:
 
 ```bash
 python run.py
