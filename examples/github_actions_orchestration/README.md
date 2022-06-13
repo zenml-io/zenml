@@ -1,7 +1,7 @@
 # 🏃 Run pipelines using GitHub Actions
 
 [GitHub Actions](https://docs.github.com/en/actions) is a platform that allows you to execute
-arbitrary software development workflows right in your GitHub repository. It's most commonly used for CI/CD pipelines, but using the **GitHubActionsOrchestrator** ZenML now enables you to easily run and schedule 
+arbitrary software development workflows right in your GitHub repository. It's most commonly used for CI/CD pipelines, but using the **GitHub Actions orchestrator** ZenML now enables you to easily run and schedule 
 your machine learning pipelines as GitHub Actions workflows.
 
 ## 📄 Prerequisites
