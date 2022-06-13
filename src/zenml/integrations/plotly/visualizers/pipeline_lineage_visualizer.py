@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Plotly Pipeline Lineage Visualizer."""
 
 from abc import abstractmethod
 from typing import Any
@@ -36,7 +37,16 @@ class PipelineLineageVisualizer(BasePipelineVisualizer):
     def visualize(
         self, object: PipelineView, *args: Any, **kwargs: Any
     ) -> Figure:
-        """Creates a pipeline lineage diagram using plotly."""
+        """Creates a pipeline lineage diagram using plotly.
+
+        Args:
+            object: The pipeline view to visualize.
+            *args: Additional arguments to pass to the visualization.
+            **kwargs: Additional keyword arguments to pass to the visualization.
+
+        Returns:
+            A plotly figure.
+        """
         logger.warning(
             "This integration is not completed yet. Results might be unexpected."
         )

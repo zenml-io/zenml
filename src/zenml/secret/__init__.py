@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the ZenML Secret module.
+
 A ZenML Secret is a grouping of key-value pairs. These are accessed and
 administered via the ZenML Secret Manager (a stack component).
 

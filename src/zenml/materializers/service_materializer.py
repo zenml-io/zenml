@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a materializer to read and write ZenML service instances."""
 
 import os
 from typing import Any, Type
@@ -31,9 +32,13 @@ class ServiceMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ServiceArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> BaseService:
-        """Creates and returns a service instantiated from the serialized
-        service configuration and last known status information saved as
-        artifact.
+        """Creates and returns a service.
+
+        This service is instantiated from the serialized service configuration
+        and last known status information saved as artifact.
+
+        Args:
+            data_type: The type of the data to read.
 
         Returns:
             A ZenML service instance.

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a SecretSchema for arbitrary key:value pairs."""
+
 from typing import Any, ClassVar, Dict
 
 from pydantic import root_validator
@@ -21,8 +23,7 @@ ARBITRARY_SECRET_SCHEMA_TYPE = "arbitrary"
 
 
 class ArbitrarySecretSchema(BaseSecretSchema):
-    """Schema for arbitrary collections of key value pairs with no
-    predefined schema."""
+    """Schema for arbitrary collections of key value pairs with no predefined schema."""
 
     TYPE: ClassVar[str] = ARBITRARY_SECRET_SCHEMA_TYPE
 
@@ -30,8 +31,10 @@ class ArbitrarySecretSchema(BaseSecretSchema):
 
     @root_validator(pre=True)
     def build_arbitrary_kv_pairs(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Pydantic root_validator that takes all unused passed kwargs
-        and passes them into the arbitrary_kv_pairs attribute.
+        """Pydantic root_validator for the Secret Schemas.
+
+        It takes all unused passed kwargs and passes them into the
+        arbitrary_kv_pairs attribute.
 
         Args:
             values: Values passed to the object constructor

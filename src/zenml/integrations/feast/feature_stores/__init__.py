@@ -11,8 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Feast Feature Store
+"""Feast Feature Store integration for ZenML.
 
 Feature stores allow data teams to serve data via an offline store and an online
 low-latency store where data is kept in sync between the two. It also offers a

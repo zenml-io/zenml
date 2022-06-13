@@ -11,8 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Seldon Secret Schemas
+"""Initialization for the Seldon secret schemas.
 
 These are secret schemas that can be used to authenticate Seldon to the
 Artifact Store used to store served ML models.

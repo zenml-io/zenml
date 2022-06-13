@@ -90,7 +90,7 @@ key-value pair:
 {example_secret_key: example_secret_value}
 
 ```shell
-zenml secret register example_secret -k example_secret_key -v example_secret_value
+zenml secret register example_secret --example_secret_key=example_secret_value
 ```
 
 ### ▶️ Run the Code
@@ -106,7 +106,7 @@ python run.py
 In order to clean up, delete the example secret:
 
 ```shell
-  zenml secret delete example_secret -k example_secret_key -v example_secret_value
+  zenml secret delete example_secret
 ```
 
 and the remaining ZenML references.

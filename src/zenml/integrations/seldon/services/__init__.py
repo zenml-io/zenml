@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization for Seldon services."""
+
 from zenml.integrations.seldon.services.seldon_deployment import (  # noqa
     SeldonDeploymentConfig,
     SeldonDeploymentService,

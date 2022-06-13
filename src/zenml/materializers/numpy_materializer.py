@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML NumPy materializer."""
 
 import os
 from typing import TYPE_CHECKING, Any, Type
@@ -39,7 +40,14 @@ class NumpyMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> "NDArray[Any]":
-        """Reads numpy array from parquet file."""
+        """Reads numpy array from parquet file.
+
+        Args:
+            data_type: The type of the data to read.
+
+        Returns:
+            The numpy array.
+        """
         super().handle_input(data_type)
         shape_dict = yaml_utils.read_json(
             os.path.join(self.artifact.uri, SHAPE_FILENAME)
