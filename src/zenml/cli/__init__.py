@@ -741,8 +741,8 @@ Interacting with Model Deployers
 -----------------------------------------
 
 Model deployers are stack components responsible for online model serving.
-They are responsible for deploying models to a remote server, and for
-managing the lifecycle of the deployed models.
+They are responsible for deploying models to a remote server, model deployers
+also act as a registry for models that are served with ZenML. 
 
 If you wish to register a new model deployer, do so with the
 `register` command:
