@@ -741,7 +741,7 @@ Interacting with Model Deployers
 -----------------------------------------
 
 Model deployers are stack components responsible for online model serving.
-They are responsible for deploying models to a remote server, model deployers
+They are responsible for deploying models to a remote server. model deployers
 also act as a registry for models that are served with ZenML. 
 
 If you wish to register a new model deployer, do so with the
@@ -772,8 +772,8 @@ model deployers into the CLI with the following command:
 zenml model-deployer delete MODEL_DEPLOYER_NAME
 ```
 
-If you wish to retrieve logs of a particular model deployer, pass the name of the
-model deployers into the CLI with the following command:
+If you wish to retrieve logs corresponding to a particular model deployer, pass the name
+of the model deployer into the CLI with the following command:
 
 ```bash
 zenml model-deployer logs MODEL_DEPLOYER_NAME
