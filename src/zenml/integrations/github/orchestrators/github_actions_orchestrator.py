@@ -489,7 +489,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             # Replace the encoded string by a global environement variable to
             # keep the workflow file small
             index = entrypoint_args.index(f"--{PIPELINE_JSON_OPTION}")
-            entrypoint_args[index + 1] = ENV_ENCODED_ZENML_PIPELINE
+            entrypoint_args[index + 1] = f"${ENV_ENCODED_ZENML_PIPELINE}"
 
             command = base_command + entrypoint_args
             docker_run_step = {
