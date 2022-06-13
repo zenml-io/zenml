@@ -794,6 +794,7 @@ sagemaker
 sam
 sas
 scalability
+scalable
 scaler
 schemas
 scikit
@@ -802,6 +803,7 @@ sdk
 seldon
 sepc
 serializable
+serverless
 serviceAccountName
 setFormatter
 setattr
@@ -865,6 +867,7 @@ txt
 ui
 uncomment
 unconfigured
+unencrypted
 uninstallation
 unix
 unlinking
