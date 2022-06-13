@@ -9,7 +9,7 @@ your machine learning pipelines as GitHub Actions workflows.
 In order to run your ZenML pipelines using GitHub Actions, we need to set up a few things first:
 
 * First you'll need a [GitHub](https://github.com) account and a cloned repository.
-* You'll also need to create a GitHub personal access token that allows you read/write GitHub secrets and push docker images to your GitHub container registry. To do so, please follow [this guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) and make sure to assign your token the **repo** and **write:packages** scopes.
+* You'll also need to create a GitHub personal access token that allows you read/write GitHub secrets and push Docker images to your GitHub container registry. To do so, please follow [this guide](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) and make sure to assign your token the **repo** and **write:packages** scopes.
 * A MySQL database that ZenML will use to store metadata. See [here](https://github.com/schustmi/github-orchestrator-test/actions/workflows/github_pipeline.yaml) for more information on how to set one up on AWS/GCP/Azure.
 * An artifact store to save the outputs of your pipeline steps. See [here](https://docs.zenml.io/advanced-guide/guide-aws-gcp-azure#artifact-store) for more information on how to set one up on AWS/GCP/Azure.
 
@@ -33,7 +33,7 @@ cd github_actions_orchestration
 export GITHUB_USERNAME=<GITHUB_USERNAME>
 export GITHUB_AUTHENTICATION_TOKEN=<GITHUB_AUTHENTICATION_TOKEN>
 
-# Login to the GitHub container registry so we can push the docker images required to run your ZenML pipeline.
+# Login to the GitHub container registry so we can push the Docker images required to run your ZenML pipeline.
 echo $GITHUB_AUTHENTICATION_TOKEN | docker login ghcr.io -u $GITHUB_USERNAME --password-stdin
 ```
 
@@ -103,7 +103,7 @@ zenml secret register mysql_secret \
     --ssl_cert=@<PATH_TO_SSL_CLIENT_CERTIFICATE> \
     --ssl_key=@<PATH_TO_SSL_CLIENT_KEY>
 
-# Register one of the following secrets depending on the flavor of artifact store that you've registered
+# Register one of the following secrets depending on the flavor of artifact store that you've registered:
 # AWS: See https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html for how to
 # create the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to authenticate with your S3 bucket
 zenml secret register s3_store_auth \
@@ -131,7 +131,7 @@ Now that we're done with all the tedious setup, it's time to run the example pip
 python run.py
 ```
 
-That's it! If everything went as planned this pipeline should now be running in
+That's it! If everything went as planned, this pipeline should now be running in
 GitHub Actions and you should be able to access it from the GitHub UI. It will look something like this:
 
 ![GitHub Actions UI](assets/github_actions_ui.png)
