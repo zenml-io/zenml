@@ -90,6 +90,7 @@ For production use cases some more flavors can be found in specific
 | [LocalSecretsManager](https://apidocs.zenml.io/latest/api_docs/secrets_managers/#zenml.secrets_managers.local.local_secrets_manager.LocalSecretsManager)  | local                | `built-in`          |
 | [AWSSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.aws.secrets_managers.aws_secrets_manager.AWSSecretsManager) | aws                  | aws                 |
 | GCPSecretsManager                                                                                                                                         | gcp_secrets_manager  | gcp_secrets_manager |
+| [GitHubSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.github.secrets_managers.github_secrets_manager.GitHubSecretsManager) | github | github |                                                                                                                   
 
 If you would like to see the available flavors for secret managers, you can 
 use the command:
