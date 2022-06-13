@@ -12,29 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import json
-
-import pytest
-from tfx.orchestration.portable.data_types import ExecutionInfo
-from tfx.proto.orchestration.pipeline_pb2 import PipelineInfo
 
 from zenml.orchestrators.utils import get_cache_status
-from zenml.repository import Repository
-from zenml.steps.utils import (
-    INTERNAL_EXECUTION_PARAMETER_PREFIX,
-    PARAM_PIPELINE_PARAMETER_NAME,
-)
 
 
 def test_get_cache_status_raises_no_error_when_none_passed():
     """Ensure get_cache_status raises no error when None is passed."""
-    try:
-        get_cache_status(None)
-    except AttributeError:
-        pytest.fail("`get_cache_status()` raised an `AttributeError`")
+    get_cache_status(None)
 
 
-def test_get_cache_status_works_when_running_pipeline_twice():
+def test_get_cache_status_works_when_running_pipeline_twice(clean_repo, mocker):
     """Check that steps are cached when a pipeline is run twice successively."""
     from zenml.pipelines import pipeline
     from zenml.steps import step
@@ -53,30 +40,26 @@ def test_get_cache_status_works_when_running_pipeline_twice():
         step_one=step_one(),
     )
 
+    def _expect_not_cached(execution_info):
+        return_value = get_cache_status(execution_info)
+        assert return_value is False
+        return return_value
+
+    def _expect_cached(execution_info):
+        return_value = get_cache_status(execution_info)
+        assert return_value is True
+        return return_value
+
+    mock = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.get_cache_status",
+        side_effect=_expect_not_cached,
+    )
     pipeline.run()
+    mock.assert_called_once()
+
+    mock = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.get_cache_status",
+        side_effect=_expect_cached,
+    )
     pipeline.run()
-
-    pipeline = Repository().get_pipeline("some_pipeline")
-    first_run = pipeline.runs[-2]
-    second_run = pipeline.runs[-1]
-
-    step_name_param = (
-        INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
-    )
-    properties_param = json.dumps("step_one")
-    pipeline_id = pipeline.name
-    first_run_id = first_run.name
-    second_run_id = second_run.name
-    first_run_execution_object = ExecutionInfo(
-        exec_properties={step_name_param: properties_param},
-        pipeline_info=PipelineInfo(id=pipeline_id),
-        pipeline_run_id=first_run_id,
-    )
-    second_run_execution_object = ExecutionInfo(
-        exec_properties={step_name_param: properties_param},
-        pipeline_info=PipelineInfo(id=pipeline_id),
-        pipeline_run_id=second_run_id,
-    )
-
-    assert get_cache_status(first_run_execution_object) is False
-    assert get_cache_status(second_run_execution_object) is True
+    mock.assert_called_once()

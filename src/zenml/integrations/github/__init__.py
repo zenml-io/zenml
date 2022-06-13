@@ -11,47 +11,49 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""AWS integration for ZenML."""
+"""Initialization of the GitHub ZenML integration.
 
+The GitHub integration provides a way to orchestrate pipelines using GitHub 
+Actions.
+"""
 from typing import List
 
 from zenml.enums import StackComponentType
-from zenml.integrations.constants import AWS
+from zenml.integrations.constants import GITHUB
 from zenml.integrations.integration import Integration
 from zenml.zen_stores.models import FlavorWrapper
 
-AWS_SECRET_MANAGER_FLAVOR = "aws"
-AWS_CONTAINER_REGISTRY_FLAVOR = "aws"
+GITHUB_SECRET_MANAGER_FLAVOR = "github"
+GITHUB_ORCHESTRATOR_FLAVOR = "github"
 
 
-class AWSIntegration(Integration):
-    """Definition of AWS integration for ZenML."""
+class GitHubIntegration(Integration):
+    """Definition of GitHub integration for ZenML."""
 
-    NAME = AWS
-    REQUIREMENTS = ["boto3==1.21.21"]
+    NAME = GITHUB
+    REQUIREMENTS: List[str] = ["PyNaCl~=1.5.0"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the AWS integration.
+        """Declare the stack component flavors for the GitHub integration.
 
         Returns:
             List of stack component flavors for this integration.
         """
         return [
             FlavorWrapper(
-                name=AWS_SECRET_MANAGER_FLAVOR,
-                source="zenml.integrations.aws.secrets_managers"
-                ".AWSSecretsManager",
-                type=StackComponentType.SECRETS_MANAGER,
+                name=GITHUB_ORCHESTRATOR_FLAVOR,
+                source="zenml.integrations.github.orchestrators.GitHubActionsOrchestrator",
+                type=StackComponentType.ORCHESTRATOR,
                 integration=cls.NAME,
             ),
             FlavorWrapper(
-                name=AWS_CONTAINER_REGISTRY_FLAVOR,
-                source="zenml.integrations.aws.container_registries.AWSContainerRegistry",
-                type=StackComponentType.CONTAINER_REGISTRY,
+                name=GITHUB_SECRET_MANAGER_FLAVOR,
+                source="zenml.integrations.github.secrets_managers.GitHubSecretsManager",
+                type=StackComponentType.SECRETS_MANAGER,
                 integration=cls.NAME,
             ),
         ]
 
 
-AWSIntegration.check_installation()
+GitHubIntegration.check_installation()

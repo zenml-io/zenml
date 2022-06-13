@@ -260,10 +260,10 @@ class BaseStep(metaclass=BaseStepMeta):
 
         kwargs.update(getattr(self, INSTANCE_CONFIGURATION))
 
+        # This value is only used in `BaseStep.__created_by_functional_api()`
+        kwargs.pop(PARAM_CREATED_BY_FUNCTIONAL_API, None)
+
         self.requires_context = bool(self.CONTEXT_PARAMETER_NAME)
-        self._created_by_functional_api = kwargs.pop(
-            PARAM_CREATED_BY_FUNCTIONAL_API, False
-        )
         self.custom_step_operator = kwargs.pop(PARAM_CUSTOM_STEP_OPERATOR, None)
 
         enable_cache = kwargs.pop(PARAM_ENABLE_CACHE, None)
@@ -307,6 +307,18 @@ class BaseStep(metaclass=BaseStepMeta):
         Returns:
             The output of the step.
         """
+
+    @classmethod
+    def _created_by_functional_api(cls) -> bool:
+        """Returns if the step class was created by the functional API.
+
+        Returns:
+            `True` if the class was created by the functional API,
+            `False` otherwise.
+        """
+        return cls.INSTANCE_CONFIGURATION.get(
+            PARAM_CREATED_BY_FUNCTIONAL_API, False
+        )
 
     def get_materializers(
         self, ensure_complete: bool = False
@@ -378,7 +390,7 @@ class BaseStep(metaclass=BaseStepMeta):
             # the entire step class.
             source_object = (
                 self.entrypoint
-                if self._created_by_functional_api
+                if self._created_by_functional_api()
                 else self.__class__
             )
             parameters["step_source"] = get_hashed_source(source_object)

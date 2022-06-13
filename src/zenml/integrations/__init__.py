@@ -30,6 +30,7 @@ from zenml.integrations.gcp import GcpIntegration  # noqa
 from zenml.integrations.gcp_secrets_manager import (  # noqa
     GcpSecretManagerIntegration,
 )
+from zenml.integrations.github import GitHubIntegration  # noqa
 from zenml.integrations.graphviz import GraphvizIntegration  # noqa
 from zenml.integrations.huggingface import HuggingfaceIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa

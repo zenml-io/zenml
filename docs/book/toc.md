@@ -22,6 +22,7 @@
 
 * [Stacks, Components, Flavors](advanced-guide/stacks-components-flavors.md)
 * [Integrations](advanced-guide/integrations.md)
+* [Track Metadata in the Cloud](advanced-guide/track_metadata_in_the_cloud.md)
 * [Execute Pipelines in the Cloud](advanced-guide/execute-pipelines-in-cloud.md)
 * [Continuous Training and Deployment](advanced-guide/continuous-training-and-deployment.md)
 * [Manage your Secrets](advanced-guide/manage-your-secrets.md)

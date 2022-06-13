@@ -75,6 +75,7 @@ ConnectionError
 ContainerOp
 ContainerOps
 Contextmanager
+Cron
 CustomFormatter
 DAGs
 DMatrix
@@ -227,6 +228,7 @@ MyObj
 MyOrchestrator
 MySQLMetadataStore
 MyService
+MyStep
 MyStepEntrypointConfiguration
 NFS
 NLP
@@ -361,8 +363,10 @@ SuperQuick
 Symlink
 TBD
 TCP
+TFEvaluator
 TFPreTrainedModel
 TFRecords
+TFTrainer
 TFX
 TFX's
 TODO
@@ -496,9 +500,11 @@ configmaps
 configs
 conll
 copyfile
+cp
 cprf
 cpu
 creationTimestamp
+cron
 csv
 ctx
 cuda
@@ -787,7 +793,9 @@ runtime
 sagemaker
 sam
 sas
+scalable
 scalability
+scalable
 scaler
 schemas
 scikit
@@ -796,6 +804,7 @@ sdk
 seldon
 sepc
 serializable
+serverless
 serviceAccountName
 setFormatter
 setattr
@@ -857,8 +866,10 @@ touchpoint
 traceback
 txt
 ui
+unencrypted
 uncomment
 unconfigured
+unencrypted
 uninstallation
 unix
 unlinking

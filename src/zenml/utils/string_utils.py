@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Utils for strings."""
 
+import base64
+
 
 def get_human_readable_time(seconds: float) -> str:
     """Convert seconds into a human-readable string.
@@ -57,3 +59,31 @@ def get_human_readable_filesize(bytes_: int) -> str:
         size /= 1024.0
 
     return f"{size:.2f} {unit}"
+
+
+def b64_encode(input_: str) -> str:
+    """Returns a base 64 encoded string of the input string.
+
+    Args:
+        input_: The input to encode.
+
+    Returns:
+        Base64 encoded string.
+    """
+    input_bytes = input_.encode()
+    encoded_bytes = base64.b64encode(input_bytes)
+    return encoded_bytes.decode()
+
+
+def b64_decode(input_: str) -> str:
+    """Returns a decoded string of the base 64 encoded input string.
+
+    Args:
+        input_: Base64 encoded string.
+
+    Returns:
+        Decoded string.
+    """
+    encoded_bytes = input_.encode()
+    decoded_bytes = base64.b64decode(encoded_bytes)
+    return decoded_bytes.decode()

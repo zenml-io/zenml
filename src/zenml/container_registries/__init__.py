@@ -53,6 +53,6 @@ __all__ = [
     "AzureContainerRegistry",
     "DockerHubContainerRegistry",
     "GCPContainerRegistry",
-    "GitLabContainerRegistry",
     "GitHubContainerRegistry",
+    "GitLabContainerRegistry",
 ]

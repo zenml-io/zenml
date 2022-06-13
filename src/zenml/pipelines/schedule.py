@@ -14,15 +14,21 @@
 """Class for defining a pipeline schedule."""
 
 import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
+
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class Schedule(BaseModel):
     """Class for defining a pipeline schedule.
 
     Attributes:
+        cron_expression: Cron expression for the pipeline schedule. If a value
+            for this is set it takes precedence over the start time + interval.
         start_time: datetime object to indicate when to start the schedule.
         end_time: datetime object to indicate when to end the schedule.
         interval_second: datetime timedelta indicating the seconds between two
@@ -36,18 +42,60 @@ class Schedule(BaseModel):
             internally, you should turn catchup off to avoid duplicate backfill.
     """
 
-    start_time: datetime.datetime
+    cron_expression: Optional[str] = None
+    start_time: Optional[datetime.datetime] = None
     end_time: Optional[datetime.datetime] = None
-    interval_second: datetime.timedelta
+    interval_second: Optional[datetime.timedelta] = None
     catchup: bool = False
 
-    @property
-    def utc_start_time(self) -> str:
-        """ISO-formatted string of the UTC start time.
+    @root_validator
+    def _ensure_cron_or_periodic_schedule_configured(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Ensures that the cron expression or start time + interval are set.
+
+        Args:
+            values: All attributes of the schedule.
 
         Returns:
-            str: ISO-formatted string of the UTC start time.
+            All schedule attributes.
+
+        Raises:
+            ValueError: If no cron expression or start time + interval were
+                provided.
         """
+        cron_expression = values.get("cron_expression")
+        periodic_schedule = values.get("start_time") and values.get(
+            "interval_second"
+        )
+
+        if cron_expression and periodic_schedule:
+            logger.warning(
+                "This schedule was created with a cron expression as well as "
+                "values for `start_time` and `interval_seconds`. The resulting "
+                "behaviour depends on the concrete orchestrator implementation "
+                "but will usually ignore the interval and use the cron "
+                "expression."
+            )
+            return values
+        elif cron_expression or periodic_schedule:
+            return values
+        else:
+            raise ValueError(
+                "Either a cron expression or start time and interval seconds "
+                "need to be set for a valid schedule."
+            )
+
+    @property
+    def utc_start_time(self) -> Optional[str]:
+        """Optional ISO-formatted string of the UTC start time.
+
+        Returns:
+            Optional ISO-formatted string of the UTC start time.
+        """
+        if not self.start_time:
+            return None
+
         return self.start_time.astimezone(datetime.timezone.utc).isoformat()
 
     @property
