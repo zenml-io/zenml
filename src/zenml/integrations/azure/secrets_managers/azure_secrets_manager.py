@@ -16,9 +16,10 @@
 from typing import Any, ClassVar, Dict, List
 
 from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient  # type: ignore [import]
+from azure.keyvault.secrets import SecretClient  # type: ignore[import]
 
 from zenml.exceptions import SecretExistsError
+from zenml.integrations.azure import AZURE_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -80,7 +81,7 @@ class AzureSecretsManager(BaseSecretsManager):
     key_vault_name: str
 
     # Class configuration
-    FLAVOR: ClassVar[str] = "azure_secrets_manager"
+    FLAVOR: ClassVar[str] = AZURE_SECRETS_MANAGER_FLAVOR
     CLIENT: ClassVar[Any] = None
 
     @classmethod
