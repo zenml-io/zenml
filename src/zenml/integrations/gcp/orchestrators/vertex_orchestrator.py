@@ -337,9 +337,8 @@ class VertexOrchestrator(BaseOrchestrator, GoogleCredentialsMixin):
 
         Raises:
             ValueError: If the attribute `pipeline_root` is not set and it
-            can be
-                not generated using the path of the artifact store in the stack
-                because it is not a
+                can be not generated using the path of the artifact store in the
+                stack because it is not a
                 `zenml.integrations.gcp.artifact_store.GCPArtifactStore`.
         """
         # If the `pipeline_root` has not been defined in the orchestrator
