@@ -21,7 +21,7 @@ standard abstraction to write and build your workflows.
 ## **Pipelining** - Take your first ZenML Steps
 
 Every journey has to start somewhere, if you are new to ZenML, you might want to
-get acquainted with the [core concepts](introduction/core-concepts.md) first, 
+get acquainted with the [core concepts](core-concepts.md) first, 
 to understand what makes ZenML so special. Afterwards, you could jump right 
 into our [developer guide](developer-guide/installation.md) that will 
 take you from zero to hero in no time and explain the necessary knowledge of 
@@ -45,7 +45,7 @@ section on [Stack Components](advanced-guide/stacks-components-flavors.md).
 ## **Collaborating** - Work together with your team
 
 Share not only your code but also your ZenML stacks with your team. Find out how
-in our section on [collaboration](collaborate/collaborate.md). 
+in our section on [collaboration](collaborate/collaborate-with-zenml.md). 
 
 ## **Resources** - Learn ZenML with tutorials, examples, and guides
 
