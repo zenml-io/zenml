@@ -13,14 +13,18 @@
 #  permissions and limitations under the License.
 import os
 import shutil
-from typing import Generator
+import threading
+from typing import Generator, Any, Optional, TypeVar, Callable
 from unittest.mock import PropertyMock
 
 import pytest
 from pytest_mock import MockerFixture
 
+from zenml.exceptions import StackExistsError
 from zenml.repository import Repository
 from zenml.stack import Stack
+
+F = TypeVar("F", bound=Callable[..., Any])
 
 ECR_REGISTRY_NAME = "715803424590.dkr.ecr.us-east-1.amazonaws.com"
 S3_BUCKET_NAME = "s3://zenbytes-bucket"
@@ -56,13 +60,27 @@ def shared_kubeflow_profile(
         KubeflowMetadataStore
     from zenml.integrations.s3.artifact_stores import S3ArtifactStore
 
-    # Patch the ui daemon as forking doesn't work well with pytest
-    module_mocker.patch.object(KubeflowMetadataStore,
-                               "resume")
-    module_mocker.patch("zenml.integrations.kubeflow.metadata_stores"
-                        ".kubeflow_metadata_store.KubeflowMetadataStore"
-                        ".is_running",
-                        new_callable=PropertyMock(return_value=True))
+    def run_in_thread(
+        daemon_function: F,
+        *args: Any,
+        pid_file: str,
+        log_file: Optional[str] = None,
+        working_directory: str = "/",
+        **kwargs: Any
+    ):
+        # run the actual passed function in a daemon thread
+        t = threading.Thread(target=daemon_function, args=args, kwargs=kwargs)
+        t.setDaemon(True)
+        t.start()
+
+        def blah(pid_file: str):
+            return True
+
+        module_mocker.patch("zenml.utils.daemon.check_if_daemon_is_running",
+                            new=blah)
+
+    module_mocker.patch("zenml.utils.daemon.run_as_daemon",
+                        new=run_in_thread)
 
     # Register and activate the kubeflow stack
     orchestrator = KubeflowOrchestrator(
@@ -83,18 +101,21 @@ def shared_kubeflow_profile(
     container_registry = DefaultContainerRegistry(
         name="ecr_registry", uri=ECR_REGISTRY_NAME
     )
-    kubeflow_stack = Stack(
-        name="aws_kubeflow_stack",
-        orchestrator=orchestrator,
-        metadata_store=metadata_store,
-        artifact_store=artifact_store,
-        container_registry=container_registry,
-    )
-    # breakpoint()
+    try:
+        kubeflow_stack = Stack(
+            name="aws_test_kubeflow_stack",
+            orchestrator=orchestrator,
+            metadata_store=metadata_store,
+            artifact_store=artifact_store,
+            container_registry=container_registry,
+        )
+    except StackExistsError:
+        pass
     base_profile.register_stack(kubeflow_stack)
     base_profile.activate_stack(kubeflow_stack.name)
 
     # Provision resources for the kubeflow stack
+
     kubeflow_stack.provision()
     kubeflow_stack.resume()
 

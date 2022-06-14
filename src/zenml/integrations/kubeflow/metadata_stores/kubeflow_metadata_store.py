@@ -341,8 +341,9 @@ class KubeflowMetadataStore(BaseMetadataStore):
                 )
                 if timeout <= 0:
                     raise RuntimeError(
-                        f"An unexpected error was encountered while waiting for the "
-                        f"Kubeflow metadata store to be functional: {str(e)}"
+                        f"An unexpected error was encountered while waiting for"
+                        f" the Kubeflow metadata store to be functional: "
+                        f"{str(e)}"
                     ) from e
                 timeout -= 10
                 time.sleep(10)
