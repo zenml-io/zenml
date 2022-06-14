@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a default materializer registry."""
 
 from typing import TYPE_CHECKING, Any, Dict, Type
 
@@ -24,9 +25,10 @@ if TYPE_CHECKING:
 
 
 class MaterializerRegistry:
-    """Matches a python type to a default materializer."""
+    """Matches a Python type to a default materializer."""
 
     def __init__(self) -> None:
+        """Initialize the materializer registry."""
         self.materializer_types: Dict[Type[Any], Type["BaseMaterializer"]] = {}
 
     def register_materializer_type(
@@ -107,11 +109,23 @@ class MaterializerRegistry:
     def get_materializer_types(
         self,
     ) -> Dict[Type[Any], Type["BaseMaterializer"]]:
-        """Get all registered materializer types."""
+        """Get all registered materializer types.
+
+        Returns:
+            A dictionary of registered materializer types.
+        """
         return self.materializer_types
 
     def is_registered(self, key: Type[Any]) -> bool:
-        """Returns if a materializer class is registered for the given type."""
+        """Returns if a materializer class is registered for the given type.
+
+        Args:
+            key: Indicates the type of object.
+
+        Returns:
+            True if a materializer is registered for the given type, False
+            otherwise.
+        """
         return any(issubclass(key, t) for t in self.materializer_types)
 
 

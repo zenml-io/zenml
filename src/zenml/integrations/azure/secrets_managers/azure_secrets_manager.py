@@ -1,9 +1,25 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Implementation of the Azure Secrets Manager integration."""
+
 from typing import Any, ClassVar, Dict, List
 
 from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient  # type: ignore [import]
+from azure.keyvault.secrets import SecretClient  # type: ignore[import]
 
 from zenml.exceptions import SecretExistsError
+from zenml.integrations.azure import AZURE_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
@@ -16,23 +32,32 @@ ZENML_GROUP_KEY = "zenml-group-key"
 
 
 def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict[str, str]:
-    """This function adds the secret group name to the keys of each
-    secret key-value pair to allow using the same key across multiple
+    """Adds the secret group name to the keys of each secret key-value pair.
+
+    This allows using the same key across multiple
     secrets.
+
     Args:
         secret: The ZenML Secret schema
+
+    Returns:
+        A dictionary with the secret keys prepended with the group name
     """
     return {f"{secret.name}-{k}": v for k, v in secret.content.items()}
 
 
 def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
-    """This function serves to remove the secret group name from the secret
-    key.
+    """Removes the secret group name from the secret key.
+
     Args:
         combined_key_name: Full name as it is within the Azure secrets manager
         group_name: Group name (the ZenML Secret name)
+
     Returns:
         The cleaned key
+
+    Raises:
+        RuntimeError: If the group name is not found in the key name
     """
     if combined_key_name.startswith(f"{group_name}-"):
         return combined_key_name[len(f"{group_name}-") :]
@@ -46,6 +71,7 @@ def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
 
 class AzureSecretsManager(BaseSecretsManager):
     """Class to interact with the Azure secrets manager.
+
     Attributes:
         project_id:  This is necessary to access the correct Azure project.
                      The project_id of your Azure project space that contains
@@ -55,7 +81,7 @@ class AzureSecretsManager(BaseSecretsManager):
     key_vault_name: str
 
     # Class configuration
-    FLAVOR: ClassVar[str] = "azure_secrets_manager"
+    FLAVOR: ClassVar[str] = AZURE_SECRETS_MANAGER_FLAVOR
     CLIENT: ClassVar[Any] = None
 
     @classmethod
@@ -68,8 +94,14 @@ class AzureSecretsManager(BaseSecretsManager):
 
     def register_secret(self, secret: BaseSecretSchema) -> None:
         """Registers a new secret.
+
         Args:
-            secret: the secret to register"""
+            secret: the secret to register
+
+        Raises:
+            SecretExistsError: if the secret already exists
+            ValueError: if the secret name contains an underscore.
+        """
         self._ensure_client_connected(self.key_vault_name)
 
         if "_" in secret.name:
@@ -102,6 +134,7 @@ class AzureSecretsManager(BaseSecretsManager):
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Get a secret by its name.
+
         Args:
             secret_name: the name of the secret to get
 
@@ -110,6 +143,7 @@ class AzureSecretsManager(BaseSecretsManager):
 
         Raises:
             RuntimeError: if the secret does not exist
+            ValueError: if the secret is named 'name'
         """
         self._ensure_client_connected(self.key_vault_name)
 
@@ -144,7 +178,8 @@ class AzureSecretsManager(BaseSecretsManager):
         """Get all secret keys.
 
         Returns:
-            A list of all secret keys."""
+            A list of all secret keys
+        """
         self._ensure_client_connected(self.key_vault_name)
 
         set_of_secrets = set()
@@ -157,10 +192,11 @@ class AzureSecretsManager(BaseSecretsManager):
         return list(set_of_secrets)
 
     def update_secret(self, secret: BaseSecretSchema) -> None:
-        """Update an existing secret by creating new versions of the existing
-        secrets.
+        """Update an existing secret by creating new versions of the existing secrets.
+
         Args:
-            secret: the secret to update"""
+            secret: the secret to update
+        """
         self._ensure_client_connected(self.key_vault_name)
 
         adjusted_content = prepend_group_name_to_keys(secret)
@@ -176,12 +212,15 @@ class AzureSecretsManager(BaseSecretsManager):
             )
 
     def delete_secret(self, secret_name: str) -> None:
-        """Delete an existing secret. by name. In Azure a secret is a single k-v
-        pair. Within ZenML a secret is a collection of k-v pairs. As such,
-        deleting a secret will iterate through all secrets and delete the ones
-        with the secret_name as label.
+        """Delete an existing secret. by name.
+
+        In Azure a secret is a single k-v pair. Within ZenML a secret is a
+        collection of k-v pairs. As such, deleting a secret will iterate through
+        all secrets and delete the ones with the secret_name as label.
+
         Args:
-            secret_name: the name of the secret to delete"""
+            secret_name: the name of the secret to delete
+        """
         self._ensure_client_connected(self.key_vault_name)
 
         # Go through all Azure secrets and delete the ones with the secret_name
@@ -194,8 +233,10 @@ class AzureSecretsManager(BaseSecretsManager):
 
     def delete_all_secrets(self, force: bool = False) -> None:
         """Delete all existing secrets.
+
         Args:
-            force: whether to force delete all secrets"""
+            force: whether to force delete all secrets
+        """
         self._ensure_client_connected(self.key_vault_name)
 
         # List all secrets.

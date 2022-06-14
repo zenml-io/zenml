@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Filesync utils for ZenML."""
+
 import json
 import os
 from typing import Any, Optional
@@ -39,8 +41,7 @@ class FileSyncModel(BaseModel):
     _config_file_timestamp: Optional[float]
 
     def __init__(self, config_file: str, **kwargs: Any) -> None:
-        """Create a FileSyncModel instance synchronized with a configuration
-        file on disk.
+        """Create a FileSyncModel instance synchronized with a configuration file on disk.
 
         Args:
             config_file: configuration file path. If the file exists, the model
@@ -64,9 +65,11 @@ class FileSyncModel(BaseModel):
         self.write_config()
 
     def __setattr__(self, key: str, value: Any) -> None:
-        """Sets an attribute on the model and persists the new value in the
-        configuration file.
+        """Sets an attribute on the model and persists it in the configuration file.
 
+        Args:
+            key: attribute name.
+            value: attribute value.
         """
         super(FileSyncModel, self).__setattr__(key, value)
         if key.startswith("_"):
@@ -74,7 +77,14 @@ class FileSyncModel(BaseModel):
         self.write_config()
 
     def __getattribute__(self, key: str) -> Any:
-        """Gets an attribute value for a specific key."""
+        """Gets an attribute value for a specific key.
+
+        Args:
+            key: attribute name.
+
+        Returns:
+            attribute value.
+        """
         if not key.startswith("_") and key in self.__dict__:
             self.load_config()
         return super(FileSyncModel, self).__getattribute__(key)

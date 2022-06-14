@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the MLflow model deployer pipeline step."""
 
 from typing import Optional, Type, cast
 
@@ -48,7 +49,7 @@ logger = get_logger(__name__)
 
 
 class MLFlowDeployerConfig(BaseStepConfig):
-    """MLflow model deployer step configuration
+    """Model deployer step configuration for MLflow.
 
     Attributes:
         model_name: the name of the MLflow model logged in the MLflow artifact
@@ -74,7 +75,9 @@ def mlflow_model_deployer_step(
     model: ModelArtifact,
     config: MLFlowDeployerConfig,
 ) -> MLFlowDeploymentService:
-    """MLflow model deployer pipeline step
+    """Model deployer pipeline step for MLflow.
+
+    # noqa: DAR401
 
     Args:
         deploy_decision: whether to deploy the model or not
@@ -198,8 +201,7 @@ def mlflow_deployer_step(
     enable_cache: bool = True,
     name: Optional[str] = None,
 ) -> Type[BaseStep]:
-    """Shortcut function to create a pipeline step to deploy a given ML model
-    with a local MLflow prediction server.
+    """Creates a pipeline step to deploy a given ML model with a local MLflow prediction server.
 
     The returned step can be used in a pipeline to implement continuous
     deployment for an MLflow model.
@@ -207,6 +209,7 @@ def mlflow_deployer_step(
     Args:
         enable_cache: Specify whether caching is enabled for this step. If no
             value is passed, caching is enabled by default
+        name: Name of the step.
 
     Returns:
         an MLflow model deployer pipeline step

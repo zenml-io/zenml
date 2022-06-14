@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utils for the ZenML service module."""
 
 from typing import Optional
 
@@ -25,8 +26,7 @@ def load_last_service_from_step(
     step_context: Optional[StepContext] = None,
     running: bool = False,
 ) -> Optional[BaseService]:
-    """Get the last service created by the pipeline and step with the given
-    names.
+    """Get the last service created by the pipeline and step with the given names.
 
     This function searches backwards through the execution history for a
     named pipeline step and returns the first service instance that it finds
@@ -45,6 +45,7 @@ def load_last_service_from_step(
 
     Raises:
         KeyError: if the pipeline or step name is not found in the execution.
+        RuntimeError: if the artifact is not a service.
     """
     if step_context is None:
         repo = Repository()
