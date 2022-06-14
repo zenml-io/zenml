@@ -40,7 +40,7 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             that will be created when calling `provision()`.
             Defaults to "mysql".
         storage_capacity: Storage capacity of the metadata store.
-            Defaults to "10Gi" (=10GB).
+            Defaults to `"10Gi"` (=10GB).
     """
 
     kubernetes_namespace: str = "default"
