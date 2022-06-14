@@ -1045,32 +1045,56 @@ def import_stack(
 
 @stack.command(
     "copy",
-    help="SOURCE_NAME: The name of the stack to copy.\n\nTARGET_NAME: Name of the copied stack.",
+    help="SOURCE_STACK: The name of the stack to copy.\n\nTARGET_STACK: Name of the copied stack.",
 )
-@click.argument("source_name", type=str, required=True)
-@click.argument("target_name", type=str, required=True)
-def copy_stack(source_name: str, target_name: str) -> None:
+@click.argument("source_stack", type=str, required=True)
+@click.argument("target_stack", type=str, required=True)
+@click.option(
+    "--from",
+    "source_profile",
+    type=str,
+    required=False,
+    help="The profile from which to copy the stack.",
+)
+def copy_stack(
+    source_stack: str, target_stack: str, source_profile: Optional[str] = None
+) -> None:
     """Copy a stack.
 
     Args:
-        source_name: The name of the stack to copy.
-        target_name: Name of the copied stack.
+        source_stack: The name of the stack to copy.
+        target_stack: Name of the copied stack.
+        source_profile: Name of the profile to copy from.
     """
     track_event(AnalyticsEvent.COPIED_STACK)
 
-    with console.status(f"Copying stack `{source_name}`...\n"):
-        repo = Repository()
+    repo = Repository()
+    if source_profile:
         try:
-            stack_ = repo.get_stack(source_name)
+            profile = GlobalConfiguration().profiles[source_profile]
         except KeyError:
             cli_utils.error(
-                f"Stack `{source_name}` cannot be copied as it does not exist."
+                f"Unable to find source profile '{source_profile}'."
+            )
+    else:
+        profile = repo.active_profile
+
+    with console.status(f"Copying stack `{source_stack}`...\n"):
+        try:
+            # Use a different `Repository` here which is configured to read from
+            # the source profile
+            stack_wrapper = Repository(profile=profile).zen_store.get_stack(
+                source_stack
+            )
+        except KeyError:
+            cli_utils.error(
+                f"Stack `{source_stack}` cannot be copied as it does not exist."
             )
 
-        if target_name in repo.stack_configurations:
+        if target_stack in repo.stack_configurations:
             cli_utils.error(
-                f"Can't copy stack as a stack with the name '{target_name}' "
+                f"Can't copy stack as a stack with the name '{target_stack}' "
                 "already exists."
             )
-        stack_._name = target_name
-        Repository().register_stack(stack_)
+        stack_wrapper.name = target_stack
+        repo.zen_store.register_stack(stack_wrapper)

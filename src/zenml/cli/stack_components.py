@@ -23,6 +23,7 @@ from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.constants import MANDATORY_COMPONENT_ATTRIBUTES
 from zenml.enums import CliCategories, StackComponentType
@@ -30,6 +31,7 @@ from zenml.exceptions import EntityExistsError
 from zenml.io import fileio
 from zenml.repository import Repository
 from zenml.stack import StackComponent
+from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.source_utils import validate_flavor_source
 from zenml.zen_stores.models.component_wrapper import ComponentWrapper
 
@@ -828,6 +830,92 @@ def generate_stack_component_delete_command(
     return delete_stack_component_command
 
 
+def generate_stack_component_copy_command(
+    component_type: StackComponentType,
+) -> Callable[[str, str, Optional[str]], None]:
+    """Generates a `copy` command for the specific stack component type.
+
+    Args:
+        component_type: Type of the component to generate the command for.
+
+    Returns:
+        A function that can be used as a `click` command.
+    """
+    display_name = _component_display_name(component_type)
+
+    @click.argument("source_component", type=str, required=True)
+    @click.argument("target_component", type=str, required=True)
+    @click.option(
+        "--from",
+        "source_profile",
+        type=str,
+        required=False,
+        help=f"The profile from which to copy the {display_name}.",
+    )
+    def copy_stack_component_command(
+        source_component: str,
+        target_component: str,
+        source_profile: Optional[str] = None,
+    ) -> None:
+        """Copies a stack component.
+
+        Args:
+            source_component: Name of the component to copy.
+            target_component: Name of the copied component.
+            source_profile: Name of the profile to copy from.
+        """
+        track_event(AnalyticsEvent.COPIED_STACK_COMPONENT)
+
+        repo = Repository()
+
+        if source_profile:
+            try:
+                profile = GlobalConfiguration().profiles[source_profile]
+            except KeyError:
+                cli_utils.error(
+                    f"Unable to find source profile '{source_profile}'."
+                )
+        else:
+            profile = repo.active_profile
+
+        with console.status(
+            f"Copying {display_name} `{source_component}`...\n"
+        ):
+            try:
+                # Use a different `Repository` here which is configured to read
+                # from the source profile
+                component = Repository(profile=profile).get_stack_component(
+                    component_type=component_type, name=source_component
+                )
+            except KeyError:
+                cli_utils.error(
+                    f"{display_name.capitalize()} `{source_component}` cannot "
+                    "be copied as it does not exist."
+                )
+
+            existing_component_names = {
+                wrapper.name
+                for wrapper in repo.zen_store.get_stack_components(
+                    component_type=component_type
+                )
+            }
+            if target_component in existing_component_names:
+                cli_utils.error(
+                    f"Can't copy {display_name} as a component with the name "
+                    f"'{target_component}' already exists."
+                )
+
+            # Copy the existing component but use the new name and generate a
+            # new UUID
+            component_config = component.dict(exclude={"uuid"})
+            component_config["name"] = target_component
+            copied_component = component.__class__.parse_obj(component_config)
+
+            repo.register_stack_component(copied_component)
+
+    return copy_stack_component_command
+
+
 def generate_stack_component_up_command(
     component_type: StackComponentType,
 ) -> Callable[[Optional[str]], None]:
@@ -903,19 +991,19 @@ def generate_stack_component_down_command(
 
     @click.argument("name", type=str, required=False)
     @click.option(
-        "--yes",
-        "-y",
+        "--force",
+        "-f",
         "force",
         is_flag=True,
         help="Deprovisions local resources instead of suspending them.",
     )
     @click.option(
-        "--force",
-        "-f",
+        "--yes",
+        "-y",
         "old_force",
         is_flag=True,
         help="DEPRECATED: Deprovisions local resources instead of suspending "
-        "them. Use `-y/--yes` instead.",
+        "them. Use `-f/--force` instead.",
     )
     def down_stack_component_command(
         name: Optional[str] = None,
@@ -928,13 +1016,13 @@ def generate_stack_component_down_command(
             name: The name of the stack component to stop/deprovision.
             force: Deprovision local resources instead of suspending them.
             old_force: DEPRECATED: Deprovision local resources instead of
-                suspending them. Use `-y/--yes` instead.
+                suspending them. Use `-f/--force` instead.
         """
         if old_force:
             force = old_force
             cli_utils.warning(
-                "The `--force` flag will soon be deprecated. Use `--yes` "
-                "or `-y` instead."
+                "The `--yes` flag will soon be deprecated. Use `--force` "
+                "or `-f` instead."
             )
         cli_utils.print_active_profile()
         cli_utils.print_active_stack()
@@ -961,7 +1049,7 @@ def generate_stack_component_down_command(
                         f"Provisioning local resources not implemented for "
                         f"{display_name} '{component.name}'. If you want to "
                         f"deprovision all resources for this component, use "
-                        f"the `--yes/-y` flag."
+                        f"the `--force/-f` flag."
                     )
             else:
                 cli_utils.declare(
@@ -1191,6 +1279,12 @@ def register_single_stack_component_cli_commands(
     command_group.command(
         "delete", help=f"Delete a registered {singular_display_name}."
     )(delete_command)
+
+    # zenml stack-component copy
+    copy_command = generate_stack_component_copy_command(component_type)
+    command_group.command(
+        "copy", help=f"Copy a registered {singular_display_name}."
+    )(copy_command)
 
     # zenml stack-component up
     up_command = generate_stack_component_up_command(component_type)
