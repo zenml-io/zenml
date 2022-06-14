@@ -11,21 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Running ZenML Pipelines from Code."""
 import os
 import textwrap
 import types
-from typing import Dict, Any
+from typing import Any, Dict
 
 from zenml import constants
 from zenml.cli import logger
 from zenml.config.config_keys import PipelineConfigurationKeys, \
     StepConfigurationKeys, SourceConfigurationKeys
 from zenml.exceptions import PipelineConfigurationError
+from zenml.logger import get_logger
 from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, yaml_utils
-
-from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -36,6 +36,9 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     Args:
         python_file: Path to the python file that defines the pipeline.
         config_path: Path to configuration YAML file.
+
+    Raises:
+        PipelineConfigurationError: Error when pipeline configuration is faulty.
     """
     # If the file was run with `python run.py, this would happen automatically.
     #  In order to allow seamless switching between running directly and through
@@ -159,6 +162,9 @@ def _load_class_from_module(
 
     Returns:
         The imported function/class
+
+    Raises:
+        PipelineConfigurationError: Error when pipeline configuration is faulty.
     """
     if isinstance(config_item, dict):
         if SourceConfigurationKeys.FILE_ in config_item:
@@ -214,4 +220,3 @@ def _get_module_attribute(module: types.ModuleType, attribute_name: str) -> Any:
             f"Unable to load '{attribute_name}' from"
             f" file '{module.__file__}'"
         ) from None
-

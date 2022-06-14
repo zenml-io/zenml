@@ -15,11 +15,8 @@ from steps.data_loader.data_loader_step import data_loader
 from steps.predictor.predictor_step import predictor
 from steps.trainer.trainer_step import trainer
 
-
 if __name__ == "__main__":
     pipeline = lgbm_pipeline(
-        data_loader=data_loader(),
-        trainer=trainer(),
-        predictor=predictor()
+        data_loader=data_loader(), trainer=trainer(), predictor=predictor()
     )
     pipeline.run()

@@ -14,7 +14,7 @@
 import pandas as pd
 import tensorflow as tf
 
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 FEATURE_COLS = [
     "CRIM",

@@ -2,17 +2,17 @@ name: data_profiling_pipeline
 steps:
   data_loader:
     source:
-      file: steps/loader/loader_step
+      file: steps
       name: data_loader
   data_splitter:
     source:
-      file: steps/splitter/splitter_step
+      file: steps
       name: data_splitter
   train_data_profiler:
     source:
-      file: steps/profiler/profiler_step
+      file: steps
       name: train_data_profiler
   test_data_profiler:
     source:
-      file: steps/profiler/profiler_step
+      file: steps
       name: test_data_profiler

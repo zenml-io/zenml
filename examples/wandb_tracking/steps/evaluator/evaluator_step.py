@@ -23,9 +23,9 @@ from zenml.steps import step
 @enable_wandb
 @step
 def tf_evaluator(
-        x_test: np.ndarray,
-        y_test: np.ndarray,
-        model: tf.keras.Model,
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
 ) -> float:
     """Calculate the loss for the model for each epoch in a graph"""
 

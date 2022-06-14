@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 import xgboost as xgb
 
-from zenml.steps import step, BaseStepConfig
+from zenml.steps import BaseStepConfig, step
 
 
 class XGBoostConfig(BaseStepConfig):
@@ -25,7 +25,8 @@ class XGBoostConfig(BaseStepConfig):
 
 @step
 def trainer(
-    config: XGBoostConfig, mat_train: xgb.DMatrix,
+    config: XGBoostConfig,
+    mat_train: xgb.DMatrix,
 ) -> xgb.Booster:
     """Trains a XGBoost model on the data."""
     num_round = 2

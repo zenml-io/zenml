@@ -12,7 +12,7 @@
 #  permissions and limitations under the License.
 from rich import print
 
-from zenml.steps import step, StepContext
+from zenml.steps import StepContext, step
 
 SECRET_NAME = "example_secret"
 SECRET_KEY = "example_secret_key"
