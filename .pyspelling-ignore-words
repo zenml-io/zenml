@@ -67,6 +67,7 @@ CamelCase
 ChatOps
 ClassVar
 ClickException
+CloudSQL
 Colab
 ComponentWrapper
 ComputeTarget
@@ -75,6 +76,7 @@ ConnectionError
 ContainerOp
 ContainerOps
 Contextmanager
+cryptoKeys
 Cron
 CustomFormatter
 DAGs
@@ -108,6 +110,7 @@ Evidently's
 EvidentlyProfileConfig
 EvidentlyProfileStep
 EvidentlyVisualizer
+eu
 ExampleSecretSchema
 ExamplesRepo
 ExecutionStatus
@@ -177,6 +180,8 @@ KMS
 KServe
 Keras
 KeyError
+keyRings
+kr
 Kubeflow
 KubeflowMetadataStore
 KubeflowOrchestrator
@@ -609,6 +614,7 @@ getfile
 getsource
 getter
 gfile
+ghcr
 gif
 github
 gke
@@ -734,6 +740,7 @@ numericaltargetdrift
 numpy
 odbc
 onerror
+orch
 orchestrator
 orchestrators
 os
@@ -764,6 +771,7 @@ probabilisticmodelperformance
 profiler
 proto
 protobuf
+PWD
 py
 pydantic
 pyenv
@@ -795,6 +803,7 @@ sam
 sas
 scalability
 scalable
+scalable
 scaler
 schemas
 scikit
@@ -804,6 +813,7 @@ seldon
 sepc
 serializable
 serverless
+serviceacc
 serviceAccountName
 setFormatter
 setattr
@@ -825,6 +835,7 @@ stackoverflow
 startswith
 staticmethod
 stderr
+stdin
 stdout
 stefan
 str
@@ -867,6 +878,7 @@ txt
 ui
 uncomment
 unconfigured
+unencrypted
 unencrypted
 uninstallation
 unix

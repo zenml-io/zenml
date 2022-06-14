@@ -46,18 +46,18 @@ zenml integration install kubeflow
 
 ### Create a local Kubeflow Pipelines Stack
 
-A [Stack](../introduction/core-concepts.md#stack) is the configuration of the
+A [Stack](../core-concepts.md#stack) is the configuration of the
 surrounding infrastructure where ZenML pipelines
 are run and managed. For now, a `Stack` consists of:
 
-* [A metadata store](../introduction/core-concepts.md#metadata-store): To store
+* [A metadata store](../core-concepts.md#metadata-store): To store
   metadata like parameters and artifact URIs.
-* [An artifact store](../introduction/core-concepts.md#artifact-store): To store
+* [An artifact store](../core-concepts.md#artifact-store): To store
   interim data which is returned from steps.
-* [An orchestrator](../introduction/core-concepts.md#orchestrator): A service
+* [An orchestrator](../core-concepts.md#orchestrator): A service
   that actually kicks off and runs each step of the pipeline.
 * An
-  optional [container registry](../introduction/core-concepts.md#container-registry):
+  optional [container registry](../core-concepts.md#container-registry):
   To store Docker images that are created to run your pipeline.
 
 When you did `zenml init` at the start of this guide, a default `local_stack` was created with local versions of all of these. In order to see the stack you can check it out in the command line:
@@ -160,7 +160,7 @@ zenml stack down --force
 
 ### Run the same pipeline on Kubeflow Pipelines deployed to the cloud
 
-You can now run the same pipeline in Kubeflow Pipelines deployed to a cluster on the cloud. Refer to the Cloud Pipelines Deployment Guide [here](../advanced-guide/guide-aws-gcp-azure.md) to know more and follow along!
+You can now run the same pipeline in Kubeflow Pipelines deployed to a cluster on the cloud. Refer to the Cloud Pipelines Deployment Guide [here](execute-pipelines-in-cloud.md) to know more and follow along!
 
 ## Conclusion
 
@@ -175,12 +175,12 @@ If you made it this far, congratulations! You're one step closer to being produc
 There are lot's more things you do in production that you might consider adding to your workflows:
 
 * Adding a step
-  to [automatically deploy the models](../extending-zenml/model-deployer.md) to
+  to [automatically deploy the models](../extending-zenml/model-deployers.md) to
   a REST endpoint.
 * Setting
-  up [a drift detection and validation step](drift-detection.md)
+  up [a drift detection and validation step](perform-drift-detection.md)
   to test models before deploying.
-* [Using a secrets manager](secrets.md) to store secret keys
+* [Using a secrets manager](manage-your-secrets.md) to store secret keys
   for use in your pipelines.
 
 ZenML will help with all of these and more. Check out our other guides to learn more!
