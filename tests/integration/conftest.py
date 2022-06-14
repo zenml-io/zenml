@@ -73,11 +73,11 @@ def shared_kubeflow_profile(
         t.setDaemon(True)
         t.start()
 
-        def blah(pid_file: str):
+        def fake_pid_file_exists(pid_file: str):
             return True
 
         module_mocker.patch("zenml.utils.daemon.check_if_daemon_is_running",
-                            new=blah)
+                            new=fake_pid_file_exists)
 
     module_mocker.patch("zenml.utils.daemon.run_as_daemon",
                         new=run_in_thread)
@@ -111,6 +111,7 @@ def shared_kubeflow_profile(
         )
     except StackExistsError:
         pass
+
     base_profile.register_stack(kubeflow_stack)
     base_profile.activate_stack(kubeflow_stack.name)
 
