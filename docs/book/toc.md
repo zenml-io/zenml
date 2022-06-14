@@ -1,9 +1,9 @@
 # Table of contents
 
-* [Introduction](index.md)
+* [Introduction](introduction.md)
 * [Quickstart](https://github.com/zenml-io/zenml/tree/main/examples/quickstart)
-* [Core Concepts](introduction/core-concepts.md)
-* [Examples](introduction/zenml-example-cli.md)
+* [Core Concepts](core-concepts.md)
+* [Examples & Use-cases](examples-and-use-cases.md)
 
 ## Developer Guide
 
@@ -11,7 +11,7 @@
 * [Steps & Pipelines](developer-guide/steps-and-pipelines.md)
 * [Runtime Configuration](developer-guide/runtime-configuration.md)
 * [Post-Execution Workflow](developer-guide/post-execution-workflow.md)
-* [Materializer](developer-guide/materializer.md)
+* [Materializers](developer-guide/materializer.md)
 * [Caching](developer-guide/caching.md)
 * [Step Fixture](developer-guide/step-fixtures.md)
 * [Fetching Historic Runs](developer-guide/fetching-historic-runs.md)
@@ -22,34 +22,36 @@
 
 * [Stacks, Components, Flavors](advanced-guide/stacks-components-flavors.md)
 * [Integrations](advanced-guide/integrations.md)
-* [Execute Pipelines in the Cloud](advanced-guide/guide-aws-gcp-azure.md)
+* [Track Metadata in the Cloud](advanced-guide/track_metadata_in_the_cloud.md)
+* [Execute Pipelines in the Cloud](advanced-guide/execute-pipelines-in-cloud.md)
 * [Continuous Training and Deployment](advanced-guide/continuous-training-and-deployment.md)
-* [Manage your Secrets](advanced-guide/secrets.md)
-* [Run Steps on Specialized Hardware](advanced-guide/step-operators.md)
-* [Load your Data from Feature Stores](advanced-guide/feature-store.md)
-* [Perform Drift Detection](advanced-guide/drift-detection.md)
-* [Manage External Services](advanced-guide/services.md)
-* [Track your Experiments](advanced-guide/experiment-tracking.md)
+* [Manage your Secrets](advanced-guide/manage-your-secrets.md)
+* [Run Steps on Specialized Hardware](advanced-guide/run-steps-on-specialized-hardware.md)
+* [Load your Data from Feature Stores](advanced-guide/load-your-data-from-feature-stores.md)
+* [Perform Drift Detection](advanced-guide/perform-drift-detection.md)
+* [Manage External Services](advanced-guide/manage-external-services.md)
+* [Track your Experiments](advanced-guide/track-your-experiments.md)
+* [Send Automated Chat Alerts](advanced-guide/send-automated-chat-alerts.md)
 
 ## Extending ZenML
 
 * [Getting Started](extending-zenml/getting-started.md)
-* [Orchestrators](extending-zenml/orchestrator.md)
-* [Artifact Stores](extending-zenml/artifact-store.md)
-* [Metadata Stores](extending-zenml/metadata-store.md)
-* [Container Registries](extending-zenml/container-registry.md)
-* [Step Operators](extending-zenml/step-operator.md)
-* [Secret Managers](extending-zenml/secrets-manager.md)
-* [Model Deployers](extending-zenml/model-deployer.md)
-* [Experiment Trackers](extending-zenml/experiment-tracker.md)
-* [Feature Stores](extending-zenml/feature-store.md)
-* [Alerters](extending-zenml/alerter.md)
+* [Orchestrators](extending-zenml/orchestrators.md)
+* [Artifact Stores](extending-zenml/artifact-stores.md)
+* [Metadata Stores](extending-zenml/metadata-stores.md)
+* [Container Registries](extending-zenml/container-registries.md)
+* [Step Operators](extending-zenml/step-operators.md)
+* [Secret Managers](extending-zenml/secrets-managers.md)
+* [Model Deployers](extending-zenml/model-deployers.md)
+* [Experiment Trackers](extending-zenml/experiment-trackers.md)
+* [Feature Stores](extending-zenml/feature-stores.md)
+* [Alerters](extending-zenml/alerters.md)
 
 ## Collaborate
 
-* [Collaborate with ZenML](collaborate/collaborate.md)
-* [Stack Export/Import](collaborate/stack-export.md)
-* [Share with Profiles](collaborate/profiles.md)
+* [Collaborate with ZenML](collaborate/collaborate-with-zenml.md)
+* [Stack Export/Import](collaborate/stack-export-import.md)
+* [Share with Profiles](collaborate/share-with-profiles.md)
 * [ZenServer](collaborate/zenml-server.md)
 
 ## Links & Resources
@@ -62,7 +64,7 @@
 	* [Slack Community](https://zenml.io/slack-invite/)
 * [Resources]()
   * [Best Practices](resources/best-practices.md)
-  * [System Environmental Variables](resources/system-env.md)
+  * [System Environmental Variables](resources/system-environmental-variables.md)
   * [Usage Analytics](resources/usage-analytics.md)
   * [Contributing](resources/contributing.md)
   * [FAQ](resources/faq.md)

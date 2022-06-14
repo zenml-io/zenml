@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Evidently Profile Step."""
+
 from typing import List, Optional, Sequence, Tuple
 
 import pandas as pd
@@ -81,6 +83,14 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
     def get_profile_sections_and_tabs(
         self,
     ) -> Tuple[List[ProfileSection], List[Tab]]:
+        """Get the profile sections and tabs to be used in the dashboard.
+
+        Returns:
+            A tuple of two lists of profile sections and tabs.
+
+        Raises:
+            ValueError: if the profile_section is not supported.
+        """
         try:
             return (
                 [
@@ -105,8 +115,7 @@ class EvidentlyProfileConfig(BaseDriftDetectionConfig):
 
 
 class EvidentlyProfileStep(BaseDriftDetectionStep):
-    """Simple step implementation which implements Evidently's functionality for
-    creating a profile."""
+    """Step implementation implementing an Evidently Profile Step."""
 
     OUTPUT_SPEC = {
         "profile": DataAnalysisArtifact,
@@ -121,8 +130,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str
     ):
-        """Main entrypoint for the Evidently categorical target drift detection
-        step.
+        """Main entrypoint for the Evidently categorical target drift detection step.
 
         Args:
             reference_dataset: a Pandas DataFrame

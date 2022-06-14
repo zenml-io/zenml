@@ -11,9 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-ZenStores define ways to store ZenML relevant data locally or remotely.
-"""
+"""ZenStores define ways to store ZenML relevant data locally or remotely."""
+
 from zenml.zen_stores.base_zen_store import BaseZenStore
 from zenml.zen_stores.local_zen_store import LocalZenStore
 from zenml.zen_stores.rest_zen_store import RestZenStore
