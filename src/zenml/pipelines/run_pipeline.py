@@ -12,15 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Running ZenML Pipelines from Code."""
-import os
 import textwrap
 import types
 from typing import Any, Dict
 
 from zenml import constants
-from zenml.cli import logger
-from zenml.config.config_keys import PipelineConfigurationKeys, \
-    StepConfigurationKeys, SourceConfigurationKeys
+from zenml.config.config_keys import (
+    PipelineConfigurationKeys,
+    SourceConfigurationKeys,
+    StepConfigurationKeys,
+)
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
 from zenml.repository import Repository
@@ -45,9 +46,11 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     #  zenml, this is done at this point
     zenml_root = Repository().root
     if not zenml_root:
-        raise RuntimeError("The `run_pipeline` function can only be called "
-                           "within a zenml repo. Run `zenml init` before "
-                           "running a pipeline using `run_pipeline`.")
+        raise RuntimeError(
+            "The `run_pipeline` function can only be called "
+            "within a zenml repo. Run `zenml init` before "
+            "running a pipeline using `run_pipeline`."
+        )
 
     module = source_utils.import_python_file(python_file, str(zenml_root))
     config = yaml_utils.read_yaml(config_path)
@@ -59,7 +62,8 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     # For docker-based orchestrators it is important for the supplied python
     #  module to be set as the main module instead of the calling process
     constants.USER_MAIN_MODULE = source_utils.get_module_source_from_module(
-        module=module)
+        module=module
+    )
 
     steps = {}
     for step_name, step_config in config[
@@ -67,9 +71,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     ].items():
         StepConfigurationKeys.key_check(step_config)
         source = step_config[StepConfigurationKeys.SOURCE_]
-        step_class = _load_class_from_module(module,
-                                             source,
-                                             str(zenml_root))
+        step_class = _load_class_from_module(module, source, str(zenml_root))
 
         # It is necessary to support passing step instances for standard
         #  step implementations (e.g WhylogsProfilerStep) in order to
@@ -135,16 +137,12 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     pipeline_instance = pipeline_class(**steps).with_config(
         config_path, overwrite_step_parameters=True
     )
-    logger.debug(
-        "Finished setting up pipeline '%s' from CLI", pipeline_name
-    )
+    logger.debug("Finished setting up pipeline '%s' from CLI", pipeline_name)
     pipeline_instance.run()
 
 
 def _load_class_from_module(
-        module: types.ModuleType,
-        config_item: Dict[str, str],
-        zen_root: str
+    module: types.ModuleType, config_item: Dict[str, str], zen_root: str
 ) -> Any:
     """Load a class from a module.
 
@@ -169,8 +167,7 @@ def _load_class_from_module(
     if isinstance(config_item, dict):
         if SourceConfigurationKeys.FILE_ in config_item:
             module = source_utils.import_python_file(
-                config_item[SourceConfigurationKeys.FILE_],
-                zen_root=zen_root
+                config_item[SourceConfigurationKeys.FILE_], zen_root=zen_root
             )
 
         implementation_name = config_item[SourceConfigurationKeys.NAME_]

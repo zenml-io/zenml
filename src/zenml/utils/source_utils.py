@@ -314,7 +314,7 @@ def get_source_root_path() -> str:
 
 
 def get_module_source_from_class(
-        class_: Union[Type[Any], str]
+    class_: Union[Type[Any], str]
 ) -> Optional[str]:
     """Takes class input and returns module_source.
 
@@ -355,22 +355,22 @@ def get_source(value: Any) -> str:
         # Monkey patch inspect.getfile temporarily to make getsource work.
         # Source: https://stackoverflow.com/questions/51566497/
         def _new_getfile(
-                object: Any,
-                _old_getfile: Callable[
-                    [
-                        Union[
-                            ModuleType,
-                            Type[Any],
-                            MethodType,
-                            FunctionType,
-                            TracebackType,
-                            FrameType,
-                            CodeType,
-                            Callable[..., Any],
-                        ]
-                    ],
-                    str,
-                ] = inspect.getfile,
+            object: Any,
+            _old_getfile: Callable[
+                [
+                    Union[
+                        ModuleType,
+                        Type[Any],
+                        MethodType,
+                        FunctionType,
+                        TracebackType,
+                        FrameType,
+                        CodeType,
+                        Callable[..., Any],
+                    ]
+                ],
+                str,
+            ] = inspect.getfile,
         ) -> Any:
             if not inspect.isclass(object):
                 return _old_getfile(object)
@@ -384,9 +384,9 @@ def get_source(value: Any) -> str:
             # If parent module is __main__, lookup by methods
             for name, member in inspect.getmembers(object):
                 if (
-                        inspect.isfunction(member)
-                        and object.__qualname__ + "." + member.__name__
-                        == member.__qualname__
+                    inspect.isfunction(member)
+                    and object.__qualname__ + "." + member.__name__
+                    == member.__qualname__
                 ):
                     return inspect.getfile(member)
             else:
@@ -450,7 +450,7 @@ def resolve_class(class_: Type[Any]) -> str:
         return initial_source
 
     if initial_source.startswith("__main__") or is_third_party_module(
-            file_path
+        file_path
     ):
         return initial_source
 
@@ -502,7 +502,7 @@ def prepend_python_path(path: str) -> Iterator[None]:
 
 
 def load_source_path_class(
-        source: str, import_path: Optional[str] = None
+    source: str, import_path: Optional[str] = None
 ) -> Type[Any]:
     """Loads a Python class from the source.
 
@@ -550,9 +550,9 @@ def import_python_file(file_path: str, zen_root: str) -> types.ModuleType:
     #  path is something like materializer.materializer the full path needs to
     #  be checked for in the sys.modules to avoid getting an empty namespace
     #  module
-    module_name = os.path.splitext(
-        os.path.relpath(module_path, os.getcwd())
-    )[0].replace(os.path.sep, ".")
+    module_name = os.path.splitext(os.path.relpath(module_path, os.getcwd()))[
+        0
+    ].replace(os.path.sep, ".")
 
     if module_name in sys.modules:
         del sys.modules[module_name]
@@ -566,7 +566,7 @@ def import_python_file(file_path: str, zen_root: str) -> types.ModuleType:
 
 
 def validate_flavor_source(
-        source: str, component_type: StackComponentType
+    source: str, component_type: StackComponentType
 ) -> Type[StackComponent]:
     """Utility function to import a StackComponent class from a given source and validate its type.
 

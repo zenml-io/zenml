@@ -195,7 +195,7 @@ class LocalExample:
             try:
                 # TODO [ENG-271]: Catch errors that might be thrown
                 #  in subprocess
-                a = subprocess.check_call(
+                subprocess.check_call(
                     call,
                     cwd=str(self.path),
                     shell=click._compat.WIN,

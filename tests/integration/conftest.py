@@ -14,8 +14,7 @@
 import os
 import shutil
 import threading
-from typing import Generator, Any, Optional, TypeVar, Callable
-from unittest.mock import PropertyMock
+from typing import Any, Callable, Generator, Optional, TypeVar
 
 import pytest
 from pytest_mock import MockerFixture
@@ -33,8 +32,8 @@ KUBE_CONTEXT = "zenml-eks"
 
 @pytest.fixture(scope="module")
 def shared_kubeflow_profile(
-        base_profile: Repository,
-        module_mocker: MockerFixture,
+    base_profile: Repository,
+    module_mocker: MockerFixture,
 ) -> Generator[Repository, None, None]:
     """Creates and activates a locally provisioned kubeflow stack.
 
@@ -54,10 +53,11 @@ def shared_kubeflow_profile(
         The input repository with a local kubeflow stack provisioned for the
         module active profile.
     """
-    from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
     from zenml.container_registries import DefaultContainerRegistry
-    from zenml.integrations.kubeflow.metadata_stores import \
-        KubeflowMetadataStore
+    from zenml.integrations.kubeflow.metadata_stores import (
+        KubeflowMetadataStore,
+    )
+    from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
     from zenml.integrations.s3.artifact_stores import S3ArtifactStore
 
     def run_in_thread(
@@ -76,11 +76,12 @@ def shared_kubeflow_profile(
         def fake_pid_file_exists(pid_file: str):
             return True
 
-        module_mocker.patch("zenml.utils.daemon.check_if_daemon_is_running",
-                            new=fake_pid_file_exists)
+        module_mocker.patch(
+            "zenml.utils.daemon.check_if_daemon_is_running",
+            new=fake_pid_file_exists,
+        )
 
-    module_mocker.patch("zenml.utils.daemon.run_as_daemon",
-                        new=run_in_thread)
+    module_mocker.patch("zenml.utils.daemon.run_as_daemon", new=run_in_thread)
 
     # Register and activate the kubeflow stack
     orchestrator = KubeflowOrchestrator(
@@ -88,16 +89,13 @@ def shared_kubeflow_profile(
         custom_docker_base_image_name="test-base-image:latest",
         synchronous=True,
         kubernetes_context=KUBE_CONTEXT,
-        skip_ui_daemon_provisioning=True
+        skip_ui_daemon_provisioning=True,
     )
 
     metadata_store = KubeflowMetadataStore(
         name="kubeflow_metadata_store",
     )
-    artifact_store = S3ArtifactStore(
-        name="s3_store",
-        path=S3_BUCKET_NAME
-    )
+    artifact_store = S3ArtifactStore(name="s3_store", path=S3_BUCKET_NAME)
     container_registry = DefaultContainerRegistry(
         name="ecr_registry", uri=ECR_REGISTRY_NAME
     )
@@ -140,7 +138,7 @@ def cleanup_active_profile() -> None:
 
 @pytest.fixture
 def clean_kubeflow_profile(
-        shared_kubeflow_profile: Repository,
+    shared_kubeflow_profile: Repository,
 ) -> Generator[Repository, None, None]:
     """Creates a clean environment with a provisioned local kubeflow stack.
 
@@ -163,7 +161,7 @@ def clean_kubeflow_profile(
 
 @pytest.fixture
 def clean_base_profile(
-        base_profile: Repository,
+    base_profile: Repository,
 ) -> Generator[Repository, None, None]:
     """Creates a clean environment with an empty artifact store and metadata
     store out of the shared base profile.

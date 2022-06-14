@@ -15,30 +15,20 @@ import logging
 import os
 import platform
 import shutil
-import sys
 import time
 from abc import ABC
 from pathlib import Path
-from typing import Callable, NamedTuple, Optional, List
+from typing import Callable, List, Optional
 
 import pytest
 from pydantic import BaseModel
 
-from zenml.cli import EXAMPLES_RUN_SCRIPT, SHELL_EXECUTABLE, LocalExample, \
-    set_active_stack
-from zenml.integrations.mlflow.experiment_trackers import \
-    MLFlowExperimentTracker
+from zenml.cli import set_active_stack
 from zenml.pipelines.run_pipeline import run_pipeline
 from zenml.repository import Repository
-from zenml.stack import StackComponent, Stack
+from zenml.stack import Stack, StackComponent
 
-from .example_validations import (
-    drift_detection_example_validation,
-    generate_basic_validation_function,
-    mlflow_tracking_example_validation,
-    mlflow_tracking_setup,
-    whylogs_example_validation,
-)
+from .example_validations import generate_basic_validation_function
 
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
@@ -79,8 +69,9 @@ class ExampleConfiguration(BaseModel, ABC):
 
         for component in self.required_stack_components:
             components[component.TYPE] = component
-        stack = Stack.from_components(name=f"{self.name}_stack",
-                                      components=components)
+        stack = Stack.from_components(
+            name=f"{self.name}_stack", components=components
+        )
         repo.register_stack(stack)
         repo.activate_stack(stack.name)
 
@@ -89,8 +80,7 @@ class ExampleConfiguration(BaseModel, ABC):
             return self.validation_function(repo)
         else:
             return generate_basic_validation_function(
-                pipeline_name=self.pipeline_name,
-                step_count=self.step_count
+                pipeline_name=self.pipeline_name, step_count=self.step_count
             )(repo)
 
 
@@ -109,14 +99,15 @@ EXAMPLES = [
         pipeline_path="pipelines/training_pipeline/training_pipeline.py",
         pipeline_name="scipy_example_pipeline",
         runs_on_windows=True,
-        step_count=4),
+        step_count=4,
+    ),
     ExampleConfiguration(
         name="xgboost",
         pipeline_path="pipelines/training_pipeline/training_pipeline.py",
         pipeline_name="xgboost_pipeline",
         runs_on_windows=False,
-        step_count=3)
-    ,
+        step_count=3,
+    ),
 ]
 
 
@@ -125,11 +116,11 @@ EXAMPLES = [
     [pytest.param(example, id=example.name) for example in EXAMPLES],
 )
 def test_run_example(
-        example_configuration: ExampleConfiguration,
-        tmp_path_factory: pytest.TempPathFactory,
-        repo_fixture_name: str,
-        request: pytest.FixtureRequest,
-        virtualenv: str,
+    example_configuration: ExampleConfiguration,
+    tmp_path_factory: pytest.TempPathFactory,
+    repo_fixture_name: str,
+    request: pytest.FixtureRequest,
+    virtualenv: str,
 ) -> None:
     """Runs the given examples and validates they ran correctly.
 
@@ -144,8 +135,10 @@ def test_run_example(
         virtualenv: Either a separate cloned environment for each test, or an
                     empty string.
     """
-    if (not example_configuration.runs_on_windows
-            and platform.system() == "Windows"):
+    if (
+        not example_configuration.runs_on_windows
+        and platform.system() == "Windows"
+    ):
         logging.info(
             f"Skipping example {example_configuration.name} on windows."
         )
