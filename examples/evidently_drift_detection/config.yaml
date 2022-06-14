@@ -11,8 +11,8 @@ steps:
   drift_detector:
     source:
       file: steps/drift_analyzer/drift_analyzer_step
-      name: drift_detector
+      name: analyze_drift
   drift_analyzer:
     source:
       file: steps/drift_detector/drift_detector_step
-      name: analyze_drift
+      name: drift_detector
