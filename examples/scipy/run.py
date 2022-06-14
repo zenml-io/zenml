@@ -11,11 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from pipelines.training_pipeline.training_pipeline import scipy_example_pipeline
-from steps.loader.loader_step import importer
-from steps.predictor.predictor_step import predictor
-from steps.trainer.trainer_step import trainer
-from steps.vectorizer.vectorizer_step import vectorizer
+from pipelines import scipy_example_pipeline
+from steps import importer
+from steps import predictor
+from steps import trainer
+from steps import vectorizer
 
 if __name__ == "__main__":
     run = scipy_example_pipeline(

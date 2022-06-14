@@ -11,12 +11,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.profiling_pipeline.profiling_pipeline import (
-    data_profiling_pipeline,
-)
-from steps.loader.loader_step import data_loader
-from steps.profiler.profiler_step import test_data_profiler, train_data_profiler
-from steps.splitter.splitter_step import data_splitter
+from pipelines import data_profiling_pipeline
+from steps import data_loader
+from steps import test_data_profiler, train_data_profiler
+from steps import data_splitter
 from whylogs import DatasetProfile  # type: ignore
 
 from zenml.integrations.whylogs.visualizers import WhylogsVisualizer
