@@ -11,20 +11,23 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Running ZenML Pipelines from Code."""
 import os
 import textwrap
 import types
 from typing import Any, Dict
 
-from zenml.cli import logger
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     SourceConfigurationKeys,
     StepConfigurationKeys,
 )
 from zenml.exceptions import PipelineConfigurationError
+from zenml.logger import get_logger
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, yaml_utils
+
+logger = get_logger(__name__)
 
 
 def run_pipeline(python_file: str, config_path: str) -> None:
@@ -33,12 +36,15 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     Args:
         python_file: Path to the python file that defines the pipeline.
         config_path: Path to configuration YAML file.
+
+    Raises:
+        PipelineConfigurationError: Error when pipeline configuration is faulty.
     """
     # If the file was run with `python run.py, this would happen automatically.
     #  In order to allow seamless switching between running directly and through
     #  zenml, this is done at this point
     with source_utils.prepend_python_path(
-        os.path.abspath(os.path.dirname(python_file))
+            os.path.abspath(os.path.dirname(python_file))
     ):
 
         module = source_utils.import_python_file(python_file)
@@ -127,7 +133,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
 
 
 def _load_class_from_module(
-    module: types.ModuleType, config_item: Dict[str, str]
+        module: types.ModuleType, config_item: Dict[str, str]
 ) -> Any:
     """Load a class from a module.
 
@@ -144,6 +150,9 @@ def _load_class_from_module(
 
     Returns:
         The imported function/class
+
+    Raises:
+        PipelineConfigurationError: Error when pipeline configuration is faulty.
     """
     if isinstance(config_item, dict):
         if SourceConfigurationKeys.FILE_ in config_item:

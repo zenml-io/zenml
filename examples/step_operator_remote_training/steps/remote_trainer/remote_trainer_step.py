@@ -15,8 +15,8 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 
 from zenml.integrations.sklearn.helpers.digits import get_digits_model
-from zenml.steps import step
 from zenml.repository import Repository
+from zenml.steps import step
 
 step_operator = Repository().active_stack.step_operator
 if not step_operator:

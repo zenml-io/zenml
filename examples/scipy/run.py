@@ -12,10 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from pipelines import scipy_example_pipeline
-from steps import importer
-from steps import predictor
-from steps import trainer
-from steps import vectorizer
+from steps import importer, predictor, trainer, vectorizer
 
 if __name__ == "__main__":
     run = scipy_example_pipeline(

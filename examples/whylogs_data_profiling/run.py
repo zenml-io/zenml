@@ -12,9 +12,12 @@
 #  permissions and limitations under the License.
 
 from pipelines import data_profiling_pipeline
-from steps import data_loader
-from steps import test_data_profiler, train_data_profiler
-from steps import data_splitter
+from steps import (
+    data_loader,
+    data_splitter,
+    test_data_profiler,
+    train_data_profiler,
+)
 from whylogs import DatasetProfile  # type: ignore
 
 from zenml.integrations.whylogs.visualizers import WhylogsVisualizer

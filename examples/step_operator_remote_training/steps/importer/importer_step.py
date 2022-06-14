@@ -14,7 +14,7 @@
 import numpy as np
 
 from zenml.integrations.sklearn.helpers.digits import get_digits
-from zenml.steps import step, Output
+from zenml.steps import Output, step
 
 
 @step

@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from steps import importer, remote_trainer, evaluator
 from pipelines import step_operator_pipeline
+from steps import evaluator, importer, remote_trainer
 
 if __name__ == "__main__":
     pipeline = step_operator_pipeline(

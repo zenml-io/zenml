@@ -16,8 +16,8 @@
 
 Three very simple steps
 """
+from .evaluator.evaluator_step import evaluator
 from .importer.importer_step import importer
 from .remote_trainer.remote_trainer_step import remote_trainer
-from .evaluator.evaluator_step import evaluator
 
 __all__ = ["importer", "remote_trainer", "evaluator"]

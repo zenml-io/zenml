@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from .loader.loader_step import importer
-from .trainer.trainer_step import trainer
 from .predictor.predictor_step import predictor
+from .trainer.trainer_step import trainer
 from .vectorizer.vectorizer_step import vectorizer
 
 __all__ = ["importer", "trainer", "predictor", "vectorizer"]
