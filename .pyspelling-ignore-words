@@ -614,6 +614,7 @@ getfile
 getsource
 getter
 gfile
+ghcr
 gif
 github
 gke
@@ -800,8 +801,8 @@ runtime
 sagemaker
 sam
 sas
-scalable
 scalability
+scalable
 scalable
 scaler
 schemas
@@ -834,6 +835,7 @@ stackoverflow
 startswith
 staticmethod
 stderr
+stdin
 stdout
 stefan
 str
@@ -874,9 +876,9 @@ touchpoint
 traceback
 txt
 ui
-unencrypted
 uncomment
 unconfigured
+unencrypted
 unencrypted
 uninstallation
 unix

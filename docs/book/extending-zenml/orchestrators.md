@@ -85,6 +85,7 @@ modules, such as the `AirflowOrchestrator` in the `airflow` integration and the
 | [AirflowOrchestrator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator)     | airflow  | airflow     |
 | [KubeflowOrchestrator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator) | kubeflow | kubeflow    |
 | [VertexAIOrchestrator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.orchestrators.vertex_orchestrator.VertexOrchestrator)          | vertex   | gcp         |
+| [GitHubActionsOrchestrator](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.github.orchestrators.github_actions_orchestrator.GitHubActionsOrchestrator) | github  | github    |
 
 
 If you would like to see the available flavors for artifact stores, you can
