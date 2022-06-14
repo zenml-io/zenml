@@ -21,6 +21,7 @@ from zenml.integrations.kubernetes import KUBERNETES_METADATA_STORE_FLAVOR
 from zenml.integrations.kubernetes.orchestrators.kube_utils import (
     create_mysql_deployment,
     create_namespace,
+    delete_deployment,
     make_core_v1_api,
 )
 from zenml.logger import get_logger
@@ -50,10 +51,10 @@ class KubernetesMetadataStore(MySQLMetadataStore):
 
     @property
     def deployment_exists(self) -> bool:
-        """Check whether a mysql deployment exists in the cluster.
+        """Check whether a MySQL deployment exists in the cluster.
 
         Returns:
-            Whether a mysql deployment exists in the cluster.
+            Whether a MySQL deployment exists in the cluster.
         """
         config.load_kube_config()
         v1 = client.AppsV1Api()
@@ -90,4 +91,12 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             storage_capacity=self.storage_capacity,
             deployment_name=self.deployment_name,
             service_name=self.deployment_name,
+        )
+
+    def deprovision(self) -> None:
+        """Deprovision the metadata store by deleting the MySQL deployment."""
+        logger.info("Deleting Kubernetes MySQL metadata store...")
+        delete_deployment(
+            deployment_name=self.deployment_name,
+            namespace=self.kubernetes_namespace,
         )

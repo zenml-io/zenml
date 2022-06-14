@@ -1,3 +1,17 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
 # Copyright 2020 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,6 +25,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Utilities for Kubernetes related functions.
 
 Internal interface: no backwards compatibility guarantees.
@@ -480,3 +495,21 @@ def create_mysql_deployment(
     _if_not_exists(core_api.create_namespaced_service)(
         namespace=namespace, body=service_manifest
     )
+
+
+def delete_deployment(deployment_name: str, namespace: str) -> None:
+    """Delete a k8s deployment.
+
+    Args:
+        deployment_name: Name of the deployment to be deleted.
+        namespace: Kubernetes namespace containing the deployment.
+    """
+    options = k8s_client.V1DeleteOptions()
+    with k8s_client.ApiClient() as api_client:
+        api_instance = k8s_client.AppsV1Api(api_client)
+        api_instance.delete_namespaced_deployment(
+            name=deployment_name,
+            namespace=namespace,
+            body=options,
+            propagation_policy="Foreground",
+        )
