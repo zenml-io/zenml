@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialisation of Kserve Secret Schemas.
+"""Initialization of Kserve Secret Schemas.
 
 These are secret schemas that can be used to authenticate Kserve to the
 Artifact Store used to store served ML models.

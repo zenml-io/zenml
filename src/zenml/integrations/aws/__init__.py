@@ -34,7 +34,7 @@ class AWSIntegration(Integration):
     """Definition of AWS integration for ZenML."""
 
     NAME = AWS
-    REQUIREMENTS = ["boto3==1.20.24", "sagemaker==2.75.0"]
+    REQUIREMENTS = ["boto3==1.20.24", "sagemaker==2.74.0"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
