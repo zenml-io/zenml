@@ -359,7 +359,7 @@ operator. If you wish to register a new step operator, do so with the
 `register` command:
 
 ```bash
-zenml step-operator register STEP_OPERATOR_NAME --type STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
+zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
 ```
 
 If you want the name of the current step operator, use the `get` command:

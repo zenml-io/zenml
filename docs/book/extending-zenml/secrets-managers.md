@@ -82,14 +82,16 @@ not intended for production use.
 
 For production use cases some more flavors can be found in specific 
 `integrations` modules, such as the `GCPSecretsManager` in the 
-`gcp_secrets_manager` integration and the `AWSSecretsManager` in the 
-`aws` integration.
+`gcp` integration, the `AWSSecretsManager` in the 
+`aws` integration and the `AzureSecretsManager` in the `azure` integration.
 
-|                                                                                                                                                           | Flavor               | Integration         |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|---------------------|
-| [LocalSecretsManager](https://apidocs.zenml.io/latest/api_docs/secrets_managers/#zenml.secrets_managers.local.local_secrets_manager.LocalSecretsManager)  | local                | `built-in`          |
-| [AWSSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.aws.secrets_managers.aws_secrets_manager.AWSSecretsManager) | aws                  | aws                 |
-| GCPSecretsManager                                                                                                                                         | gcp_secrets_manager  | gcp_secrets_manager |
+|                                                                                                                                                                   | Flavor | Integration |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|-------------|
+| [LocalSecretsManager](https://apidocs.zenml.io/latest/api_docs/secrets_managers/#zenml.secrets_managers.local.local_secrets_manager.LocalSecretsManager)          | local  | `built-in`  |
+| [AWSSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.aws.secrets_managers.aws_secrets_manager.AWSSecretsManager)         | aws    | aws         |
+| [GCPSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.gcp.secrets_managers.gcp_secrets_manager.GCPSecretsManager)         | gcp    | gcp         |
+| [AzureSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.azure.secrets_managers.azure_secrets_manager.AzureSecretsManager) | azure  | azure       |
+| [GitHubSecretsManager](https://apidocs.zenml.io/latest/api_docs/integrations/#zenml.integrations.github.secrets_managers.github_secrets_manager.GitHubSecretsManager) | github | github |                                                                                                                   
 
 If you would like to see the available flavors for secret managers, you can 
 use the command:
