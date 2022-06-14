@@ -131,7 +131,7 @@ We're almost done now, but there is one additional step we need to do after our 
 python run.py
 ```
 
-Running your first pipeline using the ZenML GitHubActions orchestrator will create a [GitHub package](https://github.com/features/packages) called **zenml-github-actions** which by default won't be accessible by GitHub Actions.
+Running your first pipeline using the ZenML GitHub Actions orchestrator will create a [GitHub package](https://github.com/features/packages) called **zenml-github-actions** which by default won't be accessible by GitHub Actions.
 Luckily it doesn't take much effort to resolve this problem: Head to `https://github.com/users/<GITHUB_REPOSITORY_OWNER>/packages/container/package/zenml-github-actions` (replace <GITHUB_REPOSITORY_OWNER> with the value you passed earlier during stack configuration) and click on `Package settings` on the right side. In there you can either
 * change the package visibility to `public`
 * give your repository permissions to access this package using GitHub Actions in the `Manage Actions access` section (see [here](https://docs.github.com/en/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility#ensuring-workflow-access-to-your-package))
