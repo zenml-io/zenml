@@ -186,6 +186,8 @@ Kubeflow
 KubeflowMetadataStore
 KubeflowOrchestrator
 Kubernetes
+KubernetesMetadataStore
+KubernetesOrchestrator
 KUBE
 LLC
 LegacyVersion

@@ -54,24 +54,24 @@ zenml orchestrator register k8s_orchestrator
 
 ### Setup and Register Metadata Store
 
-For metadata storage, we will use a MySQL database that we deploy within the
-Kubernetes cluster. 
-Run the following command to spin up the MySQL pod in your Kubernetes cluster:
+If you want to store your metadata locally within the kubernetes cluster, you
+can use the `KubernetesMetadataStore`, which is a subclass of the
+`MySQLMetadataStore` that will automatically spin up a MySQL deployment in
+your cluster if you call `zenml stack up`.
 
-```bash
-kubectl apply -k src/zenml/integrations/kubernetes/orchestrators/yaml
-```
-
-Now we can register the database as a metadata store as follows:
+We can register this metadata store as follows:
 
 ```bash
 zenml metadata-store register kubernetes_store 
-    --flavor=mysql
+    --flavor=kubernetes
     --host=mysql
     --port=3306
     --database=mysql
     --username=root
     --password=''
+    --kubernetes_namespace=zenml
+    --deployment_name=mysql 
+    --storage_capacity=10Gi
 ```
 
 ### Register Container Registry
@@ -106,7 +106,7 @@ zenml artifact-store register s3_store
     --path=<REMOTE_ARTIFACT_STORE_PATH>
 ```
 
-### Register Stack
+### Register and Spin Up Stack
 
 Finally, let us bring everything together and register our stack:
 
@@ -118,6 +118,8 @@ zenml stack register kubernetes_stack
     -c ecr_registry
 zenml stack set kubernetes_stack
 ```
+
+Next, call `zenml stack up` to provision our metadata store.
 
 ## :computer: Run Pipeline Locally
 Now that our stack is set up, all of our ML code will automatically be executed
@@ -177,19 +179,16 @@ kubectl get pods -l pipeline=parallelizable_pipeline
 
 ## :sponge: Clean Up
 
-You can run the following commands to delete all pods and other Kubernetes
-units we created during this example.
-
 ### Delete Run Pods
 ```bash
 kubectl delete pod -l pipeline=parallelizable_pipeline
 ```
 
-### Delete MySQL Metadata Store
+### Deprovision Stack
 
 **WARNING**: This will permanently delete your metadata store, so all metadata
 will be lost. Never do this for production settings!
 
 ```bash
-kubectl delete -k src/zenml/integrations/kubernetes/orchestrators/yaml
+zenml stack down --force
 ```
