@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Utility functions for source code.
+
 These utils are predicated on the following definitions:
 
 * class_source: This is a python-import type path to a class, e.g.
@@ -57,6 +58,9 @@ def is_standard_pin(pin: str) -> bool:
 
     Args:
         pin: potential ZenML pin like 'zenml_0.1.1'
+
+    Returns:
+        `True` if pin is valid ZenML pin, else False.
     """
     if pin.startswith(f"{APP_NAME}_"):
         return True
@@ -64,7 +68,14 @@ def is_standard_pin(pin: str) -> bool:
 
 
 def is_inside_repository(file_path: str) -> bool:
-    """Returns whether a file is inside a zenml repository."""
+    """Returns whether a file is inside a zenml repository.
+
+    Args:
+        file_path: A file path.
+
+    Returns:
+        `True` if the file is inside a zenml repository, else `False`.
+    """
     from zenml.repository import Repository
 
     repo_path = Repository.find_repository()
@@ -77,7 +88,14 @@ def is_inside_repository(file_path: str) -> bool:
 
 
 def is_third_party_module(file_path: str) -> bool:
-    """Returns whether a file belongs to a third party package."""
+    """Returns whether a file belongs to a third party package.
+
+    Args:
+        file_path: A file path.
+
+    Returns:
+        `True` if the file belongs to a third party package, else `False`.
+    """
     absolute_file_path = pathlib.Path(file_path).resolve()
 
     for path in site.getsitepackages() + [site.getusersitepackages()]:
@@ -88,7 +106,11 @@ def is_third_party_module(file_path: str) -> bool:
 
 
 def create_zenml_pin() -> str:
-    """Creates a ZenML pin for source pinning from release version."""
+    """Creates a ZenML pin for source pinning from release version.
+
+    Returns:
+        ZenML pin.
+    """
     return f"{APP_NAME}_{__version__}"
 
 
@@ -97,6 +119,12 @@ def resolve_standard_source(source: str) -> str:
 
     Args:
         source: class_source e.g. this.module.Class.
+
+    Returns:
+        ZenML pin.
+
+    Raises:
+        AssertionError: If source is already pinned.
     """
     if "@" in source:
         raise AssertionError(f"source {source} is already pinned.")
@@ -109,6 +137,9 @@ def is_standard_source(source: str) -> bool:
 
     Args:
         source: class_source e.g. this.module.Class[@pin].
+
+    Returns:
+        `True` if source is a standard ZenML source, else `False`.
     """
     if source.split(".")[0] == "zenml":
         return True
@@ -120,17 +151,25 @@ def get_class_source_from_source(source: str) -> str:
 
     Args:
         source: source pointing to potentially pinned sha.
+
+    Returns:
+        class_source e.g. this.module.Class.
     """
     # source need not even be pinned
     return source.split("@")[0]
 
 
 def get_module_source_from_source(source: str) -> str:
-    """Gets module source from source. E.g. `some.module.file.class@version`,
-    returns `some.module`.
+    """Gets module source from source.
+
+    For example `some.module.file.class@version` would
+    return `some.module`.
 
     Args:
         source: source pointing to potentially pinned sha.
+
+    Returns:
+        module_source e.g. some.module.
     """
     class_source = get_class_source_from_source(source)
     return ".".join(class_source.split(".")[:-2])
@@ -209,6 +248,9 @@ def get_relative_path_from_module_source(module_source: str) -> str:
 
     Args:
         module_source: A module e.g. zenml.core.step
+
+    Returns:
+        A relative path e.g. zenml/core/step.
     """
     return module_source.replace(".", os.path.sep)
 
@@ -220,14 +262,16 @@ def get_absolute_path_from_module_source(module: str) -> str:
 
     Args:
         module: A module e.g. `zenml.core.step`.
+
+    Returns:
+        An absolute path e.g. `full/path/to/zenml/core/step`.
     """
     mod = importlib.import_module(module)
     return mod.__path__[0]
 
 
 def get_source_root_path() -> str:
-    """Get the repository root path or the source root path of the current
-    process.
+    """Gets repository root path or the source root path of the current process.
 
     E.g.:
 
@@ -240,6 +284,9 @@ def get_source_root_path() -> str:
 
     Returns:
         The source root path of the current process.
+
+    Raises:
+        RuntimeError: if the main module was not started or determined.
     """
     from zenml.repository import Repository
 
@@ -269,11 +316,18 @@ def get_source_root_path() -> str:
 def get_module_source_from_class(
         class_: Union[Type[Any], str]
 ) -> Optional[str]:
-    """Takes class input and returns module_source. If class is already string
-    then returns the same.
+    """Takes class input and returns module_source.
+
+    If class is already string then returns the same.
 
     Args:
         class_: object of type class.
+
+    Returns:
+        module_source of class.
+
+    Raises:
+        AssertionError: if step_type is neither a class nor a string.
     """
     if isinstance(class_, str):
         module_source = class_
@@ -286,12 +340,16 @@ def get_module_source_from_class(
 
 
 def get_source(value: Any) -> str:
-    """Returns the source code of an object. If executing within a IPython
-    kernel environment, then this monkey-patches `inspect` module temporarily
-    with a workaround to get source from the cell.
+    """Returns the source code of an object.
 
-    Raises:
-        TypeError: If source not found.
+    If executing within a IPython kernel environment, then this monkey-patches
+    `inspect` module temporarily with a workaround to get source from the cell.
+
+    Args:
+        value: object to get source from.
+
+    Returns:
+        Source code of object.
     """
     if Environment.in_notebook():
         # Monkey patch inspect.getfile temporarily to make getsource work.
@@ -348,7 +406,17 @@ def get_source(value: Any) -> str:
 
 
 def get_hashed_source(value: Any) -> str:
-    """Returns a hash of the objects source code."""
+    """Returns a hash of the objects source code.
+
+    Args:
+        value: object to get source from.
+
+    Returns:
+        Hash of source code.
+
+    Raises:
+        TypeError: If unable to compute the hash.
+    """
     try:
         source_code = get_source(value)
     except TypeError:
@@ -368,7 +436,8 @@ def resolve_class(class_: Type[Any]) -> str:
     Args:
         class_: A Python Class reference.
 
-    Returns: source_path e.g. this.module.Class.
+    Returns:
+        source_path e.g. this.module.Class.
     """
     initial_source = class_.__module__ + "." + class_.__name__
     if is_standard_source(initial_source):
@@ -400,12 +469,13 @@ def resolve_class(class_: Type[Any]) -> str:
 
 
 def import_class_by_path(class_path: str) -> Type[Any]:
-    """Imports a class based on a given path
+    """Imports a class based on a given path.
 
     Args:
         class_path: str, class_source e.g. this.module.Class
 
-    Returns: the given class
+    Returns:
+        the given class
     """
     modulename, classname = class_path.rsplit(".", 1)
     mod = importlib.import_module(modulename)
@@ -414,7 +484,14 @@ def import_class_by_path(class_path: str) -> Type[Any]:
 
 @contextmanager
 def prepend_python_path(path: str) -> Iterator[None]:
-    """Simple context manager to help import module within the repo"""
+    """Simple context manager to help import module within the repo.
+
+    Args:
+        path: str, path to prepend to sys.path
+
+    Yields:
+        None
+    """
     try:
         # Entering the with statement
         sys.path.insert(0, path)
@@ -432,6 +509,9 @@ def load_source_path_class(
     Args:
         source: class_source e.g. this.module.Class[@sha]
         import_path: optional path to add to python path
+
+    Returns:
+        the given class
     """
     from zenml.repository import Repository
 
@@ -488,12 +568,14 @@ def import_python_file(file_path: str, zen_root: str) -> types.ModuleType:
 def validate_flavor_source(
         source: str, component_type: StackComponentType
 ) -> Type[StackComponent]:
-    """Utility function to import a StackComponent class from a given source
-    and validate its type.
+    """Utility function to import a StackComponent class from a given source and validate its type.
 
     Args:
         source: source path of the implementation
         component_type: the type of the stack component
+
+    Returns:
+        the imported class
 
     Raises:
         ValueError: If ZenML cannot find the given module path

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base and meta classes for ZenML integrations."""
+
 import shutil
 from typing import Any, Dict, List, Tuple, Type, cast
 
@@ -24,13 +26,21 @@ logger = get_logger(__name__)
 
 
 class IntegrationMeta(type):
-    """Metaclass responsible for registering different Integration
-    subclasses"""
+    """Metaclass responsible for registering different Integration subclasses."""
 
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "IntegrationMeta":
-        """Hook into creation of an Integration class."""
+        """Hook into creation of an Integration class.
+
+        Args:
+            name: The name of the class being created.
+            bases: The base classes of the class being created.
+            dct: The dictionary of attributes of the class being created.
+
+        Returns:
+            The newly created class.
+        """
         cls = cast(Type["Integration"], super().__new__(mcs, name, bases, dct))
         if name != "Integration":
             integration_registry.register_integration(cls.NAME, cls)
@@ -38,7 +48,7 @@ class IntegrationMeta(type):
 
 
 class Integration(metaclass=IntegrationMeta):
-    """Base class for integration in ZenML"""
+    """Base class for integration in ZenML."""
 
     NAME = "base_integration"
 
@@ -48,7 +58,11 @@ class Integration(metaclass=IntegrationMeta):
 
     @classmethod
     def check_installation(cls) -> bool:
-        """Method to check whether the required packages are installed"""
+        """Method to check whether the required packages are installed.
+
+        Returns:
+            True if all required packages are installed, False otherwise.
+        """
         try:
             for requirement, command in cls.SYSTEM_REQUIREMENTS.items():
                 result = shutil.which(command)

@@ -84,7 +84,7 @@ print(step.entrypoint_name)
 ```
 
 The steps are ordered by time of execution. Depending on the 
-[orchestrator](../introduction/core-concepts.md#orchestrator), steps can be run in parallel. As such, accessing steps by 
+[orchestrator](../core-concepts.md#orchestrator), steps can be run in parallel. As such, accessing steps by 
 index can be unreliable across different runs. Instead, it makes sense to access steps by their name.
 
 ```python

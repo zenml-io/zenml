@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of the PyTorch Lightning integration."""
+
 from zenml.integrations.constants import PYTORCH_L
 from zenml.integrations.integration import Integration
 

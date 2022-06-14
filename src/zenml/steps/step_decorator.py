@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Step decorator function."""
+
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -41,7 +43,6 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 @overload
 def step(_func: F) -> Type[BaseStep]:
-    """Type annotations for step decorator in case of no arguments."""
     ...
 
 
@@ -53,7 +54,6 @@ def step(
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
     custom_step_operator: Optional[str] = None,
 ) -> Callable[[F], Type[BaseStep]]:
-    """Type annotations for step decorator in case of arguments."""
     ...
 
 
@@ -65,7 +65,7 @@ def step(
     output_types: Optional[Dict[str, Type["BaseArtifact"]]] = None,
     custom_step_operator: Optional[str] = None,
 ) -> Union[Type[BaseStep], Callable[[F], Type[BaseStep]]]:
-    """Outer decorator function for the creation of a ZenML step
+    """Outer decorator function for the creation of a ZenML step.
 
     In order to be able to work with parameters such as `name`, it features a
     nested decorator structure.
@@ -89,11 +89,11 @@ def step(
     """
 
     def inner_decorator(func: F) -> Type[BaseStep]:
-        """Inner decorator function for the creation of a ZenML Step
+        """Inner decorator function for the creation of a ZenML Step.
 
         Args:
-          func: types.FunctionType, this function will be used as the
-            "process" method of the generated Step
+            func: types.FunctionType, this function will be used as the
+                "process" method of the generated Step.
 
         Returns:
             The class of a newly generated ZenML Step.

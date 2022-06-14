@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the service health monitor."""
 
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Optional, Tuple
@@ -57,8 +58,10 @@ class BaseServiceEndpointHealthMonitor(BaseTypedModel):
     def check_endpoint_status(
         self, endpoint: "BaseServiceEndpoint"
     ) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the external
-        service endpoint.
+        """Check the the current operational state of the external service endpoint.
+
+        Args:
+            endpoint: service endpoint to check
 
         This method should be overridden by subclasses that implement
         concrete service endpoint tracking functionality.
@@ -104,6 +107,15 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
     def get_healthcheck_uri(
         self, endpoint: "BaseServiceEndpoint"
     ) -> Optional[str]:
+        """Get the healthcheck URI for the given service endpoint.
+
+        Args:
+            endpoint: service endpoint to get the healthcheck URI for
+
+        Returns:
+            The healthcheck URI for the given service endpoint or None, if
+            the service endpoint doesn't have a healthcheck URI.
+        """
         uri = endpoint.status.uri
         if not uri:
             return None
@@ -112,7 +124,10 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
     def check_endpoint_status(
         self, endpoint: "BaseServiceEndpoint"
     ) -> Tuple[ServiceState, str]:
-        """Run a HTTP endpoint API healthcheck
+        """Run a HTTP endpoint API healthcheck.
+
+        Args:
+            endpoint: service endpoint to check.
 
         Returns:
             The operational state of the external HTTP endpoint and an
@@ -126,7 +141,10 @@ class HTTPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
             ServiceEndpointProtocol.HTTP,
             ServiceEndpointProtocol.HTTPS,
         ]:
-            return ServiceState.ERROR, "endpoint protocol is not HTTP nor HTTPS"
+            return (
+                ServiceState.ERROR,
+                "endpoint protocol is not HTTP nor HTTPS.",
+            )
 
         check_uri = self.get_healthcheck_uri(endpoint)
         if not check_uri:
@@ -178,7 +196,10 @@ class TCPEndpointHealthMonitor(BaseServiceEndpointHealthMonitor):
     def check_endpoint_status(
         self, endpoint: "BaseServiceEndpoint"
     ) -> Tuple[ServiceState, str]:
-        """Run a TCP endpoint healthcheck
+        """Run a TCP endpoint healthcheck.
+
+        Args:
+            endpoint: service endpoint to check.
 
         Returns:
             The operational state of the external TCP endpoint and an

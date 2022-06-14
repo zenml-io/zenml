@@ -21,9 +21,9 @@ relevant.
   model has a certain accuracy, or
   overall performs better than the previous one, deploy it in production.)
 
-ZenML allows both paradigms with [Schedules](../introduction/core-concepts.md)
-, [Model Deployers](../introduction/core-concepts.md#model-deployer)
-and [Services](../introduction/core-concepts.md#service).
+ZenML allows both paradigms with [Schedules](../core-concepts.md)
+, [Model Deployers](../core-concepts.md#model-deployer)
+and [Services](../core-concepts.md#service).
 
 ## Setting a pipeline schedule for Continuous Training (CT)
 
@@ -48,7 +48,7 @@ my_pipeline(
 ```
 
 The above deploys a pipeline, potentially on
-a [production stack](guide-aws-gcp-azure.md), on a defined schedule. If the
+a [production stack](execute-pipelines-in-cloud.md), on a defined schedule. If the
 pipeline has a well-defined data loading/importing step, then one can deploy it
 to run and train new models on fresh
 data

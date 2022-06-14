@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Kubeflow metadata store."""
+
 import os
 import subprocess
 import sys
@@ -38,7 +40,11 @@ logger = get_logger(__name__)
 
 
 def inside_kfp_pod() -> bool:
-    """Returns if the current python process is running inside a KFP Pod."""
+    """Returns if the current python process is running inside a KFP Pod.
+
+    Returns:
+        True if the current python process is running inside a KFP Pod, False otherwise.
+    """
     if "KFP_POD_NAME" not in os.environ:
         return False
 
@@ -65,7 +71,11 @@ class KubeflowMetadataStore(BaseMetadataStore):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a KFP orchestrator."""
+        """Validates that the stack contains a KFP orchestrator.
+
+        Returns:
+            The stack validator.
+        """
 
         def _ensure_kfp_orchestrator(stack: Stack) -> Tuple[bool, str]:
             return (
@@ -84,7 +94,14 @@ class KubeflowMetadataStore(BaseMetadataStore):
         metadata_store_pb2.ConnectionConfig,
         metadata_store_pb2.MetadataStoreClientConfig,
     ]:
-        """Return tfx metadata config for the kubeflow metadata store."""
+        """Return tfx metadata config for the kubeflow metadata store.
+
+        Returns:
+            The tfx metadata config for the kubeflow metadata store.
+
+        Raises:
+            RuntimeError: If the metadata store is not running.
+        """
         connection_config = metadata_store_pb2.MetadataStoreClientConfig()
         if inside_kfp_pod():
             connection_config.host = os.environ["METADATA_GRPC_SERVICE_HOST"]
@@ -104,14 +121,24 @@ class KubeflowMetadataStore(BaseMetadataStore):
 
     @property
     def kfp_orchestrator(self) -> KubeflowOrchestrator:
-        """Returns the Kubeflow orchestrator in the active stack."""
+        """Returns the Kubeflow orchestrator in the active stack.
+
+        Returns:
+            The Kubeflow orchestrator in the active stack.
+        """
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
         return cast(KubeflowOrchestrator, repo.active_stack.orchestrator)
 
     @property
     def kubernetes_context(self) -> str:
-        """Returns the kubernetes context to the cluster where the Kubeflow
-        Pipelines services are running."""
+        """Returns the kubernetes context.
+
+        This is returned to the cluster where the Kubeflow Pipelines services
+        are running.
+
+        Returns:
+            The kubernetes context.
+        """
         kubernetes_context = self.kfp_orchestrator.kubernetes_context
 
         # will never happen, but mypy doesn't know that
@@ -120,12 +147,16 @@ class KubeflowMetadataStore(BaseMetadataStore):
 
     @property
     def root_directory(self) -> str:
-        """Returns path to the root directory for all files concerning
-        this KFP metadata store.
+        """Returns path to the root directory.
+
+        This is for all files concerning this KFP metadata store.
 
         Note: the root directory for the KFP metadata store is relative to the
         root directory of the KFP orchestrator, because it is a sub-component
         of it.
+
+        Returns:
+            Path to the root directory.
         """
         return os.path.join(
             self.kfp_orchestrator.root_directory,
@@ -135,22 +166,38 @@ class KubeflowMetadataStore(BaseMetadataStore):
 
     @property
     def _pid_file_path(self) -> str:
-        """Returns path to the daemon PID file."""
+        """Returns path to the daemon PID file.
+
+        Returns:
+            Path to the daemon PID file.
+        """
         return os.path.join(self.root_directory, "kubeflow_daemon.pid")
 
     @property
     def _log_file(self) -> str:
-        """Path of the daemon log file."""
+        """Path of the daemon log file.
+
+        Returns:
+            Path to the daemon log file.
+        """
         return os.path.join(self.root_directory, "kubeflow_daemon.log")
 
     @property
     def is_provisioned(self) -> bool:
-        """If the component provisioned resources to run locally."""
+        """If the component provisioned resources to run locally.
+
+        Returns:
+            True if the component provisioned resources to run locally.
+        """
         return fileio.exists(self.root_directory)
 
     @property
     def is_running(self) -> bool:
-        """If the component is running locally."""
+        """If the component is running locally.
+
+        Returns:
+            True if the component is running locally, False otherwise.
+        """
         if sys.platform != "win32":
             from zenml.utils.daemon import check_if_daemon_is_running
 
@@ -171,7 +218,6 @@ class KubeflowMetadataStore(BaseMetadataStore):
 
     def deprovision(self) -> None:
         """Deprovisions all local resources of the component."""
-
         if fileio.exists(self._log_file):
             fileio.remove(self._log_file)
 
@@ -195,9 +241,14 @@ class KubeflowMetadataStore(BaseMetadataStore):
         self.stop_kfp_metadata_daemon()
 
     def start_kfp_metadata_daemon(self) -> None:
-        """Starts a daemon process that forwards ports so the Kubeflow Pipelines
-        Metadata MySQL database is accessible on the localhost."""
+        """Starts a daemon process that forwards ports.
 
+        This is so the Kubeflow Pipelines Metadata MySQL database is accessible
+        on the localhost.
+
+        Raises:
+            ProvisioningError: if the daemon fails to start.
+        """
         command = [
             "kubectl",
             "--context",
@@ -261,8 +312,18 @@ class KubeflowMetadataStore(BaseMetadataStore):
     def wait_until_metadata_store_ready(
         self, timeout: int = DEFAULT_KFP_METADATA_DAEMON_TIMEOUT
     ) -> None:
-        """Waits until the metadata store connection is ready, an irrecoverable
-        error occurs or the timeout expires."""
+        """Waits until the metadata store connection is ready.
+
+        Potentially an irrecoverable error could occur or the timeout could
+        expire, so it checks for this.
+
+        Args:
+            timeout: The maximum time to wait for the metadata store to be
+                ready.
+
+        Raises:
+            RuntimeError: if the metadata store is not ready after the timeout
+        """
         logger.info(
             "Waiting for the Kubeflow metadata store to be ready (this might "
             "take a few minutes)."

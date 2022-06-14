@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation for the wandb step decorator."""
+
 import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
 
@@ -39,7 +41,6 @@ S = TypeVar("S", bound=Type[BaseStep])
 def enable_wandb(
     _step: S,
 ) -> S:
-    """Type annotations for wandb step decorator in case of no arguments."""
     ...
 
 
@@ -47,7 +48,6 @@ def enable_wandb(
 def enable_wandb(
     *, settings: Optional[wandb.Settings] = None
 ) -> Callable[[S], S]:
-    """Type annotations for wandb step decorator in case of arguments."""
     ...
 
 
@@ -75,6 +75,19 @@ def enable_wandb(
         return test_acc
     ```
 
+    You can also use this decorator with our class-based API like so:
+    ```
+    @enable_wandb
+    class TFEvaluator(BaseStep):
+        def entrypoint(
+            self,
+            x_test: np.ndarray,
+            y_test: np.ndarray,
+            model: tf.keras.Model,
+        ) -> float:
+            ...
+    ```
+
     All wandb artifacts and metrics logged from all the steps in a pipeline
     run are by default grouped under a single experiment named after the
     pipeline. To log wandb artifacts and metrics from a step in a separate
@@ -83,10 +96,7 @@ def enable_wandb(
 
     Args:
         _step: The decorated step class.
-        project_name: Name of project.
-        experiment_name: optional wandb experiment name to use for the step.
-            If not provided, the name of the pipeline in the context of which
-            the step is executed will be used as experiment name.
+        settings: wandb settings to use for the step.
 
     Returns:
         The inner decorator which enhances the input step class with wandb
@@ -94,8 +104,18 @@ def enable_wandb(
     """
 
     def inner_decorator(_step: S) -> S:
-        """Inner decorator for step enable_wandb."""
+        """Inner decorator for step enable_wandb.
 
+        Args:
+            _step: The decorated step class.
+
+        Returns:
+            The decorated step class.
+
+        Raises:
+            RuntimeError: If the decorator is not being applied to a ZenML step
+                decorated function or a BaseStep subclass.
+        """
         logger.debug(
             "Applying 'enable_wandb' decorator to step %s", _step.__name__
         )
@@ -105,21 +125,16 @@ def enable_wandb(
                 "`step` decorated function or a BaseStep subclass."
             )
         source_fn = getattr(_step, STEP_INNER_FUNC_NAME)
-        return cast(
-            S,
-            type(  # noqa
-                _step.__name__,
-                (_step,),
-                {
-                    STEP_INNER_FUNC_NAME: staticmethod(
-                        wandb_step_entrypoint(
-                            settings=settings,
-                        )(source_fn)
-                    ),
-                    "__module__": _step.__module__,
-                },
-            ),
-        )
+        new_entrypoint = wandb_step_entrypoint(
+            settings=settings,
+        )(source_fn)
+        if _step._created_by_functional_api():
+            # If the step was created by the functional API, the old entrypoint
+            # was a static method -> make sure the new one is as well
+            new_entrypoint = staticmethod(new_entrypoint)
+
+        setattr(_step, STEP_INNER_FUNC_NAME, new_entrypoint)
+        return _step
 
     if _step is None:
         return inner_decorator
@@ -133,17 +148,21 @@ def wandb_step_entrypoint(
     """Decorator for a step entrypoint to enable wandb.
 
     Args:
-        project_name: Name of wandb project.
-        experiment_name: optional wandb experiment name to use for the step.
-            If not provided, the name of the pipeline in the context of which
-            the step is executed will be used as experiment name.
+        settings: wandb settings to use for the step.
 
     Returns:
         the input function enhanced with wandb profiling functionality
     """
 
     def inner_decorator(func: F) -> F:
-        """Inner decorator for step entrypoint."""
+        """Inner decorator for step entrypoint.
+
+        Args:
+            func: The decorated function.
+
+        Returns:
+            the input function enhanced with wandb profiling functionality
+        """
         logger.debug(
             "Applying 'wandb_step_entrypoint' decorator to step entrypoint %s",
             func.__name__,
@@ -151,7 +170,18 @@ def wandb_step_entrypoint(
 
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:  # noqa
-            """Wrapper function for decorator"""
+            """Wrapper function for decorator.
+
+            Args:
+                *args: positional arguments to the decorated function.
+                **kwargs: keyword arguments to the decorated function.
+
+            Returns:
+                The return value of the decorated function.
+
+            Raises:
+                ValueError: if the active stack has no active experiment tracker.
+            """
             logger.debug(
                 "Setting up wandb backend before running step entrypoint %s",
                 func.__name__,

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility functions relating to Docker."""
+
 import json
 import os
 from typing import AbstractSet, Any, Dict, Iterable, List, Optional, cast
@@ -34,7 +36,14 @@ logger = get_logger(__name__)
 
 
 def _parse_dockerignore(dockerignore_path: str) -> List[str]:
-    """Parses a dockerignore file and returns a list of patterns to ignore."""
+    """Parses a dockerignore file and returns a list of patterns to ignore.
+
+    Args:
+        dockerignore_path: Path to the dockerignore file.
+
+    Returns:
+        List of patterns to ignore.
+    """
     try:
         file_content = read_file_contents_as_string(dockerignore_path)
     except FileNotFoundError:
@@ -170,8 +179,14 @@ def create_custom_build_context(
 
 
 def get_current_environment_requirements() -> Dict[str, str]:
-    """Returns a dict of package requirements for the environment that
-    the current python process is running in."""
+    """Returns a dict of package requirements.
+
+    This applies to the environment that in which the current python process is
+    running.
+
+    Returns:
+        A dict of package requirements.
+    """
     return {
         distribution.key: distribution.version
         for distribution in pkg_resources.working_set
@@ -321,7 +336,14 @@ def get_image_digest(image_name: str) -> Optional[str]:
 
 
 def is_local_image(image_name: str) -> bool:
-    """Returns whether an image was pulled from a registry or not."""
+    """Returns whether an image was pulled from a registry or not.
+
+    Args:
+        image_name: Name of the image to check.
+
+    Returns:
+        `True` if the image was pulled from a registry, `False` otherwise.
+    """
     docker_client = DockerClient.from_env()
     images = docker_client.images.list(name=image_name)
     if images:
@@ -337,11 +359,12 @@ def is_local_image(image_name: str) -> bool:
 def _process_stream(stream: Iterable[bytes]) -> None:
     """Processes the output stream of a docker command call.
 
+    Args:
+        stream: The output stream of a docker command call.
+
     Raises:
-        JSONDecodeError: If a line in the stream is not json decodable.
         RuntimeError: If there was an error while running the docker command.
     """
-
     for element in stream:
         lines = element.decode("utf-8").strip().split("\n")
 

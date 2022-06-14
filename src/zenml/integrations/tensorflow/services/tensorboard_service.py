@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the TensorBoard service."""
 
 from typing import Any, Dict, Union
 
@@ -49,8 +50,9 @@ class TensorboardServiceConfig(LocalDaemonServiceConfig):
 
 
 class TensorboardService(LocalDaemonService):
-    """TensorBoard service that can be used to start a local TensorBoard server
-    for one or more models.
+    """TensorBoard service.
+
+    This can be used to start a local TensorBoard server for one or more models.
 
     Attributes:
         SERVICE_TYPE: a service type descriptor with information describing
@@ -74,6 +76,12 @@ class TensorboardService(LocalDaemonService):
         config: Union[TensorboardServiceConfig, Dict[str, Any]],
         **attrs: Any,
     ) -> None:
+        """Initialization for TensorBoard service.
+
+        Args:
+            config: service configuration
+            **attrs: additional attributes
+        """
         # ensure that the endpoint is created before the service is initialized
         # TODO [ENG-697]: implement a service factory or builder for TensorBoard
         #   deployment services
@@ -96,6 +104,7 @@ class TensorboardService(LocalDaemonService):
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
+        """Initialize and run the TensorBoard server."""
         logger.info(
             "Starting TensorBoard service as blocking "
             "process... press CTRL+C once to stop it."

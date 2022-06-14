@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the post-execution pipeline."""
 
 from typing import TYPE_CHECKING, Any, List, Optional
 
@@ -26,8 +27,9 @@ logger = get_logger(__name__)
 
 
 class PipelineView:
-    """Post-execution pipeline class which can be used to query
-    pipeline-related information from the metadata store.
+    """Post-execution pipeline class.
+
+    This can be used to query pipeline-related information from the metadata store.
     """
 
     def __init__(
@@ -51,7 +53,11 @@ class PipelineView:
 
     @property
     def name(self) -> str:
-        """Returns the name of the pipeline."""
+        """Returns the name of the pipeline.
+
+        Returns:
+            The name of the pipeline.
+        """
         return self._name
 
     @property
@@ -60,6 +66,9 @@ class PipelineView:
 
         The runs are returned in chronological order, so the latest
         run will be the last element in this list.
+
+        Returns:
+            A list of all stored runs of this pipeline.
         """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
@@ -71,7 +80,11 @@ class PipelineView:
         return runs
 
     def get_run_names(self) -> List[str]:
-        """Returns a list of all run names."""
+        """Returns a list of all run names.
+
+        Returns:
+            A list of all run names.
+        """
         # Do not cache runs as new runs might appear during this objects
         # lifecycle
         runs = self._metadata_store.get_pipeline_runs(self)
@@ -82,6 +95,9 @@ class PipelineView:
 
         Args:
             name: The name of the run to return.
+
+        Returns:
+            The run with the given name.
 
         Raises:
             KeyError: If there is no run with the given name.
@@ -99,14 +115,17 @@ class PipelineView:
         return run
 
     def get_run_for_completed_step(self, step_name: str) -> "PipelineRunView":
-        """This method helps you find out which pipeline run produced
-        the cached artifact of a given step.
+        """Ascertains which pipeline run produced the cached artifact of a given step.
 
         Args:
             step_name: Name of step at hand
-        Return:
+
+        Returns:
             None if no run is found that completed the given step,
-             else the original pipeline_run
+                else the original pipeline_run.
+
+        Raises:
+            LookupError: If no run is found that completed the given step
         """
         orig_pipeline_run = None
 
@@ -131,7 +150,14 @@ class PipelineView:
 
         This will filter all ZenStore runs by the pipeline name of this
         pipeline view, the run name passed in as an argument and the metadata
-        store that this pipeline run is associated with."""
+        store that this pipeline run is associated with.
+
+        Args:
+            run_name: The name of the run to get.
+
+        Returns:
+            The ZenStore run with the given name, if found.
+        """
         from zenml.repository import Repository
 
         repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
@@ -152,15 +178,26 @@ class PipelineView:
         return None
 
     def __repr__(self) -> str:
-        """Returns a string representation of this pipeline."""
+        """Returns a string representation of this pipeline.
+
+        Returns:
+            A string representation of this pipeline.
+        """
         return (
             f"{self.__class__.__qualname__}(id={self._id}, "
             f"name='{self._name}')"
         )
 
     def __eq__(self, other: Any) -> bool:
-        """Returns whether the other object is referring to the
-        same pipeline."""
+        """Returns whether the other object is referring to the same pipeline.
+
+        Args:
+            other: The other object to compare to.
+
+        Returns:
+            True if the other object is referring to the same pipeline,
+            False otherwise.
+        """
         if isinstance(other, PipelineView):
             return (
                 self._id == other._id
