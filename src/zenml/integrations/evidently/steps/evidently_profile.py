@@ -127,7 +127,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
         config: EvidentlyProfileConfig,
-        ignored_columns: Union[None, List[str]]
+        ignored_columns: Union[None, List[str]],
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str
     ):
@@ -147,8 +147,12 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
               generated for the data drift
         """
         if ignored_columns is not None:
-            reference_dataset = reference_dataset.drop(labels=ignored_columns, axis=1)
-            comparison_dataset = comparison_dataset.drop(labels=ignored_columns, axis=1)
+            reference_dataset = reference_dataset.drop(
+                labels=ignored_columns, axis=1
+            )
+            comparison_dataset = comparison_dataset.drop(
+                labels=ignored_columns, axis=1
+            )
         sections, tabs = config.get_profile_sections_and_tabs()
         data_drift_dashboard = Dashboard(tabs=tabs)
         data_drift_dashboard.calculate(
