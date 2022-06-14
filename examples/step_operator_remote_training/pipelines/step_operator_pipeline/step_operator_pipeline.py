@@ -11,14 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from zenml.integrations.constants import SKLEARN
+from zenml.pipelines import pipeline
 
-from steps import importer, remote_trainer, evaluator
-from pipelines import step_operator_pipeline
 
-if __name__ == "__main__":
-    pipeline = step_operator_pipeline(
-        importer=importer(),
-        trainer=remote_trainer(),  # The step that will be run with the step operator
-        evaluator=evaluator(),
-    )
-    pipeline.run()
+@pipeline(required_integrations=[SKLEARN])
+def step_operator_pipeline(
+    importer,
+    trainer,
+    evaluator,
+):
+    """Links all the steps together in a pipeline"""
+    X_train, X_test, y_train, y_test = importer()
+    model = trainer(X_train=X_train, y_train=y_train)
+    evaluator(X_test=X_test, y_test=y_test, model=model)

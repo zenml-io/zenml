@@ -11,14 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""
+## Exemplary Steps
 
-from steps import importer, remote_trainer, evaluator
-from pipelines import step_operator_pipeline
+Three very simple steps
+"""
+from .importer.importer_step import importer
+from .remote_trainer.remote_trainer_step import remote_trainer
+from .evaluator.evaluator_step import evaluator
 
-if __name__ == "__main__":
-    pipeline = step_operator_pipeline(
-        importer=importer(),
-        trainer=remote_trainer(),  # The step that will be run with the step operator
-        evaluator=evaluator(),
-    )
-    pipeline.run()
+__all__ = ["importer", "remote_trainer", "evaluator"]

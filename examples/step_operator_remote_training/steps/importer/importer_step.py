@@ -11,14 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import numpy as np
 
-from steps import importer, remote_trainer, evaluator
-from pipelines import step_operator_pipeline
+from zenml.integrations.sklearn.helpers.digits import get_digits
+from zenml.steps import step, Output
 
-if __name__ == "__main__":
-    pipeline = step_operator_pipeline(
-        importer=importer(),
-        trainer=remote_trainer(),  # The step that will be run with the step operator
-        evaluator=evaluator(),
-    )
-    pipeline.run()
+
+@step
+def importer() -> Output(
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
+):
+    """Loads the digits array as normal numpy arrays."""
+    X_train, X_test, y_train, y_test = get_digits()
+    return X_train, X_test, y_train, y_test
