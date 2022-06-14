@@ -21,7 +21,7 @@ class TensorflowIntegration(Integration):
     """Definition of Tensorflow integration for ZenML."""
 
     NAME = TENSORFLOW
-    REQUIREMENTS = ["tensorflow==2.7.1", "tensorflow_io==0.24.0"]
+    REQUIREMENTS = ["tensorflow==2.7.1", "tensorflow_io==0.23.1"]
 
     @classmethod
     def activate(cls) -> None:

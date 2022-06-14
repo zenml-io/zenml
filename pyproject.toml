@@ -30,12 +30,12 @@ classifiers = [
 ]
 exclude = [
     "docs",
-    "*.tests",
     "*.tests.*",
-    "tests.*",
     "tests",
     "legacy",
     "tests",
+    "*.tests",
+    "tests.*",
     "examples"
 ]
 include = [
