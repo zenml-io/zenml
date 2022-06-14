@@ -32,7 +32,7 @@ class SagemakerIntegration(Integration):
     """Definition of Sagemaker integration for ZenML."""
 
     NAME = SAGEMAKER
-    REQUIREMENTS = ["sagemaker==2.82.2"]
+    REQUIREMENTS = ["sagemaker==2.75.0"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:

@@ -33,6 +33,7 @@ class KServeIntegration(Integration):
     REQUIREMENTS = [
         "kserve==0.8.0",
         "kubernetes==18.20.0",
+        "torch-model-archiver",
     ]
 
     @classmethod

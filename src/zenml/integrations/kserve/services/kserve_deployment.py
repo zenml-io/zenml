@@ -399,7 +399,7 @@ class KServeDeploymentService(BaseService):
             tail: only retrieve the last NUM lines of log output.
 
         Returns:
-            A generator that can be acccessed to get the service logs.
+            A generator that can be accessed to get the service logs.
 
         Raises:
             Exception: if an unknown error occurs while fetching the logs.

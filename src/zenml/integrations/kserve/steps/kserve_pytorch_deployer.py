@@ -18,7 +18,9 @@ import tempfile
 from typing import Optional, cast
 
 from model_archiver.model_packaging import package_model  # type: ignore[import]
-from model_archiver.model_packaging_utils import ModelExportUtils  # type: ignore[import]
+from model_archiver.model_packaging_utils import (
+    ModelExportUtils,  # type: ignore[import]
+)
 from pydantic import BaseModel
 
 from zenml.artifacts.model_artifact import ModelArtifact
@@ -59,18 +61,18 @@ class KServePytorchDeployerStepConfig(BaseStepConfig):
     """
 
     service_config: KServeDeploymentConfig
-    model_class_file: Optional[str] = None
-    handler: Optional[str] = None
+    model_class_file: str = ""
+    handler: str = ""
     extra_files: Optional[str] = None
     requirements_file: Optional[str] = None
     model_version: Optional[int] = None
-    torch_config: Optional[str] = "config.properties"
+    torch_config: str = "config.properties"
     timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT
 
 
 class TorchModelArchiver(BaseModel):
     """Model archiver for Pytorch models.
-    
+
     Attributes:
         model_name: Model name.
         model_version: Model version.
@@ -82,7 +84,8 @@ class TorchModelArchiver(BaseModel):
         runtime: Runtime of the model.
         version: Version of the model.
         force: Force export of the model.
-        archive_format: Archive format."""
+        archive_format: Archive format.
+    """
 
     model_name: str
     serialized_file: str
