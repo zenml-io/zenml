@@ -71,7 +71,7 @@ class KServePytorchDeployerStepConfig(BaseStepConfig):
 
 
 class TorchModelArchiver(BaseModel):
-    """Model archiver for Pytorch models.
+    """Model Archiver for Pytorch models.
 
     Attributes:
         model_name: Model name.

@@ -42,12 +42,12 @@ DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT = 300
 
 
 class KServeModelDeployer(BaseModelDeployer):
-    """Kserve model deployer stack component implementation.
+    """KServe model deployer stack component implementation.
 
     Attributes:
         kubernetes_context: the Kubernetes context to use to contact the remote
-            Ksere installation. If not specified, the current
-            configuration is used. Depending on where the Kserve model deployer
+            KServe installation. If not specified, the current
+            configuration is used. Depending on where the KServe model deployer
             is being used, this can be either a locally active context or an
             in-cluster Kubernetes configuration (if running inside a pod).
         kubernetes_namespace: the Kubernetes namespace where the KServe
@@ -110,9 +110,9 @@ class KServeModelDeployer(BaseModelDeployer):
             model_deployer, KServeModelDeployer
         ):
             raise TypeError(
-                f"The active stack needs to have a Kserve model deployer "
-                f"component registered to be able to deploy models with Kserve "
-                f"You can create a new stack with a Kserve model "
+                f"The active stack needs to have a KServe model deployer "
+                f"component registered to be able to deploy models with KServe "
+                f"You can create a new stack with a KServe model "
                 f"deployer component or update your existing stack to add this "
                 f"component, e.g.:\n\n"
                 f"  'zenml model-deployer register kserve --flavor={KSERVE_MODEL_DEPLOYER_FLAVOR} "
@@ -124,7 +124,7 @@ class KServeModelDeployer(BaseModelDeployer):
 
     @property
     def kserve_client(self) -> KServeClient:
-        """Get the Kserve client associated with this model deployer.
+        """Get the KServe client associated with this model deployer.
 
         Returns:
             The KServeclient.
@@ -136,7 +136,7 @@ class KServeModelDeployer(BaseModelDeployer):
         return self._client
 
     # TODO[High]: Save ZenML Secrets in a temp file and load them into
-    # the Kserve credentials
+    # the KServe credentials
     def _set_credentials(self) -> None:
         """Set the credentials for the given service instance.
 
@@ -169,7 +169,7 @@ class KServeModelDeployer(BaseModelDeployer):
                 self.kserve_client.set_credentials(**zenml_secret.content)
             else:
                 raise RuntimeError(
-                    f"The Kserve client is not available. The ZenML secret "
+                    f"The KServe client is not available. The ZenML secret "
                     f"'{self.secret}' specified in the KServe Model Deployer "
                     f"configuration cannot be fetched."
                 )
@@ -190,41 +190,41 @@ class KServeModelDeployer(BaseModelDeployer):
         This method has two modes of operation, depending on the `replace`
         argument value:
 
-          * if `replace` is False, calling this method will create a new Kserve
+          * if `replace` is False, calling this method will create a new KServe
             deployment server to reflect the model and other configuration
-            parameters specified in the supplied Kserve deployment `config`.
+            parameters specified in the supplied KServe deployment `config`.
 
           * if `replace` is True, this method will first attempt to find an
-            existing Kserve deployment that is *equivalent* to the supplied
-            configuration parameters. Two or more Kserve deployments are
+            existing KServe deployment that is *equivalent* to the supplied
+            configuration parameters. Two or more KServe deployments are
             considered equivalent if they have the same `pipeline_name`,
             `pipeline_step_name` and `model_name` configuration parameters. To
-            put it differently, two Kserve deployments are equivalent if
+            put it differently, two KServe deployments are equivalent if
             they serve versions of the same model deployed by the same pipeline
-            step. If an equivalent Kserve deployment is found, it will be
+            step. If an equivalent KServe deployment is found, it will be
             updated in place to reflect the new configuration parameters. This
-            allows an existing Kserve deployment to retain its prediction
+            allows an existing KServe deployment to retain its prediction
             URL while performing a rolling update to serve a new model version.
 
         Callers should set `replace` to True if they want a continuous model
-        deployment workflow that doesn't spin up a new Kserve deployment
-        server for each new model version. If multiple equivalent Kserve
+        deployment workflow that doesn't spin up a new KServe deployment
+        server for each new model version. If multiple equivalent KServe
         deployments are found, the most recently created deployment is selected
         to be updated and the others are deleted.
 
         Args:
-            config: the configuration of the model to be deployed with Kserve.
+            config: the configuration of the model to be deployed with KServe.
             replace: set this flag to True to find and update an equivalent
-                KServedeployment server with the new model instead of
+                KServeDeployment server with the new model instead of
                 starting a new deployment server.
-            timeout: the timeout in seconds to wait for the Kserve server
+            timeout: the timeout in seconds to wait for the KServe server
                 to be provisioned and successfully started or updated. If set
-                to 0, the method will return immediately after the Kserve
+                to 0, the method will return immediately after the KServe
                 server is provisioned, without waiting for it to fully start.
 
         Returns:
-            The ZenML Kserve deployment service object that can be used to
-            interact with the remote Kserve server.
+            The ZenML KServe deployment service object that can be used to
+            interact with the remote KServe server.
         """
         config = cast(KServeDeploymentConfig, config)
         service = None
@@ -234,7 +234,7 @@ class KServeModelDeployer(BaseModelDeployer):
             self.secret = config.secret_name
         self._set_credentials()
 
-        # if replace is True, find equivalent Kserve deployments
+        # if replace is True, find equivalent KServe deployments
         if replace is True:
             equivalent_services = self.find_model_server(
                 running=False,
@@ -260,14 +260,14 @@ class KServeModelDeployer(BaseModelDeployer):
             # update an equivalent service in place
             service.update(config)
             logger.info(
-                f"Updating an existing Kserve deployment service: {service}"
+                f"Updating an existing KServe deployment service: {service}"
             )
         else:
             # create a new service
             service = KServeDeploymentService(config=config)
-            logger.info(f"Creating a new Kserve deployment service: {service}")
+            logger.info(f"Creating a new KServe deployment service: {service}")
 
-        # start the service which in turn provisions the Kserve
+        # start the service which in turn provisions the KServe
         # deployment server and waits for it to reach a ready state
         service.start(timeout=timeout)
         return service
@@ -275,13 +275,13 @@ class KServeModelDeployer(BaseModelDeployer):
     def get_kserve_deployments(
         self, labels: Dict[str, str]
     ) -> List[V1beta1InferenceService]:
-        """Get a list of Kserve deployments that match the supplied labels.
+        """Get a list of KServe deployments that match the supplied labels.
 
         Args:
-            labels: a dictionary of labels to match against Kserve deployments.
+            labels: a dictionary of labels to match against KServe deployments.
 
         Returns:
-            A list of Kserve deployments that match the supplied labels.
+            A list of KServe deployments that match the supplied labels.
 
         Raises:
             RuntimeError: if an operational failure is encountered while
@@ -313,7 +313,7 @@ class KServeModelDeployer(BaseModelDeployer):
             )
 
         # TODO[CRITICAL]: de-serialize each item into a complete
-        #   V1beta1InferenceService object recursively using the openapi
+        #   V1beta1InferenceService object recursively using the OpenApi
         #   schema (this doesn't work right now)
         inference_services: List[V1beta1InferenceService] = []
         for item in response.get("items", []):

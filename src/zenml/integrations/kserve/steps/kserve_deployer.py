@@ -116,7 +116,7 @@ def kserve_model_deployer_step(
         #   folders and sub-folders depending on the model type/format and the
         #   KServe protocol used to serve the model.
 
-        # TODO [ENG-791]: auto-detect built-in kserve server implementation
+        # TODO [ENG-791]: auto-detect built-in kServe server implementation
         #   from the model artifact type
 
         # TODO [ENG-792]: validate the model artifact type against the

@@ -6,7 +6,7 @@ class MNISTDigitClassifier(ImageClassifier):
     """
     MNISTDigitClassifier handler class. This handler extends class ImageClassifier from image_classifier.py, a
     default handler. This handler takes an image and returns the number in that image.
-    Here method postprocess() has been overridden while others are reused from parent class.
+    Here method post-process has been overridden while others are reused from parent class.
     """
 
     image_processing = transforms.Compose(
