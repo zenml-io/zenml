@@ -94,7 +94,7 @@ def served_models(ctx: click.Context) -> None:
 @click.option(
     "--running",
     is_flag=True,
-    help="Show only model servers that are currently runing.",
+    help="Show only model servers that are currently running.",
 )
 @click.pass_obj
 def list_models(

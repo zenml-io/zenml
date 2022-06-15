@@ -30,12 +30,12 @@ classifiers = [
 ]
 exclude = [
     "docs",
-    "*.tests",
     "*.tests.*",
-    "tests.*",
     "tests",
     "legacy",
     "tests",
+    "*.tests",
+    "tests.*",
     "examples"
 ]
 include = [
@@ -230,6 +230,7 @@ module = [
     "docker.*",
     "kfp.*",
     "kubernetes.*",
+    "kserve.*",
     "urllib3.*",
     "kfp_server_api.*",
     "sagemaker.*",

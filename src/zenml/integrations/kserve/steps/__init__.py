@@ -11,8 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the KServe Model Deployer."""
+"""Initialization for KServe steps."""
 
-from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
-    KServeModelDeployer,
+
+from zenml.integrations.kserve.steps.kserve_deployer import (
+    KServeDeployerStepConfig,
+    kserve_model_deployer_step,
+)
+from zenml.integrations.kserve.steps.kserve_pytorch_deployer import (
+    KServePytorchDeployerStepConfig,
+    kserve_pytorch_model_deployer_step,
 )

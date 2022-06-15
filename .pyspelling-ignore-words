@@ -165,6 +165,7 @@ IOError
 IPython
 ISTIO
 ImportError
+Initialization
 InitializationException
 Initializations
 IntegrationError
@@ -919,3 +920,18 @@ zenfiles
 zenml
 zenmldocker
 zenserver
+IAM
+iam
+KServeModelDeployer
+CRDs
+KServeclient
+InferenceService
+OpenApi
+TorchServe
+TorchServe's
+Archiver
+ImageClassifier
+MNISTDigitClassifier
+sanitization
+kserve
+KServeDeployment

@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the KServe integration for ZenML.
+
 The KServe integration allows you to use the KServe model serving
 platform to implement continuous model deployment.
 """
@@ -30,18 +31,26 @@ class KServeIntegration(Integration):
 
     NAME = KSERVE
     REQUIREMENTS = [
-        "kserve>=0.8.0",
+        "kserve==0.8.0",
         "kubernetes==18.20.0",
+        "torch-model-archiver",
     ]
 
     @classmethod
     def activate(cls) -> None:
         """Activate the Seldon Core integration."""
+        from zenml.integrations.kserve import model_deployers  # noqa
+        from zenml.integrations.kserve import secret_schemas  # noqa
         from zenml.integrations.kserve import services  # noqa
+        from zenml.integrations.kserve import steps  # noqa
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for KServe."""
+        """Declare the stack component flavors for KServe.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=KSERVE_MODEL_DEPLOYER_FLAVOR,
