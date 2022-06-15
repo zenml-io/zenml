@@ -12,12 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pathlib import Path
 
-from huggingface_hub import from_pretrained_fastai
 from fastai.data.core import DataLoaders
 from fastai.learner import Learner
 from fastai.vision.all import *
+from huggingface_hub import from_pretrained_fastai
 
 from zenml.cli import utils as cli_utils
 from zenml.pipelines import pipeline
