@@ -10,12 +10,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from pipelines.neural_prophet_pipeline.neural_prophet_pipeline import (
+from pipelines import (
     neural_prophet_pipeline,
 )
-from steps.data_loader.data_loader_step import data_loader
-from steps.predictor.predictor_step import predictor
-from steps.trainer.trainer_step import trainer
+from steps import data_loader
+from steps import predictor
+from steps import trainer
 
 if __name__ == "__main__":
     pipeline = neural_prophet_pipeline(
