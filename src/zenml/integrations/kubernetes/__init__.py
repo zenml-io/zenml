@@ -32,7 +32,7 @@ class KubernetesIntegration(Integration):
     """Definition of Kubernetes Integration for ZenML."""
 
     NAME = KUBERNETES
-    REQUIREMENTS = ["kubernetes>=23.6.0"]
+    REQUIREMENTS = ["kubernetes==18.20.0"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
