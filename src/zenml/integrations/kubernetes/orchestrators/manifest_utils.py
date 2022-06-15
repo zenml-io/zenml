@@ -1,6 +1,6 @@
 """Utility functions for building manifests for k8s pods."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, cast
 
 from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 
@@ -12,6 +12,7 @@ def build_pod_manifest(
     image_name: str,
     command: List[str],
     args: List[str],
+    service_account_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Build a kubernetes pod manifest for a ZenML run or step.
 
@@ -22,11 +23,14 @@ def build_pod_manifest(
         image_name: Name of the Docker image.
         command: Command to execute the entrypoint in the pod.
         args: Arguments provided to the entrypoint command.
+        service_account_name: Optional name of a service account.
+            Can be used to assign certain roles to a pod, e.g., to allow it to
+            run kubernetes commands from within the cluster.
 
     Returns:
         Pod manifest.
     """
-    return {
+    manifest = {
         "apiVersion": "v1",
         "kind": "Pod",
         "metadata": {
@@ -42,8 +46,8 @@ def build_pod_manifest(
                 {
                     "name": "main",
                     "image": image_name,
-                    "command": command,  # to be set in update_pod_manifest
-                    "args": args,  # to be set in update_pod_manifest
+                    "command": command,
+                    "args": args,
                     "env": [
                         {
                             "name": ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
@@ -52,6 +56,60 @@ def build_pod_manifest(
                     ],
                 }
             ],
+        },
+    }
+    if service_account_name is not None:
+        spec = cast(Dict[str, Any], manifest["spec"])  # mypy stupid
+        spec["serviceAccountName"] = service_account_name
+    return manifest
+
+
+def build_cron_job_manifest(
+    cron_expression: str,
+    pod_name: str,
+    run_name: str,
+    pipeline_name: str,
+    image_name: str,
+    command: List[str],
+    args: List[str],
+    service_account_name: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Create a manifest for launching a pod as scheduled CRON job.
+
+    Args:
+        cron_expression: CRON job schedule expression, e.g. "* * * * *".
+        pod_name: Name of the pod.
+        run_name: Name of the ZenML run.
+        pipeline_name: Name of the ZenML pipeline.
+        image_name: Name of the Docker image.
+        command: Command to execute the entrypoint in the pod.
+        args: Arguments provided to the entrypoint command.
+        service_account_name: Optional name of a service account.
+            Can be used to assign certain roles to a pod, e.g., to allow it to
+            run kubernetes commands from within the cluster.
+
+    Returns:
+        CRON job manifest.
+    """
+    pod_manifest = build_pod_manifest(
+        pod_name=pod_name,
+        run_name=run_name,
+        pipeline_name=pipeline_name,
+        image_name=image_name,
+        command=command,
+        args=args,
+        service_account_name=service_account_name,
+    )
+    return {
+        "apiVersion": "batch/v1",
+        "kind": "CronJob",
+        "metadata": pod_manifest["metadata"],
+        "spec": {
+            "schedule": cron_expression,
+            "jobTemplate": {
+                "metadata": pod_manifest["metadata"],
+                "spec": {"template": {"spec": pod_manifest["spec"]}},
+            },
         },
     }
 

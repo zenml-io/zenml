@@ -44,6 +44,7 @@ from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator_entrypo
     KubernetesOrchestratorEntrypointConfiguration,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
+    build_cron_job_manifest,
     build_pod_manifest,
 )
 from zenml.logger import get_logger
@@ -287,6 +288,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
         run_name = runtime_configuration.run_name
         pipeline_name = pipeline.name
+        pod_name = kube_utils.sanitize_pod_name(run_name)
 
         # Get docker image name (for all pods).
         image_name = self.get_docker_image_name(pipeline.name)
@@ -313,17 +315,6 @@ class KubernetesOrchestrator(BaseOrchestrator):
             pipeline_dag=pipeline_dag,
         )
 
-        # Build manifest for the orchestrator pod.
-        pod_name = kube_utils.sanitize_pod_name(run_name)
-        pod_manifest = build_pod_manifest(
-            pod_name=pod_name,
-            run_name=run_name,
-            pipeline_name=pipeline_name,
-            image_name=image_name,
-            command=command,
-            args=args,
-        )
-
         # Authorize orchestrator pod to run k8s commands inside the cluster.
         service_account_name = "zenml-service-account"
         core_api = kube_utils.make_core_v1_api()
@@ -332,9 +323,45 @@ class KubernetesOrchestrator(BaseOrchestrator):
             service_account_name=service_account_name,
             namespace=self.kubernetes_namespace,
         )
-        pod_manifest["spec"]["serviceAccountName"] = service_account_name
+
+        # Schedule as CRON job if CRON schedule is given.
+        if runtime_configuration.schedule:
+            if not runtime_configuration.schedule.cron_expression:
+                raise RuntimeError(
+                    "The kubernetes orchestrator only supports scheduling via "
+                    "CRON jobs, but the run was configured with a manual "
+                    "schedule. Use `Schedule(cron_expression=...)` instead."
+                )
+            cron_expression = runtime_configuration.schedule.cron_expression
+            cron_job_manifest = build_cron_job_manifest(
+                cron_expression=cron_expression,
+                run_name=run_name,
+                pod_name=pod_name,
+                pipeline_name=pipeline_name,
+                image_name=image_name,
+                command=command,
+                args=args,
+                service_account_name=service_account_name,
+            )
+            batch_api = kube_utils.make_batch_v1_api()
+            batch_api.create_namespaced_cron_job(
+                body=cron_job_manifest, namespace=self.kubernetes_namespace
+            )
+            logger.info(
+                f"Scheduling kubernetes run `{pod_name}` with CRON expression "
+                f'`"{cron_expression}"`.'
+            )
 
         # Create and run the orchestrator pod.
+        pod_manifest = build_pod_manifest(
+            run_name=run_name,
+            pod_name=pod_name,
+            pipeline_name=pipeline_name,
+            image_name=image_name,
+            command=command,
+            args=args,
+            service_account_name=service_account_name,
+        )
         core_api.create_namespaced_pod(
             namespace=self.kubernetes_namespace,
             body=pod_manifest,
