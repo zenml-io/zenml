@@ -11,11 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Secrets Manager
-The Vault Secrets Manager allows your pipeline to directly access the Hashicorp Vault
-secrets manager and use the secrets within during runtime.
-"""
+"""HashiCorp Vault Secrets Manager."""
+
 from zenml.integrations.vault.secrets_manager.vault_secrets_manager import (
     VaultSecretsManager,
 )

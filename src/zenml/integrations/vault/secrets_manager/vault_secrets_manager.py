@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the HashiCorp Vault Secrets Manager integration."""
+
 import re
 from typing import Any, ClassVar, List, Optional, Set
 
-import hvac
+import hvac  # type: ignore[import]
 
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.vault import VAULT_SECRETS_MANAGER_FLAVOR
@@ -30,13 +32,19 @@ ZENML_PATH = "zenml"
 
 
 def sanitize_secret_name(secret_name: str) -> str:
-    """Sanitize the secret name to be used in Vault."""
+    """Sanitize the secret name to be used in Vault.
+
+    Args:
+        secret_name: The secret name to sanitize.
+
+    Returns:
+        The sanitized secret name.
+    """
     return re.sub(r"[^0-9a-zA-Z_\.]+", "_", secret_name).strip("-_.")
 
 
 def prepend_secret_schema_to_secret_name(secret: BaseSecretSchema) -> str:
-    """
-    Prepend the secret schema name to the secret name.
+    """Prepend the secret schema name to the secret name.
 
     Args:
         secret: The secret to prepend the secret schema name to.
@@ -50,14 +58,16 @@ def prepend_secret_schema_to_secret_name(secret: BaseSecretSchema) -> str:
 
 
 def remove_secret_schema_name(combined_secret_name: str) -> str:
-    """
-    Remove the secret schema name from the secret name.
+    """Remove the secret schema name from the secret name.
 
     Args:
         combined_secret_name: The secret name to remove the secret schema name from.
 
     Returns:
-        The secret name with the secret schema name removed.
+        The secret name without the secret schema name.
+
+    Raises:
+        RuntimeError: If the secret name does not have a secret schema name on it.
     """
     if "-" in combined_secret_name:
         return combined_secret_name.split("-")[1]
@@ -69,14 +79,16 @@ def remove_secret_schema_name(combined_secret_name: str) -> str:
 
 
 def get_secret_schema_name(combined_secret_name: str) -> str:
-    """
-    Get the secret schema name from the secret name.
+    """Get the secret schema name from the secret name.
 
     Args:
         combined_secret_name: The secret name to get the secret schema name from.
 
     Returns:
         The secret schema name.
+
+    Raises:
+        RuntimeError: If the secret name does not have a secret schema name on it.
     """
     if "-" in combined_secret_name:
         return combined_secret_name.split("-")[0]
@@ -121,13 +133,11 @@ class VaultSecretsManager(BaseSecretsManager):
             )
 
     def _ensure_client_is_authenticated(self) -> None:
-        """
-        Ensure the client is authenticated.
+        """Ensure the client is authenticated.
 
         Raises:
             RuntimeError: If the client is not initialized or authenticated.
         """
-
         self._ensure_client_connected(url=self.url, token=self.token)
 
         if not self.CLIENT.is_authenticated():
@@ -172,11 +182,7 @@ class VaultSecretsManager(BaseSecretsManager):
 
         Returns:
             The secret.
-
-        Raises:
-            KeyError: If the secret does not exist.
         """
-
         vault_secret_name = self.vault_secret_name(secret_name)
 
         secret_items = (
@@ -195,18 +201,15 @@ class VaultSecretsManager(BaseSecretsManager):
         return secret_schema(**secret_items)
 
     def vault_list_secrets(self) -> List[str]:
-        """
-        List all secrets in the secrets manager without any reformatting.
-        All secrets names stored in Vault in the format: <secret_schema>-<secret_name>
+        """List all secrets in vault without any reformatting.
+
+        This function tries to get all secrets from Vault and returns
+        them as a list of strings all secrets names stored in Vault
+        in the format: <secret_schema>-<secret_name>
 
         Returns:
             A list of all secrets in the secrets manager.
-
-        Raises:
-            RuntimeError: If the client is not initialized or authenticated.
-            InvalidPath: If the path is invalid.
         """
-
         self._ensure_client_is_authenticated()
 
         set_of_secrets: Set[str] = set()
@@ -226,9 +229,10 @@ class VaultSecretsManager(BaseSecretsManager):
         return list(set_of_secrets)
 
     def vault_secret_name(self, secret_name: str) -> str:
-        """
-        Get the secret name in the Vault secrets manager, without any reformatting.
-        The secret name should be in the format `<secret_schema_name>-<secret_name>`.
+        """Get the secret name how it is stored in Vault.
+
+        This function retrive the secret name in the Vault secrets manager, without
+        any reformatting this secret should be in the format `<secret_schema_name>-<secret_name>`.
 
         Args:
             secret_name: The name of the secret to get.
@@ -239,7 +243,6 @@ class VaultSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: If the secret does not exist.
         """
-
         self._ensure_client_is_authenticated()
 
         secrets_keys = self.vault_list_secrets()
@@ -252,13 +255,14 @@ class VaultSecretsManager(BaseSecretsManager):
         raise KeyError(f"The secret {secret_name} does not exist.")
 
     def get_all_secret_keys(self) -> List[str]:
-        """
-        Get all secret keys in the secrets manager.
+        """Get all secret keys.
+
+        This function tries to get all secrets from Vault and returns
+        them as a list of strings all secrets names without the schema.
 
         Returns:
             A list of all secret keys in the secrets manager.
         """
-
         return [
             remove_secret_schema_name(secret_key)
             for secret_key in self.vault_list_secrets()
@@ -273,7 +277,6 @@ class VaultSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: If the secret does not exist.
         """
-
         self._ensure_client_is_authenticated()
 
         secret_name = prepend_secret_schema_to_secret_name(secret=secret)
@@ -301,7 +304,6 @@ class VaultSecretsManager(BaseSecretsManager):
         Raises:
             KeyError: If the secret does not exist.
         """
-
         self._ensure_client_is_authenticated()
 
         try:

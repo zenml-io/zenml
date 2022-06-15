@@ -11,9 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-The Vault secrets manager integration submodule provides a way to access the hashicorp vault secrets manager
-from within you ZenML Pipeline runs.
+"""Initialization for the Vault Secret Manager integration.
+
+The Vault secrets manager integration submodule provides a way 
+to access the hashiCorp vault secrets manager from within you ZenML 
+Pipeline runs.
 """
 from typing import List
 
@@ -26,15 +28,18 @@ VAULT_SECRETS_MANAGER_FLAVOR = "vault"
 
 
 class VaultSecretManagerIntegration(Integration):
-    """Definition of the Secrets Manager for the HashiCorp Vault
-    integration with ZenML."""
+    """Definition of HashiCorp Vault integration with ZenML."""
 
     NAME = VAULT
     REQUIREMENTS = ["hvac>=0.11.2"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the Vault integration."""
+        """Declare the stack component flavors for the Vault integration.
+
+        Returns:
+            List[FlavorWrapper]: The list of stack component flavors.
+        """
         return [
             FlavorWrapper(
                 name=VAULT_SECRETS_MANAGER_FLAVOR,
