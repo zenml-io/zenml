@@ -20,6 +20,7 @@ from huggingface_hub import from_pretrained_fastai
 
 from zenml.cli import utils as cli_utils
 from zenml.pipelines import pipeline
+from zenml.repository import Repository
 from zenml.steps import StepContext, step
 
 CAT_IMAGES_PATH = "data/images/"
@@ -52,9 +53,7 @@ def annotate_finetune(
         cli_utils.error("No annotator found in stack.")
 
     new_annotations = annotator.get_unannotated_artifacts()
-    if new_annotations:
-        annotator.annotate()
-    else:
+    if not new_annotations:
         cli_utils.declare("No unannotated artifacts found.")
         # finetune model using new data
         annotated_data = annotator.get_new_annotations()
@@ -72,3 +71,7 @@ if __name__ == "__main__":
     annotation_pipeline.run(
         import_inference_data, import_model, annotate_finetune
     )
+    repo = Repository()
+    annotator = repo.active_stack.annotator
+    new_annotations = annotator.get_unannotated_artifacts()
+    annotator.annotate()
