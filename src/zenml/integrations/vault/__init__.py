@@ -14,7 +14,7 @@
 """Initialization for the Vault Secret Manager integration.
 
 The Vault secrets manager integration submodule provides a way 
-to access the hashiCorp vault secrets manager from within you ZenML 
+to access the HashiCorp vault secrets manager from within you ZenML 
 Pipeline runs.
 """
 from typing import List

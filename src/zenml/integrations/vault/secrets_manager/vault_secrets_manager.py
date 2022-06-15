@@ -231,7 +231,7 @@ class VaultSecretsManager(BaseSecretsManager):
     def vault_secret_name(self, secret_name: str) -> str:
         """Get the secret name how it is stored in Vault.
 
-        This function retrive the secret name in the Vault secrets manager, without
+        This function retrieve the secret name in the Vault secrets manager, without
         any reformatting this secret should be in the format `<secret_schema_name>-<secret_name>`.
 
         Args:
