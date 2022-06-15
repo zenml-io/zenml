@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from .loader.loader_step import importer
+from .importer.importer_step import importer
 from .predictor.predictor_step import predictor
 from .trainer.trainer_step import trainer
 from .vectorizer.vectorizer_step import vectorizer

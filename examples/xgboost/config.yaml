@@ -2,14 +2,14 @@ name: xgboost_pipeline
 steps:
   data_loader:
     source:
-      file: steps
+      file: steps/loader/loader_step
       name: data_loader
   trainer:
     source:
-      file: steps
+      file: steps/trainer/trainer_step
       name: trainer
   predictor:
     source:
-      file: steps
+      file: steps/predictor/predictor_step
       name: predictor
 
