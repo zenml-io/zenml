@@ -179,7 +179,7 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The registry.
         """
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs: FeatureStore = FeatureStore(repo_path=self.feast_repo)
         return fs.registry
 
     def get_feast_version(self) -> str:

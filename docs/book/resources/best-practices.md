@@ -117,7 +117,7 @@ inactive artifact stores.
 
 Using Profiles allows you to separate your ZenML stacks and work
 locally within independent ZenML instances. See our
-[docs](../collaborate/profiles.md) on profiles to learn more.
+[docs](../collaborate/share-with-profiles.md) on profiles to learn more.
 
 ### Use unique pipeline names across projects, especially if used with the same metadata store
 
