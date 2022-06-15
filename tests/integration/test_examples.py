@@ -96,14 +96,15 @@ EXAMPLES = [
     #     validation_function=mlflow_tracking_example_validation),
     ExampleConfiguration(
         name="scipy",
-        pipeline_path="pipelines/training_pipeline/training_pipeline.py",
+        pipeline_path="pipelines/scipy_example_pipeline/"
+                      "scipy_example_pipeline.py",
         pipeline_name="scipy_example_pipeline",
         runs_on_windows=True,
         step_count=4,
     ),
     ExampleConfiguration(
         name="xgboost",
-        pipeline_path="pipelines/training_pipeline/training_pipeline.py",
+        pipeline_path="pipelines/xgboost_pipeline/xgboost_pipeline.py",
         pipeline_name="xgboost_pipeline",
         runs_on_windows=False,
         step_count=3,
