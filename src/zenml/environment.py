@@ -187,7 +187,10 @@ class Environment(metaclass=SingletonMetaClass):
             `False` otherwise.
         """
         if find_spec("IPython") is not None:
-            from IPython import get_ipython  # type: ignore
+            try:
+                from IPython import get_ipython  # type: ignore
+            except AttributeError:
+                return False
 
             if get_ipython().__class__.__name__ in [
                 "TerminalInteractiveShell",
