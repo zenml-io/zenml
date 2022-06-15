@@ -12,27 +12,46 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from pathlib import Path
+
+from huggingface_hub import from_pretrained_fastai
+from fastai.data.core import DataLoaders
+from fastai.learner import Learner
+from fastai.vision.all import *
+
 from zenml.cli import utils as cli_utils
 from zenml.pipelines import pipeline
 from zenml.steps import StepContext, step
 
-
-@step
-def import_inference_data() -> ImageList:
-    pass
+CAT_IMAGES_PATH = "data/images/"
 
 
 @step
-def import_model():
-    pass
+def import_inference_data() -> DataLoaders:
+    data_block = DataBlock(
+        blocks=(ImageBlock, CategoryBlock),
+        get_items=get_image_files,
+        splitter=RandomSubsetSplitter(train_sz=0, val_sz=1),
+        item_tfms=Resize(224),
+    )
+    return data_block.dataloaders(CAT_IMAGES_PATH, bs=8)
 
 
 @step
-def batch_inference(
+def import_model() -> Learner:
+    return from_pretrained_fastai("strickvl/redaction-classifier-fastai")
+
+
+@step
+def annotate_finetune(
     context: StepContext,
     model,
 ):
-    annotator = context.stack.annotator
+    try:
+        annotator = context.stack.annotator
+    except AttributeError:
+        cli_utils.error("No annotator found in stack.")
+
     new_annotations = annotator.get_unannotated_artifacts()
     if new_annotations:
         annotator.annotate()
@@ -48,3 +67,9 @@ def annotation_pipeline(data_importer, model_importer, batch_inference):
     inference_data = data_importer()
     model = model_importer()
     batch_inference(model=model, data=inference_data)
+
+
+if __name__ == "__main__":
+    annotation_pipeline.run(
+        import_inference_data, import_model, annotate_finetune
+    )
