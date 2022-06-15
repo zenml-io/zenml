@@ -47,6 +47,7 @@ jobs:
           sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
           source $VENV
           zenml integration install kubeflow -y
+          pip install notebook==6.4.11
 
       - name: Perform docker login and get Kubecontext
         run: bash scripts/setup_kubeflow_aws_connection.sh
