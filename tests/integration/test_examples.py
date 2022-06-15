@@ -24,7 +24,7 @@ import pytest
 from pydantic import BaseModel
 
 from zenml.cli import set_active_stack
-from zenml.integrations.slack.alerters import SlackAlerter
+# from zenml.integrations.slack.alerters import SlackAlerter
 from zenml.pipelines.run_pipeline import run_pipeline
 from zenml.repository import Repository
 from zenml.stack import Stack, StackComponent
