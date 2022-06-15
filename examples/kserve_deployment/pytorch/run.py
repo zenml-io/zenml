@@ -115,9 +115,9 @@ def main(
                         },
                     ),
                     timeout=120,
-                    model_class_file="examples/pytorch_deployment/mnist.py",
-                    handler="examples/pytorch_deployment/mnist_handler.py",
-                    torch_config="examples/pytorch_deployment/config.properties",
+                    model_class_file="examples/kserve_deployment/pytorch/mnist.py",
+                    handler="examples/kserve_deployment/pytorch/mnist_handler.py",
+                    torch_config="examples/kserve_deployment/pytorch/config.properties",
                 )
             ),
         )
