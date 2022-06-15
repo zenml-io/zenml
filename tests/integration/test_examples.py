@@ -24,6 +24,7 @@ import pytest
 from pydantic import BaseModel
 
 from zenml.cli import set_active_stack
+from zenml.integrations.slack.alerters import SlackAlerter
 from zenml.pipelines.run_pipeline import run_pipeline
 from zenml.repository import Repository
 from zenml.stack import Stack, StackComponent
@@ -95,13 +96,29 @@ EXAMPLES = [
     #     ],
     #     validation_function=mlflow_tracking_example_validation),
     # ExampleConfiguration(
-    #     name="neural_prophet",
-    #     pipeline_path="pipelines/neural_prophet_pipeline/"
-    #                   "neural_prophet_pipeline.py",
-    #     pipeline_name="neural_prophet_pipeline",
-    #     runs_on_windows=False,
-    #     step_count=3,
-    # ),
+    #     name="slack_alert",
+    #     pipeline_path="pipelines/post_pipeline.py",
+    #     pipeline_name="post_pipeline",
+    #     runs_on_windows=True,
+    #     required_stack_components=[
+    #         SlackAlerter(slack_token="", default_slack_channel_id="")
+    #     ],
+    #     step_count=5),
+    ExampleConfiguration(
+        name="lightgbm",
+        pipeline_path="pipelines/lgbm_pipeline/lgbm_pipeline.py",
+        pipeline_name="lgbm_pipeline",
+        runs_on_windows=False,
+        step_count=3,
+    ),
+    ExampleConfiguration(
+        name="neural_prophet",
+        pipeline_path="pipelines/neural_prophet_pipeline/"
+                      "neural_prophet_pipeline.py",
+        pipeline_name="neural_prophet_pipeline",
+        runs_on_windows=False,
+        step_count=3,
+    ),
     ExampleConfiguration(
         name="scipy",
         pipeline_path="pipelines/scipy_example_pipeline/"
@@ -110,13 +127,13 @@ EXAMPLES = [
         runs_on_windows=True,
         step_count=4,
     ),
-    # ExampleConfiguration(
-    #     name="xgboost",
-    #     pipeline_path="pipelines/xgboost_pipeline/xgboost_pipeline.py",
-    #     pipeline_name="xgboost_pipeline",
-    #     runs_on_windows=False,
-    #     step_count=3,
-    # ),
+    ExampleConfiguration(
+        name="xgboost",
+        pipeline_path="pipelines/xgboost_pipeline/xgboost_pipeline.py",
+        pipeline_name="xgboost_pipeline",
+        runs_on_windows=False,
+        step_count=3,
+    ),
 ]
 
 
