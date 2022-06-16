@@ -590,12 +590,12 @@ zenml stack get
 ```
 
 If you want to copy a stack, run the following command:
-```bash
+```shell
 zenml stack copy SOURCE_STACK_NAME TARGET_STACK_NAME
 ```
 You can optionally specify profiles from which the stack should be copied 
-from and to:
-```bash
+to and from:
+```shell
 zenml stack copy SOURCE_STACK_NAME TARGET_STACK_NAME \
    [--from SOURCE_PROFILE_NAME] \
    [--to TARGET_PROFILE_NAME]

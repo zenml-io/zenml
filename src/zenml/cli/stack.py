@@ -1074,8 +1074,8 @@ def copy_stack(
     Args:
         source_stack: The name of the stack to copy.
         target_stack: Name of the copied stack.
-        source_profile_name: Name of the profile to copy from.
-        target_profile_name: Name of the profile to copy to.
+        source_profile_name: Name of the profile from which to copy.
+        target_profile_name: Name of the profile to which to copy.
     """
     track_event(AnalyticsEvent.COPIED_STACK)
 

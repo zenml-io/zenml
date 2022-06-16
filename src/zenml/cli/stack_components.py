@@ -870,8 +870,8 @@ def generate_stack_component_copy_command(
         Args:
             source_component: Name of the component to copy.
             target_component: Name of the copied component.
-            source_profile_name: Name of the profile to copy from.
-            target_profile_name: Name of the profile to copy to.
+            source_profile_name: Name of the profile from which to copy.
+            target_profile_name: Name of the profile to which to copy.
         """
         track_event(AnalyticsEvent.COPIED_STACK_COMPONENT)
 
