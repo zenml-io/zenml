@@ -4,28 +4,20 @@
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
 #
-#       https://www.apache.org/licenses/LICENSE-2.0
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.steps import BaseStepConfig, step
+import numpy as np
 
-
-class DeploymentTriggerConfig(BaseStepConfig):
-    """Parameters that are used to trigger the deployment"""
-
-    min_accuracy: float
+from zenml.steps import Output, step
 
 
 @step
-def deployment_trigger(
-    accuracy: float,
-    config: DeploymentTriggerConfig,
-) -> bool:
-    """Implements a simple model deployment trigger that looks at the
-    input model accuracy and decides if it is good enough to deploy"""
-
-    return accuracy > config.min_accuracy
+def sklearn_predict_preprocessor(input: np.ndarray) -> Output(data=np.ndarray):
+    """Prepares the data for inference."""
+    input = input / 255.0
+    return input.reshape((input.shape[0], -1))

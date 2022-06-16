@@ -11,21 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.steps import BaseStepConfig, step
+import numpy as np  # type: ignore [import]
+import tensorflow as tf  # type: ignore [import]
 
-
-class DeploymentTriggerConfig(BaseStepConfig):
-    """Parameters that are used to trigger the deployment"""
-
-    min_accuracy: float
+from zenml.steps import Output, step
 
 
 @step
-def deployment_trigger(
-    accuracy: float,
-    config: DeploymentTriggerConfig,
-) -> bool:
-    """Implements a simple model deployment trigger that looks at the
-    input model accuracy and decides if it is good enough to deploy"""
-
-    return accuracy > config.min_accuracy
+def importer_mnist() -> Output(
+    x_train=np.ndarray, y_train=np.ndarray, x_test=np.ndarray, y_test=np.ndarray
+):
+    """Download the MNIST data store it as an artifact"""
+    (x_train, y_train), (
+        x_test,
+        y_test,
+    ) = tf.keras.datasets.mnist.load_data()
+    return x_train, y_train, x_test, y_test

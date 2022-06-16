@@ -14,27 +14,36 @@
 from typing import cast
 
 import click
-from pipeline import (
-    DeploymentTriggerConfig,
-    SeldonDeploymentLoaderStepConfig,
-    SklearnTrainerConfig,
-    TensorflowTrainerConfig,
+from pipelines.continuous_deployment.continuous_deployment_pipeline import (
     continuous_deployment_pipeline,
-    deployment_trigger,
-    dynamic_importer,
-    importer_mnist,
-    inference_pipeline,
-    normalizer,
-    prediction_service_loader,
-    predictor,
-    sklearn_evaluator,
-    sklearn_predict_preprocessor,
-    sklearn_trainer,
-    tf_evaluator,
-    tf_predict_preprocessor,
-    tf_trainer,
 )
+from pipelines.inference.inference_pipeline import inference_pipeline
 from rich import print
+from steps.deployment_trigger.deployment_trigger_step import (
+    DeploymentTriggerConfig,
+    deployment_trigger,
+)
+from steps.dynamic_importer.dynamic_importer_step import dynamic_importer
+from steps.importer_mnist.importer_mnist_step import importer_mnist
+from steps.normalizer.normalizer_step import normalizer
+from steps.prediction_service_loader.prediction_service_loader_step import (
+    SeldonDeploymentLoaderStepConfig,
+    prediction_service_loader,
+)
+from steps.predictor.predictor_step import predictor
+from steps.sklearn_evaluator.sklearn_evaluator_step import sklearn_evaluator
+from steps.sklearn_predict_preprocessor.sklearn_predict_preprocessor_step import (
+    sklearn_predict_preprocessor,
+)
+from steps.sklearn_trainer.sklearn_trainer_step import (
+    SklearnTrainerConfig,
+    sklearn_trainer,
+)
+from steps.tf_evaluator.tf_evaluator_step import tf_evaluator
+from steps.tf_predict_preprocessor.tf_predict_preprocessor_step import (
+    tf_predict_preprocessor,
+)
+from steps.tf_trainer import TensorflowTrainerConfig, tf_trainer
 
 from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
 from zenml.integrations.seldon.services import (
