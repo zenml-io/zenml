@@ -899,7 +899,7 @@ def generate_stack_component_copy_command(
         else:
             target_profile = Repository().active_profile
 
-        # Use different repositories for fetching/registering the stack 
+        # Use different repositories for fetching/registering the stack
         # depending on the source/target profile
         source_repo = Repository(profile=source_profile)
         target_repo = Repository(profile=target_profile)

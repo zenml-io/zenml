@@ -654,7 +654,7 @@ If you want to copy a stack component, run the following command:
 zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME
 ```
 You can optionally specify profiles from which the component should be copied 
-from and to:
+to and from:
 ```bash
 zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME \
    [--from SOURCE_PROFILE_NAME] \
