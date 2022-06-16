@@ -18,6 +18,8 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 from uuid import UUID
 
+import numpy as np
+import requests
 from kserve import (  # type: ignore[import]
     KServeClient,
     V1beta1InferenceService,
@@ -40,6 +42,8 @@ from zenml.services import (
 )
 
 if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
     )
@@ -114,7 +118,7 @@ class KServeDeploymentConfig(ServiceConfig):
 
         The annotations are used to store additional information about the
         KServe ZenML service associated with the deployment that is
-        not available in the labels. One annotation particularly important
+        not available on the labels. One annotation is particularly important
         is the serialized Service configuration itself, which is used to
         recreate the service configuration from a remote KServe inference
         service CRD.
@@ -228,7 +232,7 @@ class KServeDeploymentService(BaseService):
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the state of the KServe inference service.
 
-        This method Checks the the current operational state of the external KServe
+        This method Checks the current operational state of the external KServe
         inference service and translate it into a `ServiceState` value and a printable message.
 
         This method should be overridden by subclasses that implement concrete service tracking functionality.
@@ -261,6 +265,7 @@ class KServeDeploymentService(BaseService):
                         ServiceState.ACTIVE,
                         f"Inference service '{name}' is available",
                     )
+
                 elif status.lower() == "false":
                     return (
                         ServiceState.PENDING_STARTUP,
@@ -508,7 +513,55 @@ class KServeDeploymentService(BaseService):
         model_deployer = self._get_model_deployer()
         return os.path.join(
             model_deployer.base_url,
-            model_deployer.kubernetes_namespace or "",
-            self.crd_name,
-            "api/v0.1/predictions",
+            "v1/models",
+            f"{self.crd_name}:predict",
         )
+
+    @property
+    def prediction_hostname(self) -> Optional[str]:
+        """The prediction hostname exposed by the prediction service.
+
+        Returns:
+            The prediction hostname exposed by the prediction service status
+            that will be used in the headers of the prediction request.
+        """
+        if not self.is_running:
+            return None
+
+        # TODO[HIGH]: return correct KServe prediction URLs
+        namespace = self._get_client().namespace
+        return os.path.join(
+            f"http://{self.crd_name}.{namespace}.example.com:predict",
+        )
+
+    def predict(self, request: "NDArray[Any]") -> "NDArray[Any]":
+        """Make a prediction using the service.
+
+        Args:
+            request: a NumPy array representing the request
+
+        Returns:
+            A NumPy array represents the prediction returned by the service.
+
+        Raises:
+            Exception: if the service is not yet ready.
+            ValueError: if the prediction_url is not set.
+        """
+        if not self.is_running:
+            raise Exception(
+                "Seldon prediction service is not running. "
+                "Please start the service before making predictions."
+            )
+
+        if self.prediction_url is None:
+            raise ValueError("`self.prediction_url` is not set, cannot post.")
+        if self.prediction_hostname is None:
+            raise ValueError("`self.prediction_hostname` is not set, cannot post.")
+        headers = {"Host": self.prediction_hostname}
+        response = requests.post(
+            self.prediction_url,
+            headers=headers,
+            json={"instances": request.tolist()},
+        )
+        response.raise_for_status()
+        return np.array(response.json()["predictions"])

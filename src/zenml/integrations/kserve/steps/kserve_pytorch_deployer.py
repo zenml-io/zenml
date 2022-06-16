@@ -42,7 +42,7 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils.source_utils import get_source_root_path
+from zenml.utils.source_utils import get_source_root_path, is_inside_repository
 
 logger = get_logger(__name__)
 
@@ -66,7 +66,7 @@ class KServePytorchDeployerStepConfig(BaseStepConfig):
     extra_files: Optional[str] = None
     requirements_file: Optional[str] = None
     model_version: Optional[int] = None
-    torch_config: str = "config.properties"
+    torch_config: Optional[str] = None
     timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT
 
 
@@ -111,7 +111,7 @@ def kserve_pytorch_model_deployer_step(
     """KServe pytorch model deployer pipeline step.
 
     This step can be used in a pipeline to implement continuous
-    deployment for a ML model with KServe for pytorch models.
+    deployment for an ML model with KServe for PyTorch models.
 
     Args:
         deploy_decision: whether to deploy the model or not
@@ -146,11 +146,17 @@ def kserve_pytorch_model_deployer_step(
             model_uri: the URI of the model artifact being served
 
         Returns:
-            The URL to the model ready for serving.
+            The URL to the model is ready for serving.
 
         Raises:
             RuntimeError: if the model files cannot be prepared.
         """
+        if not is_inside_repository(
+            config.model_class_file
+        ) or not is_inside_repository(config.handler):
+            raise RuntimeError(
+                "The model class file and handler file must be inside the repository."
+            )
         deployment_folder_uri = os.path.join(
             context.get_output_artifact_uri(), "kserve"
         )
@@ -200,11 +206,25 @@ def kserve_pytorch_model_deployer_step(
                     served_model_uri, f"{config.service_config.model_name}.mar"
                 ),
             )
-            # Copy the torch model config to the model store
-            fileio.copy(
-                os.path.join(get_source_root_path(), config.torch_config),
-                os.path.join(config_propreties_uri, "config.properties"),
-            )
+
+            # Get or Generate the config file
+            if config.torch_config:
+                # Copy the torch model config to the model store
+                fileio.copy(
+                    os.path.join(get_source_root_path(), config.torch_config),
+                    os.path.join(config_propreties_uri, "config.properties"),
+                )
+            else:
+                # Generate the config file
+                config_file_uri = generate_model_deployer_config(
+                    model_name=config.service_config.model_name,
+                    directory=temp_dir,
+                )
+                # Copy the torch model config to the model store
+                fileio.copy(
+                    config_file_uri,
+                    os.path.join(config_propreties_uri, "config.properties"),
+                )
 
         service_config = config.service_config.copy()
         service_config.model_uri = deployment_folder_uri
@@ -224,7 +244,7 @@ def kserve_pytorch_model_deployer_step(
     if not deploy_decision and existing_services:
         logger.info(
             f"Skipping model deployment because the model quality does not "
-            f"meet the criteria. Reusing last model server deployed by step "
+            f"meet the criteria. Reusing the last model server deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
             f"'{config.service_config.model_name}'..."
         )
@@ -253,3 +273,43 @@ def kserve_pytorch_model_deployer_step(
     )
 
     return service
+
+
+def generate_model_deployer_config(
+    model_name: str,
+    directory: str,
+) -> str:
+    """Generate a model deployer config.
+
+    Args:
+        model_name: the name of the model
+        directory: the directory where the model is stored
+
+    Returns:
+        None
+    """
+    config_lines = [
+        "inference_address=http://0.0.0.0:8085",
+        "management_address=http://0.0.0.0:8085",
+        "metrics_address=http://0.0.0.0:8082",
+        "grpc_inference_port=7070",
+        "grpc_management_port=7071",
+        "enable_metrics_api=true",
+        "metrics_format=prometheus",
+        "number_of_netty_threads=4",
+        "job_queue_size=10",
+        "enable_envvars_config=true",
+        "install_py_dep_per_model=true",
+        "model_store=/mnt/models/model-store",
+    ]
+
+    with tempfile.NamedTemporaryFile(
+        suffix=".properties", mode="w+", dir=directory, delete=False
+    ) as f:
+        for line in config_lines:
+            f.write(line + "\n")
+        f.write(
+            f'model_snapshot={{"name":"startup.cfg","modelCount":1,"models":{{"{model_name}":{{"1.0":{{"defaultVersion":true,"marName":"{model_name}.mar","minWorkers":1,"maxWorkers":5,"batchSize":1,"responseTimeout":120}}}}}}}}'
+        )
+    f.close()
+    return f.name
