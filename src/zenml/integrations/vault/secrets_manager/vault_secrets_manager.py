@@ -125,9 +125,9 @@ class VaultSecretsManager(BaseSecretsManager):
     @classmethod
     def _ensure_client_connected(cls, url: str, token: str) -> None:
         """Ensure the client is connected.
-        
+
         This function initializes the client if it is not initialized.
-        
+
         """
         if cls.CLIENT is None:
             # Create a Vault Secrets Manager client
