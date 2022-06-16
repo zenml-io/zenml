@@ -175,8 +175,8 @@ class VaultSecretsManager(BaseSecretsManager):
             secret=secret.content,
         )
 
-        logger.debug("Created secret: %s", f"{ZENML_PATH}/{secret_name}")
-        logger.debug("Added value to secret.")
+        logger.info("Created secret: %s", f"{ZENML_PATH}/{secret_name}")
+        logger.info("Added value to secret.")
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
         """Gets the value of a secret.
@@ -205,10 +205,10 @@ class VaultSecretsManager(BaseSecretsManager):
         return secret_schema(**secret_items)
 
     def vault_list_secrets(self) -> List[str]:
-        """List all secrets in vault without any reformatting.
+        """List all secrets in Vault without any reformatting.
 
         This function tries to get all secrets from Vault and returns
-        them as a list of strings all secrets names stored in Vault
+        them as a list of strings (all secrets' names)
         in the format: <secret_schema>-<secret_name>
 
         Returns:
@@ -222,7 +222,7 @@ class VaultSecretsManager(BaseSecretsManager):
                 path=f"{ZENML_PATH}/", mount_point=self.mount_point
             )
         except hvac.exceptions.InvalidPath:
-            logger.debug(
+            logger.error(
                 f"There are no secrets created within the path `{ZENML_PATH}` "
             )
             return list(set_of_secrets)
@@ -233,10 +233,10 @@ class VaultSecretsManager(BaseSecretsManager):
         return list(set_of_secrets)
 
     def vault_secret_name(self, secret_name: str) -> str:
-        """Get the secret name how it is stored in Vault.
+        """Get the secret name in the form it is stored in Vault.
 
-        This function retrieve the secret name in the Vault secrets manager, without
-        any reformatting this secret should be in the format `<secret_schema_name>-<secret_name>`.
+        This function retrieves the secret name in the Vault secrets manager, without
+        any reformatting. This secret should be in the format `<secret_schema_name>-<secret_name>`.
 
         Args:
             secret_name: The name of the secret to get.
@@ -262,7 +262,7 @@ class VaultSecretsManager(BaseSecretsManager):
         """Get all secret keys.
 
         This function tries to get all secrets from Vault and returns
-        them as a list of strings all secrets names without the schema.
+        them as a list of strings. All secrets names are without the schema.
 
         Returns:
             A list of all secret keys in the secrets manager.
@@ -296,8 +296,8 @@ class VaultSecretsManager(BaseSecretsManager):
                 f"A Secret with the name '{secret.name}' does not exist."
             )
 
-        logger.debug("Updated secret: %s", f"{ZENML_PATH}/{secret.name}")
-        logger.debug("Added value to secret.")
+        logger.info("Updated secret: %s", f"{ZENML_PATH}/{secret.name}")
+        logger.info("Added value to secret.")
 
     def delete_secret(self, secret_name: str) -> None:
         """Delete an existing secret.
@@ -320,7 +320,7 @@ class VaultSecretsManager(BaseSecretsManager):
             mount_point=self.mount_point,
         )
 
-        logger.debug("Deleted secret: %s", f"{ZENML_PATH}/{secret_name}")
+        logger.info("Deleted secret: %s", f"{ZENML_PATH}/{secret_name}")
 
     def delete_all_secrets(self, force: bool = False) -> None:
         """Delete all existing secrets.
@@ -333,4 +333,4 @@ class VaultSecretsManager(BaseSecretsManager):
         for secret_name in self.get_all_secret_keys():
             self.delete_secret(secret_name)
 
-        logger.debug("Deleted all secrets.")
+        logger.info("Deleted all secrets.")
