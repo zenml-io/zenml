@@ -847,44 +847,68 @@ def generate_stack_component_copy_command(
     @click.argument("target_component", type=str, required=True)
     @click.option(
         "--from",
-        "source_profile",
+        "source_profile_name",
         type=str,
         required=False,
         help=f"The profile from which to copy the {display_name}.",
     )
+    @click.option(
+        "--to",
+        "target_profile_name",
+        type=str,
+        required=False,
+        help=f"The profile to which to copy the {display_name}.",
+    )
     def copy_stack_component_command(
         source_component: str,
         target_component: str,
-        source_profile: Optional[str] = None,
+        source_profile_name: Optional[str] = None,
+        target_profile_name: Optional[str] = None,
     ) -> None:
         """Copies a stack component.
 
         Args:
             source_component: Name of the component to copy.
             target_component: Name of the copied component.
-            source_profile: Name of the profile to copy from.
+            source_profile_name: Name of the profile to copy from.
+            target_profile_name: Name of the profile to copy to.
         """
         track_event(AnalyticsEvent.COPIED_STACK_COMPONENT)
 
-        repo = Repository()
-
-        if source_profile:
+        if source_profile_name:
             try:
-                profile = GlobalConfiguration().profiles[source_profile]
+                source_profile = GlobalConfiguration().profiles[
+                    source_profile_name
+                ]
             except KeyError:
                 cli_utils.error(
-                    f"Unable to find source profile '{source_profile}'."
+                    f"Unable to find source profile '{source_profile_name}'."
                 )
         else:
-            profile = repo.active_profile
+            source_profile = Repository().active_profile
+
+        if target_profile_name:
+            try:
+                target_profile = GlobalConfiguration().profiles[
+                    target_profile_name
+                ]
+            except KeyError:
+                cli_utils.error(
+                    f"Unable to find target profile '{target_profile_name}'."
+                )
+        else:
+            target_profile = Repository().active_profile
+
+        # Use different repositories for fetching/registering the stack 
+        # depending on the source/target profile
+        source_repo = Repository(profile=source_profile)
+        target_repo = Repository(profile=target_profile)
 
         with console.status(
             f"Copying {display_name} `{source_component}`...\n"
         ):
             try:
-                # Use a different `Repository` here which is configured to read
-                # from the source profile
-                component = Repository(profile=profile).get_stack_component(
+                component = source_repo.get_stack_component(
                     component_type=component_type, name=source_component
                 )
             except KeyError:
@@ -895,7 +919,7 @@ def generate_stack_component_copy_command(
 
             existing_component_names = {
                 wrapper.name
-                for wrapper in repo.zen_store.get_stack_components(
+                for wrapper in target_repo.zen_store.get_stack_components(
                     component_type=component_type
                 )
             }
@@ -911,7 +935,7 @@ def generate_stack_component_copy_command(
             component_config["name"] = target_component
             copied_component = component.__class__.parse_obj(component_config)
 
-            repo.register_stack_component(copied_component)
+            target_repo.register_stack_component(copied_component)
 
     return copy_stack_component_command
 

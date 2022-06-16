@@ -1051,50 +1051,71 @@ def import_stack(
 @click.argument("target_stack", type=str, required=True)
 @click.option(
     "--from",
-    "source_profile",
+    "source_profile_name",
     type=str,
     required=False,
     help="The profile from which to copy the stack.",
 )
+@click.option(
+    "--to",
+    "target_profile_name",
+    type=str,
+    required=False,
+    help="The profile to which to copy the stack.",
+)
 def copy_stack(
-    source_stack: str, target_stack: str, source_profile: Optional[str] = None
+    source_stack: str,
+    target_stack: str,
+    source_profile_name: Optional[str] = None,
+    target_profile_name: Optional[str] = None,
 ) -> None:
     """Copy a stack.
 
     Args:
         source_stack: The name of the stack to copy.
         target_stack: Name of the copied stack.
-        source_profile: Name of the profile to copy from.
+        source_profile_name: Name of the profile to copy from.
+        target_profile_name: Name of the profile to copy to.
     """
     track_event(AnalyticsEvent.COPIED_STACK)
 
-    repo = Repository()
-    if source_profile:
+    if source_profile_name:
         try:
-            profile = GlobalConfiguration().profiles[source_profile]
+            source_profile = GlobalConfiguration().profiles[source_profile_name]
         except KeyError:
             cli_utils.error(
-                f"Unable to find source profile '{source_profile}'."
+                f"Unable to find source profile '{source_profile_name}'."
             )
     else:
-        profile = repo.active_profile
+        source_profile = Repository().active_profile
+
+    if target_profile_name:
+        try:
+            target_profile = GlobalConfiguration().profiles[target_profile_name]
+        except KeyError:
+            cli_utils.error(
+                f"Unable to find target profile '{target_profile_name}'."
+            )
+    else:
+        target_profile = Repository().active_profile
+
+    # Use different repositories for fetching/registering the stack depending
+    # on the source/target profile
+    source_repo = Repository(profile=source_profile)
+    target_repo = Repository(profile=target_profile)
 
     with console.status(f"Copying stack `{source_stack}`...\n"):
         try:
-            # Use a different `Repository` here which is configured to read from
-            # the source profile
-            stack_wrapper = Repository(profile=profile).zen_store.get_stack(
-                source_stack
-            )
+            stack_wrapper = source_repo.zen_store.get_stack(source_stack)
         except KeyError:
             cli_utils.error(
                 f"Stack `{source_stack}` cannot be copied as it does not exist."
             )
 
-        if target_stack in repo.stack_configurations:
+        if target_stack in target_repo.stack_configurations:
             cli_utils.error(
                 f"Can't copy stack as a stack with the name '{target_stack}' "
                 "already exists."
             )
         stack_wrapper.name = target_stack
-        repo.zen_store.register_stack(stack_wrapper)
+        target_repo.zen_store.register_stack(stack_wrapper)
