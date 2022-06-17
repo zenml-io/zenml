@@ -68,7 +68,7 @@ jobs:
 
       - name: Run tests
         env:
-          TEST_MLFLOW_TRACKING_URI: ${{ secrets.TEST_MLFLOW_TRACKING_URI }}
+          TEST_MLFLOW_TRACKING_URI: https://ac8e6c63af207436194ab675ee71d85a-1399000870.us-east-1.elb.amazonaws.com
           TEST_MLFLOW_TRACKING_USERNAME: ${{ secrets.TEST_MLFLOW_TRACKING_USERNAME }}
           TEST_MLFLOW_TRACKING_PASSWORD: ${{ secrets.TEST_MLFLOW_TRACKING_PASSWORD }}
           TEST_SLACK_TOKEN: ${{ secrets.TEST_SLACK_TOKEN }}
