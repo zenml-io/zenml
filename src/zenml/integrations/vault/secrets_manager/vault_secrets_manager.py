@@ -128,6 +128,9 @@ class VaultSecretsManager(BaseSecretsManager):
 
         This function initializes the client if it is not initialized.
 
+        Args:
+            url: The url of the Vault server.
+            token: The token to use to authenticate with Vault.
         """
         if cls.CLIENT is None:
             # Create a Vault Secrets Manager client

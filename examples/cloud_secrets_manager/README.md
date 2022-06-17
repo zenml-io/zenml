@@ -87,11 +87,25 @@ zenml secrets-manager register azure_key_vault --flavor=azure_key_vault --key_va
 zenml stack register secrets_stack -m default -o default -a default -x azure_key_vault --set
 ```
 
+### 🥞 Set up your stack for HashiCorp Vault
+
+To get going with Vault you will need to have a running Vault server. 
+[set up locally](https://www.vaultproject.io/docs/install) or [use HCP Vault](https://cloud.hashicorp.com/docs/vault), 
+and you have enabled [KV Secrets Engine - Version 2](https://www.vaultproject.io/docs/secrets/kv/kv-v2) 
+with the correct credentials to access the Vault server.
+
+```shell
+zenml integration install vault
+
+zenml secrets-manager register vault --flavor=vault  --url=<YOUR_VAULT_URL> --token=<YOUR_VAULT_TOKEN> --mount_point=<PATH_TO_KV_V2_ENGINE>
+zenml stack register secrets_stack -m default -o default -a default -x vault --set
+```
+
 ### Or stay on a local stack
 
 In case you run into issues with either of the clouds, feel free to use a local 
 secret manager. Just replace `--flavor=aws`/`--flavor=gcp_secrets_manager`/`--flavor=azure_key_vault`
-with `--flavor=local` to use a file based version of a secret manager. Be aware that this is not 
+with `--flavor=local` to use a file-based version of a secret manager. Be aware that this is not 
 a recommended location to store sensitive information.
 
 
