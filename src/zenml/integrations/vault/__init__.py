@@ -11,11 +11,11 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for the Vault Secret Manager integration.
+"""Initialization for the Vault Secrets Manager integration.
 
 The Vault secrets manager integration submodule provides a way 
-to access the HashiCorp vault secrets manager from within you ZenML 
-Pipeline runs.
+to access the HashiCorp Vault secrets manager from within your ZenML 
+pipeline runs.
 """
 from typing import List
 
@@ -27,7 +27,7 @@ from zenml.zen_stores.models import FlavorWrapper
 VAULT_SECRETS_MANAGER_FLAVOR = "vault"
 
 
-class VaultSecretManagerIntegration(Integration):
+class VaultSecretsManagerIntegration(Integration):
     """Definition of HashiCorp Vault integration with ZenML."""
 
     NAME = VAULT
@@ -50,4 +50,4 @@ class VaultSecretManagerIntegration(Integration):
         ]
 
 
-VaultSecretManagerIntegration.check_installation()
+VaultSecretsManagerIntegration.check_installation()
