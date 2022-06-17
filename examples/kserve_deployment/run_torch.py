@@ -103,9 +103,8 @@ def main(
                     },
                 ),
                 timeout=120,
-                model_class_file="examples/kserve_deployment/pytorch/mnist.py",
-                handler="examples/kserve_deployment/pytorch/mnist_handler.py",
-                torch_config="examples/kserve_deployment/pytorch/config.properties",
+                model_class_file="mnist.py",
+                handler="mnist_handler.py",
             )
         ),
     ).run()
