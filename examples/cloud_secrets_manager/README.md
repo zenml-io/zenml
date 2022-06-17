@@ -89,10 +89,11 @@ zenml stack register secrets_stack -m default -o default -a default -x azure_key
 
 ### 🥞 Set up your stack for HashiCorp Vault
 
-To get going with Vault you will need to have a running Vault server. 
-[set up locally](https://www.vaultproject.io/docs/install) or [use HCP Vault](https://cloud.hashicorp.com/docs/vault), 
-and you have enabled [KV Secrets Engine - Version 2](https://www.vaultproject.io/docs/secrets/kv/kv-v2) 
-with the correct credentials to access the Vault server.
+To get going with Vault you will need to have a running Vault server, either set up a 
+[Vault Server](https://www.vaultproject.io/docs/install) or use 
+[HashiCorp Cloud Platform Vault](https://cloud.hashicorp.com/docs/vault) and generate your authentication token.
+Once everything is set up, you will need to enable [KV Secrets Engine - Version 2](https://www.vaultproject.io/docs/secrets/kv/kv-v2) 
+and save the path which will be used for the `mount_point` parameter.
 
 ```shell
 zenml integration install vault

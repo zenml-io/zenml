@@ -343,7 +343,8 @@ primarily using HashiCorp Vault to store, access, and deploy secrets across appl
 systems, and infrastructure, you can use our integration to interact with it.
 
 Before getting started with Vault, you'll need to make sure to have your Vault credentials, 
-[set up locally](https://www.vaultproject.io/docs/install) or [use HCP Vault](https://cloud.hashicorp.com/docs/vault), 
+set up a [Vault Server](https://www.vaultproject.io/docs/install) or use 
+[HashiCorp Cloud Platform Vault](https://cloud.hashicorp.com/docs/vault), 
 and you have enabled [KV Secrets Engine - Version 2](https://www.vaultproject.io/docs/secrets/kv/kv-v2). 
 If you are new to HashiCorp Vault, make sure to follow their [tutorials](https://learn.hashicorp.com/tutorials/vault/getting-started-intro?in=vault/getting-started). 
 
