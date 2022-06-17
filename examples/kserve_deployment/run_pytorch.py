@@ -14,25 +14,19 @@
 from typing import cast
 
 import click
-from pytorch_deployment import (
-    DeploymentTriggerConfig,
-    TrainerConfig,
-    deployment_trigger,
-    kserve_pytorch_deployment_pipeline,
-    torch_evaluator,
-    torch_trainer,
-)
+from pipelines.kserve_pytorch_pipeline import kserve_pytorch_pipeline
 from rich import print
+from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
+from steps.model_deployer import custom_kserve_pytorch_deployer
+from steps.pytorch_data_loader import (
+    PytorchDataLoaderConfig,
+    pytorch_data_loader,
+)
+from steps.pytorch_evaluator import pytorch_evaluator
+from steps.pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
 
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
-from zenml.integrations.kserve.services import (
-    KServeDeploymentConfig,
-    KServeDeploymentService,
-)
-from zenml.integrations.kserve.steps import (
-    KServePytorchDeployerStepConfig,
-    kserve_pytorch_model_deployer_step,
-)
+from zenml.integrations.kserve.services import KServeDeploymentService
 
 
 @click.command()
@@ -88,40 +82,24 @@ def main(
 
     custom_model_deployer = KServeModelDeployer.get_active_model_deployer()
 
-    trainer_config = TrainerConfig(
-        batch_size=batch_size, epochs=epochs, lr=lr, momentum=momentum
-    )
-    trainer = torch_trainer(trainer_config)
-    evaluator = torch_evaluator()
-    deploy = True
-    if deploy:
-        # Initialize a continuous deployment pipeline run
-        deployment = kserve_pytorch_deployment_pipeline(
-            trainer=trainer,
-            evaluator=evaluator,
-            deployment_trigger=deployment_trigger(
-                config=DeploymentTriggerConfig(
-                    min_accuracy=min_accuracy,
-                )
-            ),
-            custom_model_deployer=kserve_pytorch_model_deployer_step(
-                config=KServePytorchDeployerStepConfig(
-                    service_config=KServeDeploymentConfig(
-                        model_name=model_name,
-                        replicas=1,
-                        predictor="pytorch",
-                        resources={
-                            "requests": {"cpu": "200m", "memory": "500m"}
-                        },
-                    ),
-                    timeout=120,
-                    model_class_file="mnist.py",
-                    handler="mnist_handler.py",
-                )
-            ),
-        )
-
-        deployment.run()
+    # Initialize and run a continuous deployment pipeline run
+    kserve_pytorch_pipeline(
+        data_loader=pytorch_data_loader(
+            PytorchDataLoaderConfig(
+                train_batch_size=batch_size, test_batch_size=batch_size
+            )
+        ),
+        trainer=pytorch_trainer(
+            PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
+        ),
+        evaluator=pytorch_evaluator(),
+        deployment_trigger=deployment_trigger(
+            config=DeploymentTriggerConfig(
+                min_accuracy=min_accuracy,
+            )
+        ),
+        deployer=custom_kserve_pytorch_deployer,
+    ).run()
 
     services = custom_model_deployer.find_model_server(
         pipeline_name=deployment_pipeline_name,

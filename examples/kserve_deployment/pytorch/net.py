@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import torch.nn as nn
 import torch.nn.functional as F
-from torch import nn
 
 
 class Net(nn.Module):

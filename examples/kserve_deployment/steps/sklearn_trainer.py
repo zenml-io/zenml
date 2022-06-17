@@ -11,3 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import numpy as np
+from sklearn.base import ClassifierMixin
+
+from zenml.integrations.sklearn.helpers.digits import get_digits_model
+from zenml.steps import step
+
+
+@step
+def trainer(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a simple sklearn classifier for the digits dataset."""
+    model = get_digits_model()
+    model.fit(X_train, y_train)
+    return model

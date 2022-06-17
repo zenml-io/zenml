@@ -1,0 +1,36 @@
+name: kserve_pytorch_pipeline
+steps:
+  data_loader:
+    source:
+      file: steps/pytorch_data_loader
+      name: pytorch_data_loader
+      parameters:
+        train_batch_size: 4
+        test_batch_size: 4
+  trainer:
+    source:
+      file: steps/pytorch_trainer
+      name: pytorch_trainer
+      parameters:
+        epochs: 3
+        lr: 0.01
+        momentum: 0.5
+  evaluator:
+    source:
+      file: steps/pytorch_evaluator
+      name: pytorch_evaluator
+  deployment_trigger:
+    source:
+      file: steps/deployment_trigger
+      name: deployment_trigger
+      parameters:
+        min_accuracy: 0.8
+  deployer:
+    source:
+      file: steps/model_deployer
+      name: kserve_pytorch_model_deployer_step
+      parameters:
+        service_config: NONE  # TODO: how to handle config in config?
+        timeout: 120
+        model_class_file: pytorch/net.py
+        handler: pytorch/mnist_handler.py

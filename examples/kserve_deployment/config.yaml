@@ -1,0 +1,27 @@
+name: kserve_sklearn_pipeline
+steps:
+  importer:
+    source:
+      file: steps/sklearn_importer
+      name: importer
+  trainer:
+    source:
+      file: steps/sklearn_trainer
+      name: trainer
+  evaluator:
+    source:
+      file: steps/sklearn_evaluator
+      name: evaluator
+  deployment_trigger:
+    source:
+      file: steps/deployment_trigger
+      name: deployment_trigger
+      parameters:
+        min_accuracy: 0.85
+  deployer:
+    source:
+      file: steps/model_deployer
+      name: kserve_model_deployer_step
+      parameters:
+        service_config: NONE  # TODO: how to handle config in config?
+        timeout: 120
