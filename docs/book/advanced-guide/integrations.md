@@ -22,7 +22,7 @@ pipeline. And you can seamlessly
 transition from a
 local [MLflow deployment](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html)
 to
-a deployed model on Kubernetes using [Seldon Core](https://www.seldon.io/).
+a deployed model on Kubernetes using [Seldon Core](https://www.seldon.io/) or [KServe](https://kserve.github.io/website).
 
 All of this allows you to write your code now and add the right tool for the job
 as soon as the need arises.
