@@ -325,12 +325,8 @@ class VaultSecretsManager(BaseSecretsManager):
 
         logger.info("Deleted secret: %s", f"{ZENML_PATH}/{secret_name}")
 
-    def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete all existing secrets.
-
-        Args:
-            force: Whether to force deletion of secrets.
-        """
+    def delete_all_secrets(self) -> None:
+        """Delete all existing secrets."""
         self._ensure_client_is_authenticated()
 
         for secret_name in self.get_all_secret_keys():
