@@ -41,8 +41,12 @@ from .example_validations import (
 MLFLOW_TRACKING_URI = (
     "https://a5e1145ed6528439e978f0ead9686b91-"
     "1439350632.us-east-1.elb.amazonaws.com"
+    or os.getenv("TEST_MLFLOW_TRACKING_URI")
 )
-
+MLFLOW_TRACKING_USERNAME = ("testuser"
+                            or os.getenv("TEST_MLFLOW_TRACKING_USERNAME"))
+MLFLOW_TRACKING_PASSWORD = ("testpassword"
+                            or os.getenv("TEST_MLFLOW_TRACKING_PASSWORD"))
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
     for item in os.listdir(example_dir):
