@@ -45,7 +45,7 @@ class Net(nn.Module):
         return F.log_softmax(x, dim=1)
 
 
-class TorchTrainerConfig(BaseStepConfig):
+class PytorchTrainerConfig(BaseStepConfig):
     """Trainer params"""
 
     epochs: int = 2
@@ -54,8 +54,8 @@ class TorchTrainerConfig(BaseStepConfig):
 
 
 @step
-def torch_trainer(
-    config: TorchTrainerConfig, train_loader: DataLoader
+def pytorch_trainer(
+    config: PytorchTrainerConfig, train_loader: DataLoader
 ) -> nn.Module:
     """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""

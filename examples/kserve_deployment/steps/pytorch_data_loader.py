@@ -20,14 +20,14 @@ from torch.utils.data import DataLoader
 from zenml.steps import BaseStepConfig, step
 
 
-def data_loader(
-    train_set: bool = True, batch_size: int = 4, shuffle: bool = True
+def build_data_loader(
+    is_train: bool = True, batch_size: int = 4, shuffle: bool = True
 ) -> DataLoader:
     """Returns a torch Dataloader from two np arrays."""
     data_loader = torch.utils.data.DataLoader(
         torchvision.datasets.MNIST(
             "mnist/data",
-            train=train_set,
+            train=is_train,
             download=True,
             transform=torchvision.transforms.Compose(
                 [
@@ -42,7 +42,7 @@ def data_loader(
     return data_loader
 
 
-class TorchDataLoaderConfig(BaseStepConfig):
+class PytorchDataLoaderConfig(BaseStepConfig):
     """DataLoader params"""
 
     train_shuffle: bool = True
@@ -52,14 +52,14 @@ class TorchDataLoaderConfig(BaseStepConfig):
 
 
 @step
-def torch_data_loader_step(config: TorchDataLoaderConfig):
-    train_loader = data_loader(
-        train_set=True,
+def pytorch_data_loader(config: PytorchDataLoaderConfig):
+    train_loader = build_data_loader(
+        is_train=True,
         batch_size=config.train_batch_size,
         shuffle=config.train_shuffle,
     )
-    test_loader = data_loader(
-        train_set=False,
+    test_loader = build_data_loader(
+        is_train=False,
         batch_size=config.test_batch_size,
         shuffle=config.test_shuffle,
     )

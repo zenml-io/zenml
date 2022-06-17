@@ -12,20 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from typing import cast
+
 import click
+from pipelines.kserve_pytorch_pipeline import kserve_pytorch_pipeline
 from rich import print
+from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
+from steps.model_deployer import custom_kserve_pytorch_deployer
+from steps.pytorch_data_loader import (
+    PytorchDataLoaderConfig,
+    pytorch_data_loader,
+)
+from steps.pytorch_evaluator import pytorch_evaluator
+from steps.pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
 
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
-from zenml.integrations.kserve.services import (
-    KServeDeploymentService,
-)
-
-from steps.deployment_trigger import deployment_trigger, DeploymentTriggerConfig
-from steps.model_deployer import custom_kserve_pytorch_deployer
-from steps.torch_data_loader import torch_data_loader_step, TorchDataLoaderConfig
-from steps.torch_trainer import torch_trainer, TorchTrainerConfig
-from steps.torch_evaluator import torch_evaluator
-from pipelines.kserve_torch_pipeline import kserve_pytorch_deployment_pipeline
+from zenml.integrations.kserve.services import KServeDeploymentService
 
 
 @click.command()
@@ -82,16 +83,22 @@ def main(
     custom_model_deployer = KServeModelDeployer.get_active_model_deployer()
 
     # Initialize and run a continuous deployment pipeline run
-    kserve_pytorch_deployment_pipeline(
-        data_loader_step=torch_data_loader_step(TorchDataLoaderConfig(train_batch_size=batch_size, test_batch_size=batch_size)),
-        trainer=torch_trainer(TorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)),
-        evaluator=torch_evaluator(),
+    kserve_pytorch_pipeline(
+        data_loader=pytorch_data_loader(
+            PytorchDataLoaderConfig(
+                train_batch_size=batch_size, test_batch_size=batch_size
+            )
+        ),
+        trainer=pytorch_trainer(
+            PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
+        ),
+        evaluator=pytorch_evaluator(),
         deployment_trigger=deployment_trigger(
             config=DeploymentTriggerConfig(
                 min_accuracy=min_accuracy,
             )
         ),
-        custom_model_deployer=custom_kserve_torch_deployer,
+        deployer=custom_kserve_pytorch_deployer,
     ).run()
 
     services = custom_model_deployer.find_model_server(

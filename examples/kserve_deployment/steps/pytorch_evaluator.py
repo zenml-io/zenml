@@ -24,7 +24,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 @step
-def torch_evaluator(model: nn.Module, test_loader: DataLoader) -> float:
+def pytorch_evaluator(model: nn.Module, test_loader: DataLoader) -> float:
     """Calculate the loss for the model for each epoch in a graph"""
     model.eval()
     test_loss = 0

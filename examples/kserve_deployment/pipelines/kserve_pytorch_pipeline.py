@@ -22,18 +22,18 @@ from zenml.pipelines import pipeline
     requirements=["torchvision"],
     required_integrations=[KSERVE, PYTORCH],
 )
-def kserve_pytorch_deployment_pipeline(
-    data_loader_step,
+def kserve_pytorch_pipeline(
+    data_loader,
     trainer,
     evaluator,
     deployment_trigger,
-    custom_model_deployer,
+    deployer,
 ):
-    train_loader, test_loader = data_loader_step()
+    train_loader, test_loader = data_loader()
     model = trainer(train_loader)
     accuracy = evaluator(model=model, test_loader=test_loader)
     deployment_decision = deployment_trigger(accuracy=accuracy)
-    custom_model_deployer(
+    deployer(
         deployment_decision,
         model,
     )
