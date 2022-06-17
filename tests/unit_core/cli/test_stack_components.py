@@ -18,7 +18,7 @@ from typing import Iterator
 import pytest
 from click.testing import CliRunner
 
-from tests.unit.test_flavor import AriaOrchestrator
+from tests.unit_core.test_flavor import AriaOrchestrator
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
 from zenml.stack.flavor_registry import flavor_registry
