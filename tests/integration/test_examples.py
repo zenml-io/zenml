@@ -29,6 +29,7 @@ from zenml.cli import set_active_stack
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
 )
+from zenml.integrations.slack.alerters import SlackAlerter
 from zenml.pipelines.run_pipeline import run_pipeline
 from zenml.repository import Repository
 from zenml.stack import Stack, StackComponent
@@ -38,15 +39,12 @@ from .example_validations import (
     mlflow_tracking_example_validation,
 )
 
-MLFLOW_TRACKING_URI = (
-    "https://a5e1145ed6528439e978f0ead9686b91-"
-    "1439350632.us-east-1.elb.amazonaws.com"
-    or os.getenv("TEST_MLFLOW_TRACKING_URI")
-)
-MLFLOW_TRACKING_USERNAME = ("testuser"
-                            or os.getenv("TEST_MLFLOW_TRACKING_USERNAME"))
-MLFLOW_TRACKING_PASSWORD = ("testpassword"
-                            or os.getenv("TEST_MLFLOW_TRACKING_PASSWORD"))
+MLFLOW_TRACKING_URI = os.getenv("TEST_MLFLOW_TRACKING_URI")
+MLFLOW_TRACKING_USERNAME = os.getenv("TEST_MLFLOW_TRACKING_USERNAME")
+MLFLOW_TRACKING_PASSWORD = os.getenv("TEST_MLFLOW_TRACKING_PASSWORD")
+
+SLACK_TOKEN = os.getenv("TEST_SLACK_TOKEN")
+SLACK_CHANNEL_ID = os.getenv("TEST_SLACK_CHANNEL_ID")
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
     for item in os.listdir(example_dir):
@@ -116,16 +114,19 @@ EXAMPLES = [
             )
         ],
         validation_function=mlflow_tracking_example_validation,
-    )
-    # ExampleConfiguration(
-    #     name="slack_alert",
-    #     pipeline_path="pipelines/post_pipeline.py",
-    #     pipeline_name="post_pipeline",
-    #     runs_on_windows=True,
-    #     required_stack_components=[
-    #         SlackAlerter(slack_token="", default_slack_channel_id="")
-    #     ],
-    #     step_count=5),
+    ),
+    ExampleConfiguration(
+        name="slack_alert",
+        pipeline_path="pipelines/post_pipeline.py",
+        pipeline_name="post_pipeline",
+        runs_on_windows=True,
+        required_stack_components=[
+            SlackAlerter(
+                name="test_slack_alerter",
+                slack_token=SLACK_TOKEN,
+                default_slack_channel_id=SLACK_CHANNEL_ID)
+        ],
+        step_count=5),
     # ExampleConfiguration(
     #     name="lightgbm",
     #     pipeline_path="pipelines/lgbm_pipeline/lgbm_pipeline.py",
