@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -12,40 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import logging
 import os
 
 import numpy as np
 import tensorflow as tf
 
-from zenml.integrations.constants import TENSORFLOW
-from zenml.pipelines import pipeline
-from zenml.steps import BaseStepConfig, Output, StepContext, step
-
-
-@step
-def importer() -> Output(
-    X_train=np.ndarray,
-    X_test=np.ndarray,
-    y_train=np.ndarray,
-    y_test=np.ndarray,
-):
-    """Download the MNIST data store it as an artifact"""
-    (X_train, y_train), (
-        X_test,
-        y_test,
-    ) = tf.keras.datasets.mnist.load_data()
-    return X_train, X_test, y_train, y_test
-
-
-@step
-def normalizer(
-    X_train: np.ndarray, X_test: np.ndarray
-) -> Output(X_train_normed=np.ndarray, X_test_normed=np.ndarray):
-    """Normalize digits dataset with mean and standard deviation."""
-    X_train_normed = (X_train - np.mean(X_train)) / np.std(X_train)
-    X_test_normed = (X_test - np.mean(X_test)) / np.std(X_test)
-    return X_train_normed, X_test_normed
+from zenml.steps import BaseStepConfig, StepContext, step
 
 
 class TrainerConfig(BaseStepConfig):
@@ -91,30 +63,3 @@ def trainer(
     )
 
     return model
-
-
-@step
-def evaluator(
-    X_test: np.ndarray,
-    y_test: np.ndarray,
-    model: tf.keras.Model,
-) -> float:
-    """Calculate the accuracy on the test set"""
-
-    _, test_acc = model.evaluate(X_test, y_test, verbose=2)
-    logging.info(f"Test accuracy: {test_acc}")
-    return test_acc
-
-
-@pipeline(required_integrations=[TENSORFLOW], enable_cache=True)
-def mnist_pipeline(
-    importer,
-    normalizer,
-    trainer,
-    evaluator,
-):
-    # Link all the steps together
-    X_train, X_test, y_train, y_test = importer()
-    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
-    model = trainer(X_train=X_trained_normed, y_train=y_train)
-    evaluator(X_test=X_test_normed, y_test=y_test, model=model)

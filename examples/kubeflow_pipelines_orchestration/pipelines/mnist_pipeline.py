@@ -11,3 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.integrations.constants import TENSORFLOW
+from zenml.pipelines import pipeline
+
+
+@pipeline(required_integrations=[TENSORFLOW], enable_cache=True)
+def mnist_pipeline(
+    importer,
+    normalizer,
+    trainer,
+    evaluator,
+):
+    X_train, X_test, y_train, y_test = importer()
+    X_trained_normed, X_test_normed = normalizer(X_train=X_train, X_test=X_test)
+    model = trainer(X_train=X_trained_normed, y_train=y_train)
+    evaluator(X_test=X_test_normed, y_test=y_test, model=model)
