@@ -257,12 +257,8 @@ class GCPSecretsManager(BaseSecretsManager):
             ):
                 self.CLIENT.delete_secret(request={"name": secret.name})
 
-    def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete all existing secrets.
-
-        Args:
-            force: whether to force delete all secrets
-        """
+    def delete_all_secrets(self) -> None:
+        """Delete all existing secrets."""
         self._ensure_client_connected()
 
         # List all secrets.

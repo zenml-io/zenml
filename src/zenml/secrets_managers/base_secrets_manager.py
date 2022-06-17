@@ -65,9 +65,5 @@ class BaseSecretsManager(StackComponent, ABC):
         """
 
     @abstractmethod
-    def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete all existing secrets.
-
-        Args:
-            force: Whether to force deletion of secrets.
-        """
+    def delete_all_secrets(self) -> None:
+        """Delete all existing secrets."""
