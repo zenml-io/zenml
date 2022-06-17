@@ -14,14 +14,34 @@
 
 from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
+    KServeDeployerStepConfig,
     KServePytorchDeployerStepConfig,
+    kserve_model_deployer_step,
     kserve_pytorch_model_deployer_step,
 )
+
+MODEL_NAME = "mnist"
+
+
+custom_kserve_sklearn_deployer = (
+    kserve_model_deployer_step(
+        config=KServeDeployerStepConfig(
+            service_config=KServeDeploymentConfig(
+                model_name=MODEL_NAME,
+                replicas=1,
+                predictor="sklearn",
+                resources={"requests": {"cpu": "100m", "memory": "100m"}},
+            ),
+            timeout=120,
+        )
+    ),
+)
+
 
 custom_kserve_pytorch_deployer = kserve_pytorch_model_deployer_step(
     config=KServePytorchDeployerStepConfig(
         service_config=KServeDeploymentConfig(
-            model_name="mnist",
+            model_name=MODEL_NAME,
             replicas=1,
             predictor="pytorch",
             resources={"requests": {"cpu": "200m", "memory": "500m"}},

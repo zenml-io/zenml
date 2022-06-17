@@ -11,26 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import numpy as np
+from sklearn.base import ClassifierMixin
+
+from zenml.integrations.sklearn.helpers.digits import get_digits_model
+from zenml.steps import step
 
 
-from zenml.integrations.constants import KSERVE, PYTORCH
-from zenml.pipelines import pipeline
-
-
-@pipeline(
-    enable_cache=True,
-    requirements=["torchvision"],
-    required_integrations=[KSERVE, PYTORCH],
-)
-def kserve_pytorch_pipeline(
-    data_loader,
-    trainer,
-    evaluator,
-    deployment_trigger,
-    deployer,
-):
-    train_loader, test_loader = data_loader()
-    model = trainer(train_loader)
-    accuracy = evaluator(model=model, test_loader=test_loader)
-    deployment_decision = deployment_trigger(accuracy=accuracy)
-    deployer(deployment_decision, model)
+@step
+def trainer(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+) -> ClassifierMixin:
+    """Train a simple sklearn classifier for the digits dataset."""
+    model = get_digits_model()
+    model.fit(X_train, y_train)
+    return model

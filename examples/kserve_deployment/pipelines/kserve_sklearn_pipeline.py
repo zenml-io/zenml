@@ -13,24 +13,21 @@
 #  permissions and limitations under the License.
 
 
-from zenml.integrations.constants import KSERVE, PYTORCH
+from zenml.integrations.constants import KSERVE, SKLEARN
 from zenml.pipelines import pipeline
 
 
-@pipeline(
-    enable_cache=True,
-    requirements=["torchvision"],
-    required_integrations=[KSERVE, PYTORCH],
-)
-def kserve_pytorch_pipeline(
-    data_loader,
+@pipeline(required_integrations=[SKLEARN, KSERVE])
+def kserve_sklearn_pipeline(
+    importer,
     trainer,
     evaluator,
     deployment_trigger,
-    deployer,
+    model_deployer,
 ):
-    train_loader, test_loader = data_loader()
-    model = trainer(train_loader)
-    accuracy = evaluator(model=model, test_loader=test_loader)
+    """Links all the steps together in a pipeline"""
+    X_train, X_test, y_train, y_test = importer()
+    model = trainer(X_train=X_train, y_train=y_train)
+    accuracy = evaluator(X_test=X_test, y_test=y_test, model=model)
     deployment_decision = deployment_trigger(accuracy=accuracy)
-    deployer(deployment_decision, model)
+    model_deployer(deployment_decision, model)

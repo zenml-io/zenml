@@ -11,26 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import numpy as np
+
+from zenml.integrations.sklearn.helpers.digits import get_digits
+from zenml.steps import Output, step
 
 
-from zenml.integrations.constants import KSERVE, PYTORCH
-from zenml.pipelines import pipeline
-
-
-@pipeline(
-    enable_cache=True,
-    requirements=["torchvision"],
-    required_integrations=[KSERVE, PYTORCH],
-)
-def kserve_pytorch_pipeline(
-    data_loader,
-    trainer,
-    evaluator,
-    deployment_trigger,
-    deployer,
+@step
+def importer() -> Output(
+    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
 ):
-    train_loader, test_loader = data_loader()
-    model = trainer(train_loader)
-    accuracy = evaluator(model=model, test_loader=test_loader)
-    deployment_decision = deployment_trigger(accuracy=accuracy)
-    deployer(deployment_decision, model)
+    """Loads the digits array as normal numpy arrays."""
+    X_train, X_test, y_train, y_test = get_digits()
+    return X_train, X_test, y_train, y_test
