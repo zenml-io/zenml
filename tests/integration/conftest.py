@@ -87,8 +87,9 @@ def shared_kubeflow_profile(
         return False
 
     module_mocker.patch("zenml.utils.daemon.run_as_daemon", new=run_in_thread)
-    module_mocker.patch("zenml.environment.Environment.in_notebook",
-                        new=return_false)
+    module_mocker.patch(
+        "zenml.environment.Environment.in_notebook", new=return_false
+    )
 
     # Register and activate the kubeflow stack
     orchestrator = KubeflowOrchestrator(

@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from .data_loader.data_loader_step import data_loader
-from .trainer.trainer_step import trainer
 from .predictor.predictor_step import predictor
+from .trainer.trainer_step import trainer
 
 __all__ = ["data_loader", "trainer", "predictor"]

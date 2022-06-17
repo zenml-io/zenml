@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from .neural_prophet_pipeline.neural_prophet_pipeline import (
-    neural_prophet_pipeline
+    neural_prophet_pipeline,
 )
 
 __all__ = ["neural_prophet_pipeline"]

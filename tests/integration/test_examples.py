@@ -24,18 +24,25 @@ import pytest
 from pydantic import BaseModel
 
 from zenml.cli import set_active_stack
+
 # from zenml.integrations.slack.alerters import SlackAlerter
-from zenml.integrations.mlflow.experiment_trackers import \
-    MLFlowExperimentTracker
+from zenml.integrations.mlflow.experiment_trackers import (
+    MLFlowExperimentTracker,
+)
 from zenml.pipelines.run_pipeline import run_pipeline
 from zenml.repository import Repository
 from zenml.stack import Stack, StackComponent
 
-from .example_validations import generate_basic_validation_function, \
-    mlflow_tracking_example_validation
+from .example_validations import (
+    generate_basic_validation_function,
+    mlflow_tracking_example_validation,
+)
 
-MLFLOW_TRACKING_URI = 'https://a5e1145ed6528439e978f0ead9686b91-' \
-                      '1439350632.us-east-1.elb.amazonaws.com'
+MLFLOW_TRACKING_URI = (
+    "https://a5e1145ed6528439e978f0ead9686b91-"
+    "1439350632.us-east-1.elb.amazonaws.com"
+)
+
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
     for item in os.listdir(example_dir):
@@ -100,10 +107,12 @@ EXAMPLES = [
             MLFlowExperimentTracker(
                 name="mlflow_tracker",
                 tracking_uri=MLFLOW_TRACKING_URI,
-                tracking_username='testusr',
-                tracking_password='testpwd')
+                tracking_username="testusr",
+                tracking_password="testpwd",
+            )
         ],
-        validation_function=mlflow_tracking_example_validation)
+        validation_function=mlflow_tracking_example_validation,
+    )
     # ExampleConfiguration(
     #     name="slack_alert",
     #     pipeline_path="pipelines/post_pipeline.py",
