@@ -35,7 +35,6 @@ custom_kserve_sklearn_deployer = kserve_model_deployer_step(
     )
 )
 
-
 custom_kserve_pytorch_deployer = kserve_pytorch_model_deployer_step(
     config=KServePytorchDeployerStepConfig(
         service_config=KServeDeploymentConfig(

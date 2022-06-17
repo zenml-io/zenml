@@ -188,6 +188,7 @@ def kserve_model_deployer_step(
     logger.info(
         f"KServe deployment service started and reachable at:\n"
         f"    {service.prediction_url}\n"
+        f"    With the hostname: {service.prediction_hostname}."
     )
 
     return service
