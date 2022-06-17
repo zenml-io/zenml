@@ -1,0 +1,14 @@
+name: airflow_example_pipeline
+steps:
+  get_first_num:
+    source:
+      file: steps/first_num
+      name: get_first_num
+  get_random_int:
+    source:
+      file: steps/random_int
+      name: get_random_int
+  subtract_numbers:
+    source:
+      file: steps/substract_numbers
+      name: subtract_numbers

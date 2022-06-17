@@ -11,3 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+
+from zenml.steps import Output, step
+
+
+@step
+def subtract_numbers(first_num: int, random_num: int) -> Output(result=int):
+    """Subtract random_num from first_num."""
+    return first_num - random_num

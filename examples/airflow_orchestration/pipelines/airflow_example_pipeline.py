@@ -11,3 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+
+from zenml.pipelines import pipeline
+
+
+@pipeline
+def airflow_example_pipeline(get_first_num, get_random_int, subtract_numbers):
+    # Link all the steps artifacts together
+    first_num = get_first_num()
+    random_num = get_random_int()
+    subtract_numbers(first_num, random_num)
