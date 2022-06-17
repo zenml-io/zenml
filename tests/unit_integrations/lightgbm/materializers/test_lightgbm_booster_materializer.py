@@ -11,3 +11,33 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import tempfile
+from contextlib import ExitStack as does_not_raise
+from pathlib import Path
+
+import lightgbm as lgb
+import pytest
+
+from zenml.integrations.lightgbm.materializers.lightgbm_booster_materializer import (
+    LightGBMBoosterMaterializer,
+)
+from zenml.steps import step
+
+
+@pytest.fixture
+def empty_model_file() -> Path:
+    """Fixture to get an empty model.txt file"""
+
+    with tempfile.NamedTemporaryFile() as tmp:
+        yield tmp.name
+
+
+def test_lightgbm_booster_materializer(empty_model_file):
+    """Tests whether the steps work for the lightgbm booster materializer."""
+
+    @step
+    def some_step() -> lgb.Booster:
+        return lgb.Booster(model_file=empty_model_file)
+
+    with does_not_raise():
+        some_step().with_return_materializers(LightGBMBoosterMaterializer)()

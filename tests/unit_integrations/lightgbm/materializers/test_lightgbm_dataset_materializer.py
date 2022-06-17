@@ -13,16 +13,16 @@
 #  permissions and limitations under the License.
 from contextlib import ExitStack as does_not_raise
 
+import lightgbm as lgb
+
 from zenml.integrations.lightgbm.materializers.lightgbm_dataset_materializer import (
     LightGBMDatasetMaterializer,
 )
 from zenml.steps import step
-import lightgbm as lgb
 
 
-def test_materializer_with_subclassing_parameter():
-    """Tests whether the steps work where one parameter subclasses one of the
-    registered types"""
+def test_lightgbm_dataset_materializer():
+    """Tests whether the steps work for the lightgbm dataset materializer."""
 
     @step
     def some_step() -> lgb.Dataset:
