@@ -12,8 +12,22 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
+from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
     KServePytorchDeployerStepConfig,
     kserve_pytorch_model_deployer_step,
+)
+
+custom_kserve_pytorch_deployer = kserve_pytorch_model_deployer_step(
+    config=KServePytorchDeployerStepConfig(
+        service_config=KServeDeploymentConfig(
+            model_name="mnist",
+            replicas=1,
+            predictor="pytorch",
+            resources={"requests": {"cpu": "200m", "memory": "500m"}},
+        ),
+        timeout=120,
+        model_class_file="mnist.py",
+        handler="mnist_handler.py",
+    )
 )

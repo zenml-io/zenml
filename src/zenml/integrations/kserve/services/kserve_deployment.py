@@ -556,7 +556,9 @@ class KServeDeploymentService(BaseService):
         if self.prediction_url is None:
             raise ValueError("`self.prediction_url` is not set, cannot post.")
         if self.prediction_hostname is None:
-            raise ValueError("`self.prediction_hostname` is not set, cannot post.")
+            raise ValueError(
+                "`self.prediction_hostname` is not set, cannot post."
+            )
         headers = {"Host": self.prediction_hostname}
         response = requests.post(
             self.prediction_url,

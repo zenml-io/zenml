@@ -17,12 +17,11 @@ from rich import print
 
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
 from zenml.integrations.kserve.services import (
-    KServeDeploymentConfig,
     KServeDeploymentService,
 )
 
 from steps.deployment_trigger import deployment_trigger, DeploymentTriggerConfig
-from steps.model_deployer import kserve_pytorch_model_deployer_step, KServePytorchDeployerStepConfig
+from steps.model_deployer import custom_kserve_pytorch_deployer
 from steps.torch_data_loader import torch_data_loader_step, TorchDataLoaderConfig
 from steps.torch_trainer import torch_trainer, TorchTrainerConfig
 from steps.torch_evaluator import torch_evaluator
@@ -92,21 +91,7 @@ def main(
                 min_accuracy=min_accuracy,
             )
         ),
-        custom_model_deployer=kserve_pytorch_model_deployer_step(
-            config=KServePytorchDeployerStepConfig(
-                service_config=KServeDeploymentConfig(
-                    model_name=model_name,
-                    replicas=1,
-                    predictor="pytorch",
-                    resources={
-                        "requests": {"cpu": "200m", "memory": "500m"}
-                    },
-                ),
-                timeout=120,
-                model_class_file="mnist.py",
-                handler="mnist_handler.py",
-            )
-        ),
+        custom_model_deployer=custom_kserve_torch_deployer,
     ).run()
 
     services = custom_model_deployer.find_model_server(

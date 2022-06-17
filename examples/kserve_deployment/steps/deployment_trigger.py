@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 
 
-from zenml.steps import step
-from zenml.steps import BaseStepConfig
+from zenml.steps import BaseStepConfig, step
 
 
 class DeploymentTriggerConfig(BaseStepConfig):

@@ -18,25 +18,47 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from mnist import Net
-from zenml.steps import step, BaseStepConfig
 
+from zenml.steps import BaseStepConfig, step
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+class Net(nn.Module):
+    """Network architecture"""
+
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
+        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
+        self.conv2_drop = nn.Dropout2d()
+        self.fc1 = nn.Linear(320, 50)
+        self.fc2 = nn.Linear(50, 10)
+
+    def forward(self, x):
+        x = F.relu(F.max_pool2d(self.conv1(x), 2))
+        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+        x = x.view(-1, 320)
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return F.log_softmax(x, dim=1)
+
+
 class TorchTrainerConfig(BaseStepConfig):
     """Trainer params"""
+
     epochs: int = 2
     lr: float = 0.01
     momentum: float = 0.5
 
 
 @step
-def torch_trainer(config: TorchTrainerConfig, train_loader: DataLoader) -> nn.Module:
+def torch_trainer(
+    config: TorchTrainerConfig, train_loader: DataLoader
+) -> nn.Module:
     """Train a neural net from scratch to recognize MNIST digits return our
     model or the learner"""
-    
 
     model = Net().to(DEVICE)
     optimizer = optim.SGD(
