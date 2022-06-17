@@ -462,7 +462,7 @@ def delete_secret_set(
 @click.option(
     "--yes",
     "-y",
-    "force",
+    "yes",
     is_flag=True,
     help="Force the deletion of all secrets",
     type=click.BOOL,
@@ -470,7 +470,7 @@ def delete_secret_set(
 @click.option(
     "--force",
     "-f",
-    "old_force",
+    "force",
     is_flag=True,
     help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` "
     "instead.",
@@ -478,31 +478,28 @@ def delete_secret_set(
 )
 @click.pass_obj
 def delete_all_secrets(
-    secrets_manager: "BaseSecretsManager", force: bool, old_force: bool
+    secrets_manager: "BaseSecretsManager", yes: bool, force: bool
 ) -> None:
     """Delete all secrets tracked by your Secrets Manager.
 
-    Use the --yes flag to specify if force should be applied when deleting all
-    secrets. This might have differing implications depending on the underlying
-    secrets manager
-
     Args:
         secrets_manager: The secrets manager to use.
-        force: Force the deletion of all secrets.
-        old_force: DEPRECATED: Force the deletion of all secrets.
+        yes: Skip asking for confirmation.
+        force: DEPRECATED: Skip asking for confirmation.
     """
-    if old_force:
-        force = old_force
+    if force:
         warning(
             "The `--force` flag will soon be deprecated. Use `--yes` or `-y` "
             "instead."
         )
-    confirmation_response = confirmation(
-        "This will delete all secrets. Are you sure you want to proceed?"
-    )
-    if not confirmation_response:
-        console.print("Aborting secret deletion...")
-    else:
-        with console.status("Deleting all secrets ..."):
-            secrets_manager.delete_all_secrets(force=force)
-            console.print("Deleted all secrets.")
+    if not yes:
+        confirmation_response = confirmation(
+            "This will delete all secrets. Are you sure you want to proceed?"
+        )
+        if not confirmation_response:
+            console.print("Aborting deletion of all secrets...")
+            return
+
+    with console.status("Deleting all secrets..."):
+        secrets_manager.delete_all_secrets()
+        console.print("Deleted all secrets.")
