@@ -21,7 +21,7 @@ from zenml.integrations.neural_prophet.materializers.neural_prophet_materializer
 from zenml.steps import step
 
 
-def test_lightgbm_booster_materializer():
+def test_neural_prophet_booster_materializer():
     """Tests whether the steps work for the NeuralProphet materializer."""
 
     @step
