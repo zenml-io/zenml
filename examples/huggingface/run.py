@@ -89,12 +89,12 @@ from steps.configuration import HuggingfaceConfig
          "conll2003",
 )
 def main(
-        nlp_task: str,
-        pretrained_model: str,
-        batch_size: int,
-        epochs: int,
-        full_set: bool,
-        **kwargs
+    nlp_task: str,
+    pretrained_model: str,
+    batch_size: int,
+    epochs: int,
+    full_set: bool,
+    **kwargs
 ):
     if nlp_task == "token-classification":
         # Run Pipeline
