@@ -626,6 +626,8 @@ graphviz
 grey
 hasattr
 hashable
+HashiCorp
+HCP
 healthcheck
 healthchecks
 hkls
@@ -919,4 +921,3 @@ zenfiles
 zenml
 zenmldocker
 zenserver
-HashiCorp
