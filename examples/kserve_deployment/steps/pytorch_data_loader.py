@@ -17,7 +17,7 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 
-from zenml.steps import BaseStepConfig, step
+from zenml.steps import BaseStepConfig, Output, step
 
 
 def build_data_loader(
@@ -52,7 +52,9 @@ class PytorchDataLoaderConfig(BaseStepConfig):
 
 
 @step
-def pytorch_data_loader(config: PytorchDataLoaderConfig):
+def pytorch_data_loader(
+    config: PytorchDataLoaderConfig,
+) -> Output(train_loader=DataLoader, test_loader=DataLoader):
     train_loader = build_data_loader(
         is_train=True,
         batch_size=config.train_batch_size,

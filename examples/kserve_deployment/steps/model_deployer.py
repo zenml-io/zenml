@@ -23,18 +23,16 @@ from zenml.integrations.kserve.steps import (
 MODEL_NAME = "mnist"
 
 
-custom_kserve_sklearn_deployer = (
-    kserve_model_deployer_step(
-        config=KServeDeployerStepConfig(
-            service_config=KServeDeploymentConfig(
-                model_name=MODEL_NAME,
-                replicas=1,
-                predictor="sklearn",
-                resources={"requests": {"cpu": "100m", "memory": "100m"}},
-            ),
-            timeout=120,
-        )
-    ),
+custom_kserve_sklearn_deployer = kserve_model_deployer_step(
+    config=KServeDeployerStepConfig(
+        service_config=KServeDeploymentConfig(
+            model_name=MODEL_NAME,
+            replicas=1,
+            predictor="sklearn",
+            resources={"requests": {"cpu": "100m", "memory": "100m"}},
+        ),
+        timeout=120,
+    )
 )
 
 
