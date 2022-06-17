@@ -67,6 +67,12 @@ jobs:
         uses: mxschmitt/action-tmate@v3
 
       - name: Run tests
+        env:
+          TEST_MLFLOW_TRACKING_URI: ${{ secrets.TEST_MLFLOW_TRACKING_URI }}
+          TEST_MLFLOW_TRACKING_USERNAME: ${{ secrets.TEST_MLFLOW_TRACKING_USERNAME }}
+          TEST_MLFLOW_TRACKING_PASSWORD: ${{ secrets.TEST_MLFLOW_TRACKING_PASSWORD }}
+          TEST_SLACK_TOKEN: ${{ secrets.TEST_SLACK_TOKEN }}
+          TEST_SLACK_CHANNEL_ID: ${{ secrets.TEST_SLACK_CHANNEL_ID }}
         run: |
           source $VENV
           pytest tests/integration/test_examples.py -s --on-kubeflow --use-virtualenv
