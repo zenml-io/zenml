@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Neural Prophet materializer."""
 
 import os
 from typing import Any, Type
@@ -37,6 +38,9 @@ class NeuralProphetMaterializer(BaseMaterializer):
 
     def handle_input(self, data_type: Type[Any]) -> NeuralProphet:
         """Reads and returns a NeuralProphet model.
+
+        Args:
+            data_type: A NeuralProphet model object.
 
         Returns:
             A loaded NeuralProphet model.

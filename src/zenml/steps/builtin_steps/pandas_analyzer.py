@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Pandas analyzer step."""
+
 from typing import Any, List, Optional, Type, Union
 
 import pandas as pd
@@ -24,7 +26,7 @@ from zenml.steps.step_interfaces.base_analyzer_step import (
 
 
 class PandasAnalyzerConfig(BaseAnalyzerConfig):
-    """Config class for the PandasAnalyzer Config"""
+    """Config class for the PandasAnalyzer Config."""
 
     percentiles: List[float] = [0.25, 0.5, 0.75]
     include: Optional[Union[str, List[Type[Any]]]] = None
@@ -32,7 +34,7 @@ class PandasAnalyzerConfig(BaseAnalyzerConfig):
 
 
 class PandasAnalyzer(BaseAnalyzerStep):
-    """Simple step implementation which analyzes a given pd.DataFrame"""
+    """Simple step implementation which analyzes a given pd.DataFrame."""
 
     # Manually defining the type of the output artifacts
     OUTPUT_SPEC = {"statistics": StatisticsArtifact, "schema": SchemaArtifact}
@@ -44,11 +46,12 @@ class PandasAnalyzer(BaseAnalyzerStep):
     ) -> Output(  # type:ignore[valid-type]
         statistics=pd.DataFrame, schema=pd.DataFrame
     ):
-        """Main entrypoint function for the pandas analyzer
+        """Main entrypoint function for the pandas analyzer.
 
         Args:
             dataset: pd.DataFrame, the given dataset
             config: the configuration of the step
+
         Returns:
             the statistics and the schema of the given dataframe
         """

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Metadata store for SQLite."""
+
 from pathlib import Path
 from typing import ClassVar, Union
 
@@ -32,7 +34,11 @@ class SQLiteMetadataStore(BaseMetadataStore):
 
     @property
     def local_path(self) -> str:
-        """Path to the local directory where the SQLite DB is stored."""
+        """Path to the local directory where the SQLite DB is stored.
+
+        Returns:
+            The path to the local directory where the SQLite DB is stored.
+        """
         return str(Path(self.uri).parent)
 
     def get_tfx_metadata_config(
@@ -41,12 +47,26 @@ class SQLiteMetadataStore(BaseMetadataStore):
         metadata_store_pb2.ConnectionConfig,
         metadata_store_pb2.MetadataStoreClientConfig,
     ]:
-        """Return tfx metadata config for sqlite metadata store."""
+        """Return tfx metadata config for sqlite metadata store.
+
+        Returns:
+            The tfx metadata config.
+        """
         return metadata.sqlite_metadata_connection_config(self.uri)
 
     @validator("uri")
     def ensure_uri_is_local(cls, uri: str) -> str:
-        """Ensures that the metadata store uri is local."""
+        """Ensures that the metadata store uri is local.
+
+        Args:
+            uri: The metadata store uri.
+
+        Returns:
+            The metadata store uri.
+
+        Raises:
+            ValueError: If the uri is not local.
+        """
         if io_utils.is_remote(uri):
             raise ValueError(
                 f"Uri '{uri}' specified for SQLiteMetadataStore is not a "

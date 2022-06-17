@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Flavor wrapper implementation."""
+
 from typing import Optional, Type
 
 from pydantic import BaseModel
@@ -24,8 +26,10 @@ from zenml.utils.source_utils import (
 
 
 class FlavorWrapper(BaseModel):
-    """Network serializable wrapper representing the custom implementation of
-    a stack component flavor."""
+    """Network serializable wrapper.
+
+    This represents the custom implementation of a stack component flavor.
+    """
 
     name: str
     type: StackComponentType
@@ -34,8 +38,11 @@ class FlavorWrapper(BaseModel):
 
     @property
     def reachable(self) -> bool:
-        """Property to which indicates whether ZenML can import the module
-        within the source."""
+        """Indicates whether ZenML can import the module within the source.
+
+        Returns:
+            True if the source is reachable, False otherwise.
+        """
         from zenml.integrations.registry import integration_registry
 
         if self.integration:
@@ -61,6 +68,9 @@ class FlavorWrapper(BaseModel):
 
         Args:
             flavor: the class which defines the flavor
+
+        Returns:
+            a FlavorWrapper
         """
         return FlavorWrapper(
             name=flavor.FLAVOR,
@@ -69,7 +79,14 @@ class FlavorWrapper(BaseModel):
         )
 
     def to_flavor(self) -> Type[StackComponent]:
-        """Imports and returns the class of the flavor."""
+        """Imports and returns the class of the flavor.
+
+        Returns:
+            the class of the flavor
+
+        Raises:
+            ImportError: if the flavor is not able to be imported.
+        """
         try:
             return load_source_path_class(source=self.source)  # noqa
         except (ModuleNotFoundError, ImportError, NotImplementedError):

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Huggingface TF model materializer."""
 
 import importlib
 import os
@@ -27,13 +28,20 @@ DEFAULT_TF_MODEL_DIR = "hf_tf_model"
 
 
 class HFTFModelMaterializer(BaseMaterializer):
-    """Materializer to read tensorflow model to and from huggingface pretrained model."""
+    """Materializer to read Tensorflow model to and from huggingface pretrained model."""
 
     ASSOCIATED_TYPES = (TFPreTrainedModel,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> TFPreTrainedModel:
-        """Reads HFModel"""
+        """Reads HFModel.
+
+        Args:
+            data_type: The type of the model to read.
+
+        Returns:
+            The model read from the specified dir.
+        """
         super().handle_input(data_type)
 
         config = AutoConfig.from_pretrained(
@@ -49,8 +57,9 @@ class HFTFModelMaterializer(BaseMaterializer):
 
     def handle_return(self, model: Type[Any]) -> None:
         """Writes a Model to the specified dir.
+
         Args:
-            TFPreTrainedModel: The TF Model to write.
+            model: The TF Model to write.
         """
         super().handle_return(model)
         temp_dir = TemporaryDirectory()

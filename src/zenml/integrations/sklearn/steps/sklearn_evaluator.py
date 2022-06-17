@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the sklearn evaluator step."""
 
 import pandas as pd
 from sklearn.base import BaseEstimator
@@ -23,14 +24,17 @@ from zenml.steps.step_interfaces.base_evaluator_step import (
 
 
 class SklearnEvaluatorConfig(BaseEvaluatorConfig):
-    """Config class for the sklearn evaluator"""
+    """Config class for the sklearn evaluator."""
 
     label_class_column: str
 
 
 class SklearnEvaluator(BaseEvaluatorStep):
-    """A simple step implementation which utilizes sklearn to evaluate the
-    performance of a given model on a given test dataset"""
+    """Simple sklearn evaluator step implementation.
+
+    This uses sklearn to evaluate the performance of a given model on a given
+    test dataset.
+    """
 
     def entrypoint(  # type: ignore[override]
         self,
@@ -38,12 +42,13 @@ class SklearnEvaluator(BaseEvaluatorStep):
         model: BaseEstimator,
         config: SklearnEvaluatorConfig,
     ) -> dict:  # type: ignore[type-arg]
-        """Method which is responsible for the computation of the evaluation
+        """Method which is responsible for the computation of the evaluation.
 
         Args:
             dataset: a pandas DataFrame which represents the test dataset
             model: a trained sklearn model
             config: the configuration for the step
+
         Returns:
             a dictionary which has the evaluation report
         """

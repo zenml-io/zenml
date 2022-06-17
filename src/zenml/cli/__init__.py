@@ -359,7 +359,7 @@ operator. If you wish to register a new step operator, do so with the
 `register` command:
 
 ```bash
-zenml step-operator register STEP_OPERATOR_NAME --type STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
+zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
 ```
 
 If you want the name of the current step operator, use the `get` command:
@@ -589,9 +589,20 @@ To see which stack is currently set as the default active stack, type:
 zenml stack get
 ```
 
-If you wish to transfer one of your stacks to another profile or even another
-machine, you can do so by exporting the stack configuration and then importing
-it again.
+If you want to copy a stack, run the following command:
+```shell
+zenml stack copy SOURCE_STACK_NAME TARGET_STACK_NAME
+```
+You can optionally specify profiles from which the stack should be copied 
+to and from:
+```shell
+zenml stack copy SOURCE_STACK_NAME TARGET_STACK_NAME \
+   [--from SOURCE_PROFILE_NAME] \
+   [--to TARGET_PROFILE_NAME]
+```
+
+If you wish to transfer one of your stacks to another machine, you can do so 
+by exporting the stack configuration and then importing it again.
 
 To export a stack to YAML, run the following command:
 
@@ -636,6 +647,18 @@ If you wish to rename your stack, use the following command:
 
 ```shell
 zenml stack rename STACK_NAME NEW_STACK_NAME
+```
+
+If you want to copy a stack component, run the following command:
+```bash
+zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME
+```
+You can optionally specify profiles from which the component should be copied 
+to and from:
+```bash
+zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME \
+   [--from SOURCE_PROFILE_NAME] \
+   [--to TARGET_PROFILE_NAME]
 ```
 
 If you wish to update a specific stack component, use the following command,
@@ -736,6 +759,49 @@ You can see a list of all current role assignments by running:
 ```bash
 zenml role assignment list
 ```
+
+Interacting with Model Deployers
+-----------------------------------------
+
+Model deployers are stack components responsible for online model serving.
+They are responsible for deploying models to a remote server. Model deployers
+also act as a registry for models that are served with ZenML. 
+
+If you wish to register a new model deployer, do so with the
+`register` command:
+
+```bash
+zenml model-deployer register MODEL_DEPLOYER_NAME --flavor=MODEL_DEPLOYER_FLAVOR [--OPTIONS]
+```
+
+If you wish to list the model-deployers that have already been registered
+within your ZenML project / repository, type:
+
+```bash
+zenml model-deployer list
+```
+
+If you wish to get more detailed information about a particular model deployer
+within your ZenML project / repository, type:
+
+```bash
+zenml model-deployer describe MODEL_DEPLOYER_NAME
+```
+
+If you wish to delete a particular model deployer, pass the name of the
+model deployers into the CLI with the following command:
+
+```bash
+zenml model-deployer delete MODEL_DEPLOYER_NAME
+```
+
+If you wish to retrieve logs corresponding to a particular model deployer, pass the name
+of the model deployer into the CLI with the following command:
+
+```bash
+zenml model-deployer logs MODEL_DEPLOYER_NAME
+```
+
 """
 
 from zenml.cli.base import *  # noqa

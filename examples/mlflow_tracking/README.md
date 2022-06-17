@@ -59,6 +59,21 @@ def tf_trainer(
     return model
 ```
 
+If you want to use this decorator with our class-based API, simply decorate your step class as follows:
+
+```python
+from zenml.integrations.mlflow.mlflow_step_decorator import enable_mlflow
+
+@enable_mlflow
+class TFTrainer(BaseStep):
+    def entrypoint(
+        self,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+    ) -> tf.keras.Model:
+        mlflow.tensorflow.autolog()
+        ...
+```
 # 🖥 Run it locally
 
 ## ⏩ SuperQuick `mlflow_tracking` run

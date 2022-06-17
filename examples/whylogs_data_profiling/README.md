@@ -58,6 +58,27 @@ def data_loader(
     return df, profile
 ```
 
+If you want to use this decorator with our class-based API, simply decorate your step class as follows:
+```python
+from zenml.integrations.whylogs.whylogs_step_decorator import enable_whylogs
+from zenml.steps import Output, BaseStep
+
+@enable_whylogs
+class DataLoader(BaseStep):
+    def entrypoint(
+        self,
+        context: StepContext,
+    ) -> Output(data=pd.DataFrame, profile=DatasetProfile,):
+        ...
+
+        # leverage the whylogs sub-context to generate a whylogs profile
+        profile = context.whylogs.profile_dataframe(
+            df, dataset_name="input_data", tags={"datasetId": "model-14"}
+        )
+
+        return df, profile
+```
+
 Additional whylogs profiling steps can also be created using the
 `whylogs_profiler_step` shortcut:
 

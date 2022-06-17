@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the TensorFlow Keras materializer."""
+
 import tempfile
 from typing import Any, Type
 
@@ -30,6 +32,9 @@ class KerasMaterializer(BaseMaterializer):
 
     def handle_input(self, data_type: Type[Any]) -> keras.Model:
         """Reads and returns a Keras model after copying it to temporary path.
+
+        Args:
+            data_type: The type of the data to read.
 
         Returns:
             A tf.keras.Model model.

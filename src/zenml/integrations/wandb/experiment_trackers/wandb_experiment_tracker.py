@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation for the wandb experiment tracker."""
+
 import os
 from contextlib import contextmanager
 from typing import ClassVar, Iterator, Optional, Tuple
@@ -79,6 +81,9 @@ class WandbExperimentTracker(BaseExperimentTracker):
             run_name: Name of the wandb run to create.
             tags: Tags to attach to the wandb run.
             settings: Additional settings for the wandb run.
+
+        Yields:
+            None
         """
         try:
             logger.info(
