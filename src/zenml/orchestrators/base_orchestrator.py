@@ -60,10 +60,6 @@ from zenml.orchestrators.utils import (
 from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.steps import BaseStep
-from zenml.steps.utils import (
-    INTERNAL_EXECUTION_PARAMETER_PREFIX,
-    PARAM_PIPELINE_PARAMETER_NAME,
-)
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -337,9 +333,6 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             DuplicateRunNameError: If the run name is already in use.
         """
-        step_name_param = (
-            INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
-        )
         pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
         start_time = time.time()
         logger.info(f"Step `{pipeline_step_name}` has started.")
