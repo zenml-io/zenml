@@ -140,9 +140,8 @@ class KubernetesOrchestrator(BaseOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            contexts, active_context = self.get_kubernetes_contexts()
-
             if not self.skip_context_checks:
+                contexts, active_context = self.get_kubernetes_contexts()
                 if self.kubernetes_context not in contexts:
                     return False, (
                         f"Could not find a Kubernetes context named "
