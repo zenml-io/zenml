@@ -16,6 +16,8 @@
 
 import argparse
 import json
+import socket
+from typing import List
 
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (
@@ -44,6 +46,41 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def patch_run_name_for_cron_scheduling(
+    run_name: str, fixed_step_args: List[str]
+) -> str:
+    """Adjust run_name at runtime according to the k8s orchestrator pod name.
+
+    This is required for scheduling via CRON jobs, since each job would
+    otherwise have the same run_name, which zenml does not support.
+
+    Args:
+        run_name: Initial run name.
+        fixed_step_args: Fixed entrypoint args for the step pods.
+            We also need to patch the run name in there.
+
+    Returns:
+        New unique run name.
+    """
+    # Get name of the orchestrator pod.
+    host_name = socket.gethostname()
+
+    # If we are not running as CRON job, we don't need to do anything.
+    if host_name == kube_utils.sanitize_pod_name(run_name):
+        return run_name
+
+    # Otherwise, define new run_name.
+    job_id = host_name.split("-")[-1]
+    run_name = f"{run_name}-{job_id}"
+
+    # Then also adjust run_name in fixed_step_args.
+    for i, arg in enumerate(fixed_step_args):
+        if arg == "--run_name":
+            fixed_step_args[i + 1] = run_name
+
+    return run_name
+
+
 def main() -> None:
     """Entrypoint of the k8s master/orchestrator pod."""
     # Log to the container's stdout so it can be streamed by the client.
@@ -60,6 +97,11 @@ def main() -> None:
     # Get k8s Core API for running kubectl commands later.
     core_api = kube_utils.make_core_v1_api()
 
+    # Patch run name (only needed for CRON scheduling)
+    run_name = patch_run_name_for_cron_scheduling(
+        args.run_name, fixed_step_args
+    )
+
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
 
@@ -67,7 +109,7 @@ def main() -> None:
             step_name (str): Name of the step.
         """
         # Define k8s pod name.
-        pod_name = f"{args.run_name}-{step_name}"
+        pod_name = f"{run_name}-{step_name}"
         pod_name = kube_utils.sanitize_pod_name(pod_name)
 
         # Build list of args for this step.
@@ -76,7 +118,7 @@ def main() -> None:
         # Define k8s pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
-            run_name=args.run_name,
+            run_name=run_name,
             pipeline_name=args.pipeline_name,
             image_name=args.image_name,
             command=step_command,
