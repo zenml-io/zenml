@@ -101,7 +101,7 @@ def build_cron_job_manifest(
         service_account_name=service_account_name,
     )
     return {
-        "apiVersion": "batch/v1",
+        "apiVersion": "batch/v1beta1",
         "kind": "CronJob",
         "metadata": pod_manifest["metadata"],
         "spec": {

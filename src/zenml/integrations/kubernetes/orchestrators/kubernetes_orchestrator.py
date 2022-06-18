@@ -33,6 +33,7 @@
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 
+from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
@@ -342,7 +343,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 args=args,
                 service_account_name=service_account_name,
             )
-            batch_api = kube_utils.make_batch_v1_api()
+            batch_api = k8s_client.BatchV1beta1Api()
             batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest, namespace=self.kubernetes_namespace
             )
