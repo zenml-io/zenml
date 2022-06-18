@@ -345,21 +345,8 @@ class BaseOrchestrator(StackComponent, ABC):
         logger.info(f"Step `{pipeline_step_name}` has started.")
         try:
             execution_info = tfx_launcher.launch()
-
             if execution_info and get_cache_status(execution_info):
-                if execution_info.exec_properties:
-                    step_name = json.loads(
-                        execution_info.exec_properties[step_name_param]
-                    )
-                    logger.info(
-                        f"Using cached version of `{pipeline_step_name}` "
-                        f"[`{step_name}`].",
-                    )
-                else:
-                    logger.error(
-                        f"No execution properties found for step "
-                        f"`{pipeline_step_name}`."
-                    )
+                logger.info(f"Using cached version of `{pipeline_step_name}`.")
         except RuntimeError as e:
             if "execution has already succeeded" in str(e):
                 # Hacky workaround to catch the error that a pipeline run with
