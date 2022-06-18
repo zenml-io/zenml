@@ -77,7 +77,7 @@ def main(
 
     """
     model_name = "mnist"
-    deployment_pipeline_name = "kserve_pytorch_deployment_pipeline"
+    deployment_pipeline_name = "kserve_pytorch_pipeline"
     deployer_step_name = "kserve_pytorch_model_deployer_step"
 
     custom_model_deployer = KServeModelDeployer.get_active_model_deployer()
