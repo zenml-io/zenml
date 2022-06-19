@@ -528,11 +528,8 @@ class KServeDeploymentService(BaseService):
         if not self.is_running:
             return None
 
-        # TODO[HIGH]: return correct KServe prediction URLs
-        namespace = self._get_client().namespace
-        return os.path.join(
-            f"http://{self.crd_name}.{namespace}.example.com:predict",
-        )
+        namespace = self._get_namespace()
+        return f"http://{self.crd_name}.{namespace}.example.com:predict"
 
     def predict(self, request: "NDArray[Any]") -> "NDArray[Any]":
         """Make a prediction using the service.

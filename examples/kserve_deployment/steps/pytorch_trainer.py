@@ -18,6 +18,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from pytorch.net import Net
+from rich import print
 from torch.utils.data import DataLoader
 
 from zenml.steps import BaseStepConfig, step

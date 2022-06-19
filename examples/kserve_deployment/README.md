@@ -286,7 +286,7 @@ Set up a namespace for ZenML KServe workloads:
 kubectl create ns zenml-workloads
 ```
 
-Extract the URL where the Seldon Core model server exposes its prediction API, e.g.:
+Extract the URL where the KServe model server exposes its prediction API, e.g.:
 
 ```bash
 export INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
@@ -350,19 +350,78 @@ $ zenml secret get kserve_secret
 ┗━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 
-## 🖥 Scikit-Learn Pipeline Example
+## 🔦 Run Scikit-Learn Pipeline
 
+[MLServer](https://github.com/SeldonIO/MLServer) is a Python library that aims to provide an easy way to start 
+serving your machine learning models through a REST and gRPC interface. Out of the box, MLServer comes with 
+a set of pre-packaged runtimes which let you interact with a subset of common frameworks.
+(e.g. Scikit-Learn, XGBoost, LightGBM, MLflow etc.)
 
+The Sickit-Learn pipeline consists of the following steps:
+* importer - Load the MNIST handwritten digits dataset from the Sickit-Learn library
+* train - Train a Support Vector Classifier model using the training dataset.
+* evaluate - Evaluate the model using the test dataset.
+* deployment_trigger - Verify if the newly trained model exceeds the threshold and if so, deploy the model.
+* model_deployer - Deploy the Sickit-Learn model to the KServe model server using the SKLearn MLServer runtime. the model_deployer is a ZenML built-in step that takes care of the preparing of the model to the right format for the runtime servers. In this case, the ZenML will be saving a file with name `model.joblib` in the artifact store which is the format that the runtime servers expect.
 
-## 🖥 PyTorch Pipeline Example
+### 🏃️ Run the code
+To run the training/deployment Sickit-Learn pipeline:
+
+```shell
+python run.py
+```
+
+Example output when run with the local orchestrator stack:
+
+```shell
+Creating run for pipeline: kserve_sklearn_pipeline
+Cache enabled for pipeline kserve_sklearn_pipeline
+Using stack gcp_stack_kserve to run pipeline kserve_sklearn_pipeline...
+Step importer has started.
+Using cached version of importer [importer].
+Step `importer` has finished in 0.051s.
+Step `trainer` has started.
+Step `trainer` has finished in 11.972s.
+Step `evaluator` has started.
+Test `accuracy`: 0.9688542825361512
+Step `evaluator` has finished in 4.440s.
+Step `deployment_trigger` has started.
+Step `deployment_trigger` has finished in 3.847s.
+Step `kserve_model_deployer_step` has started.
+INFO:kserve.api.creds_utils:Created Secret: kserve-secret-d5zwr in namespace kserve-test
+INFO:kserve.api.creds_utils:Patched Service account: kserve-service-credentials in namespace kserve-test
+Creating a new KServe deployment service: KServeDeploymentService[7a1d22c1-3892-4cfc-83dc-b89e22cbc743] (type: model-serving, flavor: kserve)
+KServe deployment service started and reachable at:
+    http://35.196.207.240:80/v1/models/zenml-7a1d22c1:predict
+    With the hostname: http://zenml-7a1d22c1.zenml-workloads.example.com:predict.
+Step `kserve_model_deployer_step` has finished in 23.944s.
+Pipeline run kserve_sklearn_pipeline-20_Jun_22-00_03_43_072385 has finished in 45.404s.
+``` 
+To stop the service, re-run the same command and supply the `--stop-service` argument.
+
+## 🖥 Run PyTorch Pipeline
 
 As Pytorch becomes more of a standard framework for writing Computer Vision
 and Natural Language Processing models, especially in the research domain,
 it is becoming more and more important to have a robust and easy to not only 
 [build ML pipelines with Pytorch](../pytorch/) but also to deploy the models built with it.
 
-[TorchServe](https://torchserve.github.io/website) is an open-source model serving framework for PyTorch
-that makes it easy to deploy Pytorch models at a production scale with low latency and high throughput.
-it provides default handlers for the most common applications such as object detection and text classification, 
-so you can write as little code as possible to deploy your custom models.
+[TorchServe](https://torchserve.github.io/website) is an open-source model serving 
+framework for PyTorch that makes it easy to deploy Pytorch models at a production 
+scale with low latency and high throughput, it provides default handlers for the most 
+common applications such as object detection and text classification, so you can write
+as little code as possible to deploy your custom models.
 
+The Pytorch pipeline consists of the following steps:
+* importer - Load the MNIST handwritten digits dataset from the torchvision library
+* train - Train a neural network using the training set. The network is defined in the `net.py` file in pytorch folder.
+* evaluate - Evaluate the model using the test set.
+* deployment_trigger - Verify if the newly trained model exceeds the threshold and if so, deploy the model.
+* model_deployer - Deploy the trained model to the KServe model server using the TorchServe runtime.
+just like the SKLearn MLServer runtime, the model_deployer is a ZenML built-in step that takes care of the preparing of the model to the right format for the runtime servers. But in this case, the user must provide some extra files to the config parameters of the model_deployer step.
+Part of the parameters that TorchServe expects are:
+    - `model_class_file`:   Python script containing model architecture class.
+    - `handler`:            TorchServe's handler file to handle custom TorchServe inference logic.
+    - `torch_config`:       TorchServe configuration file. By default, ZenML generates a config file for you. You can also provide your config file.
+
+For more information about the TorchServe runtime, please refer to the [TorchServe InferenceService](https://kserve.github.io/website/0.8/modelserving/v1beta1/torchserve/#create-the-torchserve-inferenceservice). Or the [TorchServe Github Repository](https://github.com/pytorch/serve).

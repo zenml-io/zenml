@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import numpy as np
+from rich import print
 from sklearn.base import ClassifierMixin
 
 from zenml.steps import step

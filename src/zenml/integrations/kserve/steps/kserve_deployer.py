@@ -12,8 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the KServe Deployer step."""
-
-
 import os
 from typing import cast
 
@@ -67,7 +65,7 @@ def kserve_model_deployer_step(
     """KServe model deployer pipeline step.
 
     This step can be used in a pipeline to implement continuous
-    deployment for a ML model with KServe.
+    deployment for an ML model with KServe.
 
     Args:
         deploy_decision: whether to deploy the model or not

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import numpy as np
 from sklearn.base import ClassifierMixin
+from sklearn.svm import SVC
 
 from zenml.integrations.sklearn.helpers.digits import get_digits_model
 from zenml.steps import step
@@ -25,5 +26,6 @@ def trainer(
 ) -> ClassifierMixin:
     """Train a simple sklearn classifier for the digits dataset."""
     model = get_digits_model()
+    model = SVC(gamma=0.001)
     model.fit(X_train, y_train)
     return model
