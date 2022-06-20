@@ -17,12 +17,7 @@ import re
 from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
-from kserve import (  # type: ignore[import]
-    KServeClient,
-    V1beta1InferenceService,
-    constants,
-    utils,
-)
+from kserve import KServeClient, V1beta1InferenceService, constants, utils
 from kubernetes import client
 
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR

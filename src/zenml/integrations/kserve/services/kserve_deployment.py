@@ -20,7 +20,7 @@ from uuid import UUID
 
 import numpy as np
 import requests
-from kserve import (  # type: ignore[import]
+from kserve import (
     KServeClient,
     V1beta1InferenceService,
     V1beta1InferenceServiceSpec,
@@ -209,7 +209,7 @@ class KServeDeploymentService(BaseService):
                 "No active KServe model deployer is present in the active "
                 "stack. Please make sure that a KServe model deployer is "
                 "present in the active stack."
-            )  # type: ignore
+            )
         return model_deployer
 
     def _get_client(self) -> KServeClient:

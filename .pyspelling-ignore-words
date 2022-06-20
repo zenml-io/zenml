@@ -62,6 +62,7 @@ CLI
 CLIs
 CRD
 CWD
+CNAME
 CalledProcessError
 CamelCase
 ChatOps
@@ -170,6 +171,7 @@ InitializationException
 Initializations
 IntegrationError
 Intitialization
+inferenceservices
 Istio
 Itemwise
 Iterable
@@ -184,9 +186,12 @@ KeyError
 keyRings
 kr
 Kubeflow
+Knative
+knative
 KubeflowMetadataStore
 KubeflowOrchestrator
 Kubernetes
+KServeDeploymentService
 LLC
 LegacyVersion
 LightGBM
@@ -197,6 +202,7 @@ LocalDaemonServiceConfig
 LocalExample
 LogRecord
 LookupError
+LATESTREADYREVISION
 MERCHANTABILITY
 MLFlowDeployerConfig
 MLFlowDeploymentConfig
@@ -211,6 +217,7 @@ MLServer
 MLflow
 MNIST
 MSI
+MXNet
 MYSQLSecretSchema
 MacOS
 MachineSpec
@@ -314,6 +321,7 @@ SVC
 Sagemaker
 Sagemaker's
 Sauron
+Sickit
 SchemaArtifact
 SciPy
 SecondStep
@@ -339,6 +347,7 @@ SingletonMetaClass
 SlackAlerter
 SleepingDaemon
 SleepingDaemonConfig
+SKLearn
 SqlZenStore
 StackComponent
 StackComponentConfiguration
@@ -382,6 +391,7 @@ TensorBoardInfo
 TheMatrix
 Tokenize
 Tokenizer
+TorchVision
 TypeError
 UI
 UID

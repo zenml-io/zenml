@@ -2,12 +2,12 @@
 
 [KServe](https://kserve.github.io/website) is a Kubernetes-based Model inference platform
 built for highly scalable deployment use cases, it provides a standardized inference protocol 
-across ML frameworks while supporting a serverless architecture with Autoscaling including Scale to Zero on GPU.
+across ML frameworks while supporting a serverless architecture with autoscaling including Scale to Zero on GPU.
 KServe Uses a simple and pluggable production serving for production ML serving that includes 
 prediction, pre/post-processing, monitoring and explainability.
 
 Following the deployment story with ZenML that already covers a local deployment with 
-[MLFlow Deployment Example](../mlflow_deployment/) and a [Seldon Core Deployment Example](../seldon_deployment/) 
+[MLflow Deployment Example](../mlflow_deployment/) and a [Seldon Core Deployment Example](../seldon_deployment/) 
 as the production-grade model deployer in Kubernetes environment. The next tool that gets added to our deployment 
 integrations is [KServe]() which is a Kubernetes-based Model inference platform just like Seldon Core.
 
@@ -36,7 +36,7 @@ in the cluster and giving the path to KServe as the model uri with the right per
 By default, ZenML's KServe integration will try to cover that for you 
 by automatically loading, preparing and then saving files to the Artifact Store 
 active in the ZenML stack. However, for some frameworks (e.g. Pytorch) you will still need 
-to provide some additional files that Runtimes Server needs to be able to run the model. 
+to provide some additional files that Runtime Server needs to be able to run the model. 
 
 The KServe deployment server is provisioned remotely as a Kubernetes
 resource that continues to run after the deployment pipeline run is complete.
@@ -413,8 +413,8 @@ common applications such as object detection and text classification, so you can
 as little code as possible to deploy your custom models.
 
 The Pytorch pipeline consists of the following steps:
-* importer - Load the MNIST handwritten digits dataset from the torchvision library
-* train - Train a neural network using the training set. The network is defined in the `net.py` file in pytorch folder.
+* importer - Load the MNIST handwritten digits dataset from the TorchVision library
+* train - Train a neural network using the training set. The network is defined in the `net.py` file in the Pytorch folder.
 * evaluate - Evaluate the model using the test set.
 * deployment_trigger - Verify if the newly trained model exceeds the threshold and if so, deploy the model.
 * model_deployer - Deploy the trained model to the KServe model server using the TorchServe runtime.
