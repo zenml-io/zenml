@@ -1,4 +1,4 @@
-# 🚀 Pytorch Models Deployment with KServe and TorchServe 
+# 🚀 KServe Deployment Example - Sickit-Learn and Pytorch Examples 🚀
 
 [KServe](https://kserve.github.io/website) is a Kubernetes-based Model inference platform
 built for highly scalable deployment use cases, it provides a standardized inference protocol 
