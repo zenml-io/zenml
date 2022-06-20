@@ -216,10 +216,10 @@ def register_secret(
                 "predefined keys. Entering interactive mode:"
             )
             while True:
-                k = click.prompt("Please enter a secret-key")
+                k = click.prompt("Please enter a secret key")
                 if k not in secret_contents:
                     v = getpass.getpass(
-                        f"Please enter the secret_value for the key [{k}]:"
+                        f"Please enter the secret value for the key [{k}]:"
                     )
                     secret_contents[k] = expand_argument_value_from_file(
                         name=k, value=v
