@@ -162,14 +162,14 @@ class AWSSecretsManager(BaseSecretsManager):
             SecretId=secret_name, ForceDeleteWithoutRecovery=False
         )
 
-    def delete_all_secrets(self, force: bool = False) -> None:
+    def delete_all_secrets(self) -> None:
         """Delete all existing secrets.
 
-        Args:
-            force: whether to force delete all secrets
+        This method will force delete all your secrets. You will not be able to
+        recover them once this method is called.
         """
         self._ensure_client_connected(self.region_name)
         for secret_name in self.get_all_secret_keys():
             self.CLIENT.delete_secret(
-                SecretId=secret_name, ForceDeleteWithoutRecovery=force
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
             )
