@@ -497,7 +497,7 @@ def format_date(
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
-def _expand_argument_value_from_file(name: str, value: str) -> str:
+def expand_argument_value_from_file(name: str, value: str) -> str:
     """Expands the value of an argument pointing to a file into the contents of that file.
 
     Args:
@@ -572,7 +572,7 @@ def parse_unknown_options(
 
     if expand_args:
         args_dict = {
-            k: _expand_argument_value_from_file(k, v)
+            k: expand_argument_value_from_file(k, v)
             for k, v in args_dict.items()
         }
 
