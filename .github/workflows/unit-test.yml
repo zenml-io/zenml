@@ -41,7 +41,7 @@ jobs:
       - name: Install Prerequisites
         run: |
           source $VENV
-          zenml integration install kubeflow s3 gcp azure gcp_secrets_manager vertex -f
+          zenml integration install kubeflow s3 gcp azure gcp_secrets_manager vertex vault -f
 
 
       - name: Setup tmate session
