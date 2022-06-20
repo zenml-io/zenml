@@ -43,6 +43,7 @@ class StackComponentType(StrEnum):
     """All possible types a `StackComponent` can have."""
 
     ALERTER = "alerter"
+    ANNOTATOR = "annotator"
     ORCHESTRATOR = "orchestrator"
     METADATA_STORE = "metadata_store"
     ARTIFACT_STORE = "artifact_store"

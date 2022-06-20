@@ -11,3 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base class for ZenML annotator stack components."""
+
+from abc import ABC, abstractmethod
+from typing import ClassVar
+
+from zenml.enums import StackComponentType
+from zenml.stack import StackComponent
+
+
+class BaseAnnotator(StackComponent, ABC):
+    """Base class for all ZenML annotators."""
+
+    # Class configuration
+    TYPE: ClassVar[StackComponentType] = StackComponentType.ANNOTATOR
+    FLAVOR: ClassVar[str]
+
+    @abstractmethod
+    def get_url(self) -> str:
+        """Gets the URL of the annotation interface."""
