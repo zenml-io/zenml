@@ -73,8 +73,8 @@ pip install zenml
 zenml integration install gcp
 
 # pull example
-zenml example pull huggingface
-cd zenml_examples/huggingface
+zenml example pull vertex_ai_orchestration
+cd zenml_examples/vertex_ai_orchestration
 
 # Create a zenml repository
 zenml init
