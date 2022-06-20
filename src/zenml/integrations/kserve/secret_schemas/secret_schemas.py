@@ -29,8 +29,6 @@ KSERVE_AZUREBLOB_SECRET_SCHEMA_TYPE = "kserve_az"
 class KServeS3SecretSchema(BaseSecretSchema):
     """KServe S3 credentials.
 
-    Based on: https://rclone.org/s3/#amazon-s3
-
     Attributes:
         storage_type: the storage type. Must be set to "s3" for this schema.
         namespace: the kubernetes namespace where secrets are stored.
@@ -58,8 +56,6 @@ class KServeS3SecretSchema(BaseSecretSchema):
 class KServeGSSecretSchema(BaseSecretSchema):
     """KServe GCS credentials.
 
-    Based on: https://rclone.org/googlecloudstorage/
-
     Attributes:
         storage_type: the storage type. Must be set to "GCS" for this schema.
         namespace: the namespace.
@@ -78,8 +74,6 @@ class KServeGSSecretSchema(BaseSecretSchema):
 @register_secret_schema_class
 class KServeAzureSecretSchema(BaseSecretSchema):
     """KServe Azure Blob Storage credentials.
-
-    Based on: https://rclone.org/azureblob/
 
     Attributes:
         storage_type: the storage type. Must be set to "GCS" for this schema.
