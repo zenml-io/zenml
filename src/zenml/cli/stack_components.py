@@ -643,9 +643,13 @@ def generate_stack_component_update_command(
                 else:
                     continue
 
-            updated_component = component_wrapper.to_component().copy(
-                update=parsed_args
-            )
+            # Initialize a new component object to make sure pydantic validation
+            # is used
+            new_attributes = {
+                **component_wrapper.to_component().dict(),
+                **parsed_args,
+            }
+            updated_component = component_class(**new_attributes)
 
             repo.update_stack_component(
                 name, updated_component.TYPE, updated_component
@@ -721,9 +725,12 @@ def generate_stack_component_remove_attribute_command(
                         f"'{', '.join(optional_attributes)}'."
                     )
 
-            updated_component = current_component.copy(
-                update={arg: None for arg in parsed_args}
-            )
+            # Remove the attributes from the current component dict
+            new_attributes = current_component.dict()
+            for arg in parsed_args:
+                new_attributes.pop(arg, None)
+
+            updated_component = current_component.__class__(**new_attributes)
 
             repo.update_stack_component(
                 name, updated_component.TYPE, updated_component

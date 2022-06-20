@@ -102,7 +102,6 @@ def generate_dockerfile_contents(
     if entrypoint:
         lines.append(f"ENTRYPOINT {entrypoint}")
 
-    print(lines)
     return "\n".join(lines)
 
 
