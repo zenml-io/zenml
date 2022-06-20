@@ -88,7 +88,7 @@ def generate_dockerfile_contents(
 
     if requirements:
         # Quote the requirements to avoid problems with special characters
-        requirements = [f"'{r}'" for r in requirements]
+        requirements = {f"'{r}'" for r in requirements}
         lines.append(
             f"RUN pip install --no-cache {' '.join(sorted(requirements))}"
         )
