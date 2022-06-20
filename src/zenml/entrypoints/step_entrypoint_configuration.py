@@ -272,7 +272,7 @@ class StepEntrypointConfiguration(ABC):
             STEP_SOURCE_OPTION,
             # Base64 encoded json representation of the parent pipeline of
             # the step that will be executed. This is needed in order to create
-            # the tfx launcher in the entrypoint that will run the ZenML step.
+            # the launcher in the entrypoint that will run the ZenML step.
             PIPELINE_JSON_OPTION,
             # Base64 encoded json dictionary mapping the step input names to
             # importable sources pointing to
