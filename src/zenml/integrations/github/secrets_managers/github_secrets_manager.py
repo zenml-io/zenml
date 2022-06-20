@@ -375,11 +375,7 @@ class GitHubSecretsManager(BaseSecretsManager):
         full_secret_name = _convert_secret_name(secret_name, add_prefix=True)
         self._send_request("DELETE", resource=f"/{full_secret_name}")
 
-    def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete all existing secrets.
-
-        Args:
-            force: Whether to force deletion of secrets.
-        """
+    def delete_all_secrets(self) -> None:
+        """Delete all existing secrets."""
         for secret_name in self.get_all_secret_keys(include_prefix=False):
             self.delete_secret(secret_name=secret_name)

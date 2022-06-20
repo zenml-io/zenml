@@ -63,7 +63,7 @@ class BaseSecretsManager(StackComponent, ABC):
         """Delete an existing secret."""
 
     @abstractmethod
-    def delete_all_secrets(self, force: bool = False) -> None:
+    def delete_all_secrets(self) -> None:
         """Delete all existing secrets."""
 ```
 
