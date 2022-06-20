@@ -12,11 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Running ZenML Pipelines from Code."""
-import os
 import textwrap
 import types
 from typing import Any, Dict
 
+from zenml import constants
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
     SourceConfigurationKeys,
@@ -24,6 +24,7 @@ from zenml.config.config_keys import (
 )
 from zenml.exceptions import PipelineConfigurationError
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.utils import source_utils, yaml_utils
 
@@ -43,96 +44,105 @@ def run_pipeline(python_file: str, config_path: str) -> None:
     # If the file was run with `python run.py, this would happen automatically.
     #  In order to allow seamless switching between running directly and through
     #  zenml, this is done at this point
-    with source_utils.prepend_python_path(
-        os.path.abspath(os.path.dirname(python_file))
-    ):
-        module = source_utils.import_python_file(python_file)
-        config = yaml_utils.read_yaml(config_path)
-        PipelineConfigurationKeys.key_check(config)
+    zenml_root = Repository().root
+    if not zenml_root:
+        raise RuntimeError(
+            "The `run_pipeline` function can only be called "
+            "within a zenml repo. Run `zenml init` before "
+            "running a pipeline using `run_pipeline`."
+        )
 
-        pipeline_name = config[PipelineConfigurationKeys.NAME]
-        pipeline_class = _get_module_attribute(module, pipeline_name)
+    module = source_utils.import_python_file(python_file, str(zenml_root))
+    config = yaml_utils.read_yaml(config_path)
+    PipelineConfigurationKeys.key_check(config)
 
-        steps = {}
-        for step_name, step_config in config[
-            PipelineConfigurationKeys.STEPS
-        ].items():
-            StepConfigurationKeys.key_check(step_config)
-            source = step_config[StepConfigurationKeys.SOURCE_]
-            step_class = _load_class_from_module(module, source)
+    pipeline_name = config[PipelineConfigurationKeys.NAME]
+    pipeline_class = _get_module_attribute(module, pipeline_name)
 
-            # It is necessary to support passing step instances for standard
-            #  step implementations (e.g WhylogsProfilerStep) in order to
-            #  support using the same step multiple  times, once this problem is
-            #  solved, this portion of the code can be simplified to only
-            #  support classes.
-            if not isinstance(step_class, BaseStep):
-                step_instance = step_class()
-            else:
-                step_instance = step_class
+    # For docker-based orchestrators it is important for the supplied python
+    #  module to be set as the main module instead of the calling process
+    constants.USER_MAIN_MODULE = source_utils.get_module_source_from_module(
+        module=module
+    )
 
-            materializers_config = step_config.get(
-                StepConfigurationKeys.MATERIALIZERS_, None
-            )
-            if materializers_config:
-                # We need to differentiate whether it's a single materializer
-                # or a dictionary mapping output names to materializers
-                if isinstance(materializers_config, str):
-                    correct_input = textwrap.dedent(
-                        f"""
-                    {SourceConfigurationKeys.NAME_}: {materializers_config}
-                    {SourceConfigurationKeys.FILE_}: optional/filepath.py
-                    """
-                    )
+    steps = {}
+    for step_name, step_config in config[
+        PipelineConfigurationKeys.STEPS
+    ].items():
+        StepConfigurationKeys.key_check(step_config)
+        source = step_config[StepConfigurationKeys.SOURCE_]
+        step_class = _load_class_from_module(module, source, str(zenml_root))
 
-                    raise PipelineConfigurationError(
-                        "As of ZenML version 0.8.0 `str` entries are no "
-                        "longer supported "
-                        "to define steps or materializers. Instead you will "
-                        "now need to "
-                        "pass a dictionary. This dictionary **has to** "
-                        "contain a "
-                        f"`{SourceConfigurationKeys.NAME_}` which refers to "
-                        f"the function/"
-                        "class name. If this entity is defined outside the "
-                        "main module,"
-                        "you will need to additionally supply a "
-                        f"{SourceConfigurationKeys.FILE_} with the relative "
-                        f"forward-slash-"
-                        "separated path to the file. \n"
-                        f"You tried to pass in `{materializers_config}` "
-                        f"- however you should have specified the name "
-                        f"(and file) like this: \n "
-                        f"{correct_input}"
-                    )
-                elif isinstance(materializers_config, dict):
-                    materializers = {
-                        output_name: _load_class_from_module(module, source)
-                        for output_name, source in materializers_config.items()
-                    }
-                else:
-                    raise PipelineConfigurationError(
-                        f"Only `str` and `dict` values are allowed for "
-                        f"'materializers' attribute of a step configuration. "
-                        f"You tried to pass in `{materializers_config}` (type: "
-                        f"`{type(materializers_config).__name__}`)."
-                    )
-                step_instance = step_instance.with_return_materializers(
-                    materializers
+        # It is necessary to support passing step instances for standard
+        #  step implementations (e.g WhylogsProfilerStep) in order to
+        #  support using the same step multiple  times, once this problem is
+        #  solved, this portion of the code can be simplified to only
+        #  support classes.
+        if not isinstance(step_class, BaseStep):
+            step_instance = step_class()
+        else:
+            step_instance = step_class
+
+        materializers_config = step_config.get(
+            StepConfigurationKeys.MATERIALIZERS_, None
+        )
+        if materializers_config:
+            # We need to differentiate whether it's a single materializer
+            # or a dictionary mapping output names to materializers
+            if isinstance(materializers_config, str):
+                correct_input = textwrap.dedent(
+                    f"""
+                {SourceConfigurationKeys.NAME_}: {materializers_config}
+                {SourceConfigurationKeys.FILE_}: optional/filepath.py
+                """
                 )
 
-            steps[step_name] = step_instance
-        pipeline_instance = pipeline_class(**steps).with_config(
-            config_path, overwrite_step_parameters=True
-        )
-        logger.debug(
-            "Finished setting up pipeline '%s' from CLI", pipeline_name
-        )
-        pipeline_instance.run()
+                raise PipelineConfigurationError(
+                    "As of ZenML version 0.8.0 `str` entries are no "
+                    "longer supported "
+                    "to define steps or materializers. Instead you will "
+                    "now need to "
+                    "pass a dictionary. This dictionary **has to** "
+                    "contain a "
+                    f"`{SourceConfigurationKeys.NAME_}` which refers to "
+                    f"the function/"
+                    "class name. If this entity is defined outside the "
+                    "main module,"
+                    "you will need to additionally supply a "
+                    f"{SourceConfigurationKeys.FILE_} with the relative "
+                    f"forward-slash-"
+                    "separated path to the file. \n"
+                    f"You tried to pass in `{materializers_config}` "
+                    f"- however you should have specified the name "
+                    f"(and file) like this: \n "
+                    f"{correct_input}"
+                )
+            elif isinstance(materializers_config, dict):
+                materializers = {
+                    output_name: _load_class_from_module(module, source)
+                    for output_name, source in materializers_config.items()
+                }
+            else:
+                raise PipelineConfigurationError(
+                    f"Only `str` and `dict` values are allowed for "
+                    f"'materializers' attribute of a step configuration. "
+                    f"You tried to pass in `{materializers_config}` (type: "
+                    f"`{type(materializers_config).__name__}`)."
+                )
+            step_instance = step_instance.with_return_materializers(
+                materializers
+            )
+
+        steps[step_name] = step_instance
+    pipeline_instance = pipeline_class(**steps).with_config(
+        config_path, overwrite_step_parameters=True
+    )
+    logger.debug("Finished setting up pipeline '%s' from CLI", pipeline_name)
+    pipeline_instance.run()
 
 
 def _load_class_from_module(
-    module: types.ModuleType, config_item: Dict[str, str]
+    module: types.ModuleType, config_item: Dict[str, str], zen_root: str
 ) -> Any:
     """Load a class from a module.
 
@@ -146,6 +156,7 @@ def _load_class_from_module(
                         - it will have a function/class name and
                         optionally a relative filepath
                         (e.g {`file`: `steps/steps.py`, `name`: `step_name`}
+        zen_root: Absolute path of the zenml root.
 
     Returns:
         The imported function/class
@@ -156,7 +167,7 @@ def _load_class_from_module(
     if isinstance(config_item, dict):
         if SourceConfigurationKeys.FILE_ in config_item:
             module = source_utils.import_python_file(
-                config_item[SourceConfigurationKeys.FILE_]
+                config_item[SourceConfigurationKeys.FILE_], zen_root=zen_root
             )
 
         implementation_name = config_item[SourceConfigurationKeys.NAME_]

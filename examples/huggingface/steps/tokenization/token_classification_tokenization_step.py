@@ -12,11 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datasets import DatasetDict
+from steps.configuration import HuggingfaceConfig
 from transformers import PreTrainedTokenizerBase
 
 from zenml.steps import step
-
-from ..configuration import HuggingfaceConfig
 
 
 @step

@@ -13,10 +13,13 @@
 #  permissions and limitations under the License.
 import tensorflow as tf
 from datasets import DatasetDict
-from transformers import TFPreTrainedModel, PreTrainedTokenizerBase, \
-    DataCollatorWithPadding
+from steps.configuration import HuggingfaceConfig
+from transformers import (
+    DataCollatorWithPadding,
+    PreTrainedTokenizerBase,
+    TFPreTrainedModel,
+)
 
-from ..configuration import HuggingfaceConfig
 from zenml.steps import step
 
 

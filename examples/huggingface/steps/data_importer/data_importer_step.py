@@ -11,20 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Union
 
 from datasets import DatasetDict, load_dataset
+from steps.configuration import HuggingfaceConfig
 
-from ..configuration import (
-    HuggingfaceConfig
-)
 from zenml.steps import step
 
 
 @step
-def data_importer(
-    config: HuggingfaceConfig
-) -> DatasetDict:
+def data_importer(config: HuggingfaceConfig) -> DatasetDict:
     """Load dataset using huggingface datasets"""
     datasets = load_dataset(config.dataset_name)
     print("Sample Example :", datasets["train"][7])

@@ -11,18 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import TYPE_CHECKING, Union
 
-from transformers import PreTrainedTokenizerBase, AutoTokenizer
+from steps.configuration import HuggingfaceConfig
+from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from zenml.steps import step
 
-from ..configuration import HuggingfaceConfig
 
 @step
-def load_tokenizer(
-    config: HuggingfaceConfig
-) -> PreTrainedTokenizerBase:
+def load_tokenizer(config: HuggingfaceConfig) -> PreTrainedTokenizerBase:
     """Load pretrained tokenizer"""
     tokenizer = AutoTokenizer.from_pretrained(config.pretrained_model)
     return tokenizer

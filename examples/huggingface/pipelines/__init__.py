@@ -12,11 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from .sequence_classifier_pipeline.sequence_classifier_pipeline import (
-    seq_classifier_train_eval_pipeline
+    seq_classifier_train_eval_pipeline,
 )
 from .token_classifier_pipeline.token_classifier_pipeline import (
-    token_classifier_train_eval_pipeline
+    token_classifier_train_eval_pipeline,
 )
 
-__all__ = ["seq_classifier_train_eval_pipeline",
-           "token_classifier_train_eval_pipeline"]
+__all__ = [
+    "seq_classifier_train_eval_pipeline",
+    "token_classifier_train_eval_pipeline",
+]

@@ -23,8 +23,8 @@ class HuggingfaceConfig(BaseStepConfig):
     dummy_run = True
     init_lr = 2e-5
     weight_decay_rate = 0.01
-    text_column = "tokens"      # "text" for Sequence
-    label_column = "ner_tags"   # "label" for Sequence
-    label_all_tokens = True     # Irrelevant for Sequence
+    text_column = "tokens"  # "text" for Sequence
+    label_column = "ner_tags"  # "label" for Sequence
+    label_all_tokens = True  # Irrelevant for Sequence
     dataset_name = "conll2003"  # "imdb" for Sequence
-    max_seq_length = 128        # Irrelevant for Token Classification
+    max_seq_length = 128  # Irrelevant for Token Classification

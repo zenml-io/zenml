@@ -12,17 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from datasets import DatasetDict
+from steps.configuration import HuggingfaceConfig
 from transformers import (
+    DataCollatorForTokenClassification,
     PreTrainedTokenizerBase,
-    TFPreTrainedModel,
     TFAutoModelForTokenClassification,
+    TFPreTrainedModel,
     create_optimizer,
-    DataCollatorForTokenClassification
 )
 
 from zenml.steps import step
 
-from ..configuration import HuggingfaceConfig
 
 @step
 def token_trainer(

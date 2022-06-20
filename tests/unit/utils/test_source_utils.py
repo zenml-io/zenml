@@ -68,7 +68,7 @@ def test_prepend_python_path():
     path_element = "definitely_not_part_of_pythonpath"
 
     assert path_element not in sys.path
-    with source_utils.prepend_python_path(path_element):
+    with source_utils.prepend_python_path([path_element]):
         assert sys.path[0] == path_element
 
     assert path_element not in sys.path

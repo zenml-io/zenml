@@ -1,22 +1,21 @@
 import tensorflow as tf
 from datasets import DatasetDict
+from steps.configuration import HuggingfaceConfig
 from transformers import (
-    TFPreTrainedModel,
+    DataCollatorForTokenClassification,
     PreTrainedTokenizerBase,
-    DataCollatorForTokenClassification
+    TFPreTrainedModel,
 )
 
 from zenml.steps import step
 
-from ..configuration import HuggingfaceConfig
-
 
 @step
 def token_evaluator(
-        config: HuggingfaceConfig,
-        model: TFPreTrainedModel,
-        tokenized_datasets: DatasetDict,
-        tokenizer: PreTrainedTokenizerBase,
+    config: HuggingfaceConfig,
+    model: TFPreTrainedModel,
+    tokenized_datasets: DatasetDict,
+    tokenizer: PreTrainedTokenizerBase,
 ) -> float:
     """Evaluate trained model on validation set"""
     # Needs to recompile because we are reloading model for evaluation

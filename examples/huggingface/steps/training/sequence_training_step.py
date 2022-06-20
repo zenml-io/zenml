@@ -13,11 +13,15 @@
 #  permissions and limitations under the License.
 import tensorflow as tf
 from datasets import DatasetDict
-from transformers import PreTrainedTokenizerBase, TFPreTrainedModel, \
-    TFAutoModelForSequenceClassification, create_optimizer, \
-    DataCollatorWithPadding
+from steps.configuration import HuggingfaceConfig
+from transformers import (
+    DataCollatorWithPadding,
+    PreTrainedTokenizerBase,
+    TFAutoModelForSequenceClassification,
+    TFPreTrainedModel,
+    create_optimizer,
+)
 
-from ..configuration import HuggingfaceConfig
 from zenml.steps import step
 
 
