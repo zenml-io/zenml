@@ -36,7 +36,19 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
-          zenml integration install -y --ignore-integration feast
+          zenml integration install kserve github hugginface slack xgboost -y
+          pip install click~=8.0.3
+
+      - name: Lint
+        run: |
+          source $VENV 
+          bash scripts/lint.sh
+          
+      - name: Install Dependencies
+        run: |
+          source $VENV
+          zenml integration uninstall kserve -y
+          zenml integration install -y --ignore-integration feast kserve
           pip install click~=8.0.3
 
       - name: Lint
