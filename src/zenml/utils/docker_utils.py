@@ -87,6 +87,8 @@ def generate_dockerfile_contents(
             lines.append(f"ENV {key.upper()}={value}")
 
     if requirements:
+        # Quote the requirements to avoid problems with special characters
+        requirements = [f"'{r}'" for r in requirements]
         lines.append(
             f"RUN pip install --no-cache {' '.join(sorted(requirements))}"
         )
@@ -100,6 +102,7 @@ def generate_dockerfile_contents(
     if entrypoint:
         lines.append(f"ENTRYPOINT {entrypoint}")
 
+    print(lines)
     return "\n".join(lines)
 
 
