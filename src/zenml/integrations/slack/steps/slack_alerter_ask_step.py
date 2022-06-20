@@ -44,7 +44,7 @@ def slack_alerter_ask_step(
     alerter = get_active_alerter(context)
     if not isinstance(alerter, SlackAlerter):
         # TODO: potential duplicate code for other components
-        # -> generalize to `check_component_flavor()` util function?
+        # -> generalize to `check_component_flavor()` utility function?
         raise RuntimeError(
             "Step `slack_alerter_ask_step` requires an alerter component of "
             "flavor `slack`, but the currently active alerter is of type "
