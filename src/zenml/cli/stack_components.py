@@ -726,9 +726,10 @@ def generate_stack_component_remove_attribute_command(
                     )
 
             # Remove the attributes from the current component dict
-            new_attributes = current_component.dict()
-            for arg in parsed_args:
-                new_attributes.pop(arg, None)
+            new_attributes = {
+                **current_component.dict(),
+                **{arg: None for arg in parsed_args},
+            }
 
             updated_component = current_component.__class__(**new_attributes)
 
