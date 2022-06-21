@@ -253,9 +253,9 @@ class VaultSecretsManager(BaseSecretsManager):
         self._ensure_client_is_authenticated()
 
         secrets_keys = self.vault_list_secrets()
+        sanitized_secret_name = sanitize_secret_name(secret_name)
 
         for secret_key in secrets_keys:
-            sanitized_secret_name = sanitize_secret_name(secret_name)
             secret_name_without_schema = remove_secret_schema_name(secret_key)
             if sanitized_secret_name == secret_name_without_schema:
                 return secret_key

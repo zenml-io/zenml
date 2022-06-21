@@ -38,7 +38,7 @@ class VaultSecretsManagerIntegration(Integration):
         """Declare the stack component flavors for the Vault integration.
 
         Returns:
-            List[FlavorWrapper]: The list of stack component flavors.
+            List of stack component flavors.
         """
         return [
             FlavorWrapper(
