@@ -14,14 +14,20 @@
 """Base class for ZenML annotator stack components."""
 
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import Any, ClassVar, List
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
 
 class BaseAnnotator(StackComponent, ABC):
-    """Base class for all ZenML annotators."""
+    """Base class for all ZenML annotators.
+
+    Attributes:
+        notebook_only: if the annotator can only be used in a notebook.
+    """
+
+    notebook_only: ClassVar[bool] = False
 
     # Class configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.ANNOTATOR
@@ -30,3 +36,51 @@ class BaseAnnotator(StackComponent, ABC):
     @abstractmethod
     def get_url(self) -> str:
         """Gets the URL of the annotation interface."""
+
+    @abstractmethod
+    def get_datasets(self) -> List[str]:
+        """Gets the datasets currently available for annotation."""
+
+    @abstractmethod
+    def launch(self) -> None:
+        """Launches the annotation interface."""
+
+    @abstractmethod
+    def add_dataset(self, dataset_name: str) -> None:
+        """Registers a dataset for annotation."""
+
+    @abstractmethod
+    def delete_dataset(self, dataset_name: str) -> None:
+        """Deletes a dataset from the annotation interface."""
+
+    @abstractmethod
+    def get_dataset(self, dataset_name: str) -> None:
+        """Gets the dataset with the given name."""
+
+    @abstractmethod
+    def get_annotations(self, dataset_name: str) -> None:
+        """Gets the annotations for the given dataset."""
+
+    @abstractmethod
+    def tag_dataset(self, dataset_name: str, tag: str) -> None:
+        """Tags the dataset with the given name with the given tag."""
+
+    @abstractmethod
+    def untag_dataset(self, dataset_name: str, tag: str) -> None:
+        """Untags the dataset with the given name with the given tag."""
+
+    @abstractmethod
+    def get_labeled_data(self, dataset_name: str) -> None:
+        """Gets the labeled data for the given dataset."""
+
+    @abstractmethod
+    def get_unlabeled_data(self, dataset_name: str) -> None:
+        """Gets the unlabeled data for the given dataset."""
+
+    @abstractmethod
+    def export_data(self, identifier: str, export_config) -> Any:
+        """Exports the data for the given identifier."""
+
+    @abstractmethod
+    def import_data(self, identifier: str, import_config) -> None:
+        """Imports the data for the given identifier."""
