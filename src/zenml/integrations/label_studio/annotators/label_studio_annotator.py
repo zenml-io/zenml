@@ -16,20 +16,16 @@
 import os
 import subprocess
 import sys
-from typing import ClassVar
+from typing import Any, ClassVar, List
 
+from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.exceptions import ProvisioningError
+from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, networking_utils
 
 logger = get_logger(__name__)
-
-import sys
-from typing import Any, ClassVar, List
-
-from zenml.annotators.base_annotator import BaseAnnotator
-from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 
 DEFAULT_LABEL_STUDIO_PORT = 8093
 
