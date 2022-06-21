@@ -195,7 +195,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         """Launches the annotation interface."""
         # Define the URL where Label Studio is accessible and the API key for your user account
         LABEL_STUDIO_URL = "http://localhost:8080"
-        API_KEY = "872ce7506559e64571991b4053255c99bd71f76a"
+        API_KEY = "YOUR_API_KEY"
 
         # Import the SDK and the client module
         from label_studio_sdk import Client
