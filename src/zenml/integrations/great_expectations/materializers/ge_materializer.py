@@ -52,7 +52,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
     def preprocess_checkpoint_result_dict(
         artifact_dict: Dict[str, Any]
     ) -> None:
-        """Preprocesses a GE checkpoint dict before it is used to de-serialize a GE CheckpointResult object.
+        """Pre-processes a GE checkpoint dict before it is used to de-serialize a GE CheckpointResult object.
 
         The GE CheckpointResult object is not fully de-serializable
         due to some missing code in the GE codebase. We need to compensate
@@ -91,7 +91,7 @@ class GreatExpectationsMaterializer(BaseMaterializer):
             data_type: The type of the data to read.
 
         Returns:
-            A loaded Great Expectations CheckpointResult.
+            A loaded Great Expectations object.
         """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, ARTIFACT_FILENAME)

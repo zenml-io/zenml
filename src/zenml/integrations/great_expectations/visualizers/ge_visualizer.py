@@ -30,9 +30,6 @@ from zenml.logger import get_logger
 from zenml.post_execution import StepView
 from zenml.visualizers import BaseStepVisualizer
 
-# from great_expectations.types import SerializableDictDot  # type: ignore[import]
-
-
 logger = get_logger(__name__)
 
 

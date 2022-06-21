@@ -65,6 +65,7 @@ CWD
 CalledProcessError
 CamelCase
 ChatOps
+CheckpointResult
 ClassVar
 ClickException
 CloudSQL
@@ -389,6 +390,7 @@ URIs
 UTF
 UUID
 Uncategorized
+UserConfigurableProfiler
 UserGuide
 UsingWithRDS
 Util
@@ -900,6 +902,7 @@ utils
 uuid
 uvicorn
 validator
+validators
 vectorizer
 venv
 virtualenv
