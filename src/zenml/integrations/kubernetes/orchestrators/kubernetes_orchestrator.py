@@ -89,7 +89,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
     custom_docker_base_image_name: Optional[str] = None
     kubernetes_context: Optional[str] = None
-    kubernetes_namespace: str = "default"
+    kubernetes_namespace: str = "zenml"
     synchronous: bool = False
     skip_context_checks = False
 
@@ -132,8 +132,8 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 stack: The stack.
 
             Returns:
-                bool: Whether the stack is valid or not..
-                str: An explanation why the stack is invalid, if applicable.
+                Whether the stack is valid or not.
+                An explanation why the stack is invalid, if applicable.
             """
             container_registry = stack.container_registry
 
@@ -351,6 +351,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 f"Scheduling kubernetes run `{pod_name}` with CRON expression "
                 f'`"{cron_expression}"`.'
             )
+            return
 
         # Create and run the orchestrator pod.
         pod_manifest = build_pod_manifest(
@@ -380,5 +381,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         else:
             logger.info(
                 f"Orchestration started asynchronously in pod "
-                f"`{self.kubernetes_namespace}:{pod_name}`"
+                f"`{self.kubernetes_namespace}:{pod_name}`. "
+                f"Run the following command to inspect the logs: "
+                f"`kubectl logs {pod_name} -n {self.kubernetes_namespace}`."
             )

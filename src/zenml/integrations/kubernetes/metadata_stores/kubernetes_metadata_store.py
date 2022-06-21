@@ -43,7 +43,7 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             Defaults to `"10Gi"` (=10GB).
     """
 
-    kubernetes_namespace: str = "default"
+    kubernetes_namespace: str = "zenml"
     deployment_name: str = "mysql"
     storage_capacity: str = "10Gi"
 
@@ -76,6 +76,15 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             True if the component provisioned resources to run.
         """
         return super().is_provisioned and self.deployment_exists
+
+    @property
+    def is_running(self) -> bool:
+        """If the component is running.
+
+        Returns:
+            True if `is_provisioned` else False.
+        """
+        return self.is_provisioned
 
     def provision(self) -> None:
         """Provision the metadata store.

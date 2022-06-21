@@ -106,7 +106,7 @@ class _KubernetesClientFactory:
         """Whether current environment is inside the kubernetes cluster.
 
         Returns:
-            bool: True if inside the cluster else False.
+            True if inside the cluster else False.
         """
         if not self._config_loaded:
             self._LoadConfig()
@@ -174,10 +174,10 @@ def sanitize_pod_name(pod_name: str) -> str:
     """Sanitize pod names so they conform to kubernetes pod naming convention.
 
     Args:
-        pod_name (str): Arbitrary input pod name.
+        pod_name: Arbitrary input pod name.
 
     Returns:
-        str: Sanitized pod name.
+        Sanitized pod name.
     """
     pod_name = re.sub(r"[^a-z0-9-]", "-", pod_name.lower())
     pod_name = re.sub(r"^[-]+", "", pod_name)
@@ -188,10 +188,10 @@ def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
     """Check if pod status is not 'Pending'.
 
     Args:
-        pod (k8s_client.V1Pod): kubernetes pod.
+        pod: kubernetes pod.
 
     Returns:
-        bool: False if the pod status is 'Pending' else True.
+        False if the pod status is 'Pending' else True.
     """
     return pod.status.phase != PodPhase.PENDING.value  # type: ignore[no-any-return]
 
@@ -200,10 +200,10 @@ def pod_failed(pod: k8s_client.V1Pod) -> bool:
     """Check if pod status is 'Failed'.
 
     Args:
-        pod (k8s_client.V1Pod): kubernetes pod.
+        pod: kubernetes pod.
 
     Returns:
-        bool: True if pod status is 'Failed' else False.
+        True if pod status is 'Failed' else False.
     """
     return pod.status.phase == PodPhase.FAILED.value  # type: ignore[no-any-return]
 
@@ -212,10 +212,10 @@ def pod_is_done(pod: k8s_client.V1Pod) -> bool:
     """Check if pod status is 'Succeeded'.
 
     Args:
-        pod (k8s_client.V1Pod): kubernetes pod.
+        pod: kubernetes pod.
 
     Returns:
-        bool: True if pod status is 'Succeeded' else False.
+        True if pod status is 'Succeeded' else False.
     """
     return pod.status.phase == PodPhase.SUCCEEDED.value  # type: ignore[no-any-return]
 
@@ -242,7 +242,7 @@ def is_inside_cluster() -> bool:
     """Whether current running environment is inside the kubernetes cluster.
 
     Returns:
-        bool: True if inside Kubernetes cluster else False.
+        True if inside Kubernetes cluster else False.
     """
     return _factory.inside_cluster
 

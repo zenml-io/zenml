@@ -75,10 +75,10 @@ def get_step_specific_args(step_args: List[str]) -> List[str]:
     """Get the step-specific args that change from step to step.
 
     Args:
-        step_args (List[str]): list of ALL step args.
+        step_args: list of ALL step args.
 
     Returns:
-        List[str]: Step-specific args.
+        Step-specific args.
     """
     return get_fixed_step_args(step_args, get_fixed=False)
 
@@ -91,7 +91,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
         """Gets all the options required for running this entrypoint.
 
         Returns:
-            Set[str]: Entrypoint options.
+            Entrypoint options.
         """
         options = {
             RUN_NAME_OPTION,
@@ -107,7 +107,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
         """Returns a command that runs the entrypoint module.
 
         Returns:
-            List[str]: Entrypoint command.
+            Entrypoint command.
         """
         command = [
             "python",
@@ -130,14 +130,13 @@ class KubernetesOrchestratorEntrypointConfiguration:
         """Gets all arguments that the entrypoint command should be called with.
 
         Args:
-            run_name (str): Name of the ZenML run.
-            pipeline_name (str): Name of the ZenML pipeline.
-            image_name (str): Name of the Docker image.
-            kubernetes_namespace (str): Name of the Kubernetes namespace.
-            pb2_pipeline (Pb2Pipeline): ZenML pipeline in TFX pb2 format.
-            sorted_steps (List[BaseStep]): List of steps in execution order.
-            pipeline_dag (Dict[str, List[str]]): For each step, list of
-                steps that need to run before it.
+            run_name: Name of the ZenML run.
+            pipeline_name: Name of the ZenML pipeline.
+            image_name: Name of the Docker image.
+            kubernetes_namespace: Name of the Kubernetes namespace.
+            pb2_pipeline: ZenML pipeline in TFX pb2 format.
+            sorted_steps: List of steps in execution order.
+            pipeline_dag: For each step, list of steps that need to run before.
 
         Returns:
             List[str]: Entrypoint arguments.
@@ -147,10 +146,10 @@ class KubernetesOrchestratorEntrypointConfiguration:
             """Get the entrypoint args for a specific step.
 
             Args:
-                step (BaseStep): ZenML step for which to get entrypoint args.
+                step: ZenML step for which to get entrypoint args.
 
             Returns:
-                List[str]: Entrypoint args of the step.
+                Entrypoint args of the step.
             """
             return (
                 KubernetesStepEntrypointConfiguration.get_entrypoint_arguments(

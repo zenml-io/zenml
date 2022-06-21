@@ -76,10 +76,10 @@ class ThreadedDagRunner:
         node have already completed.
 
         Args:
-            node (str): The node.
+            node: The node.
 
         Returns:
-            bool: True if the node can run else False.
+            True if the node can run else False.
         """
         # Check that node has not run yet.
         if not self.node_is_waiting[node]:
@@ -98,7 +98,7 @@ class ThreadedDagRunner:
         Calls the user-defined run_fn, then calls `self._finish_node`.
 
         Args:
-            node (str): The node.
+            node: The node.
         """
         self.run_fn(node)
         self._finish_node(node)
@@ -110,10 +110,10 @@ class ThreadedDagRunner:
         Then calls self._run_node() in a new thread and returns the thread.
 
         Args:
-            node (str): The node.
+            node: The node.
 
         Returns:
-            threading.Thread: The thread in which the node was run.
+            The thread in which the node was run.
         """
         # Update node status to running.
         assert self.node_is_waiting[node]
@@ -133,7 +133,7 @@ class ThreadedDagRunner:
         Then starts all other nodes that can now be run and waits for them.
 
         Args:
-            node (str): The node.
+            node: The node.
         """
         # Update node status to completed.
         assert self.node_is_running[node]

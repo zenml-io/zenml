@@ -1,8 +1,8 @@
-from pipelines.parallelizable_pipeline import parallelizable_pipeline
+from pipelines.kubernetes_example_pipeline import kubernetes_example_pipeline
 from steps import evaluator, importer, skew_comparison, svc_trainer
 
 if __name__ == "__main__":
-    parallelizable_pipeline(
+    kubernetes_example_pipeline(
         importer=importer(),
         trainer=svc_trainer(),
         evaluator=evaluator(),
@@ -15,7 +15,7 @@ if __name__ == "__main__":
     #
     # schedule = Schedule(cron_expression="*/5 * * * *")  # every 5 minutes
     #
-    # parallelizable_pipeline(
+    # kubernetes_example_pipeline(
     #     importer=importer(),
     #     trainer=svc_trainer(),
     #     evaluator=evaluator(),
