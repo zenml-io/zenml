@@ -68,6 +68,6 @@ def test_dag_runner_multi_path():  # 3->(2, 5)->1
     )
 
 
-def test_dag_runner_acyclic():
-    """Test that nothing happens for acyclic graphs, and no error is raised."""
+def test_dag_runner_cyclic():
+    """Test that nothing happens for cyclic graphs, and no error is raised."""
     _test_runner({1: [2], 2: [1]}, correct_results=[0])

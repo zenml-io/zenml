@@ -51,12 +51,12 @@ def get_fixed_step_args(
     only once.
 
     Args:
-        step_args (List[str]): list of ALL step args.
+        step_args: list of ALL step args.
             E.g. ["--arg1", "arg1_value", "--arg2", "arg2_value", ...].
-        get_fixed (bool): Set to `False` to get step-specific args instead.
+        get_fixed: Set to `False` to get step-specific args instead.
 
     Returns:
-        List[str]: Fixed step args (if get_fixed==True)
+        Fixed step args (if get_fixed==True)
             or step-specific args (if `get_fixed==False`).
     """
     fixed_args = []
@@ -139,7 +139,7 @@ class KubernetesOrchestratorEntrypointConfiguration:
             pipeline_dag: For each step, list of steps that need to run before.
 
         Returns:
-            List[str]: Entrypoint arguments.
+            List of entrypoint arguments.
         """
 
         def _get_step_args(step: BaseStep) -> List[str]:
