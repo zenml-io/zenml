@@ -14,10 +14,7 @@
 from typing import cast
 
 import click
-from pipelines.continuous_deployment_pipeline import (
-    continuous_deployment_pipeline,
-)
-from pipelines.inference_pipeline import inference_pipeline
+from pipelines import continuous_deployment_pipeline, inference_pipeline
 from rich import print
 from steps.deployment_trigger.deployment_trigger_step import (
     DeploymentTriggerConfig,

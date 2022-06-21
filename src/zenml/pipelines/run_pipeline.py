@@ -40,6 +40,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
 
     Raises:
         PipelineConfigurationError: Error when pipeline configuration is faulty.
+        RuntimeError: Error when zenml repository is not found.
     """
     # If the file was run with `python run.py, this would happen automatically.
     #  In order to allow seamless switching between running directly and through

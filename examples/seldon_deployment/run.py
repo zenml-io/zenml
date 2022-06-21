@@ -14,10 +14,6 @@
 from typing import cast
 
 import click
-from pipelines.continuous_deployment.continuous_deployment_pipeline import (
-    continuous_deployment_pipeline,
-)
-from pipelines.inference.inference_pipeline import inference_pipeline
 from rich import print
 from steps.deployment_trigger.deployment_trigger_step import (
     DeploymentTriggerConfig,
@@ -25,6 +21,7 @@ from steps.deployment_trigger.deployment_trigger_step import (
 )
 from steps.dynamic_importer.dynamic_importer_step import dynamic_importer
 from steps.importer_mnist.importer_mnist_step import importer_mnist
+from steps.model_deployer.model_deployer_step import seldon_model_deployer_step
 from steps.normalizer.normalizer_step import normalizer
 from steps.prediction_service_loader.prediction_service_loader_step import (
     SeldonDeploymentLoaderStepConfig,
@@ -43,17 +40,16 @@ from steps.tf_evaluator.tf_evaluator_step import tf_evaluator
 from steps.tf_predict_preprocessor.tf_predict_preprocessor_step import (
     tf_predict_preprocessor,
 )
-from steps.tf_trainer import TensorflowTrainerConfig, tf_trainer
+from steps.tf_trainer.tf_trainer_step import TensorflowTrainerConfig, tf_trainer
 
 from zenml.integrations.seldon.model_deployers import SeldonModelDeployer
 from zenml.integrations.seldon.services import (
     SeldonDeploymentConfig,
     SeldonDeploymentService,
 )
-from zenml.integrations.seldon.steps import (
-    SeldonDeployerStepConfig,
-    seldon_model_deployer_step,
-)
+from zenml.integrations.seldon.steps import SeldonDeployerStepConfig
+
+from .pipelines import continuous_deployment_pipeline, inference_pipeline
 
 DEPLOY = "deploy"
 PREDICT = "predict"
