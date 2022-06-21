@@ -15,6 +15,7 @@
 
 import threading
 from collections import defaultdict
+from enum import Enum
 from typing import Any, Callable, Dict, List
 
 from zenml.logger import get_logger
@@ -46,13 +47,28 @@ def reverse_dag(dag: Dict[str, List[str]]) -> Dict[str, List[str]]:
     return reversed_dag
 
 
+class NodeStatus(Enum):
+    """Status of the execution of a node."""
+
+    WAITING = "Waiting"
+    RUNNING = "Running"
+    COMPLETED = "Completed"
+
+
 class ThreadedDagRunner:
-    """Multi-threaded DAG Runner."""
+    """Multi-threaded DAG Runner.
+
+    This class expects a DAG of strings in adjacency list representation, as
+    well as a custom `run_fn` as input, then calls `run_fn(node)` for each
+    string node in the DAG.
+
+    Steps that can be executed in parallel will be started in separate threads.
+    """
 
     def __init__(
         self, dag: Dict[str, List[str]], run_fn: Callable[[str], Any]
     ) -> None:
-        """Init.
+        """Define attributes and initialize all nodes in waiting state.
 
         Args:
             dag: Adjacency list representation of a DAG.
@@ -64,9 +80,7 @@ class ThreadedDagRunner:
         self.reversed_dag = reverse_dag(dag)
         self.run_fn = run_fn
         self.nodes = dag.keys()
-        self.node_is_waiting = {node: True for node in self.nodes}
-        self.node_is_running = {node: False for node in self.nodes}
-        self.node_is_completed = {node: False for node in self.nodes}
+        self.node_states = {node: NodeStatus.WAITING for node in self.nodes}
         self._lock = threading.Lock()
 
     def _can_run(self, node: str) -> bool:
@@ -82,12 +96,12 @@ class ThreadedDagRunner:
             True if the node can run else False.
         """
         # Check that node has not run yet.
-        if not self.node_is_waiting[node]:
+        if not self.node_states[node] == NodeStatus.WAITING:
             return False
 
         # Check that all upstream nodes of this node have already completed.
         for upstream_node in self.dag[node]:
-            if not self.node_is_completed[upstream_node]:
+            if not self.node_states[upstream_node] == NodeStatus.COMPLETED:
                 return False
 
         return True
@@ -116,10 +130,9 @@ class ThreadedDagRunner:
             The thread in which the node was run.
         """
         # Update node status to running.
-        assert self.node_is_waiting[node]
+        assert self.node_states[node] == NodeStatus.WAITING
         with self._lock:
-            self.node_is_waiting[node] = False
-            self.node_is_running[node] = True
+            self.node_states[node] = NodeStatus.RUNNING
 
         # Run node in new thread.
         thread = threading.Thread(target=self._run_node, args=(node,))
@@ -136,10 +149,9 @@ class ThreadedDagRunner:
             node: The node.
         """
         # Update node status to completed.
-        assert self.node_is_running[node]
+        assert self.node_states[node] == NodeStatus.RUNNING
         with self._lock:
-            self.node_is_running[node] = False
-            self.node_is_completed[node] = True
+            self.node_states[node] = NodeStatus.COMPLETED
 
         # Run downstream nodes.
         threads = []
@@ -173,7 +185,7 @@ class ThreadedDagRunner:
 
         # Make sure all nodes were run, otherwise print a warning.
         for node in self.nodes:
-            if self.node_is_waiting[node]:
+            if self.node_states[node] == NodeStatus.WAITING:
                 upstream_nodes = self.dag[node]
                 logger.warning(
                     f"Node `{node}` was never run, because it was still"
