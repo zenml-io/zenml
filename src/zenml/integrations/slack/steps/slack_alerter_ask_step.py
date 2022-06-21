@@ -25,13 +25,13 @@ from zenml.steps import StepContext, step
 def slack_alerter_ask_step(
     config: SlackAlerterConfig, context: StepContext, message: str
 ) -> bool:
-    """Posts a message to the slack alerter component and waits for approval.
+    """Posts a message to the Slack alerter component and waits for approval.
 
     This can be useful, e.g. to easily get a human in the loop before
     deploying models.
 
     Args:
-        config: Runtime configuration for the slack alerter.
+        config: Runtime configuration for the Slack alerter.
         context: StepContext of the ZenML repository.
         message: Initial message to be posted.
 

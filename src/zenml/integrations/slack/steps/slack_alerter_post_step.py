@@ -25,10 +25,10 @@ from zenml.steps import StepContext, step
 def slack_alerter_post_step(
     config: SlackAlerterConfig, context: StepContext, message: str
 ) -> bool:
-    """Post a message to the slack alerter component of the active stack.
+    """Post a message to the Slack alerter component of the active stack.
 
     Args:
-        config: Runtime configuration for the slack alerter.
+        config: Runtime configuration for the Slack alerter.
         context: StepContext of the ZenML repository.
         message: Message to be posted.
 
