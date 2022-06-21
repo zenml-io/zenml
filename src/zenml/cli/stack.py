@@ -149,6 +149,7 @@ def register_stack(
 ) -> None:
     """Register a stack.
 
+    \b
     Args:
         stack_name: Unique name of the stack
         metadata_store_name: Name of the metadata store for this stack.
@@ -342,6 +343,7 @@ def update_stack(
 ) -> None:
     """Update a stack.
 
+    \b
     Args:
         stack_name: Name of the stack to update.
         metadata_store_name: Name of the new metadata store for this stack.
@@ -521,6 +523,7 @@ def remove_stack_component(
 ) -> None:
     """Remove stack components from a stack.
 
+    \b
     Args:
         stack_name: Name of the stack to remove components from.
         container_registry_flag: To remove the container registry from this stack.
@@ -581,6 +584,7 @@ def rename_stack(
 ) -> None:
     """Rename a stack.
 
+    \b
     Args:
         current_stack_name: Name of the stack to rename.
         new_stack_name: New name of the stack.
@@ -654,6 +658,7 @@ def list_stacks() -> None:
 def describe_stack(stack_name: Optional[str]) -> None:
     """Show details about a named stack or the active stack.
 
+    \b
     Args:
         stack_name: Name of the stack to describe.
     """
@@ -693,6 +698,7 @@ def delete_stack(
 ) -> None:
     """Delete a stack.
 
+    \b
     Args:
         stack_name: Name of the stack to delete.
         yes: Stack will be deleted without prompting for
@@ -754,6 +760,7 @@ def set_active_stack_command(
     If the '--global' flag is set, the global active stack will be set,
     otherwise the repository active stack takes precedence.
 
+    \b
     Args:
         stack_name: Name of the stack to set as active.
         global_profile: Set the active stack globally.
@@ -767,6 +774,7 @@ def set_active_stack(stack_name: str, global_profile: bool = False) -> None:
     If the '--global' flag is set, the global active stack will be set,
     otherwise the repository active stack takes precedence.
 
+    \b
     Args:
         stack_name: Unique name of the stack
         global_profile: If the stack should be created on the global profile
@@ -830,6 +838,7 @@ def up_stack() -> None:
 def down_stack(force: bool = False, old_force: bool = False) -> None:
     """Suspends resources of the active stack deployment.
 
+    \b
     Args:
         force: Deprovisions local resources instead of suspending them.
         old_force: DEPRECATED: Deprovisions local resources instead of
@@ -990,6 +999,7 @@ def import_stack(
 ) -> None:
     """Import a stack from YAML.
 
+    \b
     Args:
         ctx: The click context.
         stack_name: The name of the stack to import.
@@ -1045,7 +1055,6 @@ def import_stack(
 
 @stack.command(
     "copy",
-    help="SOURCE_STACK: The name of the stack to copy.\n\nTARGET_STACK: Name of the copied stack.",
 )
 @click.argument("source_stack", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
@@ -1071,6 +1080,7 @@ def copy_stack(
 ) -> None:
     """Copy a stack.
 
+    \b
     Args:
         source_stack: The name of the stack to copy.
         target_stack: Name of the copied stack.

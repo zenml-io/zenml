@@ -107,6 +107,7 @@ def list_models(
 ) -> None:
     """Get a list of all served models within the model-deployer stack component.
 
+    \b
     Args:
         model_deployer: The model-deployer stack component.
         pipeline: Show only served models that were deployed by the indicated
@@ -142,6 +143,7 @@ def describe_model(
 ) -> None:
     """Describe a specified served model.
 
+    \b
     Args:
         model_deployer: The model-deployer stack component.
         served_model_uuid: The UUID of the served model.
@@ -164,6 +166,7 @@ def get_url(
 ) -> None:
     """Return the prediction URL to a specified model server.
 
+    \b
     Args:
         model_deployer: The model-deployer stack component.
         served_model_uuid: The UUID of the served model.
@@ -205,6 +208,7 @@ def start_model_service(
 ) -> None:
     """Start a specified model server.
 
+    \b
     Args:
         model_deployer: The model-deployer stack component.
         served_model_uuid: The UUID of the served model.
@@ -263,6 +267,7 @@ def stop_model_service(
 ) -> None:
     """Stop a specified model server.
 
+    \b
     Args:
         model_deployer: The model-deployer stack component.
         served_model_uuid: The UUID of the served model.
@@ -328,6 +333,7 @@ def delete_model_service(
 ) -> None:
     """Delete a specified model server.
 
+    \b
     Args:
         model_deployer: The model-deployer stack component.
         served_model_uuid: The UUID of the served model.
@@ -385,6 +391,7 @@ def get_model_service_logs(
 ) -> None:
     """Display the logs for a model server.
 
+    \b
     Args:
         model_deployer: The model-deployer stack component.
         served_model_uuid: The UUID of the served model.

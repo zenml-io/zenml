@@ -131,6 +131,7 @@ def clean(yes: bool = False, local: bool = False) -> None:
 
     This is a destructive operation, primarily intended for use in development.
 
+    \b
     Args:
         yes: If you don't want a confirmation prompt.
         local: If you want to delete local files associated with the active stack.

@@ -41,6 +41,7 @@ def get_user() -> None:
 def set_user(user_name: str) -> None:
     """Set the active user.
 
+    \b
     Args:
         user_name: The name of the user to set as active.
     """
@@ -76,6 +77,7 @@ def list_users() -> None:
 def create_user(user_name: str) -> None:
     """Create a new user.
 
+    \b
     Args:
         user_name: The name of the user to create.
     """
@@ -120,6 +122,7 @@ def list_teams() -> None:
 def describe_team(team_name: str) -> None:
     """Print details of a team.
 
+    \b
     Args:
         team_name: The name of the team to describe.
     """
@@ -139,6 +142,7 @@ def describe_team(team_name: str) -> None:
 def create_team(team_name: str) -> None:
     """Create a new team.
 
+    \b
     Args:
         team_name: Name of the team to create.
     """
@@ -151,6 +155,7 @@ def create_team(team_name: str) -> None:
 def delete_team(team_name: str) -> None:
     """Delete a team.
 
+    \b
     Args:
         team_name (str): The name of the team to delete.
     """
@@ -167,6 +172,7 @@ def delete_team(team_name: str) -> None:
 def add_users(team_name: str, user_names: Tuple[str]) -> None:
     """Add users to a team.
 
+    \b
     Args:
         team_name: Name of the team.
         user_names: Names of the users to add to the team.
@@ -190,6 +196,7 @@ def add_users(team_name: str, user_names: Tuple[str]) -> None:
 def remove_users(team_name: str, user_names: Tuple[str]) -> None:
     """Remove users from a team.
 
+    \b
     Args:
         team_name: Name of the team.
         user_names: Names of the users.
@@ -242,6 +249,7 @@ def create_project(
 ) -> None:
     """Create a new project.
 
+    \b
     Args:
         project_name: The name of the project.
         description: A description of the project.
@@ -289,6 +297,7 @@ def get_project() -> None:
 def set_project(project_name: str) -> None:
     """Set the project for the current repository.
 
+    \b
     Args:
         project_name: The name of the project to set as active.
     """
@@ -334,8 +343,9 @@ def unset_project() -> None:
 def delete_project(project_name: str) -> None:
     """Delete a project.
 
-    If name isn't specified, delete current project.
+    If the name isn't specified, delete the current project.
 
+    \b
     Args:
         project_name (str): Name of project to delete.
     """
@@ -375,6 +385,7 @@ def list_roles() -> None:
 def create_role(role_name: str) -> None:
     """Create a new role.
 
+    \b
     Args:
         role_name: Name of the role to create.
     """
@@ -387,6 +398,7 @@ def create_role(role_name: str) -> None:
 def delete_role(role_name: str) -> None:
     """Delete a role.
 
+    \b
     Args:
         role_name (str): Name of the role to delete.
     """
@@ -410,6 +422,7 @@ def assign_role(
 ) -> None:
     """Assign a role.
 
+    \b
     Args:
         role_name (str): Name of the role to assign.
         user_names (Tuple[str]): Names of users to assign the role to.
@@ -465,6 +478,7 @@ def revoke_role(
 ) -> None:
     """Revoke a role.
 
+    \b
     Args:
         role_name: Name of the role to revoke.
         user_names: Names of the users to revoke the role from.
