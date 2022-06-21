@@ -137,7 +137,7 @@ are run in parallel, so the order of messages might differ when you run it
 yourself.
 
 ```
-Using stack default to run pipeline parallelizable_pipeline...
+Using stack default to run pipeline kubernetes_example_pipeline...
 Waiting for Kubernetes orchestrator pod...
 Kubernetes orchestrator pod started.
 Waiting for pod of step importer to start...
@@ -159,7 +159,7 @@ Step evaluator has finished in 6.219s.
 Pod of step evaluator completed.
 Orchestration pod completed.
 Pipeline run finished.
-Pipeline run parallelizable_pipeline-07_Jun_22-14_26_14_450641 has finished in 1m57s.
+Pipeline run kubernetes_example_pipeline-07_Jun_22-14_26_14_450641 has finished in 1m57s.
 ```
 
 ### Interacting with pods via kubectl
@@ -174,14 +174,14 @@ E.g., you can use these labels to get a list of all pods related to the
 pipeline used in this example by running the following:
 
 ```
-kubectl get pods -l pipeline=parallelizable_pipeline
+kubectl get pods -l pipeline=kubernetes_example_pipeline
 ```
 
 ## :sponge: Clean Up
 
 ### Delete Run Pods
 ```bash
-kubectl delete pod -l pipeline=parallelizable_pipeline
+kubectl delete pod -l pipeline=kubernetes_example_pipeline
 ```
 
 ### Deprovision Stack

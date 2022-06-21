@@ -13,10 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation of Kubernetes metadata store."""
 
-from typing import ClassVar
+from typing import Any, ClassVar, Dict
 
 from kubernetes import client, config
+from pydantic import root_validator
 
+from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.kubernetes import KUBERNETES_METADATA_STORE_FLAVOR
 from zenml.integrations.kubernetes.orchestrators.kube_utils import (
     create_mysql_deployment,
@@ -34,20 +36,52 @@ class KubernetesMetadataStore(MySQLMetadataStore):
     """Kubernetes metadata store (MySQL database deployed in the cluster).
 
     Attributes:
+        deployment_name: Name of the kubernetes deployment and corresponding
+            service/pod that will be created when calling `provision()`.
         kubernetes_namespace: Name of the kubernetes namespace.
             Defaults to "default".
-        deployment_name: Name of the deployment (and corresponding service/pod)
-            that will be created when calling `provision()`.
-            Defaults to "mysql".
         storage_capacity: Storage capacity of the metadata store.
             Defaults to `"10Gi"` (=10GB).
     """
 
+    deployment_name: str
     kubernetes_namespace: str = "zenml"
-    deployment_name: str = "mysql"
     storage_capacity: str = "10Gi"
 
     FLAVOR: ClassVar[str] = KUBERNETES_METADATA_STORE_FLAVOR
+
+    @root_validator(skip_on_failure=False)
+    def check_deployment_name_set(
+        cls, values: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Pydantic root_validator.
+
+        This ensures that the `deployment_name` is set and raises an error
+        with a custom error message otherwise.
+
+        Args:
+            values: Values passed to the object constructor.
+
+        Raises:
+            StackComponentInterfaceError: if `deployment_name` attribute is not
+                defined.
+
+        Returns:
+            Values passed to the Pydantic constructor.
+        """
+        if "deployment_name" not in values:
+            raise StackComponentInterfaceError(
+                "Required field `deployment_name` missing for "
+                "`KubernetesMetadataStore`. "
+                "Note: the `kubernetes` metadata store flavor is a special "
+                "subtype of the `mysql` metadata store that deploys a fresh "
+                "MySQL database within your k8s cluster when running "
+                "`zenml stack up`. "
+                "If you already have a MySQL database running in your cluster "
+                "(or elsewhere), simply use the `mysql` metadata store flavor "
+                "instead."
+            )
+        return values
 
     @property
     def deployment_exists(self) -> bool:
