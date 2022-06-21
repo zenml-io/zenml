@@ -35,7 +35,7 @@ class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
         consistent values between steps.
 
         Returns:
-            Set[str]: Set of entrypoint options.
+            Set of entrypoint options.
         """
         return {RUN_NAME_OPTION}
 
@@ -48,12 +48,12 @@ class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
         Sets the value for the `RUN_NAME_OPTION` argument.
 
         Args:
-            step (BaseStep): ZenML step for which the entrypoint is built.
+            step: ZenML step for which the entrypoint is built.
             args: additional (unused) arguments.
             kwargs: keyword args; needs to include `RUN_NAME_OPTION`.
 
         Returns:
-            List[str]: Entrypoint arguments.
+            List of entrypoint arguments.
         """
         return [
             f"--{RUN_NAME_OPTION}",
@@ -64,10 +64,10 @@ class KubernetesStepEntrypointConfiguration(StepEntrypointConfiguration):
         """Returns the ZenML run name.
 
         Args:
-            pipeline_name (str): Name of the ZenML pipeline (unused).
+            pipeline_name: Name of the ZenML pipeline (unused).
 
         Returns:
-            str: ZenML run name.
+            ZenML run name.
         """
         job_id: str = self.entrypoint_args[RUN_NAME_OPTION]
         return job_id

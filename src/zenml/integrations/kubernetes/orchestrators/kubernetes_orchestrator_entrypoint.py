@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     """Parse entrypoint arguments.
 
     Returns:
-        argparse.Namespace: Parsed args.
+        Parsed args.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
@@ -106,7 +106,7 @@ def main() -> None:
         """Run a pipeline step in a separate Kubernetes pod.
 
         Args:
-            step_name (str): Name of the step.
+            step_name: Name of the step.
         """
         # Define k8s pod name.
         pod_name = f"{run_name}-{step_name}"

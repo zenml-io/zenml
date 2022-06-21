@@ -209,7 +209,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
             pipeline_name: Name of a ZenML pipeline.
 
         Returns:
-            str: Docker image name.
+            Docker image name.
         """
         container_registry = Repository().active_stack.container_registry
         assert container_registry

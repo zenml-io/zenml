@@ -39,7 +39,7 @@ class KubernetesIntegration(Integration):
         """Declare the stack component flavors for the Kubernetes integration.
 
         Returns:
-            List[FlavorWrapper]: list of new stack component flavors.
+            List of new stack component flavors.
         """
         return [
             FlavorWrapper(
