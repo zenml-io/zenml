@@ -127,6 +127,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-an",
+    "--annotator",
+    "annotator_name",
+    help="Name of the annotator for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--set",
     "set_stack",
     is_flag=True,
@@ -145,6 +153,7 @@ def register_stack(
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
+    annotator_name: Optional[str] = None,
     set_stack: bool = False,
 ) -> None:
     """Register a stack.
@@ -161,6 +170,7 @@ def register_stack(
         model_deployer_name: Name of the model deployer for this stack.
         experiment_tracker_name: Name of the experiment tracker for this stack.
         alerter_name: Name of the alerter for this stack.
+        annotator_name: Name of the annotator for this stack.
         set_stack: Immediately set this stack as active.
     """
     cli_utils.print_active_profile()
@@ -233,6 +243,14 @@ def register_stack(
             ] = repo.get_stack_component(
                 StackComponentType.ALERTER,
                 name=alerter_name,
+            )
+
+        if annotator_name:
+            stack_components[
+                StackComponentType.ANNOTATOR
+            ] = repo.get_stack_component(
+                StackComponentType.ANNOTATOR,
+                name=annotator_name,
             )
 
         stack_ = Stack.from_components(
@@ -327,6 +345,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-an",
+    "--annotator",
+    "annotator_name",
+    help="Name of the new annotator for this stack.",
+    type=str,
+    required=False,
+)
 def update_stack(
     stack_name: Optional[str],
     metadata_store_name: Optional[str] = None,
@@ -339,6 +365,7 @@ def update_stack(
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
+    annotator_name: Optional[str] = None,
 ) -> None:
     """Update a stack.
 
@@ -356,6 +383,7 @@ def update_stack(
         experiment_tracker_name: Name of the new experiment tracker for this
             stack.
         alerter_name: Name of the new alerter for this stack.
+        annotator_name: Name of the new annotator for this stack.
     """
     cli_utils.print_active_profile()
 
@@ -451,6 +479,14 @@ def update_stack(
                 name=alerter_name,
             )
 
+        if annotator_name:
+            stack_components[
+                StackComponentType.ANNOTATOR
+            ] = repo.get_stack_component(
+                StackComponentType.ANNOTATOR,
+                name=annotator_name,
+            )
+
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
@@ -510,6 +546,22 @@ def update_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-al",
+    "--alerter",
+    "alerter_flag",
+    help="Include this to remove the alerter from this stack.",
+    is_flag=True,
+    required=False,
+)
+@click.option(
+    "-an",
+    "--annotator",
+    "annotator_flag",
+    help="Include this to remove the annotator from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name: Optional[str],
     container_registry_flag: Optional[bool] = False,
@@ -518,6 +570,8 @@ def remove_stack_component(
     feature_store_flag: Optional[bool] = False,
     model_deployer_flag: Optional[bool] = False,
     experiment_tracker_flag: Optional[bool] = False,
+    alerter_flag: Optional[bool] = False,
+    annotator_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -528,7 +582,10 @@ def remove_stack_component(
         secrets_manager_flag: To remove the secrets manager from this stack.
         feature_store_flag: To remove the feature store from this stack.
         model_deployer_flag: To remove the model deployer from this stack.
-        experiment_tracker_flag: To remove the experiment tracker from this stack.
+        experiment_tracker_flag: To remove the experiment tracker from this
+        stack.
+        alerter_flag: To remove the alerter from this stack.
+        annotator_flag: To remove the annotator from this stack.
     """
     cli_utils.print_active_profile()
 
@@ -564,6 +621,12 @@ def remove_stack_component(
 
         if experiment_tracker_flag:
             stack_components.pop(StackComponentType.EXPERIMENT_TRACKER, None)
+
+        if alerter_flag:
+            stack_components.pop(StackComponentType.ALERTER, None)
+
+        if annotator_flag:
+            stack_components.pop(StackComponentType.ANNOTATOR, None)
 
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
