@@ -612,9 +612,10 @@ def clone_step(step: Type["BaseStep"], step_name: str) -> Type["BaseStep"]:
         A clone of the given step.
 
     Raises:
-        ValueError: if the given step is not a subclass of BaseStep.
-        ImportError: if the given step name cannot be used because the calling
-            module already contains a symbol with the same name.
+        TypeError: if the given step is not a subclass of BaseStep.
+        ImportError: if the the calling Python module cannot be determined
+            or if the given step name cannot be used because the calling
+            Python module already contains a symbol with the same name.
     """
     from zenml.steps.base_step import BaseStep
 
@@ -628,7 +629,7 @@ def clone_step(step: Type["BaseStep"], step_name: str) -> Type["BaseStep"]:
     mod = inspect.getmodule(frm[0])
 
     if not mod:
-        raise ValueError(
+        raise ImportError(
             f"Cannot clone step `{step}` because the calling Python module "
             f"cannot be determined."
         )

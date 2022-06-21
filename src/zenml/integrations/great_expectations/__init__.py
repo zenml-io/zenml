@@ -11,12 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Great Expectation integration for ZenML.
+
+The Great Expectations integration enables you to use Great Expectations as a
+way of profiling and validating your data.
 """
-The Great Expectations integration currently enables you to use Great
-Expectations as a way of validating your data. It is currently only implemented
-to interact with a pre-existing Great Expectations context with expectations
-already defined as part of a suite.
-"""
+
 from zenml.integrations.constants import GREAT_EXPECTATIONS
 from zenml.integrations.integration import Integration
 
@@ -26,13 +26,13 @@ class GreatExpectationsIntegration(Integration):
 
     NAME = GREAT_EXPECTATIONS
     REQUIREMENTS = [
-        "great-expectations>=0.15.2",
+        "great-expectations>=0.15.2,<0.18.0",
     ]
 
     @staticmethod
     def activate() -> None:
         """Activate the Great Expectations integration."""
-        # from zenml.integrations.great_expectations import data_validators  # noqa
+        from zenml.integrations.great_expectations import materializers  # noqa
 
 
 GreatExpectationsIntegration.check_installation()

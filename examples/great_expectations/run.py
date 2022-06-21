@@ -14,20 +14,23 @@
 
 
 import pandas as pd
+from great_expectations.core import ExpectationSuite  # type: ignore[import]
 from sklearn.datasets import fetch_openml
 
-from zenml.console import console
 from zenml.integrations.constants import GREAT_EXPECTATIONS, SKLEARN
-from zenml.integrations.great_expectations.steps.great_expectations_checkpoint import (
-    GreatExpectationsCheckpointConfig,
-    GreatExpectationsCheckpointStep,
+from zenml.integrations.great_expectations.steps import (
+    GreatExpectationsProfilerConfig,
+    GreatExpectationsProfilerStep,
+    GreatExpectationsValidatorConfig,
+    GreatExpectationsValidatorStep,
 )
-from zenml.integrations.great_expectations.visualizers.great_expectations_visualizer import (
+from zenml.integrations.great_expectations.visualizers.ge_visualizer import (
     GreatExpectationsVisualizer,
 )
 from zenml.pipelines import pipeline
 from zenml.repository import Repository
 from zenml.steps import Output, step
+from zenml.steps.utils import clone_step
 
 FULL_FEATURE_NAMES = [
     name.lower()
@@ -80,6 +83,15 @@ def importer() -> pd.DataFrame:
     return df
 
 
+ge_profiler_config = GreatExpectationsProfilerConfig(
+    expectation_suite_name="steel_plates_suite",
+    data_asset_name="steel_plates_train_df",
+)
+ge_profiler_step = clone_step(
+    GreatExpectationsProfilerStep, "ge_profiler_step_class"
+)(config=ge_profiler_config)
+
+
 @step
 def splitter(
     df: pd.DataFrame,
@@ -88,33 +100,67 @@ def splitter(
     return train, test
 
 
-ge_config = GreatExpectationsCheckpointConfig(
-    context_path="./great_expectations/",
-    datasource_name="zenml_datasource",
-    expectation_suite_name="ge_suite",
-    data_asset_name="plates_train_df",
+ge_validate_train_config = GreatExpectationsValidatorConfig(
+    expectation_suite_name="steel_plates_suite",
+    data_asset_name="steel_plates_train_df",
 )
-ge_step = GreatExpectationsCheckpointStep(config=ge_config)
+ge_validate_train_step = clone_step(
+    GreatExpectationsValidatorStep, "ge_validate_train_step_class"
+)(config=ge_validate_train_config)
+
+ge_validate_test_config = GreatExpectationsValidatorConfig(
+    expectation_suite_name="steel_plates_suite",
+    data_asset_name="steel_plates_test_df",
+)
+ge_validate_test_step = clone_step(
+    GreatExpectationsValidatorStep, "ge_validate_test_step_class"
+)(config=ge_validate_test_config)
 
 
-@pipeline(required_integrations=[SKLEARN, GREAT_EXPECTATIONS])
-def validation_pipeline(importer, splitter, validator):
+@step
+def prevalidator(
+    suite: ExpectationSuite,
+) -> bool:
+    """
+    This step is necessary to make sure that the validation step is only run
+    after the profiler step has finished.
+    """
+    return True
+
+
+@pipeline(
+    enable_cache=False, required_integrations=[SKLEARN, GREAT_EXPECTATIONS]
+)
+def validation_pipeline(
+    importer, splitter, profiler, prevalidator, train_validator, test_validator
+):
     imported_data = importer()
-    _, test = splitter(imported_data)
-    validator(test)
+    train, test = splitter(imported_data)
+    suite = profiler(train)
+    condition = prevalidator(suite)
+    train_validator(train, condition)
+    test_validator(test, condition)
+
+
+def visualize_results(pipeline_name: str, step_name: str) -> None:
+    repo = Repository()
+    pipeline = repo.get_pipeline(pipeline_name)
+    last_run = pipeline.runs[-1]
+    validation_step = last_run.get_step(name=step_name)
+    GreatExpectationsVisualizer().visualize(validation_step)
 
 
 if __name__ == "__main__":
-    pipeline = validation_pipeline(importer(), splitter(), ge_step)
+    pipeline = validation_pipeline(
+        importer(),
+        splitter(),
+        ge_profiler_step,
+        prevalidator(),
+        ge_validate_train_step,
+        ge_validate_test_step,
+    )
     pipeline.run()
 
-    repo = Repository()
-    pipeline = repo.get_pipeline("validation_pipeline")
-    last_run = pipeline.runs[-1]
-    validation_step = last_run.get_step(name="validator")
-    results = validation_step.outputs["results"].read()
-    datadoc_path = validation_step.outputs["data_doc"].read()
-    if not results["success"]:
-        console.print("Data failed to pass the Expectations Suite. \n")
-        console.print(results)
-        GreatExpectationsVisualizer().visualize(datadoc_path)
+    visualize_results("validation_pipeline", "profiler")
+    visualize_results("validation_pipeline", "train_validator")
+    visualize_results("validation_pipeline", "test_validator")
