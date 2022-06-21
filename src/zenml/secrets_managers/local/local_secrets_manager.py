@@ -217,20 +217,7 @@ class LocalSecretsManager(BaseSecretsManager):
         except KeyError:
             error(f"Secret {secret_name} does not exist.")
 
-    def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete all existing secrets.
-
-        Args:
-            force: If True, delete all secrets.
-
-        Raises:
-            ValueError: If force is False.
-        """
+    def delete_all_secrets(self) -> None:
+        """Delete all existing secrets."""
         self._create_secrets_file__if_not_exists()
-
-        if not force:
-            raise ValueError(
-                "This operation will delete all secrets. "
-                "To confirm, please pass `--yes`."
-            )
         remove(self.secrets_file)
