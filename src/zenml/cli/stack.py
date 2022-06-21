@@ -537,8 +537,7 @@ def remove_stack_component(
         secrets_manager_flag: To remove the secrets manager from this stack.
         feature_store_flag: To remove the feature store from this stack.
         model_deployer_flag: To remove the model deployer from this stack.
-        experiment_tracker_flag: To remove the experiment tracker from this
-        stack.
+        experiment_tracker_flag: To remove the experiment tracker from this stack.
         alerter_flag: To remove the alerter from this stack.
     """
     cli_utils.print_active_profile()
