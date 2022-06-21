@@ -152,22 +152,15 @@ class KServeModelDeployer(BaseModelDeployer):
                     f"The ZenML secret specified in the KServe Model "
                     f"Deployer configuration cannot be fetched: {self.secret}."
                 )
-            if self.kserve_client:
-                try:
-                    zenml_secret = secret_manager.get_secret(self.secret)
-                except KeyError:
-                    raise RuntimeError(
-                        f"The ZenML secret '{self.secret}' specified in the "
-                        f"KServe Model Deployer configuration was not found "
-                        f"in the active stack's secret manager."
-                    )
-                self.kserve_client.set_credentials(**zenml_secret.content)
-            else:
+            try:
+                zenml_secret = secret_manager.get_secret(self.secret)
+            except KeyError:
                 raise RuntimeError(
-                    f"The KServe client is not available. The ZenML secret "
-                    f"'{self.secret}' specified in the KServe Model Deployer "
-                    f"configuration cannot be fetched."
+                    f"The ZenML secret '{self.secret}' specified in the "
+                    f"KServe Model Deployer configuration was not found "
+                    f"in the active stack's secret manager."
                 )
+            self.kserve_client.set_credentials(**zenml_secret.content)
         else:
             raise ValueError(
                 "The secret name must be specified to set in registration of the model deployer",
@@ -281,7 +274,6 @@ class KServeModelDeployer(BaseModelDeployer):
         Raises:
             RuntimeError: if an operational failure is encountered while
         """
-        labels = labels or {}
         label_selector = (
             ",".join(f"{k}={v}" for k, v in labels.items()) if labels else None
         )
@@ -318,6 +310,14 @@ class KServeModelDeployer(BaseModelDeployer):
         return inference_services
 
     def _camel_to_snake(self, obj: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert a camelCase dictionary to snake_case.
+
+        Args:
+            obj: a dictionary with camelCase keys
+
+        Returns:
+            a dictionary with snake_case keys
+        """
         if isinstance(obj, (str, int, float)):
             return obj
         if isinstance(obj, dict):
