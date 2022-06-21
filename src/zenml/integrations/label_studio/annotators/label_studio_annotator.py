@@ -78,10 +78,62 @@ class LabelStudioAnnotator(BaseAnnotator):
         """
         return os.path.join(self.root_directory, "label_studio_daemon.log")
 
-    def up(self) -> None:
+    @property
+    def is_provisioned(self) -> bool:
+        """If the component provisioned resources to run locally.
+
+        Returns:
+            True if the component provisioned resources to run locally.
+        """
+        return fileio.exists(self.root_directory)
+
+    @property
+    def is_running(self) -> bool:
+        """If the component is running locally.
+
+        Returns:
+            True if the component is running locally, False otherwise.
+        """
+        if sys.platform != "win32":
+            from zenml.utils.daemon import check_if_daemon_is_running
+
+            if not check_if_daemon_is_running(self._pid_file_path):
+                return False
+        else:
+            # Daemon functionality is not supported on Windows, so the PID
+            # file won't exist. This if clause exists just for mypy to not
+            # complain about missing functions
+            pass
+
+        return True
+
+    def provision(self) -> None:
         """Spins up the annotation server backend."""
         fileio.makedirs(self.root_directory)
 
+    def deprovision(self) -> None:
+        """Spins down the annotation server backend."""
+        if fileio.exists(self._log_file):
+            fileio.remove(self._log_file)
+
+    def resume(self) -> None:
+        """Resumes the annotation interface."""
+        if self.is_running:
+            logger.info("Local kubeflow pipelines deployment already running.")
+            return
+
+        self.start_annotator_daemon()
+
+    def suspend(self) -> None:
+        """Suspends the annotation interface."""
+        if not self.is_running:
+            logger.info("Local annotation server is not running.")
+            return
+
+        self.stop_annotator_daemon()
+
+    def start_annotator_daemon(self) -> None:
+        """Starts the annotation server backend."""
         command = [
             "label-studio",
             "start",
@@ -120,16 +172,13 @@ class LabelStudioAnnotator(BaseAnnotator):
             )
             logger.info(
                 "Started Label Studio daemon (check the daemon"
-                "logs at %s in case you're not able to access the annotation"
+                "logs at `%s` in case you're not able to access the annotation "
                 "interface).",
                 self._log_file,
             )
 
-    def down(self) -> None:
-        """Spins down the annotation server backend."""
-        if fileio.exists(self._log_file):
-            fileio.remove(self._log_file)
-
+    def stop_annotator_daemon(self) -> None:
+        """Stops the annotation server backend."""
         if fileio.exists(self._pid_file_path):
             if sys.platform == "win32":
                 # Daemon functionality is not supported on Windows, so the PID
