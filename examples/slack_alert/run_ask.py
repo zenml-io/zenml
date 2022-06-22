@@ -11,20 +11,25 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.ask_pipeline import ask_pipeline
-from steps.alerter_steps import alerter_ask_step
-from steps.data_loader import data_loader
-from steps.deployer import mlflow_model_deployer_step
-from steps.evaluator import evaluator
-from steps.formatter import test_acc_ask_formatter
-from steps.trainer import svc_trainer_mlflow
+from pipelines.ask_pipeline import slack_ask_pipeline
+from steps import (
+    evaluator,
+    importer,
+    svc_trainer_mlflow,
+    test_acc_ask_formatter,
+)
+
+from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
+from zenml.integrations.slack.steps.slack_alerter_ask_step import (
+    slack_alerter_ask_step,
+)
 
 if __name__ == "__main__":
-    ask_pipeline(
-        data_loader=data_loader(),
+    slack_ask_pipeline(
+        importer=data_loader(),
         trainer=svc_trainer_mlflow(),
         evaluator=evaluator(),
         formatter=test_acc_ask_formatter(),
-        alerter=alerter_ask_step(),
+        alerter=slack_alerter_ask_step(),
         deployer=mlflow_model_deployer_step(),
     ).run()

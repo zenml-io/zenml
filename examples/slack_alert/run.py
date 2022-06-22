@@ -11,18 +11,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from pipelines.post_pipeline import post_pipeline
-from steps.alerter_steps import alerter_post_step
-from steps.data_loader import data_loader
-from steps.evaluator import evaluator
-from steps.formatter import test_acc_post_formatter
-from steps.trainer import svc_trainer
+from pipelines.post_pipeline import slack_post_pipeline
+from steps import evaluator, importer, svc_trainer, test_acc_post_formatter
+
+from zenml.integrations.slack.steps.slack_alerter_post_step import (
+    slack_alerter_post_step,
+)
 
 if __name__ == "__main__":
-    post_pipeline(
-        data_loader=data_loader(),
+    slack_post_pipeline(
+        importer=data_loader(),
         trainer=svc_trainer(),
         evaluator=evaluator(),
         formatter=test_acc_post_formatter(),
-        alerter=alerter_post_step(),
+        alerter=slack_alerter_post_step(),
     ).run()
