@@ -13,16 +13,20 @@
 #  permissions and limitations under the License.
 """Implementation of Kubernetes metadata store."""
 
+import subprocess
+import time
 from typing import Any, ClassVar, Dict
 
 from kubernetes import client as k8s_client
 from pydantic import root_validator
 
-from zenml.exceptions import StackComponentInterfaceError
+from zenml.exceptions import ProvisioningError, StackComponentInterfaceError
 from zenml.integrations.kubernetes import KUBERNETES_METADATA_STORE_FLAVOR
 from zenml.integrations.kubernetes.orchestrators import kube_utils
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata_stores.mysql_metadata_store import MySQLMetadataStore
+from zenml.utils import networking_utils
 
 logger = get_logger(__name__)
 
@@ -39,12 +43,18 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             Defaults to "default".
         storage_capacity: Storage capacity of the metadata store.
             Defaults to `"10Gi"` (=10GB).
+        port: Local port where metadata store will be reachable.
     """
 
     deployment_name: str
     kubernetes_context: str
     kubernetes_namespace: str = "zenml"
     storage_capacity: str = "10Gi"
+    port: int = 8081
+    _mysql_port: int = 3306
+    _timeout: int = 180
+    _pid_file_path: str = "kubernetes_metadata_store_daemon.pid"
+    _log_file: str = "kubernetes_metadata_store_daemon.log"
     _k8s_core_api: k8s_client.CoreV1Api = None
     _k8s_apps_api: k8s_client.AppsV1Api = None
 
@@ -137,6 +147,11 @@ class KubernetesMetadataStore(MySQLMetadataStore):
         Returns:
             True if `is_provisioned` else False.
         """
+        from zenml.utils.daemon import check_if_daemon_is_running
+
+        if not check_if_daemon_is_running(self._pid_file_path):
+            return False
+
         return self.is_provisioned
 
     def provision(self) -> None:
@@ -164,3 +179,121 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             deployment_name=self.deployment_name,
             namespace=self.kubernetes_namespace,
         )
+
+    # TODO: code below is duplicated from kubeflow metadata store.
+
+    def resume(self) -> None:
+        """Resumes the metadata store."""
+        self.start_metadata_daemon()
+        self.wait_until_metadata_store_ready(timeout=self._timeout)
+
+    def suspend(self) -> None:
+        """Suspends the metadata store."""
+        self.stop_metadata_daemon()
+
+    @property
+    def pod_name(self) -> str:
+        """Name of the k8s pod where the MySQL database is deployed.
+
+        Returns:
+            Name of the k8s pod.
+        """
+        pod_list = self._k8s_core_api.list_namespaced_pod(
+            namespace=self.kubernetes_namespace,
+            label_selector=f"app={self.deployment_name}",
+        )
+        return pod_list.items[0].metadata.name  # type: ignore[no-any-return]
+
+    def start_metadata_daemon(self) -> None:
+        """Starts a daemon process that forwards ports.
+
+        This is so the MySQL database in the k8s cluster is accessible on the
+        localhost.
+
+        Raises:
+            ProvisioningError: if the daemon fails to start.
+        """
+        command = [
+            "kubectl",
+            "--context",
+            self.kubernetes_context,
+            "--namespace",
+            self.kubernetes_namespace,
+            "port-forward",
+            self.pod_name,
+            f"{self.port}:{self._mysql_port}",
+        ]
+        print(command)
+        if not networking_utils.port_available(self.port):
+            raise ProvisioningError(
+                f"Unable to port-forward Kubernetes Metadata to local "
+                f"port {self.port} because the port is occupied. In order to "
+                f"access the Kubernetes Metadata locally, please "
+                f"change the metadata store configuration to use an available "
+                f"port or stop the other process currently using the port."
+            )
+        else:
+            from zenml.utils import daemon
+
+            def _daemon_function() -> None:
+                """Forwards the port of the Kubeflow Pipelines Metadata pod ."""
+                subprocess.check_call(command)
+
+            daemon.run_as_daemon(
+                _daemon_function,
+                pid_file=self._pid_file_path,
+                log_file=self._log_file,
+            )
+            logger.info(
+                "Started Kubernetes Metadata daemon (check the daemon"
+                "logs at %s in case you're not able to access the pipeline"
+                "metadata).",
+                self._log_file,
+            )
+
+    def stop_metadata_daemon(self) -> None:
+        """Stops the Kubernetes metadata daemon process if it is running."""
+        if fileio.exists(self._pid_file_path):
+            from zenml.utils import daemon
+
+            daemon.stop_daemon(self._pid_file_path)
+            fileio.remove(self._pid_file_path)
+
+    def wait_until_metadata_store_ready(self, timeout: int) -> None:
+        """Waits until the metadata store connection is ready.
+
+        Potentially an irrecoverable error could occur or the timeout could
+        expire, so it checks for this.
+
+        Args:
+            timeout: The maximum time to wait for the metadata store to be
+                ready.
+
+        Raises:
+            RuntimeError: if the metadata store is not ready after the timeout
+        """
+        logger.info(
+            "Waiting for the Kubernetes metadata store to be ready (this "
+            "might take a few minutes)."
+        )
+        while True:
+            try:
+                # it doesn't matter what we call here as long as it exercises
+                # the MLMD connection
+                self.get_pipelines()
+                break
+            except Exception as e:
+                logger.info(
+                    "The Kubernetes metadata store is not ready yet. Waiting "
+                    "for 10 seconds..."
+                )
+                if timeout <= 0:
+                    raise RuntimeError(
+                        f"An unexpected error was encountered while waiting "
+                        f"for the Kubernetes metadata store to be functional: "
+                        f"{str(e)}"
+                    ) from e
+                timeout -= 10
+                time.sleep(10)
+
+        logger.info("The Kubernetes metadata store is functional.")
