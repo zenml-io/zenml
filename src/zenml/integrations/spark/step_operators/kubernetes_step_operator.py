@@ -11,44 +11,114 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import os
 import subprocess
-from typing import List, ClassVar
+from typing import AbstractSet, ClassVar, Dict, List, Optional
+
+from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
-from zenml.integrations.spark.step_operators import spark_entrypoint
-from zenml.step_operators import BaseStepOperator
+from zenml.io.fileio import copy
+from zenml.logger import get_logger
+from zenml.step_operators import BaseStepOperator, entrypoint
 from zenml.utils.docker_utils import build_docker_image
+from zenml.utils.io_utils import write_file_contents_as_string
 from zenml.utils.source_utils import get_source_root_path
 
-ENTRYPOINT = spark_entrypoint.__file__
+logger = get_logger(__name__)
+
+LOCAL_ENTRYPOINT = entrypoint.__file__
+ZENML_DIR = "/zenml/"
+APP_DIR = "/app/"
+CONTAINER_ZENML_CONFIG_DIR = ".zenconfig"
+
+
+def generate_dockerfile_contents(
+    base_image: str,
+    requirements: Optional[AbstractSet[str]] = None,
+    environment_vars: Optional[Dict[str, str]] = None,
+) -> str:
+    """Generates a Dockerfile.
+
+    Args:
+        base_image: The image to use as base for the dockerfile.
+        requirements: Optional list of pip requirements to install.
+        environment_vars: Optional dict of environment variables to set.
+
+    Returns:
+        Contents of a dockerfile.
+    """
+    # Create the base
+    lines = [
+        f"FROM {base_image}",
+        "USER root",  # required to install the requirements
+        f"WORKDIR {ZENML_DIR}",
+        f"COPY entrypoint.py .",
+    ]
+
+    # Add env variables
+    if environment_vars:
+        for key, value in environment_vars.items():
+            lines.append(f"ENV {key.upper()}={value}")
+
+    # Install requirements
+    if requirements:
+        lines.append(
+            f"RUN pip install --user --no-cache {' '.join(sorted(requirements))}"
+        )
+
+    # Copy the repo and config
+    lines.extend(
+        [
+            f"WORKDIR {APP_DIR}",
+            "COPY . .",
+            "RUN chmod -R a+rw .",
+            f"ENV {ENV_ZENML_CONFIG_PATH}={APP_DIR}{CONTAINER_ZENML_CONFIG_DIR}",
+        ]
+    )
+
+    return "\n".join(lines)
 
 
 class KubernetesSparkStepOperator(BaseStepOperator):
     # Instance parameters
     master: str
-    deploy_mode: str = 'cluster'
+    deploy_mode: str = "cluster"
     configuration_properties: List[str] = []
 
     # Class configuration
     FLAVOR: ClassVar[str] = SPARK_KUBERNETES_STEP_OPERATOR
 
     def _build_docker_image(
-            self,
-            pipeline_name,
-            requirements,
+        self,
+        pipeline_name,
+        requirements,
     ):
         """Create the proper image to use for spark on k8s."""
+        base_image = "spark-py:pypyspark"
         image_name = f"zenml-k8s:{pipeline_name}"
+
         self.configuration_properties.extend(
-            [f"spark.kubernetes.container.image={image_name}",
-             "spark.kubernetes.context=minikube",
-             "spark.kubernetes.file.upload.path=/tmp",
-             "spark.ui.enabled=false"]
+            [
+                f"spark.kubernetes.container.image={image_name}",
+            ]
         )
+        dockerfile_content = generate_dockerfile_contents(
+            base_image=base_image, requirements=requirements
+        )
+        dockerfile_path = os.path.join(os.getcwd(), "DOCKERFILE")
+        entrypoint_path = os.path.join(os.getcwd(), "entrypoint.py")
+        copy(LOCAL_ENTRYPOINT, entrypoint_path, overwrite=True)
+        write_file_contents_as_string(
+            dockerfile_path,
+            dockerfile_content,
+        )
+
         build_docker_image(
-            build_context_path=get_source_root_path(),
             image_name=image_name,
+            build_context_path=get_source_root_path(),
+            dockerfile_path=dockerfile_path,
+            base_image=base_image,
             requirements=requirements,
-            base_image="spark-py:pyspark"
         )
 
     def _create_base_command(self):
@@ -64,21 +134,29 @@ class KubernetesSparkStepOperator(BaseStepOperator):
 
     def _create_configurations(self):
         """Build the configuration parameters for the spark-submit command."""
-        configurations = []
+        configurations = [
+            "--conf",
+            "spark.kubernetes.namespace=default",
+            "--conf",
+            "spark.kubernetes.authenticate.driver.serviceAccountName=spark",
+        ]
+
         for o in self.configuration_properties:
             configurations.extend(["--conf", o])
         return configurations
 
     @staticmethod
-    def _build_entrypoint_command(entrypoint_command):
+    def _create_spark_app_command(entrypoint_command):
         """Build the python entrypoint command for the spark-submit."""
-        command = [ENTRYPOINT]
+        command = [
+            f"local://{ZENML_DIR}{os.path.basename(entrypoint.__file__)}"
+        ]
 
         for arg in [
             "--main_module",
             "--step_source_path",
             "--execution_info_path",
-            "--input_artifact_types_path"
+            "--input_artifact_types_path",
         ]:
             i = entrypoint_command.index(arg)
             command.extend([arg, entrypoint_command[i + 1]])
@@ -86,11 +164,11 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         return command
 
     def launch(
-            self,
-            pipeline_name: str,
-            run_name: str,
-            requirements: List[str],
-            entrypoint_command: List[str],
+        self,
+        pipeline_name: str,
+        run_name: str,
+        requirements: List[str],
+        entrypoint_command: List[str],
     ) -> None:
         """Launch the spark job with spark-submit."""
         # Build the docker image to use for spark on Kubernetes
@@ -103,18 +181,17 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         configurations = self._create_configurations()
         base_command.extend(configurations)
 
-        # Add the entrypoint
-        entrypoint = self._build_entrypoint_command(entrypoint_command)
+        # Add the spark app
+        spark_app_command = self._create_spark_app_command(entrypoint_command)
+        base_command.extend(spark_app_command)
 
-        # Finalize the command
-        final_command = " ".join(base_command + entrypoint)
-
+        # Execute the command
         process = subprocess.Popen(
-            final_command,
+            " ".join(base_command),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
-            shell=True
+            shell=True,
         )
 
         stdout, stderr = process.communicate()
