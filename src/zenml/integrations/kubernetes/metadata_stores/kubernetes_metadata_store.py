@@ -67,36 +67,41 @@ class KubernetesMetadataStore(MySQLMetadataStore):
         self._k8s_apps_api = k8s_client.AppsV1Api()
 
     @root_validator(skip_on_failure=False)
-    def check_deployment_name_set(
+    def check_required_attributes(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Pydantic root_validator.
 
-        This ensures that the `deployment_name` is set and raises an error
-        with a custom error message otherwise.
+        This ensures that both `deployment_name` and `kubernetes_context` are
+        set and raises an error with a custom error message otherwise.
 
         Args:
-            values: Values passed to the object constructor.
+            values: Values passed to the Pydantic constructor.
 
         Raises:
-            StackComponentInterfaceError: if `deployment_name` attribute is not
-                defined.
+            StackComponentInterfaceError: if either `deployment_name` or
+                `kubernetes_context` is not defined.
 
         Returns:
             Values passed to the Pydantic constructor.
         """
-        if "deployment_name" not in values:
-            raise StackComponentInterfaceError(
-                "Required field `deployment_name` missing for "
-                "`KubernetesMetadataStore`. "
-                "Note: the `kubernetes` metadata store flavor is a special "
-                "subtype of the `mysql` metadata store that deploys a fresh "
-                "MySQL database within your k8s cluster when running "
-                "`zenml stack up`. "
-                "If you already have a MySQL database running in your cluster "
-                "(or elsewhere), simply use the `mysql` metadata store flavor "
-                "instead."
-            )
+        usage_note = (
+            "Note: the `kubernetes` metadata store flavor is a special "
+            "subtype of the `mysql` metadata store that deploys a fresh "
+            "MySQL database within your k8s cluster when running "
+            "`zenml stack up`. "
+            "If you already have a MySQL database running in your cluster "
+            "(or elsewhere), simply use the `mysql` metadata store flavor "
+            "instead."
+        )
+
+        for required_field in ("deployment_name", "kubernetes_context"):
+            if required_field not in values:
+                raise StackComponentInterfaceError(
+                    f"Required field `{required_field}` missing for "
+                    "`KubernetesMetadataStore`. " + usage_note
+                )
+
         return values
 
     @property
