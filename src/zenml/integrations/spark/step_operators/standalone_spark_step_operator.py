@@ -12,7 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import subprocess
-from typing import List, ClassVar
+from typing import ClassVar, List
 
 from zenml.integrations.spark import SPARK_STANDALONE_STEP_OPERATOR
 from zenml.integrations.spark.step_operators import spark_entrypoint
@@ -57,7 +57,7 @@ class StandaloneSparkStepOperator(BaseStepOperator):
             "--main_module",
             "--step_source_path",
             "--execution_info_path",
-            "--input_artifact_types_path"
+            "--input_artifact_types_path",
         ]:
             i = entrypoint_command.index(arg)
             command.extend([arg, entrypoint_command[i + 1]])
@@ -91,7 +91,7 @@ class StandaloneSparkStepOperator(BaseStepOperator):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
-            shell=True
+            shell=True,
         )
 
         stdout, stderr = process.communicate()

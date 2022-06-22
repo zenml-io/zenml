@@ -25,6 +25,7 @@ from zenml.zen_stores.models import FlavorWrapper
 SPARK_STANDALONE_STEP_OPERATOR = "spark-standalone"
 SPARK_KUBERNETES_STEP_OPERATOR = "spark-k8s"
 
+
 class SparkIntegration(Integration):
     """Definition of Spark integration for ZenML."""
 
@@ -51,7 +52,7 @@ class SparkIntegration(Integration):
                 source="zenml.integrations.spark.step_operators.KubernetesSparkStepOperator",
                 type=StackComponentType.STEP_OPERATOR,
                 integration=cls.NAME,
-            )
+            ),
         ]
 
 

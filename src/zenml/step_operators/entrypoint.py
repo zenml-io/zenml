@@ -35,6 +35,7 @@ from zenml.repository import Repository
 from zenml.steps import BaseStep
 from zenml.steps.utils import _FunctionExecutor, generate_component_class
 from zenml.utils import source_utils, yaml_utils
+from zenml.utils.source_utils import prepend_python_path
 
 
 def create_executor_class(
@@ -149,6 +150,7 @@ def main(
     """
     # prevent running entire pipeline in user code if they would run at import
     # time (e.g. not wrapped in a function or __name__== "__main__" check)
+
     constants.SHOULD_PREVENT_PIPELINE_EXECUTION = True
 
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -157,23 +159,26 @@ def main(
     # activate integrations and import the user main module to register all
     # materializers and stack components
     integration_registry.activate_integrations()
-    importlib.import_module(main_module)
+    with prepend_python_path("/app"):
+        importlib.import_module(main_module)
 
-    input_artifact_type_mapping = yaml_utils.read_json(
-        input_artifact_types_path
-    )
-    executor_class = create_executor_class(
-        step_source_path=step_source_path,
-        input_artifact_type_mapping=input_artifact_type_mapping,
-    )
+        input_artifact_type_mapping = yaml_utils.read_json(
+            input_artifact_types_path
+        )
+        executor_class = create_executor_class(
+            step_source_path=step_source_path,
+            input_artifact_type_mapping=input_artifact_type_mapping,
+        )
 
-    stack = Repository().active_stack
-    execution_info = load_execution_info(execution_info_path)
-    executor = configure_executor(executor_class, execution_info=execution_info)
+        stack = Repository().active_stack
+        execution_info = load_execution_info(execution_info_path)
+        executor = configure_executor(
+            executor_class, execution_info=execution_info
+        )
 
-    stack.prepare_step_run()
-    run_with_executor(execution_info=execution_info, executor=executor)
-    stack.cleanup_step_run()
+        stack.prepare_step_run()
+        run_with_executor(execution_info=execution_info, executor=executor)
+        stack.cleanup_step_run()
 
 
 if __name__ == "__main__":
