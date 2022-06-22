@@ -120,7 +120,9 @@ def run_pipeline(python_file: str, config_path: str) -> None:
                 )
             elif isinstance(materializers_config, dict):
                 materializers = {
-                    output_name: _load_class_from_module(module, source)
+                    output_name: _load_class_from_module(
+                        module, source, str(zenml_root)
+                    )
                     for output_name, source in materializers_config.items()
                 }
             else:
