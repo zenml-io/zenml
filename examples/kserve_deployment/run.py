@@ -14,7 +14,7 @@
 import click
 from pipelines.kserve_sklearn_pipeline import kserve_sklearn_pipeline
 from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
-from steps.model_deployer import custom_kserve_sklearn_deployer
+from steps.model_deployer import sklearn_pytorch_deployer
 from steps.sklearn_evaluator import evaluator
 from steps.sklearn_importer import importer
 from steps.sklearn_trainer import trainer
@@ -39,7 +39,7 @@ def main(
                 min_accuracy=min_accuracy,
             )
         ),
-        model_deployer=custom_kserve_sklearn_deployer,
+        model_deployer=sklearn_pytorch_deployer,
     )
     deployment_pipeline.run()
 

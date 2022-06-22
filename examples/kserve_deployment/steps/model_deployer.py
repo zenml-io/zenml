@@ -23,7 +23,7 @@ from zenml.integrations.kserve.steps import (
 MODEL_NAME = "mnist"
 
 
-custom_kserve_sklearn_deployer = kserve_model_deployer_step(
+kserve_sklearn_deployer = kserve_model_deployer_step(
     config=KServeDeployerStepConfig(
         service_config=KServeDeploymentConfig(
             model_name=MODEL_NAME,
@@ -35,7 +35,7 @@ custom_kserve_sklearn_deployer = kserve_model_deployer_step(
     )
 )
 
-custom_kserve_pytorch_deployer = kserve_pytorch_model_deployer_step(
+pytorch_pytorch_deployer = kserve_pytorch_model_deployer_step(
     config=KServePytorchDeployerStepConfig(
         service_config=KServeDeploymentConfig(
             model_name=MODEL_NAME,

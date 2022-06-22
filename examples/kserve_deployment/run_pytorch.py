@@ -15,9 +15,19 @@ from typing import cast
 
 import click
 from pipelines.kserve_pytorch_pipeline import kserve_pytorch_pipeline
+from pipelines.pytorch_inference_pipeline import pytorch_inference_pipeline
 from rich import print
 from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
-from steps.model_deployer import custom_kserve_pytorch_deployer
+from steps.load_inference_image import (
+    LoadInferenceImageStepConfig,
+    load_inference_image,
+)
+from steps.model_deployer import pytorch_pytorch_deployer
+from steps.prediction_services_loader import (
+    KServeDeploymentLoaderStepConfig,
+    prediction_service_loader,
+)
+from steps.predictor import predictor
 from steps.pytorch_data_loader import (
     PytorchDataLoaderConfig,
     pytorch_data_loader,
@@ -28,14 +38,23 @@ from steps.pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
 from zenml.integrations.kserve.services import KServeDeploymentService
 
+DEPLOY = "deploy"
+PREDICT = "predict"
+DEPLOY_AND_PREDICT = "deploy_and_predict"
+
 
 @click.command()
-# @click.option(
-#    "--deploy",
-#    "-d",
-#    is_flag=True,
-#    help="Run the deployment pipeline to train and deploy a model",
-# )
+@click.option(
+    "--config",
+    "-c",
+    type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
+    default="deploy_and_predict",
+    help="Optionally you can choose to only run the deployment "
+    "pipeline to train and deploy a model (`deploy`), or to "
+    "only run a prediction against the deployed model "
+    "(`predict`). By default both will be run "
+    "(`deploy_and_predict`).",
+)
 @click.option(
     "--batch-size",
     default=4,
@@ -62,7 +81,7 @@ from zenml.integrations.kserve.services import KServeDeploymentService
     help="Minimum accuracy required to deploy the model (default: 0.92)",
 )
 def main(
-    # deploy: bool,
+    config: str,
     batch_size: int,
     epochs: int,
     lr: float,
@@ -76,32 +95,56 @@ def main(
         python run.py --deploy --min-accuracy 0.80
 
     """
+    deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
+    predict = config == PREDICT or config == DEPLOY_AND_PREDICT
+
     model_name = "mnist"
     deployment_pipeline_name = "kserve_pytorch_pipeline"
     deployer_step_name = "kserve_pytorch_model_deployer_step"
 
-    custom_model_deployer = KServeModelDeployer.get_active_model_deployer()
+    model_deployer = KServeModelDeployer.get_active_model_deployer()
 
-    # Initialize and run a continuous deployment pipeline run
-    kserve_pytorch_pipeline(
-        data_loader=pytorch_data_loader(
-            PytorchDataLoaderConfig(
-                train_batch_size=batch_size, test_batch_size=batch_size
-            )
-        ),
-        trainer=pytorch_trainer(
-            PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
-        ),
-        evaluator=pytorch_evaluator(),
-        deployment_trigger=deployment_trigger(
-            config=DeploymentTriggerConfig(
-                min_accuracy=min_accuracy,
-            )
-        ),
-        deployer=custom_kserve_pytorch_deployer,
-    ).run()
+    if deploy:
+        # Initialize and run a continuous deployment pipeline run
+        kserve_pytorch_pipeline(
+            data_loader=pytorch_data_loader(
+                PytorchDataLoaderConfig(
+                    train_batch_size=batch_size, test_batch_size=batch_size
+                )
+            ),
+            trainer=pytorch_trainer(
+                PytorchTrainerConfig(epochs=epochs, lr=lr, momentum=momentum)
+            ),
+            evaluator=pytorch_evaluator(),
+            deployment_trigger=deployment_trigger(
+                config=DeploymentTriggerConfig(
+                    min_accuracy=min_accuracy,
+                )
+            ),
+            deployer=pytorch_pytorch_deployer,
+        ).run()
 
-    services = custom_model_deployer.find_model_server(
+    img_url: str = "https://github.com/kserve/kserve/blob/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png"
+
+    if predict:
+        # Initialize an inference pipeline run
+        pytorch_inference_pipeline(
+            load_inference_image=load_inference_image(
+                LoadInferenceImageStepConfig(
+                    image_url=img_url,
+                ),
+            ),
+            prediction_service_loader=prediction_service_loader(
+                KServeDeploymentLoaderStepConfig(
+                    pipeline_name=deployment_pipeline_name,
+                    step_name=deployer_step_name,
+                    model_name=model_name,
+                )
+            ),
+            predictor=predictor(),
+        ).run()
+
+    services = model_deployer.find_model_server(
         pipeline_name=deployment_pipeline_name,
         pipeline_step_name=deployer_step_name,
         model_name=model_name,
@@ -113,7 +156,6 @@ def main(
                 f"The KServe prediction server is running remotely as a Kubernetes "
                 f"service and accepts inference requests at:\n"
                 f"    {service.prediction_url}\n"
-                f"    With the hostname: {service.prediction_hostname}\n"
                 f"To stop the service, run "
                 f"[italic green]`zenml served-models delete "
                 f"{str(service.uuid)}`[/italic green]."
@@ -128,7 +170,8 @@ def main(
     else:
         print(
             "No KServe prediction server is currently running. The deployment "
-            "pipeline must run first to train a model and deploy it."
+            "pipeline must run first to train a model and deploy it. Execute "
+            "the same command with the `--deploy` argument to deploy a model."
         )
 
 
