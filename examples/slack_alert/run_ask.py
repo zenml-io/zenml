@@ -13,8 +13,8 @@
 
 from pipelines.ask_pipeline import slack_ask_pipeline
 from steps import (
-    evaluator,
     data_loader,
+    evaluator,
     svc_trainer_mlflow,
     test_acc_ask_formatter,
 )
