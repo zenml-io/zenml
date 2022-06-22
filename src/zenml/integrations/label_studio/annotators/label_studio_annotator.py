@@ -16,7 +16,10 @@
 import os
 import subprocess
 import sys
+import webbrowser
 from typing import Any, ClassVar, List
+
+from label_studio_sdk import Client
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.exceptions import ProvisioningError
@@ -34,12 +37,13 @@ class LabelStudioAnnotator(BaseAnnotator):
     """Class to interact with the Label Studio annotation interface."""
 
     port: int = DEFAULT_LABEL_STUDIO_PORT
+    api_key: str
 
     FLAVOR: ClassVar[str] = LABEL_STUDIO_ANNOTATOR_FLAVOR
 
     def get_url(self) -> str:
         """Gets the URL of the annotation interface."""
-        return "https://labelstudio.org"
+        return f"http://localhost:{self.port}"
 
     def get_datasets(self) -> List[str]:
         """Gets the datasets currently available for annotation."""
@@ -190,16 +194,24 @@ class LabelStudioAnnotator(BaseAnnotator):
 
     def launch(self) -> None:
         """Launches the annotation interface."""
-        # Define the URL where Label Studio is accessible and the API key for your user account
-        LABEL_STUDIO_URL = "http://localhost:8080"
-        API_KEY = "YOUR_API_KEY"
+        if self._connection_available():
+            webbrowser.open(self.get_url(), new=1, autoraise=True)
+        else:
+            logger.warning(
+                "Could not launch annotation interface"
+                "because the connection could not be established."
+            )
 
-        # Import the SDK and the client module
-        from label_studio_sdk import Client
-
-        # Connect to the Label Studio API and check the connection
-        ls = Client(url=LABEL_STUDIO_URL, api_key=API_KEY)
-        ls.check_connection()
+    def _connection_available(self) -> bool:
+        ls = Client(url=self.get_url(), api_key=self.api_key)
+        try:
+            result = ls.check_connection()
+            return result.get("status") == "UP"
+        except Exception:
+            logger.error(
+                "Connection error: No connection was able to be established to the Label Studio backend."
+            )
+            return False
 
     def add_dataset(self, dataset_name: str) -> None:
         """Registers a dataset for annotation."""
