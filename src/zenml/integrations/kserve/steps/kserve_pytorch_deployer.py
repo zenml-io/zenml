@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the KServe Pytorch Deployer step."""
+"""Implementation of the KServe PyTorch Deployer step."""
 
 import os
 import tempfile
@@ -48,11 +48,11 @@ logger = get_logger(__name__)
 
 
 class KServePytorchDeployerStepConfig(BaseStepConfig):
-    """KServe pytorch model deployer step configuration.
+    """KServe PyTorch model deployer step configuration.
 
     Attributes:
         service_config: KServe deployment service configuration.
-        model_class_file:     Path to python file containing model architecture.
+        model_class_file:     Path to Python file containing model architecture.
         handler:        TorchServe's handler file to handle custom TorchServe inference logic.
         extra_files:    Comma separated path to extra dependency files.
         model_version: Model version.
@@ -71,7 +71,7 @@ class KServePytorchDeployerStepConfig(BaseStepConfig):
 
 
 class TorchModelArchiver(BaseModel):
-    """Model Archiver for Pytorch models.
+    """Model Archiver for PyTorch models.
 
     Attributes:
         model_name: Model name.
@@ -108,7 +108,7 @@ def kserve_pytorch_model_deployer_step(
     context: StepContext,
     model: ModelArtifact,
 ) -> KServeDeploymentService:
-    """KServe pytorch model deployer pipeline step.
+    """KServe PyTorch model deployer pipeline step.
 
     This step can be used in a pipeline to implement continuous
     deployment for an ML model with KServe for PyTorch models.
@@ -136,7 +136,7 @@ def kserve_pytorch_model_deployer_step(
     config.service_config.pipeline_step_name = step_name
 
     def prepare_service_config(model_uri: str) -> KServeDeploymentConfig:
-        """Prepare the pytorch model files for model serving.
+        """Prepare the PyTorch model files for model serving.
 
         This function ensures that the model files are in the correct format
         and file structure required by the KServe server implementation

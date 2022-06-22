@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Implementation for the KServe inference service."""
 
+import json
 import os
 import re
 from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 from uuid import UUID
 
-import numpy as np
 import requests
 from kserve import (
     KServeClient,
@@ -42,8 +42,6 @@ from zenml.services import (
 )
 
 if TYPE_CHECKING:
-    from numpy.typing import NDArray
-
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
     )
@@ -529,9 +527,9 @@ class KServeDeploymentService(BaseService):
             return None
 
         namespace = self._get_namespace()
-        return f"http://{self.crd_name}.{namespace}.example.com:predict"
+        return f"{self.crd_name}.{namespace}.example.com"
 
-    def predict(self, request: "NDArray[Any]") -> "NDArray[Any]":
+    def predict(self, request: str) -> Any:
         """Make a prediction using the service.
 
         Args:
@@ -560,7 +558,7 @@ class KServeDeploymentService(BaseService):
         response = requests.post(
             self.prediction_url,
             headers=headers,
-            json={"instances": request.tolist()},
+            json=json.loads(request),
         )
         response.raise_for_status()
-        return np.array(response.json()["predictions"])
+        return response.json()["predictions"]
