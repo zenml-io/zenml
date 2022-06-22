@@ -16,7 +16,7 @@ from zenml.pipelines import pipeline
 
 
 @pipeline
-def post_pipeline(data_loader, trainer, evaluator, formatter, alerter):
+def slack_post_pipeline(data_loader, trainer, evaluator, formatter, alerter):
     """Train and evaluate a model and post the test accuracy to slack."""
     X_train, X_test, y_train, y_test = data_loader()
     model = trainer(X_train=X_train, y_train=y_train)
