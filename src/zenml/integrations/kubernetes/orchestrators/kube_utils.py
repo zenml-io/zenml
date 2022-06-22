@@ -36,7 +36,7 @@ import datetime
 import enum
 import re
 import time
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, Callable, Optional, TypeVar, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -70,104 +70,21 @@ class PodPhase(enum.Enum):
     UNKNOWN = "Unknown"
 
 
-class RestartPolicy(enum.Enum):
-    """Restart policy of the Kubernetes Pod container.
+def load_kube_config(context: Optional[str] = None) -> None:
+    """Load the kubernetes client config.
 
-    Restart policies are defined in
-    https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy
+    Depending on the environment (whether it is inside the running kubernetes
+    cluster or remote host), different location will be searched for the config
+    file.
+
+    Args:
+        context: Name of the Kubernetes context. If not provided, uses the
+            curretly active context.
     """
-
-    ALWAYS = "Always"
-    ON_FAILURE = "OnFailure"
-    NEVER = "Never"
-
-
-class PersistentVolumeAccessMode(enum.Enum):
-    """Access mode of the Kubernetes Persistent Volume.
-
-    Access modes are defined in
-    https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes
-    """
-
-    READ_WRITE_ONCE = "ReadWriteOnce"
-    READ_ONLY_MANY = "ReadOnlyMany"
-    READ_WRITE_MANY = "ReadWriteMany"
-
-
-class _KubernetesClientFactory:
-    """Factory class for creating kubernetes API client."""
-
-    def __init__(self) -> None:
-        self._config_loaded = False
-        self._inside_cluster = False
-
-    @property
-    def inside_cluster(self) -> bool:
-        """Whether current environment is inside the kubernetes cluster.
-
-        Returns:
-            True if inside the cluster else False.
-        """
-        if not self._config_loaded:
-            self._LoadConfig()
-        return self._inside_cluster
-
-    def _LoadConfig(self) -> None:  # pylint: disable=invalid-name
-        """Load the kubernetes client config.
-
-        Depending on the environment (whether it is inside the running kubernetes
-        cluster or remote host), different location will be searched for the config
-        file. The loaded config will be used as a default value for the clients this
-        factory is creating.
-        If config is already loaded, it is a no-op.
-        """
-        try:
-            # If this code is running inside Kubernetes Pod, service account admission
-            # controller [1] sets volume mounts in which the service account tokens
-            # and certificates exists, and it can be loaded using
-            # `load_incluster_config()`.
-            #
-            # [1]
-            # https://kubernetes.io/docs/reference/access-authn-authz/service-accounts-admin/#service-account-admission-controller
-            self._inside_cluster = True
-            k8s_config.load_incluster_config()
-        except k8s_config.ConfigException:
-            # If loading config in cluster fails, it means we're not running the code
-            # inside Kubernetes cluster. We try to load `~/.kube/config` file, or the
-            # filename from the KUBECONFIG environment variable.
-            # It will raise `kubernetes.config.ConfigException` if no config file
-            # is found.
-            self._inside_cluster = False
-            k8s_config.load_kube_config()
-
-        self._config_loaded = True
-
-    def MakeCoreV1Api(
-        self,
-    ) -> k8s_client.CoreV1Api:  # pylint: disable=invalid-name
-        """Make a kubernetes `CoreV1Api` client.
-
-        Returns:
-            `CoreV1Api` client.
-        """
-        if not self._config_loaded:
-            self._LoadConfig()
-        return k8s_client.CoreV1Api()
-
-    def MakeBatchV1Api(
-        self,
-    ) -> k8s_client.BatchV1Api:  # pylint: disable=invalid-name
-        """Make a Kubernetes `BatchV1Api` client.
-
-        Returns:
-            `BatchV1Api` client.
-        """
-        if not self._config_loaded:
-            self._LoadConfig()
-        return k8s_client.BatchV1Api()
-
-
-_factory = _KubernetesClientFactory()
+    try:
+        k8s_config.load_incluster_config()
+    except k8s_config.ConfigException:
+        k8s_config.load_kube_config(context=context)
 
 
 def sanitize_pod_name(pod_name: str) -> str:
@@ -220,33 +137,6 @@ def pod_is_done(pod: k8s_client.V1Pod) -> bool:
     return pod.status.phase == PodPhase.SUCCEEDED.value  # type: ignore[no-any-return]
 
 
-def make_core_v1_api() -> k8s_client.CoreV1Api:
-    """Make a kubernetes `CoreV1Api` client.
-
-    Returns:
-        `CoreV1Api` client.
-    """
-    return _factory.MakeCoreV1Api()
-
-
-def make_batch_v1_api() -> k8s_client.BatchV1Api:
-    """Make a kubernetes `BatchV1Api` client.
-
-    Returns:
-        `BatchV1Api` client.
-    """
-    return _factory.MakeBatchV1Api()
-
-
-def is_inside_cluster() -> bool:
-    """Whether current running environment is inside the kubernetes cluster.
-
-    Returns:
-        True if inside Kubernetes cluster else False.
-    """
-    return _factory.inside_cluster
-
-
 def get_pod(
     core_api: k8s_client.CoreV1Api, pod_name: str, namespace: str
 ) -> Optional[k8s_client.V1Pod]:
@@ -266,11 +156,9 @@ def get_pod(
     try:
         return core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
     except k8s_client.rest.ApiException as e:
-        if e.status != 404:
-            raise RuntimeError(
-                "Unknown error! \nReason: %s\nBody: %s" % (e.reason, e.body)
-            )
-        return None
+        if e.status == 404:
+            return None
+        raise RuntimeError from e
 
 
 def wait_pod(
@@ -378,41 +266,18 @@ def _if_not_exists(create_fn: FuncT) -> FuncT:
     return cast(FuncT, create_if_not_exists)
 
 
-def create_cluster_role_binding(body: Dict[str, Any]) -> None:
-    """Create a k8s cluster role binding.
-
-    Args:
-        body: Manifest for creating a cluster role binding.
-    """
-    with k8s_client.ApiClient() as api_client:
-        api_instance = k8s_client.RbacAuthorizationV1Api(api_client)
-        api_instance.create_cluster_role_binding(body=body)
-
-
-def create_deployment(body: Dict[str, Any], namespace: str = "default") -> None:
-    """Create a k8s deployment.
-
-    Args:
-        body: Manifest for creating a deployment.
-        namespace: Kubernetes namespace. Defaults to "default".
-    """
-    with k8s_client.ApiClient() as api_client:
-        api_instance = k8s_client.AppsV1Api(api_client)
-        api_instance.create_namespaced_deployment(
-            namespace=namespace, body=body
-        )
-
-
 def create_edit_service_account(
     core_api: k8s_client.CoreV1Api,
+    rbac_api: k8s_client.RbacAuthorizationV1Api,
     service_account_name: str,
-    namespace: str = "default",
+    namespace: str,
     cluster_role_binding_name: str = "zenml-edit",
 ) -> None:
     """Create a new k8s service account with "edit" rights.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
+        rbac_api: Client of Rbac Authorization V1 API of Kubernetes API.
         service_account_name: Name of the service account.
         namespace: Kubernetes namespace. Defaults to "default".
         cluster_role_binding_name: Name of the cluster role binding.
@@ -424,7 +289,7 @@ def create_edit_service_account(
         service_account_name=service_account_name,
         namespace=namespace,
     )
-    _if_not_exists(create_cluster_role_binding)(body=crb_manifest)
+    _if_not_exists(rbac_api.create_cluster_role_binding)(body=crb_manifest)
 
     sa_manifest = build_service_account_manifest(
         name=service_account_name, namespace=namespace
@@ -448,10 +313,10 @@ def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str) -> None:
 
 def create_mysql_deployment(
     core_api: k8s_client.CoreV1Api,
-    namespace: str = "default",
+    apps_api: k8s_client.AppsV1Api,
+    deployment_name: str,
+    namespace: str,
     storage_capacity: str = "10Gi",
-    deployment_name: str = "mysql",
-    service_name: str = "mysql",
     volume_name: str = "mysql-pv-volume",
     volume_claim_name: str = "mysql-pv-claim",
 ) -> None:
@@ -459,10 +324,10 @@ def create_mysql_deployment(
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
+        apps_api: Client of Apps V1 API of Kubernetes API.
         namespace: Kubernetes namespace. Defaults to "default".
         storage_capacity: Storage capacity of the database. Defaults to `"10Gi"`.
         deployment_name: Name of the deployment. Defaults to "mysql".
-        service_name: Name of the service. Defaults to "mysql".
         volume_name: Name of the persistent volume.
             Defaults to `"mysql-pv-volume"`.
         volume_claim_name: Name of the persistent volume claim.
@@ -486,30 +351,31 @@ def create_mysql_deployment(
         namespace=namespace,
         pv_claim_name=volume_claim_name,
     )
-    _if_not_exists(create_deployment)(
+    _if_not_exists(apps_api.create_namespaced_deployment)(
         body=deployment_manifest, namespace=namespace
     )
     service_manifest = build_mysql_service_manifest(
-        name=service_name, namespace=namespace
+        name=deployment_name, namespace=namespace
     )
     _if_not_exists(core_api.create_namespaced_service)(
         namespace=namespace, body=service_manifest
     )
 
 
-def delete_deployment(deployment_name: str, namespace: str) -> None:
+def delete_deployment(
+    apps_api: k8s_client.AppsV1Api, deployment_name: str, namespace: str
+) -> None:
     """Delete a k8s deployment.
 
     Args:
+        apps_api: Client of Apps V1 API of Kubernetes API.
         deployment_name: Name of the deployment to be deleted.
         namespace: Kubernetes namespace containing the deployment.
     """
     options = k8s_client.V1DeleteOptions()
-    with k8s_client.ApiClient() as api_client:
-        api_instance = k8s_client.AppsV1Api(api_client)
-        api_instance.delete_namespaced_deployment(
-            name=deployment_name,
-            namespace=namespace,
-            body=options,
-            propagation_policy="Foreground",
-        )
+    apps_api.delete_namespaced_deployment(
+        name=deployment_name,
+        namespace=namespace,
+        body=options,
+        propagation_policy="Foreground",
+    )

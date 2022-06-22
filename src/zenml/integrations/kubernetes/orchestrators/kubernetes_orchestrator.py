@@ -65,7 +65,7 @@ logger = get_logger(__name__)
 
 
 class KubernetesOrchestrator(BaseOrchestrator):
-    """Orchestrator responsible for running pipelines using Kubernetes.
+    """Orchestrator for running ZenML pipelines using native Kubernetes.
 
     Attributes:
         custom_docker_base_image_name: Name of a docker image that should be
@@ -91,10 +91,29 @@ class KubernetesOrchestrator(BaseOrchestrator):
     kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "zenml"
     synchronous: bool = False
-    skip_context_checks = False
+    skip_context_checks: bool = False
+    _k8s_core_api: k8s_client.CoreV1Api = None
+    _k8s_batch_api: k8s_client.BatchV1beta1Api = None
+    _k8s_rbac_api: k8s_client.RbacAuthorizationV1Api = None
 
-    # Class Configuration
     FLAVOR: ClassVar[str] = KUBERNETES_ORCHESTRATOR_FLAVOR
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initiate the Pydantic object and initialize the k8s clients.
+
+        Args:
+            *args: The positional arguments to pass to the Pydantic object.
+            **kwargs: The keyword arguments to pass to the Pydantic object.
+        """
+        super().__init__(*args, **kwargs)
+        self._initialize_k8s_clients()
+
+    def _initialize_k8s_clients(self) -> None:
+        """Initialize the Kubernetes clients."""
+        kube_utils.load_kube_config(context=self.kubernetes_context)
+        self._k8s_core_api = k8s_client.CoreV1Api()
+        self._k8s_batch_api = k8s_client.BatchV1beta1Api()
+        self._k8s_rbac_api = k8s_client.RbacAuthorizationV1Api()
 
     def get_kubernetes_contexts(self) -> Tuple[List[str], str]:
         """Get list of configured Kubernetes contexts and the active context.
@@ -317,9 +336,9 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
         # Authorize orchestrator pod to run k8s commands inside the cluster.
         service_account_name = "zenml-service-account"
-        core_api = kube_utils.make_core_v1_api()
         kube_utils.create_edit_service_account(
-            core_api=core_api,
+            core_api=self._k8s_core_api,
+            rbac_api=self._k8s_rbac_api,
             service_account_name=service_account_name,
             namespace=self.kubernetes_namespace,
         )
@@ -343,8 +362,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 args=args,
                 service_account_name=service_account_name,
             )
-            batch_api = k8s_client.BatchV1beta1Api()
-            batch_api.create_namespaced_cron_job(
+            self._k8s_batch_api.create_namespaced_cron_job(
                 body=cron_job_manifest, namespace=self.kubernetes_namespace
             )
             logger.info(
@@ -363,7 +381,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
             args=args,
             service_account_name=service_account_name,
         )
-        core_api.create_namespaced_pod(
+        self._k8s_core_api.create_namespaced_pod(
             namespace=self.kubernetes_namespace,
             body=pod_manifest,
         )
@@ -372,8 +390,8 @@ class KubernetesOrchestrator(BaseOrchestrator):
         if self.synchronous:
             logger.info("Waiting for Kubernetes orchestrator pod...")
             kube_utils.wait_pod(
-                core_api,
-                pod_name,
+                core_api=self._k8s_core_api,
+                pod_name=pod_name,
                 namespace=self.kubernetes_namespace,
                 exit_condition_lambda=kube_utils.pod_is_done,
                 stream_logs=True,

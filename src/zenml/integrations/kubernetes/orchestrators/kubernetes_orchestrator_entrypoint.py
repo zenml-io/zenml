@@ -19,6 +19,8 @@ import json
 import socket
 from typing import List
 
+from kubernetes import client as k8s_client
+
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.dag_runner import (
     ThreadedDagRunner,
@@ -95,7 +97,8 @@ def main() -> None:
     pipeline_dag = pipeline_config["pipeline_dag"]
 
     # Get k8s Core API for running kubectl commands later.
-    core_api = kube_utils.make_core_v1_api()
+    kube_utils.load_kube_config()
+    core_api = k8s_client.CoreV1Api()
 
     # Patch run name (only needed for CRON scheduling)
     run_name = patch_run_name_for_cron_scheduling(
@@ -134,8 +137,8 @@ def main() -> None:
         # Wait for pod to finish.
         logger.info(f"Waiting for pod of step `{step_name}` to start...")
         kube_utils.wait_pod(
-            core_api,
-            pod_name,
+            core_api=core_api,
+            pod_name=pod_name,
             namespace=args.kubernetes_namespace,
             exit_condition_lambda=kube_utils.pod_is_done,
             stream_logs=True,
