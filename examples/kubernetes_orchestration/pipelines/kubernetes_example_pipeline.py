@@ -3,7 +3,7 @@ from zenml.pipelines import pipeline
 
 @pipeline(
     enable_cache=False,
-    required_integrations=["sklearn"],
+    required_integrations=["sklearn", "facets"],
 )
 def kubernetes_example_pipeline(importer, trainer, evaluator, skew_comparison):
     """data loading -> train -> test with skew comparison in parallel."""
