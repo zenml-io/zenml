@@ -1,31 +1,31 @@
 # 🚀 KServe Deployment Example - Sickit-Learn and Pytorch Examples 🚀
 
-[KServe](https://kserve.github.io/website) is a Kubernetes-based Model inference platform
-built for highly scalable deployment use cases, it provides a standardized inference protocol 
-across ML frameworks while supporting a serverless architecture with autoscaling including Scale to Zero on GPU.
-KServe Uses a simple and pluggable production serving for production ML serving that includes 
-prediction, pre/post-processing, monitoring and explainability.
+[KServe](https://kserve.github.io/website) is a Kubernetes-based model inference platform
+built for highly scalable deployment use cases. It provides a standardized inference protocol 
+across ML frameworks while supporting a serverless architecture with autoscaling including Scale to Zero on GPUs.
+KServe uses a simple and pluggable production serving architecture for production ML serving that includes 
+prediction, pre-/post-processing, monitoring and explainability.
 
-Following the deployment story with ZenML that already covers a local deployment with 
+We already have a deployment story with ZenML that already covers a local deployment with 
 [MLflow Deployment Example](../mlflow_deployment/) and a [Seldon Core Deployment Example](../seldon_deployment/) 
 as the production-grade model deployer in Kubernetes environment. The next tool that gets added to our deployment 
-integrations is [KServe]() which is a Kubernetes-based Model inference platform just like Seldon Core.
+integrations is [KServe](https://github.com/kserve/kserve) which is a Kubernetes-based model inference platform just like Seldon Core.
 
 KServe has built-in servers that can be used to serve models with a variety of frameworks, 
 such as TensorFlow, PyTorch, TensorRT, MXNet, etc. This example shows how we can use ZenML 
-to write a pipeline that trains and deploys a digits model with a SKLearn MLServer and a 
-TorchServe as Runtime Servers for both frameworks using the KServe integration.
+to write a pipeline that trains and deploys a digits model with a sklearn MLServer and a 
+TorchServe as runtime Servers for both frameworks using the KServe integration.
 
 ## 🗺 Overview
 
 The example uses the digits dataset to train a classifier using both 
 [scikit-learn](https://scikit-learn.org/stable/) and [PyTorch](https://pytorch.org/).
 Different hyperparameter values (e.g. the number of epochs and learning rate for 
-the PyTorch model, solver and penalty for the Scikit-learn logical regression) 
+the PyTorch model, solver and penalty for the scikit-learn logistic regression) 
 can be supplied as command-line arguments to the `run.py` Python script. 
 
 The example contains three pipelines:
-    * `kserve_sklearn_pipeline`: trains a classifier using Scikit-learn and deploys it to KServe with SKLearn MLServer Runtime Server.
+    * `kserve_sklearn_pipeline`: trains a classifier using scikit-learn and deploys it to KServe with the sklearn MLServer Runtime Server.
     * `kserve_pytorch_pipeline`: trains a classifier using PyTorch and deploys it to KServe with TorchServe Runtime Server.
     * `inference_pipeline`: runs predictions on the served models.
 
@@ -33,9 +33,9 @@ Running the pipelines to train the classifiers and then deploying them to
 KServe requires preparing them into an exact format that is expected 
 by the runtime server, storing them into remote storage or a persistent volume 
 in the cluster and giving the path to KServe as the model uri with the right permissions. 
-By default, ZenML's KServe integration will try to cover that for you 
+By default, ZenML's KServe integration will try to handle that for you 
 by automatically loading, preparing and then saving files to the Artifact Store 
-active in the ZenML stack. However, for some frameworks (e.g. Pytorch) you will still need 
+active in the ZenML stack. However, for some frameworks (e.g. PyTorch) you will still need 
 to provide some additional files that Runtime Server needs to be able to run the model. 
 
 The KServe deployment server is provisioned remotely as a Kubernetes
@@ -49,7 +49,7 @@ change. When a new model is trained that passes the accuracy threshold
 validation, the pipeline automatically updates the currently running KServe
 deployment server so that the new model is being served instead of the old one.
 
-The inference pipeline load image from the local filesystem and perform 
+The inference pipeline loads the image from the local filesystem and performs 
 online predictions on the running KServe inference service.
 
 
@@ -63,11 +63,12 @@ For the ZenML KServe deployer to work, these things are required:
     to point to the Kubernetes cluster where KServe model servers will be deployed. If the context 
     is not explicitly supplied to the example, it defaults to using the locally active context.
 
-2. KServe must be installed and running on the Kubernetes cluster. (more information about how to
-    install KServe can be found below or in the [KServe documentation](https://kserve.github.io/website/)).
+2. KServe must be installed and running on the Kubernetes cluster. (More information about how to
+    install KServe can be found below or on the [KServe documentation](https://kserve.github.io/website/)).
 
-3. KServe must be able to access whatever storage is used by the ZenML to save the artifact, Since the
+3. KServe must be able to access whatever storage is used by ZenML to save the artifact. Since 
     KServe is installed in the Kubernetes cluster, a local filesystem storage can't be used.
+
     We recommend using a persistent volume or a remote storage service.
     (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
 
@@ -121,7 +122,7 @@ kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1
 kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.5.0/serving-core.yaml
 ```
 
-Install an istio networking layer:
+Install an Istio networking layer:
 
 ```bash
 # Install a properly configured Istio
@@ -133,7 +134,7 @@ kubectl apply -f https://github.com/knative/net-istio/releases/download/knative-
 kubectl --namespace istio-system get service istio-ingressgateway
 ```
 
-Verify the installation
+Verify the installation:
 
 ```bash
 kubectl get pods -n knative-serving
@@ -155,7 +156,7 @@ webhook-756688c869-79pqh                 1/1     Running     0          2d22h
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
 ```
 
-4. Finally, Install KServe :
+4. Finally, install KServe:
 
 ```bash
 # Install KServe
@@ -203,7 +204,7 @@ sklearn-iris   http://sklearn-iris.kserve-test.example.com         True         
 """
 ```
 
-4. Determine the ingress IP and ports
+4. Determine the ingress IP and ports:
 
 ```bash
 $ kubectl get svc istio-ingressgateway -n istio-system
@@ -233,7 +234,8 @@ cat <<EOF > "./iris-input.json"
 EOF
 ```
 
-Use curl to send a test prediction API request to the server:
+Use `curl` to send a test prediction API request to the server:
+ a test prediction API request to the server:
 
 ```bash
 SERVICE_HOSTNAME=$(kubectl get inferenceservice sklearn-iris -n kserve-test -o jsonpath='{.status.url}' | cut -d "/" -f 3)
@@ -312,16 +314,16 @@ As the last step in setting up the stack, we need to configure a ZenML secret
 with the credentials needed by KServe to access the Artifact Store. This is
 covered in the [Managing KServe Credentials section](#managing-kserve-credentials).
 
-The next sections cover how to set GCP Artifacts store credentials for the KServe model deployer,   
-Please look up the variables relevant to your use-case in the
+The next sections cover how to set GCP Artifact Store credentials for the KServe model deployer,   
+Please look up the variables relevant to your use case in the
 [official KServe Storage Credentials](https://kserve.github.io/website/0.8/sdk_docs/docs/KServeClient/#parameters)
 and set them accordingly for your ZenML secret.
 
 ##### GCP Authentication with kserve_gs secret schema
 
 Before setting ZenML secrets, we need to create a service account key. 
-This service account will be used to access the GCP artifact
-store. for more information, see the [Create and manage service account keys](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#iam-service-account-keys-create-gcloud).
+This service account will be used to access the GCP Artifact
+Store. for more information, see the [Create and manage service account keys](https://cloud.google.com/iam/docs/creating-managing-service-account-keys#iam-service-account-keys-create-gcloud).
 Once we have the service account key, we can create a ZenML secret with the following command:
 
 ```bash
@@ -357,15 +359,15 @@ serving your machine learning models through a REST and gRPC interface. Out of t
 a set of pre-packaged runtimes which let you interact with a subset of common frameworks.
 (e.g. Scikit-Learn, XGBoost, LightGBM, MLflow etc.)
 
-The Sickit-Learn pipeline consists of the following steps:
-* importer - Load the MNIST handwritten digits dataset from the Sickit-Learn library
+The Scikit-Learn pipeline consists of the following steps:
+* importer - Load the MNIST handwritten digits dataset from the Scikit-Learn library
 * train - Train a Support Vector Classifier model using the training dataset.
 * evaluate - Evaluate the model using the test dataset.
 * deployment_trigger - Verify if the newly trained model exceeds the threshold and if so, deploy the model.
-* model_deployer - Deploy the Sickit-Learn model to the KServe model server using the SKLearn MLServer runtime. the model_deployer is a ZenML built-in step that takes care of the preparing of the model to the right format for the runtime servers. In this case, the ZenML will be saving a file with name `model.joblib` in the artifact store which is the format that the runtime servers expect.
+* model_deployer - Deploy the Scikit-Learn model to the KServe model server using the SKLearn MLServer runtime. the model_deployer is a ZenML built-in step that takes care of the preparing of the model to the right format for the runtime servers. In this case, the ZenML will be saving a file with name `model.joblib` in the artifact store which is the format that the runtime servers expect.
 
 ### 🏃️ Run the code
-To run the training/deployment Sickit-Learn pipeline:
+To run the training/deployment Scikit-Learn pipeline:
 
 ```shell
 python run.py
@@ -401,7 +403,7 @@ To stop the service, re-run the same command and supply the `--stop-service` arg
 
 ## 🖥 Run PyTorch Pipeline
 
-As Pytorch becomes more of a standard framework for writing Computer Vision
+As PyTorch becomes more of a standard framework for writing Computer Vision
 and Natural Language Processing models, especially in the research domain,
 it is becoming more and more important to have a robust and easy to not only 
 [build ML pipelines with Pytorch](../pytorch/) but also to deploy the models built with it.
@@ -412,14 +414,14 @@ scale with low latency and high throughput, it provides default handlers for the
 common applications such as object detection and text classification, so you can write
 as little code as possible to deploy your custom models.
 
-The Pytorch pipeline consists of the following steps:
+The PyTorch pipeline consists of the following steps:
 * importer - Load the MNIST handwritten digits dataset from the TorchVision library
-* train - Train a neural network using the training set. The network is defined in the `net.py` file in the Pytorch folder.
+* train - Train a neural network using the training set. The network is defined in the `net.py` file in the PyTorch folder.
 * evaluate - Evaluate the model using the test set.
 * deployment_trigger - Verify if the newly trained model exceeds the threshold and if so, deploy the model.
 * model_deployer - Deploy the trained model to the KServe model server using the TorchServe runtime.
-just like the SKLearn MLServer runtime, the model_deployer is a ZenML built-in step that takes care of the preparing of the model to the right format for the runtime servers. But in this case, the user must provide some extra files to the config parameters of the model_deployer step.
-Part of the parameters that TorchServe expects are:
+Just like the SKLearn MLServer runtime, the `model_deployer` is a ZenML built-in step that takes care of the preparing of the model to the right format for the runtime servers. But in this case, the user must provide some extra files to the config parameters of the `model_deployer` step.
+Some of the parameters that TorchServe expects are:
     - `model_class_file`:   Python script containing model architecture class.
     - `handler`:            TorchServe's handler file to handle custom TorchServe inference logic.
     - `torch_config`:       TorchServe configuration file. By default, ZenML generates a config file for you. You can also provide your config file.
