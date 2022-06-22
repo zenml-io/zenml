@@ -11,17 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.constants import KSERVE, PYTORCH
+from zenml.integrations.constants import KSERVE, TENSORFLOW
 from zenml.pipelines import pipeline
 
 
-@pipeline(enable_cache=True, required_integrations=[KSERVE, PYTORCH])
-def pytorch_inference_pipeline(
-    load_inference_image,
-    prediction_service_loader,
-    predictor,
+@pipeline(
+    enable_cache=True, required_integrations=[KSERVE, TENSORFLOW]
+)
+def kserve_tensorflow_pipeline(
+    importer,
+    normalizer,
+    trainer,
+    evaluator,
+    deployment_trigger,
+    model_deployer,
 ):
     # Link all the steps artifacts together
-    inference_request = load_inference_image()
-    model_deployment_service = prediction_service_loader()
-    predictor(model_deployment_service, inference_request)
+    x_train, y_train, x_test, y_test = importer()
+    x_trained_normed, x_test_normed = normalizer(x_train=x_train, x_test=x_test)
+    model = trainer(x_train=x_trained_normed, y_train=y_train)
+    accuracy = evaluator(x_test=x_test_normed, y_test=y_test, model=model)
+    deployment_decision = deployment_trigger(accuracy=accuracy)
+    model_deployer(deployment_decision, model)

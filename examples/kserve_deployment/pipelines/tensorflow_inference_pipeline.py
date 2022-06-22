@@ -11,24 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, List
-import numpy as np
-
-from rich import print as rich_print
-
-from zenml.integrations.kserve.services import KServeDeploymentService
-from zenml.steps import Output, step
+from zenml.integrations.constants import KSERVE, TENSORFLOW
+from zenml.pipelines import pipeline
 
 
-@step
-def predictor(
-    service: KServeDeploymentService,
-    data: np.ndarray,
-) -> Output(predictions=np.ndarray):
-    """Run a inference request against a prediction service"""
-
-    service.start(timeout=120)  # should be a NOP if already started
-    prediction = service.predict(data)
-    prediction = prediction.argmax(axis=-1)
-    rich_print("Prediction: ", prediction)
-    return
+@pipeline(
+    enable_cache=True, required_integrations=[KSERVE, TENSORFLOW]
+)
+def tensorflow_inference_pipeline(
+    dynamic_importer,
+    predict_preprocessor,
+    prediction_service_loader,
+    predictor,
+):
+    # Link all the steps artifacts together
+    batch_data = dynamic_importer()
+    inference_data = predict_preprocessor(batch_data)
+    model_deployment_service = prediction_service_loader()
+    predictor(model_deployment_service, inference_data)

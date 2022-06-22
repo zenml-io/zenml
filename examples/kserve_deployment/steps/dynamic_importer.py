@@ -11,23 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import numpy as np  # type: ignore [import]
+import tensorflow as tf  # type: ignore [import]
+
+from zenml.steps import Output, step
 
 
-from zenml.integrations.constants import KSERVE, SKLEARN
-from zenml.pipelines import pipeline
-
-
-@pipeline(required_integrations=[SKLEARN, KSERVE])
-def kserve_sklearn_pipeline(
-    importer,
-    trainer,
-    evaluator,
-    deployment_trigger,
-    model_deployer,
+@step
+def importer_mnist() -> Output(
+    x_train=np.ndarray, y_train=np.ndarray, x_test=np.ndarray, y_test=np.ndarray
 ):
-    """Links all the steps together in a pipeline"""
-    X_train, X_test, y_train, y_test = importer()
-    model = trainer(X_train=X_train, y_train=y_train)
-    accuracy = evaluator(X_test=X_test, y_test=y_test, model=model)
-    deployment_decision = deployment_trigger(accuracy=accuracy)
-    model_deployer(deployment_decision, model)
+    """Download the MNIST data store it as an artifact"""
+    (x_train, y_train), (
+        x_test,
+        y_test,
+    ) = tf.keras.datasets.mnist.load_data()
+    return x_train, y_train, x_test, y_test

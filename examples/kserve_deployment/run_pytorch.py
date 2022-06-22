@@ -22,7 +22,7 @@ from steps.load_inference_image import (
     LoadInferenceImageStepConfig,
     load_inference_image,
 )
-from steps.model_deployer import pytorch_pytorch_deployer
+from steps.model_deployer import kserve_pytorch_deployer
 from steps.prediction_services_loader import (
     KServeDeploymentLoaderStepConfig,
     prediction_service_loader,
@@ -121,7 +121,7 @@ def main(
                     min_accuracy=min_accuracy,
                 )
             ),
-            deployer=pytorch_pytorch_deployer,
+            deployer=kserve_pytorch_deployer,
         ).run()
 
     img_url: str = "https://github.com/kserve/kserve/blob/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png"

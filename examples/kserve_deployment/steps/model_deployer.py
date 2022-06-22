@@ -23,19 +23,19 @@ from zenml.integrations.kserve.steps import (
 MODEL_NAME = "mnist"
 
 
-kserve_sklearn_deployer = kserve_model_deployer_step(
+kserve_tensorflow_deployer = kserve_model_deployer_step(
     config=KServeDeployerStepConfig(
         service_config=KServeDeploymentConfig(
             model_name=MODEL_NAME,
             replicas=1,
-            predictor="sklearn",
-            resources={"requests": {"cpu": "100m", "memory": "100m"}},
+            predictor="tensorflow",
+            resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=120,
     )
 )
 
-pytorch_pytorch_deployer = kserve_pytorch_model_deployer_step(
+kserve_pytorch_deployer = kserve_pytorch_model_deployer_step(
     config=KServePytorchDeployerStepConfig(
         service_config=KServeDeploymentConfig(
             model_name=MODEL_NAME,

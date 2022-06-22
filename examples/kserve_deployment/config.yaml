@@ -1,27 +1,31 @@
-name: kserve_sklearn_pipeline
+name: kserve_tensorflow_pipeline
 steps:
-  importer:
+  importer_mnist:
     source:
-      file: steps/sklearn_importer
-      name: importer
-  trainer:
+      file: steps/importer_step.py
+      name: importer_mnist
+  normalizer:
     source:
-      file: steps/sklearn_trainer
-      name: trainer
-  evaluator:
+      file: steps/normalizer.py
+      name: normalizer
+  tf_trainer:
     source:
-      file: steps/sklearn_evaluator
-      name: evaluator
+      file: steps/tf_trainer.py
+      name: tf_trainer
+  tf_evaluator:
+    source:
+      file: steps/tf_evaluator.py
+      name: tf_evaluator
   deployment_trigger:
     source:
-      file: steps/deployment_trigger
+      file: steps/deployment_trigger.py
       name: deployment_trigger
-      parameters:
-        min_accuracy: 0.85
-  deployer:
+    parameters:
+      min_accuracy: 0.8
+  kserve_tensorflow_deployer:
     source:
-      file: steps/model_deployer
-      name: kserve_model_deployer_step
-      parameters:
-        service_config: NONE  # TODO: how to handle config in config?
-        timeout: 120
+      file: steps/model_deployer.py
+      name: kserve_tensorflow_deployer
+    parameters:
+      model_name: "mnist"
+      implementation: "tensorflow"

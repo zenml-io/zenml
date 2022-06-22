@@ -11,37 +11,140 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from typing import cast
 import click
-from pipelines.kserve_sklearn_pipeline import kserve_sklearn_pipeline
+from steps.dynamic_importer import importer_mnist
+from steps.normalizer import normalizer
+from steps.tf_evaluator import tf_evaluator
+from steps.tf_predict_preprocessor import tf_predict_preprocessor
+from steps.tf_trainer import TensorflowTrainerConfig, tf_trainer
+from pipelines.tensorflow_inference_pipeline import tensorflow_inference_pipeline
+from steps.prediction_services_loader import KServeDeploymentLoaderStepConfig, prediction_service_loader
+from steps.predictor import predictor
+from steps.dynamic_importer import dynamic_importer
+from pipelines.kserve_tensorflow_pipeline import kserve_tensorflow_pipeline
 from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
-from steps.model_deployer import sklearn_pytorch_deployer
-from steps.sklearn_evaluator import evaluator
-from steps.sklearn_importer import importer
-from steps.sklearn_trainer import trainer
+from steps.model_deployer import kserve_tensorflow_deployer
+from zenml.integrations.kserve.model_deployers.kserve_model_deployer import KServeModelDeployer
+from zenml.integrations.kserve.services.kserve_deployment import KServeDeploymentService
+
+DEPLOY = "deploy"
+PREDICT = "predict"
+DEPLOY_AND_PREDICT = "deploy_and_predict"
 
 
 @click.command()
 @click.option(
+    "--config",
+    "-c",
+    type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
+    default="deploy_and_predict",
+    help="Optionally you can choose to only run the deployment "
+    "pipeline to train and deploy a model (`deploy`), or to "
+    "only run a prediction against the deployed model "
+    "(`predict`). By default both will be run "
+    "(`deploy_and_predict`).",
+)
+@click.option(
+    "--epochs",
+    default=5,
+    help="Number of epochs for training (tensorflow hyperparam)",
+)
+@click.option(
+    "--lr",
+    default=0.003,
+    help="Learning rate for training (tensorflow hyperparam, default: 0.003)",
+)
+@click.option(
     "--min-accuracy",
-    default=0.85,
-    help="Minimum accuracy required to deploy the model (default: 0.85)",
+    default=0.92,
+    help="Minimum accuracy required to deploy the model (default: 0.92)",
 )
 def main(
+    config: str,
+    epochs: int,
+    lr: float,
     min_accuracy: float,
 ):
-    """Run the mnist example pipeline"""
-    deployment_pipeline = kserve_sklearn_pipeline(
-        importer=importer(),
-        trainer=trainer(),
-        evaluator=evaluator(),
-        deployment_trigger=deployment_trigger(
-            config=DeploymentTriggerConfig(
-                min_accuracy=min_accuracy,
-            )
-        ),
-        model_deployer=sklearn_pytorch_deployer,
+    """Run the Seldon example continuous deployment or inference pipeline
+    Example usage:
+        python run.py --deploy --predict --model-flavor tensorflow \
+             --min-accuracy 0.80
+    """
+    deploy = config == DEPLOY or config == DEPLOY_AND_PREDICT
+    predict = config == PREDICT or config == DEPLOY_AND_PREDICT
+
+    model_name = "mnist"
+    deployment_pipeline_name = "kserve_tensorflow_pipeline"
+    deployer_step_name = "kserve_model_deployer_step"
+
+    model_deployer = KServeModelDeployer.get_active_model_deployer()
+
+    if deploy:
+        # Initialize a continuous deployment pipeline run
+        deployment = kserve_tensorflow_pipeline(
+            importer=importer_mnist(),
+            normalizer=normalizer(),
+            trainer=tf_trainer(
+                TensorflowTrainerConfig(epochs=epochs, lr=lr)
+            ),
+            evaluator=tf_evaluator(),
+            deployment_trigger=deployment_trigger(
+                config=DeploymentTriggerConfig(
+                    min_accuracy=min_accuracy,
+                )
+            ),
+            model_deployer=kserve_tensorflow_deployer,
+        )
+
+        deployment.run()
+
+    if predict:
+        # Initialize an inference pipeline run
+        inference = tensorflow_inference_pipeline(
+            dynamic_importer=dynamic_importer(),
+            predict_preprocessor=tf_predict_preprocessor(),
+            prediction_service_loader=prediction_service_loader(
+                KServeDeploymentLoaderStepConfig(
+                    pipeline_name=deployment_pipeline_name,
+                    step_name=deployer_step_name,
+                    model_name=model_name,
+                )
+            ),
+            predictor=predictor(),
+        )
+
+        inference.run()
+
+    services = model_deployer.find_model_server(
+        pipeline_name=deployment_pipeline_name,
+        pipeline_step_name=deployer_step_name,
+        model_name=model_name,
     )
-    deployment_pipeline.run()
+    if services:
+        service = cast(KServeDeploymentService, services[0])
+        if service.is_running:
+            print(
+                f"The KServe prediction server is running remotely as a Kubernetes "
+                f"service and accepts inference requests at:\n"
+                f"    {service.prediction_url}\n"
+                f"To stop the service, run "
+                f"[italic green]`zenml served-models delete "
+                f"{str(service.uuid)}`[/italic green]."
+            )
+        elif service.is_failed:
+            print(
+                f"The KServe prediction server is in a failed state:\n"
+                f" Last state: '{service.status.state.value}'\n"
+                f" Last error: '{service.status.last_error}'"
+            )
+
+    else:
+        print(
+            "No KServe prediction server is currently running. The deployment "
+            "pipeline must run first to train a model and deploy it. Execute "
+            "the same command with the `--deploy` argument to deploy a model."
+        )
 
 
 if __name__ == "__main__":

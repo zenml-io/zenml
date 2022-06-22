@@ -558,7 +558,7 @@ class KServeDeploymentService(BaseService):
         response = requests.post(
             self.prediction_url,
             headers=headers,
-            json=json.loads(request),
+            json={"instances": request.tolist()},
         )
         response.raise_for_status()
         return response.json()["predictions"]

@@ -212,7 +212,7 @@ def get_data_from_api():
 
     df = pd.DataFrame(requests.get(url).json())
     data = df["image"].map(lambda x: np.array(x)).values
-    data = np.array([x.reshape(28, 28) for x in data])
+    data = np.array([x.reshape(28, 28) for x in data[:1]])
     return data
 
 
@@ -228,7 +228,6 @@ def tf_predict_preprocessor(input: np.ndarray) -> Output(data=np.ndarray):
     """Prepares the data for inference."""
     input = input / 255.0
     return input
-
 
 @step
 def sklearn_predict_preprocessor(input: np.ndarray) -> Output(data=np.ndarray):
