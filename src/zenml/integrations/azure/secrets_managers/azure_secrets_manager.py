@@ -16,7 +16,7 @@
 from typing import Any, ClassVar, Dict, List
 
 from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient  # type: ignore[import]
+from azure.keyvault.secrets import SecretClient
 
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.azure import AZURE_SECRETS_MANAGER_FLAVOR
