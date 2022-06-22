@@ -38,6 +38,7 @@ class AzureIntegration(Integration):
     REQUIREMENTS = [
         "adlfs==2021.10.0",
         "azure-keyvault-keys",
+        "azure-keyvault-secrets",
         "azure-identity",
         "azureml-core==1.39.0.post1",
     ]
