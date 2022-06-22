@@ -15,7 +15,7 @@
 #  permissions and limitations under the License.
 
 import json
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
@@ -42,45 +42,31 @@ STEP_SPECIFIC_STEP_ENTRYPOINT_OPTIONS = [
 ]  # options from StepEntrypointConfiguration that change from step to step.
 
 
-def get_fixed_step_args(
-    step_args: List[str], get_fixed: bool = True
-) -> List[str]:
-    """Get the fixed step args that don't change between steps.
+def split_step_args(step_args: List[str]) -> Tuple[List[str], List[str]]:
+    """Split step args into fixed and step-specific.
 
-    We want to have them separate so we can send them to the orchestrator pod
-    only once.
+    We want to have them separate so we can send the fixed args to the
+    orchestrator pod only once.
 
     Args:
         step_args: list of ALL step args.
             E.g. ["--arg1", "arg1_value", "--arg2", "arg2_value", ...].
-        get_fixed: Set to `False` to get step-specific args instead.
 
     Returns:
-        Fixed step args (if get_fixed==True)
-            or step-specific args (if `get_fixed==False`).
+        Tuple (fixed step args, step-specific args).
     """
     fixed_args = []
+    step_specific_args = []
     for i, arg in enumerate(step_args):
         if not arg.startswith("--"):  # arg is a value, not an option
             continue
         option_and_value = step_args[i : i + 2]  # e.g. ["--name", "Aria"]
         is_fixed = arg[2:] not in STEP_SPECIFIC_STEP_ENTRYPOINT_OPTIONS
-        is_correct_category = is_fixed == get_fixed
-        if is_correct_category:
+        if is_fixed:
             fixed_args += option_and_value
-    return fixed_args
-
-
-def get_step_specific_args(step_args: List[str]) -> List[str]:
-    """Get the step-specific args that change from step to step.
-
-    Args:
-        step_args: list of ALL step args.
-
-    Returns:
-        Step-specific args.
-    """
-    return get_fixed_step_args(step_args, get_fixed=False)
+        else:
+            step_specific_args += option_and_value
+    return fixed_args, step_specific_args
 
 
 class KubernetesOrchestratorEntrypointConfiguration:
@@ -164,10 +150,12 @@ class KubernetesOrchestratorEntrypointConfiguration:
         step_command = (
             KubernetesStepEntrypointConfiguration.get_entrypoint_command()
         )
-        # TODO: handle empty pipelines without steps
-        fixed_step_args = get_fixed_step_args(_get_step_args(sorted_steps[0]))
+        fixed_step_args = []
+        if len(sorted_steps) > 0:
+            first_step_args = _get_step_args(sorted_steps[0])
+            fixed_step_args = split_step_args(first_step_args)[0]
         step_specific_args = {
-            step.name: get_step_specific_args(_get_step_args(step))
+            step.name: split_step_args(_get_step_args(step))[1]
             for step in sorted_steps
         }  # e.g.: {"trainer": train_step_args, ...}
 
