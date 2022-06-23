@@ -23,6 +23,7 @@ from abc import abstractmethod
 from typing import Dict, Generator, List, Optional, Tuple
 
 import psutil
+from psutil import NoSuchProcess
 from pydantic import Field
 
 from zenml.logger import get_logger
@@ -143,14 +144,17 @@ class LocalDaemonServiceStatus(ServiceStatus):
             # this avoids the situation where a PID file is left over from
             # a previous daemon run, but another process is using the same
             # PID.
-            p = psutil.Process(pid)
-            cmd_line = p.cmdline()
-            if (
-                daemon_entrypoint.__name__ not in cmd_line
-                or self.config_file not in cmd_line
-            ):
+            try:
+                p = psutil.Process(pid)
+                cmd_line = p.cmdline()
+                if (
+                    daemon_entrypoint.__name__ not in cmd_line
+                    or self.config_file not in cmd_line
+                ):
+                    return None
+                return pid
+            except NoSuchProcess:
                 return None
-            return pid
 
 
 class LocalDaemonService(BaseService):
