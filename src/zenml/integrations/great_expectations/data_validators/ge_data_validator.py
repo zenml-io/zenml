@@ -161,6 +161,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 "module_name": ZenMLArtifactStoreBackend.__module__,
                 "class_name": ZenMLArtifactStoreBackend.__name__,
                 "prefix": f"{str(self.uuid)}/{prefix}",
+                "suppress_store_backend_id": False,
             },
         }
 
@@ -179,7 +180,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         if local:
             store_backend = {
                 "class_name": "TupleFilesystemStoreBackend",
-                "prefix": f"{self.root_directory}/{prefix}",
+                "base_directory": f"{self.root_directory}/{prefix}",
             }
         else:
             store_backend = {
