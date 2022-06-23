@@ -13,21 +13,25 @@
 #  permissions and limitations under the License.
 """Implementation of the KServe Model Deployer."""
 
+from pathlib import Path
 import re
 from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from kserve import KServeClient, V1beta1InferenceService, constants, utils
 from kubernetes import client
+from zenml.config.global_config import GlobalConfiguration
 
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
     KServeDeploymentService,
 )
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.repository import Repository
+from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 
@@ -139,33 +143,37 @@ class KServeModelDeployer(BaseModelDeployer):
             RuntimeError: if the credentials are not available.
             ValueError: if the credentials are not valid.
         """
-        if self.secret:
-            secret_manager = Repository(  # type: ignore [call-arg]
-                skip_repository_check=True
-            ).active_stack.secrets_manager
-
-            if not secret_manager or not isinstance(
-                secret_manager, BaseSecretsManager
-            ):
-                raise RuntimeError(
-                    f"The active stack doesn't have a secret manager component. "
-                    f"The ZenML secret specified in the KServe Model "
-                    f"Deployer configuration cannot be fetched: {self.secret}."
-                )
-            try:
-                zenml_secret = secret_manager.get_secret(self.secret)
-            except KeyError:
-                raise RuntimeError(
-                    f"The ZenML secret '{self.secret}' specified in the "
-                    f"KServe Model Deployer configuration was not found "
-                    f"in the active stack's secret manager."
-                )
-            self.kserve_client.set_credentials(**zenml_secret.content)
-        else:
-            raise ValueError(
-                "The secret name must be specified to set in registration of the model deployer",
-                "or at the KServe deployment service configuration.",
+        secret = self._get_kserve_secret()
+        if secret:
+            secret_folder = Path(
+                GlobalConfiguration().config_directory,
+                "kserve-storage",
+                str(self.uuid),
             )
+
+            kserve_credentials = {}
+            # Handle the secrets attributes
+            for key in secret.content.keys():
+                content = getattr(secret, key)
+                if key == "credentials" and content:
+                    fileio.makedirs(str(secret_folder))
+                    file_path = Path(secret_folder, f"{key}.json")
+                    kserve_credentials["credentials_file"] = str(file_path)
+                    with open(file_path, "w") as f:
+                        f.write(content)
+                    file_path.chmod(0o600)
+                # Handle additional params
+                else:
+                    kserve_credentials[key] = content
+            try:
+                self.kserve_client.set_credentials(**kserve_credentials)
+            except Exception as e:
+                raise RuntimeError(
+                    f"Failed to set credentials for KServe model deployer: {e}"
+                )
+            finally:
+                if file_path.exists():
+                    file_path.unlink()
 
     def deploy_model(
         self,
@@ -462,3 +470,37 @@ class KServeModelDeployer(BaseModelDeployer):
         if len(services) == 0:
             return
         services[0].stop(timeout=timeout, force=force)
+
+    def _get_kserve_secret(self) -> BaseSecretSchema:
+        """Get the secret object for the KServe deployment.
+        
+        Returns:
+            The secret object for the KServe deployment.
+        
+        Raises:
+            RuntimeError: if the secret object is not found or secrets_manager is not set.
+        """
+        if self.secret:
+
+            secret_manager = Repository(  # type: ignore [call-arg]
+                skip_repository_check=True
+            ).active_stack.secrets_manager
+
+            if not secret_manager or not isinstance(
+                secret_manager, BaseSecretsManager
+            ):
+                raise RuntimeError(
+                    f"The active stack doesn't have a secret manager component. "
+                    f"The ZenML secret specified in the KServe Model "
+                    f"Deployer configuration cannot be fetched: {self.secret}."
+                )
+            try:
+                secret = secret_manager.get_secret(self.secret)
+                return secret
+            except KeyError:
+                raise RuntimeError(
+                    f"The secret `{self.secret}` used for your KServe Model"
+                    f"Deployer configuration does not exist in your secrets "
+                    f"manager `{secret_manager.name}`."
+                )
+        return None

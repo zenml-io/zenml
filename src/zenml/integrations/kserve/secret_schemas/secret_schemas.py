@@ -24,7 +24,6 @@ KSERVE_S3_SECRET_SCHEMA_TYPE = "kserve_s3"
 KSERVE_GS_SECRET_SCHEMA_TYPE = "kserve_gs"
 KSERVE_AZUREBLOB_SECRET_SCHEMA_TYPE = "kserve_az"
 
-
 @register_secret_schema_class
 class KServeS3SecretSchema(BaseSecretSchema):
     """KServe S3 credentials.
@@ -32,7 +31,7 @@ class KServeS3SecretSchema(BaseSecretSchema):
     Attributes:
         storage_type: the storage type. Must be set to "s3" for this schema.
         namespace: the kubernetes namespace where secrets are stored.
-        credentials_file: the path to the credentials file.
+        credentials: the credentials to use.
         service_account: the name of the service account.
         s3_endpoint: the S3 endpoint.
         s3_region: the S3 region.
@@ -44,7 +43,7 @@ class KServeS3SecretSchema(BaseSecretSchema):
 
     storage_type: Literal["S3"] = "S3"
     namespace: Optional[str]
-    credentials_file: Optional[str]
+    credentials: Optional[str]
     service_account: Optional[str]
     s3_endpoint: Optional[str]
     s3_region: Optional[str]
@@ -59,7 +58,7 @@ class KServeGSSecretSchema(BaseSecretSchema):
     Attributes:
         storage_type: the storage type. Must be set to "GCS" for this schema.
         namespace: the namespace.
-        credentials_file: the credentials file.
+        credentials: the credentials to use.
         service_account: the service account.
     """
 
@@ -67,7 +66,7 @@ class KServeGSSecretSchema(BaseSecretSchema):
 
     storage_type: Literal["GCS"] = "GCS"
     namespace: Optional[str]
-    credentials_file: Optional[str]
+    credentials: Optional[str]
     service_account: Optional[str]
 
 
@@ -78,11 +77,11 @@ class KServeAzureSecretSchema(BaseSecretSchema):
     Attributes:
         storage_type: the storage type. Must be set to "GCS" for this schema.
         namespace: the namespace.
-        credentials_file: the credentials file.
+        credentials_file: the credentials to use.
     """
 
     TYPE: ClassVar[str] = KSERVE_AZUREBLOB_SECRET_SCHEMA_TYPE
 
     storage_type: Literal["Azure"] = "Azure"
     namespace: Optional[str]
-    credentials_file: Optional[str]
+    credentials: Optional[str]

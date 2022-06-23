@@ -28,7 +28,7 @@ class LoadInferenceImageStepConfig(BaseStepConfig):
     img_url: str = "https://github.com/kserve/kserve/blob/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png"
 
 
-@step
+@step(enable_cache=False)
 def load_inference_image(config: LoadInferenceImageStepConfig) -> str:
     """
     Loads an image from a URL and returns the image as a base64 encoded string.
@@ -42,5 +42,5 @@ def load_inference_image(config: LoadInferenceImageStepConfig) -> str:
     img_data = requests.get(config.img_url).content
     image_64_encode = base64.b64encode(img_data)
     bytes_array = image_64_encode.decode("utf-8")
-    request = {"instances": [{"data": bytes_array}]}
-    return json.dumps(request)
+    request = {"data": "iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAAAAABXZoBIAAAAw0lEQVR4nGNgGFggVVj4/y8Q2GOR83n+58/fP0DwcSqmpNN7oOTJw6f+/H2pjUU2JCSEk0EWqN0cl828e/FIxvz9/9cCh1zS5z9/G9mwyzl/+PNnKQ45nyNAr9ThMHQ/UG4tDofuB4bQIhz6fIBenMWJQ+7Vn7+zeLCbKXv6z59NOPQVgsIcW4QA9YFi6wNQLrKwsBebW/68DJ388Nun5XFocrqvIFH59+XhBAxThTfeB0r+vP/QHbuDCgr2JmOXoSsAAKK7bU3vISS4AAAAAElFTkSuQmCC"}
+    return json.dumps([request])

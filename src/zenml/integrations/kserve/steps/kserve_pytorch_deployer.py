@@ -172,7 +172,7 @@ def kserve_pytorch_model_deployer_step(
             tmp_model_uri = os.path.join(str(temp_dir), "chekpoint.pt")
 
             # Copy from artifact store to temporary file
-            fileio.copy(model_uri, tmp_model_uri)
+            fileio.copy(f"{model_uri}/checkpoint.pt", tmp_model_uri)
 
             torch_archiver_args = TorchModelArchiver(
                 model_name=config.service_config.model_name,

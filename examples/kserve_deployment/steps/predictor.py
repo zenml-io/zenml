@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Dict, List
+from typing import Dict, List, Union
 import numpy as np
 
 from rich import print as rich_print
@@ -23,7 +23,7 @@ from zenml.steps import Output, step
 @step
 def predictor(
     service: KServeDeploymentService,
-    data: np.ndarray,
+    data: str,
 ) -> Output(predictions=np.ndarray):
     """Run a inference request against a prediction service"""
 

@@ -16,7 +16,7 @@
 import json
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
 from uuid import UUID
 
 import requests
@@ -42,6 +42,7 @@ from zenml.services import (
 )
 
 if TYPE_CHECKING:
+    from numpy.typing import NDArray
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
     )
@@ -509,10 +510,11 @@ class KServeDeploymentService(BaseService):
 
         # TODO[HIGH]: return correct KServe prediction URLs
         model_deployer = self._get_model_deployer()
+        model_name = self._get_kubernetes_labels().get("model_name") or "mnist"
         return os.path.join(
             model_deployer.base_url,
             "v1/models",
-            f"{self.crd_name}:predict",
+            f"{model_name}:predict",
         )
 
     @property
@@ -555,10 +557,14 @@ class KServeDeploymentService(BaseService):
                 "`self.prediction_hostname` is not set, cannot post."
             )
         headers = {"Host": self.prediction_hostname}
+        if isinstance(request, str):
+            request = json.loads(request)
+        else:
+            request = request.tolist()
         response = requests.post(
             self.prediction_url,
             headers=headers,
-            json={"instances": request.tolist()},
+            json={"instances": request},
         )
         response.raise_for_status()
         return response.json()["predictions"]
