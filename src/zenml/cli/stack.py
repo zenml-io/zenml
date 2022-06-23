@@ -133,6 +133,14 @@ def stack() -> None:
     help="Immediately set this stack as active.",
     type=click.BOOL,
 )
+@click.option(
+    "--reset-association",
+    "-r",
+    "reset_association",
+    is_flag=True,
+    help="Resets the associations for artifact/metadata stores.",
+    type=click.BOOL,
+)
 def register_stack(
     stack_name: str,
     metadata_store_name: str,
@@ -146,6 +154,7 @@ def register_stack(
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
     set_stack: bool = False,
+    reset_association: bool = False,
 ) -> None:
     """Register a stack.
 
@@ -162,6 +171,7 @@ def register_stack(
         experiment_tracker_name: Name of the experiment tracker for this stack.
         alerter_name: Name of the alerter for this stack.
         set_stack: Immediately set this stack as active.
+        reset_association: Resets the associations for artifact/metadata stores.
     """
     cli_utils.print_active_profile()
 
@@ -238,7 +248,7 @@ def register_stack(
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
-        repo.register_stack(stack_)
+        repo.register_stack(stack_, reset_association=reset_association)
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
     if set_stack:
@@ -327,6 +337,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "--reset-association",
+    "-r",
+    "reset_association",
+    is_flag=True,
+    help="Resets the associations for artifact/metadata stores.",
+    type=click.BOOL,
+)
 def update_stack(
     stack_name: Optional[str],
     metadata_store_name: Optional[str] = None,
@@ -339,6 +357,7 @@ def update_stack(
     model_deployer_name: Optional[str] = None,
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
+    reset_association: bool = False,
 ) -> None:
     """Update a stack.
 
@@ -356,6 +375,7 @@ def update_stack(
         experiment_tracker_name: Name of the new experiment tracker for this
             stack.
         alerter_name: Name of the new alerter for this stack.
+        reset_association: Resets the associations for artifact/metadata stores.
     """
     cli_utils.print_active_profile()
 
@@ -454,7 +474,9 @@ def update_stack(
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
-        repo.update_stack(stack_name, stack_)
+        repo.update_stack(
+            name=stack_name, stack=stack_, reset_association=reset_association
+        )
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
