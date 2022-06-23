@@ -89,5 +89,6 @@ class StoreAssociation(BaseModel):
         artifact_store_uuid: The UUID of the artifact store.
         metadata_store_uuid: The UUID of the metadata store.
     """
+
     artifact_store_uuid: UUID
     metadata_store_uuid: UUID
