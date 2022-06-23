@@ -17,18 +17,16 @@ import numpy as np
 from rich import print as rich_print
 
 from zenml.integrations.kserve.services import KServeDeploymentService
-from zenml.steps import Output, step
+from zenml.steps import step
 
 
 @step
 def predictor(
     service: KServeDeploymentService,
     data: str,
-) -> Output(predictions=np.ndarray):
+) -> None:
     """Run a inference request against a prediction service"""
 
     service.start(timeout=120)  # should be a NOP if already started
     prediction = service.predict(data)
-    prediction = prediction.argmax(axis=-1)
     rich_print("Prediction: ", prediction)
-    return

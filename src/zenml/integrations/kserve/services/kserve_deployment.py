@@ -546,7 +546,7 @@ class KServeDeploymentService(BaseService):
         """
         if not self.is_running:
             raise Exception(
-                "Seldon prediction service is not running. "
+                "KServe prediction service is not running. "
                 "Please start the service before making predictions."
             )
 

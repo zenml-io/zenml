@@ -48,7 +48,7 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
     "--config",
     "-c",
     type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
-    default="deploy_and_predict",
+    default="predict",
     help="Optionally you can choose to only run the deployment "
     "pipeline to train and deploy a model (`deploy`), or to "
     "only run a prediction against the deployed model "
@@ -88,7 +88,7 @@ def main(
     momentum: float,
     min_accuracy: float,
 ):
-    """Run the Seldon example continuous deployment or inference pipeline
+    """Run the KServe-Pytorch example deployment or inference pipeline
 
     Example usage:
 
@@ -124,14 +124,14 @@ def main(
             deployer=kserve_pytorch_deployer,
         ).run()
 
-    img_url: str = "https://github.com/kserve/kserve/blob/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png"
+    img_url: str = "https://raw.githubusercontent.com/kserve/kserve/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png"
 
     if predict:
         # Initialize an inference pipeline run
         pytorch_inference_pipeline(
             load_inference_image=load_inference_image(
                 LoadInferenceImageStepConfig(
-                    image_url=img_url,
+                    img_url=img_url,
                 ),
             ),
             prediction_service_loader=prediction_service_loader(
@@ -156,6 +156,7 @@ def main(
                 f"The KServe prediction server is running remotely as a Kubernetes "
                 f"service and accepts inference requests at:\n"
                 f"    {service.prediction_url}\n"
+                f"    With the hostname: {service.prediction_hostname}.\n"
                 f"To stop the service, run "
                 f"[italic green]`zenml served-models delete "
                 f"{str(service.uuid)}`[/italic green]."

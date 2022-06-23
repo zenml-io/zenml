@@ -17,7 +17,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from pytorch.net import Net
+from pytorch.mnist import Net
 from rich import print
 from torch.utils.data import DataLoader
 
@@ -42,9 +42,7 @@ def pytorch_trainer(
     model or the learner"""
 
     model = Net().to(DEVICE)
-    optimizer = optim.SGD(
-        model.parameters(), lr=config.lr, momentum=config.momentum
-    )
+    optimizer = optim.Adadelta(model.parameters(), lr=config.lr)
 
     for epoch in range(1, config.epochs + 1):
         model.train()
@@ -55,7 +53,6 @@ def pytorch_trainer(
             loss = F.nll_loss(output, target)
             loss.backward()
             optimizer.step()
-
         print("Train Epoch: {} \tLoss: {:.6f}".format(epoch, loss.item()))
 
     return model

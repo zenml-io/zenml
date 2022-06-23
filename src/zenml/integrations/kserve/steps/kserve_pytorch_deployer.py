@@ -65,7 +65,7 @@ class KServePytorchDeployerStepConfig(BaseStepConfig):
     handler: str = ""
     extra_files: Optional[str] = None
     requirements_file: Optional[str] = None
-    model_version: Optional[int] = None
+    model_version: Optional[str] = "1.0"
     torch_config: Optional[str] = None
     timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT
 
@@ -82,7 +82,6 @@ class TorchModelArchiver(BaseModel):
         requirements_file: Path to requirements file.
         export_path: Path to export model.
         runtime: Runtime of the model.
-        version: Version of the model.
         force: Force export of the model.
         archive_format: Archive format.
     """
@@ -93,10 +92,9 @@ class TorchModelArchiver(BaseModel):
     handler: str
     export_path: str
     extra_files: Optional[str] = None
-    model_version: Optional[int] = None
+    version: Optional[str] = None
     requirements_file: Optional[str] = None
-    runtime: Optional[str] = "python3"
-    version: Optional[int] = None
+    runtime: Optional[str] = "python"
     force: Optional[bool] = None
     archive_format: Optional[str] = "default"
 
@@ -169,7 +167,7 @@ def kserve_pytorch_model_deployer_step(
 
             # Create a temporary folder
             temp_dir = tempfile.mkdtemp(prefix="zenml-pytorch-temp-")
-            tmp_model_uri = os.path.join(str(temp_dir), "chekpoint.pt")
+            tmp_model_uri = os.path.join(str(temp_dir), "mnist.pt")
 
             # Copy from artifact store to temporary file
             fileio.copy(f"{model_uri}/checkpoint.pt", tmp_model_uri)
@@ -182,6 +180,7 @@ def kserve_pytorch_model_deployer_step(
                 ),
                 handler=os.path.join(get_source_root_path(), config.handler),
                 export_path=temp_dir,
+                version=config.model_version
             )
 
             manifest = ModelExportUtils.generate_manifest_json(
@@ -310,7 +309,7 @@ def generate_model_deployer_config(
         for line in config_lines:
             f.write(line + "\n")
         f.write(
-            f'model_snapshot={{"name":"startup.cfg","modelCount":1,"models":{{"{model_name}":{{"1.0":{{"defaultVersion":true,"marName":"{model_name}.mar","minWorkers":1,"maxWorkers":5,"batchSize":1,"responseTimeout":120}}}}}}}}'
+            f'model_snapshot={{"name":"startup.cfg","modelCount":1,"models":{{"{model_name}":{{"1.0":{{"defaultVersion":true,"marName":"{model_name}.mar","minWorkers":1,"maxWorkers":5,"batchSize":1,"maxBatchDelay":10,"responseTimeout":120}}}}}}}}'
         )
     f.close()
     return f.name
