@@ -55,15 +55,12 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             behavior.
         configure_local_docs: configure a local data docs site where Great
             Expectations docs are generated and can be visualized locally.
-        local_docs_site: the name of the local data docs site that will be used
-            to visualize results on the local machine.
     """
 
     context_root_dir: Optional[str] = None
     context_config: Optional[Dict[str, Any]] = None
     configure_zenml_stores: bool = False
-    configure_local_docs: bool = False
-    local_docs_site_name: str = "local"
+    configure_local_docs: bool = True
     _context: BaseDataContext = None
 
     # Class Configuration
@@ -99,9 +96,9 @@ class GreatExpectationsDataValidator(BaseDataValidator):
 
         Call this method to retrieve the data context managed by ZenML
         through the active Great Expectations data validator stack component.
-        The default context as returned by the GE `` call will be returned
-        if a Great Expectations data validator component is not present in the
-        active stack.
+        The default context as returned by the GE `get_context()` call will be
+        returned if a Great Expectations data validator component is not present
+        in the active stack.
 
         Returns:
             A Great Expectations data context managed by ZenML as configured
@@ -161,7 +158,6 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 "module_name": ZenMLArtifactStoreBackend.__module__,
                 "class_name": ZenMLArtifactStoreBackend.__name__,
                 "prefix": f"{str(self.uuid)}/{prefix}",
-                "suppress_store_backend_id": False,
             },
         }
 
@@ -205,6 +201,37 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             The Great Expectations data context configured for this component.
         """
         if not self._context:
+            zenml_context_config = dict(
+                stores={
+                    "zenml_expectations_store": self.get_store_config(
+                        "ExpectationsStore", "expectations"
+                    ),
+                    "zenml_validations_store": self.get_store_config(
+                        "ValidationsStore", "validations"
+                    ),
+                    "zenml_checkpoint_store": self.get_store_config(
+                        "CheckpointStore", "checkpoints"
+                    ),
+                    "zenml_profiler_store": self.get_store_config(
+                        "ProfilerStore", "profilers"
+                    ),
+                    "evaluation_parameter_store": {
+                        "class_name": "EvaluationParameterStore"
+                    },
+                },
+                expectations_store_name="zenml_expectations_store",
+                validations_store_name="zenml_validations_store",
+                checkpoint_store_name="zenml_checkpoint_store",
+                profiler_store_name="zenml_profiler_store",
+                evaluation_parameter_store_name="evaluation_parameter_store",
+                data_docs_sites={
+                    "zenml_artifact_store": self.get_data_docs_config(
+                        "data_docs"
+                    )
+                },
+            )
+
+            configure_zenml_stores = self.configure_zenml_stores
             if self.context_root_dir:
                 # initialize the local data context, if a local path was
                 # configured
@@ -212,58 +239,39 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             else:
                 # create an in-memory data context configuration that is not
                 # backed by a local YAML file (see https://docs.greatexpectations.io/docs/guides/setup/configuring_data_contexts/how_to_instantiate_a_data_context_without_a_yml_file/).
-                self.configure_zenml_stores = True
                 if self.context_config:
                     context_config = DataContextConfig(**self.context_config)
                 else:
-                    context_config = DataContextConfig()
+                    context_config = DataContextConfig(**zenml_context_config)
+                    # skip adding the stores after initialization, as they are
+                    # already baked in the initial configuration
+                    configure_zenml_stores = False
                 self._context = BaseDataContext(project_config=context_config)
 
-            if self.configure_zenml_stores:
-                store_name = "zenml_expectations_store"
-                self._context.add_store(
-                    store_name=store_name,
-                    store_config=self.get_store_config(
-                        "ExpectationsStore", "expectations"
-                    ),
-                )
-                self._context.config.expectations_store_name = store_name
-
-                store_name = "zenml_validations_store"
-                self._context.add_store(
-                    store_name=store_name,
-                    store_config=self.get_store_config(
-                        "ValidationsStore", "validations"
-                    ),
-                )
-                self._context.config.validations_store_name = store_name
-
-                store_name = "zenml_checkpoint_store"
-                self._context.add_store(
-                    store_name=store_name,
-                    store_config=self.get_store_config(
-                        "CheckpointStore", "checkpoints"
-                    ),
-                )
-                self._context.config.checkpoint_store_name = store_name
-
-                store_name = "zenml_profiler_store"
-                self._context.add_store(
-                    store_name=store_name,
-                    store_config=self.get_store_config(
-                        "ProfilerStore", "profilers"
-                    ),
-                )
-                self._context.config.profiler_store_name = store_name
-
-                self._context.config.data_docs_sites[
-                    "zenml_artifact_store"
-                ] = self.get_data_docs_config("data_docs")
+            if configure_zenml_stores:
+                for store_name, store_config in zenml_context_config[  # type: ignore[attr-defined]
+                    "stores"
+                ].items():
+                    self._context.config.expectations_store_name = store_name
+                    self._context.add_store(
+                        store_name=store_name,
+                        store_config=store_config,
+                    )
+                for site_name, site_config in zenml_context_config[  # type: ignore[attr-defined]
+                    "data_docs_sites"
+                ].items():
+                    self._context.config.data_docs_sites[
+                        site_name
+                    ] = site_config
 
             if self.configure_local_docs:
-                self._context.config.data_docs_sites[
-                    self.local_docs_site_name
-                ] = self.get_data_docs_config("data_docs", local=True)
+
+                repo = Repository(skip_repository_check=True)  # type: ignore[call-arg]
+                artifact_store = repo.active_stack.artifact_store
+                if artifact_store.FLAVOR != "local":
+                    self._context.config.data_docs_sites[
+                        "zenml_local"
+                    ] = self.get_data_docs_config("data_docs", local=True)
 
         return self._context
 

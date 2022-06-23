@@ -1,19 +1,73 @@
-# Validate your data with Great Expectations
+# 🏎 Validate your data with Great Expectations
+Data drift is something you often want to guard against in your pipelines.
+Machine learning pipelines are built on top of data inputs, so it is worth
+checking for drift if you have a model that was trained on a certain
+distribution of data.
 
-Our goal here is to help you to get the first practical experience with our tool and give you a brief overview 
-on some basic functionalities of ZenML. We'll create a training pipeline for the 
-[MNIST](http://yann.lecun.com/exdb/mnist/) dataset.
+## 🗺 Overview
+This example uses [`evidently`](https://github.com/evidentlyai/evidently), a
+useful open-source library to painlessly check for data drift (among other
+features). At its core, Evidently's drift detection takes in a reference data
+set and compares it against another comparison dataset. These are both input in
+the form of a `pandas` dataframe, though CSV inputs are also possible. You can receive these results in the form of a standard dictionary object containing all the relevant information, or as a visualization. We support both outputs.
 
-If you want to run this notebook in an interactive environment, feel free to run it in a 
-[Google Colab](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) 
-or view it on [GitHub](https://github.com/zenml-io/zenml/tree/main/examples/quickstart) directly.
+ZenML implements this functionality in the form of several standardized steps.
+You select which of the profile sections you want to use in your step by passing
+a string into the `EvidentlyProfileConfig`. Possible options supported by
+Evidently are:
 
-## Overview
-Here we train a simple sklearn classifier on the MNIST dataset.
+- "datadrift"
+- "categoricaltargetdrift"
+- "numericaltargetdrift"
+- "classificationmodelperformance"
+- "regressionmodelperformance"
+- "probabilisticmodelperformance"
 
-## Run it locally
+## 🧰 How the example is implemented
+In this example, we compare two separate slices of the same dataset as an easy
+way to get an idea for how `evidently` is making the comparison between the two
+dataframes. We chose [the University of Wisconsin breast cancer diagnosis
+dataset](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+(Diagnostic))
+to illustrate how it works.
 
-### Pre-requisites
+```python
+from zenml.integrations.evidently.steps import (
+    EvidentlyProfileConfig,
+    EvidentlyProfileStep,
+)
+
+# instead of defining the step yourself, we have done it for you
+drift_detector = EvidentlyProfileStep(
+    EvidentlyProfileConfig(
+        column_mapping=None,
+        profile_section="datadrift",
+    )
+)
+```
+
+Here you can see that defining the step is extremely simple using our
+class-based interface, and then you just have to pass in the two dataframes for
+the comparison to take place.
+
+We even allow you to use the Evidently visualization tool easily to display data
+drift diagrams in your browser or within a Jupyter notebook:
+
+![Evidently drift visualization UI](assets/drift_visualization.png)
+
+# 🖥 Run it locally
+
+## ⏩ SuperQuick `evidently` run
+
+If you're really in a hurry and just want to see this example pipeline run
+without wanting to fiddle around with all the individual installation and
+configuration steps, just run the following:
+
+```shell
+zenml example run evidently_drift_detection
+```
+
+## 👣 Step-by-Step
+### 📄 Prerequisites 
 In order to run this example, you need to install and initialize ZenML:
 
 ```shell
@@ -21,44 +75,26 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install sklearn
+zenml integration install great_expectations sklearn
 
 # pull example
-zenml example pull quickstart
-cd zenml_examples/quickstart
+zenml example pull great_expectations
+cd zenml_examples/great_expectations
 
-# initialize
+# Initialize ZenML repo
 zenml init
 ```
 
-### Run the project
+### ▶️ Run the Code
 Now we're ready. Execute:
 
-```shell
-python quickstart.py
-```
-
-Or just a jupyter notebook
 ```bash
-jupyter notebook  # jupyter must be installed
+python run.py
 ```
 
-Or check out a [Google Colab version](https://colab.research.google.com/github/zenml-io/zenml/blob/main/examples/quickstart/quickstart.ipynb) 
-to test it out immediately.
-
-### Clean up
-In order to clean up, delete the remaining zenml references.
+### 🧽 Clean up
+In order to clean up, delete the remaining ZenML references.
 
 ```shell
 rm -rf zenml_examples
-```
-
-## SuperQuick `quickstart` run
-
-If you're really in a hurry and you want just to see this example pipeline run,
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run quickstart
 ```

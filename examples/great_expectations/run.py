@@ -75,6 +75,15 @@ FULL_FEATURE_NAMES = [
 
 @step
 def importer() -> pd.DataFrame:
+    """Import the OpenML Steel Plates Fault Dataset.
+
+    The Steel Plates Faults Data Set is provided by Semeion, Research Center of
+    Sciences of Communication, Via Sersale 117, 00128, Rome, Italy
+    (https://www.openml.org/search?type=data&sort=runs&id=1504&status=active).
+
+    Returns:
+        pd.DataFrame: the steel plates fault dataset.
+    """
     plates = fetch_openml(name="steel-plates-fault")
     df = pd.DataFrame(data=plates.data, columns=plates.feature_names)
     df["target"] = plates.target
@@ -87,9 +96,7 @@ ge_profiler_config = GreatExpectationsProfilerConfig(
     expectation_suite_name="steel_plates_suite",
     data_asset_name="steel_plates_train_df",
 )
-ge_profiler_step = clone_step(
-    GreatExpectationsProfilerStep, "ge_profiler_step_class"
-)(config=ge_profiler_config)
+ge_profiler_step = GreatExpectationsProfilerStep(config=ge_profiler_config)
 
 
 @step
@@ -104,6 +111,9 @@ ge_validate_train_config = GreatExpectationsValidatorConfig(
     expectation_suite_name="steel_plates_suite",
     data_asset_name="steel_plates_train_df",
 )
+# We clone the builtin step by calling the `clone_step` utility to use it twice
+# in our pipeline: on the training set and on the validation set.
+# This is necessary because a step cannot be used twice in the same pipeline.
 ge_validate_train_step = clone_step(
     GreatExpectationsValidatorStep, "ge_validate_train_step_class"
 )(config=ge_validate_train_config)

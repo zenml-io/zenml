@@ -19,8 +19,6 @@ from typing import ClassVar
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
 
-DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT = 300
-
 
 class BaseDataValidator(StackComponent, ABC):
     """Base class for all ZenML data validators."""

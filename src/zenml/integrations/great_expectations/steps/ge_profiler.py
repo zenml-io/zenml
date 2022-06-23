@@ -15,12 +15,14 @@
 
 from typing import Any, Dict, Optional, cast
 
-import great_expectations as ge  # type: ignore[import]
 import great_expectations.exceptions as ge_exceptions  # type: ignore[import]
 import pandas as pd
 from great_expectations.core import ExpectationSuite  # type: ignore[import]
 from great_expectations.core.batch import (  # type: ignore[import]
     RuntimeBatchRequest,
+)
+from great_expectations.data_context.data_context import (  # type: ignore[import]
+    DataContext,
 )
 from great_expectations.profile.user_configurable_profiler import (  # type: ignore[import]
     UserConfigurableProfiler,
@@ -90,7 +92,8 @@ class GreatExpectationsProfilerStep(BaseStep):
         context = GreatExpectationsDataValidator.get_data_context()
 
         suite_exists = False
-        try:
+        if context.expectations_store.has_key(config.expectation_suite_name):
+            suite_exists = True
             suite = context.get_expectation_suite(config.expectation_suite_name)
             if not config.overwrite_existing_suite:
                 logger.info(
@@ -100,9 +103,6 @@ class GreatExpectationsProfilerStep(BaseStep):
                     f"profiler."
                 )
                 return suite
-            suite_exists = True
-        except ge_exceptions.DataContextError:
-            pass
 
         datasource_name = f"{run_id}_{step_name}"
         data_connector_name = datasource_name
@@ -161,6 +161,13 @@ class GreatExpectationsProfilerStep(BaseStep):
 
             context.build_data_docs()
         finally:
-            context.delete_datasource(datasource_name)
+            try:
+                context.delete_datasource(datasource_name)
+            except AttributeError:
+                # this is required to account for a bug in the BaseDataContext
+                # class that doesn't account for the fact that an in-memory
+                # data context doesn't have a `_save_project_config` method.
+                # see: https://github.com/great-expectations/great_expectations/issues/5373
+                pass
 
         return suite

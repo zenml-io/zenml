@@ -14,11 +14,6 @@ config_version: 3.0
 # You can use the CLI command `great_expectations datasource new` to help you
 # add a new datasource. Read more at https://docs.greatexpectations.io/docs/guides/connecting_to_your_data/connect_to_data_overview
 datasources: {}
-config_variables_file_path: uncommitted/config_variables.yml
-
-# The plugins_directory will be added to your python path for custom modules
-# used to override and extend Great Expectations.
-plugins_directory: plugins/
 
 stores:
 # Stores are configurable places to store things like Expectations, Validations
@@ -32,13 +27,13 @@ stores:
     class_name: ExpectationsStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
-      base_directory: uncommitted/expectations
+      base_directory: expectations
 
   validations_store:
     class_name: ValidationsStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
-      base_directory: uncommitted/validations
+      base_directory: validations
 
   evaluation_parameter_store:
     # Evaluation Parameters enable dynamic expectations. Read more here:
@@ -49,14 +44,14 @@ stores:
     class_name: CheckpointStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
-      base_directory: uncommitted/checkpoints
+      base_directory: checkpoints
       suppress_store_backend_id: true
 
   profiler_store:
     class_name: ProfilerStore
     store_backend:
       class_name: TupleFilesystemStoreBackend
-      base_directory: uncommitted/profilers
+      base_directory: profilers
       suppress_store_backend_id: true
 
 expectations_store_name: expectations_store
@@ -76,7 +71,7 @@ data_docs_sites:
     show_how_to_buttons: true
     store_backend:
       class_name: TupleFilesystemStoreBackend
-      prefix: uncommitted/data_docs
+      base_directory: data_docs
     site_index_builder:
       class_name: DefaultSiteIndexBuilder
 anonymous_usage_statistics:

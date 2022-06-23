@@ -15,13 +15,15 @@
 
 from typing import Any, Dict, List, Optional, cast
 
-import great_expectations as ge  # type: ignore[import]
 import pandas as pd
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
     CheckpointResult,
 )
 from great_expectations.core.batch import (  # type: ignore[import]
     RuntimeBatchRequest,
+)
+from great_expectations.data_context.data_context import (  # type: ignore[import]
+    DataContext,
 )
 
 from zenml.environment import Environment
@@ -145,7 +147,15 @@ class GreatExpectationsValidatorStep(BaseStep):
                 validations=[{"batch_request": batch_request}],
             )
         finally:
-            context.delete_datasource(datasource_name)
+            try:
+                context.delete_datasource(datasource_name)
+            except AttributeError:
+                # this is required to account for a bug in the BaseDataContext
+                # class that doesn't account for the fact that an in-memory
+                # data context doesn't have a `_save_project_config` method.
+                # see: https://github.com/great-expectations/great_expectations/issues/5373
+                pass
+
             context.delete_checkpoint(checkpoint_name)
 
         return results

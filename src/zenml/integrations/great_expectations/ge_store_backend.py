@@ -133,7 +133,8 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
             )
         else:
             raise InvalidKeyError(
-                f"Unable to retrieve object from {self.__class__.__name__} with the following Key: {str(filepath)}"
+                f"Unable to retrieve object from {self.__class__.__name__} with "
+                f"the following Key: {str(filepath)}"
             )
         return contents
 
@@ -239,7 +240,6 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
             fileio.remove(filepath)
             if not io_utils.is_remote(filepath):
                 parent_dir = str(Path(filepath).parent)
-                os.makedirs(parent_dir, exist_ok=True)
                 self.rrmdir(self.root_path, str(parent_dir))
             return True
         return False
@@ -303,24 +303,20 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
         public_url = self.base_public_path + filepath.replace(self.proto, "")
         return cast(str, public_url)
 
-    def rrmdir(self, start_path: str, end_path: str) -> None:
+    @staticmethod
+    def rrmdir(start_path: str, end_path: str) -> None:
         """Recursively removes empty dirs between start_path and end_path inclusive.
 
         Args:
             start_path: Directory to use as a starting point.
             end_path: Directory to use as a destination point.
         """
-        try:
-            while (
-                not os.listdir(end_path)
-                and os.path.exists(end_path)
-                and start_path != end_path
-            ):
-                f2 = os.path.dirname(end_path)
-                os.rmdir(end_path)
-                end_path = f2
-        except (NotADirectoryError, FileNotFoundError):
-            pass
+        while (
+            not os.listdir(end_path)
+            and start_path != end_path
+        ):
+            os.rmdir(end_path)
+            end_path = os.path.dirname(end_path)
 
     @property
     def config(self) -> Dict[str, Any]:
