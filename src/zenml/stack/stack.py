@@ -472,6 +472,10 @@ class Stack:
         Args:
             reset_association: Flag to reset the previous associations between
                 an artifact store and a metadata store
+
+        Raises:
+            StackValidationError: If the artifact store and the metadata store
+                are not properly associated.
         """
         from zenml.cli.utils import warning
         from zenml.repository import Repository

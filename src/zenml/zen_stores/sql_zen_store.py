@@ -1510,6 +1510,9 @@ class SqlZenStore(BaseZenStore):
         Args:
             artifact_store_uuid: The UUID of the selected artifact store.
             metadata_store_uuid: The UUID of the selected metadata store.
+
+        Raises:
+            KeyError: If an association with the given pair is not found.
         """
         with Session(self.engine) as session:
             try:

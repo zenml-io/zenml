@@ -251,7 +251,7 @@ def register_stack(
         try:
             repo.register_stack(stack_, reset_association=reset_association)
         except StackValidationError as e:
-            cli_utils.error(e)
+            cli_utils.error(e)  # type: ignore[arg-type]
 
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
@@ -485,7 +485,7 @@ def update_stack(
                 reset_association=reset_association,
             )
         except StackValidationError as e:
-            cli_utils.error(e)
+            cli_utils.error(e)  # type: ignore[arg-type]
 
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 

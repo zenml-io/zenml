@@ -794,6 +794,9 @@ class RestZenStore(BaseZenStore):
 
         Returns:
             A list of all artifact/metadata store associations.
+
+        Raises:
+            ValueError: In case of a bad API response.
         """
         body = self.get(STORE_ASSOCIATIONS)
         if not isinstance(body, list):
