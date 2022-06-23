@@ -496,11 +496,11 @@ class Stack:
                             f"Removing the association between given artifact "
                             f"store {self.artifact_store.name} (uuid: "
                             f"{self.artifact_store.uuid}) and the metadata "
-                            f"store (uuid: {self.metadata_store.uuid})."
+                            f"store (uuid: {a.metadata_store_uuid})."
                         )
                         r.zen_store.delete_store_association_for_artifact_and_metadata_store(
                             artifact_store_uuid=self.artifact_store.uuid,
-                            metadata_store_uuid=self.metadata_store.uuid,
+                            metadata_store_uuid=a.metadata_store_uuid,
                         )
                     else:
                         raise StackValidationError(
@@ -532,7 +532,7 @@ class Stack:
                             f"store (uuid: {a.artifact_store_uuid})."
                         )
                         r.zen_store.delete_store_association_for_artifact_and_metadata_store(
-                            artifact_store_uuid=self.artifact_store.uuid,
+                            artifact_store_uuid=a.artifact_store_uuid,
                             metadata_store_uuid=self.metadata_store.uuid,
                         )
                     else:
