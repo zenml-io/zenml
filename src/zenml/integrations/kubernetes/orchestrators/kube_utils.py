@@ -92,7 +92,7 @@ def load_kube_config(context: Optional[str] = None) -> None:
 
     Args:
         context: Name of the Kubernetes context. If not provided, uses the
-            curretly active context.
+            currently active context.
     """
     try:
         k8s_config.load_incluster_config()
