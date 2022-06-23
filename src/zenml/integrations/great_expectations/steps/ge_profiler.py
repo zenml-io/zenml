@@ -24,6 +24,9 @@ from great_expectations.core.batch import (  # type: ignore[import]
 from great_expectations.data_context.data_context import (  # type: ignore[import]
     DataContext,
 )
+from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
+    ExpectationSuiteIdentifier,
+)
 from great_expectations.profile.user_configurable_profiler import (  # type: ignore[import]
     UserConfigurableProfiler,
 )
@@ -92,7 +95,9 @@ class GreatExpectationsProfilerStep(BaseStep):
         context = GreatExpectationsDataValidator.get_data_context()
 
         suite_exists = False
-        if context.expectations_store.has_key(config.expectation_suite_name):
+        if context.expectations_store.has_key(  # noqa
+            ExpectationSuiteIdentifier(config.expectation_suite_name)
+        ):
             suite_exists = True
             suite = context.get_expectation_suite(config.expectation_suite_name)
             if not config.overwrite_existing_suite:
@@ -161,13 +166,6 @@ class GreatExpectationsProfilerStep(BaseStep):
 
             context.build_data_docs()
         finally:
-            try:
-                context.delete_datasource(datasource_name)
-            except AttributeError:
-                # this is required to account for a bug in the BaseDataContext
-                # class that doesn't account for the fact that an in-memory
-                # data context doesn't have a `_save_project_config` method.
-                # see: https://github.com/great-expectations/great_expectations/issues/5373
-                pass
+            context.delete_datasource(datasource_name)
 
         return suite

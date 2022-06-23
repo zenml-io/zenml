@@ -147,15 +147,7 @@ class GreatExpectationsValidatorStep(BaseStep):
                 validations=[{"batch_request": batch_request}],
             )
         finally:
-            try:
-                context.delete_datasource(datasource_name)
-            except AttributeError:
-                # this is required to account for a bug in the BaseDataContext
-                # class that doesn't account for the fact that an in-memory
-                # data context doesn't have a `_save_project_config` method.
-                # see: https://github.com/great-expectations/great_expectations/issues/5373
-                pass
-
+            context.delete_datasource(datasource_name)
             context.delete_checkpoint(checkpoint_name)
 
         return results

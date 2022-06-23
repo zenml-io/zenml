@@ -31,6 +31,7 @@ BaseAlerterStepConfig
 BaseArtifact
 BaseArtifactStore
 BaseContainerRegistry
+BaseDataContext
 BaseEnvironmentComponent
 BaseEnvironmentComponent
 BaseException
@@ -254,6 +255,7 @@ OAuth
 OneRing
 OpFunc
 OpenAPI
+OpenML
 Orchestrators
 PID
 PNS
@@ -333,7 +335,9 @@ SeldonDeploymentExistsError
 SeldonDeploymentNotFoundError
 SeldonDeploymentService
 SeldonIO
+Semeion
 SequentialExecutor
+Sersale
 ServiceConfig
 ServiceStatus
 ServiceType

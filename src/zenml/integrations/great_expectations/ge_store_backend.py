@@ -198,7 +198,9 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
         root_path = self._build_object_path(tuple(), is_prefix=True)
         for root, dirs, files in fileio.walk(list_path):
             for file_ in files:
-                filepath = os.path.relpath(os.path.join(root, file_), root_path)
+                filepath = os.path.relpath(
+                    os.path.join(str(root), str(file_)), root_path
+                )
 
                 if self.filepath_prefix and not filepath.startswith(
                     self.filepath_prefix
@@ -300,10 +302,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
             start_path: Directory to use as a starting point.
             end_path: Directory to use as a destination point.
         """
-        while (
-            not os.listdir(end_path)
-            and start_path != end_path
-        ):
+        while not os.listdir(end_path) and start_path != end_path:
             os.rmdir(end_path)
             end_path = os.path.dirname(end_path)
 
