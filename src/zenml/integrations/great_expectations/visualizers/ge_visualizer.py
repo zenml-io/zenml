@@ -26,6 +26,9 @@ from great_expectations.data_context.types.resource_identifiers import (  # type
 )
 
 from zenml.artifacts import DataAnalysisArtifact
+from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
+    GreatExpectationsDataValidator,
+)
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
 from zenml.visualizers import BaseStepVisualizer
@@ -60,5 +63,5 @@ class GreatExpectationsVisualizer(BaseStepVisualizer):
                         suite.expectation_suite_name
                     )
 
-                context = ge.get_context()
+                context = GreatExpectationsDataValidator.get_data_context()
                 context.open_data_docs(identifier)

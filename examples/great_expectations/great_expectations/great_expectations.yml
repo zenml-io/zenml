@@ -14,7 +14,6 @@ config_version: 3.0
 # You can use the CLI command `great_expectations datasource new` to help you
 # add a new datasource. Read more at https://docs.greatexpectations.io/docs/guides/connecting_to_your_data/connect_to_data_overview
 datasources: {}
-
 config_variables_file_path: uncommitted/config_variables.yml
 
 # The plugins_directory will be added to your python path for custom modules
@@ -32,14 +31,16 @@ stores:
   expectations_store:
     class_name: ExpectationsStore
     store_backend:
-      class_name: TupleFilesystemStoreBackend
-      base_directory: uncommitted/expectations/
+      module_name: zenml.integrations.great_expectations.ge_store_backend
+      class_name: ZenMLArtifactStoreBackend
+      prefix: expectations
 
   validations_store:
     class_name: ValidationsStore
     store_backend:
-      class_name: TupleFilesystemStoreBackend
-      base_directory: uncommitted/validations/
+      module_name: zenml.integrations.great_expectations.ge_store_backend
+      class_name: ZenMLArtifactStoreBackend
+      prefix: validations
 
   evaluation_parameter_store:
     # Evaluation Parameters enable dynamic expectations. Read more here:
@@ -49,21 +50,52 @@ stores:
   checkpoint_store:
     class_name: CheckpointStore
     store_backend:
-      class_name: TupleFilesystemStoreBackend
+      module_name: zenml.integrations.great_expectations.ge_store_backend
+      class_name: ZenMLArtifactStoreBackend
+      prefix: checkpoints
       suppress_store_backend_id: true
-      base_directory: uncommitted/checkpoints/
 
   profiler_store:
     class_name: ProfilerStore
     store_backend:
-      class_name: TupleFilesystemStoreBackend
+      module_name: zenml.integrations.great_expectations.ge_store_backend
+      class_name: ZenMLArtifactStoreBackend
+      prefix: profilers
       suppress_store_backend_id: true
-      base_directory: uncommitted/profilers/
 
-expectations_store_name: expectations_store
-validations_store_name: validations_store
+  zenml_expectations_store:
+    class_name: ExpectationsStore
+    store_backend:
+      module_name: zenml.integrations.great_expectations.ge_store_backend
+      class_name: ZenMLArtifactStoreBackend
+      prefix: 638d291c-c9c3-4224-9b0e-45c04cd5d3ae/expectations
+      suppress_store_backend_id: true
+  zenml_validations_store:
+    class_name: ValidationsStore
+    store_backend:
+      module_name: zenml.integrations.great_expectations.ge_store_backend
+      class_name: ZenMLArtifactStoreBackend
+      prefix: 638d291c-c9c3-4224-9b0e-45c04cd5d3ae/validations
+      suppress_store_backend_id: true
+  zenml_checkpoint_store:
+    class_name: CheckpointStore
+    store_backend:
+      module_name: zenml.integrations.great_expectations.ge_store_backend
+      class_name: ZenMLArtifactStoreBackend
+      prefix: 638d291c-c9c3-4224-9b0e-45c04cd5d3ae/checkpoints
+      suppress_store_backend_id: true
+  zenml_profiler_store:
+    class_name: ProfilerStore
+    store_backend:
+      module_name: zenml.integrations.great_expectations.ge_store_backend
+      class_name: ZenMLArtifactStoreBackend
+      prefix: 638d291c-c9c3-4224-9b0e-45c04cd5d3ae/profilers
+      suppress_store_backend_id: true
+expectations_store_name: zenml_expectations_store
+validations_store_name: zenml_validations_store
 evaluation_parameter_store_name: evaluation_parameter_store
-checkpoint_store_name: checkpoint_store
+checkpoint_store_name: zenml_checkpoint_store
+profiler_store_name: profiler_store
 
 data_docs_sites:
   # Data Docs make it simple to visualize data quality in your project. These
@@ -75,11 +107,12 @@ data_docs_sites:
     # set to false to hide how-to buttons in Data Docs
     show_how_to_buttons: true
     store_backend:
-      class_name: TupleFilesystemStoreBackend
-      base_directory: uncommitted/data_docs/local_site/
+      module_name: zenml.integrations.great_expectations.ge_store_backend
+      class_name: ZenMLArtifactStoreBackend
+      prefix: data_docs
     site_index_builder:
       class_name: DefaultSiteIndexBuilder
 anonymous_usage_statistics:
+  data_context_id: 00000000-0000-0000-0000-00000000e003
   enabled: true
-  data_context_id: efc512e5-4d88-4e39-ab96-f79474333392
 notebooks:

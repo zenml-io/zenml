@@ -25,6 +25,9 @@ from great_expectations.core.batch import (  # type: ignore[import]
 )
 
 from zenml.environment import Environment
+from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
+    GreatExpectationsDataValidator,
+)
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseStep,
@@ -75,7 +78,7 @@ class GreatExpectationsValidatorStep(BaseStep):
         run_id = step_env.pipeline_run_id
         step_name = step_env.step_name
 
-        context = ge.get_context()
+        context = GreatExpectationsDataValidator.get_data_context()
 
         datasource_name = f"{run_id}_{step_name}"
         data_connector_name = datasource_name
@@ -135,12 +138,14 @@ class GreatExpectationsValidatorStep(BaseStep):
         )
 
         context.add_checkpoint(**checkpoint_config)
-        results = context.run_checkpoint(
-            checkpoint_name=checkpoint_name,
-            validations=[{"batch_request": batch_request}],
-        )
 
-        context.delete_datasource(datasource_name)
-        context.delete_checkpoint(checkpoint_name)
+        try:
+            results = context.run_checkpoint(
+                checkpoint_name=checkpoint_name,
+                validations=[{"batch_request": batch_request}],
+            )
+        finally:
+            context.delete_datasource(datasource_name)
+            context.delete_checkpoint(checkpoint_name)
 
         return results

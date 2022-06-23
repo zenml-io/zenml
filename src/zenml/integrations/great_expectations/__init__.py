@@ -17,8 +17,14 @@ The Great Expectations integration enables you to use Great Expectations as a
 way of profiling and validating your data.
 """
 
+from typing import List
+
+from zenml.enums import StackComponentType
 from zenml.integrations.constants import GREAT_EXPECTATIONS
 from zenml.integrations.integration import Integration
+from zenml.zen_stores.models import FlavorWrapper
+
+GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR = "great_expectations"
 
 
 class GreatExpectationsIntegration(Integration):
@@ -26,13 +32,29 @@ class GreatExpectationsIntegration(Integration):
 
     NAME = GREAT_EXPECTATIONS
     REQUIREMENTS = [
-        "great-expectations>=0.15.2,<0.18.0",
+        "great-expectations>=0.15.2",
     ]
 
     @staticmethod
     def activate() -> None:
         """Activate the Great Expectations integration."""
         from zenml.integrations.great_expectations import materializers  # noqa
+
+    @classmethod
+    def flavors(cls) -> List[FlavorWrapper]:
+        """Declare the stack component flavors for the Kubeflow integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
+        return [
+            FlavorWrapper(
+                name=GREAT_EXPECTATIONS_DATA_VALIDATOR_FLAVOR,
+                source="zenml.integrations.great_expectations.data_validators.GreatExpectationsDataValidator",
+                type=StackComponentType.DATA_VALIDATOR,
+                integration=cls.NAME,
+            ),
+        ]
 
 
 GreatExpectationsIntegration.check_installation()

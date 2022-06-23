@@ -226,9 +226,9 @@ class Stack:
 
         data_validator = components.get(StackComponentType.DATA_VALIDATOR)
         if data_validator is not None and not isinstance(
-            alerter, BaseDataValidator
+            data_validator, BaseDataValidator
         ):
-            _raise_type_error(alerter, BaseDataValidator)
+            _raise_type_error(data_validator, BaseDataValidator)
 
         return Stack(
             name=name,
