@@ -28,14 +28,13 @@ from zenml.cli.stack_components import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.exceptions import ProvisioningError
+from zenml.exceptions import ProvisioningError, StackValidationError
 from zenml.repository import Repository
 from zenml.stack import Stack
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 
-from zenml.exceptions import ProvisioningError, StackValidationError
 # Stacks
 @cli.group(
     cls=TagGroup,
@@ -483,7 +482,7 @@ def update_stack(
             repo.update_stack(
                 name=stack_name,
                 stack=stack_,
-                reset_association=reset_association
+                reset_association=reset_association,
             )
         except StackValidationError as e:
             cli_utils.error(e)
