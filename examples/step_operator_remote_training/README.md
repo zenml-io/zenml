@@ -47,9 +47,9 @@ Each type of step operator has their own prerequisites.
 
 Before running this example, you must set up the individual cloud providers in a
 certain way. The complete guide can be found in
-the [docs](https://docs.zenml.io/advanced-guide/cloud/step-operators).
+the [docs](https://docs.zenml.io/extending-zenml/step-operators).
 
-Please jump to the section applicable to 
+Please jump to the section applicable to
 the step operator you would like to use:
 
 ### 🌿 Sagemaker
@@ -70,12 +70,12 @@ The stack will consist of:
   step on Sagemaker.
 
 To configure resources for the step operators, please
-follow [this guide](https://docs.zenml.io/advanced-guide/cloud/step-operators)
+follow [this guide](https://docs.zenml.io/extending-zenml/step-operators)
 and then proceed with the following steps:
 
 ```bash
 # install ZenML integrations
-zenml integration install aws s3 
+zenml integration install aws s3
 
 zenml artifact-store register s3_store \
     --flavor=s3 \
@@ -122,7 +122,7 @@ The stack will consist of:
   on Azure.
 
 To configure resources for the step operators, please
-follow [this guide](https://docs.zenml.io/advanced-guide/cloud/step-operators)
+follow [this guide](https://docs.zenml.io/advanced-guide/run-steps-on-specialized-hardware)
 and then proceed with the following steps:
 
 ```bash
@@ -139,7 +139,7 @@ zenml step-operator register azureml \
     --resource_group=<AZURE_RESOURCE_GROUP> \
     --workspace_name=<AZURE_WORKSPACE_NAME> \
     --compute_target_name=<AZURE_COMPUTE_TARGET_NAME> \
-    --environment_name=<AZURE_ENVIRONMENT_NAME> 
+    --environment_name=<AZURE_ENVIRONMENT_NAME>
 
 zenml stack register azureml_stack \
     -m default \
@@ -170,7 +170,7 @@ The stack will consist of:
   on GCP.
 
 To configure resources for the step operators, please
-follow [this guide](https://docs.zenml.io/advanced-guide/cloud/step-operators)
+follow [this guide](https://docs.zenml.io/advanced-guide/run-steps-on-specialized-hardware)
 and then proceed with the following steps:
 
 ```bash
