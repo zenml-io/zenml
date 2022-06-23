@@ -175,6 +175,17 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             deployment_name=self.deployment_name,
         )
 
+        # wait a bit, then make sure deployment pod is alive and running.
+        logger.info("Trying to reach Kubernetes MySQL metadata store pod...")
+        time.sleep(10)
+        kube_utils.wait_pod(
+            core_api=self._k8s_core_api,
+            pod_name=self.pod_name,
+            namespace=self.kubernetes_namespace,
+            exit_condition_lambda=kube_utils.pod_is_not_pending,
+        )
+        logger.info("Kubernetes MySQL metadata store pod is up and running.")
+
     def deprovision(self) -> None:
         """Deprovision the metadata store by deleting the MySQL deployment."""
         logger.info("Deleting Kubernetes MySQL metadata store...")
@@ -214,10 +225,14 @@ class KubernetesMetadataStore(MySQLMetadataStore):
         metadata_store_pb2.ConnectionConfig,
         metadata_store_pb2.MetadataStoreClientConfig,
     ]:
-        """Return tfx metadata config for the kubeflow metadata store.
+        """Return tfx metadata config for the kubernetes metadata store.
+
+        This overwrites the MySQL host to use `self._local_host_name` when
+        running outside of the cluster so we can access the metadata store
+        locally for post execution.
 
         Returns:
-            The tfx metadata config for the kubeflow metadata store.
+            The tfx metadata config.
 
         Raises:
             RuntimeError: If the metadata store is not running.
@@ -252,7 +267,6 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             f"svc/{self.deployment_name}",
             f"{self.port}:{self.port}",
         ]
-        print(command)
         if not networking_utils.port_available(self.port):
             raise ProvisioningError(
                 f"Unable to port-forward Kubernetes Metadata to local "
@@ -265,7 +279,7 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             from zenml.utils import daemon
 
             def _daemon_function() -> None:
-                """Forwards the port of the Kubeflow Pipelines Metadata pod ."""
+                """Forwards the port of the kubernetes metadata store pod ."""
                 subprocess.check_call(command)
 
             daemon.run_as_daemon(
