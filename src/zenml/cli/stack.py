@@ -845,16 +845,13 @@ def down_stack(force: bool = False, old_force: bool = False) -> None:
 
     stack_ = Repository().active_stack
 
+    cli_utils.declare(f"Suspending resources for active stack '{stack_.name}'.")
+    stack_.suspend()
     if force:
         cli_utils.declare(
             f"Deprovisioning resources for active stack '{stack_.name}'."
         )
         stack_.deprovision()
-    else:
-        cli_utils.declare(
-            f"Suspending resources for active stack '{stack_.name}'."
-        )
-        stack_.suspend()
 
 
 def _get_component_as_dict(
