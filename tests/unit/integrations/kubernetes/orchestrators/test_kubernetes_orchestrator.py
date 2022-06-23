@@ -29,14 +29,14 @@ from zenml.stack import Stack
 
 def test_kubernetes_orchestrator_attributes() -> None:
     """Test that the Kubernetes orchestrator has correct type and flavor."""
-    orchestrator = KubernetesOrchestrator(name="", skip_context_checks=True)
+    orchestrator = KubernetesOrchestrator(name="", skip_config_loading=True)
     assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
     assert orchestrator.FLAVOR == "kubernetes"
 
 
 def test_kubernetes_orchestrator_remote_stack() -> None:
     """Test that the kubernetes orchestrator works with remote stacks."""
-    orchestrator = KubernetesOrchestrator(name="", skip_context_checks=True)
+    orchestrator = KubernetesOrchestrator(name="", skip_config_loading=True)
     remote_metadata_store = MySQLMetadataStore(
         name="",
         username="",
@@ -61,7 +61,7 @@ def test_kubernetes_orchestrator_remote_stack() -> None:
 
 def test_kubernetes_orchestrator_local_stack() -> None:
     """Test that the kubernetes orchestrator raises an error in local stacks."""
-    orchestrator = KubernetesOrchestrator(name="", skip_context_checks=True)
+    orchestrator = KubernetesOrchestrator(name="", skip_config_loading=True)
     local_container_registry = DefaultContainerRegistry(
         name="", uri="localhost:5000"
     )

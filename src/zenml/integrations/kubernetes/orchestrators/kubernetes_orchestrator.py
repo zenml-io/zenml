@@ -83,15 +83,15 @@ class KubernetesOrchestrator(BaseOrchestrator):
             If not provided, `default` namespace will be used.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Kubernetes.
-        skip_context_checks: If `True`, don't validate the kubernetes context.
-            This is mainly useful for unit testing.
+        skip_config_loading: If `True`, don't load the kubernetes context and
+            clients. This is only useful for unit testing.
     """
 
     custom_docker_base_image_name: Optional[str] = None
     kubernetes_context: Optional[str] = None
     kubernetes_namespace: str = "zenml"
     synchronous: bool = False
-    skip_context_checks: bool = False
+    skip_config_loading: bool = False
     _k8s_core_api: k8s_client.CoreV1Api = None
     _k8s_batch_api: k8s_client.BatchV1beta1Api = None
     _k8s_rbac_api: k8s_client.RbacAuthorizationV1Api = None
@@ -110,6 +110,8 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
     def _initialize_k8s_clients(self) -> None:
         """Initialize the Kubernetes clients."""
+        if self.skip_config_loading:
+            return
         kube_utils.load_kube_config(context=self.kubernetes_context)
         self._k8s_core_api = k8s_client.CoreV1Api()
         self._k8s_batch_api = k8s_client.BatchV1beta1Api()
@@ -160,7 +162,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
             # this, but just in case
             assert container_registry is not None
 
-            if not self.skip_context_checks:
+            if not self.skip_config_loading:
                 contexts, active_context = self.get_kubernetes_contexts()
                 if self.kubernetes_context not in contexts:
                     return False, (
