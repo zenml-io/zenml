@@ -54,7 +54,6 @@ if TYPE_CHECKING:
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
 
-
 logger = get_logger(__name__)
 
 
@@ -458,7 +457,7 @@ class Stack:
         ]
         return set.union(*requirements) if requirements else set()
 
-    def validate(self) -> None:
+    def validate(self, reset_association: bool = False) -> None:
         """Checks whether the stack configuration is valid.
 
         To check if a stack configuration is valid, the following criteria must
@@ -467,10 +466,105 @@ class Stack:
             remote execution) specified by the orchestrator of the stack
         - the `StackValidator` of each stack component has to validate the
             stack to make sure all the components are compatible with each other
+        - the stack must either have a properly associated artifact/metadata
+            store pair or reset the association.
+
+        Args:
+            reset_association: Flag to reset the previous associations between
+                an artifact store and a metadata store
         """
+        from zenml.cli.utils import warning
+        from zenml.repository import Repository
+
         for component in self.components.values():
             if component.validator:
                 component.validator.validate(stack=self)
+
+        r = Repository()
+        a_associations = r.zen_store.get_store_associations_for_artifact_store(
+            self.artifact_store.uuid
+        )
+        if a_associations:
+            for a in a_associations:
+                if a.metadata_store_uuid != self.metadata_store.uuid:
+                    if reset_association:
+                        warning(
+                            f"Removing the association between given artifact "
+                            f"store {self.artifact_store.name} (uuid: "
+                            f"{self.artifact_store.uuid}) and the metadata "
+                            f"store {self.metadata_store.name} (uuid: "
+                            f"{self.metadata_store.uuid})."
+                        )
+                        r.zen_store.delete_association(
+                            artifact_store_uuid=self.artifact_store.uuid,
+                            metadata_store_uuid=self.metadata_store.uuid,
+                        )
+                    else:
+                        raise StackValidationError(
+                            f"The artifact store instance in your stack "
+                            f"{self.artifact_store.name} (uuid: "
+                            f"{self.artifact_store.uuid}) has been previously "
+                            f"associated with a different metadata store "
+                            f"{self.metadata_store.name} (uuid: "
+                            f"{self.metadata_store.uuid} in a different stack. "
+                            f"If either one of these stores are previously "
+                            f"populated, this might lead to various problems. "
+                            f"In order to solve this issue, you can either "
+                            f"create and use another artifact store instance "
+                            f"or use the '-r' flag when you register/update "
+                            f"a stack to reset the associations of these "
+                            f"components."
+                        )
+
+        m_associations = r.zen_store.get_store_associations_for_metadata_store(
+            self.metadata_store.uuid
+        )
+        if m_associations:
+            for a in m_associations:
+                if a.artifact_store_uuid != self.artifact_store.uuid:
+                    if reset_association:
+                        warning(
+                            f"Removing the association between given metadata "
+                            f"store {self.metadata_store.name} (uuid: "
+                            f"{self.metadata_store.uuid}) and the artifact "
+                            f"store {self.artifact_store.name} (uuid: "
+                            f"{self.artifact_store.uuid})."
+                        )
+                        r.zen_store.delete_association(
+                            artifact_store_uuid=self.artifact_store.uuid,
+                            metadata_store_uuid=self.metadata_store.uuid,
+                        )
+                    else:
+                        raise StackValidationError(
+                            f"The metadata store instance in your stack "
+                            f"{self.metadata_store.name} (uuid: "
+                            f"{self.metadata_store.uuid}) has been previously "
+                            f"associated with a different artifact store "
+                            f"{self.artifact_store.name} (uuid: "
+                            f"{self.artifact_store.uuid} in a different stack. "
+                            f"If either one of these stores are previously "
+                            f"populated, this might lead to various problems. "
+                            f"In order to solve this issue, you can either "
+                            f"create and use another artifact store instance "
+                            f"or use the '-r' flag when you register/update "
+                            f"a stack to reset the associations of these "
+                            f"components."
+                        )
+
+        # Check if the associations already exists, if not create it
+        if (
+            len(
+                r.zen_store.get_store_associations_for_artifact_and_metadata_store(
+                    artifact_store_uuid=self.artifact_store.uuid,
+                    metadata_store_uuid=self.metadata_store.uuid,
+                )
+            )
+            == 0
+        ):
+            r.zen_store.create_store_association(
+                artifact_store_uuid=self.artifact_store.uuid,
+                metadata_store_uuid=self.metadata_store.uuid,
+            )
 
     def _register_pipeline_run(
         self,
