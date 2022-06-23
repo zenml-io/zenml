@@ -14,7 +14,9 @@
 from pipelines.post_pipeline import slack_post_pipeline
 from steps import evaluator, importer, svc_trainer, test_acc_post_formatter
 
-from zenml.alerter.alerter_step import alerter_post_step
+from zenml.integrations.slack.steps.slack_alerter_post_step import (
+    slack_alerter_post_step,
+)
 
 if __name__ == "__main__":
     slack_post_pipeline(
@@ -22,5 +24,5 @@ if __name__ == "__main__":
         trainer=svc_trainer(),
         evaluator=evaluator(),
         formatter=test_acc_post_formatter(),
-        alerter=alerter_post_step(),
+        alerter=slack_alerter_post_step(),
     ).run()
