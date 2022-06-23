@@ -197,18 +197,7 @@ class ZenMLArtifactStoreBackend(TupleStoreBackend):  # type: ignore[misc]
         root_path = self._build_object_path(tuple(), is_prefix=True)
         for root, dirs, files in fileio.walk(list_path):
             for file_ in files:
-                full_path, file_name = os.path.split(
-                    os.path.join(str(root), str(file_))
-                )
-                relative_path = os.path.relpath(
-                    full_path,
-                    root_path,
-                )
-
-                if relative_path == ".":
-                    filepath = file_name
-                else:
-                    filepath = os.path.join(relative_path, file_name)
+                filepath = os.path.relpath(os.path.join(root, file_), root_path)
 
                 if self.filepath_prefix and not filepath.startswith(
                     self.filepath_prefix
