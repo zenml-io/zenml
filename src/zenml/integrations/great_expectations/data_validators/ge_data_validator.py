@@ -284,7 +284,7 @@ class GreatExpectationsDataValidator(BaseDataValidator):
         """
         path = os.path.join(
             io_utils.get_global_config_directory(),
-            "great_expectations",
+            self.FLAVOR,
             str(self.uuid),
         )
 
