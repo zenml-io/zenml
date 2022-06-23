@@ -492,28 +492,26 @@ class Stack:
                             f"Removing the association between given artifact "
                             f"store {self.artifact_store.name} (uuid: "
                             f"{self.artifact_store.uuid}) and the metadata "
-                            f"store {self.metadata_store.name} (uuid: "
-                            f"{self.metadata_store.uuid})."
+                            f"store (uuid: {self.metadata_store.uuid})."
                         )
-                        r.zen_store.delete_association(
+                        r.zen_store.delete_store_association_for_artifact_and_metadata_store(
                             artifact_store_uuid=self.artifact_store.uuid,
                             metadata_store_uuid=self.metadata_store.uuid,
                         )
                     else:
                         raise StackValidationError(
                             f"The artifact store instance in your stack "
-                            f"{self.artifact_store.name} (uuid: "
+                            f"'{self.artifact_store.name}' (uuid: "
                             f"{self.artifact_store.uuid}) has been previously "
                             f"associated with a different metadata store "
-                            f"{self.metadata_store.name} (uuid: "
-                            f"{self.metadata_store.uuid} in a different stack. "
-                            f"If either one of these stores are previously "
-                            f"populated, this might lead to various problems. "
-                            f"In order to solve this issue, you can either "
-                            f"create and use another artifact store instance "
-                            f"or use the '-r' flag when you register/update "
-                            f"a stack to reset the associations of these "
-                            f"components."
+                            f"(uuid: {a.metadata_store_uuid} in a different "
+                            f"stack. If either one of these stores are "
+                            f"previously populated, this might lead to various "
+                            f"problems. In order to solve this issue, you can "
+                            f"either create and use another artifact store "
+                            f"instance or use the '-r' flag when you "
+                            f"register/update a stack to reset the "
+                            f"associations of these components."
                         )
 
         m_associations = r.zen_store.get_store_associations_for_metadata_store(
@@ -527,28 +525,26 @@ class Stack:
                             f"Removing the association between given metadata "
                             f"store {self.metadata_store.name} (uuid: "
                             f"{self.metadata_store.uuid}) and the artifact "
-                            f"store {self.artifact_store.name} (uuid: "
-                            f"{self.artifact_store.uuid})."
+                            f"store (uuid: {a.artifact_store_uuid})."
                         )
-                        r.zen_store.delete_association(
+                        r.zen_store.delete_store_association_for_artifact_and_metadata_store(
                             artifact_store_uuid=self.artifact_store.uuid,
                             metadata_store_uuid=self.metadata_store.uuid,
                         )
                     else:
                         raise StackValidationError(
                             f"The metadata store instance in your stack "
-                            f"{self.metadata_store.name} (uuid: "
+                            f"'{self.metadata_store.name}' (uuid: "
                             f"{self.metadata_store.uuid}) has been previously "
                             f"associated with a different artifact store "
-                            f"{self.artifact_store.name} (uuid: "
-                            f"{self.artifact_store.uuid} in a different stack. "
-                            f"If either one of these stores are previously "
-                            f"populated, this might lead to various problems. "
-                            f"In order to solve this issue, you can either "
-                            f"create and use another artifact store instance "
-                            f"or use the '-r' flag when you register/update "
-                            f"a stack to reset the associations of these "
-                            f"components."
+                            f"(uuid: {a.artifact_store_uuid} in a different "
+                            f"stack. If either one of these stores are "
+                            f"previously populated, this might lead to various "
+                            f"problems. In order to solve this issue, you can "
+                            f"either create and use another artifact store "
+                            f"instance or use the '-r' flag when you "
+                            f"register/update a stack to reset the "
+                            f"associations of these components."
                         )
 
         # Check if the associations already exists, if not create it

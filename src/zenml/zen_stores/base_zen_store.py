@@ -1033,6 +1033,7 @@ class BaseZenStore(ABC):
         a local artifact store and a local SQLite metadata store.
         """
         stack = Stack.default_local_stack()
+        stack.validate()
         sw = StackWrapper.from_stack(stack)
         self._register_stack(sw)
         metadata = {c.type.value: c.flavor for c in sw.components}

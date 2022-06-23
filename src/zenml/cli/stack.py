@@ -35,6 +35,7 @@ from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 
+from zenml.exceptions import ProvisioningError, StackValidationError
 # Stacks
 @cli.group(
     cls=TagGroup,
@@ -248,7 +249,11 @@ def register_stack(
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
-        repo.register_stack(stack_, reset_association=reset_association)
+        try:
+            repo.register_stack(stack_, reset_association=reset_association)
+        except StackValidationError as e:
+            cli_utils.error(e)
+
         cli_utils.declare(f"Stack '{stack_name}' successfully registered!")
 
     if set_stack:
@@ -474,9 +479,15 @@ def update_stack(
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
-        repo.update_stack(
-            name=stack_name, stack=stack_, reset_association=reset_association
-        )
+        try:
+            repo.update_stack(
+                name=stack_name,
+                stack=stack_,
+                reset_association=reset_association
+            )
+        except StackValidationError as e:
+            cli_utils.error(e)
+
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
