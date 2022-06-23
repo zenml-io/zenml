@@ -43,6 +43,7 @@ from zenml.zen_stores.models import (
     Project,
     Role,
     RoleAssignment,
+    StoreAssociation,
     Team,
     User,
     ZenStoreModel,
@@ -918,6 +919,112 @@ class LocalZenStore(BaseZenStore):
         return self._get_role_assignments(
             team_id=team.id, project_id=project_id
         )
+
+    @property
+    def store_associations(self) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations within the
+        ZenStore."""
+        return self.__store.store_associations
+
+    def create_store_association(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> StoreAssociation:
+        """Creates an association between an artifact store and a metadata
+        store."""
+        association = StoreAssociation(
+            metadata_store_uuid=metadata_store_uuid,
+            artifact_store_uuid=artifact_store_uuid,
+        )
+        self.__store.store_associations.append(association)
+        self.__store.write_config()
+        return association
+
+    def get_store_associations_for_artifact_store(
+        self,
+        artifact_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations for a given
+        artifact store.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+
+        Returns:
+            The list of store associations for the given artifact store
+        """
+        return [
+            a
+            for a in self.__store.store_associations
+            if a.artifact_store_uuid == artifact_store_uuid
+        ]
+
+    def get_store_associations_for_metadata_store(
+        self,
+        metadata_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations for a given
+        metadata store.
+
+        Args:
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Returns:
+            The list of store associations for the given metadata store
+        """
+        return [
+            a
+            for a in self.__store.store_associations
+            if a.metadata_store_uuid == metadata_store_uuid
+        ]
+
+    def get_store_associations_for_artifact_and_metadata_store(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations for a given
+        combination.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Returns:
+            The list of store associations for the given combination.
+        """
+        return [
+            a
+            for a in self.__store.store_associations
+            if a.artifact_store_uuid == artifact_store_uuid
+            and a.metadata_store_uuid == metadata_store_uuid
+        ]
+
+    def delete_store_association_for_artifact_and_metadata_store(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> None:
+        """Deletes an association between a give artifact/metadata store pair.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+            metadata_store_uuid: The UUID of the selected metadata store.
+        """
+
+        associations = (
+            self.get_store_associations_for_artifact_and_metadata_store(
+                artifact_store_uuid=artifact_store_uuid,
+                metadata_store_uuid=metadata_store_uuid,
+            )
+        )
+
+        for a in associations:
+            self.__store.store_associations.remove(a)
+            logger.info(f"Deleted store association {a}.")
+
+        self.__store.write_config()
 
     # Pipelines and pipeline runs
 

@@ -16,6 +16,7 @@
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from uuid import UUID
 
 import requests
 from pydantic import BaseModel
@@ -30,6 +31,7 @@ from zenml.constants import (
     STACK_CONFIGURATIONS,
     STACKS,
     STACKS_EMPTY,
+    STORE_ASSOCIATIONS,
     TEAMS,
     USERS,
 )
@@ -49,6 +51,7 @@ from zenml.zen_stores.models import (
     Role,
     RoleAssignment,
     StackWrapper,
+    StoreAssociation,
     Team,
     User,
 )
@@ -784,6 +787,110 @@ class RestZenStore(BaseZenStore):
             RoleAssignment.parse_obj(assignment_dict)
             for assignment_dict in body
         ]
+
+    @property
+    def store_associations(self) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations within
+        the ZenStore."""
+        body = self.get(STORE_ASSOCIATIONS)
+        if not isinstance(body, list):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+        return [
+            StoreAssociation.parse_obj(association_dict)
+            for association_dict in body
+        ]
+
+    def create_store_association(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> StoreAssociation:
+        """Creates an association between an artifact store and a metadata
+        store."""
+        association = StoreAssociation(
+            artifact_store_uuid=artifact_store_uuid,
+            metadata_store_uuid=metadata_store_uuid,
+        )
+        return StoreAssociation.parse_obj(
+            self.post(STORE_ASSOCIATIONS, body=association)
+        )
+
+    def get_store_associations_for_artifact_store(
+        self,
+        artifact_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations for a given
+        artifact store.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+
+        Returns:
+            The list of store associations for the given artifact store
+        """
+        return [
+            a
+            for a in self.store_associations
+            if a.artifact_store_uuid == artifact_store_uuid
+        ]
+
+    def get_store_associations_for_metadata_store(
+        self,
+        metadata_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations for a given
+        metadata store.
+
+        Args:
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Returns:
+            The list of store associations for the given metadata store
+        """
+        return [
+            a
+            for a in self.store_associations
+            if a.metadata_store_uuid == metadata_store_uuid
+        ]
+
+    def get_store_associations_for_artifact_and_metadata_store(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> List[StoreAssociation]:
+        """Fetches all artifact/metadata store associations for a given
+        combination.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+            metadata_store_uuid: The UUID of the selected metadata store.
+
+        Returns:
+            The list of store associations for the given combination/
+        """
+        return [
+            a
+            for a in self.store_associations
+            if a.metadata_store_uuid == metadata_store_uuid
+            and a.artifact_store_uuid == artifact_store_uuid
+        ]
+
+    def delete_store_association_for_artifact_and_metadata_store(
+        self,
+        artifact_store_uuid: UUID,
+        metadata_store_uuid: UUID,
+    ) -> None:
+        """Deletes an association between a give artifact/metadata store pair.
+
+        Args:
+            artifact_store_uuid: The UUID of the selected artifact store.
+            metadata_store_uuid: The UUID of the selected metadata store.
+        """
+        self.delete(
+            f"{STORE_ASSOCIATIONS}/{artifact_store_uuid}/{metadata_store_uuid}"
+        )
 
     # Pipelines and pipeline runs
 
