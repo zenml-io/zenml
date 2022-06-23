@@ -82,8 +82,7 @@ class StackWrapper(BaseModel):
 
 
 class StoreAssociation(BaseModel):
-    """Network Serializable Model describing the association between an
-    artifact store and a metadata store.
+    """Model for the association between an artifact store and a metadata store.
 
     Args:
         artifact_store_uuid: The UUID of the artifact store.

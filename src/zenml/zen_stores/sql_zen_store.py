@@ -1376,8 +1376,11 @@ class SqlZenStore(BaseZenStore):
 
     @property
     def store_associations(self) -> List[StoreAssociation]:
-        """Fetches all artifact/metadata store associations within
-        the ZenStore."""
+        """Fetches all artifact/metadata store associations.
+
+        Returns:
+            A list of all artifact/metadata store associations.
+        """
         with Session(self.engine) as session:
             return [
                 StoreAssociation(**association.dict())
@@ -1391,8 +1394,15 @@ class SqlZenStore(BaseZenStore):
         artifact_store_uuid: UUID,
         metadata_store_uuid: UUID,
     ) -> StoreAssociation:
-        """Creates an association between an artifact store and a metadata
-        store."""
+        """Creates an association between an artifact- and a metadata store.
+
+        Args:
+            artifact_store_uuid: The UUID of the artifact store.
+            metadata_store_uuid: The UUID of the metadata store.
+
+        Returns:
+            The newly created store association.
+        """
         with Session(self.engine) as session:
             existing_association = session.exec(
                 select(StoreAssociationTable)
@@ -1424,14 +1434,13 @@ class SqlZenStore(BaseZenStore):
         self,
         artifact_store_uuid: UUID,
     ) -> List[StoreAssociation]:
-        """Fetches all artifact/metadata store associations for a given
-        artifact store.
+        """Fetches all associations for a given artifact store.
 
         Args:
             artifact_store_uuid: The UUID of the selected artifact store.
 
         Returns:
-            The list of store associations for the given artifact store
+            A list of store associations for the given artifact store.
         """
         with Session(self.engine) as session:
             associations = session.exec(
@@ -1446,14 +1455,13 @@ class SqlZenStore(BaseZenStore):
         self,
         metadata_store_uuid: UUID,
     ) -> List[StoreAssociation]:
-        """Fetches all artifact/metadata store associations for a given
-        metadata store.
+        """Fetches all associations for a given metadata store.
 
         Args:
             metadata_store_uuid: The UUID of the selected metadata store.
 
         Returns:
-            The list of store associations for the given metadata store
+            A list of store associations for the given metadata store.
         """
         with Session(self.engine) as session:
             associations = session.exec(
@@ -1469,15 +1477,14 @@ class SqlZenStore(BaseZenStore):
         artifact_store_uuid: UUID,
         metadata_store_uuid: UUID,
     ) -> List[StoreAssociation]:
-        """Fetches all artifact/metadata store associations for a given
-        combination.
+        """Fetches all associations for a given artifact/metadata store pair.
 
         Args:
             artifact_store_uuid: The UUID of the selected artifact store.
             metadata_store_uuid: The UUID of the selected metadata store.
 
         Returns:
-            The list of store associations for the given combination/
+            A list of store associations for the given combination.
         """
         with Session(self.engine) as session:
             associations = session.exec(
@@ -1498,13 +1505,12 @@ class SqlZenStore(BaseZenStore):
         artifact_store_uuid: UUID,
         metadata_store_uuid: UUID,
     ) -> None:
-        """Deletes an association between a give artifact/metadata store pair.
+        """Deletes associations between a given artifact/metadata store pair.
 
         Args:
             artifact_store_uuid: The UUID of the selected artifact store.
             metadata_store_uuid: The UUID of the selected metadata store.
         """
-
         with Session(self.engine) as session:
             try:
                 association = session.exec(
