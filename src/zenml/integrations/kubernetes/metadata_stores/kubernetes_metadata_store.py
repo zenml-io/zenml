@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of Kubernetes metadata store."""
 
+import os
 import subprocess
 import time
 from typing import Any, ClassVar, Dict, Union
@@ -27,7 +28,7 @@ from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata_stores.mysql_metadata_store import MySQLMetadataStore
-from zenml.utils import networking_utils
+from zenml.utils import io_utils, networking_utils
 
 logger = get_logger(__name__)
 
@@ -57,8 +58,6 @@ class KubernetesMetadataStore(MySQLMetadataStore):
     storage_capacity: str = "10Gi"
     _local_host_name: str = DEFAULT_KUBERNETES_METADATA_LOCAL_HOST_NAME
     _timeout: int = DEFAULT_KUBERNETES_METADATA_DAEMON_TIMEOUT
-    _pid_file_path: str = DEFAULT_KUBERNETES_METADATA_DAEMON_PID_FILE
-    _log_file: str = DEFAULT_KUBERNETES_METADATA_DAEMON_LOG_FILE
     _k8s_core_api: k8s_client.CoreV1Api = None
     _k8s_apps_api: k8s_client.AppsV1Api = None
 
@@ -195,7 +194,42 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             namespace=self.kubernetes_namespace,
         )
 
-    # TODO: code duplication with kubeflow metadata store.
+    # TODO: code duplication with kubeflow metadata store below.
+
+    @property
+    def root_directory(self) -> str:
+        """Returns path to the root directory for all files concerning this orchestrator.
+
+        Returns:
+            Path to the root directory.
+        """
+        return os.path.join(
+            io_utils.get_global_config_directory(),
+            self.FLAVOR,
+            str(self.uuid),
+        )
+
+    @property
+    def _pid_file_path(self) -> str:
+        """Returns path to the daemon PID file.
+
+        Returns:
+            Path to the daemon PID file.
+        """
+        return os.path.join(
+            self.root_directory, DEFAULT_KUBERNETES_METADATA_DAEMON_PID_FILE
+        )
+
+    @property
+    def _log_file(self) -> str:
+        """Path of the daemon log file.
+
+        Returns:
+            Path to the daemon log file.
+        """
+        return os.path.join(
+            self.root_directory, DEFAULT_KUBERNETES_METADATA_DAEMON_LOG_FILE
+        )
 
     def resume(self) -> None:
         """Resumes the metadata store."""
