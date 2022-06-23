@@ -70,6 +70,19 @@ class PodPhase(enum.Enum):
     UNKNOWN = "Unknown"
 
 
+def is_inside_kubernetes() -> bool:
+    """Check whether we are inside a kubernetes cluster or on a remote host.
+
+    Returns:
+        True if inside a kubernetes cluster, else False.
+    """
+    try:
+        k8s_config.load_incluster_config()
+        return True
+    except k8s_config.ConfigException:
+        return False
+
+
 def load_kube_config(context: Optional[str] = None) -> None:
     """Load the kubernetes client config.
 

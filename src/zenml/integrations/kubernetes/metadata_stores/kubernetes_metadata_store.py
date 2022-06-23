@@ -15,9 +15,10 @@
 
 import subprocess
 import time
-from typing import Any, ClassVar, Dict
+from typing import Any, ClassVar, Dict, Union
 
 from kubernetes import client as k8s_client
+from ml_metadata.proto import metadata_store_pb2
 from pydantic import root_validator
 
 from zenml.exceptions import ProvisioningError, StackComponentInterfaceError
@@ -29,6 +30,11 @@ from zenml.metadata_stores.mysql_metadata_store import MySQLMetadataStore
 from zenml.utils import networking_utils
 
 logger = get_logger(__name__)
+
+DEFAULT_KUBERNETES_METADATA_LOCAL_HOST_NAME = "127.0.0.1"
+DEFAULT_KUBERNETES_METADATA_DAEMON_TIMEOUT = 60
+DEFAULT_KUBERNETES_METADATA_DAEMON_PID_FILE = "kubernetes_metadata_daemon.pid"
+DEFAULT_KUBERNETES_METADATA_DAEMON_LOG_FILE = "kubernetes_metadata_daemon.log"
 
 
 class KubernetesMetadataStore(MySQLMetadataStore):
@@ -43,18 +49,16 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             Defaults to "default".
         storage_capacity: Storage capacity of the metadata store.
             Defaults to `"10Gi"` (=10GB).
-        port: Local port where metadata store will be reachable.
     """
 
     deployment_name: str
     kubernetes_context: str
     kubernetes_namespace: str = "zenml"
     storage_capacity: str = "10Gi"
-    port: int = 8081
-    _mysql_port: int = 3306
-    _timeout: int = 180
-    _pid_file_path: str = "kubernetes_metadata_store_daemon.pid"
-    _log_file: str = "kubernetes_metadata_store_daemon.log"
+    _local_host_name: str = DEFAULT_KUBERNETES_METADATA_LOCAL_HOST_NAME
+    _timeout: int = DEFAULT_KUBERNETES_METADATA_DAEMON_TIMEOUT
+    _pid_file_path: str = DEFAULT_KUBERNETES_METADATA_DAEMON_PID_FILE
+    _log_file: str = DEFAULT_KUBERNETES_METADATA_DAEMON_LOG_FILE
     _k8s_core_api: k8s_client.CoreV1Api = None
     _k8s_apps_api: k8s_client.AppsV1Api = None
 
@@ -180,7 +184,7 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             namespace=self.kubernetes_namespace,
         )
 
-    # TODO: code below is duplicated from kubeflow metadata store.
+    # TODO: code duplication with kubeflow metadata store.
 
     def resume(self) -> None:
         """Resumes the metadata store."""
@@ -204,6 +208,31 @@ class KubernetesMetadataStore(MySQLMetadataStore):
         )
         return pod_list.items[0].metadata.name  # type: ignore[no-any-return]
 
+    def get_tfx_metadata_config(
+        self,
+    ) -> Union[
+        metadata_store_pb2.ConnectionConfig,
+        metadata_store_pb2.MetadataStoreClientConfig,
+    ]:
+        """Return tfx metadata config for the kubeflow metadata store.
+
+        Returns:
+            The tfx metadata config for the kubeflow metadata store.
+
+        Raises:
+            RuntimeError: If the metadata store is not running.
+        """
+        connection_config = super().get_tfx_metadata_config()
+        if not kube_utils.is_inside_kubernetes():
+            if not self.is_running:
+                raise RuntimeError(
+                    "The Kubernetes metadata daemon is not running. Please run the "
+                    "following command to start it first:\n\n"
+                    "    'zenml metadata-store up'\n"
+                )
+            connection_config.mysql.host = self._local_host_name
+        return connection_config
+
     def start_metadata_daemon(self) -> None:
         """Starts a daemon process that forwards ports.
 
@@ -220,8 +249,8 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             "--namespace",
             self.kubernetes_namespace,
             "port-forward",
-            self.pod_name,
-            f"{self.port}:{self._mysql_port}",
+            f"svc/{self.deployment_name}",
+            f"{self.port}:{self.port}",
         ]
         print(command)
         if not networking_utils.port_available(self.port):
