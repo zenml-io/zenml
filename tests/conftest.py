@@ -78,9 +78,22 @@ def base_repo(
     repo.original_cwd = orig_cwd
     yield repo
 
-    # clean up
+    # remove all traces, and change working directory back to base path
     os.chdir(orig_cwd)
-    shutil.rmtree(tmp_path)
+    try:
+        shutil.rmtree(tmp_path)
+    except PermissionError:
+        # Windows does not have the concept of unlinking a file and deleting
+        #  once all processes that are accessing the resource are done
+        #  instead windows tries to delete immediately and fails with a
+        #  PermissionError: [WinError 32] The process cannot access the
+        #  file because it is being used by another process
+        logging.debug(
+            "Skipping deletion of temp dir at teardown, due to "
+            "Windows Permission error"
+        )
+        # TODO[HIGH]: Implement fixture cleanup for Windows where shutil.rmtree
+        #  fails on files that are in use on python 3.7 and 3.8
 
     # reset the global configuration and the repository
     GlobalConfiguration._reset_instance()
