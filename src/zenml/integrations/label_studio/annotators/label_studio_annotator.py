@@ -17,13 +17,17 @@ import os
 import subprocess
 import sys
 import webbrowser
-from typing import Any, ClassVar, List
+from typing import ClassVar, List, Optional
 
 from label_studio_sdk import Client
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
+from zenml.integrations.label_studio.steps.label_studio_export_step import (
+    AnnotationInputArtifact,
+    LabelStudioRecords,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, networking_utils
@@ -34,10 +38,17 @@ DEFAULT_LABEL_STUDIO_PORT = 8093
 
 
 class LabelStudioAnnotator(BaseAnnotator):
-    """Class to interact with the Label Studio annotation interface."""
+    """Class to interact with the Label Studio annotation interface.
+
+    Attributes:
+        api_key: The API key to use for authentication.
+        port: The port to use for the annotation interface.
+        project_name: The name of the project to interact with.
+    """
 
     port: int = DEFAULT_LABEL_STUDIO_PORT
     api_key: str
+    project_name: Optional[str]
 
     FLAVOR: ClassVar[str] = LABEL_STUDIO_ANNOTATOR_FLAVOR
 
@@ -237,8 +248,16 @@ class LabelStudioAnnotator(BaseAnnotator):
     def get_unlabeled_data(self, dataset_name: str) -> None:
         """Gets the unlabeled data for the given dataset."""
 
-    def export_data(self, identifier: str, export_config) -> Any:
+    def export_data(
+        self, data: AnnotationInputArtifact, export_config
+    ) -> LabelStudioRecords:
         """Exports the data for the given identifier."""
 
     def import_data(self, identifier: str, import_config) -> None:
         """Imports the data for the given identifier."""
+
+    def register_dataset_for_annotation(
+        self, name: str, tags: List[str]
+    ) -> None:
+        """Registers a dataset for annotation."""
+        # create a project if it doesn't exist

@@ -1073,9 +1073,7 @@ def import_stack(
         if filename is None:
             filename = stack_name + ".yaml"
         data = read_yaml(filename)
-        cli_utils.declare(
-            f"Using '{filename}' to import '{stack_name}' stack."
-        )
+        cli_utils.declare(f"Using '{filename}' to import '{stack_name}' stack.")
 
     # assert zenml version is the same
     if data["zenml_version"] != zenml.__version__:
@@ -1146,9 +1144,7 @@ def copy_stack(
 
     if source_profile_name:
         try:
-            source_profile = GlobalConfiguration().profiles[
-                source_profile_name
-            ]
+            source_profile = GlobalConfiguration().profiles[source_profile_name]
         except KeyError:
             cli_utils.error(
                 f"Unable to find source profile '{source_profile_name}'."
@@ -1158,9 +1154,7 @@ def copy_stack(
 
     if target_profile_name:
         try:
-            target_profile = GlobalConfiguration().profiles[
-                target_profile_name
-            ]
+            target_profile = GlobalConfiguration().profiles[target_profile_name]
         except KeyError:
             cli_utils.error(
                 f"Unable to find target profile '{target_profile_name}'."
