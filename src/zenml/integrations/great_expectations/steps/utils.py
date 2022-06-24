@@ -43,7 +43,7 @@ def create_batch_request(
         data_asset_name: Optional custom name for the data asset.
 
     Returns:
-        A Greassssst Expectations runtime batch request.
+        A Great Expectations runtime batch request.
     """
     # get pipeline name, step name and run id
     step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])

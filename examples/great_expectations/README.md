@@ -1,5 +1,5 @@
 # 🏎 Validate your data with Great Expectations
-In data centric machine learning development, data quality is critical not only
+In data-centric machine learning development, data quality is critical not only
 to achieve good initial results but also to keep data drift and concept drift
 at bay as your models are deployed to production and interact with live data.
 
