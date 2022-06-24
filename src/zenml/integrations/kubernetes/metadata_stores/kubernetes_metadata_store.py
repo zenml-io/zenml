@@ -42,11 +42,11 @@ class KubernetesMetadataStore(MySQLMetadataStore):
     """Kubernetes metadata store (MySQL database deployed in the cluster).
 
     Attributes:
-        deployment_name: Name of the kubernetes deployment and corresponding
+        deployment_name: Name of the Kubernetes deployment and corresponding
             service/pod that will be created when calling `provision()`.
-        kubernetes_context: Name of the kubernetes context in which to deploy
+        kubernetes_context: Name of the Kubernetes context in which to deploy
             and provision the MySQL database.
-        kubernetes_namespace: Name of the kubernetes namespace.
+        kubernetes_namespace: Name of the Kubernetes namespace.
             Defaults to "default".
         storage_capacity: Storage capacity of the metadata store.
             Defaults to `"10Gi"` (=10GB).
@@ -64,7 +64,7 @@ class KubernetesMetadataStore(MySQLMetadataStore):
     FLAVOR: ClassVar[str] = KUBERNETES_METADATA_STORE_FLAVOR
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initiate the Pydantic object and initialize the k8s clients.
+        """Initiate the Pydantic object and initialize the Kubernetes clients.
 
         Args:
             *args: The positional arguments to pass to the Pydantic object.
@@ -101,7 +101,7 @@ class KubernetesMetadataStore(MySQLMetadataStore):
         usage_note = (
             "Note: the `kubernetes` metadata store flavor is a special "
             "subtype of the `mysql` metadata store that deploys a fresh "
-            "MySQL database within your k8s cluster when running "
+            "MySQL database within your Kubernetes cluster when running "
             "`zenml stack up`. "
             "If you already have a MySQL database running in your cluster "
             "(or elsewhere), simply use the `mysql` metadata store flavor "
@@ -242,10 +242,10 @@ class KubernetesMetadataStore(MySQLMetadataStore):
 
     @property
     def pod_name(self) -> str:
-        """Name of the k8s pod where the MySQL database is deployed.
+        """Name of the Kubernetes pod where the MySQL database is deployed.
 
         Returns:
-            Name of the k8s pod.
+            Name of the Kubernetes pod.
         """
         pod_list = self._k8s_core_api.list_namespaced_pod(
             namespace=self.kubernetes_namespace,
@@ -259,7 +259,7 @@ class KubernetesMetadataStore(MySQLMetadataStore):
         metadata_store_pb2.ConnectionConfig,
         metadata_store_pb2.MetadataStoreClientConfig,
     ]:
-        """Return tfx metadata config for the kubernetes metadata store.
+        """Return tfx metadata config for the Kubernetes metadata store.
 
         This overwrites the MySQL host to use `self._local_host_name` when
         running outside of the cluster so we can access the metadata store
@@ -285,8 +285,8 @@ class KubernetesMetadataStore(MySQLMetadataStore):
     def start_metadata_daemon(self) -> None:
         """Starts a daemon process that forwards ports.
 
-        This is so the MySQL database in the k8s cluster is accessible on the
-        localhost.
+        This is so the MySQL database in the Kubernetes cluster is accessible
+        on the localhost.
 
         Raises:
             ProvisioningError: if the daemon fails to start.
@@ -313,7 +313,7 @@ class KubernetesMetadataStore(MySQLMetadataStore):
             from zenml.utils import daemon
 
             def _daemon_function() -> None:
-                """Forwards the port of the kubernetes metadata store pod ."""
+                """Forwards the port of the Kubernetes metadata store pod ."""
                 subprocess.check_call(command)
 
             daemon.run_as_daemon(

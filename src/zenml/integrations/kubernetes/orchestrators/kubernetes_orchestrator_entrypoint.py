@@ -1,4 +1,4 @@
-"""Entrypoint of the k8s master/orchestrator pod."""
+"""Entrypoint of the Kubernetes master/orchestrator pod."""
 
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
@@ -51,10 +51,10 @@ def parse_args() -> argparse.Namespace:
 def patch_run_name_for_cron_scheduling(
     run_name: str, fixed_step_args: List[str]
 ) -> str:
-    """Adjust run_name at runtime according to the k8s orchestrator pod name.
+    """Adjust run name according to the Kubernetes orchestrator pod name.
 
     This is required for scheduling via CRON jobs, since each job would
-    otherwise have the same run_name, which zenml does not support.
+    otherwise have the same run name, which zenml does not support.
 
     Args:
         run_name: Initial run name.
@@ -96,7 +96,7 @@ def main() -> None:
     step_specific_args = pipeline_config["step_specific_args"]
     pipeline_dag = pipeline_config["pipeline_dag"]
 
-    # Get k8s Core API for running kubectl commands later.
+    # Get Kubernetes Core API for running kubectl commands later.
     kube_utils.load_kube_config()
     core_api = k8s_client.CoreV1Api()
 
@@ -111,14 +111,14 @@ def main() -> None:
         Args:
             step_name: Name of the step.
         """
-        # Define k8s pod name.
+        # Define Kubernetes pod name.
         pod_name = f"{run_name}-{step_name}"
         pod_name = kube_utils.sanitize_pod_name(pod_name)
 
         # Build list of args for this step.
         step_args = [*fixed_step_args, *step_specific_args[step_name]]
 
-        # Define k8s pod manifest.
+        # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
             run_name=run_name,

@@ -1,4 +1,4 @@
-"""Entrypoint configuration for the k8s step pods."""
+"""Entrypoint configuration for the Kubernetes worker/step pods."""
 
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #

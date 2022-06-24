@@ -28,7 +28,7 @@ and Docker installed locally.
 
 ### Setup and Register Kubernetes Orchestrator
 After spinning up your Kubernetes cluster in the cloud, you will first need
-to connect it to your local kubectl as a new kubernetes context.
+to connect it to your local kubectl as a new Kubernetes context.
 
 How to do this depends on your cloud provider. For AWS EKS, you can do the
 following:
@@ -42,7 +42,7 @@ aws eks --region <AWS_REGION> update-kubeconfig
 **Note:** It does not matter what you use as `KUBE_CONTEXT` here, as long as it
 is a unique name.
 
-Next, register your Kubernetes orchestrator with the respective kubernetes 
+Next, register your Kubernetes orchestrator with the respective Kubernetes 
 context:
 
 ```bash
@@ -54,7 +54,7 @@ zenml orchestrator register k8s_orchestrator
 
 ### Setup and Register Metadata Store
 
-If you want to store your metadata locally within the kubernetes cluster, you
+If you want to store your metadata locally within the Kubernetes cluster, you
 can use the `KubernetesMetadataStore`, which is a subclass of the
 `MySQLMetadataStore` that will automatically spin up a MySQL deployment in
 your cluster if you call `zenml stack up`.
@@ -129,8 +129,8 @@ on the Kubernetes cluster in the cloud. Let's run the example pipeline:
 python run.py
 ```
 
-If all went well, you should now see the logs of all k8s pods in your terminal,
-similar to what is shown below.
+If all went well, you should now see the logs of all Kubernetes pods in your
+terminal, similar to what is shown below.
 
 For the output below, note that the `skew_comparison` and `svc_trainer` steps
 are run in parallel, so the order of messages might differ when you run it
@@ -164,9 +164,9 @@ Pipeline run kubernetes_example_pipeline-07_Jun_22-14_26_14_450641 has finished 
 
 ### Interacting with pods via kubectl
 
-For debugging, it can sometimes be handy to interact with the k8s pods directly
-via kubectl. To make this easier, we have added the following labels to all
-pods:
+For debugging, it can sometimes be handy to interact with the Kubernetes pods
+directly via kubectl. 
+To make this easier, we have added the following labels to all pods:
 - `run`: the name of the ZenML run.
 - `pipeline`: the name of the ZenML pipeline associated with this run.
 

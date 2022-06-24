@@ -1,4 +1,4 @@
-"""Entrypoint configuration for the k8s master/orchestrator pod."""
+"""Entrypoint configuration for the Kubernetes master/orchestrator pod."""
 
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #

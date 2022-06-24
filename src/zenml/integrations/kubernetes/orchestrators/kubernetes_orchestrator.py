@@ -29,7 +29,7 @@
 #  permissions and limitations under the License.
 
 # Parts of the `prepare_or_run_pipeline()` method of this file are
-# inspired by the kubernetes dag runner implementation of tfx
+# inspired by the Kubernetes dag runner implementation of tfx
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 
@@ -69,21 +69,22 @@ class KubernetesOrchestrator(BaseOrchestrator):
 
     Attributes:
         custom_docker_base_image_name: Name of a docker image that should be
-            used as the base for the image that will be run on k8s pods. If no
-            custom image is given, a basic image of the active ZenML version
-            will be used. **Note**: This image needs to have ZenML installed,
+            used as the base for the image that will be run on Kubernetes pods.
+            If no custom image is given, a basic image of the active ZenML
+            version will be used.
+            **Note**: This image needs to have ZenML installed,
             otherwise the pipeline execution will fail. For that reason, you
             might want to extend the ZenML docker images found here:
             https://hub.docker.com/r/zenmldocker/zenml/
-        kubernetes_context: Optional name of a kubernetes context to run
+        kubernetes_context: Optional name of a Kubernetes context to run
             pipelines in. If not set, the current active context will be used.
             You can find the active context by running `kubectl config
             current-context`.
-        kubernetes_namespace: Name of the kubernetes namespace to be used.
+        kubernetes_namespace: Name of the Kubernetes namespace to be used.
             If not provided, `default` namespace will be used.
         synchronous: If `True`, running a pipeline using this orchestrator will
             block until all steps finished running on Kubernetes.
-        skip_config_loading: If `True`, don't load the kubernetes context and
+        skip_config_loading: If `True`, don't load the Kubernetes context and
             clients. This is only useful for unit testing.
     """
 
@@ -99,7 +100,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
     FLAVOR: ClassVar[str] = KUBERNETES_ORCHESTRATOR_FLAVOR
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initiate the Pydantic object and initialize the k8s clients.
+        """Initialize the Pydantic object the Kubernetes clients.
 
         Args:
             *args: The positional arguments to pass to the Pydantic object.
@@ -336,7 +337,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
             pipeline_dag=pipeline_dag,
         )
 
-        # Authorize orchestrator pod to run k8s commands inside the cluster.
+        # Authorize pod to run Kubernetes commands inside the cluster.
         service_account_name = "zenml-service-account"
         kube_utils.create_edit_service_account(
             core_api=self._k8s_core_api,
@@ -349,7 +350,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         if runtime_configuration.schedule:
             if not runtime_configuration.schedule.cron_expression:
                 raise RuntimeError(
-                    "The kubernetes orchestrator only supports scheduling via "
+                    "The Kubernetes orchestrator only supports scheduling via "
                     "CRON jobs, but the run was configured with a manual "
                     "schedule. Use `Schedule(cron_expression=...)` instead."
                 )
@@ -368,7 +369,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
                 body=cron_job_manifest, namespace=self.kubernetes_namespace
             )
             logger.info(
-                f"Scheduling kubernetes run `{pod_name}` with CRON expression "
+                f"Scheduling Kubernetes run `{pod_name}` with CRON expression "
                 f'`"{cron_expression}"`.'
             )
             return

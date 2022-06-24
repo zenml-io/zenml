@@ -14,7 +14,7 @@ def build_pod_manifest(
     args: List[str],
     service_account_name: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Build a kubernetes pod manifest for a ZenML run or step.
+    """Build a Kubernetes pod manifest for a ZenML run or step.
 
     Args:
         pod_name: Name of the pod.
@@ -25,7 +25,7 @@ def build_pod_manifest(
         args: Arguments provided to the entrypoint command.
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
-            run kubernetes commands from within the cluster.
+            run Kubernetes commands from within the cluster.
 
     Returns:
         Pod manifest.
@@ -86,7 +86,7 @@ def build_cron_job_manifest(
         args: Arguments provided to the entrypoint command.
         service_account_name: Optional name of a service account.
             Can be used to assign certain roles to a pod, e.g., to allow it to
-            run kubernetes commands from within the cluster.
+            run Kubernetes commands from within the cluster.
 
     Returns:
         CRON job manifest.

@@ -71,10 +71,10 @@ class PodPhase(enum.Enum):
 
 
 def is_inside_kubernetes() -> bool:
-    """Check whether we are inside a kubernetes cluster or on a remote host.
+    """Check whether we are inside a Kubernetes cluster or on a remote host.
 
     Returns:
-        True if inside a kubernetes cluster, else False.
+        True if inside a Kubernetes cluster, else False.
     """
     try:
         k8s_config.load_incluster_config()
@@ -84,9 +84,9 @@ def is_inside_kubernetes() -> bool:
 
 
 def load_kube_config(context: Optional[str] = None) -> None:
-    """Load the kubernetes client config.
+    """Load the Kubernetes client config.
 
-    Depending on the environment (whether it is inside the running kubernetes
+    Depending on the environment (whether it is inside the running Kubernetes
     cluster or remote host), different location will be searched for the config
     file.
 
@@ -101,7 +101,7 @@ def load_kube_config(context: Optional[str] = None) -> None:
 
 
 def sanitize_pod_name(pod_name: str) -> str:
-    """Sanitize pod names so they conform to kubernetes pod naming convention.
+    """Sanitize pod names so they conform to Kubernetes pod naming convention.
 
     Args:
         pod_name: Arbitrary input pod name.
@@ -118,7 +118,7 @@ def pod_is_not_pending(pod: k8s_client.V1Pod) -> bool:
     """Check if pod status is not 'Pending'.
 
     Args:
-        pod: kubernetes pod.
+        pod: Kubernetes pod.
 
     Returns:
         False if the pod status is 'Pending' else True.
@@ -130,7 +130,7 @@ def pod_failed(pod: k8s_client.V1Pod) -> bool:
     """Check if pod status is 'Failed'.
 
     Args:
-        pod: kubernetes pod.
+        pod: Kubernetes pod.
 
     Returns:
         True if pod status is 'Failed' else False.
@@ -142,7 +142,7 @@ def pod_is_done(pod: k8s_client.V1Pod) -> bool:
     """Check if pod status is 'Succeeded'.
 
     Args:
-        pod: kubernetes pod.
+        pod: Kubernetes pod.
 
     Returns:
         True if pod status is 'Succeeded' else False.
@@ -257,13 +257,13 @@ FuncT = TypeVar("FuncT", bound=Callable[..., Any])
 
 
 def _if_not_exists(create_fn: FuncT) -> FuncT:
-    """Wrap a kubernetes function to handle creation if already exists.
+    """Wrap a Kubernetes function to handle creation if already exists.
 
     Args:
-        create_fn: kubernetes function to be wrapped.
+        create_fn: Kubernetes function to be wrapped.
 
     Returns:
-        Wrapped kubernetes function.
+        Wrapped Kubernetes function.
     """
 
     def create_if_not_exists(*args: Any, **kwargs: Any) -> None:
@@ -286,7 +286,7 @@ def create_edit_service_account(
     namespace: str,
     cluster_role_binding_name: str = "zenml-edit",
 ) -> None:
-    """Create a new k8s service account with "edit" rights.
+    """Create a new Kubernetes service account with "edit" rights.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
@@ -314,7 +314,7 @@ def create_edit_service_account(
 
 
 def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str) -> None:
-    """Create a k8s namespace.
+    """Create a Kubernetes namespace.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
@@ -333,13 +333,14 @@ def create_mysql_deployment(
     volume_name: str = "mysql-pv-volume",
     volume_claim_name: str = "mysql-pv-claim",
 ) -> None:
-    """Create a k8s deployment with a MySQL database running on it.
+    """Create a Kubernetes deployment with a MySQL database running on it.
 
     Args:
         core_api: Client of Core V1 API of Kubernetes API.
         apps_api: Client of Apps V1 API of Kubernetes API.
         namespace: Kubernetes namespace. Defaults to "default".
-        storage_capacity: Storage capacity of the database. Defaults to `"10Gi"`.
+        storage_capacity: Storage capacity of the database.
+            Defaults to `"10Gi"`.
         deployment_name: Name of the deployment. Defaults to "mysql".
         volume_name: Name of the persistent volume.
             Defaults to `"mysql-pv-volume"`.
@@ -378,7 +379,7 @@ def create_mysql_deployment(
 def delete_deployment(
     apps_api: k8s_client.AppsV1Api, deployment_name: str, namespace: str
 ) -> None:
-    """Delete a k8s deployment.
+    """Delete a Kubernetes deployment.
 
     Args:
         apps_api: Client of Apps V1 API of Kubernetes API.

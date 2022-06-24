@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Kubernetes integration for k8s-native orchestration.
+"""Kubernetes integration for Kubernetes-native orchestration.
 
 The Kubernetes integration sub-module powers an alternative to the local
 orchestrator. You can enable it by registering the Kubernetes orchestrator with
