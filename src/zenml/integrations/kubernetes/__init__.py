@@ -29,7 +29,7 @@ KUBERNETES_METADATA_STORE_FLAVOR = "kubernetes"
 
 
 class KubernetesIntegration(Integration):
-    """Definition of Kubernetes Integration for ZenML."""
+    """Definition of Kubernetes integration for ZenML."""
 
     NAME = KUBERNETES
     REQUIREMENTS = ["kubernetes==18.20.0"]
