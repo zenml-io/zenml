@@ -68,13 +68,13 @@ class KubernetesOrchestrator(BaseOrchestrator):
     """Orchestrator for running ZenML pipelines using native Kubernetes.
 
     Attributes:
-        custom_docker_base_image_name: Name of a docker image that should be
+        custom_docker_base_image_name: Name of a Docker image that should be
             used as the base for the image that will be run on Kubernetes pods.
             If no custom image is given, a basic image of the active ZenML
             version will be used.
             **Note**: This image needs to have ZenML installed,
             otherwise the pipeline execution will fail. For that reason, you
-            might want to extend the ZenML docker images found here:
+            might want to extend the ZenML Docker images found here:
             https://hub.docker.com/r/zenmldocker/zenml/
         kubernetes_context: Optional name of a Kubernetes context to run
             pipelines in. If not set, the current active context will be used.
@@ -225,7 +225,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         )
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Return the full docker image name including registry and tag.
+        """Return the full Docker image name including registry and tag.
 
         Args:
             pipeline_name: Name of a ZenML pipeline.
@@ -244,7 +244,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Build a docker image and upload it to the container registry.
+        """Build a Docker image and upload it to the container registry.
 
         Args:
             pipeline: A ZenML pipeline.
@@ -270,7 +270,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         assert stack.container_registry  # should never happen due to validation
         stack.container_registry.push_image(image_name)
 
-        # Store the docker image digest in the runtime configuration so it gets
+        # Store the Docker image digest in the runtime configuration so it gets
         # tracked in the ZenStore
         image_digest = docker_utils.get_image_digest(image_name) or image_name
         runtime_configuration["docker_image"] = image_digest
@@ -312,7 +312,7 @@ class KubernetesOrchestrator(BaseOrchestrator):
         pipeline_name = pipeline.name
         pod_name = kube_utils.sanitize_pod_name(run_name)
 
-        # Get docker image name (for all pods).
+        # Get Docker image name (for all pods).
         image_name = self.get_docker_image_name(pipeline.name)
         image_name = get_image_digest(image_name) or image_name
 
