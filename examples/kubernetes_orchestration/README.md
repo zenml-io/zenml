@@ -70,20 +70,15 @@ zenml orchestrator register k8s_orchestrator
 ### Setup and Register Metadata Store
 
 If you want to store your metadata locally within the Kubernetes cluster, you
-can use the `KubernetesMetadataStore`, which is a subclass of the
-`MySQLMetadataStore` that will automatically spin up a MySQL deployment in
-your cluster if you call `zenml stack up`.
+can use the `KubernetesMetadataStore`, which automatically spins up a MySQL 
+deployment in your cluster if you call `zenml stack up`.
 
 We can register this metadata store as follows:
 
 ```bash
-zenml metadata-store register kubernetes_store 
+zenml metadata-store register k8s_store 
     --flavor=kubernetes
-    --host=mysql
-    --port=3306
-    --database=mysql
-    --username=root
-    --password=''
+    --kubernetes_context==<KUBE_CONTEXT>
     --kubernetes_namespace=zenml
     --deployment_name=mysql 
     --storage_capacity=10Gi
@@ -126,15 +121,15 @@ zenml artifact-store register s3_store
 Finally, let us bring everything together and register our stack:
 
 ```bash
-zenml stack register kubernetes_stack 
-    -m kubernetes_store 
+zenml stack register k8s_stack 
+    -m k8s_store 
     -a s3_store 
     -o k8s_orchestrator 
     -c ecr_registry
-zenml stack set kubernetes_stack
+zenml stack set k8s_stack
 ```
 
-Next, call `zenml stack up` to provision our metadata store.
+Next, call `zenml stack up` to provision and start the metadata store.
 
 ## :computer: Run Pipeline Locally
 Now that our stack is set up, all of our ML code will automatically be executed
@@ -152,7 +147,7 @@ are run in parallel, so the order of messages might differ when you run it
 yourself.
 
 ```
-Using stack default to run pipeline kubernetes_example_pipeline...
+Using stack k8s_stack to run pipeline kubernetes_example_pipeline...
 Waiting for Kubernetes orchestrator pod...
 Kubernetes orchestrator pod started.
 Waiting for pod of step importer to start...

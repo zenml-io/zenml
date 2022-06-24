@@ -20,6 +20,7 @@ from typing import Any, ClassVar, Dict, Union
 
 from kubernetes import client as k8s_client
 from ml_metadata.proto import metadata_store_pb2
+from ml_metadata.proto.metadata_store_pb2 import MySQLDatabaseConfig
 from pydantic import root_validator
 
 from zenml.exceptions import ProvisioningError, StackComponentInterfaceError
@@ -27,18 +28,25 @@ from zenml.integrations.kubernetes import KUBERNETES_METADATA_STORE_FLAVOR
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.metadata_stores.mysql_metadata_store import MySQLMetadataStore
+from zenml.metadata_stores.base_metadata_store import BaseMetadataStore
 from zenml.utils import io_utils, networking_utils
 
 logger = get_logger(__name__)
 
-DEFAULT_KUBERNETES_METADATA_LOCAL_HOST_NAME = "127.0.0.1"
 DEFAULT_KUBERNETES_METADATA_DAEMON_TIMEOUT = 60
 DEFAULT_KUBERNETES_METADATA_DAEMON_PID_FILE = "kubernetes_metadata_daemon.pid"
 DEFAULT_KUBERNETES_METADATA_DAEMON_LOG_FILE = "kubernetes_metadata_daemon.log"
 
+DEFAULT_KUBERNETES_MYSQL_HOST = "mysql"
+DEFAULT_KUBERNETES_MYSQL_LOCAL_HOST = "127.0.0.1"
+DEFAULT_KUBERNETES_MYSQL_PORT = 3306
+DEFAULT_KUBERNETES_MYSQL_DATABASE = "mysql"
+DEFAULT_KUBERNETES_MYSQL_USERNAME = "root"
+DEFAULT_KUBERNETES_MYSQL_PASSWORD = ""
+DEFAULT_KUBERNETES_MYSQL_SECRET = None
 
-class KubernetesMetadataStore(MySQLMetadataStore):
+
+class KubernetesMetadataStore(BaseMetadataStore):
     """Kubernetes metadata store (MySQL database deployed in the cluster).
 
     Attributes:
@@ -254,6 +262,39 @@ class KubernetesMetadataStore(MySQLMetadataStore):
         )
         return pod_list.items[0].metadata.name  # type: ignore[no-any-return]
 
+    @property
+    def host(self) -> str:
+        """Get the MySQL host required to access the metadata store.
+
+        This overwrites the MySQL host to use local host when
+        running outside of the cluster so we can access the metadata store
+        locally for post execution.
+
+        Raises:
+            RuntimeError: If the metadata store is not running.
+
+        Returns:
+            MySQL host.
+        """
+        if kube_utils.is_inside_kubernetes():
+            return DEFAULT_KUBERNETES_MYSQL_HOST
+        if not self.is_running:
+            raise RuntimeError(
+                "The Kubernetes metadata daemon is not running. Please run the "
+                "following command to start it first:\n\n"
+                "    'zenml metadata-store up'\n"
+            )
+        return DEFAULT_KUBERNETES_MYSQL_LOCAL_HOST
+
+    @property
+    def port(self) -> int:
+        """Get the MySQL port required to access the metadata store.
+
+        Returns:
+            int: MySQL port.
+        """
+        return DEFAULT_KUBERNETES_MYSQL_PORT
+
     def get_tfx_metadata_config(
         self,
     ) -> Union[
@@ -262,27 +303,17 @@ class KubernetesMetadataStore(MySQLMetadataStore):
     ]:
         """Return tfx metadata config for the Kubernetes metadata store.
 
-        This overwrites the MySQL host to use local host when
-        running outside of the cluster so we can access the metadata store
-        locally for post execution.
-
         Returns:
             The tfx metadata config.
-
-        Raises:
-            RuntimeError: If the metadata store is not running.
         """
-        connection_config = super().get_tfx_metadata_config()
-        if not kube_utils.is_inside_kubernetes():
-            if not self.is_running:
-                raise RuntimeError(
-                    "The Kubernetes metadata daemon is not running. Please run the "
-                    "following command to start it first:\n\n"
-                    "    'zenml metadata-store up'\n"
-                )
-            connection_config.mysql.host = (
-                DEFAULT_KUBERNETES_METADATA_LOCAL_HOST_NAME
-            )
+        config = MySQLDatabaseConfig(
+            host=self.host,
+            port=self.port,
+            database=DEFAULT_KUBERNETES_MYSQL_DATABASE,
+            user=DEFAULT_KUBERNETES_MYSQL_USERNAME,
+            password=DEFAULT_KUBERNETES_MYSQL_PASSWORD,
+        )
+        connection_config = metadata_store_pb2.ConnectionConfig(mysql=config)
         return connection_config
 
     def start_metadata_daemon(self) -> None:
