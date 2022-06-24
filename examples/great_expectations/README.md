@@ -12,9 +12,13 @@ batch predictions. This is one good way of detecting training-serving skew.
 
 ## 🗺 Overview
 This example uses the very popular [`Great Expectations`](https://greatexpectations.io/)
-open-source library to run data quality tasks on [the Steel Plates Faults Data Set]((https://www.openml.org/search?type=data&sort=runs&id=1504&status=active).)
+open-source library to run data quality tasks on [the Steel Plates Faults Data Set](https://www.openml.org/search?type=data&sort=runs&id=1504&status=active).
 provided by Semeion, Research Center of Sciences of Communication, Via Sersale
-117, 00128, Rome, Italy.
+117, 00128, Rome, Italy. The dataset consists of 27 features describing each
+fault (location, size, ...) and 7 binary features indicating the type of fault
+(on of 7: Pastry, Z_Scratch, K_Scatch, Stains, Dirtiness, Bumps, Other_Faults).
+The latter is commonly used as a binary classification target ('common' or
+'other' fault.)
 
 Working with Great Expectations usually starts by configuring a Data Context,
 which is the primary entry point for a Great Expectations deployment. All
