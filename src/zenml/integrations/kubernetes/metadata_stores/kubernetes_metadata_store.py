@@ -56,8 +56,6 @@ class KubernetesMetadataStore(MySQLMetadataStore):
     kubernetes_context: str
     kubernetes_namespace: str = "zenml"
     storage_capacity: str = "10Gi"
-    _local_host_name: str = DEFAULT_KUBERNETES_METADATA_LOCAL_HOST_NAME
-    _timeout: int = DEFAULT_KUBERNETES_METADATA_DAEMON_TIMEOUT
     _k8s_core_api: k8s_client.CoreV1Api = None
     _k8s_apps_api: k8s_client.AppsV1Api = None
 
@@ -235,7 +233,9 @@ class KubernetesMetadataStore(MySQLMetadataStore):
     def resume(self) -> None:
         """Resumes the metadata store."""
         self.start_metadata_daemon()
-        self.wait_until_metadata_store_ready(timeout=self._timeout)
+        self.wait_until_metadata_store_ready(
+            timeout=DEFAULT_KUBERNETES_METADATA_DAEMON_TIMEOUT
+        )
 
     def suspend(self) -> None:
         """Suspends the metadata store."""
@@ -262,7 +262,7 @@ class KubernetesMetadataStore(MySQLMetadataStore):
     ]:
         """Return tfx metadata config for the Kubernetes metadata store.
 
-        This overwrites the MySQL host to use `self._local_host_name` when
+        This overwrites the MySQL host to use local host when
         running outside of the cluster so we can access the metadata store
         locally for post execution.
 
@@ -280,7 +280,9 @@ class KubernetesMetadataStore(MySQLMetadataStore):
                     "following command to start it first:\n\n"
                     "    'zenml metadata-store up'\n"
                 )
-            connection_config.mysql.host = self._local_host_name
+            connection_config.mysql.host = (
+                DEFAULT_KUBERNETES_METADATA_LOCAL_HOST_NAME
+            )
         return connection_config
 
     def start_metadata_daemon(self) -> None:
