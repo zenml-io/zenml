@@ -188,6 +188,7 @@ class KubernetesMetadataStore(MySQLMetadataStore):
     def deprovision(self) -> None:
         """Deprovision the metadata store by deleting the MySQL deployment."""
         logger.info("Deleting Kubernetes MySQL metadata store...")
+        self.suspend()
         kube_utils.delete_deployment(
             apps_api=self._k8s_apps_api,
             deployment_name=self.deployment_name,
