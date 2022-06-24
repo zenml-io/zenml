@@ -469,7 +469,7 @@ class KServeModelDeployer(BaseModelDeployer):
             return
         services[0].stop(timeout=timeout, force=force)
 
-    def _get_kserve_secret(self) -> BaseSecretSchema:
+    def _get_kserve_secret(self) -> Any:
         """Get the secret object for the KServe deployment.
 
         Returns:
