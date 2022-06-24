@@ -56,7 +56,7 @@ logger = get_logger(__name__)
 
 
 class PodPhase(enum.Enum):
-    """Phase of the Kubernetes Pod.
+    """Phase of the Kubernetes pod.
 
     Pod phases are defined in
     https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-phase.
@@ -156,14 +156,14 @@ def get_pod(
 
     Args:
         core_api: Client of `CoreV1Api` of Kubernetes API.
-        pod_name: The name of the Pod.
-        namespace: The namespace of the Pod.
+        pod_name: The name of the pod.
+        namespace: The namespace of the pod.
 
     Raises:
         RuntimeError: When it sees unexpected errors from Kubernetes API.
 
     Returns:
-        The found Pod object. None if it's not found.
+        The found pod object. None if it's not found.
     """
     try:
         return core_api.read_namespaced_pod(name=pod_name, namespace=namespace)
@@ -182,14 +182,14 @@ def wait_pod(
     exponential_backoff: bool = False,
     stream_logs: bool = False,
 ) -> k8s_client.V1Pod:
-    """Wait for a Pod to meet an exit condition.
+    """Wait for a pod to meet an exit condition.
 
     Args:
         core_api: Client of `CoreV1Api` of Kubernetes API.
-        pod_name: The name of the Pod.
-        namespace: The namespace of the Pod.
+        pod_name: The name of the pod.
+        namespace: The namespace of the pod.
         exit_condition_lambda: A lambda
-            which will be called periodically to wait for a Pod to exit. The
+            which will be called periodically to wait for a pod to exit. The
             function returns True to exit.
         timeout_sec: Timeout in seconds to wait for pod to reach exit
             condition, or 0 to wait for an unlimited duration.
@@ -203,7 +203,7 @@ def wait_pod(
         RuntimeError: when the function times out.
 
     Returns:
-        The Pod object which meets the exit condition.
+        The pod object which meets the exit condition.
     """
     start_time = datetime.datetime.utcnow()
 
