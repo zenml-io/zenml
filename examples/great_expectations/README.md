@@ -11,54 +11,62 @@ the training dataset and then used to validate the datasets used to perform
 batch predictions. This is one good way of detecting training-serving skew.
 
 ## 🗺 Overview
-This example uses [`evidently`](https://github.com/evidentlyai/evidently), a
-useful open-source library to painlessly check for data drift (among other
-features). At its core, Evidently's drift detection takes in a reference data
-set and compares it against another comparison dataset. These are both input in
-the form of a `pandas` dataframe, though CSV inputs are also possible. You can receive these results in the form of a standard dictionary object containing all the relevant information, or as a visualization. We support both outputs.
+This example uses the very popular [`Great Expectations`](https://greatexpectations.io/)
+open-source library to run data quality tasks on [the Steel Plates Faults Data Set]((https://www.openml.org/search?type=data&sort=runs&id=1504&status=active).)
+provided by Semeion, Research Center of Sciences of Communication, Via Sersale
+117, 00128, Rome, Italy.
 
-ZenML implements this functionality in the form of several standardized steps.
-You select which of the profile sections you want to use in your step by passing
-a string into the `EvidentlyProfileConfig`. Possible options supported by
-Evidently are:
+Working with Great Expectations usually starts by configuring a Data Context,
+which is the primary entry point for a Great Expectations deployment. All
+aspects related to how Great Expectations manages and stores its information
+(data sources, data validation rules, data validation results and generated
+documentation) is controlled by this Data Context concept.
 
-- "datadrift"
-- "categoricaltargetdrift"
-- "numericaltargetdrift"
-- "classificationmodelperformance"
-- "regressionmodelperformance"
-- "probabilisticmodelperformance"
+ZenML makes it really simple to integrate Great Expectations into the pipeline
+workflows by automatically configuring Great Expectations to use the Artifact
+Store in the active stack to store the Data Context and all its related data.
+
+ZenML also includes materializers for Expectation Suites and Checkpoint Results
+and two builtin pipeline steps:
+
+ * a Great Expectations profiler that can be used to automatically generate
+ Expectation Suites from input datasets
+ * a Great Expectations validator that uses an existing Expectation Suite to
+ validate an input dataset
+
+Expectation Suites and Validation Results produced by ZenML can be visualized
+locally with the use of a Great Expectation ZenML Visualizer.
 
 ## 🧰 How the example is implemented
-In this example, we compare two separate slices of the same dataset as an easy
-way to get an idea for how `evidently` is making the comparison between the two
-dataframes. We chose [the University of Wisconsin breast cancer diagnosis
-dataset](https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+(Diagnostic))
-to illustrate how it works.
+In this example, we split the Steel Plates Faults dataset into training and
+validation slices. We then use the training dataset to generate an Expectations
+Suite that we later on use to check that the validation dataset is not skewed.
 
 ```python
-from zenml.integrations.evidently.steps import (
-    EvidentlyProfileConfig,
-    EvidentlyProfileStep,
+@pipeline(
+    required_integrations=[SKLEARN, GREAT_EXPECTATIONS]
 )
-
-# instead of defining the step yourself, we have done it for you
-drift_detector = EvidentlyProfileStep(
-    EvidentlyProfileConfig(
-        column_mapping=None,
-        profile_section="datadrift",
-    )
-)
+def validation_pipeline(
+    importer, splitter, profiler, prevalidator, train_validator, test_validator
+):
+    imported_data = importer()
+    train, test = splitter(imported_data)
+    suite = profiler(train)
+    condition = prevalidator(suite)
+    train_validator(train, condition)
+    test_validator(test, condition)
 ```
 
-Here you can see that defining the step is extremely simple using our
-class-based interface, and then you just have to pass in the two dataframes for
-the comparison to take place.
+The Expectation Suite inferred by Great Expectations from a dataset is
+intentionally designed to be over-fitted to the data, so the validation
+step is expected to fail on the validation dataset.
 
-We even allow you to use the Evidently visualization tool easily to display data
-drift diagrams in your browser or within a Jupyter notebook:
+The post-execution workflow of this example uses the builtin visualizer to
+open the Great Expectations generated Data Docs in the web browser to display
+information about the generated Expectation Suite and the validation results.
 
-![Evidently drift visualization UI](assets/drift_visualization.png)
+![Expectation Suite visualization UI](assets/expectation_suite.png)
+![Validation Result visualization UI](assets/validation_result.png)
 
 # 🖥 Run it locally
 
@@ -79,6 +87,18 @@ cd zenml_examples/great_expectations
 
 # Initialize ZenML repo
 zenml init
+```
+
+
+### 🥞 Set up your stack for Great Expectations
+
+To configure Great Expectations automatically to use the ZenML Artifact Store
+to store its persistent state, a data validator stack component of flavor
+`great_expectations` must be registered and included in your active stack:  
+
+```shell
+zenml data-validator register great_expectations --flavor=great_expectations
+zenml stack register ge_stack -m default -o default -a default -dv great_expectations --set
 ```
 
 ### ▶️ Run the Code
