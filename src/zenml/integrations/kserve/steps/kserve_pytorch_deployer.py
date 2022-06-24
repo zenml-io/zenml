@@ -17,9 +17,9 @@ import os
 import tempfile
 from typing import Optional, cast
 
-from model_archiver.model_packaging import package_model
+from model_archiver.model_packaging import package_model  # type: ignore
 from model_archiver.model_packaging_utils import (
-    ModelExportUtils,
+    ModelExportUtils,  # type: ignore
 )
 from pydantic import BaseModel
 

@@ -31,7 +31,6 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.repository import Repository
-from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.services.service import BaseService, ServiceConfig
 

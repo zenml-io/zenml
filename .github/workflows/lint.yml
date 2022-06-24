@@ -37,7 +37,7 @@ jobs:
         run: |
           source $VENV
           zenml integration install -y --ignore-integration feast kserve
-          zenml integration install kserve
+          pip install kserve torch-model-archiver
           pip install click~=8.0.3
 
       - name: Lint
