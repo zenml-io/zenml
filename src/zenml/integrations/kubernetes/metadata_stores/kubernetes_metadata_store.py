@@ -379,7 +379,7 @@ class KubernetesMetadataStore(BaseMetadataStore):
 
     def stop_metadata_daemon(self) -> None:
         """Stops the Kubernetes metadata daemon process if it is running."""
-        if fileio.exists(self._pid_file_path):
+        if sys.platform != "win32" and fileio.exists(self._pid_file_path):
             from zenml.utils import daemon
 
             daemon.stop_daemon(self._pid_file_path)
