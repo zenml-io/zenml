@@ -605,7 +605,7 @@ def clone_step(step: Type["BaseStep"], step_name: str) -> Type["BaseStep"]:
     Args:
         step: the step to clone
         step_name: name to use for the cloned step. This name will be used
-            to uniquely identify the cloned step in the python module from
+            to uniquely identify the cloned step in the Python module from
             which this function is called.
 
     Returns:
