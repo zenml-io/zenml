@@ -132,7 +132,7 @@ cloud](docs/book/assets/core_concepts/concepts-3.png)
 
 Once code is organized into a ZenML pipeline, you can supercharge your ML
 development with [powerful
-integrations](https://docs.zenml.io/features/integrations) on multiple [MLOps
+integrations](https://docs.zenml.io/advanced-guide/integrations) on multiple [MLOps
 stacks](https://docs.zenml.io/core-concepts). There are lots of moving parts for
 all the MLOps tooling and infrastructure you require for ML in production and
 ZenML aims to bring it all together under one roof.
@@ -357,7 +357,7 @@ ZenML is being built in public. The [roadmap](https://zenml.io/roadmap) is a
 regularly updated source of truth for the ZenML community to understand where
 the product is going in the short, medium, and long term.
 
-ZenML is managed by a [core team](https://zenml.io/team) of developers that are
+ZenML is managed by a [core team](https://zenml.io/company#CompanyTeam) of developers that are
 responsible for making key decisions and incorporating feedback from the
 community. The team oversees feedback via various channels, and you can directly
 influence the roadmap as follows:
