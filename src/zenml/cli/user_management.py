@@ -36,12 +36,11 @@ def get_user() -> None:
     cli_utils.declare(f"Active user: '{Repository().active_user_name}'")
 
 
-@user.command("set")
+@user.command("set", help="Set the active user.")
 @click.argument("user_name", type=str)
 def set_user(user_name: str) -> None:
     """Set the active user.
 
-    \b
     Args:
         user_name: The name of the user to set as active.
     """
@@ -70,14 +69,13 @@ def list_users() -> None:
     )
 
 
-@user.command("create")
+@user.command("create", help="Create a new user.")
 @click.argument("user_name", type=str, required=True)
 # @click.option("--email", type=str, required=True)
 # @click.password_option("--password", type=str, required=True)
 def create_user(user_name: str) -> None:
     """Create a new user.
 
-    \b
     Args:
         user_name: The name of the user to create.
     """
@@ -117,12 +115,11 @@ def list_teams() -> None:
     cli_utils.print_pydantic_models(teams)
 
 
-@team.command("describe")
+@team.command("describe", help="Print details of a team.")
 @click.argument("team_name", type=str, required=True)
 def describe_team(team_name: str) -> None:
     """Print details of a team.
 
-    \b
     Args:
         team_name: The name of the team to describe.
     """
@@ -137,12 +134,11 @@ def describe_team(team_name: str) -> None:
         )
 
 
-@team.command("create")
+@team.command("create", help="Create a new team.")
 @click.argument("team_name", type=str, required=True)
 def create_team(team_name: str) -> None:
     """Create a new team.
 
-    \b
     Args:
         team_name: Name of the team to create.
     """
@@ -150,12 +146,11 @@ def create_team(team_name: str) -> None:
     Repository().zen_store.create_team(team_name=team_name)
 
 
-@team.command("delete")
+@team.command("delete", help="Delete a team.")
 @click.argument("team_name", type=str, required=True)
 def delete_team(team_name: str) -> None:
     """Delete a team.
 
-    \b
     Args:
         team_name (str): The name of the team to delete.
     """
@@ -166,13 +161,12 @@ def delete_team(team_name: str) -> None:
         cli_utils.warning(f"No team found for name '{team_name}'.")
 
 
-@team.command("add")
+@team.command("add", help="Add users to a team.")
 @click.argument("team_name", type=str, required=True)
 @click.option("--user", "user_names", type=str, required=True, multiple=True)
 def add_users(team_name: str, user_names: Tuple[str]) -> None:
     """Add users to a team.
 
-    \b
     Args:
         team_name: Name of the team.
         user_names: Names of the users to add to the team.
@@ -190,13 +184,12 @@ def add_users(team_name: str, user_names: Tuple[str]) -> None:
             )
 
 
-@team.command("remove")
+@team.command("remove", help="Remove users from a team.")
 @click.argument("team_name", type=str, required=True)
 @click.option("--user", "user_names", type=str, required=True, multiple=True)
 def remove_users(team_name: str, user_names: Tuple[str]) -> None:
     """Remove users from a team.
 
-    \b
     Args:
         team_name: Name of the team.
         user_names: Names of the users.
@@ -241,7 +234,7 @@ def list_projects() -> None:
         cli_utils.declare("No projects registered.")
 
 
-@project.command("create")
+@project.command("create", help="Create a new project.")
 @click.argument("project_name", type=str, required=True)
 @click.option("--description", "-d", type=str, required=False)
 def create_project(
@@ -249,7 +242,6 @@ def create_project(
 ) -> None:
     """Create a new project.
 
-    \b
     Args:
         project_name: The name of the project.
         description: A description of the project.
@@ -292,12 +284,11 @@ def get_project() -> None:
         )
 
 
-@project.command("set")
+@project.command("set", help="Set the project for the current repository.")
 @click.argument("project_name", type=str, required=True)
 def set_project(project_name: str) -> None:
     """Set the project for the current repository.
 
-    \b
     Args:
         project_name: The name of the project to set as active.
     """
@@ -334,7 +325,7 @@ def unset_project() -> None:
     cli_utils.declare("Unset active project.")
 
 
-@project.command("delete")
+@project.command("delete", help="Delete a project.")
 @click.argument(
     "project_name",
     type=str,
@@ -345,7 +336,6 @@ def delete_project(project_name: str) -> None:
 
     If the name isn't specified, delete the current project.
 
-    \b
     Args:
         project_name (str): Name of project to delete.
     """
@@ -380,12 +370,11 @@ def list_roles() -> None:
     cli_utils.print_pydantic_models(roles)
 
 
-@role.command("create")
+@role.command("create", help="Create a new role.")
 @click.argument("role_name", type=str, required=True)
 def create_role(role_name: str) -> None:
     """Create a new role.
 
-    \b
     Args:
         role_name: Name of the role to create.
     """
@@ -393,12 +382,11 @@ def create_role(role_name: str) -> None:
     Repository().zen_store.create_role(role_name=role_name)
 
 
-@role.command("delete")
+@role.command("delete", help="Delete a role.")
 @click.argument("role_name", type=str, required=True)
 def delete_role(role_name: str) -> None:
     """Delete a role.
 
-    \b
     Args:
         role_name (str): Name of the role to delete.
     """
@@ -409,7 +397,7 @@ def delete_role(role_name: str) -> None:
         cli_utils.warning(f"No role found for name '{role_name}'.")
 
 
-@role.command("assign")
+@role.command("assign", help="Assign a role.")
 @click.argument("role_name", type=str, required=True)
 @click.option("--user", "user_names", type=str, required=False, multiple=True)
 @click.option("--team", "team_names", type=str, required=False, multiple=True)
@@ -422,7 +410,6 @@ def assign_role(
 ) -> None:
     """Assign a role.
 
-    \b
     Args:
         role_name (str): Name of the role to assign.
         user_names (Tuple[str]): Names of users to assign the role to.
@@ -465,7 +452,7 @@ def assign_role(
             )
 
 
-@role.command("revoke")
+@role.command("revoke", help="Revoke a role.")
 @click.argument("role_name", type=str, required=True)
 @click.option("--user", "user_names", type=str, required=False, multiple=True)
 @click.option("--team", "team_names", type=str, required=False, multiple=True)
@@ -478,7 +465,6 @@ def revoke_role(
 ) -> None:
     """Revoke a role.
 
-    \b
     Args:
         role_name: Name of the role to revoke.
         user_names: Names of the users to revoke the role from.

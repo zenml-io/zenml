@@ -61,7 +61,11 @@ def secret(ctx: click.Context) -> None:
     ctx.obj = secrets_manager_wrapper.to_component()
 
 
-@secret.command("register", context_settings={"ignore_unknown_options": True})
+@secret.command(
+    "register",
+    context_settings={"ignore_unknown_options": True},
+    help="Register a secret with the given name and schema.",
+)
 @click.argument("name", type=click.STRING)
 @click.option(
     "--schema",
@@ -89,14 +93,13 @@ def register_secret(
     args: List[str],
 ) -> None:
     """Register a secret with the given name and schema.
-    
+
     Use this command to store sensitive information into a ZenML secret. The
     secret data consists of key-value pairs that can be configured interactively
     (if the `--interactive` option is set) or via command-line arguments.
     If a schema is indicated, the secret key-value pairs will be validated
     against the schema.
 
-    \b
     Args:
         secrets_manager: The secrets manager to use.
         name: The name of the secret to register.
@@ -207,7 +210,7 @@ def register_secret(
         secrets_manager.register_secret(secret=secret)
 
 
-@secret.command("get")
+@secret.command("get", help="Get a secret, given its name.")
 @click.argument("name", type=click.STRING)
 @click.pass_obj
 def get_secret(
@@ -216,7 +219,6 @@ def get_secret(
 ) -> None:
     """Get a secret, given its name.
 
-    \b
     Args:
         secrets_manager: The secrets manager to use.
         name: The name of the secret to get.
@@ -231,12 +233,13 @@ def get_secret(
         )
 
 
-@secret.command("list")
+@secret.command(
+    "list", help="List all secrets tracked by your Secrets Manager."
+)
 @click.pass_obj
 def list_secret(secrets_manager: "BaseSecretsManager") -> None:
     """List all secrets tracked by your Secrets Manager.
 
-    \b
     Args:
         secrets_manager: The secrets manager to use.
     """
@@ -245,7 +248,11 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
         print_secrets(secret_names)
 
 
-@secret.command("update", context_settings={"ignore_unknown_options": True})
+@secret.command(
+    "update",
+    context_settings={"ignore_unknown_options": True},
+    help="Update a secret with a given name.",
+)
 @click.argument("name", type=click.STRING)
 @click.option(
     "--interactive",
@@ -271,7 +278,6 @@ def update_secret(
     If a schema is associated with the existing secret, the updated secret
     key-value pairs will be validated against the schema.
 
-    \b
     Args:
         secrets_manager: The secrets manager to use.
         name: The name of the secret to update.
@@ -344,7 +350,7 @@ def update_secret(
             error(f"Secret with name `{name}` already exists.")
 
 
-@secret.command("delete")
+@secret.command("delete", help="Delete a secret identified by its name.")
 @click.argument("name", type=click.STRING)
 @click.option(
     "--yes",
@@ -362,7 +368,6 @@ def delete_secret_set(
 ) -> None:
     """Delete a secret identified by its name.
 
-    \b
     Args:
         secrets_manager: The secrets manager to use.
         name: The name of the secret to delete.
@@ -385,7 +390,11 @@ def delete_secret_set(
             error(f"Secret with name `{name}` no longer present.")
 
 
-@secret.command("cleanup", hidden=True)
+@secret.command(
+    "cleanup",
+    hidden=True,
+    help="Delete all secrets tracked by your Secrets Manager.",
+)
 @click.option(
     "--yes",
     "-y",
@@ -409,7 +418,6 @@ def delete_all_secrets(
 ) -> None:
     """Delete all secrets tracked by your Secrets Manager.
 
-    \b
     Args:
         secrets_manager: The secrets manager to use.
         yes: Skip asking for confirmation.

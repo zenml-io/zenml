@@ -111,7 +111,11 @@ def _delete_local_files(force_delete: bool = False) -> None:
     declare("Deleted all files relating to the local active stack.")
 
 
-@cli.command("clean", hidden=True)
+@cli.command(
+    "clean",
+    hidden=True,
+    help="Delete all ZenML metadata, artifacts, profiles and stacks.",
+)
 @click.option(
     "--yes",
     "-y",
@@ -131,7 +135,6 @@ def clean(yes: bool = False, local: bool = False) -> None:
 
     This is a destructive operation, primarily intended for use in development.
 
-    \b
     Args:
         yes: If you don't want a confirmation prompt.
         local: If you want to delete local files associated with the active stack.
