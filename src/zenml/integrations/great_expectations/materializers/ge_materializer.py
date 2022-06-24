@@ -71,7 +71,8 @@ class GreatExpectationsMaterializer(BaseMaterializer):
         artifact_dict["checkpoint_config"] = CheckpointConfig(
             **artifact_dict["checkpoint_config"]
         )
-        for result_ident, results in list(artifact_dict["run_results"].items()):
+        validation_dict = {}
+        for result_ident, results in artifact_dict["run_results"].items():
             validation_ident = (
                 ValidationResultIdentifier.from_fixed_length_tuple(
                     result_ident.split("::")[1].split("/")
@@ -81,8 +82,8 @@ class GreatExpectationsMaterializer(BaseMaterializer):
                 result_name: preprocess_run_result(result_name, result)
                 for result_name, result in results.items()
             }
-            artifact_dict["run_results"][validation_ident] = validation_results
-            del artifact_dict["run_results"][result_ident]
+            validation_dict[validation_ident] = validation_results
+        artifact_dict["run_results"] = validation_dict
 
     def handle_input(self, data_type: Type[Any]) -> SerializableDictDot:
         """Reads and returns a Great Expectations object.
