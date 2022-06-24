@@ -180,7 +180,7 @@ def kserve_pytorch_model_deployer_step(
                 ),
                 handler=os.path.join(get_source_root_path(), config.handler),
                 export_path=temp_dir,
-                version=config.model_version
+                version=config.model_version,
             )
 
             manifest = ModelExportUtils.generate_manifest_json(

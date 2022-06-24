@@ -11,21 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from zenml.integrations.constants import KSERVE, TENSORFLOW
-from zenml.pipelines import pipeline
+import numpy as np  # type: ignore [import]
+import tensorflow as tf  # type: ignore [import]
+
+from zenml.steps import step
 
 
-@pipeline(
-    enable_cache=True, required_integrations=[KSERVE, TENSORFLOW]
-)
-def tensorflow_inference_pipeline(
-    dynamic_importer,
-    predict_preprocessor,
-    prediction_service_loader,
-    predictor,
-):
-    # Link all the steps artifacts together
-    batch_data = dynamic_importer()
-    inference_data = predict_preprocessor(batch_data)
-    model_deployment_service = prediction_service_loader()
-    predictor(model_deployment_service, inference_data)
+@step
+def tf_evaluator(
+    x_test: np.ndarray,
+    y_test: np.ndarray,
+    model: tf.keras.Model,
+) -> float:
+    """Calculate the loss for the model for each epoch in a graph"""
+
+    _, test_acc = model.evaluate(x_test, y_test, verbose=2)
+    return test_acc

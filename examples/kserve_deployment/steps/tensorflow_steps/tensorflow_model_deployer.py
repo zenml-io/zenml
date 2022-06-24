@@ -12,25 +12,23 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
-from zenml.integrations.constants import KSERVE, PYTORCH
-from zenml.pipelines import pipeline
-
-
-@pipeline(
-    enable_cache=True,
-    requirements=["torchvision"],
-    required_integrations=[KSERVE, PYTORCH],
+from zenml.integrations.kserve.services import KServeDeploymentConfig
+from zenml.integrations.kserve.steps import (
+    KServeDeployerStepConfig,
+    kserve_model_deployer_step,
 )
-def kserve_pytorch_pipeline(
-    data_loader,
-    trainer,
-    evaluator,
-    deployment_trigger,
-    deployer,
-):
-    train_loader, test_loader = data_loader()
-    model = trainer(train_loader)
-    accuracy = evaluator(model=model, test_loader=test_loader)
-    deployment_decision = deployment_trigger(accuracy=accuracy)
-    deployer(deployment_decision, model)
+
+MODEL_NAME = "mnist"
+
+
+kserve_tensorflow_deployer = kserve_model_deployer_step(
+    config=KServeDeployerStepConfig(
+        service_config=KServeDeploymentConfig(
+            model_name=MODEL_NAME,
+            replicas=1,
+            predictor="tensorflow",
+            resources={"requests": {"cpu": "200m", "memory": "500m"}},
+        ),
+        timeout=120,
+    )
+)

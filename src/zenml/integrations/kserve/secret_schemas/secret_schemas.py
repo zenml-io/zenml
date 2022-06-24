@@ -24,6 +24,7 @@ KSERVE_S3_SECRET_SCHEMA_TYPE = "kserve_s3"
 KSERVE_GS_SECRET_SCHEMA_TYPE = "kserve_gs"
 KSERVE_AZUREBLOB_SECRET_SCHEMA_TYPE = "kserve_az"
 
+
 @register_secret_schema_class
 class KServeS3SecretSchema(BaseSecretSchema):
     """KServe S3 credentials.

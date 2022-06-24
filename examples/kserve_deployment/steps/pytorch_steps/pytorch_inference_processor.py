@@ -14,26 +14,31 @@
 import base64
 import json
 from typing import Optional
-from zenml.steps import step
-from zenml.steps.base_step_config import BaseStepConfig
 from urllib.request import urlopen
 
+from zenml.steps import step
+from zenml.steps.base_step_config import BaseStepConfig
 
-class LoadInferenceImageStepConfig(BaseStepConfig):
+
+class PyTorchInferenceProcessorStepConfig(BaseStepConfig):
     """
     Configuration for the LoadInferenceImageStepConfig.
     """
 
-    img_url: Optional[str] = "https://raw.githubusercontent.com/kserve/kserve/master/docs/samples/v1beta1/torchserve/v1/imgconv/0.png"
+    img_url: Optional[
+        str
+    ] = "https://raw.githubusercontent.com/kserve/kserve/master/docs/samples/v1beta1/torchserve/v1/imgconv/0.png"
 
 
 @step(enable_cache=False)
-def load_inference_image(config: LoadInferenceImageStepConfig) -> str:
+def pytorch_inference_processor(
+    config: PyTorchInferenceProcessorStepConfig,
+) -> str:
     """Load an image from a URL and encode it as a base64 string.
 
     Args:
         config: The configuration for the step.
-    
+
     Returns:
         The request body includes a base64 coded image for the inference request.
     """

@@ -229,6 +229,7 @@ def tf_predict_preprocessor(input: np.ndarray) -> Output(data=np.ndarray):
     input = input / 255.0
     return input
 
+
 @step
 def sklearn_predict_preprocessor(input: np.ndarray) -> Output(data=np.ndarray):
     """Prepares the data for inference."""

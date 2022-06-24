@@ -18,7 +18,7 @@ from zenml.integrations.kserve.services import KServeDeploymentService
 from zenml.steps import BaseStepConfig, step
 
 
-class KServeDeploymentLoaderStepConfig(BaseStepConfig):
+class PredectionServiceLoaderStepConfig(BaseStepConfig):
     """KServe deployment loader configuration
     Attributes:
         pipeline_name: name of the pipeline that deployed the KServe prediction
@@ -35,7 +35,7 @@ class KServeDeploymentLoaderStepConfig(BaseStepConfig):
 
 @step(enable_cache=False)
 def prediction_service_loader(
-    config: KServeDeploymentLoaderStepConfig,
+    config: PredectionServiceLoaderStepConfig,
 ) -> KServeDeploymentService:
     """Get the prediction service started by the deployment pipeline"""
 

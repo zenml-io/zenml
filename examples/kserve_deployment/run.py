@@ -12,21 +12,31 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from typing import cast
+
 import click
-from steps.dynamic_importer import importer_mnist
+from pipelines.kserve_tensorflow_pipeline import kserve_tensorflow_pipeline
+from pipelines.tensorflow_inference_pipeline import (
+    tensorflow_inference_pipeline,
+)
+from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
+from steps.dynamic_importer import dynamic_importer, importer_mnist
+from steps.model_deployer import kserve_tensorflow_deployer
 from steps.normalizer import normalizer
+from steps.prediction_services_loader import (
+    KServeDeploymentLoaderStepConfig,
+    prediction_service_loader,
+)
+from steps.predictor import predictor
 from steps.tf_evaluator import tf_evaluator
 from steps.tf_predict_preprocessor import tf_predict_preprocessor
 from steps.tf_trainer import TensorflowTrainerConfig, tf_trainer
-from pipelines.tensorflow_inference_pipeline import tensorflow_inference_pipeline
-from steps.prediction_services_loader import KServeDeploymentLoaderStepConfig, prediction_service_loader
-from steps.predictor import predictor
-from steps.dynamic_importer import dynamic_importer
-from pipelines.kserve_tensorflow_pipeline import kserve_tensorflow_pipeline
-from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
-from steps.model_deployer import kserve_tensorflow_deployer
-from zenml.integrations.kserve.model_deployers.kserve_model_deployer import KServeModelDeployer
-from zenml.integrations.kserve.services.kserve_deployment import KServeDeploymentService
+
+from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (
+    KServeModelDeployer,
+)
+from zenml.integrations.kserve.services.kserve_deployment import (
+    KServeDeploymentService,
+)
 
 DEPLOY = "deploy"
 PREDICT = "predict"
@@ -85,9 +95,7 @@ def main(
         deployment = kserve_tensorflow_pipeline(
             importer=importer_mnist(),
             normalizer=normalizer(),
-            trainer=tf_trainer(
-                TensorflowTrainerConfig(epochs=epochs, lr=lr)
-            ),
+            trainer=tf_trainer(TensorflowTrainerConfig(epochs=epochs, lr=lr)),
             evaluator=tf_evaluator(),
             deployment_trigger=deployment_trigger(
                 config=DeploymentTriggerConfig(

@@ -13,15 +13,15 @@
 #  permissions and limitations under the License.
 """Implementation of the KServe Model Deployer."""
 
-from pathlib import Path
 import re
+from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, cast
 from uuid import UUID
 
 from kserve import KServeClient, V1beta1InferenceService, constants, utils
 from kubernetes import client
-from zenml.config.global_config import GlobalConfiguration
 
+from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.kserve import KSERVE_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
@@ -141,7 +141,6 @@ class KServeModelDeployer(BaseModelDeployer):
 
         Raises:
             RuntimeError: if the credentials are not available.
-            ValueError: if the credentials are not valid.
         """
         secret = self._get_kserve_secret()
         if secret:
@@ -150,7 +149,6 @@ class KServeModelDeployer(BaseModelDeployer):
                 "kserve-storage",
                 str(self.uuid),
             )
-
             kserve_credentials = {}
             # Handle the secrets attributes
             for key in secret.content.keys():
@@ -473,10 +471,10 @@ class KServeModelDeployer(BaseModelDeployer):
 
     def _get_kserve_secret(self) -> BaseSecretSchema:
         """Get the secret object for the KServe deployment.
-        
+
         Returns:
             The secret object for the KServe deployment.
-        
+
         Raises:
             RuntimeError: if the secret object is not found or secrets_manager is not set.
         """

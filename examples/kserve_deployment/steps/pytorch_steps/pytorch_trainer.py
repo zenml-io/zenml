@@ -17,11 +17,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from pytorch.mnist import Net
 from rich import print
 from torch.utils.data import DataLoader
 
 from zenml.steps import BaseStepConfig, step
+
+from .mnist import Net
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

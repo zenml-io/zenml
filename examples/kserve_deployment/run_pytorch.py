@@ -14,26 +14,27 @@
 from typing import cast
 
 import click
-from pipelines.kserve_pytorch_pipeline import kserve_pytorch_pipeline
-from pipelines.pytorch_inference_pipeline import pytorch_inference_pipeline
+from pipelines import (
+    pytorch_inference_pipeline,
+    pytorch_training_deployment_pipeline,
+)
 from rich import print
 from steps.deployment_trigger import DeploymentTriggerConfig, deployment_trigger
-from steps.load_inference_image import (
-    LoadInferenceImageStepConfig,
-    load_inference_image,
-)
-from steps.model_deployer import kserve_pytorch_deployer
-from steps.prediction_services_loader import (
-    KServeDeploymentLoaderStepConfig,
+from steps.prediction_service_loader import (
+    PredectionServiceLoaderStepConfig,
     prediction_service_loader,
 )
 from steps.predictor import predictor
-from steps.pytorch_data_loader import (
+from steps.pytorch_steps import (
     PytorchDataLoaderConfig,
+    PyTorchInferenceProcessorStepConfig,
+    PytorchTrainerConfig,
     pytorch_data_loader,
+    pytorch_evaluator,
+    pytorch_inference_processor,
+    pytorch_model_deployer,
+    pytorch_trainer,
 )
-from steps.pytorch_evaluator import pytorch_evaluator
-from steps.pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
 
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
 from zenml.integrations.kserve.services import KServeDeploymentService
@@ -48,7 +49,7 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
     "--config",
     "-c",
     type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
-    default="predict",
+    default="deploy_and_predict",
     help="Optionally you can choose to only run the deployment "
     "pipeline to train and deploy a model (`deploy`), or to "
     "only run a prediction against the deployed model "
@@ -88,7 +89,7 @@ def main(
     momentum: float,
     min_accuracy: float,
 ):
-    """Run the KServe-Pytorch example deployment or inference pipeline
+    """Run the KServe-Pytorch example training/deployment or inference pipeline
 
     Example usage:
 
@@ -99,14 +100,14 @@ def main(
     predict = config == PREDICT or config == DEPLOY_AND_PREDICT
 
     model_name = "mnist"
-    deployment_pipeline_name = "kserve_pytorch_pipeline"
+    deployment_pipeline_name = "pytorch_training_deployment_pipeline"
     deployer_step_name = "kserve_pytorch_model_deployer_step"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 
     if deploy:
         # Initialize and run a continuous deployment pipeline run
-        kserve_pytorch_pipeline(
+        pytorch_training_deployment_pipeline(
             data_loader=pytorch_data_loader(
                 PytorchDataLoaderConfig(
                     train_batch_size=batch_size, test_batch_size=batch_size
@@ -121,7 +122,7 @@ def main(
                     min_accuracy=min_accuracy,
                 )
             ),
-            deployer=kserve_pytorch_deployer,
+            deployer=pytorch_model_deployer,
         ).run()
 
     img_url: str = "https://raw.githubusercontent.com/kserve/kserve/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png"
@@ -129,13 +130,13 @@ def main(
     if predict:
         # Initialize an inference pipeline run
         pytorch_inference_pipeline(
-            load_inference_image=load_inference_image(
-                LoadInferenceImageStepConfig(
+            load_inference_image=pytorch_inference_processor(
+                PyTorchInferenceProcessorStepConfig(
                     img_url=img_url,
                 ),
             ),
             prediction_service_loader=prediction_service_loader(
-                KServeDeploymentLoaderStepConfig(
+                PredectionServiceLoaderStepConfig(
                     pipeline_name=deployment_pipeline_name,
                     step_name=deployer_step_name,
                     model_name=model_name,

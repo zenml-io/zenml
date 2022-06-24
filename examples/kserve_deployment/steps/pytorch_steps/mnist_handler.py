@@ -21,7 +21,7 @@ class MNISTDigitClassifier(ImageClassifier):
         Args:
             data (list): The predicted output from the inference with probabilities is passed
             to the post-process function
-            
+
         Returns:
             list: A list of dictionaries with predictions and explanations is returned
         """

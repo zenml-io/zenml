@@ -16,7 +16,7 @@
 import json
 import os
 import re
-from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Tuple
 from uuid import UUID
 
 import requests
@@ -42,7 +42,6 @@ from zenml.services import (
 )
 
 if TYPE_CHECKING:
-    from numpy.typing import NDArray
     from zenml.integrations.kserve.model_deployers.kserve_model_deployer import (  # noqa
         KServeModelDeployer,
     )
