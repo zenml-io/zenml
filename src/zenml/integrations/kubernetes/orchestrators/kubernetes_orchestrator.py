@@ -1,5 +1,3 @@
-"""Kubernetes-native orchestrator."""
-
 # Copyright 2022 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+#
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,9 +25,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+#
 # Parts of the `prepare_or_run_pipeline()` method of this file are
 # inspired by the Kubernetes dag runner implementation of tfx
+"""Kubernetes-native orchestrator."""
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 
