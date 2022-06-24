@@ -263,7 +263,6 @@ exclude = '''
 )/
 '''
 
-
 [tool.interrogate]
 ignore-init-method = true
 ignore-init-module = true
