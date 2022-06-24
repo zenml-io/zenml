@@ -13,17 +13,10 @@
 #  permissions and limitations under the License.
 """Great Expectations data profiling standard step."""
 
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional
 
-import great_expectations.exceptions as ge_exceptions  # type: ignore[import]
 import pandas as pd
 from great_expectations.core import ExpectationSuite  # type: ignore[import]
-from great_expectations.core.batch import (  # type: ignore[import]
-    RuntimeBatchRequest,
-)
-from great_expectations.data_context.data_context import (  # type: ignore[import]
-    DataContext,
-)
 from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
     ExpectationSuiteIdentifier,
 )
@@ -32,17 +25,14 @@ from great_expectations.profile.user_configurable_profiler import (  # type: ign
 )
 from pydantic import Field
 
-from zenml.environment import Environment
 from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
     GreatExpectationsDataValidator,
 )
-from zenml.logger import get_logger
-from zenml.steps import (
-    STEP_ENVIRONMENT_NAME,
-    BaseStep,
-    BaseStepConfig,
-    StepEnvironment,
+from zenml.integrations.great_expectations.steps.utils import (
+    create_batch_request,
 )
+from zenml.logger import get_logger
+from zenml.steps import BaseStep, BaseStepConfig
 
 logger = get_logger(__name__)
 
@@ -86,12 +76,6 @@ class GreatExpectationsProfilerStep(BaseStep):
         Returns:
             The generated Great Expectation suite.
         """
-        # get pipeline name, step name and run id
-        step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-        pipeline_name = step_env.pipeline_name
-        run_id = step_env.pipeline_run_id
-        step_name = step_env.step_name
-
         context = GreatExpectationsDataValidator.get_data_context()
 
         suite_exists = False
@@ -109,40 +93,11 @@ class GreatExpectationsProfilerStep(BaseStep):
                 )
                 return suite
 
-        datasource_name = f"{run_id}_{step_name}"
-        data_connector_name = datasource_name
-        data_asset_name = (
-            config.data_asset_name or f"{pipeline_name}_{step_name}"
+        batch_request = create_batch_request(
+            context, dataset, config.data_asset_name
         )
-        batch_identifier = "default"
-
-        datasource_config = {
-            "name": datasource_name,
-            "class_name": "Datasource",
-            "module_name": "great_expectations.datasource",
-            "execution_engine": {
-                "module_name": "great_expectations.execution_engine",
-                "class_name": "PandasExecutionEngine",
-            },
-            "data_connectors": {
-                data_connector_name: {
-                    "class_name": "RuntimeDataConnector",
-                    "batch_identifiers": [batch_identifier],
-                },
-            },
-        }
-
-        context.add_datasource(**datasource_config)
 
         try:
-            batch_request = RuntimeBatchRequest(
-                datasource_name=datasource_name,
-                data_connector_name=data_connector_name,
-                data_asset_name=data_asset_name,
-                runtime_parameters={"batch_data": dataset},
-                batch_identifiers={batch_identifier: batch_identifier},
-            )
-
             if suite_exists:
                 validator = context.get_validator(
                     batch_request=batch_request,
@@ -166,6 +121,6 @@ class GreatExpectationsProfilerStep(BaseStep):
 
             context.build_data_docs()
         finally:
-            context.delete_datasource(datasource_name)
+            context.delete_datasource(batch_request.datasource_name)
 
         return suite

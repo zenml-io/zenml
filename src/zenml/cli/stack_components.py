@@ -377,7 +377,9 @@ def generate_stack_component_register_command(
             )
 
         try:
-            parsed_args = cli_utils.parse_unknown_options(args)
+            parsed_args = cli_utils.parse_unknown_options(
+                args, expand_args=True
+            )
         except AssertionError as e:
             cli_utils.error(str(e))
             return
@@ -606,7 +608,9 @@ def generate_stack_component_update_command(
             repo = Repository()
 
             try:
-                parsed_args = cli_utils.parse_unknown_options(kwargs)
+                parsed_args = cli_utils.parse_unknown_options(
+                    kwargs, expand_args=True
+                )
             except AssertionError as e:
                 cli_utils.error(str(e))
                 return

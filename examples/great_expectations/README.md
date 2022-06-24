@@ -1,8 +1,14 @@
 # 🏎 Validate your data with Great Expectations
-Data drift is something you often want to guard against in your pipelines.
-Machine learning pipelines are built on top of data inputs, so it is worth
-checking for drift if you have a model that was trained on a certain
-distribution of data.
+In data centric machine learning development, data quality is critical not only
+to achieve good initial results but also to keep data drift and concept drift
+at bay as your models are deployed to production and interact with live data.
+
+Data validation tools can be employed early on in your machine learning
+pipelines to generate data statistical profiles and infer validation rules
+that can be used to continuously validate the data being ingested at various
+points in the pipeline. For example, data validation rules can be inferred from
+the training dataset and then used to validate the datasets used to perform
+batch predictions. This is one good way of detecting training-serving skew.
 
 ## 🗺 Overview
 This example uses [`evidently`](https://github.com/evidentlyai/evidently), a
@@ -55,16 +61,6 @@ drift diagrams in your browser or within a Jupyter notebook:
 ![Evidently drift visualization UI](assets/drift_visualization.png)
 
 # 🖥 Run it locally
-
-## ⏩ SuperQuick `evidently` run
-
-If you're really in a hurry and just want to see this example pipeline run
-without wanting to fiddle around with all the individual installation and
-configuration steps, just run the following:
-
-```shell
-zenml example run evidently_drift_detection
-```
 
 ## 👣 Step-by-Step
 ### 📄 Prerequisites 

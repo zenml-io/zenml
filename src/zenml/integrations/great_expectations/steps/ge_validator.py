@@ -19,16 +19,13 @@ import pandas as pd
 from great_expectations.checkpoint.types.checkpoint_result import (  # type: ignore[import]
     CheckpointResult,
 )
-from great_expectations.core.batch import (  # type: ignore[import]
-    RuntimeBatchRequest,
-)
-from great_expectations.data_context.data_context import (  # type: ignore[import]
-    DataContext,
-)
 
 from zenml.environment import Environment
 from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
     GreatExpectationsDataValidator,
+)
+from zenml.integrations.great_expectations.steps.utils import (
+    create_batch_request,
 )
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
@@ -76,37 +73,16 @@ class GreatExpectationsValidatorStep(BaseStep):
         """
         # get pipeline name, step name and run id
         step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
-        pipeline_name = step_env.pipeline_name
         run_id = step_env.pipeline_run_id
         step_name = step_env.step_name
 
         context = GreatExpectationsDataValidator.get_data_context()
 
-        datasource_name = f"{run_id}_{step_name}"
-        data_connector_name = datasource_name
-        checkpoint_name = datasource_name
-        data_asset_name = (
-            config.data_asset_name or f"{pipeline_name}_{step_name}"
+        checkpoint_name = f"{run_id}_{step_name}"
+
+        batch_request = create_batch_request(
+            context, dataset, config.data_asset_name
         )
-        batch_identifier = "default"
-
-        datasource_config = {
-            "name": datasource_name,
-            "class_name": "Datasource",
-            "module_name": "great_expectations.datasource",
-            "execution_engine": {
-                "module_name": "great_expectations.execution_engine",
-                "class_name": "PandasExecutionEngine",
-            },
-            "data_connectors": {
-                data_connector_name: {
-                    "class_name": "RuntimeDataConnector",
-                    "batch_identifiers": [batch_identifier],
-                },
-            },
-        }
-
-        context.add_datasource(**datasource_config)
 
         action_list = config.action_list or [
             {
@@ -131,14 +107,6 @@ class GreatExpectationsValidatorStep(BaseStep):
             "expectation_suite_name": config.expectation_suite_name,
             "action_list": action_list,
         }
-        batch_request = RuntimeBatchRequest(
-            datasource_name=datasource_name,
-            data_connector_name=data_connector_name,
-            data_asset_name=data_asset_name,
-            runtime_parameters={"batch_data": dataset},
-            batch_identifiers={batch_identifier: batch_identifier},
-        )
-
         context.add_checkpoint(**checkpoint_config)
 
         try:
@@ -147,7 +115,7 @@ class GreatExpectationsValidatorStep(BaseStep):
                 validations=[{"batch_request": batch_request}],
             )
         finally:
-            context.delete_datasource(datasource_name)
+            context.delete_datasource(batch_request.datasource_name)
             context.delete_checkpoint(checkpoint_name)
 
         return results

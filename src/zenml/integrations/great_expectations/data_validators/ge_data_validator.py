@@ -17,6 +17,7 @@ import os
 from typing import Any, ClassVar, Dict, Optional
 
 import great_expectations as ge  # type: ignore[import]
+import yaml
 from great_expectations.data_context.data_context import (  # type: ignore[import]
     BaseDataContext,
     DataContext,
@@ -24,7 +25,7 @@ from great_expectations.data_context.data_context import (  # type: ignore[impor
 from great_expectations.data_context.types.base import (  # type: ignore[import]
     DataContextConfig,
 )
-from pydantic import validator
+from pydantic import root_validator, validator
 
 from zenml.data_validators import BaseDataValidator
 from zenml.integrations.great_expectations import (
@@ -89,6 +90,38 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                     f"point to an existing data context path: {context_root_dir}"
                 )
         return context_root_dir
+
+    @root_validator(pre=True)
+    def _convert_context_config(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Converts context_config from JSON/YAML string format to a dict.
+
+        Args:
+            values: Values passed to the object constructor
+
+        Returns:
+            Values passed to the object constructor
+
+        Raises:
+            ValueError: If the context_config value is not a valid JSON/YAML or
+                if the GE configuration extracted from it fails GE validation.
+        """
+        context_config = values.get("context_config")
+        if context_config and not isinstance(context_config, dict):
+            try:
+                context_config_dict = yaml.safe_load(context_config)
+            except yaml.parser.ParserError as e:
+                raise ValueError(
+                    f"Malformed `context_config` value. Only JSON and YAML formats "
+                    f"are supported: {str(e)}"
+                )
+            try:
+                context_config = DataContextConfig(**context_config_dict)
+                BaseDataContext(project_config=context_config)
+            except Exception as e:
+                raise ValueError(f"Invalid `context_config` value: {str(e)}")
+
+            values["context_config"] = context_config_dict
+        return values
 
     @classmethod
     def get_data_context(cls) -> BaseDataContext:
@@ -201,29 +234,35 @@ class GreatExpectationsDataValidator(BaseDataValidator):
             The Great Expectations data context configured for this component.
         """
         if not self._context:
+            expectations_store_name = "zenml_expectations_store"
+            validations_store_name = "zenml_validations_store"
+            checkpoint_store_name = "zenml_checkpoint_store"
+            profiler_store_name = "zenml_profiler_store"
+            evaluation_parameter_store_name = "evaluation_parameter_store"
+
             zenml_context_config = dict(
                 stores={
-                    "zenml_expectations_store": self.get_store_config(
+                    expectations_store_name: self.get_store_config(
                         "ExpectationsStore", "expectations"
                     ),
-                    "zenml_validations_store": self.get_store_config(
+                    validations_store_name: self.get_store_config(
                         "ValidationsStore", "validations"
                     ),
-                    "zenml_checkpoint_store": self.get_store_config(
+                    checkpoint_store_name: self.get_store_config(
                         "CheckpointStore", "checkpoints"
                     ),
-                    "zenml_profiler_store": self.get_store_config(
+                    profiler_store_name: self.get_store_config(
                         "ProfilerStore", "profilers"
                     ),
-                    "evaluation_parameter_store": {
+                    evaluation_parameter_store_name: {
                         "class_name": "EvaluationParameterStore"
                     },
                 },
-                expectations_store_name="zenml_expectations_store",
-                validations_store_name="zenml_validations_store",
-                checkpoint_store_name="zenml_checkpoint_store",
-                profiler_store_name="zenml_profiler_store",
-                evaluation_parameter_store_name="evaluation_parameter_store",
+                expectations_store_name=expectations_store_name,
+                validations_store_name=validations_store_name,
+                checkpoint_store_name=checkpoint_store_name,
+                profiler_store_name=profiler_store_name,
+                evaluation_parameter_store_name=evaluation_parameter_store_name,
                 data_docs_sites={
                     "zenml_artifact_store": self.get_data_docs_config(
                         "data_docs"
@@ -249,10 +288,22 @@ class GreatExpectationsDataValidator(BaseDataValidator):
                 self._context = BaseDataContext(project_config=context_config)
 
             if configure_zenml_stores:
+                self._context.config.expectations_store_name = (
+                    expectations_store_name
+                )
+                self._context.config.validations_store_name = (
+                    validations_store_name
+                )
+                self._context.config.checkpoint_store_name = (
+                    checkpoint_store_name
+                )
+                self._context.config.profiler_store_name = profiler_store_name
+                self._context.config.evaluation_parameter_store_name = (
+                    evaluation_parameter_store_name
+                )
                 for store_name, store_config in zenml_context_config[  # type: ignore[attr-defined]
                     "stores"
                 ].items():
-                    self._context.config.expectations_store_name = store_name
                     self._context.add_store(
                         store_name=store_name,
                         store_config=store_config,
