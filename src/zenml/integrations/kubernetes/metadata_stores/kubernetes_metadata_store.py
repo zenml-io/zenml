@@ -15,6 +15,7 @@
 
 import os
 import subprocess
+import sys
 import time
 from typing import Any, ClassVar, Dict, Union
 
@@ -156,10 +157,16 @@ class KubernetesMetadataStore(BaseMetadataStore):
         Returns:
             True if `is_provisioned` else False.
         """
-        from zenml.utils.daemon import check_if_daemon_is_running
+        if sys.platform != "win32":
+            from zenml.utils.daemon import check_if_daemon_is_running
 
-        if not check_if_daemon_is_running(self._pid_file_path):
-            return False
+            if not check_if_daemon_is_running(self._pid_file_path):
+                return False
+        else:
+            # Daemon functionality is not supported on Windows, so the PID
+            # file won't exist. This if clause exists just for mypy to not
+            # complain about missing functions
+            pass
 
         return self.is_provisioned
 
@@ -335,7 +342,15 @@ class KubernetesMetadataStore(BaseMetadataStore):
             f"svc/{self.deployment_name}",
             f"{self.port}:{self.port}",
         ]
-        if not networking_utils.port_available(self.port):
+        if sys.platform == "win32":
+            logger.warning(
+                "Daemon functionality not supported on Windows. "
+                "In order to access the Kubernetes Metadata locally, "
+                "please run '%s' in a separate command line shell.",
+                self.port,
+                " ".join(command),
+            )
+        elif not networking_utils.port_available(self.port):
             raise ProvisioningError(
                 f"Unable to port-forward Kubernetes Metadata to local "
                 f"port {self.port} because the port is occupied. In order to "
