@@ -512,6 +512,14 @@ def update_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-al",
+    "--alerter",
+    "alerter_flag",
+    help="Include this to remove the alerter from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name: Optional[str],
     container_registry_flag: Optional[bool] = False,
@@ -520,6 +528,7 @@ def remove_stack_component(
     feature_store_flag: Optional[bool] = False,
     model_deployer_flag: Optional[bool] = False,
     experiment_tracker_flag: Optional[bool] = False,
+    alerter_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -532,6 +541,7 @@ def remove_stack_component(
         feature_store_flag: To remove the feature store from this stack.
         model_deployer_flag: To remove the model deployer from this stack.
         experiment_tracker_flag: To remove the experiment tracker from this stack.
+        alerter_flag: To remove the alerter from this stack.
     """
     cli_utils.print_active_profile()
 
@@ -567,6 +577,9 @@ def remove_stack_component(
 
         if experiment_tracker_flag:
             stack_components.pop(StackComponentType.EXPERIMENT_TRACKER, None)
+
+        if alerter_flag:
+            stack_components.pop(StackComponentType.ALERTER, None)
 
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
