@@ -22,6 +22,27 @@ from zenml.pipelines import pipeline
 def validation_pipeline(
     importer, splitter, profiler, prevalidator, train_validator, test_validator
 ):
+    """Data validation pipeline for Great Expectations.
+
+    The pipeline imports data from a source, then splits it into training
+    and validation sets. The Great Expectations profiler step is used to
+    generate the expectation suite (i.e. validation rules) based on the
+    schema ans statistical properties of the training dataset.
+
+    Next, that generated expectation suite is used to validate both the training
+    dataset and the validation dataset.
+
+    A prevalidator step is used to delay the execution of the validator
+    steps until the generated expectation suite is ready.
+
+    Args:
+        importer (_type_): _description_
+        splitter (_type_): _description_
+        profiler (_type_): _description_
+        prevalidator (_type_): _description_
+        train_validator (_type_): _description_
+        test_validator (_type_): _description_
+    """
     imported_data = importer()
     train, test = splitter(imported_data)
     suite = profiler(train)
