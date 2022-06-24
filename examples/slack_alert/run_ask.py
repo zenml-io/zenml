@@ -19,8 +19,10 @@ from steps import (
     test_acc_ask_formatter,
 )
 
-from zenml.alerter.alerter_step import alerter_ask_step
 from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
+from zenml.integrations.slack.steps.slack_alerter_ask_step import (
+    slack_alerter_ask_step,
+)
 
 if __name__ == "__main__":
     slack_ask_pipeline(
@@ -28,6 +30,6 @@ if __name__ == "__main__":
         trainer=svc_trainer_mlflow(),
         evaluator=evaluator(),
         formatter=test_acc_ask_formatter(),
-        alerter=alerter_ask_step(),
+        alerter=slack_alerter_ask_step(),
         deployer=mlflow_model_deployer_step(),
     ).run()
