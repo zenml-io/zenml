@@ -111,6 +111,7 @@ def register_secret(
         zenml secret register my_secret --username=zenml --password=@@password
     will interpret the value of the field `password` as the literal string
     `@password`.
+
     Examples:
     - register a secret with the name `secret_one` and configure its values
     interactively:
@@ -323,6 +324,7 @@ def update_secret(
         zenml secret update my_secret --username=zenml --password=@@password
     will interpret the value of the field `password` as the literal string
     `@password`.
+    
     Examples:
     - update a secret with the name `secret_one` and configure its values
     interactively:
