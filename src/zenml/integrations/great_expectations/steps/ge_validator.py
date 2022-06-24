@@ -45,7 +45,7 @@ class GreatExpectationsValidatorConfig(BaseStepConfig):
 
 
 class GreatExpectationsValidatorStep(BaseStep):
-    """Standard Great Expectation data validation step implementation.
+    """Standard Great Expectations data validation step implementation.
 
     Use this standard Great Expectations data validation step to run an
     existing Expectation Suite on an input dataset [as covered in the official GE documentation](https://docs.greatexpectations.io/docs/guides/validation/how_to_validate_data_by_running_a_checkpoint).
@@ -57,7 +57,7 @@ class GreatExpectationsValidatorStep(BaseStep):
         condition: bool,
         config: GreatExpectationsValidatorConfig,
     ) -> CheckpointResult:
-        """Standard Great Expectation data validation step entrypoint.
+        """Standard Great Expectations data validation step entrypoint.
 
         Args:
             dataset: The dataset to run the expectation suite on.
@@ -69,7 +69,7 @@ class GreatExpectationsValidatorStep(BaseStep):
             config: The configuration for the step.
 
         Returns:
-            The Great Expectation validation (checkpoint) result.
+            The Great Expectations validation (checkpoint) result.
         """
         # get pipeline name, step name and run id
         step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])

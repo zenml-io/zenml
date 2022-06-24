@@ -55,7 +55,7 @@ class GreatExpectationsProfilerConfig(BaseStepConfig):
 
 
 class GreatExpectationsProfilerStep(BaseStep):
-    """Standard Great Expectation profiling step implementation.
+    """Standard Great Expectations profiling step implementation.
 
     Use this standard Great Expectations profiling step to build an Expectation
     Suite automatically by running a UserConfigurableProfiler on an input
@@ -67,14 +67,14 @@ class GreatExpectationsProfilerStep(BaseStep):
         dataset: pd.DataFrame,
         config: GreatExpectationsProfilerConfig,
     ) -> ExpectationSuite:
-        """Standard Great Expectation data profiling step entrypoint.
+        """Standard Great Expectations data profiling step entrypoint.
 
         Args:
             dataset: The dataset from which the expectation suite will be inferred.
             config: The configuration for the step.
 
         Returns:
-            The generated Great Expectation suite.
+            The generated Great Expectations suite.
         """
         context = GreatExpectationsDataValidator.get_data_context()
 
