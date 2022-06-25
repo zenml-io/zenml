@@ -74,6 +74,7 @@ These are the third-party integrations that ZenML currently supports:
 | Weights & Biases | ✅      | Experiment Tracking    | Tracks your pipelines and your training runs.                                                 | [wandb_tracking](https://github.com/zenml-io/zenml/tree/main/examples/wandb_tracking)                                                                    |
 | whylogs                   | ✅      | Logging                | Integration fully implemented for data logging.                                               | [whylogs_data_profiling](https://github.com/zenml-io/zenml/tree/main/examples/whylogs_data_profiling)                                                                                  |
 | xgboost                   | ✅      | Training               | Support for `Booster` and `DMatrix` materialization.                                          | [xgboost](https://github.com/zenml-io/zenml/tree/main/examples/xgboost)                                                                                  |
+| Vault                   | ✅      | Secrets Manager               | Use Vault Key/Value Secrets Engine                                        |                                                                                   |
 
 ✅ means the integration is already implemented.
 ⛏ means we are looking to implement the integration soon.
