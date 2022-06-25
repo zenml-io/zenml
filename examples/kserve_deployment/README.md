@@ -392,7 +392,7 @@ Step `deployment_trigger` has finished in 3.847s.
 Step `kserve_model_deployer_step` has started.
 INFO:kserve.api.creds_utils:Created Secret: kserve-secret-d5zwr in namespace kserve-test
 INFO:kserve.api.creds_utils:Patched Service account: kserve-service-credentials in namespace kserve-test
-Creating a new KServe deployment service: KServeDeploymentService[7a1d22c1-3892-4cfc-83dc-b89e22cbc743] (type: model-serving, flavor: kserve)
+Creating a new KServe deployment service: `KServeDeploymentService[7a1d22c1-3892-4cfc-83dc-b89e22cbc743]` (type: model-serving, flavor: kserve)
 KServe deployment service started and reachable at:
     http://35.196.207.240:80/v1/models/zenml-7a1d22c1:predict
     With the hostname: http://zenml-7a1d22c1.zenml-workloads.example.com:predict.
