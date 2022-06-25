@@ -25,7 +25,12 @@ from pydantic import BaseModel, ValidationError
 
 from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
-from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REPOSITORY_DIRECTORY_NAME
+from zenml.constants import (
+    ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
+    ENV_ZENML_REPOSITORY_PATH,
+    REPOSITORY_DIRECTORY_NAME,
+    handle_bool_env_var,
+)
 from zenml.enums import StackComponentType, StoreType
 from zenml.environment import Environment
 from zenml.exceptions import (
@@ -277,13 +282,17 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Raises:
             RuntimeError: If no active configuration profile is found.
         """
-        self._root = self.find_repository(root, enable_warnings=True)
+        enable_warnings = handle_bool_env_var(
+            ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, True
+        )
+        self._root = self.find_repository(root, enable_warnings=enable_warnings)
 
         global_cfg = GlobalConfiguration()
         new_profile = self._profile
 
         if not self._root:
-            logger.info("Running without an active repository root.")
+            if enable_warnings:
+                logger.info("Running without an active repository root.")
         else:
             logger.debug("Using repository root %s.", self._root)
             self.__config = self._load_config()
