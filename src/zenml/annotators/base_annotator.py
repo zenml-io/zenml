@@ -14,7 +14,7 @@
 """Base class for ZenML annotator stack components."""
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, List
+from typing import ClassVar, List
 
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent
@@ -77,9 +77,9 @@ class BaseAnnotator(StackComponent, ABC):
     def get_unlabeled_data(self, dataset_name: str) -> None:
         """Gets the unlabeled data for the given dataset."""
 
-    @abstractmethod
-    def export_data(self, identifier: str, export_config) -> Any:
-        """Exports the data for the given identifier."""
+    # @abstractmethod
+    # def export_data(self, identifier: str, export_config) -> Any:
+    #     """Exports the data for the given identifier."""
 
     @abstractmethod
     def import_data(self, identifier: str, import_config) -> None:

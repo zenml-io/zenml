@@ -29,7 +29,9 @@
 #    register_new_dataset_for_labelling(exported_data.name, tags...)
 #    return exported_data # or just the ID/tag
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
+from label_studio_sdk.project import ProjectSampling
 
 from zenml.artifacts.data_artifact import DataArtifact
 from zenml.logger import get_logger
@@ -44,52 +46,79 @@ class AnnotationInputArtifact(DataArtifact):
     predictions: Optional[Dict[str]]
 
 
+IMAGE_CLASSIFICATION_LABEL_CONFIG = """
+    <View>
+    <Image name="image" value="$image"/>
+    <Choices name="choice" toName="image">
+        <Choice value="Mr Blupus"/>
+        <Choice value="Other" />
+    </Choices>
+    </View>
+    """
+
+
 class ImageClassificationInputArtifact(AnnotationInputArtifact):
     """Image classification input artifact."""
-
-    images_dir: str
-    labels: List[str]
 
 
 class AnnotationOutputArtifact(DataArtifact):
     """Annotation output data artifact."""
 
 
-class LabelStudioExportStepConfig(BaseStepConfig):
-    """Step config definition for Label studio export step."""
-
-
 class LabelStudioRecords(DataArtifact):
     """Label studio records data artifact."""
 
+    records: List[Dict[Any]]
 
-class LabelStudioExportStep(BaseStep):
-    """Exports data in a format that Label Studio can understand."""
+
+class LabelStudioDatasetCreationConfig(BaseStepConfig):
+    """Step config definition for Label studio export step."""
+
+    label_config: str = IMAGE_CLASSIFICATION_LABEL_CONFIG
+    storage_type: str
+
+
+class AzureDatasetCreationConfig(LabelStudioDatasetCreationConfig):
+    """Step config definition for Azure."""
+
+    dataset_name: str
+    container_name: str
+    prefix: Optional[str]
+    regex_filter: Optional[str]
+    use_blob_urls: Optional[bool] = True
+    presign: Optional[bool] = True
+    presign_ttl: Optional[int] = 1
+    description: Optional[str]
+    account_name: Optional[str]
+    account_key: Optional[str]
+    project_sampling: Optional[ProjectSampling] = ProjectSampling.RANDOM
+
+
+class LabelStudioDatasetCreationStep(BaseStep):
+    """Creates a dataset based on data and labels passed in."""
 
     def entrypoint(
         self,
         data: AnnotationInputArtifact,
-        config: LabelStudioExportStepConfig,
+        config: Optional[LabelStudioDatasetCreationConfig],
         context: StepContext,
-    ) -> Optional[LabelStudioRecords]:
+    ) -> Optional[Tuple[int, LabelStudioRecords]]:
         """Main entrypoint function for the Label Studio export step."""
         annotator = context.stack.annotator
         if annotator and annotator._connection_available():
-            # it "converts" from DataSource to a format that the
-            # data labelling tool supports
-            exported_data = annotator.export(data)
-            # tag, label, mark the exported data as an object that can be
-            # visualized and edited with Label Studio (?)
-            # annotator.register_new_dataset_for_labelling(exported_data.name, tags...)
-            return exported_data  # or just the ID/tag
+            registered_dataset_id = annotator.register_dataset_for_annotation(
+                data, config
+            )
+            imported_tasks = annotator.get_unlabeled_data(registered_dataset_id)
+            return registered_dataset_id, imported_tasks  # or just the ID/tag
         else:
             logger.warning("No active annotator.")
 
 
-def label_studio_export_step() -> LabelStudioExportStep:
-    """Shortcut function to create a new instance of the export step.
+# def label_studio_export_step() -> LabelStudioExportStep:
+#     """Shortcut function to create a new instance of the export step.
 
-    Combines the config and the step classes to create a new instance of the
-    step.
-    """
-    # TODO: convenience step to be implemented later
+#     Combines the config and the step classes to create a new instance of the
+#     step.
+#     """
+#     # TODO: convenience step to be implemented later

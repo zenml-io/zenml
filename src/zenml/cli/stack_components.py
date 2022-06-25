@@ -15,7 +15,16 @@
 
 import time
 from importlib import import_module
-from typing import Any, Callable, List, Optional, Sequence, Tuple, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+)
 
 import click
 from pydantic import ValidationError
@@ -34,6 +43,9 @@ from zenml.stack import StackComponent
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 from zenml.utils.source_utils import validate_flavor_source
 from zenml.zen_stores.models.component_wrapper import ComponentWrapper
+
+if TYPE_CHECKING:
+    from zenml.annotators.base_annotator import BaseAnnotator
 
 
 def _get_required_attributes(
@@ -1338,12 +1350,93 @@ def register_single_stack_component_cli_commands(
     )(explain_command)
 
 
+def register_annotator_subcommands() -> None:
+    """Registers CLI subcommands for the annotator."""
+    annotator_group = cli.commands.get("annotator")
+    if annotator_group:
+
+        @annotator_group.group(cls=TagGroup)
+        @click.pass_context
+        def dataset(ctx: click.Context) -> None:
+            """Do something"""
+            repo = Repository()
+            active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+            annotator_wrapper = active_stack.get_component_wrapper(
+                StackComponentType.ANNOTATOR
+            )
+            if annotator_wrapper is None:
+                cli_utils.error(
+                    "No active secrets manager found. Please create a secrets manager "
+                    "first and add it to your stack."
+                )
+                return
+
+            ctx.obj = annotator_wrapper.to_component()
+
+        @dataset.command(
+            "list", context_settings={"ignore_unknown_options": True}
+        )
+        @click.pass_obj
+        def dataset_list(annotator: "BaseAnnotator") -> None:
+            cli_utils.declare("Success")
+
+        @dataset.command(
+            "stats", context_settings={"ignore_unknown_options": True}
+        )
+        @click.argument(
+            "name",
+            type=click.STRING,
+        )
+        @click.pass_obj
+        def dataset_stats(annotator: "BaseAnnotator", name: str) -> None:
+            cli_utils.declare(f"Printing stats about your dataset '{name}'")
+
+        @dataset.command(
+            "delete", context_settings={"ignore_unknown_options": True}
+        )
+        @click.argument(
+            "name",
+            type=click.STRING,
+        )
+        @click.pass_obj
+        def dataset_delete(annotator: "BaseAnnotator", name: str) -> None:
+            cli_utils.declare(f"Deleting your dataset '{name}'")
+
+        @dataset.command(
+            "annotate", context_settings={"ignore_unknown_options": True}
+        )
+        @click.argument(
+            "name",
+            type=click.STRING,
+        )
+        @click.pass_obj
+        def dataset_annotate(annotator: "BaseAnnotator", name: str) -> None:
+            cli_utils.declare(
+                f"Launching annotation interface for your dataset '{name}'"
+            )
+
+        @dataset.command(
+            "annotate", context_settings={"ignore_unknown_options": True}
+        )
+        @click.argument(
+            "name",
+            type=click.STRING,
+        )
+        @click.pass_obj
+        def dataset_annotate(annotator: "BaseAnnotator", name: str) -> None:
+            cli_utils.declare(
+                f"Launching annotation interface for your dataset '{name}'"
+            )
+
+
 def register_all_stack_component_cli_commands() -> None:
     """Registers CLI commands for all stack components."""
     for component_type in StackComponentType:
         register_single_stack_component_cli_commands(
             component_type, parent_group=cli
         )
+        if component_type == StackComponentType.ANNOTATOR:
+            register_annotator_subcommands()
 
 
 register_all_stack_component_cli_commands()

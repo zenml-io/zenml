@@ -17,15 +17,15 @@ import os
 import subprocess
 import sys
 import webbrowser
-from typing import ClassVar, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
-from label_studio_sdk import Client
+from label_studio_sdk import Client, Project
 
 from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.integrations.label_studio.steps.label_studio_export_step import (
-    AnnotationInputArtifact,
+    LabelStudioDatasetCreationConfig,
     LabelStudioRecords,
 )
 from zenml.io import fileio
@@ -185,7 +185,7 @@ class LabelStudioAnnotator(BaseAnnotator):
             logger.info(
                 "Started Label Studio daemon (check the daemon"
                 "logs at `%s` in case you're not able to access the annotation "
-                "interface).",
+                f"interface). Please visit `{self.get_url()}/` to use the Label Studio interface.",
                 self._log_file,
             )
 
@@ -213,8 +213,12 @@ class LabelStudioAnnotator(BaseAnnotator):
                 "because the connection could not be established."
             )
 
+    def _get_client(self) -> Client:
+        """Gets Label Studio client."""
+        return Client(url=self.get_url(), api_key=self.api_key)
+
     def _connection_available(self) -> bool:
-        ls = Client(url=self.get_url(), api_key=self.api_key)
+        ls = self._get_client()
         try:
             result = ls.check_connection()
             return result.get("status") == "UP"
@@ -242,22 +246,60 @@ class LabelStudioAnnotator(BaseAnnotator):
     def untag_dataset(self, dataset_name: str, tag: str) -> None:
         """Untags the dataset with the given name with the given tag."""
 
+    def _dataset_name_to_project(self, dataset_name: str) -> Optional[Project]:
+        """Finds the project id for a specific dataset name."""
+        ls = self._get_client()
+        projects = ls.get_projects()
+        current_project = [
+            project for project in projects if project["title"] == dataset_name
+        ]
+        return current_project[0]
+
     def get_labeled_data(self, dataset_name: str) -> None:
         """Gets the labeled data for the given dataset."""
 
     def get_unlabeled_data(self, dataset_name: str) -> None:
         """Gets the unlabeled data for the given dataset."""
 
-    def export_data(
-        self, data: AnnotationInputArtifact, export_config
-    ) -> LabelStudioRecords:
-        """Exports the data for the given identifier."""
+    def get_converted_dataset(
+        self, dataset_name: str, output_format: str
+    ) -> Dict[Any]:
+        """Extract annotated tasks in a specific converted format."""
+        project = self._dataset_name_to_project(dataset_name)
+        return project.export_tasks(export_type=output_format)
 
-    def import_data(self, identifier: str, import_config) -> None:
-        """Imports the data for the given identifier."""
+    def get_unlabeled_data(self, dataset_id: int) -> Optional[Dict[Any]]:
+        """Some docstring goes here"""
+        ls = self._get_client()
+        return ls.get_project(dataset_id).get_unlabeled_tasks()
 
     def register_dataset_for_annotation(
-        self, name: str, tags: List[str]
-    ) -> None:
+        self,
+        data: LabelStudioRecords,
+        config: LabelStudioDatasetCreationConfig,
+    ) -> int:
         """Registers a dataset for annotation."""
-        # create a project if it doesn't exist
+        ls = self._get_client()
+        project = ls.start_project(
+            title=config.dataset_name,
+            label_config=config.label_config,
+            sampling=config.project_sampling,
+        )
+
+        if config.storage_type == "azure":
+            storage = project.connect_azure_import_storage(
+                container=config.container,
+                prefix=config.prefix,
+                regex_filter=config.regex_filter,
+                use_blob_urls=config.use_blob_urls,
+                presign=config.presign,
+                presign_ttl=config.presign_ttl,
+                title=config.dataset_name,
+                description=config.description,
+                account_name=config.account_name,
+                account_key=config.account_key,
+            )
+        # TODO: add GCP, S3 and LOCAL
+
+        ls.sync_storage(storage_id=storage["id"], storage_type=storage["type"])
+        return project.get_params()["id"]
