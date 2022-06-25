@@ -25,7 +25,7 @@ from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.integrations.label_studio.steps.label_studio_export_step import (
-    LabelStudioDatasetCreationConfig,
+    AzureDatasetCreationConfig,
     LabelStudioRecords,
 )
 from zenml.io import fileio
@@ -263,12 +263,12 @@ class LabelStudioAnnotator(BaseAnnotator):
 
     def get_converted_dataset(
         self, dataset_name: str, output_format: str
-    ) -> Dict[Any]:
+    ) -> Dict[Any, Any]:
         """Extract annotated tasks in a specific converted format."""
         project = self._dataset_name_to_project(dataset_name)
         return project.export_tasks(export_type=output_format)
 
-    def get_unlabeled_data(self, dataset_id: int) -> Optional[Dict[Any]]:
+    def get_unlabeled_data(self, dataset_id: int) -> Optional[Dict[Any, Any]]:
         """Some docstring goes here"""
         ls = self._get_client()
         return ls.get_project(dataset_id).get_unlabeled_tasks()
@@ -276,7 +276,7 @@ class LabelStudioAnnotator(BaseAnnotator):
     def register_dataset_for_annotation(
         self,
         data: LabelStudioRecords,
-        config: LabelStudioDatasetCreationConfig,
+        config: AzureDatasetCreationConfig,
     ) -> int:
         """Registers a dataset for annotation."""
         ls = self._get_client()

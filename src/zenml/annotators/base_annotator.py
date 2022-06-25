@@ -76,11 +76,3 @@ class BaseAnnotator(StackComponent, ABC):
     @abstractmethod
     def get_unlabeled_data(self, dataset_name: str) -> None:
         """Gets the unlabeled data for the given dataset."""
-
-    # @abstractmethod
-    # def export_data(self, identifier: str, export_config) -> Any:
-    #     """Exports the data for the given identifier."""
-
-    @abstractmethod
-    def import_data(self, identifier: str, import_config) -> None:
-        """Imports the data for the given identifier."""

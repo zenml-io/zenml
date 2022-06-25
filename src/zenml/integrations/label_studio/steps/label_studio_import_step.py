@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 class LabelStudioImportStepConfig(BaseStepConfig):
     """Step config definition for Label studio import step."""
 
-    output_format: str
+    output_format: str = "JSON"
 
 
 class LabelStudioImportStep(BaseStep):

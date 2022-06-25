@@ -43,7 +43,7 @@ logger = get_logger(__name__)
 class AnnotationInputArtifact(DataArtifact):
     """Annotation input data artifact."""
 
-    predictions: Optional[Dict[str]]
+    predictions: Optional[Dict[Any, Any]]
 
 
 IMAGE_CLASSIFICATION_LABEL_CONFIG = """
@@ -68,18 +68,14 @@ class AnnotationOutputArtifact(DataArtifact):
 class LabelStudioRecords(DataArtifact):
     """Label studio records data artifact."""
 
-    records: List[Dict[Any]]
+    records: List[Dict[Any, Any]]
 
 
-class LabelStudioDatasetCreationConfig(BaseStepConfig):
-    """Step config definition for Label studio export step."""
+class AzureDatasetCreationConfig(BaseStepConfig):
+    """Step config definition for Azure."""
 
     label_config: str = IMAGE_CLASSIFICATION_LABEL_CONFIG
     storage_type: str
-
-
-class AzureDatasetCreationConfig(LabelStudioDatasetCreationConfig):
-    """Step config definition for Azure."""
 
     dataset_name: str
     container_name: str
@@ -100,7 +96,7 @@ class LabelStudioDatasetCreationStep(BaseStep):
     def entrypoint(
         self,
         data: AnnotationInputArtifact,
-        config: Optional[LabelStudioDatasetCreationConfig],
+        config: AzureDatasetCreationConfig,
         context: StepContext,
     ) -> Optional[Tuple[int, LabelStudioRecords]]:
         """Main entrypoint function for the Label Studio export step."""
