@@ -1213,6 +1213,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         try:
             # Try to find if there are any custom flavor implementations
+            breakpoint()
             flavor_wrapper = self.zen_store.get_flavor_by_name_and_type(
                 flavor_name=name,
                 component_type=component_type,

@@ -34,7 +34,7 @@ from zenml.utils import io_utils, networking_utils
 
 logger = get_logger(__name__)
 
-DEFAULT_LABEL_STUDIO_PORT = 8093
+DEFAULT_LABEL_STUDIO_PORT = "8093"
 
 
 class LabelStudioAnnotator(BaseAnnotator):
