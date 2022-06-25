@@ -36,8 +36,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
           source $VENV
-          zenml integration install -y --ignore-integration feast kserve
-          pip install kserve torch-model-archiver
+          zenml integration install -y --ignore-integration feast
           pip install click~=8.0.3
 
       - name: Lint
