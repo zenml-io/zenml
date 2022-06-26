@@ -22,7 +22,7 @@ from zenml.steps.base_step_config import BaseStepConfig
 
 class PyTorchInferenceProcessorStepConfig(BaseStepConfig):
     """
-    Configuration for the LoadInferenceImageStepConfig.
+    Configuration for the PyTorch inference preprocessor step.
     """
 
     img_url: Optional[

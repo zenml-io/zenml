@@ -977,3 +977,5 @@ inferenceservice
 pluggable
 sa
 zwr
+camelCase
+inference
