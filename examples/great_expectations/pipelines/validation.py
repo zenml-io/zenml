@@ -36,12 +36,12 @@ def validation_pipeline(
     steps until the generated expectation suite is ready.
 
     Args:
-        importer (_type_): _description_
-        splitter (_type_): _description_
-        profiler (_type_): _description_
-        prevalidator (_type_): _description_
-        train_validator (_type_): _description_
-        test_validator (_type_): _description_
+        importer: data importer step
+        splitter: splitter step
+        profiler: data profiler step
+        prevalidator: dummy step required to enforce ordering
+        train_validator: training dataset validation step
+        test_validator: test dataset validation step
     """
     imported_data = importer()
     train, test = splitter(imported_data)

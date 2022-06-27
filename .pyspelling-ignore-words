@@ -322,6 +322,7 @@ SVC
 Sagemaker
 Sagemaker's
 Sauron
+Scatch
 SchemaArtifact
 SciPy
 SecondStep
@@ -583,6 +584,7 @@ ds
 dsl
 dst
 dt
+dv
 ecr
 edwardgeorge
 eks
@@ -626,6 +628,7 @@ gcp
 gcr
 gcs
 gcsfs
+ge
 getattr
 getfile
 getsource
@@ -788,6 +791,7 @@ preprocessing
 preprocessor
 pretrained
 prettyprint
+prevalidator
 probabilisticmodelperformance
 profiler
 proto
