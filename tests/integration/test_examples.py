@@ -26,6 +26,7 @@ from zenml.repository import Repository
 from .example_validations import (
     drift_detection_example_validation,
     generate_basic_validation_function,
+    great_expectations_setup,
     mlflow_tracking_example_validation,
     mlflow_tracking_setup,
     whylogs_example_validation,
@@ -134,6 +135,14 @@ examples = [
         validation_function=generate_basic_validation_function(
             pipeline_name="fashion_mnist_pipeline", step_count=3
         ),
+    ),
+    ExampleIntegrationTestConfiguration(
+        name="great_expectations_data_validation",
+        validation_function=generate_basic_validation_function(
+            pipeline_name="validation_pipeline", step_count=6
+        ),
+        setup_function=great_expectations_setup,
+        skip_on_windows=True,
     ),
 ]
 
