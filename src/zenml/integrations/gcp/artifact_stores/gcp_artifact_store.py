@@ -262,7 +262,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
             topdown: Unused argument to conform to interface.
             onerror: Unused argument to conform to interface.
 
-        Returns:
+        Yields:
             An Iterable of Tuples, each of which contain the path of the current
             directory path, a list of directories inside the current directory
             and a list of files inside the current directory.
