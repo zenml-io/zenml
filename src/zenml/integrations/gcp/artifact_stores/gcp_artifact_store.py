@@ -37,6 +37,9 @@ from zenml.utils.io_utils import convert_to_str
 PathType = Union[bytes, str]
 
 
+GCP_PATH_PREFIX = "gs://"
+
+
 class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
@@ -44,7 +47,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
     # Class Configuration
     FLAVOR: ClassVar[str] = GCP_ARTIFACT_STORE_FLAVOR
-    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"gs://"}
+    SUPPORTED_SCHEMES: ClassVar[Set[str]] = {GCP_PATH_PREFIX}
 
     @property
     def filesystem(self) -> gcsfs.GCSFileSystem:
@@ -127,7 +130,10 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             A list of paths that match the given glob pattern.
         """
-        return [f"gs://{path}" for path in self.filesystem.glob(path=pattern)]
+        return [
+            f"{GCP_PATH_PREFIX}{path}"
+            for path in self.filesystem.glob(path=pattern)
+        ]
 
     def isdir(self, path: PathType) -> bool:
         """Check whether a path is a directory.
@@ -150,7 +156,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
             A list of paths of files in the directory.
         """
         return [
-            f"gs://{info_dict['name']}"
+            f"{GCP_PATH_PREFIX}{info_dict['name']}"
             for info_dict in self.filesystem.listdir(path=path)
         ]
 
@@ -249,4 +255,4 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
             subdirectories,
             files,
         ) in self.filesystem.walk(path=top):
-            yield f"gs://{directory}", subdirectories, files
+            yield f"{GCP_PATH_PREFIX}{directory}", subdirectories, files
