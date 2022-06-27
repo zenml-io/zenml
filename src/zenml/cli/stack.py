@@ -44,7 +44,11 @@ def stack() -> None:
     """Stacks to define various environments."""
 
 
-@stack.command("register", context_settings=dict(ignore_unknown_options=True))
+@stack.command(
+    "register",
+    context_settings=dict(ignore_unknown_options=True),
+    help="Register a stack with components.",
+)
 @click.argument("stack_name", type=str, required=True)
 @click.option(
     "-m",
@@ -245,7 +249,11 @@ def register_stack(
         set_active_stack(stack_name=stack_name)
 
 
-@stack.command("update", context_settings=dict(ignore_unknown_options=True))
+@stack.command(
+    "update",
+    context_settings=dict(ignore_unknown_options=True),
+    help="Update a stack with new components.",
+)
 @click.argument("stack_name", type=str, required=False)
 @click.option(
     "-m",
@@ -459,7 +467,9 @@ def update_stack(
 
 
 @stack.command(
-    "remove-component", context_settings=dict(ignore_unknown_options=True)
+    "remove-component",
+    context_settings=dict(ignore_unknown_options=True),
+    help="Remove stack components from a stack.",
 )
 @click.argument("stack_name", type=str, required=False)
 @click.option(
@@ -585,7 +595,7 @@ def remove_stack_component(
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
-@stack.command("rename")
+@stack.command("rename", help="Rename a stack.")
 @click.argument("current_stack_name", type=str, required=True)
 @click.argument("new_stack_name", type=str, required=True)
 def rename_stack(
@@ -697,7 +707,7 @@ def describe_stack(stack_name: Optional[str]) -> None:
     )
 
 
-@stack.command("delete")
+@stack.command("delete", help="Delete a stack given its name.")
 @click.argument("stack_name", type=str)
 @click.option("--yes", "-y", is_flag=True, required=False)
 @click.option("--force", "-f", "old_force", is_flag=True, required=False)
@@ -750,7 +760,7 @@ def delete_stack(
     cli_utils.declare(f"Deleted stack '{stack_name}'.")
 
 
-@stack.command("set")
+@stack.command("set", help="Sets a stack as active.")
 @click.argument("stack_name", type=str)
 @click.option(
     "--global",
@@ -824,7 +834,9 @@ def up_stack() -> None:
         cli_utils.error(str(e))
 
 
-@stack.command("down")
+@stack.command(
+    "down", help="Suspends resources of the active stack deployment."
+)
 @click.option(
     "--yes",
     "-y",
@@ -893,7 +905,7 @@ def _get_component_as_dict(
     return component_dict
 
 
-@stack.command("export")
+@stack.command("export", help="Exports a stack to a YAML file.")
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=False)
 def export_stack(stack_name: str, filename: Optional[str]) -> None:
@@ -994,7 +1006,7 @@ def _import_stack_component(
     return component_name
 
 
-@stack.command("import")
+@stack.command("import", help="Import a stack from YAML.")
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=False)
 @click.pass_context
@@ -1056,10 +1068,7 @@ def import_stack(
     ctx.invoke(register_stack, stack_name=stack_name, **component_names)
 
 
-@stack.command(
-    "copy",
-    help="SOURCE_STACK: The name of the stack to copy.\n\nTARGET_STACK: Name of the copied stack.",
-)
+@stack.command("copy", help="Copy a stack to a new stack name.")
 @click.argument("source_stack", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
 @click.option(

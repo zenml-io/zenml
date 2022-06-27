@@ -61,7 +61,11 @@ def secret(ctx: click.Context) -> None:
     ctx.obj = secrets_manager_wrapper.to_component()
 
 
-@secret.command("register", context_settings={"ignore_unknown_options": True})
+@secret.command(
+    "register",
+    context_settings={"ignore_unknown_options": True},
+    help="Register a secret with the given name and schema.",
+)
 @click.argument("name", type=click.STRING)
 @click.option(
     "--schema",
@@ -92,55 +96,44 @@ def register_secret(
 
     Use this command to store sensitive information into a ZenML secret. The
     secret data consists of key-value pairs that can be configured interactively
-    (if the `--interactive` option is set) or via command line arguments.
+    (if the `--interactive` option is set) or via command-line arguments.
     If a schema is indicated, the secret key-value pairs will be validated
     against the schema.
 
     When passed as command line arguments, the secret field values may also be
     loaded from files instead of being issued inline, by prepending the field
     name with a `@` sign. For example, the following command line:
-
         zenml secret register my_secret --secret_token=@/path/to/file.json
-
     will load the value for the field `secret_token` from the file
     `/path/to/file.json`.
-
     To use the `@` sign as the first character of a field name without pointing
     to a file, double the `@` sign. For example, the following command line:
-
         zenml secret register my_secret --username=zenml --password=@@password
-
     will interpret the value of the field `password` as the literal string
     `@password`.
 
     Examples:
     - register a secret with the name `secret_one` and configure its values
     interactively:
-
         zenml secret register secret_one -i
-
     - register a secret with the name `secret_two` and configure its values
     via command line arguments:
-
         zenml secret register secret_two --username=admin --password=secret
-
     - register a secret with the name `secret_three` interactively and
     conforming to a schema named `aws` (which is defined in the `aws`
     integration):
-
         zenml integration install aws
         zenml secret register secret_three -i --schema=aws
-
     - register a secret with the name `secret_four` from command line arguments
     and conforming to a schema named `aws` (which is defined in the `aws`
     integration). Also load the value for the field `secret_token` from a
     local file:
-
         zenml integration install aws
         zenml secret register secret_four --schema=aws \
             --aws_access_key_id=1234567890 \
             --aws_secret_access_key=abcdefghij \
             --aws_session_token=@/path/to/token.txt
+
 
     Args:
         secrets_manager: The secrets manager to use.
@@ -252,7 +245,7 @@ def register_secret(
         secrets_manager.register_secret(secret=secret)
 
 
-@secret.command("get")
+@secret.command("get", help="Get a secret, given its name.")
 @click.argument("name", type=click.STRING)
 @click.pass_obj
 def get_secret(
@@ -275,7 +268,9 @@ def get_secret(
         )
 
 
-@secret.command("list")
+@secret.command(
+    "list", help="List all secrets tracked by your Secrets Manager."
+)
 @click.pass_obj
 def list_secret(secrets_manager: "BaseSecretsManager") -> None:
     """List all secrets tracked by your Secrets Manager.
@@ -288,7 +283,11 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
         print_secrets(secret_names)
 
 
-@secret.command("update", context_settings={"ignore_unknown_options": True})
+@secret.command(
+    "update",
+    context_settings={"ignore_unknown_options": True},
+    help="Update a secret with a given name.",
+)
 @click.argument("name", type=click.STRING)
 @click.option(
     "--interactive",
@@ -310,37 +309,29 @@ def update_secret(
 
     Use this command to update the information stored in an existing ZenML
     secret. The secret's key-value pairs can be updated interactively
-    (if the `--interactive` option is set) or via command line arguments.
+    (if the `--interactive` option is set) or via command-line arguments.
     If a schema is associated with the existing secret, the updated secret
     key-value pairs will be validated against the schema.
 
     When passed as command line arguments, the secret field values may also be
     loaded from files instead of being issued inline, by prepending the field
     name with a `@` sign. For example, the following command line:
-
         zenml secret update my_secret --secret_token=@/path/to/file.json
-
     will load the value for the field `secret_token` from the file
     `/path/to/file.json`.
-
     To use the `@` sign as the first character of a field name without pointing
     to a file, double the `@` sign. For example, the following command line:
-
         zenml secret update my_secret --username=zenml --password=@@password
-
     will interpret the value of the field `password` as the literal string
     `@password`.
-
+    
     Examples:
     - update a secret with the name `secret_one` and configure its values
     interactively:
-
         zenml secret update secret_one -i
-
     - update a secret with the name `secret_two` from command line arguments
     and load the value for the field `secret_token` from a
     local file:
-
         zenml secret update secret_four \
             --aws_access_key_id=1234567890 \
             --aws_secret_access_key=abcdefghij \
@@ -418,7 +409,7 @@ def update_secret(
             error(f"Secret with name `{name}` already exists.")
 
 
-@secret.command("delete")
+@secret.command("delete", help="Delete a secret identified by its name.")
 @click.argument("name", type=click.STRING)
 @click.option(
     "--yes",
@@ -458,7 +449,11 @@ def delete_secret_set(
             error(f"Secret with name `{name}` no longer present.")
 
 
-@secret.command("cleanup", hidden=True)
+@secret.command(
+    "cleanup",
+    hidden=True,
+    help="Delete all secrets tracked by your Secrets Manager.",
+)
 @click.option(
     "--yes",
     "-y",
