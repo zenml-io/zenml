@@ -37,7 +37,7 @@ class GreatExpectationsIntegration(Integration):
         #  1. to match the kfp version requirements
         #  2. to avoid installing the latest jsonschema version that doesn't
         #  include `/python3.8/site-packages/jsonschema/schemas/vocabularies.json`
-        "jsonschema<4"
+        "jsonschema<4",
     ]
 
     @staticmethod
