@@ -91,6 +91,8 @@ def mlflow_tracking_setup(repository: Repository) -> None:
     import subprocess
 
     subprocess.check_call(["zenml", "integration", "install", "mlflow", "-y"])
+    subprocess.check_call(["zenml", "integration", "list"])
+    subprocess.check_call(["pip", "list"])
 
     from zenml.integrations.mlflow.experiment_trackers import (
         MLFlowExperimentTracker,

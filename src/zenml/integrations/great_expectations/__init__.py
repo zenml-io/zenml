@@ -33,11 +33,6 @@ class GreatExpectationsIntegration(Integration):
     NAME = GREAT_EXPECTATIONS
     REQUIREMENTS = [
         "great-expectations~=0.15.11",
-        # We need to fix the jsonschema version for two reasons:
-        #  1. to match the kfp version requirements
-        #  2. to avoid installing the latest jsonschema version that doesn't
-        #  include `/python3.8/site-packages/jsonschema/schemas/vocabularies.json`
-        "jsonschema<4",
     ]
 
     @staticmethod
