@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2021. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,11 +11,37 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import random
 
-from pipelines.airflow_example_pipeline import airflow_example_pipeline
-from steps.first_num import get_first_num
-from steps.random_int import get_random_int
-from steps.substract_numbers import subtract_numbers
+from zenml.pipelines import pipeline
+from zenml.steps import Output, step
+
+
+@step
+def get_first_num() -> Output(first_num=int):
+    """Returns an integer."""
+    return 10
+
+
+@step(enable_cache=False)
+def get_random_int() -> Output(random_num=int):
+    """Get a random integer between 0 and 10"""
+    return random.randint(0, 10)
+
+
+@step
+def subtract_numbers(first_num: int, random_num: int) -> Output(result=int):
+    """Subtract random_num from first_num."""
+    return first_num - random_num
+
+
+@pipeline
+def airflow_example_pipeline(get_first_num, get_random_int, subtract_numbers):
+    # Link all the steps artifacts together
+    first_num = get_first_num()
+    random_num = get_random_int()
+    subtract_numbers(first_num, random_num)
+
 
 # Initialize a new pipeline run
 aep = airflow_example_pipeline(
