@@ -140,6 +140,7 @@ GBM
 GCP
 GCS
 GCS
+Gi
 GID
 GKE
 GPUs
@@ -190,6 +191,9 @@ Kubeflow
 KubeflowMetadataStore
 KubeflowOrchestrator
 Kubernetes
+KubernetesMetadataStore
+KubernetesOrchestrator
+KUBE
 LLC
 LegacyVersion
 LightGBM
@@ -529,6 +533,7 @@ da
 daemonization
 daemonize
 daemonizer
+dango
 datadir
 datadrift
 dataframe
@@ -578,6 +583,7 @@ ds
 dsl
 dst
 dt
+ecr
 edwardgeorge
 eks
 elif
@@ -607,6 +613,7 @@ fileio
 filepath
 filesize
 filesystem
+fn
 formatter
 fromisoformat
 fs
@@ -636,6 +643,8 @@ graphviz
 grey
 hasattr
 hashable
+HashiCorp
+HCP
 healthcheck
 healthchecks
 hkls
@@ -673,6 +682,7 @@ isdir
 isinstance
 istio
 istioctl
+iteratively
 jejik
 jira
 jk
@@ -755,6 +765,7 @@ orchestrator
 orchestrators
 os
 ourownstory
+parallelizable
 param
 params
 params
@@ -781,10 +792,12 @@ probabilisticmodelperformance
 profiler
 proto
 protobuf
+pv
 PWD
 py
 pydantic
 pyenv
+pylint
 pypi
 pytest
 pythonic
@@ -792,6 +805,7 @@ pythonpath
 pytorch
 quickstart
 rb
+rbac
 rclone
 readthedocs
 reconfigures
@@ -843,6 +857,7 @@ src
 ssl
 stackoverflow
 startswith
+stateful
 staticmethod
 stderr
 stdin
@@ -864,6 +879,7 @@ subprocess
 subtypes
 superclass
 superclasses
+svc
 symlinks
 sys
 syspath
