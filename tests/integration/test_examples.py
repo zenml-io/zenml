@@ -142,6 +142,7 @@ examples = [
             pipeline_name="validation_pipeline", step_count=6
         ),
         setup_function=great_expectations_setup,
+        skip_on_windows=True,
     ),
 ]
 
