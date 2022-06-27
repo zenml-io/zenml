@@ -127,7 +127,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             A list of paths that match the given glob pattern.
         """
-        return self.filesystem.glob(path=pattern)  # type: ignore[no-any-return]
+        return [f"gs://{path}" for path in self.filesystem.glob(path=pattern)]
 
     def isdir(self, path: PathType) -> bool:
         """Check whether a path is a directory.
@@ -149,7 +149,10 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             A list of paths of files in the directory.
         """
-        return self.filesystem.listdir(path=path)  # type: ignore[no-any-return]
+        return [
+            f"gs://{info_dict['name']}"
+            for info_dict in self.filesystem.listdir(path=path)
+        ]
 
     def makedirs(self, path: PathType) -> None:
         """Create a directory at the given path.
@@ -241,4 +244,9 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
             and a list of files inside the current directory.
         """
         # TODO [ENG-153]: Additional params
-        return self.filesystem.walk(path=top)  # type: ignore[no-any-return]
+        for (
+            directory,
+            subdirectories,
+            files,
+        ) in self.filesystem.walk(path=top):
+            yield f"gs://{directory}", subdirectories, files
