@@ -60,10 +60,6 @@ from zenml.orchestrators.utils import (
 from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.steps import BaseStep
-from zenml.steps.utils import (
-    INTERNAL_EXECUTION_PARAMETER_PREFIX,
-    PARAM_PIPELINE_PARAMETER_NAME,
-)
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -337,29 +333,13 @@ class BaseOrchestrator(StackComponent, ABC):
         Raises:
             DuplicateRunNameError: If the run name is already in use.
         """
-        step_name_param = (
-            INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
-        )
         pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
         start_time = time.time()
         logger.info(f"Step `{pipeline_step_name}` has started.")
         try:
             execution_info = tfx_launcher.launch()
-
             if execution_info and get_cache_status(execution_info):
-                if execution_info.exec_properties:
-                    step_name = json.loads(
-                        execution_info.exec_properties[step_name_param]
-                    )
-                    logger.info(
-                        f"Using cached version of `{pipeline_step_name}` "
-                        f"[`{step_name}`].",
-                    )
-                else:
-                    logger.error(
-                        f"No execution properties found for step "
-                        f"`{pipeline_step_name}`."
-                    )
+                logger.info(f"Using cached version of `{pipeline_step_name}`.")
         except RuntimeError as e:
             if "execution has already succeeded" in str(e):
                 # Hacky workaround to catch the error that a pipeline run with
