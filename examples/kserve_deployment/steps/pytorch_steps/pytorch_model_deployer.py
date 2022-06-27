@@ -29,7 +29,7 @@ pytorch_model_deployer = kserve_pytorch_model_deployer_step(
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=120,
-        model_class_file="mnist.py",
-        handler="mnist_handler.py",
+        model_class_file="steps/pytorch_steps/mnist.py",
+        handler="steps/pytorch_steps/mnist_handler.py",
     )
 )

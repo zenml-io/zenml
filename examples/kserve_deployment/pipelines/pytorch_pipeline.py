@@ -38,11 +38,11 @@ def pytorch_training_deployment_pipeline(
 
 @pipeline(enable_cache=True, required_integrations=[KSERVE, PYTORCH])
 def pytorch_inference_pipeline(
-    load_inference_image,
+    pytorch_inference_processor,
     prediction_service_loader,
     predictor,
 ):
     # Link all the steps artifacts together
-    inference_request = load_inference_image()
+    inference_request = pytorch_inference_processor()
     model_deployment_service = prediction_service_loader()
     predictor(model_deployment_service, inference_request)

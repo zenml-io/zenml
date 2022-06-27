@@ -12,15 +12,18 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import numpy as np
+import tensorflow as tf
 
-from zenml.integrations.sklearn.helpers.digits import get_digits
 from zenml.steps import Output, step
 
 
 @step
-def importer() -> Output(
-    X_train=np.ndarray, X_test=np.ndarray, y_train=np.ndarray, y_test=np.ndarray
+def importer_mnist() -> Output(
+    x_train=np.ndarray, y_train=np.ndarray, x_test=np.ndarray, y_test=np.ndarray
 ):
-    """Loads the digits array as normal numpy arrays."""
-    X_train, X_test, y_train, y_test = get_digits()
-    return X_train, X_test, y_train, y_test
+    """Download the MNIST data store it as an artifact"""
+    (x_train, y_train), (
+        x_test,
+        y_test,
+    ) = tf.keras.datasets.mnist.load_data()
+    return x_train, y_train, x_test, y_test

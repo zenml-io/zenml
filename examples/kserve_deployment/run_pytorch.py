@@ -130,7 +130,7 @@ def main(
     if predict:
         # Initialize an inference pipeline run
         pytorch_inference_pipeline(
-            load_inference_image=pytorch_inference_processor(
+            pytorch_inference_processor=pytorch_inference_processor(
                 PyTorchInferenceProcessorStepConfig(
                     img_url=img_url,
                 ),
