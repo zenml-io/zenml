@@ -170,6 +170,11 @@ else:
         if log_file:
             log_file = os.path.abspath(log_file)
 
+        # create parent directory if necessary
+        dir_name = os.path.dirname(pid_file)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+
         # check if PID file exists
         if pid_file and os.path.exists(pid_file):
             pid = get_daemon_pid_if_running(pid_file)
