@@ -24,6 +24,7 @@ from typing import (
     Set,
     Tuple,
     Union,
+    cast,
 )
 
 import gcsfs
@@ -155,9 +156,26 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             A list of paths of files in the directory.
         """
+        path_without_prefix = convert_to_str(path)
+        if path_without_prefix.startswith(GCP_PATH_PREFIX):
+            path_without_prefix = path_without_prefix[len(GCP_PATH_PREFIX) :]
+
+        def _extract_basename(file_dict: Dict[str, Any]) -> str:
+            """Extracts the basename from a file info dict returned by GCP.
+
+            Args:
+                file_dict: A file info dict returned by the GCP filesystem.
+
+            Returns:
+                The basename of the file.
+            """
+            file_path = cast(str, file_dict["name"])
+            base_name = file_path[len(path_without_prefix) :]
+            return base_name.lstrip("/")
+
         return [
-            f"{GCP_PATH_PREFIX}{info_dict['name']}"
-            for info_dict in self.filesystem.listdir(path=path)
+            _extract_basename(dict_)
+            for dict_ in self.filesystem.listdir(path=path)
         ]
 
     def makedirs(self, path: PathType) -> None:
