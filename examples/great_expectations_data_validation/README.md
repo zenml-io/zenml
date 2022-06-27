@@ -86,8 +86,8 @@ pip install zenml
 zenml integration install great_expectations sklearn
 
 # pull example
-zenml example pull great_expectations
-cd zenml_examples/great_expectations
+zenml example pull great_expectations_data_validation
+cd zenml_examples/great_expectations_data_validation
 
 # Initialize ZenML repo
 zenml init

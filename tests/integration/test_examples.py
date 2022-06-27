@@ -137,7 +137,7 @@ examples = [
         ),
     ),
     ExampleIntegrationTestConfiguration(
-        name="great_expectations",
+        name="great_expectations_data_validation",
         validation_function=generate_basic_validation_function(
             pipeline_name="validation_pipeline", step_count=6
         ),
