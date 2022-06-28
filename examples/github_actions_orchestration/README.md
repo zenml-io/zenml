@@ -48,7 +48,7 @@ zenml orchestrator register github_orchestrator --flavor=github --push=true
 
 # You can find the repository owner and repository name from the URL of your GitHub repository,
 # for example https://github.com/zenml-io/zenml -> The owner would be `zenml-io` and the repository name `zenml`
-zenml secrets_manager register github_secrets_manager \
+zenml secrets-manager register github_secrets_manager \
     --flavor=github \
     --owner=<GITHUB_REPOSITORY_OWNER> \
     --repository=<GITHUB_REPOSITORY_NAME>

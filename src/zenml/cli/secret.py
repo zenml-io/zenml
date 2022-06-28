@@ -23,6 +23,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
     error,
+    expand_argument_value_from_file,
     parse_unknown_options,
     pretty_print_secret,
     print_secrets,
@@ -199,17 +200,22 @@ def register_secret(
             for k in secret_keys:
                 v = getpass.getpass(f"Secret value for {k}:")
                 if v:
-                    secret_contents[k] = v
+                    secret_contents[k] = expand_argument_value_from_file(
+                        name=k, value=v
+                    )
         else:
             click.echo(
                 "You have not supplied a secret schema with any "
                 "predefined keys. Entering interactive mode:"
             )
             while True:
-                k = click.prompt("Please enter a secret-key")
+                k = click.prompt("Please enter a secret key")
                 if k not in secret_contents:
-                    secret_contents[k] = getpass.getpass(
-                        f"Please enter the secret_value for the key [{k}]:"
+                    v = getpass.getpass(
+                        f"Please enter the secret value for the key [{k}]:"
+                    )
+                    secret_contents[k] = expand_argument_value_from_file(
+                        name=k, value=v
                     )
                 else:
                     warning(

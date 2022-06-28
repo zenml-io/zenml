@@ -43,15 +43,16 @@ class StackComponentType(StrEnum):
     """All possible types a `StackComponent` can have."""
 
     ALERTER = "alerter"
-    ORCHESTRATOR = "orchestrator"
-    METADATA_STORE = "metadata_store"
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
-    STEP_OPERATOR = "step_operator"
-    FEATURE_STORE = "feature_store"
-    SECRETS_MANAGER = "secrets_manager"
-    MODEL_DEPLOYER = "model_deployer"
+    DATA_VALIDATOR = "data_validator"
     EXPERIMENT_TRACKER = "experiment_tracker"
+    FEATURE_STORE = "feature_store"
+    METADATA_STORE = "metadata_store"
+    MODEL_DEPLOYER = "model_deployer"
+    ORCHESTRATOR = "orchestrator"
+    SECRETS_MANAGER = "secrets_manager"
+    STEP_OPERATOR = "step_operator"
 
     @property
     def plural(self) -> str:
