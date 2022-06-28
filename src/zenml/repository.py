@@ -166,7 +166,7 @@ class RepositoryMetaClass(ABCMeta):
                     "require access to the artifact or metadata store, please "
                     "use a `StepContext` inside your step instead.",
                     url="https://docs.zenml.io/features/step-fixtures#using"
-                        "-the-stepcontext",
+                    "-the-stepcontext",
                 )
 
         if args or kwargs:
@@ -188,9 +188,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     """
 
     def __init__(
-            self,
-            root: Optional[Path] = None,
-            profile: Optional["ProfileConfiguration"] = None,
+        self,
+        root: Optional[Path] = None,
+        profile: Optional["ProfileConfiguration"] = None,
     ) -> None:
         """Initializes the global repository instance.
 
@@ -329,7 +329,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self._sanitize_config()
 
     def _set_active_profile(
-            self, profile: "ProfileConfiguration", new_profile: bool = False
+        self, profile: "ProfileConfiguration", new_profile: bool = False
     ) -> None:
         """Set the supplied configuration profile as the active profile for
         this repository.
@@ -384,10 +384,10 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         # Sanitize the repository active profile
         if self.__config.active_profile_name != self.active_profile_name:
             if (
-                    self.__config.active_profile_name
-                    and not global_cfg.has_profile(
                 self.__config.active_profile_name
-            )
+                and not global_cfg.has_profile(
+                    self.__config.active_profile_name
+                )
             ):
                 logger.warning(
                     "Profile `%s` not found. Switching repository to the "
@@ -431,7 +431,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @staticmethod
     def _migrate_legacy_repository(
-            config_file: str,
+        config_file: str,
     ) -> Optional["ProfileConfiguration"]:
         """Migrate a legacy repository configuration to the new format and
         create a new Profile out of it.
@@ -562,10 +562,10 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @staticmethod
     def create_store(
-            profile: "ProfileConfiguration",
-            skip_default_registrations: bool = False,
-            track_analytics: bool = True,
-            skip_migration: bool = False,
+        profile: "ProfileConfiguration",
+        skip_default_registrations: bool = False,
+        track_analytics: bool = True,
+        skip_migration: bool = False,
     ) -> "BaseZenStore":
         """Create repository persistence back-end store from a configuration
         profile.
@@ -628,7 +628,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     @staticmethod
     @track(event=AnalyticsEvent.INITIALIZE_REPO)
     def initialize(
-            root: Optional[Path] = None,
+        root: Optional[Path] = None,
     ) -> None:
         """Initializes a new ZenML repository at the given path.
 
@@ -907,10 +907,10 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
 
     def update_stack_component(
-            self,
-            name: str,
-            component_type: StackComponentType,
-            component: StackComponent,
+        self,
+        name: str,
+        component_type: StackComponentType,
+        component: StackComponent,
     ) -> None:
         """Updates a stack component.
 
@@ -928,7 +928,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         )
 
     def get_stack_components(
-            self, component_type: StackComponentType
+        self, component_type: StackComponentType
     ) -> List[StackComponent]:
         """Fetches all registered stack components of the given type.
 
@@ -944,7 +944,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         ]
 
     def get_stack_component(
-            self, component_type: StackComponentType, name: str
+        self, component_type: StackComponentType, name: str
     ) -> StackComponent:
         """Fetches a registered stack component.
 
@@ -966,8 +966,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         ).to_component()
 
     def register_stack_component(
-            self,
-            component: StackComponent,
+        self,
+        component: StackComponent,
     ) -> None:
         """Registers a stack component.
 
@@ -983,7 +983,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             logger.info(component.post_registration_message)
 
     def deregister_stack_component(
-            self, component_type: StackComponentType, name: str
+        self, component_type: StackComponentType, name: str
     ) -> None:
         """Deregisters a stack component.
 
@@ -1058,7 +1058,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(
-            self, stack_name: Optional[str] = None
+        self, stack_name: Optional[str] = None
     ) -> List["PipelineView"]:
         """Fetches post-execution pipeline views.
 
@@ -1085,10 +1085,10 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @track(event=AnalyticsEvent.GET_PIPELINE)
     def get_pipeline(
-            self,
-            pipeline: Optional["BasePipeline"] = None,
-            pipeline_name: Optional[str] = "",
-            stack_name: Optional[str] = None
+        self,
+        pipeline: Optional["BasePipeline"] = None,
+        pipeline_name: Optional[str] = "",
+        stack_name: Optional[str] = None,
     ) -> Optional["PipelineView"]:
         """Fetches a post-execution pipeline view.
 
@@ -1108,20 +1108,26 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 is configured.
         """
         if pipeline and pipeline_name:
-            raise TypeError("'pipeline' and 'pipeline_name' both set for the"
-                            "get_pipeline() method. This is not supported. "
-                            "Please set either the 'pipeline' or the "
-                            "'pipeline_name' parameter.")
+            raise TypeError(
+                "'pipeline' and 'pipeline_name' both set for the"
+                "get_pipeline() method. This is not supported. "
+                "Please set either the 'pipeline' or the "
+                "'pipeline_name' parameter."
+            )
         elif pipeline:
-            if isinstance(pipeline,
-                          zenml.pipelines.base_pipeline.BasePipelineMeta):
+            if isinstance(
+                pipeline, zenml.pipelines.base_pipeline.BasePipelineMeta
+            ):
                 pipeline_name = pipeline.__name__
-            elif isinstance(pipeline,
-                            zenml.pipelines.base_pipeline.BasePipeline):
+            elif isinstance(
+                pipeline, zenml.pipelines.base_pipeline.BasePipeline
+            ):
                 pipeline_name = pipeline.name
         elif not pipeline_name:
-            raise TypeError("get_pipeline() missing a required argument:"
-                            " 'pipeline' or 'pipeline_name' need to be set.")
+            raise TypeError(
+                "get_pipeline() missing a required argument:"
+                " 'pipeline' or 'pipeline_name' need to be set."
+            )
         stack_name = stack_name or self.active_stack_name
         if not stack_name:
             raise RuntimeError(
@@ -1147,7 +1153,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @staticmethod
     def find_repository(
-            path: Optional[Path] = None, enable_warnings: bool = False
+        path: Optional[Path] = None, enable_warnings: bool = False
     ) -> Optional[Path]:
         """Search for a ZenML repository directory.
 
@@ -1222,7 +1228,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         return None
 
     def get_flavor(
-            self, name: str, component_type: StackComponentType
+        self, name: str, component_type: StackComponentType
     ) -> Type[StackComponent]:
         """Fetches a registered flavor.
 

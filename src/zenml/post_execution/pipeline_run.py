@@ -39,11 +39,11 @@ class PipelineRunView:
     """
 
     def __init__(
-            self,
-            id_: int,
-            name: str,
-            executions: List[proto.Execution],
-            metadata_store: "BaseMetadataStore",
+        self,
+        id_: int,
+        name: str,
+        executions: List[proto.Execution],
+        metadata_store: "BaseMetadataStore",
     ):
         """Initializes a post-execution pipeline run object.
 
@@ -130,9 +130,9 @@ class PipelineRunView:
         if any(status == ExecutionStatus.FAILED for status in step_statuses):
             return ExecutionStatus.FAILED
         elif all(
-                status == ExecutionStatus.COMPLETED
-                or status == ExecutionStatus.CACHED
-                for status in step_statuses
+            status == ExecutionStatus.COMPLETED
+            or status == ExecutionStatus.CACHED
+            for status in step_statuses
         ):
             return ExecutionStatus.COMPLETED
         else:
@@ -157,10 +157,12 @@ class PipelineRunView:
         self._ensure_steps_fetched()
         return list(self._steps.keys())
 
-    def get_step(self,
-                 step: Optional["BaseStep"] = None,
-                 step_name: Optional[str] = "",
-                 **kwargs: Any) -> StepView:
+    def get_step(
+        self,
+        step: Optional["BaseStep"] = None,
+        step_name: Optional[str] = "",
+        **kwargs: Any,
+    ) -> StepView:
         """Returns a step for the given name.
 
         Args:
@@ -176,24 +178,26 @@ class PipelineRunView:
         """
         self._ensure_steps_fetched()
         if step and step_name:
-            raise TypeError("'step' and 'step_name' both set for the"
-                            "get_step() method. This is not supported. "
-                            "Please set either the 'step' or the "
-                            "'step_name' parameter.")
+            raise TypeError(
+                "'step' and 'step_name' both set for the"
+                "get_step() method. This is not supported. "
+                "Please set either the 'step' or the "
+                "'step_name' parameter."
+            )
         elif step:
-            if isinstance(step,
-                          zenml.steps.base_step.BaseStepMeta):
+            if isinstance(step, zenml.steps.base_step.BaseStepMeta):
                 step_name = step.__name__
-            elif isinstance(step,
-                            zenml.steps.base_step.BaseStep):
+            elif isinstance(step, zenml.steps.base_step.BaseStep):
                 step_name = step.name
         elif "name" in kwargs and not step_name:
-            logger.warning("Using 'name' to get a step from "
-                           "'PipelineRunView.get_step()' is deprecated and "
-                           "will be removed in the future. Instead please "
-                           "use 'step' (a step class or instance) or "
-                           "'step_name' to access a step from your past"
-                           " pipeline runs.")
+            logger.warning(
+                "Using 'name' to get a step from "
+                "'PipelineRunView.get_step()' is deprecated and "
+                "will be removed in the future. Instead please "
+                "use 'step' (a step class or instance) or "
+                "'step_name' to access a step from your past"
+                " pipeline runs."
+            )
 
             step_name = kwargs.pop("name")
         try:
@@ -243,7 +247,7 @@ class PipelineRunView:
         """
         if isinstance(other, PipelineRunView):
             return (
-                    self._id == other._id
-                    and self._metadata_store.uuid == other._metadata_store.uuid
+                self._id == other._id
+                and self._metadata_store.uuid == other._metadata_store.uuid
             )
         return NotImplemented
