@@ -13,12 +13,8 @@
 #  permissions and limitations under the License.
 """Initialization for KServe steps."""
 
-
 from zenml.integrations.kserve.steps.kserve_deployer import (
     KServeDeployerStepConfig,
+    TorchServeParamters,
     kserve_model_deployer_step,
-)
-from zenml.integrations.kserve.steps.kserve_pytorch_deployer import (
-    KServePytorchDeployerStepConfig,
-    kserve_pytorch_model_deployer_step,
 )

@@ -250,7 +250,7 @@ class KServeDeploymentService(BaseService):
         except RuntimeError:
             return (ServiceState.INACTIVE, "")
 
-        # TODO[HIGH]: Implement better operational status checking that also
+        # TODO[MEDIUM]: Implement better operational status checking that also
         #   cover errors
         if "status" not in deployment:
             return (ServiceState.INACTIVE, "No operational status available")

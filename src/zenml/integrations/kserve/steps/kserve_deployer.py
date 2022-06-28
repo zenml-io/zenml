@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of the KServe Deployer step."""
 import os
-from typing import cast
+from typing import List, Optional, cast
+
+from pydantic import BaseModel, validator
 
 from zenml.artifacts.model_artifact import ModelArtifact
 from zenml.environment import Environment
@@ -25,7 +27,6 @@ from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
     KServeDeploymentService,
 )
-from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
@@ -34,9 +35,135 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils import io_utils
+from zenml.utils.source_utils import get_source_root_path, is_inside_repository
 
 logger = get_logger(__name__)
+
+TORCH_HANDLERS = [
+    "image_classifier",
+    "image_segmenter",
+    "object_detector",
+    "text_classifier",
+]
+
+
+class TorchServeParamters(BaseModel):
+    """KServe PyTorch model deployer step configuration.
+
+    Attributes:
+        service_config: KServe deployment service configuration.
+        model_class: Path to Python file containing model architecture.
+        handler: TorchServe's handler file to handle custom TorchServe inference logic.
+        extra_files: Comma separated path to extra dependency files.
+        model_version: Model version.
+        requirements_file: Path to requirements file.
+        torch_config: TorchServe configuration file path.
+    """
+
+    model_class: str
+    handler: str
+    extra_files: Optional[List[str]] = None
+    requirements_file: Optional[str] = None
+    model_version: Optional[str] = "1.0"
+    torch_config: Optional[str] = None
+
+    @validator("model_class")
+    def model_class_validate(cls, v: str) -> str:
+        """Validate model class file path.
+
+        Args:
+            v: model class file path
+
+        Returns:
+            model class file path
+
+        Raises:
+            ValueError: if model class file path is not valid
+        """
+        if not v:
+            raise ValueError("Model class file path is required.")
+        if not is_inside_repository(v):
+            raise ValueError(
+                "Model class file path must be inside the repository."
+            )
+        return os.path.join(get_source_root_path(), v)
+
+    @validator("handler")
+    def handler_validate(cls, v: str) -> str:
+        """Validate handler.
+
+        Args:
+            v: handler file path
+
+        Returns:
+            handler file path
+
+        Raises:
+            ValueError: if handler file path is not valid
+        """
+        if v:
+            if v in TORCH_HANDLERS:
+                return v
+            elif is_inside_repository(v):
+                return os.path.join(get_source_root_path(), v)
+            else:
+                raise ValueError(
+                    "Handler must be one of the TorchServe handlers",
+                    "or a file that exists inside the repository.",
+                )
+        else:
+            raise ValueError("Handler is required.")
+
+    @validator("extra_files")
+    def extra_files_validate(
+        cls, v: Optional[List[str]]
+    ) -> Optional[List[str]]:
+        """Validate extra files.
+
+        Args:
+            v: extra files path
+
+        Returns:
+            extra files path
+
+        Raises:
+            ValueError: if extra files path is not valid
+        """
+        extra_files = []
+        if v is not None:
+            for file_path in v:
+                if is_inside_repository(file_path):
+                    extra_files.append(
+                        os.path.join(get_source_root_path(), file_path)
+                    )
+                else:
+                    raise ValueError(
+                        "Extra file path must be inside the repository."
+                    )
+            return extra_files
+        return v
+
+    @validator("torch_config")
+    def torch_config_validate(cls, v: Optional[str]) -> Optional[str]:
+        """Validate torch config file.
+
+        Args:
+            v: torch config file path
+
+        Returns:
+            torch config file path
+
+        Raises:
+            ValueError: if torch config file path is not valid.
+        """
+        if v:
+            if is_inside_repository(v):
+                return os.path.join(get_source_root_path(), v)
+            else:
+                raise ValueError(
+                    "Torch config file path must be inside the repository."
+                )
+        return v
 
 
 class KServeDeployerStepConfig(BaseStepConfig):
@@ -52,6 +179,7 @@ class KServeDeployerStepConfig(BaseStepConfig):
     """
 
     service_config: KServeDeploymentConfig
+    torch_serve_paramters: Optional[TorchServeParamters] = None
     timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT
 
 
@@ -89,63 +217,6 @@ def kserve_model_deployer_step(
     config.service_config.pipeline_run_id = pipeline_run_id
     config.service_config.pipeline_step_name = step_name
 
-    def prepare_service_config(model_uri: str) -> KServeDeploymentConfig:
-        """Prepare the model files for model serving.
-
-        This function ensures that the model files are in the correct format
-        and file structure required by the KServe server implementation
-        used for model serving.
-
-        Args:
-            model_uri: the URI of the model artifact being served
-
-        Returns:
-            The URL to the model ready for serving.
-
-        Raises:
-            RuntimeError: if the model files cannot be prepared.
-        """
-        served_model_uri = os.path.join(
-            context.get_output_artifact_uri(), "kserve"
-        )
-        fileio.makedirs(served_model_uri)
-
-        # TODO [ENG-773]: determine how to formalize how models are organized into
-        #   folders and sub-folders depending on the model type/format and the
-        #   KServe protocol used to serve the model.
-
-        # TODO [ENG-791]: auto-detect built-in KServe server implementation
-        #   from the model artifact type
-
-        # TODO [ENG-792]: validate the model artifact type against the
-        #   supported built-in KServe server implementations
-        if config.service_config.predictor == "tensorflow":
-            # the TensorFlow server expects model artifacts to be
-            # stored in numbered subdirectories, each representing a model
-            # version
-            io_utils.copy_dir(model_uri, os.path.join(served_model_uri, "1"))
-        elif config.service_config.predictor == "sklearn":
-            # the sklearn server expects model artifacts to be
-            # stored in a file called model.joblib
-            model_uri = os.path.join(model.uri, "model")
-            if not fileio.exists(model.uri):
-                raise RuntimeError(
-                    f"Expected sklearn model artifact was not found at "
-                    f"{model_uri}"
-                )
-            fileio.copy(
-                model_uri, os.path.join(served_model_uri, "model.joblib")
-            )
-        else:
-            # default treatment for all other server implementations is to
-            # simply reuse the model from the artifact store path where it
-            # is originally stored
-            served_model_uri = model_uri
-
-        service_config = config.service_config.copy()
-        service_config.model_uri = served_model_uri
-        return service_config
-
     # fetch existing services with same pipeline name, step name and
     # model name
     existing_services = model_deployer.find_model_server(
@@ -154,13 +225,13 @@ def kserve_model_deployer_step(
         model_name=config.service_config.model_name,
     )
 
-    # even when the deploy decision is negative, if an existing model server
+    # even when the deploy decision is negative if an existing model server
     # is not running for this pipeline/step, we still have to serve the
     # current model, to ensure that a model server is available at all times
     if not deploy_decision and existing_services:
         logger.info(
             f"Skipping model deployment because the model quality does not "
-            f"meet the criteria. Reusing last model server deployed by step "
+            f"meet the criteria. Reusing the last model server deployed by step "
             f"'{step_name}' and pipeline '{pipeline_name}' for model "
             f"'{config.service_config.model_name}'..."
         )
@@ -175,7 +246,30 @@ def kserve_model_deployer_step(
     # invoke the KServe model deployer to create a new service
     # or update an existing one that was previously deployed for the same
     # model
-    service_config = prepare_service_config(model.uri)
+    if config.service_config.predictor == "pytorch":
+        # import the prepare function from the step utils
+        from zenml.integrations.kserve.steps.kserve_step_utils import (
+            prepare_torch_service_config,
+        )
+
+        # prepare the service config
+        service_config = prepare_torch_service_config(
+            model_uri=model.uri,
+            output_artifact_uri=context.get_output_artifact_uri(),
+            config=config,
+        )
+    else:
+        # import the prepare function from the step utils
+        from zenml.integrations.kserve.steps.kserve_step_utils import (
+            prepare_service_config,
+        )
+
+        # prepare the service config
+        service_config = prepare_service_config(
+            model_uri=model.uri,
+            output_artifact_uri=context.get_output_artifact_uri(),
+            config=config,
+        )
     service = cast(
         KServeDeploymentService,
         model_deployer.deploy_model(

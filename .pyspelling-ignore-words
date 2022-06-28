@@ -192,13 +192,10 @@ knative
 KubeflowMetadataStore
 KubeflowOrchestrator
 Kubernetes
-<<<<<<< HEAD
 KServeDeploymentService
-=======
 KubernetesMetadataStore
 KubernetesOrchestrator
 KUBE
->>>>>>> develop
 LLC
 LegacyVersion
 LightGBM

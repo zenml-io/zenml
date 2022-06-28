@@ -218,6 +218,9 @@ class KServeModelDeployer(BaseModelDeployer):
         Returns:
             The ZenML KServe deployment service object that can be used to
             interact with the remote KServe server.
+
+        Raises:
+            RuntimeError: if the KServe deployment server could not be stopped.
         """
         config = cast(KServeDeploymentConfig, config)
         service = None
@@ -245,10 +248,13 @@ class KServeModelDeployer(BaseModelDeployer):
                         # delete the older services and don't wait for them to
                         # be deprovisioned
                         service.stop()
-                    except RuntimeError:
+                    except RuntimeError as e:
                         # ignore errors encountered while stopping old services
-                        pass
-
+                        raise RuntimeError(
+                            "Failed to stop the KServe deployment server:\n",
+                            f"{e}\n",
+                            "Please stop it manually and try again.",
+                        )
         if service:
             # update an equivalent service in place
             service.update(config)
