@@ -31,7 +31,6 @@ from typing import (
     cast,
 )
 
-import zenml.cli.utils as cli_utils
 from zenml import constants
 from zenml.config.config_keys import (
     PipelineConfigurationKeys,
@@ -73,7 +72,7 @@ class BasePipelineMeta(type):
     """Pipeline Metaclass responsible for validating the pipeline definition."""
 
     def __new__(
-        mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
+            mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BasePipelineMeta":
         """Saves argument names for later verification purposes.
 
@@ -116,7 +115,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         requirements_file: DEPRECATED: Optional path to a pip requirements file
             that contains all requirements to run the pipeline. (Use
             `requirements` instead.)
-        requirements: Optional list of (string) pip requirements to run the pipeline, or a string path to a requirements file.
+        requirements: Optional list of (string) pip requirements to run the
+        pipeline, or a string path to a requirements file.
         required_integrations: Optional set of integrations that need to be
             installed for this pipeline to run.
     """
@@ -138,7 +138,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
         self.requirements_file = kwargs.pop(PARAM_REQUIREMENTS_FILE, None)
         if self.requirements_file:
             logger.warning(
-                "The `requirements_file` argument has been deprecated. Please use `requirements` instead to pass in either a string path to a file listing your 'requirements' or a list of the individual requirements."
+                "The `requirements_file` argument has been deprecated. Please "
+                "use `requirements` instead to pass in either a string path "
+                "to a file listing your 'requirements' or a list of the "
+                "individual requirements."
             )
         self._requirements = kwargs.pop(PARAM_REQUIREMENTS, None)
         self.dockerignore_file = kwargs.pop(PARAM_DOCKERIGNORE_FILE, None)
@@ -306,7 +309,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
                 ) from e
 
         if isinstance(self._requirements, str) and fileio.exists(
-            self._requirements
+                self._requirements
         ):
             with fileio.open(self._requirements, "r") as f:
                 requirements.update(
@@ -316,8 +319,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     }
                 )
             if self.requirements_file:
-                cli_utils.warning(
-                    f"Using the file path passed in as `requirements` and ignoring the file '{self.requirements_file}'."
+                logger.warning(
+                    f"Using the file path passed in as `requirements` and "
+                    f"ignoring the file '{self.requirements_file}'."
                 )
         # Add this logic back in (described in #ENG-882)
         #
@@ -342,8 +346,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
         elif isinstance(self._requirements, List):
             requirements.update(self._requirements)
             if self.requirements_file:
-                cli_utils.warning(
-                    f"Using the values passed in as `requirements` and ignoring the file '{self.requirements_file}'."
+                logger.warning(
+                    f"Using the values passed in as `requirements` and "
+                    f"ignoring the file '{self.requirements_file}'."
                 )
         elif self.requirements_file and fileio.exists(self.requirements_file):
             # TODO [ENG-883]: Deprecate the `requirements_file` option
@@ -394,8 +399,9 @@ class BasePipeline(metaclass=BasePipelineMeta):
 
         for step in self.steps.values():
             if (
-                step.custom_step_operator
-                and step.custom_step_operator not in available_step_operators
+                    step.custom_step_operator
+                    and step.custom_step_operator not in
+                    available_step_operators
             ):
                 raise StackValidationError(
                     f"Step '{step.name}' requires custom step operator "
@@ -413,11 +419,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
             step._has_been_called = False
 
     def run(
-        self,
-        *,
-        run_name: Optional[str] = None,
-        schedule: Optional[Schedule] = None,
-        **additional_parameters: Any,
+            self,
+            *,
+            run_name: Optional[str] = None,
+            schedule: Optional[Schedule] = None,
+            **additional_parameters: Any,
     ) -> Any:
         """Runs the pipeline on the active stack of the current repository.
 
@@ -459,7 +465,8 @@ class BasePipeline(metaclass=BasePipelineMeta):
         # the airflow orchestrator so it knows which file to copy into the DAG
         # directory
         dag_filepath = io_utils.resolve_relative_path(
-            inspect.currentframe().f_back.f_code.co_filename  # type: ignore[union-attr]
+            inspect.currentframe().f_back.f_code.co_filename
+            # type: ignore[union-attr]
         )
         runtime_configuration = RuntimeConfiguration(
             run_name=run_name,
@@ -491,7 +498,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         )
 
     def with_config(
-        self: T, config_file: str, overwrite_step_parameters: bool = False
+            self: T, config_file: str, overwrite_step_parameters: bool = False
     ) -> T:
         """Configures this pipeline using a yaml file.
 
@@ -519,7 +526,7 @@ class BasePipeline(metaclass=BasePipelineMeta):
         return self
 
     def _read_config_steps(
-        self, steps: Dict[str, Dict[str, Any]], overwrite: bool = False
+            self, steps: Dict[str, Dict[str, Any]], overwrite: bool = False
     ) -> None:
         """Reads and sets step parameters from a config file.
 

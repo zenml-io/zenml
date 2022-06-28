@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from ml_metadata import proto
 
+import zenml.steps.base_step
 from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.post_execution.step import StepView
@@ -38,11 +39,11 @@ class PipelineRunView:
     """
 
     def __init__(
-        self,
-        id_: int,
-        name: str,
-        executions: List[proto.Execution],
-        metadata_store: "BaseMetadataStore",
+            self,
+            id_: int,
+            name: str,
+            executions: List[proto.Execution],
+            metadata_store: "BaseMetadataStore",
     ):
         """Initializes a post-execution pipeline run object.
 
@@ -129,9 +130,9 @@ class PipelineRunView:
         if any(status == ExecutionStatus.FAILED for status in step_statuses):
             return ExecutionStatus.FAILED
         elif all(
-            status == ExecutionStatus.COMPLETED
-            or status == ExecutionStatus.CACHED
-            for status in step_statuses
+                status == ExecutionStatus.COMPLETED
+                or status == ExecutionStatus.CACHED
+                for status in step_statuses
         ):
             return ExecutionStatus.COMPLETED
         else:
@@ -156,11 +157,16 @@ class PipelineRunView:
         self._ensure_steps_fetched()
         return list(self._steps.keys())
 
-    def get_step(self, name: str) -> StepView:
+    def get_step(self,
+                 step: Optional["BaseStep"] = None,
+                 step_name: Optional[str] = "",
+                 **kwargs: Any) -> StepView:
         """Returns a step for the given name.
 
         Args:
-            name: The name of the step to return.
+            step: Class or class instance of the step
+            step_name: Name of the step.
+            name: DEPRECATED: The name of the step to return.
 
         Returns:
             A step for the given name.
@@ -169,11 +175,32 @@ class PipelineRunView:
             KeyError: If there is no step with the given name.
         """
         self._ensure_steps_fetched()
+        if step and step_name:
+            raise TypeError("'step' and 'step_name' both set for the"
+                            "get_step() method. This is not supported. "
+                            "Please set either the 'step' or the "
+                            "'step_name' parameter.")
+        elif step:
+            if isinstance(step,
+                          zenml.steps.base_step.BaseStepMeta):
+                step_name = step.__name__
+            elif isinstance(step,
+                            zenml.steps.base_step.BaseStep):
+                step_name = step.name
+        elif "name" in kwargs and not step_name:
+            logger.warning("Using 'name' to get a step from "
+                           "'PipelineRunView.get_step()' is deprecated and "
+                           "will be removed in the future. Instead please "
+                           "use 'step' (a step class or instance) or "
+                           "'step_name' to access a step from your past"
+                           " pipeline runs.")
+
+            step_name = kwargs.pop("name")
         try:
-            return self._steps[name]
+            return self._steps[step_name]
         except KeyError:
             raise KeyError(
-                f"No step found for name `{name}`. This pipeline "
+                f"No step found for name `{step_name}`. This pipeline "
                 f"run only has steps with the following "
                 f"names: `{self.get_step_names()}`"
             )
@@ -205,7 +232,8 @@ class PipelineRunView:
         )
 
     def __eq__(self, other: Any) -> bool:
-        """Returns whether the other object is referring to the same pipeline run.
+        """Returns whether the other object is referring to the same pipeline
+        run.
 
         Args:
             other: The other object to compare to.
@@ -215,7 +243,7 @@ class PipelineRunView:
         """
         if isinstance(other, PipelineRunView):
             return (
-                self._id == other._id
-                and self._metadata_store.uuid == other._metadata_store.uuid
+                    self._id == other._id
+                    and self._metadata_store.uuid == other._metadata_store.uuid
             )
         return NotImplemented
