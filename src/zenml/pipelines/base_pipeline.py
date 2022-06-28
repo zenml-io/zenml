@@ -51,6 +51,7 @@ from zenml.repository import Repository
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.steps import BaseStep
 from zenml.steps.base_step import BaseStepMeta
+from zenml.steps.utils import clone_step
 from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track_event
 
@@ -213,7 +214,10 @@ class BasePipeline(metaclass=BasePipelineMeta):
                     f"Found multiple step objects of the same class "
                     f"(`{step_class}`) for arguments '{previous_key}' and "
                     f"'{key}' in pipeline '{self.name}'. Only one step object "
-                    f"per class is allowed inside a ZenML pipeline."
+                    f"per class is allowed inside a ZenML pipeline. A possible "
+                    f"solution is to use the "
+                    f"{clone_step.__module__}.{clone_step.__name__} utility to "
+                    f"create multiple copies of the same step."
                 )
 
             step.pipeline_parameter_name = key

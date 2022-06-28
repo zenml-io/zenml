@@ -31,6 +31,7 @@ import json
 import sys
 import typing
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -44,6 +45,7 @@ from typing import (
     Set,
     Type,
     ValuesView,
+    cast,
 )
 
 import pydantic
@@ -66,6 +68,9 @@ from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
+
+if TYPE_CHECKING:
+    from zenml.steps.base_step import BaseStep
 
 logger = get_logger(__name__)
 
@@ -589,3 +594,72 @@ class _FunctionExecutor(BaseExecutor):
         )
         with fileio.open(self._context.executor_output_uri, "wb") as f:
             f.write(executor_output.SerializeToString())
+
+
+def clone_step(step: Type["BaseStep"], step_name: str) -> Type["BaseStep"]:
+    """Returns a clone of the given step.
+
+    Call this function when you want to use several copies of the same step
+    in a pipeline.
+
+    Args:
+        step: the step to clone
+        step_name: name to use for the cloned step. This name will be used
+            to uniquely identify the cloned step in the Python module from
+            which this function is called.
+
+    Returns:
+        A clone of the given step.
+
+    Raises:
+        TypeError: if the given step is not a subclass of BaseStep.
+        ImportError: if the the calling Python module cannot be determined
+            or if the given step name cannot be used because the calling
+            Python module already contains a symbol with the same name.
+    """
+    from zenml.steps.base_step import BaseStep
+
+    if not issubclass(step, BaseStep):
+        raise TypeError(
+            f"The step source `{step}` is not a `{BaseStep}` subclass."
+        )
+
+    # get the python module from which this function is called
+    frm = inspect.stack()[1]
+    mod = inspect.getmodule(frm[0])
+
+    if not mod:
+        raise ImportError(
+            f"Cannot clone step `{step}` because the calling Python module "
+            f"cannot be determined."
+        )
+
+    if step_name in mod.__dict__:
+        raise ImportError(
+            f"The step name `{step_name}` cannot be used because the "
+            f"`{mod.__name__}` Python module already contains an identifier "
+            f"with the same name. Try using a different step name."
+        )
+
+    config = getattr(step, INSTANCE_CONFIGURATION, {}).copy()
+    # mark the step as being created by the functional API,
+    # otherwise the base class will try to use the class source code
+    # to compute the hash for the cache key (instead of the entrypoint
+    # source code)
+    config[PARAM_CREATED_BY_FUNCTIONAL_API] = True
+
+    step_clone = cast(
+        Type[BaseStep],
+        type(  # noqa
+            step_name,
+            (step,),
+            {
+                INSTANCE_CONFIGURATION: config,
+                "__module__": mod.__name__,
+                "__doc__": step.__doc__,
+            },
+        ),
+    )
+
+    mod.__dict__[step_name] = step_clone
+    return step_clone
