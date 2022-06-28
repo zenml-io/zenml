@@ -507,7 +507,6 @@ class KServeDeploymentService(BaseService):
         if not self.is_running:
             return None
 
-        # TODO[HIGH]: return correct KServe prediction URLs
         model_deployer = self._get_model_deployer()
         model_name = self._get_kubernetes_labels().get("model_name") or "mnist"
         return os.path.join(

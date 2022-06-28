@@ -133,8 +133,6 @@ class KServeModelDeployer(BaseModelDeployer):
             )
         return self._client
 
-    # TODO[High]: Save ZenML Secrets in a temp file and load them into
-    # the KServe credentials
     def _set_credentials(self) -> None:
         """Set the credentials for the given service instance.
 

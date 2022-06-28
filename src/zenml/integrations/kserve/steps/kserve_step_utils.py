@@ -17,9 +17,7 @@ import tempfile
 from typing import List, Optional
 
 from model_archiver.model_packaging import package_model
-from model_archiver.model_packaging_utils import (
-    ModelExportUtils,
-)
+from model_archiver.model_packaging_utils import ModelExportUtils
 from pydantic import BaseModel
 
 from zenml.integrations.kserve.services.kserve_deployment import (
