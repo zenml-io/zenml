@@ -34,8 +34,8 @@ exclude = [
     "tests",
     "legacy",
     "tests",
-    "*.tests",
     "tests.*",
+    "*.tests",
     "examples"
 ]
 include = [
@@ -245,7 +245,7 @@ module = [
     "jupyter_dash.*",
     "slack_sdk.*",
     "azure-keyvault-keys.*",
-    "model_archiver.*",
+    "model_archiver.*"
 ]
 ignore_missing_imports = true
 
