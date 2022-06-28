@@ -989,6 +989,16 @@ explainability
 inferenceservice
 pluggable
 sa
-zwr
 camelCase
 inference
+InferenceServices
+RoleBinding
+ServiceAccount
+ServiceAccounts
+Standards
+TFServing
+apiGroup
+permession
+roleRef
+runtimes
+serviceaccounts

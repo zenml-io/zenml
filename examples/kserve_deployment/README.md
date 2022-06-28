@@ -8,7 +8,7 @@ prediction, pre-/post-processing, monitoring and explainability.
 
 Following the model deployment story within ZenML, and to make it easier to deploy models with other serving tools, 
 we have created an Integration for KServe. But how does KServe differ from the already integrated [Seldon Core](../seldon_deployment/)?
-* __**Supported frameworks**__: Standars ML frameworks like TensorFlow, PyTorch, Scikit-learn, XGBoost, Keras, MXNet, etc... Are First-class citizens in KServe and can be fairly easily used
+* __**Supported frameworks**__: Standards ML frameworks like TensorFlow, PyTorch, Scikit-learn, XGBoost, Keras, MXNet, etc... Are First-class citizens in KServe and can be fairly easily used
 while Seldon Core has support for the majority of these ML frameworks, it lacks support for: Pytorch even tho it could be still used using the custom deployment, but that's some extra work to handle.
 * __**Custom Deployment**__: Both Seldon Core and KServe have support for custom deployment.
 However Seldon Core offers an extra inference graph that includes custom TRANSFORMER and ROUTER which can be used to build more powerful inference graphs.
@@ -319,7 +319,7 @@ of which Kubeflow pipelines are running to allow the ZenML workloads to create,
 update and delete KServe InferenceServices, Secrets and ServiceAccounts. 
 You can do so with the below command.
 
-```bash
+```shell
 kubectl apply -n kserve-test -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -369,6 +369,7 @@ Once we have the service account key, we can create a ZenML secret with the foll
 $ zenml secret register -s kserve_gs kserve_secret \
     --namespace="zenml-workloads" \
     --credentials="@~/sa-deployment-temp.json" \
+```
 
 The following secret will be registered.
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┓
@@ -379,6 +380,7 @@ The following secret will be registered.
 ┃             credentials            │ ***          ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━┛
 
+```bash
 $ zenml secret get kserve_secret
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃    SECRET_KEY    │ SECRET_VALUE              ┃
@@ -429,12 +431,12 @@ Step `evaluator` has finished in 4.440s.
 Step `deployment_trigger` has started.
 Step `deployment_trigger` has finished in 3.847s.
 Step `kserve_model_deployer_step` has started.
-INFO:kserve.api.creds_utils:Created Secret: kserve-secret-d5zwr in namespace kserve-test
+INFO:kserve.api.creds_utils:Created Secret: `kserve-secret-d5zwr` in namespace kserve-test
 INFO:kserve.api.creds_utils:Patched Service account: kserve-service-credentials in namespace kserve-test
 Creating a new KServe deployment service: `KServeDeploymentService[7a1d22c1-3892-4cfc-83dc-b89e22cbc743]` (type: model-serving, flavor: kserve)
 KServe deployment service started and reachable at:
-    http://35.196.207.240:80/v1/models/zenml-7a1d22c1:predict
-    With the hostname: http://zenml-7a1d22c1.zenml-workloads.example.com:predict.
+    `http://35.196.207.240:80/v1/models/zenml-7a1d22c1:predict`
+    With the hostname: `http://zenml-7a1d22c1.zenml-workloads.example.com:predict.``
 Step `kserve_model_deployer_step` has finished in 23.944s.
 Pipeline run kserve_sklearn_pipeline-20_Jun_22-00_03_43_072385 has finished in 45.404s.
 ``` 
@@ -498,8 +500,8 @@ Step deployment_trigger has started.
 Using cached version of deployment_trigger.
 Step deployment_trigger has finished in 0.023s.
 Step kserve_model_deployer_step has started.
-INFO:root:Successfully exported model mnist to file /var/folders/lt/r3j8hp4s00dfgtf662d1prw80000gn/T/zenml-pytorch-temp-rb85yzvx
-INFO:kserve.api.creds_utils:Created Secret: kserve-secret-jnxxj in namespace kserve-test
+INFO:root:Successfully exported model mnist to file `/var/folders/lt/r3j8hp4s00dfgtf662d1prw80000gn/T/zenml-pytorch-temp-rb85yzvx`
+INFO:kserve.api.creds_utils:Created Secret: `kserve-secret-jnxxj` in namespace kserve-test
 INFO:kserve.api.creds_utils:Patched Service account: kserve-service-credentials in namespace kserve-test
 Creating a new KServe deployment service: `KServeDeploymentService[4b9414f8-b6e6-45c1-b092-5d53c02b0e26]` (type: model-serving, flavor: kserve)
 KServe deployment service started and reachable at:
