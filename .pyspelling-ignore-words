@@ -981,14 +981,13 @@ PREV
 PREVROLLEDOUTREVISION
 TensorRT
 autoscaling
-cbc
-cfc
 crd
 creds
 explainability
 inferenceservice
 pluggable
 sa
+EOF
 camelCase
 inference
 InferenceServices
