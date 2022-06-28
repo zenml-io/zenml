@@ -11,10 +11,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from .pytorch_data_loader import PytorchDataLoaderConfig, pytorch_data_loader
-from .pytorch_evaluator import pytorch_evaluator
-from .pytorch_inference_processor import (
-    PyTorchInferenceProcessorStepConfig,
-    pytorch_inference_processor,
-)
-from .pytorch_trainer import PytorchTrainerConfig, pytorch_trainer
+"""Initialization of ZenML custom deployer."""
+
+from .zenml_custom_model import ZenMLCustomModel  # noqa

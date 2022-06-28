@@ -32,9 +32,9 @@ from steps.pytorch_steps import (
     pytorch_data_loader,
     pytorch_evaluator,
     pytorch_inference_processor,
-    pytorch_model_deployer,
     pytorch_trainer,
 )
+from steps.pytorch_steps.pytorch_model_deployer import pytorch_model_deployer
 
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
 from zenml.integrations.kserve.services import KServeDeploymentService
