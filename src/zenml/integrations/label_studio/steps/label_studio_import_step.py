@@ -11,9 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Optional
+from typing import List
 
-from zenml.artifacts.data_artifact import DataArtifact
+from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
 from zenml.steps import BaseStep, BaseStepConfig, StepContext
 
@@ -31,18 +31,18 @@ class LabelStudioImportStep(BaseStep):
 
     def entrypoint(
         self,
-        dataset_name: str,
+        dataset_id: int,
         config: LabelStudioImportStepConfig,
         context: StepContext,
-    ) -> Optional[DataArtifact]:
+    ) -> List:
         """Main entrypoint function for the Label Studio export step."""
         annotator = context.stack.annotator
         if annotator and annotator._connection_available():
             return annotator.get_converted_dataset(
-                dataset_name=dataset_name, output_format=config.output_format
+                dataset_id=dataset_id, output_format=config.output_format
             )
         else:
-            logger.warning("No active annotator.")
+            raise StackComponentInterfaceError("No active annotator.")
 
 
 # def label_studio_import_step(

@@ -29,13 +29,12 @@
 #    register_new_dataset_for_labelling(exported_data.name, tags...)
 #    return exported_data # or just the ID/tag
 
-from typing import Any, Dict, List, Optional, Tuple
-
-from label_studio_sdk.project import ProjectSampling
+from typing import Any, Dict, List, Optional
 
 from zenml.artifacts.data_artifact import DataArtifact
+from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
-from zenml.steps import BaseStep, BaseStepConfig, StepContext
+from zenml.steps import BaseStep, BaseStepConfig, Output, StepContext
 
 logger = get_logger(__name__)
 
@@ -57,20 +56,6 @@ IMAGE_CLASSIFICATION_LABEL_CONFIG = """
     """
 
 
-class ImageClassificationInputArtifact(AnnotationInputArtifact):
-    """Image classification input artifact."""
-
-
-class AnnotationOutputArtifact(DataArtifact):
-    """Annotation output data artifact."""
-
-
-class LabelStudioRecords(DataArtifact):
-    """Label studio records data artifact."""
-
-    records: List[Dict[Any, Any]]
-
-
 class AzureDatasetCreationConfig(BaseStepConfig):
     """Step config definition for Azure."""
 
@@ -87,7 +72,7 @@ class AzureDatasetCreationConfig(BaseStepConfig):
     description: Optional[str]
     account_name: Optional[str]
     account_key: Optional[str]
-    project_sampling: Optional[ProjectSampling] = ProjectSampling.RANDOM
+    # project_sampling: Optional[ProjectSampling] = ProjectSampling.RANDOM
 
 
 class LabelStudioDatasetCreationStep(BaseStep):
@@ -95,20 +80,20 @@ class LabelStudioDatasetCreationStep(BaseStep):
 
     def entrypoint(
         self,
-        data: AnnotationInputArtifact,
+        # data: AnnotationInputArtifact,
         config: AzureDatasetCreationConfig,
         context: StepContext,
-    ) -> Optional[Tuple[int, LabelStudioRecords]]:
+    ) -> Output(dataset_id=int, exported_dataset=List):
         """Main entrypoint function for the Label Studio export step."""
         annotator = context.stack.annotator
         if annotator and annotator._connection_available():
             registered_dataset_id = annotator.register_dataset_for_annotation(
-                data, config
+                config
             )
             imported_tasks = annotator.get_unlabeled_data(registered_dataset_id)
             return registered_dataset_id, imported_tasks  # or just the ID/tag
         else:
-            logger.warning("No active annotator.")
+            raise StackComponentInterfaceError("No active annotator.")
 
 
 # def label_studio_export_step() -> LabelStudioExportStep:

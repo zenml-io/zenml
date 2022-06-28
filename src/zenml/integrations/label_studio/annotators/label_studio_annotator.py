@@ -26,7 +26,6 @@ from zenml.exceptions import ProvisioningError
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.integrations.label_studio.steps.label_studio_export_step import (
     AzureDatasetCreationConfig,
-    LabelStudioRecords,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -58,6 +57,8 @@ class LabelStudioAnnotator(BaseAnnotator):
 
     def get_datasets(self) -> List[str]:
         """Gets the datasets currently available for annotation."""
+        ls = self._get_client()
+        return ls.get_projects()
 
     @property
     def root_directory(self) -> str:
@@ -234,8 +235,10 @@ class LabelStudioAnnotator(BaseAnnotator):
     def delete_dataset(self, dataset_name: str) -> None:
         """Deletes a dataset from the annotation interface."""
 
-    def get_dataset(self, dataset_name: str) -> None:
+    def get_dataset(self, dataset_id: int) -> None:
         """Gets the dataset with the given name."""
+        ls = self._get_client()
+        return ls.get_project(dataset_id)
 
     def get_annotations(self, dataset_name: str) -> None:
         """Gets the annotations for the given dataset."""
@@ -251,7 +254,9 @@ class LabelStudioAnnotator(BaseAnnotator):
         ls = self._get_client()
         projects = ls.get_projects()
         current_project = [
-            project for project in projects if project["title"] == dataset_name
+            project
+            for project in projects
+            if project.get_params()["title"] == dataset_name
         ]
         return current_project[0]
 
@@ -262,10 +267,11 @@ class LabelStudioAnnotator(BaseAnnotator):
         """Gets the unlabeled data for the given dataset."""
 
     def get_converted_dataset(
-        self, dataset_name: str, output_format: str
+        self, dataset_id: int, output_format: str
     ) -> Dict[Any, Any]:
         """Extract annotated tasks in a specific converted format."""
-        project = self._dataset_name_to_project(dataset_name)
+        # project = self._dataset_name_to_project(dataset_name)
+        project = self.get_dataset(dataset_id)
         return project.export_tasks(export_type=output_format)
 
     def get_unlabeled_data(self, dataset_id: int) -> Optional[Dict[Any, Any]]:
@@ -275,7 +281,7 @@ class LabelStudioAnnotator(BaseAnnotator):
 
     def register_dataset_for_annotation(
         self,
-        data: LabelStudioRecords,
+        # data: List[str],
         config: AzureDatasetCreationConfig,
     ) -> int:
         """Registers a dataset for annotation."""
@@ -283,12 +289,12 @@ class LabelStudioAnnotator(BaseAnnotator):
         project = ls.start_project(
             title=config.dataset_name,
             label_config=config.label_config,
-            sampling=config.project_sampling,
+            # sampling=config.project_sampling,
         )
 
         if config.storage_type == "azure":
             storage = project.connect_azure_import_storage(
-                container=config.container,
+                container=config.container_name,
                 prefix=config.prefix,
                 regex_filter=config.regex_filter,
                 use_blob_urls=config.use_blob_urls,
