@@ -14,14 +14,15 @@
 
 from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
-    KServePytorchDeployerStepConfig,
-    kserve_pytorch_model_deployer_step,
+    KServeDeployerStepConfig,
+    TorchServeParamters,
+    kserve_model_deployer_step,
 )
 
 MODEL_NAME = "mnist"
 
-pytorch_model_deployer = kserve_pytorch_model_deployer_step(
-    config=KServePytorchDeployerStepConfig(
+pytorch_model_deployer = kserve_model_deployer_step(
+    config=KServeDeployerStepConfig(
         service_config=KServeDeploymentConfig(
             model_name=MODEL_NAME,
             replicas=1,
@@ -29,7 +30,9 @@ pytorch_model_deployer = kserve_pytorch_model_deployer_step(
             resources={"requests": {"cpu": "200m", "memory": "500m"}},
         ),
         timeout=120,
-        model_class_file="steps/pytorch_steps/mnist.py",
-        handler="steps/pytorch_steps/mnist_handler.py",
+        torch_serve_paramters=TorchServeParamters(
+            model_class="steps/pytorch_steps/mnist.py",
+            handler="steps/pytorch_steps/mnist_handler.py",
+        ),
     )
 )

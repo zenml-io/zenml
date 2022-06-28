@@ -6,16 +6,17 @@ across ML frameworks while supporting a serverless architecture with autoscaling
 KServe uses a simple and pluggable production serving architecture for production ML serving that includes 
 prediction, pre-/post-processing, monitoring and explainability.
 
-We already have a deployment story with ZenML that already covers a local deployment with 
-[MLflow Deployment Example](../mlflow_deployment/) and a [Seldon Core Deployment Example](../seldon_deployment/) 
-as the production-grade model deployer in Kubernetes environment. The next tool that gets added to our deployment 
-integrations is [KServe](https://github.com/kserve/kserve) which is a Kubernetes-based model inference platform just like Seldon Core.
+Following the model deployment story within ZenML, and to make it easier to deploy models with other serving tools, 
+we have created an Integration for KServe. But how does KServe differ from the already integrated [Seldon Core](../seldon_deployment/)?
+* __**Supported frameworks**__: Standars ML frameworks like TensorFlow, PyTorch, Scikit-learn, XGBoost, Keras, MXNet, etc... Are First-class citizens in KServe and can be fairly easily used
+while Seldon Core has support for the majority of these ML frameworks, it lacks support for: Pytorch even tho it could be still used using the custom deployment, but that's some extra work to handle.
+* __**Custom Deployment**__: Both Seldon Core and KServe have support for custom deployment.
+However Seldon Core offers an extra inference graph that includes custom TRANSFORMER and ROUTER which can be used to build more powerful inference graphs.
+* __**Autoscaling**__: KServe has more advanced autoscaling features than Seldon Core.
+With the Knative autoscaling, it is possible to scale up and down the number of replicas of the model deployment based on the number of requests received.
+* __**Predictions interfaces**__: Seldon Core and KServe have built-in support for HTTP-based protocols, However only Seldon Core has support for GRPC-based protocols. While it still can be configured for KServe it requires using manual, custom deployment.
 
-KServe has built-in servers that can be used to serve models with a variety of frameworks, 
-such as TensorFlow, PyTorch, TensorRT, MXNet, etc. This example shows how we can use ZenML 
-to write a pipeline that trains and deploys a TensorFlow and PyTorch digits model with 
-TFServing and TorchServe as runtime Servers for both frameworks using the KServe integration.
-
+Now that we have a clear understanding of the different features of KServe compared to Seldon Core, we will go through the deployment process of the model with KServe and focus more on how to deploy the PyTorch model.
 ## 🗺 Overview
 
 The example uses the [digits dataset](https://keras.io/api/datasets/mnist/) 
@@ -25,9 +26,9 @@ Different hyperparameter values (e.g. the number of epochs and learning rate)
 can be supplied as command-line arguments to the `run.py` Python script. 
 
 The example contains three pipelines:
-    * `pytorch_training_deployment_pipeline`: trains a classifier using TensorFlow and deploys it to KServe with the TFServing Runtime Server.
-    * `tensorflow_training_deployment_pipeline`: trains a classifier using PyTorch and deploys it to KServe with TorchServe Runtime Server.
-    * `inference_pipeline`: runs predictions on the served models.
+* `pytorch_training_deployment_pipeline`: trains a classifier using TensorFlow and deploys it to KServe with the TFServing Runtime Server.
+* `tensorflow_training_deployment_pipeline`: trains a classifier using PyTorch and deploys it to KServe with TorchServe Runtime Server.
+* `inference_pipeline`: runs predictions on the served models.
 
 Running the pipelines to train the classifiers and then deploying them to 
 KServe requires preparing them into an exact format that is expected 
@@ -58,19 +59,11 @@ online predictions on the running KServe inference service.
 ### 📄 Prerequisites 
 
 For the ZenML KServe deployer to work, these things are required:
-1. Access to a running [Kubernetes cluster](https://kubernetes.io/docs/tutorials/cluster-administration/) 
-    The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs 
-    to point to the Kubernetes cluster where KServe model servers will be deployed. If the context 
-    is not explicitly supplied to the example, it defaults to using the locally active context.
+1. Access to a running [Kubernetes cluster](https://kubernetes.io/docs/tutorials/cluster-administration/). The example accepts a `--kubernetes-context` command-line argument. This Kubernetes context needs to point to the Kubernetes cluster where KServe model servers will be deployed. If the context is not explicitly supplied to the example, it defaults to using the locally active context.
 
-2. KServe must be installed and running on the Kubernetes cluster. (More information about how to
-    install KServe can be found below or on the [KServe documentation](https://kserve.github.io/website/)).
+2. KServe must be installed and running on the Kubernetes cluster (More information about how to install KServe can be found below or on the [KServe documentation](https://kserve.github.io/website/)).
 
-3. KServe must be able to access whatever storage is used by ZenML to save the artifact. Since 
-    KServe is installed in the Kubernetes cluster, a local filesystem storage can't be used.
-
-    We recommend using a persistent volume or a remote storage service.
-    (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
+3. KServe must be able to access whatever storage is used by ZenML to save the artifact. Since  KServe is installed in the Kubernetes cluster, local filesystem storage can't be used. We recommend using a persistent volume or a remote storage service. (e.g. AWS S3, GCS, Azure Blob Storage, etc.).
 
 To run this example, you need to install and initialize ZenML:
 
@@ -91,8 +84,8 @@ zenml init
 
 ### Installing KServe (e.g. in an GKE cluster)
 
-This section is a trimmed-up version of the serverless installation guide for KServe.
-[official KServe [installation instructions](https://kserve.github.io/website/0.8/admin/serverless/#recommended-version-matrix) Applied to a particular type of Kubernetes cluster, GKE in this case. It assumes that a GKE cluster is already set up and accessible.
+This section is a trimmed-up version of the serverless installation guide for KServe,
+[official KServe installation instructions](https://kserve.github.io/website/0.8/admin/serverless/#recommended-version-matrix), applied to a particular type of Kubernetes cluster, GKE in this case. It assumes that a GKE cluster is already set up and accessible.
 
 To configure GKE cluster access locally, e.g:
 
@@ -246,7 +239,7 @@ Use `curl` to send a test prediction API request to the server:
 SERVICE_HOSTNAME=$(kubectl get inferenceservice sklearn-iris -n kserve-test -o jsonpath='{.status.url}' | cut -d "/" -f 3)
 curl -v -H "Host: ${SERVICE_HOSTNAME}" http://${INGRESS_HOST}:${INGRESS_PORT}/v1/models/sklearn-iris:predict -d @./iris-input.json
 ```
-
+echo 
 You should see something like this as the prediction response:
 
 ```json
@@ -312,11 +305,48 @@ zenml integration install tensorflow pytorch gcp kserve
 zenml model-deployer register kserve_gke --flavor=kserve \
   --kubernetes_context=gke_zenml-core_us-east1-b_zenml-test-cluster \ 
   --kubernetes_namespace=zenml-workloads \
-  --base_url=http://$INGRESS_URL \
+  --base_url=$INGRESS_URL \
   --secret=kserve_secret
 zenml artifact-store register gcp --flavor=fcp --path gs://my-bucket
 zenml secrets-manager register local --flavor=local
 zenml stack register local_gcp_kserve_stack -m default -a gcp -o default -d kserve_gke -x local --set
+```
+
+ZenML will manage the KServe deployments inside the same `kubeflow`
+namespace where the Kubeflow pipelines are running. You also have to update the set of
+permissions granted by Kubeflow to the Kubernetes service account in the context
+of which Kubeflow pipelines are running to allow the ZenML workloads to create,
+update and delete KServe InferenceServices, Secrets and ServiceAccounts. 
+You can do so with the below command.
+
+```bash
+kubectl apply -n kserve-test -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubeflow-kserve-permession
+  namespace: kubeflow
+  labels:
+    app: zenml
+rules:
+- apiGroups: ["serving.kserve.io",""] # "" indicates the core API group
+  resources: ["inferenceservices","secrets","serviceaccounts"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: role-binding
+  namespace: kubeflow
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubeflow-kserve-permession
+subjects:
+- kind: ServiceAccount
+  name: pipeline-runner
+  namespace: kubeflow
+EOF
 ```
 
 As the last step in setting up the stack, we need to configure a ZenML secret
@@ -467,7 +497,7 @@ Step pytorch_evaluator has finished in 0.027s.
 Step deployment_trigger has started.
 Using cached version of deployment_trigger.
 Step deployment_trigger has finished in 0.023s.
-Step kserve_pytorch_model_deployer_step has started.
+Step kserve_model_deployer_step has started.
 INFO:root:Successfully exported model mnist to file /var/folders/lt/r3j8hp4s00dfgtf662d1prw80000gn/T/zenml-pytorch-temp-rb85yzvx
 INFO:kserve.api.creds_utils:Created Secret: kserve-secret-jnxxj in namespace kserve-test
 INFO:kserve.api.creds_utils:Patched Service account: kserve-service-credentials in namespace kserve-test
@@ -475,7 +505,7 @@ Creating a new KServe deployment service: `KServeDeploymentService[4b9414f8-b6e6
 KServe deployment service started and reachable at:
     `http://35.196.207.240:80/v1/models/mnist:predict`
     With the hostname: `zenml-4b9414f8.zenml-workloads.example.com`
-Step kserve_pytorch_model_deployer_step has finished in 2m6s.
+Step kserve_model_deployer_step has finished in 2m6s.
 Pipeline run pytorch_training_deployment_pipeline-26_Jun_22-23_24_48_544764 has finished in 2m8s.
 The KServe prediction server is running remotely as a Kubernetes service and accepts inference requests at:
     `http://35.196.207.240:80/v1/models/mnist:predict`

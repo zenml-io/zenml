@@ -36,7 +36,11 @@ def pytorch_training_deployment_pipeline(
     deployer(deployment_decision, model)
 
 
-@pipeline(enable_cache=True, required_integrations=[KSERVE, PYTORCH])
+@pipeline(
+    enable_cache=True,
+    required_integrations=[KSERVE, PYTORCH],
+    requirements=["torchvision"],
+)
 def pytorch_inference_pipeline(
     pytorch_inference_processor,
     prediction_service_loader,
