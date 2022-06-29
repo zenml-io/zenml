@@ -222,7 +222,7 @@ Re-running the example with different hyperparameter values will re-train
 the model and update the MLflow deployment server to serve the new model:
 
 ```shell
-python run.py --config deploy --epochs=10 --learning_rate=0.1
+python run.py --config deploy --epochs=10 --lr=0.1
 ```
 
 If the input argument values are not changed, the pipeline caching feature
