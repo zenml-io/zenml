@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
+    from zenml.data_validators import BaseDataValidator
     from zenml.experiment_trackers.base_experiment_tracker import (
         BaseExperimentTracker,
     )
@@ -82,6 +83,7 @@ class Stack:
         model_deployer: Optional["BaseModelDeployer"] = None,
         experiment_tracker: Optional["BaseExperimentTracker"] = None,
         alerter: Optional["BaseAlerter"] = None,
+        data_validator: Optional["BaseDataValidator"] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -99,6 +101,7 @@ class Stack:
             model_deployer: Model deployer component of the stack.
             experiment_tracker: Experiment tracker component of the stack.
             alerter: Alerter component of the stack.
+            data_validator: Data validator component of the stack.
 
         Raises:
             StackValidationError: If the stack configuration is not valid.
@@ -114,6 +117,7 @@ class Stack:
         self._model_deployer = model_deployer
         self._experiment_tracker = experiment_tracker
         self._alerter = alerter
+        self._data_validator = data_validator
 
     @classmethod
     def from_components(
@@ -137,6 +141,7 @@ class Stack:
         from zenml.alerter import BaseAlerter
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
+        from zenml.data_validators import BaseDataValidator
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.metadata_stores import BaseMetadataStore
@@ -219,6 +224,12 @@ class Stack:
         if alerter is not None and not isinstance(alerter, BaseAlerter):
             _raise_type_error(alerter, BaseAlerter)
 
+        data_validator = components.get(StackComponentType.DATA_VALIDATOR)
+        if data_validator is not None and not isinstance(
+            data_validator, BaseDataValidator
+        ):
+            _raise_type_error(data_validator, BaseDataValidator)
+
         return Stack(
             name=name,
             orchestrator=orchestrator,
@@ -231,6 +242,7 @@ class Stack:
             model_deployer=model_deployer,
             experiment_tracker=experiment_tracker,
             alerter=alerter,
+            data_validator=data_validator,
         )
 
     @classmethod
@@ -291,6 +303,7 @@ class Stack:
                 self.model_deployer,
                 self.experiment_tracker,
                 self.alerter,
+                self.data_validator,
             ]
             if component is not None
         }
@@ -394,6 +407,15 @@ class Stack:
             The alerter of the stack.
         """
         return self._alerter
+
+    @property
+    def data_validator(self) -> Optional["BaseDataValidator"]:
+        """The data validator of the stack.
+
+        Returns:
+            The data validator of the stack.
+        """
+        return self._data_validator
 
     @property
     def runtime_options(self) -> Dict[str, Any]:

@@ -332,3 +332,53 @@ os.environ.get('AWS_SECRET_ACCESS_KEY')
 Note that some secrets will get used by your stack implicitly. For example, in
 the case of when you are using an AWS S3 artifact store, the environment
 variables passed down will be used to confirm access.
+
+
+## Using HashiCorp Vault Secrets Manager
+
+HashiCorp offers [a secrets
+manager](https://www.vaultproject.io/) (known as
+'HashiCorp Vault') to store and use secrets for different services. If your stack is
+primarily using HashiCorp Vault to store, access, and deploy secrets across applications, 
+systems, and infrastructure, you can use our integration to interact with it.
+
+Before getting started with Vault, you'll need to make sure to have your Vault credentials, 
+set up a [Vault Server](https://www.vaultproject.io/docs/install) or use 
+[HashiCorp Cloud Platform Vault](https://cloud.hashicorp.com/docs/vault), 
+and you have enabled [KV Secrets Engine - Version 2](https://www.vaultproject.io/docs/secrets/kv/kv-v2). 
+If you are new to HashiCorp Vault, make sure to follow their [tutorials](https://learn.hashicorp.com/tutorials/vault/getting-started-intro?in=vault/getting-started). 
+
+With this set up, make sure that the integration is installed first, and then 
+register your secrets manager in the following way: 
+
+```shell
+zenml integration install vault 
+zenml secrets-manager register VAULT_SECRETS_MANAGER_NAME -f vault \
+    --url=<YOUR_VAULT_URL> --token=<YOUR_VAULT_TOKEN> --mount_point=<PATH_TO_KV_V2_ENGINE>
+
+# update your default stack, for example
+zenml stack update default -x VAULT_SECRETS_MANAGER_NAME
+```
+
+--url is the URL to your Vault Server. 
+--token refers to the authentication token. 
+--mount_point refers to the path to your KV Secrets Engine - Version 2. 
+
+If you are using the [ZenML Kubeflow
+integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) for
+your orchestrator, you can then access the keys and their corresponding values
+for all the secrets you imported in the pipeline definition (as mentioned
+above). The keys that you used when creating the secret will be capitalized when
+they are passed down into the images used by Kubeflow. For example, in the case
+of accessing the `aws` secret referenced above, you would get the value for the
+`aws_secret_access_key` key with the following code (within a step):
+
+```python
+import os 
+
+os.environ.get('AWS_SECRET_ACCESS_KEY')
+```
+
+Note that some secrets will get used by your stack implicitly. For example, in
+the case of when you are using an AWS S3 artifact store, the environment variables
+passed down will be used to confirm access.

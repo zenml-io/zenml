@@ -59,7 +59,10 @@ def served_models(ctx: click.Context) -> None:
     ctx.obj = model_deployer_wrapper.to_component()
 
 
-@served_models.command("list")
+@served_models.command(
+    "list",
+    help="Get a list of all served models within the model-deployer stack component.",
+)
 @click.option(
     "--pipeline",
     "-p",
@@ -134,7 +137,7 @@ def list_models(
         warning("No served models found.")
 
 
-@served_models.command("describe")
+@served_models.command("describe", help="Describe a specified served model.")
 @click.argument("served_model_uuid", type=click.STRING)
 @click.pass_obj
 def describe_model(
@@ -156,7 +159,9 @@ def describe_model(
     return
 
 
-@served_models.command("get-url")
+@served_models.command(
+    "get-url", help="Return the prediction URL to a specified model server."
+)
 @click.argument("served_model_uuid", type=click.STRING)
 @click.pass_obj
 def get_url(
@@ -188,7 +193,7 @@ def get_url(
     return
 
 
-@served_models.command("start")
+@served_models.command("start", help="Start a specified model server.")
 @click.argument("served_model_uuid", type=click.STRING)
 @click.option(
     "--timeout",
@@ -224,7 +229,7 @@ def start_model_service(
     return
 
 
-@served_models.command("stop")
+@served_models.command("stop", help="Stop a specified model server.")
 @click.argument("served_model_uuid", type=click.STRING)
 @click.option(
     "--timeout",
@@ -289,7 +294,7 @@ def stop_model_service(
     return
 
 
-@served_models.command("delete")
+@served_models.command("delete", help="Delete a specified model server.")
 @click.argument("served_model_uuid", type=click.STRING)
 @click.option(
     "--timeout",
@@ -354,7 +359,7 @@ def delete_model_service(
     return
 
 
-@served_models.command("logs")
+@served_models.command("logs", help="Show the logs for a model server.")
 @click.argument("served_model_uuid", type=click.STRING)
 @click.option(
     "--follow",

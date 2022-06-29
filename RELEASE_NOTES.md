@@ -1,3 +1,55 @@
+# 0.10.0
+
+The 0.10.0 release continues our streak of extending ZenML with support for new
+orchestrators, this time by adding
+[the Kubernetes Native Orchestrator](https://github.com/zenml-io/zenml/tree/main/examples/kubernetes_orchestration).
+This orchestrator is a lightweight alternative to other distributed orchestrators
+like Airflow or Kubeflow that gives our users the ability to run pipelines in any
+Kubernetes cluster without having to install and manage additional tools or
+components. 
+
+This release features another integration that we are really excited about: the
+popular data profiling and validation library [Great Expectations](https://greatexpectations.io/)
+is our first Data Validator, a new category of stack components that we are in
+the process of standardizing, that will make data quality a central feature of
+ZenML. [The ZenML Great Expectations integration](https://github.com/zenml-io/zenml/tree/main/examples/great_expectations_data_validation)
+eliminates the complexity associated with configuring the store backends for
+Great Expectations by reusing our Artifact Store concept for that purpose and
+gives ZenML users immediate access to Great Expectations in both local and cloud
+settings.
+
+Last but not least, the release also includes a new secrets manager implementation,
+courtesy of our contributor @karimhabush, that integrates ZenML with the
+[Hashicorp Vault Server](https://www.vaultproject.io) as well as a few other bug
+fixes and improvements.
+
+## What's Changed
+* Fix broken link by @strickvl in https://github.com/zenml-io/zenml/pull/707
+* Add stack component copy command by @schustmi in https://github.com/zenml-io/zenml/pull/705
+* Remove `force` flag from secrets managers' implementation by @strickvl in https://github.com/zenml-io/zenml/pull/708
+* Fixed wrong example README by @AlexejPenner in https://github.com/zenml-io/zenml/pull/712
+* Fix dead links in integrations docs. by @fa9r in https://github.com/zenml-io/zenml/pull/710
+* Fixing link to guide by @chethanuk-plutoflume in https://github.com/zenml-io/zenml/pull/716
+* Adding azure-keyvault-secrets to azure integration dependencies by @safoinme in https://github.com/zenml-io/zenml/pull/717
+* Fix MLflow repeated deployment error by @fa9r in https://github.com/zenml-io/zenml/pull/715
+* Replace alerter standard steps by Slack-specific steps to fix config issue. by @fa9r in https://github.com/zenml-io/zenml/pull/714
+* Fix broken links on README by @dnth in https://github.com/zenml-io/zenml/pull/722
+* Invalidate cache by @strickvl in https://github.com/zenml-io/zenml/pull/724
+* Skip Cleaning Trace on tests by @safoinme in https://github.com/zenml-io/zenml/pull/725
+* Kubernetes orchestrator by @fa9r in https://github.com/zenml-io/zenml/pull/688
+* Vault Secrets Manager integration - KV Secrets Engine by @karimhabush in https://github.com/zenml-io/zenml/pull/689
+* Add missing help text for CLI commands  by @safoinme in https://github.com/zenml-io/zenml/pull/723
+* Misc bugfixes by @schustmi in https://github.com/zenml-io/zenml/pull/713
+* Great Expectations integration for data validation by @strickvl in https://github.com/zenml-io/zenml/pull/555
+* Fix GCP artifact store by @schustmi in https://github.com/zenml-io/zenml/pull/730
+
+## New Contributors
+* @chethanuk-plutoflume made their first contribution in https://github.com/zenml-io/zenml/pull/716
+* @dnth made their first contribution in https://github.com/zenml-io/zenml/pull/722
+* @karimhabush made their first contribution in https://github.com/zenml-io/zenml/pull/689
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.9.0...0.10.0
+
 # 0.9.0
 
 It's been a couple of weeks, so it's time for a new release! 0.9.0 brings two whole new orchestrators, one of which was contributed by a community member just one day after we unveiled new documentation for orchestrator extensibility! The release also includes a new secrets manager, a Slack integration and a bunch of other smaller changes across the codebase. (Our new orchestrators are exciting enough that they'll get their own blog posts to showcase their strengths in due course.)
