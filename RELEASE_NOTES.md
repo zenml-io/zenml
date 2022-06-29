@@ -1,3 +1,120 @@
+# 0.10.0
+
+The 0.10.0 release continues our streak of extending ZenML with support for new
+orchestrators, this time by adding
+[the Kubernetes Native Orchestrator](https://github.com/zenml-io/zenml/tree/main/examples/kubernetes_orchestration).
+This orchestrator is a lightweight alternative to other distributed orchestrators
+like Airflow or Kubeflow that gives our users the ability to run pipelines in any
+Kubernetes cluster without having to install and manage additional tools or
+components. 
+
+This release features another integration that we are really excited about: the
+popular data profiling and validation library [Great Expectations](https://greatexpectations.io/)
+is our first Data Validator, a new category of stack components that we are in
+the process of standardizing, that will make data quality a central feature of
+ZenML. [The ZenML Great Expectations integration](https://github.com/zenml-io/zenml/tree/main/examples/great_expectations_data_validation)
+eliminates the complexity associated with configuring the store backends for
+Great Expectations by reusing our Artifact Store concept for that purpose and
+gives ZenML users immediate access to Great Expectations in both local and cloud
+settings.
+
+Last but not least, the release also includes a new secrets manager implementation,
+courtesy of our contributor @karimhabush, that integrates ZenML with the
+[Hashicorp Vault Server](https://www.vaultproject.io) as well as a few other bug
+fixes and improvements.
+
+## What's Changed
+* Fix broken link by @strickvl in https://github.com/zenml-io/zenml/pull/707
+* Add stack component copy command by @schustmi in https://github.com/zenml-io/zenml/pull/705
+* Remove `force` flag from secrets managers' implementation by @strickvl in https://github.com/zenml-io/zenml/pull/708
+* Fixed wrong example README by @AlexejPenner in https://github.com/zenml-io/zenml/pull/712
+* Fix dead links in integrations docs. by @fa9r in https://github.com/zenml-io/zenml/pull/710
+* Fixing link to guide by @chethanuk-plutoflume in https://github.com/zenml-io/zenml/pull/716
+* Adding azure-keyvault-secrets to azure integration dependencies by @safoinme in https://github.com/zenml-io/zenml/pull/717
+* Fix MLflow repeated deployment error by @fa9r in https://github.com/zenml-io/zenml/pull/715
+* Replace alerter standard steps by Slack-specific steps to fix config issue. by @fa9r in https://github.com/zenml-io/zenml/pull/714
+* Fix broken links on README by @dnth in https://github.com/zenml-io/zenml/pull/722
+* Invalidate cache by @strickvl in https://github.com/zenml-io/zenml/pull/724
+* Skip Cleaning Trace on tests by @safoinme in https://github.com/zenml-io/zenml/pull/725
+* Kubernetes orchestrator by @fa9r in https://github.com/zenml-io/zenml/pull/688
+* Vault Secrets Manager integration - KV Secrets Engine by @karimhabush in https://github.com/zenml-io/zenml/pull/689
+* Add missing help text for CLI commands  by @safoinme in https://github.com/zenml-io/zenml/pull/723
+* Misc bugfixes by @schustmi in https://github.com/zenml-io/zenml/pull/713
+* Great Expectations integration for data validation by @strickvl in https://github.com/zenml-io/zenml/pull/555
+* Fix GCP artifact store by @schustmi in https://github.com/zenml-io/zenml/pull/730
+
+## New Contributors
+* @chethanuk-plutoflume made their first contribution in https://github.com/zenml-io/zenml/pull/716
+* @dnth made their first contribution in https://github.com/zenml-io/zenml/pull/722
+* @karimhabush made their first contribution in https://github.com/zenml-io/zenml/pull/689
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.9.0...0.10.0
+
+# 0.9.0
+
+It's been a couple of weeks, so it's time for a new release! 0.9.0 brings two whole new orchestrators, one of which was contributed by a community member just one day after we unveiled new documentation for orchestrator extensibility! The release also includes a new secrets manager, a Slack integration and a bunch of other smaller changes across the codebase. (Our new orchestrators are exciting enough that they'll get their own blog posts to showcase their strengths in due course.)
+
+Beyond this, as usual we included a number of smaller bugfixes and documentation changes to cumulatively improve experience of using ZenML as a user.
+
+## What's Changed
+* Pass secret to release linting workflow by @schustmi in https://github.com/zenml-io/zenml/pull/642
+* Fix typo in example by @anencore94 in https://github.com/zenml-io/zenml/pull/644
+* Added `SecretExistsError` in `register_secret()` method by @hectorLop in https://github.com/zenml-io/zenml/pull/648
+* Fix broken GCP Secrets example CLI command by @strickvl in https://github.com/zenml-io/zenml/pull/649
+* Upgrade to `ml-pipelines-sdk` v1.8.0 by @strickvl in https://github.com/zenml-io/zenml/pull/651
+* Fix example list CLI command name by @schustmi in https://github.com/zenml-io/zenml/pull/647
+* Fix README by @strickvl in https://github.com/zenml-io/zenml/pull/657
+* Fix broken links in docs by @safoinme in https://github.com/zenml-io/zenml/pull/652
+* Add `VertexOrchestrator` implementation by @gabrielmbmb in https://github.com/zenml-io/zenml/pull/640
+* Fix index page links and Heading links. by @safoinme in https://github.com/zenml-io/zenml/pull/661
+* Add docstring checks to `pre-commit` script by @strickvl in https://github.com/zenml-io/zenml/pull/481
+* Pin MLflow to <1.26.0 to prevent issues when matplotlib is not installed by @fa9r in https://github.com/zenml-io/zenml/pull/666
+* Making `utils` more consistent by @strickvl in https://github.com/zenml-io/zenml/pull/658
+* Fix linting failures on `develop` by @strickvl in https://github.com/zenml-io/zenml/pull/669
+* Add docstrings for `config` module by @strickvl in https://github.com/zenml-io/zenml/pull/668
+* Miscellaneous bugfixes by @schustmi in https://github.com/zenml-io/zenml/pull/660
+* Make ZenServer dependencies optional by @schustmi in https://github.com/zenml-io/zenml/pull/665
+* Implement Azure Secrets Manager integration by @strickvl in https://github.com/zenml-io/zenml/pull/654
+* Replace `codespell` with `pyspelling` by @strickvl in https://github.com/zenml-io/zenml/pull/663
+* Add Community Event to README by @htahir1 in https://github.com/zenml-io/zenml/pull/674
+* Fix failing integration tests by @strickvl in https://github.com/zenml-io/zenml/pull/677
+* Add `io` and `model_deployers` docstring checks by @strickvl in https://github.com/zenml-io/zenml/pull/675
+* Update `zenml stack down` to use --force flag by @schustmi in https://github.com/zenml-io/zenml/pull/673
+* Fix class resolving on windows by @schustmi in https://github.com/zenml-io/zenml/pull/678
+* Added `pipelines` docstring checks by @strickvl in https://github.com/zenml-io/zenml/pull/676
+* Docstring checks for `cli` module by @strickvl in https://github.com/zenml-io/zenml/pull/680
+* Docstring fixes for `entrypoints` and `experiment_trackers` modules by @strickvl in https://github.com/zenml-io/zenml/pull/672
+* Clearer Contributing.md by @htahir1 in https://github.com/zenml-io/zenml/pull/681
+* How to access secrets within step added to docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/653
+* FIX: Log a warning instead of raising an `AssertionError` by @ketangangal in https://github.com/zenml-io/zenml/pull/628
+* Reviewer Reminder by @htahir1 in https://github.com/zenml-io/zenml/pull/683
+* Fix some docs phrasings and headers by @strickvl in https://github.com/zenml-io/zenml/pull/670
+* Implement `SlackAlerter.ask()` by @fa9r in https://github.com/zenml-io/zenml/pull/662
+* Extending Alerters Docs by @fa9r in https://github.com/zenml-io/zenml/pull/690
+* Sane defaults for MySQL by @htahir1 in https://github.com/zenml-io/zenml/pull/691
+* pd.Series materializer by @Reed-Schimmel in https://github.com/zenml-io/zenml/pull/684
+* Add docstrings for `materializers` and `metadata_stores` by @strickvl in https://github.com/zenml-io/zenml/pull/694
+* Docstrings for the `integrations` module(s) by @strickvl in https://github.com/zenml-io/zenml/pull/692
+* Add remaining docstrings by @strickvl in https://github.com/zenml-io/zenml/pull/696
+* Allow enabling mlflow/wandb/whylogs with the class-based api by @schustmi in https://github.com/zenml-io/zenml/pull/697
+* GitHub Actions orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/685
+* Created MySQL docs, Vertex AI docs, and step.entrypoint() by @AlexejPenner in https://github.com/zenml-io/zenml/pull/698
+* Update ignored words by @strickvl in https://github.com/zenml-io/zenml/pull/701
+* Stack Component registering made easier by @AlexejPenner in https://github.com/zenml-io/zenml/pull/695
+* Cleaning up the docs after the revamp by @bcdurak in https://github.com/zenml-io/zenml/pull/699
+* Add model deployer to CLI docs by @safoinme in https://github.com/zenml-io/zenml/pull/702
+* Merge Cloud Integrations and create a Vertex AI Example by @AlexejPenner in https://github.com/zenml-io/zenml/pull/693
+* GitHub actions orchestrator example by @schustmi in https://github.com/zenml-io/zenml/pull/703
+
+## New Contributors
+* @anencore94 made their first contribution in https://github.com/zenml-io/zenml/pull/644
+* @hectorLop made their first contribution in https://github.com/zenml-io/zenml/pull/648
+* @gabrielmbmb made their first contribution in https://github.com/zenml-io/zenml/pull/640
+* @ketangangal made their first contribution in https://github.com/zenml-io/zenml/pull/628
+* @Reed-Schimmel made their first contribution in https://github.com/zenml-io/zenml/pull/684
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.8.1...0.9.0
+
 # 0.8.1
 
 ZenML 0.8.1 is here and it comes with support for Python 3.9 🎉. It also includes major updates to our 

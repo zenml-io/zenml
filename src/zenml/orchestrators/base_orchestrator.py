@@ -28,6 +28,7 @@
 
 # The `run_step()` method of this file is a modified version of the local dag
 # runner implementation of tfx
+"""Base orchestrator class."""
 
 import json
 import time
@@ -59,10 +60,6 @@ from zenml.orchestrators.utils import (
 from zenml.repository import Repository
 from zenml.stack import StackComponent
 from zenml.steps import BaseStep
-from zenml.steps.utils import (
-    INTERNAL_EXECUTION_PARAMETER_PREFIX,
-    PARAM_PIPELINE_PARAMETER_NAME,
-)
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
@@ -74,9 +71,10 @@ logger = get_logger(__name__)
 
 
 class BaseOrchestrator(StackComponent, ABC):
-    """
-    Base class for all orchestrators. In order to implement an
-    orchestrator you will need to subclass from this class.
+    """Base class for all orchestrators.
+
+    In order to implement an orchestrator you will need to subclass from this
+    class.
 
     How it works:
     -------------
@@ -126,47 +124,47 @@ class BaseOrchestrator(StackComponent, ABC):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """
-         This method needs to be implemented by the respective orchestrator.
-         Depending on the type of orchestrator you'll have to perform slightly
-         different operations.
+        """This method needs to be implemented by the respective orchestrator.
 
-         Simple Case:
-         ------------
-         The Steps are run directly from within the same environment in which
-         the orchestrator code is executed. In this case you will need to
-         deal with implementation-specific runtime configurations (like the
-         schedule) and then iterate through each step and finally call
-         `self.run_step()` to execute each step.
+        Depending on the type of orchestrator you'll have to perform slightly
+        different operations.
 
-         Advanced Case:
-         --------------
-         Most orchestrators will not run the steps directly. Instead, they
-         build some intermediate representation of the pipeline that is then
-         used to create and run the pipeline and its steps on the target
-         environment. For such orchestrators this method will have to build
-         this representation and either deploy it directly or return it.
+        Simple Case:
+        ------------
+        The Steps are run directly from within the same environment in which
+        the orchestrator code is executed. In this case you will need to
+        deal with implementation-specific runtime configurations (like the
+        schedule) and then iterate through each step and finally call
+        `self.run_step()` to execute each step.
 
-         Regardless of the implementation details, the orchestrator will need
-         to a way to trigger each step in the target environment. For this
-         the `run_step()` method should be used.
+        Advanced Case:
+        --------------
+        Most orchestrators will not run the steps directly. Instead, they
+        build some intermediate representation of the pipeline that is then
+        used to create and run the pipeline and its steps on the target
+        environment. For such orchestrators this method will have to build
+        this representation and either deploy it directly or return it.
 
-         In case the orchestrator is using docker containers for orchestration
-         of each step, the `zenml.entrypoints.step_entrypoint` module can be
-         used as a generalized entrypoint that sets up all the necessary
-         prerequisites, parses input parameters and finally executes the step
-         using the `run_step()`method.
+        Regardless of the implementation details, the orchestrator will need
+        to a way to trigger each step in the target environment. For this
+        the `run_step()` method should be used.
 
-         If the orchestrator needs to know the upstream steps for a specific
-         step to build a DAG, it can use the `get_upstream_step_names()` method
-         to get them.
+        In case the orchestrator is using docker containers for orchestration
+        of each step, the `zenml.entrypoints.step_entrypoint` module can be
+        used as a generalized entrypoint that sets up all the necessary
+        prerequisites, parses input parameters and finally executes the step
+        using the `run_step()`method.
 
-         Args:
-             sorted_steps: List of sorted steps
-             pipeline: Zenml Pipeline instance
-             pb2_pipeline: Protobuf Pipeline instance
-             stack: The stack the pipeline was run on
-             runtime_configuration: The Runtime configuration of the current run
+        If the orchestrator needs to know the upstream steps for a specific
+        step to build a DAG, it can use the `get_upstream_step_names()` method
+        to get them.
+
+        Args:
+            sorted_steps: List of sorted steps.
+            pipeline: Zenml Pipeline instance.
+            pb2_pipeline: Protobuf Pipeline instance.
+            stack: The stack the pipeline was run on.
+            runtime_configuration: The Runtime configuration of the current run.
 
         Returns:
             The optional return value from this method will be returned by the
@@ -179,20 +177,21 @@ class BaseOrchestrator(StackComponent, ABC):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> Any:
-        """Runs a pipeline. To do this, a protobuf pipeline is created, the
-        context of the individual steps is expanded to include relevant data,
-        the steps are sorted into execution order and the implementation
-        specific `prepare_or_run_pipeline()` method is called.
+        """Runs a pipeline.
+
+        To do this, a protobuf pipeline is created, the context of the
+        individual steps is expanded to include relevant data, the steps are
+        sorted into execution order and the implementation specific
+        `prepare_or_run_pipeline()` method is called.
 
         Args:
             pipeline: The pipeline to run.
             stack: The stack on which the pipeline is run.
             runtime_configuration: Runtime configuration of the pipeline run.
 
-        Return:
+        Returns:
             The result of the call to `prepare_or_run_pipeline()`.
         """
-
         # Create the protobuf pipeline which will be needed for various reasons
         # in the following steps
         pb2_pipeline: Pb2Pipeline = Compiler().compile(
@@ -224,9 +223,10 @@ class BaseOrchestrator(StackComponent, ABC):
     def _get_sorted_steps(
         pipeline: "BasePipeline", pb2_pipeline: Pb2Pipeline
     ) -> List["BaseStep"]:
-        """Get steps sorted in the execution order. This simplifies the
-        building of a DAG at a later stage as it can be built with one iteration
-        over this sorted list of steps.
+        """Get steps sorted in the execution order.
+
+        This simplifies the building of a DAG at a later stage as it can be
+        built with one iteration over this sorted list of steps.
 
         Args:
             pipeline: The pipeline
@@ -258,6 +258,9 @@ class BaseOrchestrator(StackComponent, ABC):
             step: The step to be executed
             run_name: The unique run name
             pb2_pipeline: Protobuf Pipeline instance
+
+        Returns:
+            The execution info of the step.
         """
         # Substitute the runtime parameter to be a concrete run_id, it is
         # important for this to be unique for each run.
@@ -326,29 +329,17 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Returns:
             Optional execution info returned by the launcher.
+
+        Raises:
+            DuplicateRunNameError: If the run name is already in use.
         """
-        step_name_param = (
-            INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
-        )
         pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
         start_time = time.time()
         logger.info(f"Step `{pipeline_step_name}` has started.")
         try:
             execution_info = tfx_launcher.launch()
             if execution_info and get_cache_status(execution_info):
-                if execution_info.exec_properties:
-                    step_name = json.loads(
-                        execution_info.exec_properties[step_name_param]
-                    )
-                    logger.info(
-                        f"Using cached version of `{pipeline_step_name}` "
-                        f"[`{step_name}`].",
-                    )
-                else:
-                    logger.error(
-                        f"No execution properties found for step "
-                        f"`{pipeline_step_name}`."
-                    )
+                logger.info(f"Using cached version of `{pipeline_step_name}`.")
         except RuntimeError as e:
             if "execution has already succeeded" in str(e):
                 # Hacky workaround to catch the error that a pipeline run with
@@ -369,8 +360,7 @@ class BaseOrchestrator(StackComponent, ABC):
     def get_upstream_step_names(
         self, step: "BaseStep", pb2_pipeline: Pb2Pipeline
     ) -> List[str]:
-        """Given a step, use the associated pb2 node to find the names of all
-        upstream nodes.
+        """Given a step, use the associated pb2 node to find the names of all upstream nodes.
 
         Args:
             step: Instance of a Pipeline Step
@@ -391,8 +381,7 @@ class BaseOrchestrator(StackComponent, ABC):
     def _get_node_with_step_name(
         step_name: str, pb2_pipeline: Pb2Pipeline
     ) -> PipelineNode:
-        """Given the name of a step, return the node with that name from the
-        pb2_pipeline.
+        """Given the name of a step, return the node with that name from the pb2_pipeline.
 
         Args:
             step_name: Name of the step
@@ -400,6 +389,9 @@ class BaseOrchestrator(StackComponent, ABC):
 
         Returns:
             PipelineNode instance
+
+        Raises:
+            KeyError: If the step name is not found in the pipeline.
         """
         for node in pb2_pipeline.nodes:
             if (
@@ -420,9 +412,10 @@ class BaseOrchestrator(StackComponent, ABC):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Iterates through each node of a pb2_pipeline and attaches important
-        contexts to the nodes; namely pipeline.requirements, stack
-        information and the runtime configuration.
+        """Iterates through each node of a pb2_pipeline.
+
+        This attaches important contexts to the nodes; namely
+        pipeline.requirements, stack information and the runtime configuration.
 
         Args:
             pipeline: Zenml Pipeline instance

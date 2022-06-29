@@ -1,3 +1,18 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Utils for the local Kubeflow deployment behaviors."""
+
 import json
 import shutil
 import subprocess
@@ -20,8 +35,9 @@ logger = get_logger(__name__)
 def check_prerequisites(
     skip_k3d: bool = False, skip_kubectl: bool = False
 ) -> bool:
-    """Checks whether all prerequisites for a local kubeflow pipelines
-    deployment are installed.
+    """Checks prerequisites for a local kubeflow pipelines deployment.
+
+    It makes sure they are installed.
 
     Args:
         skip_k3d: Whether to skip the check for the k3d command.
@@ -57,7 +73,14 @@ def write_local_registry_yaml(
 
 
 def k3d_cluster_exists(cluster_name: str) -> bool:
-    """Checks whether there exists a K3D cluster with the given name."""
+    """Checks whether there exists a K3D cluster with the given name.
+
+    Args:
+        cluster_name: Name of the cluster to check.
+
+    Returns:
+        Whether the cluster exists.
+    """
     output = subprocess.check_output(
         ["k3d", "cluster", "list", "--output", "json"]
     )
@@ -69,7 +92,14 @@ def k3d_cluster_exists(cluster_name: str) -> bool:
 
 
 def k3d_cluster_running(cluster_name: str) -> bool:
-    """Checks whether the K3D cluster with the given name is running."""
+    """Checks whether the K3D cluster with the given name is running.
+
+    Args:
+        cluster_name: Name of the cluster to check.
+
+    Returns:
+        Whether the cluster is running.
+    """
     output = subprocess.check_output(
         ["k3d", "cluster", "list", "--output", "json"]
     )
@@ -114,19 +144,31 @@ def create_k3d_cluster(
 
 
 def start_k3d_cluster(cluster_name: str) -> None:
-    """Starts a K3D cluster with the given name."""
+    """Starts a K3D cluster with the given name.
+
+    Args:
+        cluster_name: Name of the cluster to start.
+    """
     subprocess.check_call(["k3d", "cluster", "start", cluster_name])
     logger.info("Started local k3d cluster '%s'.", cluster_name)
 
 
 def stop_k3d_cluster(cluster_name: str) -> None:
-    """Stops a K3D cluster with the given name."""
+    """Stops a K3D cluster with the given name.
+
+    Args:
+        cluster_name: Name of the cluster to stop.
+    """
     subprocess.check_call(["k3d", "cluster", "stop", cluster_name])
     logger.info("Stopped local k3d cluster '%s'.", cluster_name)
 
 
 def delete_k3d_cluster(cluster_name: str) -> None:
-    """Deletes a K3D cluster with the given name."""
+    """Deletes a K3D cluster with the given name.
+
+    Args:
+        cluster_name: Name of the cluster to delete.
+    """
     subprocess.check_call(["k3d", "cluster", "delete", cluster_name])
     logger.info("Deleted local k3d cluster '%s'.", cluster_name)
 
@@ -137,6 +179,9 @@ def kubeflow_pipelines_ready(kubernetes_context: str) -> bool:
     Args:
         kubernetes_context: The kubernetes context in which the pods
             should be checked.
+
+    Returns:
+        Whether all Kubeflow Pipelines pods are ready.
     """
     try:
         subprocess.check_call(
@@ -241,8 +286,9 @@ def deploy_kubeflow_pipelines(kubernetes_context: str) -> None:
 def add_hostpath_to_kubeflow_pipelines(
     kubernetes_context: str, local_path: str
 ) -> None:
-    """Patches the Kubeflow Pipelines deployment to mount a local folder as
-    a hostpath for visualization purposes.
+    """Patches the Kubeflow Pipelines deployment to mount a local folder.
+
+    This folder serves as a hostpath for visualization purposes.
 
     This function reconfigures the Kubeflow pipelines deployment to use a
     shared local folder to support loading the TensorBoard viewer and other
@@ -367,8 +413,9 @@ def start_kfp_ui_daemon(
     port: int,
     kubernetes_context: str,
 ) -> None:
-    """Starts a daemon process that forwards ports so the Kubeflow Pipelines
-    UI is accessible in the browser.
+    """Starts a daemon process that forwards ports.
+
+    This is so the Kubeflow Pipelines UI is accessible in the browser.
 
     Args:
         pid_file_path: Path where the file with the daemons process ID should

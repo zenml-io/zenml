@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization for ZenML's container registries module.
+
 A container registry is a store for (Docker) containers. A ZenML workflow
 involving a container registry would automatically containerize your code to
 be transported across stacks running remotely. As part of the deployment to
@@ -49,5 +50,6 @@ __all__ = [
     "AzureContainerRegistry",
     "DockerHubContainerRegistry",
     "GCPContainerRegistry",
+    "GitHubContainerRegistry",
     "GitLabContainerRegistry",
 ]

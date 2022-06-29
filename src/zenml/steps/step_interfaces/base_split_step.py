@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base split step."""
+
 from abc import abstractmethod
 
 from zenml.artifacts import DataArtifact
@@ -18,11 +20,11 @@ from zenml.steps import BaseStep, BaseStepConfig, Output, StepContext
 
 
 class BaseSplitStepConfig(BaseStepConfig):
-    """Base class for split configs to inherit from"""
+    """Base class for split configs to inherit from."""
 
 
 class BaseSplitStep(BaseStep):
-    """Base step implementation for any split step implementation on ZenML"""
+    """Base step implementation for any split step implementation."""
 
     @abstractmethod
     def entrypoint(  # type: ignore[override]
@@ -33,4 +35,13 @@ class BaseSplitStep(BaseStep):
     ) -> Output(  # type:ignore[valid-type]
         train=DataArtifact, test=DataArtifact, validation=DataArtifact
     ):
-        """Entrypoint for a function for the split steps to run"""
+        """Entrypoint for a function for the split steps to run.
+
+        Args:
+            dataset: The dataset to split.
+            config: The configuration for the step.
+            context: The context for the step.
+
+        Returns:
+            The split datasets.
+        """

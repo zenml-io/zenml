@@ -11,30 +11,24 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the GitHub Actions Orchestrator."""
 
+import copy
 import os
 import re
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    cast,
-)
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple
 
 from git.exc import InvalidGitRepositoryError
 from git.repo.base import Repo
+from google.protobuf import json_format
 from tfx.proto.orchestration.pipeline_pb2 import Pipeline as Pb2Pipeline
 
-from zenml.container_registries.base_container_registry import (
+from zenml.container_registries import (
     BaseContainerRegistry,
-)
-from zenml.integrations.github.container_registries import (
     GitHubContainerRegistry,
 )
+from zenml.entrypoints.step_entrypoint_configuration import PIPELINE_JSON_OPTION
 from zenml.integrations.github.orchestrators.github_actions_entrypoint_configuration import (
     GitHubActionsEntrypointConfiguration,
 )
@@ -48,7 +42,7 @@ from zenml.orchestrators import BaseOrchestrator
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.utils import yaml_utils
+from zenml.utils import string_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines import BasePipeline
@@ -64,6 +58,10 @@ logger = get_logger(__name__)
 
 # Git remote URL prefixes that indicate a GitHub repository.
 GITHUB_REMOTE_URL_PREFIXES = ["git@github.com", "https://github.com"]
+# Name of the GitHub Action used to login to docker
+DOCKER_LOGIN_ACTION = "docker/login-action@v1"
+# Name of the environment variable that holds the encoded pb2 pipeline
+ENV_ENCODED_ZENML_PIPELINE = "ENCODED_ZENML_PIPELINE"
 
 
 class GitHubActionsOrchestrator(BaseOrchestrator):
@@ -77,9 +75,11 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
             ZenML installed, otherwise the pipeline execution will fail. For
             that reason, you might want to extend the ZenML docker images
             found here: https://hub.docker.com/r/zenmldocker/zenml/
-        prevent_dirty_repository: If `True`, this orchestrator will raise an
-            exception when trying to run a pipeline while there are still
-            untracked/uncommitted files in the git repository.
+        skip_dirty_repository_check: If `True`, this orchestrator will not
+            raise an exception when trying to run a pipeline while there are
+            still untracked/uncommitted files in the git repository.
+        skip_github_repository_check: If `True`, the orchestrator will not check
+            if your git repository is pointing to a GitHub remote.
         push: If `True`, this orchestrator will automatically commit and push
             the GitHub workflow file when running a pipeline. If `False`, the
             workflow file will be written to the correct location but needs to
@@ -87,7 +87,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
     """
 
     custom_docker_base_image_name: Optional[str] = None
-    prevent_dirty_repository: bool = True
+    skip_dirty_repository_check: bool = False
+    skip_github_repository_check: bool = False
     push: bool = False
 
     _git_repo: Optional[Repo] = None
@@ -98,6 +99,9 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
     @property
     def git_repo(self) -> Repo:
         """Returns the git repository for the current working directory.
+
+        Returns:
+            Git repository for the current working directory.
 
         Raises:
             RuntimeError: If there is no git repository for the current working
@@ -117,27 +121,40 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 remote_url.startswith(prefix)
                 for prefix in GITHUB_REMOTE_URL_PREFIXES
             )
-            if not is_github_repo:
+            if not (is_github_repo or self.skip_github_repository_check):
                 raise RuntimeError(
                     f"The remote URL '{remote_url}' of your git repo "
                     f"({self._git_repo.git_dir}) is not pointing to a GitHub "
                     "repository. The GitHub Actions orchestrator runs "
                     "pipelines using GitHub Actions and therefore only works "
-                    "with GitHub repositories."
+                    "with GitHub repositories. If you want to skip this check "
+                    "and run this orchestrator anyway, run: \n"
+                    f"`zenml orchestrator update {self.name} "
+                    "--skip_github_repository_check=true`"
                 )
 
         return self._git_repo
 
     @property
     def workflow_directory(self) -> str:
-        """Returns path to the github workflows directory."""
+        """Returns path to the GitHub workflows directory.
+
+        Returns:
+            The GitHub workflows directory.
+        """
         assert self.git_repo.working_dir
         return os.path.join(self.git_repo.working_dir, ".github", "workflows")
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a container registry and only
-        remote components."""
+        """Validator that ensures that the stack is compatible.
+
+        Makes sure that the stack contains a container registry and only
+        remote components.
+
+        Returns:
+            The stack validator.
+        """
 
         def _validate_local_requirements(stack: "Stack") -> Tuple[bool, str]:
             container_registry = stack.container_registry
@@ -153,16 +170,25 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                     "container registries."
                 )
 
-            # for component in stack.components.values():
-            #     if component.local_path:
-            #         return False, (
-            #             "The GitHub Actions orchestrator runs pipelines on "
-            #             "remote GitHub Actions runners, but the "
-            #             f"'{component.name}' {component.TYPE.value} of your "
-            #             "active stack is a local component. Please make sure "
-            #             "to only use remote stack components in combination "
-            #             "with the GitHub Actions orchestrator. "
-            #         )
+            if container_registry.requires_authentication:
+                return False, (
+                    "The GitHub Actions orchestrator currently only works with "
+                    "GitHub container registries or public container "
+                    f"registries, but your {container_registry.FLAVOR} "
+                    f"container registry '{container_registry.name}' requires "
+                    "authentication."
+                )
+
+            for component in stack.components.values():
+                if component.local_path:
+                    return False, (
+                        "The GitHub Actions orchestrator runs pipelines on "
+                        "remote GitHub Actions runners, but the "
+                        f"'{component.name}' {component.TYPE.value} of your "
+                        "active stack is a local component. Please make sure "
+                        "to only use remote stack components in combination "
+                        "with the GitHub Actions orchestrator. "
+                    )
 
             return True, ""
 
@@ -172,7 +198,15 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         )
 
     def get_docker_image_name(self, pipeline_name: str) -> str:
-        """Returns the full docker image name including registry and tag."""
+        """Returns the full docker image name including registry and tag.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to generate a docker
+                image name.
+
+        Returns:
+            The docker image name.
+        """
         container_registry = Repository().active_stack.container_registry
         assert container_registry  # should never happen due to validation
         return f"{container_registry.uri}/zenml-github-actions:{pipeline_name}"
@@ -197,17 +231,19 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         ):
             # Use GitHub Actions specific placeholder if the container registry
             # specifies automatic token authentication
-            username = "{{ github.actor }}"
-            password = "{{ secrets.GITHUB_TOKEN }}"
-        elif container_registry.requires_authentication:
-            username = cast(str, container_registry.username)
-            password = cast(str, container_registry.password)
+            username = "${{ github.actor }}"
+            password = "${{ secrets.GITHUB_TOKEN }}"
+        # TODO: Uncomment these lines once we support different private
+        #  container registries in GitHub Actions
+        # elif container_registry.requires_authentication:
+        #     username = cast(str, container_registry.username)
+        #     password = cast(str, container_registry.password)
         else:
             return None
 
         return {
             "name": "Authenticate with the container registry",
-            "uses": "docker/login-action@v1",
+            "uses": DOCKER_LOGIN_ACTION,
             "with": {
                 "registry": container_registry.uri,
                 "username": username,
@@ -224,8 +260,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
         Args:
             file_name: Name of the environment file that should be written.
-            secret_names: List of GitHub secret names that should be included
-                in the environment file.
+            secrets_manager: Secrets manager that will be used to read secrets
+                during pipeline execution.
 
         Returns:
             Dictionary specifying the GitHub Actions step for writing the
@@ -267,17 +303,26 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
     ) -> None:
-        """Builds a docker image for the current environment and uploads it to
-        a container registry if configured.
+        """Builds and uploads a docker image.
+
+        Args:
+            pipeline: The pipeline for which the image is built.
+            stack: The stack on which the pipeline will be executed.
+            runtime_configuration: Runtime configuration for the pipeline run.
+
+        Raises:
+            RuntimeError: If the orchestrator should only run in a clean git
+                repository and the repository is dirty.
         """
-        if self.prevent_dirty_repository and self.git_repo.is_dirty(
+        if not self.skip_dirty_repository_check and self.git_repo.is_dirty(
             untracked_files=True
         ):
             raise RuntimeError(
-                "Trying to run a pipeline from within a dirty git repository."
+                "Trying to run a pipeline from within a dirty (=containing "
+                "untracked/uncommitted files) git repository."
                 "If you want this orchestrator to skip the dirty repo check in "
                 f"the future, run\n `zenml orchestrator update {self.name} "
-                "--prevent_dirty_repository=false`"
+                "--skip_dirty_repository_check=true`"
             )
 
         image_name = self.get_docker_image_name(pipeline.name)
@@ -310,15 +355,45 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         pb2_pipeline: Pb2Pipeline,
         stack: "Stack",
         runtime_configuration: "RuntimeConfiguration",
-    ) -> Any:
-        """Writes a GitHub Action workflow yaml and optionally pushes it."""
+    ) -> None:
+        """Writes a GitHub Action workflow yaml and optionally pushes it.
+
+        Args:
+             sorted_steps: List of sorted steps
+             pipeline: Zenml Pipeline instance
+             pb2_pipeline: Protobuf Pipeline instance
+             stack: The stack the pipeline was run on
+             runtime_configuration: The Runtime configuration of the current run
+
+        Raises:
+            ValueError: If a schedule without a cron expression or with an
+                invalid cron expression is passed.
+        """
+        schedule = runtime_configuration.schedule
+
+        workflow_name = pipeline.name
+        if schedule:
+            # Add a suffix to the workflow filename so we don't overwrite
+            # scheduled pipeline by future schedules or single pipeline runs.
+            datetime_string = datetime.now().strftime("%y_%m_%d_%H_%M_%S")
+            workflow_name += f"-scheduled-{datetime_string}"
+
         workflow_path = os.path.join(
-            self.workflow_directory, f"{pipeline.name}.yaml"
+            self.workflow_directory,
+            f"{workflow_name}.yaml",
         )
 
-        workflow_dict: Dict[str, Any] = {"name": pipeline.name}
+        # Store the encoded pb2 pipeline once as an environment variable.
+        # We will replace the entrypoint argument later to reduce the size
+        # of the workflow file.
+        encoded_pb2_pipeline = string_utils.b64_encode(
+            json_format.MessageToJson(pb2_pipeline)
+        )
+        workflow_dict: Dict[str, Any] = {
+            "name": workflow_name,
+            "env": {ENV_ENCODED_ZENML_PIPELINE: encoded_pb2_pipeline},
+        }
 
-        schedule = runtime_configuration.schedule
         if schedule:
             if not schedule.cron_expression:
                 raise ValueError(
@@ -326,7 +401,8 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                     "expressions and not using a periodic schedule. If you "
                     "want to schedule pipelines using this GitHub Action "
                     "orchestrator, please include a cron expression in your "
-                    "schedule object."
+                    "schedule object. For more information on GitHub workflow "
+                    "schedules check out https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule."
                 )
 
             # GitHub workflows requires a schedule interval of at least 5
@@ -337,7 +413,10 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 raise ValueError(
                     "GitHub workflows requires a schedule interval of at "
                     "least 5 minutes which is incompatible with your cron "
-                    "expression '{schedule.cron_expression}'."
+                    f"expression '{schedule.cron_expression}'. An example of a "
+                    "valid cron expression would be '* 1 * * *' to run "
+                    "every hour. For more information on GitHub workflow "
+                    "schedules check out https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule."
                 )
 
             logger.warning(
@@ -348,7 +427,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 "default branch for this scheduled pipeline to run."
             )
             workflow_dict["on"] = {
-                "schedule": {"cron": schedule.cron_expression}
+                "schedule": [{"cron": schedule.cron_expression}]
             }
         else:
             # The pipeline should only run once. The only fool-proof way to
@@ -390,21 +469,27 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
 
         jobs = {}
         for step in sorted_steps:
-            steps = []
+            job_steps = []
 
+            # Copy the shared dicts here to avoid creating yaml anchors (which
+            # are currently not supported in GitHub workflow yaml files)
             if write_env_file_step:
-                steps.append(write_env_file_step)
+                job_steps.append(copy.deepcopy(write_env_file_step))
 
             if docker_login_step:
-                steps.append(docker_login_step)
+                job_steps.append(copy.deepcopy(docker_login_step))
 
             entrypoint_args = (
                 GitHubActionsEntrypointConfiguration.get_entrypoint_arguments(
                     step=step,
                     pb2_pipeline=pb2_pipeline,
-                    pipeline_name=pipeline.name,
                 )
             )
+
+            # Replace the encoded string by a global environment variable to
+            # keep the workflow file small
+            index = entrypoint_args.index(f"--{PIPELINE_JSON_OPTION}")
+            entrypoint_args[index + 1] = f"${ENV_ENCODED_ZENML_PIPELINE}"
 
             command = base_command + entrypoint_args
             docker_run_step = {
@@ -412,13 +497,13 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
                 "run": " ".join(command),
             }
 
-            steps.append(docker_run_step)
+            job_steps.append(docker_run_step)
             job_dict = {
                 "runs-on": "ubuntu-latest",
                 "needs": self.get_upstream_step_names(
                     step=step, pb2_pipeline=pb2_pipeline
                 ),
-                "steps": steps,
+                "steps": job_steps,
             }
             jobs[step.name] = job_dict
 
@@ -429,7 +514,7 @@ class GitHubActionsOrchestrator(BaseOrchestrator):
         logger.info("Wrote GitHub workflow file to %s", workflow_path)
 
         if self.push:
-            # Add, commit and push the pipeline worflow yaml
+            # Add, commit and push the pipeline workflow yaml
             self.git_repo.index.add(workflow_path)
             self.git_repo.index.commit(
                 "[ZenML GitHub Actions Orchestrator] Add github workflow for "

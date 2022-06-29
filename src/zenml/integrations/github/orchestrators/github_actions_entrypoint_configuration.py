@@ -11,36 +11,57 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the GitHub Actions Orchestrator entrypoint."""
 
 from typing import Any, List, Set, cast
 
 from zenml.entrypoints import StepEntrypointConfiguration
 from zenml.steps import BaseStep
 
-RUN_NAME_OPTION = "run_name"
+RUN_ID_OPTION = "run_id"
 
 
 class GitHubActionsEntrypointConfiguration(StepEntrypointConfiguration):
-    """Entrypoint configuration for running steps on GitHub Action runners."""
+    """Entrypoint configuration for running steps on GitHub Actions runners."""
 
     @classmethod
     def get_custom_entrypoint_options(cls) -> Set[str]:
-        """GitHub Actions specific entrypoint options."""
-        return {RUN_NAME_OPTION}
+        """GitHub Actions specific entrypoint options.
+
+        Returns:
+            Set with the custom run id option.
+        """
+        return {RUN_ID_OPTION}
 
     @classmethod
     def get_custom_entrypoint_arguments(
         cls, step: BaseStep, **kwargs: Any
     ) -> List[str]:
-        """Adds a run name argument for the entrypoint."""
+        """Adds a run id argument for the entrypoint.
+
+        Args:
+            step: Step for which the arguments are passed.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            GitHub Actions placeholder for the run id option.
+        """
         # These placeholders in the workflow file will be replaced with
-        # concrete values by the GH action runner
-        run_name = kwargs["pipeline_name"] + (
-            "-${{ github.run_id }}_${{ github.run_number }}_"
+        # concrete values by the GitHub Actions runner
+        run_id = (
+            "${{ github.run_id }}_${{ github.run_number }}_"
             "${{ github.run_attempt }}"
         )
-        return [f"--{RUN_NAME_OPTION}", run_name]
+        return [f"--{RUN_ID_OPTION}", run_id]
 
     def get_run_name(self, pipeline_name: str) -> str:
-        """Returns the pipeline run name."""
-        return cast(str, self.entrypoint_args[RUN_NAME_OPTION])
+        """Returns the pipeline run name.
+
+        Args:
+            pipeline_name: Name of the pipeline which will run.
+
+        Returns:
+            The run name.
+        """
+        run_id = cast(str, self.entrypoint_args[RUN_ID_OPTION])
+        return f"{pipeline_name}-{run_id}"

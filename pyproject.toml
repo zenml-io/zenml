@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.8.1"
+version = "0.10.0"
 packages = [
     { include = "zenml", from = "src" },
 ]
@@ -242,6 +242,7 @@ module = [
     "boto3.*",
     "botocore.*",
     "jupyter_dash.*",
+    "slack_sdk.*",
     "azure-keyvault-keys.*"
 ]
 ignore_missing_imports = true
@@ -261,7 +262,6 @@ exclude = '''
 | build
 )/
 '''
-
 
 [tool.interrogate]
 ignore-init-method = true

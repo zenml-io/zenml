@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a local ZenML service."""
 
 import os
 import pathlib
@@ -22,6 +23,7 @@ from abc import abstractmethod
 from typing import Dict, Generator, List, Optional, Tuple
 
 import psutil
+from psutil import NoSuchProcess
 from pydantic import Field
 
 from zenml.logger import get_logger
@@ -79,8 +81,7 @@ class LocalDaemonServiceStatus(ServiceStatus):
 
     @property
     def config_file(self) -> Optional[str]:
-        """Get the path to the configuration file used to start the service
-        daemon.
+        """Get the path to the configuration file used to start the service daemon.
 
         Returns:
             The path to the configuration file, or None, if the
@@ -92,8 +93,7 @@ class LocalDaemonServiceStatus(ServiceStatus):
 
     @property
     def log_file(self) -> Optional[str]:
-        """Get the path to the log file where the service output is/has been
-        logged.
+        """Get the path to the log file where the service output is/has been logged.
 
         Returns:
             The path to the log file, or None, if the service has never been
@@ -105,8 +105,9 @@ class LocalDaemonServiceStatus(ServiceStatus):
 
     @property
     def pid_file(self) -> Optional[str]:
-        """Get the path to the daemon PID file where the last known PID of the
-        daemon process is stored.
+        """Get the path to a daemon PID file.
+
+        This is where the last known PID of the daemon process is stored.
 
         Returns:
             The path to the PID file, or None, if the service has never been
@@ -118,7 +119,12 @@ class LocalDaemonServiceStatus(ServiceStatus):
 
     @property
     def pid(self) -> Optional[int]:
-        """Return the PID of the currently running daemon"""
+        """Return the PID of the currently running daemon.
+
+        Returns:
+            The PID of the daemon, or None, if the service has never been
+            started before.
+        """
         pid_file = self.pid_file
         if not pid_file:
             return None
@@ -138,14 +144,17 @@ class LocalDaemonServiceStatus(ServiceStatus):
             # this avoids the situation where a PID file is left over from
             # a previous daemon run, but another process is using the same
             # PID.
-            p = psutil.Process(pid)
-            cmd_line = p.cmdline()
-            if (
-                daemon_entrypoint.__name__ not in cmd_line
-                or self.config_file not in cmd_line
-            ):
+            try:
+                p = psutil.Process(pid)
+                cmd_line = p.cmdline()
+                if (
+                    daemon_entrypoint.__name__ not in cmd_line
+                    or self.config_file not in cmd_line
+                ):
+                    return None
+                return pid
+            except NoSuchProcess:
                 return None
-            return pid
 
 
 class LocalDaemonService(BaseService):
@@ -213,8 +222,12 @@ class LocalDaemonService(BaseService):
     endpoint: Optional[LocalDaemonServiceEndpoint] = None
 
     def get_service_status_message(self) -> str:
-        """Get a message providing information about the current operational
-        state of the service."""
+        """Get a message about the current operational state of the service.
+
+        Returns:
+            A message providing information about the current operational
+            state of the service.
+        """
         msg = super().get_service_status_message()
         pid = self.status.pid
         if pid:
@@ -234,7 +247,6 @@ class LocalDaemonService(BaseService):
             providing additional information about that state (e.g. a
             description of the error, if one is encountered).
         """
-
         if not self.status.pid:
             return ServiceState.INACTIVE, "service daemon is not running"
 
@@ -315,7 +327,6 @@ class LocalDaemonService(BaseService):
 
     def _start_daemon(self) -> None:
         """Start the service daemon process associated with this service."""
-
         pid = self.status.pid
         if pid:
             # service daemon is already running
@@ -358,7 +369,6 @@ class LocalDaemonService(BaseService):
         Args:
             force: if True, the service daemon will be forcefully stopped
         """
-
         pid = self.status.pid
         if not pid:
             # service daemon is not running
@@ -382,9 +392,15 @@ class LocalDaemonService(BaseService):
             p.terminate()
 
     def provision(self) -> None:
+        """Provision the service."""
         self._start_daemon()
 
     def deprovision(self, force: bool = False) -> None:
+        """Deprovision the service.
+
+        Args:
+            force: if True, the service daemon will be forcefully stopped
+        """
         self._stop_daemon(force)
 
     def get_logs(
@@ -396,7 +412,7 @@ class LocalDaemonService(BaseService):
             follow: if True, the logs will be streamed as they are written
             tail: only retrieve the last NUM lines of log output.
 
-        Returns:
+        Yields:
             A generator that can be accessed to get the service logs.
         """
         if not self.status.log_file or not os.path.exists(self.status.log_file):

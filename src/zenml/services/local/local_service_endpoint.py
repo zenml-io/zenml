@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
+"""Implementation of a local service endpoint."""
 
 from typing import Optional, Union
 
@@ -102,7 +102,6 @@ class LocalDaemonServiceEndpoint(BaseServiceEndpoint):
                 disabled in the endpoint configuration, or if no free TCP port
                 could be otherwise allocated.
         """
-
         # If a port value is explicitly configured, attempt to use it first
         if self.config.port:
             if port_available(self.config.port):

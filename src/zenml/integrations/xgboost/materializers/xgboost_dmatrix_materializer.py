@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the XGBoost dmatrix materializer."""
 
 import os
 import tempfile
@@ -26,13 +27,20 @@ DEFAULT_FILENAME = "data.binary"
 
 
 class XgboostDMatrixMaterializer(BaseMaterializer):
-    """Materializer to read data to and from xgboost.DMatrix"""
+    """Materializer to read data to and from xgboost.DMatrix."""
 
     ASSOCIATED_TYPES = (xgb.DMatrix,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> xgb.DMatrix:
-        """Reads a xgboost.DMatrix binary file and loads it."""
+        """Reads a xgboost.DMatrix binary file and loads it.
+
+        Args:
+            data_type: The datatype which should be read.
+
+        Returns:
+            Materialized xgboost matrix.
+        """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 

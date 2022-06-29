@@ -1,7 +1,7 @@
 root: ./docs/book/
 
 structure:
-  readme: index.md
+  readme: introduction.md
   summary: toc.md
 
 #redirects:

@@ -1,5 +1,5 @@
 ---
-description: Control how Data is persisted between Steps
+description: Control how data is persisted between steps.
 ---
 
 A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
@@ -8,11 +8,13 @@ step should be considered as its very own process that reads and writes its
 inputs and outputs from and to the artifact store. This is where
 **materializers** come into play.
 
-### What is a materializer?
+# Materializers: Serializing and deserializing your artifacts
 
 A materializer dictates how a given artifact can be written to and retrieved
 from the artifact store. It contains all serialization and deserialization
 logic.
+
+## What is a materializer?
 
 ```python
 from typing import Type, Any
@@ -77,7 +79,7 @@ Each materializer has `ASSOCIATED_TYPES` and `ASSOCIATED_ARTIFACT_TYPES`.
   etc. This is simply a tag to query certain artifact types in the
   post-execution workflow.
 
-### Extending the `BaseMaterializer`
+## Writing a custom materializer
 
 Let's say you have a custom class called `MyObject` that flows between two steps
 in a pipeline:
@@ -270,7 +272,7 @@ first_pipeline(
 
 </details>
 
-# Skip materialization
+## Skip materialization
 
 While in most cases, [materializers](../developer-guide/materializer.md)
 should be used to control how artifacts are consumed and output from steps in a
@@ -278,7 +280,7 @@ pipeline, you will sometimes need to have a completely non-materialized artifact
 in a step.
 
 A non-materialized artifact is a `BaseArtifact` (or any of its subclasses) and
-has a property `uri` that points to the unique path in the [artifact store](../introduction/core-concepts.md) where the artifact is stored. One
+has a property `uri` that points to the unique path in the [artifact store](../core-concepts.md) where the artifact is stored. One
 can use a non-materialized artifact by simply specifying it as the type in the
 step:
 
@@ -304,7 +306,7 @@ non-materialized step.
 Be careful: Using artifacts directly like this might have unintended
 consequences for downstream tasks that rely on materialized artifacts.
 
-## A simple example
+### A simple example
 
 A simple example can suffice to showcase how to use non-materialized artifacts:
 

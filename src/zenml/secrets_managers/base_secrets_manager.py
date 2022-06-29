@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base class for ZenML secrets managers."""
+
 from abc import ABC, abstractmethod
 from typing import ClassVar, List
 
@@ -63,9 +65,5 @@ class BaseSecretsManager(StackComponent, ABC):
         """
 
     @abstractmethod
-    def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete all existing secrets.
-
-        Args:
-            force: Whether to force deletion of secrets.
-        """
+    def delete_all_secrets(self) -> None:
+        """Delete all existing secrets."""

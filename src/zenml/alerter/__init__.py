@@ -17,10 +17,6 @@ This is useful to immediately get notified when failures happen,
 and also for general monitoring / reporting.
 """
 
-from zenml.alerter.alerter_step import alerter_step
 from zenml.alerter.base_alerter import BaseAlerter
 
-__all__ = [
-    "BaseAlerter",
-    "alerter_step",
-]
+__all__ = ["BaseAlerter"]

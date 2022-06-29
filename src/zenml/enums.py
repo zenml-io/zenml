@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""ZenML enums."""
 
 import logging
 from enum import Enum
@@ -42,19 +43,24 @@ class StackComponentType(StrEnum):
     """All possible types a `StackComponent` can have."""
 
     ALERTER = "alerter"
-    ORCHESTRATOR = "orchestrator"
-    METADATA_STORE = "metadata_store"
     ARTIFACT_STORE = "artifact_store"
     CONTAINER_REGISTRY = "container_registry"
-    STEP_OPERATOR = "step_operator"
-    FEATURE_STORE = "feature_store"
-    SECRETS_MANAGER = "secrets_manager"
-    MODEL_DEPLOYER = "model_deployer"
+    DATA_VALIDATOR = "data_validator"
     EXPERIMENT_TRACKER = "experiment_tracker"
+    FEATURE_STORE = "feature_store"
+    METADATA_STORE = "metadata_store"
+    MODEL_DEPLOYER = "model_deployer"
+    ORCHESTRATOR = "orchestrator"
+    SECRETS_MANAGER = "secrets_manager"
+    STEP_OPERATOR = "step_operator"
 
     @property
     def plural(self) -> str:
-        """Returns the plural of the enum value."""
+        """Returns the plural of the enum value.
+
+        Returns:
+            The plural of the enum value.
+        """
         if self == StackComponentType.CONTAINER_REGISTRY:
             return "container_registries"
 
@@ -62,14 +68,14 @@ class StackComponentType(StrEnum):
 
 
 class MetadataContextTypes(Enum):
-    """All possible types that contexts can have within pipeline nodes"""
+    """All possible types that contexts can have within pipeline nodes."""
 
     STACK = "stack"
     PIPELINE_REQUIREMENTS = "pipeline_requirements"
 
 
 class StoreType(StrEnum):
-    """Repository Store Backend Types"""
+    """Repository Store Backend Types."""
 
     LOCAL = "local"
     SQL = "sql"
@@ -88,6 +94,7 @@ class ContainerRegistryFlavor(StrEnum):
 
 class CliCategories(StrEnum):
     """All possible categories for CLI commands.
+
     Note: The order of the categories is important. The same
     order is used to sort the commands in the CLI help output.
     """

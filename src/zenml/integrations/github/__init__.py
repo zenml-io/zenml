@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization of the GitHub ZenML integration.
+
 The GitHub integration provides a way to orchestrate pipelines using GitHub 
 Actions.
 """
@@ -24,17 +25,21 @@ from zenml.zen_stores.models import FlavorWrapper
 
 GITHUB_SECRET_MANAGER_FLAVOR = "github"
 GITHUB_ORCHESTRATOR_FLAVOR = "github"
-GITHUB_CONTAINER_REGISTRY_FLAVOR = "github"
 
 
 class GitHubIntegration(Integration):
     """Definition of GitHub integration for ZenML."""
 
     NAME = GITHUB
+    REQUIREMENTS: List[str] = ["PyNaCl~=1.5.0"]
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the GitHub integration."""
+        """Declare the stack component flavors for the GitHub integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=GITHUB_ORCHESTRATOR_FLAVOR,
@@ -46,12 +51,6 @@ class GitHubIntegration(Integration):
                 name=GITHUB_SECRET_MANAGER_FLAVOR,
                 source="zenml.integrations.github.secrets_managers.GitHubSecretsManager",
                 type=StackComponentType.SECRETS_MANAGER,
-                integration=cls.NAME,
-            ),
-            FlavorWrapper(
-                name=GITHUB_CONTAINER_REGISTRY_FLAVOR,
-                source="zenml.integrations.github.container_registries.GitHubContainerRegistry",
-                type=StackComponentType.CONTAINER_REGISTRY,
                 integration=cls.NAME,
             ),
         ]

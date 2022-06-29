@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Constants for ZenML integrations."""
 
 AIRFLOW = "airflow"
 AWS = "aws"
@@ -24,7 +25,9 @@ GCP = "gcp"
 GCP_SECRETS_MANAGER = "gcp_secrets_manager"
 GITHUB = "github"
 GRAPHVIZ = "graphviz"
+GREAT_EXPECTATIONS = "great_expectations"
 KUBEFLOW = "kubeflow"
+KUBERNETES = "kubernetes"
 LIGHTGBM = "lightgbm"
 MLFLOW = "mlflow"
 PLOTLY = "plotly"
@@ -44,3 +47,4 @@ VERTEX = "vertex"
 NEURAL_PROPHET = "neural_prophet"
 HUGGINGFACE = "huggingface"
 XGBOOST = "xgboost"
+VAULT = "vault"

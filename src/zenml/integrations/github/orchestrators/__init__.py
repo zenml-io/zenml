@@ -11,6 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+<<<<<<< HEAD
+=======
+"""Initialization of the GitHub Actions Orchestrator."""
+>>>>>>> origin/develop
 
 from zenml.integrations.github.orchestrators.github_actions_orchestrator import (
     GitHubActionsOrchestrator,

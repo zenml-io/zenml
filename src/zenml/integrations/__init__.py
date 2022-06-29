@@ -11,7 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""ZenML integrations module.
+
 The ZenML integrations module contains sub-modules for each integration that we
 support. This includes orchestrators like Apache Airflow, visualization tools
 like the ``facets`` library, as well as deep learning libraries like PyTorch.
@@ -20,19 +21,19 @@ like the ``facets`` library, as well as deep learning libraries like PyTorch.
 from zenml.integrations.airflow import AirflowIntegration  # noqa
 from zenml.integrations.aws import AWSIntegration  # noqa
 from zenml.integrations.azure import AzureIntegration  # noqa
-from zenml.integrations.azureml import AzureMLIntegration  # noqa
 from zenml.integrations.dash import DashIntegration  # noqa
 from zenml.integrations.evidently import EvidentlyIntegration  # noqa
 from zenml.integrations.facets import FacetsIntegration  # noqa
 from zenml.integrations.feast import FeastIntegration  # noqa
 from zenml.integrations.gcp import GcpIntegration  # noqa
-from zenml.integrations.gcp_secrets_manager import (  # noqa
-    GcpSecretManagerIntegration,
-)
 from zenml.integrations.github import GitHubIntegration  # noqa
 from zenml.integrations.graphviz import GraphvizIntegration  # noqa
+from zenml.integrations.great_expectations import (  # noqa
+    GreatExpectationsIntegration,
+)
 from zenml.integrations.huggingface import HuggingfaceIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa
+from zenml.integrations.kubernetes import KubernetesIntegration  # noqa
 from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
@@ -42,13 +43,12 @@ from zenml.integrations.pytorch_lightning import (  # noqa
     PytorchLightningIntegration,
 )
 from zenml.integrations.s3 import S3Integration  # noqa
-from zenml.integrations.sagemaker import SagemakerIntegration  # noqa
 from zenml.integrations.scipy import ScipyIntegration  # noqa
 from zenml.integrations.seldon import SeldonIntegration  # noqa
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
 from zenml.integrations.slack import SlackIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
-from zenml.integrations.vertex import VertexIntegration  # noqa
+from zenml.integrations.vault import VaultSecretsManagerIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa

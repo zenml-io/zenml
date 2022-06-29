@@ -23,6 +23,7 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     confirmation,
     error,
+    expand_argument_value_from_file,
     parse_unknown_options,
     pretty_print_secret,
     print_secrets,
@@ -61,7 +62,11 @@ def secret(ctx: click.Context) -> None:
     ctx.obj = secrets_manager_wrapper.to_component()
 
 
-@secret.command("register", context_settings={"ignore_unknown_options": True})
+@secret.command(
+    "register",
+    context_settings={"ignore_unknown_options": True},
+    help="Register a secret with the given name and schema.",
+)
 @click.argument("name", type=click.STRING)
 @click.option(
     "--schema",
@@ -92,55 +97,44 @@ def register_secret(
 
     Use this command to store sensitive information into a ZenML secret. The
     secret data consists of key-value pairs that can be configured interactively
-    (if the `--interactive` option is set) or via command line arguments.
+    (if the `--interactive` option is set) or via command-line arguments.
     If a schema is indicated, the secret key-value pairs will be validated
     against the schema.
 
     When passed as command line arguments, the secret field values may also be
     loaded from files instead of being issued inline, by prepending the field
     name with a `@` sign. For example, the following command line:
-
         zenml secret register my_secret --secret_token=@/path/to/file.json
-
     will load the value for the field `secret_token` from the file
     `/path/to/file.json`.
-
     To use the `@` sign as the first character of a field name without pointing
     to a file, double the `@` sign. For example, the following command line:
-
         zenml secret register my_secret --username=zenml --password=@@password
-
     will interpret the value of the field `password` as the literal string
     `@password`.
 
     Examples:
     - register a secret with the name `secret_one` and configure its values
     interactively:
-
         zenml secret register secret_one -i
-
     - register a secret with the name `secret_two` and configure its values
     via command line arguments:
-
         zenml secret register secret_two --username=admin --password=secret
-
     - register a secret with the name `secret_three` interactively and
     conforming to a schema named `aws` (which is defined in the `aws`
     integration):
-
         zenml integration install aws
         zenml secret register secret_three -i --schema=aws
-
     - register a secret with the name `secret_four` from command line arguments
     and conforming to a schema named `aws` (which is defined in the `aws`
     integration). Also load the value for the field `secret_token` from a
     local file:
-
         zenml integration install aws
         zenml secret register secret_four --schema=aws \
             --aws_access_key_id=1234567890 \
             --aws_secret_access_key=abcdefghij \
             --aws_session_token=@/path/to/token.txt
+
 
     Args:
         secrets_manager: The secrets manager to use.
@@ -206,17 +200,22 @@ def register_secret(
             for k in secret_keys:
                 v = getpass.getpass(f"Secret value for {k}:")
                 if v:
-                    secret_contents[k] = v
+                    secret_contents[k] = expand_argument_value_from_file(
+                        name=k, value=v
+                    )
         else:
             click.echo(
                 "You have not supplied a secret schema with any "
                 "predefined keys. Entering interactive mode:"
             )
             while True:
-                k = click.prompt("Please enter a secret-key")
+                k = click.prompt("Please enter a secret key")
                 if k not in secret_contents:
-                    secret_contents[k] = getpass.getpass(
-                        f"Please enter the secret_value for the key [{k}]:"
+                    v = getpass.getpass(
+                        f"Please enter the secret value for the key [{k}]:"
+                    )
+                    secret_contents[k] = expand_argument_value_from_file(
+                        name=k, value=v
                     )
                 else:
                     warning(
@@ -252,7 +251,7 @@ def register_secret(
         secrets_manager.register_secret(secret=secret)
 
 
-@secret.command("get")
+@secret.command("get", help="Get a secret, given its name.")
 @click.argument("name", type=click.STRING)
 @click.pass_obj
 def get_secret(
@@ -275,7 +274,9 @@ def get_secret(
         )
 
 
-@secret.command("list")
+@secret.command(
+    "list", help="List all secrets tracked by your Secrets Manager."
+)
 @click.pass_obj
 def list_secret(secrets_manager: "BaseSecretsManager") -> None:
     """List all secrets tracked by your Secrets Manager.
@@ -288,7 +289,11 @@ def list_secret(secrets_manager: "BaseSecretsManager") -> None:
         print_secrets(secret_names)
 
 
-@secret.command("update", context_settings={"ignore_unknown_options": True})
+@secret.command(
+    "update",
+    context_settings={"ignore_unknown_options": True},
+    help="Update a secret with a given name.",
+)
 @click.argument("name", type=click.STRING)
 @click.option(
     "--interactive",
@@ -310,37 +315,29 @@ def update_secret(
 
     Use this command to update the information stored in an existing ZenML
     secret. The secret's key-value pairs can be updated interactively
-    (if the `--interactive` option is set) or via command line arguments.
+    (if the `--interactive` option is set) or via command-line arguments.
     If a schema is associated with the existing secret, the updated secret
     key-value pairs will be validated against the schema.
 
     When passed as command line arguments, the secret field values may also be
     loaded from files instead of being issued inline, by prepending the field
     name with a `@` sign. For example, the following command line:
-
         zenml secret update my_secret --secret_token=@/path/to/file.json
-
     will load the value for the field `secret_token` from the file
     `/path/to/file.json`.
-
     To use the `@` sign as the first character of a field name without pointing
     to a file, double the `@` sign. For example, the following command line:
-
         zenml secret update my_secret --username=zenml --password=@@password
-
     will interpret the value of the field `password` as the literal string
     `@password`.
-
+    
     Examples:
     - update a secret with the name `secret_one` and configure its values
     interactively:
-
         zenml secret update secret_one -i
-
     - update a secret with the name `secret_two` from command line arguments
     and load the value for the field `secret_token` from a
     local file:
-
         zenml secret update secret_four \
             --aws_access_key_id=1234567890 \
             --aws_secret_access_key=abcdefghij \
@@ -418,7 +415,7 @@ def update_secret(
             error(f"Secret with name `{name}` already exists.")
 
 
-@secret.command("delete")
+@secret.command("delete", help="Delete a secret identified by its name.")
 @click.argument("name", type=click.STRING)
 @click.option(
     "--yes",
@@ -458,11 +455,15 @@ def delete_secret_set(
             error(f"Secret with name `{name}` no longer present.")
 
 
-@secret.command("cleanup", hidden=True)
+@secret.command(
+    "cleanup",
+    hidden=True,
+    help="Delete all secrets tracked by your Secrets Manager.",
+)
 @click.option(
     "--yes",
     "-y",
-    "force",
+    "yes",
     is_flag=True,
     help="Force the deletion of all secrets",
     type=click.BOOL,
@@ -470,7 +471,7 @@ def delete_secret_set(
 @click.option(
     "--force",
     "-f",
-    "old_force",
+    "force",
     is_flag=True,
     help="DEPRECATED: Force the deletion of all secrets. Use `-y/--yes` "
     "instead.",
@@ -478,31 +479,28 @@ def delete_secret_set(
 )
 @click.pass_obj
 def delete_all_secrets(
-    secrets_manager: "BaseSecretsManager", force: bool, old_force: bool
+    secrets_manager: "BaseSecretsManager", yes: bool, force: bool
 ) -> None:
     """Delete all secrets tracked by your Secrets Manager.
 
-    Use the --yes flag to specify if force should be applied when deleting all
-    secrets. This might have differing implications depending on the underlying
-    secrets manager
-
     Args:
         secrets_manager: The secrets manager to use.
-        force: Force the deletion of all secrets.
-        old_force: DEPRECATED: Force the deletion of all secrets.
+        yes: Skip asking for confirmation.
+        force: DEPRECATED: Skip asking for confirmation.
     """
-    if old_force:
-        force = old_force
+    if force:
         warning(
             "The `--force` flag will soon be deprecated. Use `--yes` or `-y` "
             "instead."
         )
-    confirmation_response = confirmation(
-        "This will delete all secrets. Are you sure you want to proceed?"
-    )
-    if not confirmation_response:
-        console.print("Aborting secret deletion...")
-    else:
-        with console.status("Deleting all secrets ..."):
-            secrets_manager.delete_all_secrets(force=force)
-            console.print("Deleted all secrets.")
+    if not yes:
+        confirmation_response = confirmation(
+            "This will delete all secrets. Are you sure you want to proceed?"
+        )
+        if not confirmation_response:
+            console.print("Aborting deletion of all secrets...")
+            return
+
+    with console.status("Deleting all secrets..."):
+        secrets_manager.delete_all_secrets()
+        console.print("Deleted all secrets.")

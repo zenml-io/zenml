@@ -11,9 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
+"""Initialization for the wandb integration.
+
 The wandb integrations currently enables you to use wandb tracking as a
-convenient way to visualize your experiment runs within the wandb ui
+convenient way to visualize your experiment runs within the wandb ui.
 """
 from typing import List
 
@@ -33,7 +34,11 @@ class WandbIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[FlavorWrapper]:
-        """Declare the stack component flavors for the MLflow integration"""
+        """Declare the stack component flavors for the Weights and Biases integration.
+
+        Returns:
+            List of stack component flavors for this integration.
+        """
         return [
             FlavorWrapper(
                 name=WANDB_EXPERIMENT_TRACKER_FLAVOR,

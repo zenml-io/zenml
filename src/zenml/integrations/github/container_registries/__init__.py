@@ -11,9 +11,33 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+<<<<<<< HEAD:src/zenml/integrations/github/container_registries/__init__.py
+=======
+"""Implementation of the GitHub Container Registry."""
+
+from typing import ClassVar
+>>>>>>> origin/develop:src/zenml/container_registries/github_container_registry.py
 
 from zenml.integrations.github.container_registries.github_container_registry import (
     GitHubContainerRegistry,
 )
 
+<<<<<<< HEAD:src/zenml/integrations/github/container_registries/__init__.py
 __all__ = ["GitHubContainerRegistry"]
+=======
+
+class GitHubContainerRegistry(BaseContainerRegistry):
+    """Class for GitHub Container Registry.
+
+    Attributes:
+        automatic_token_authentication: If `True`, use automatic token
+            authentication (https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow)
+            when trying to access this container registry from within a GitHub
+            Actions environment.
+    """
+
+    automatic_token_authentication: bool = False
+
+    # Class Configuration
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITHUB
+>>>>>>> origin/develop:src/zenml/container_registries/github_container_registry.py
