@@ -13,4 +13,6 @@
 #  permissions and limitations under the License.
 """Initialization of ZenML custom deployer."""
 
-from zenml.integrations.kserve.custom_deployer.zenml_custom_model import  ZenMLCustomModel  # noqa
+from zenml.integrations.kserve.custom_deployer.zenml_custom_model import (  # noqa
+    ZenMLCustomModel,
+)

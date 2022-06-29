@@ -205,6 +205,7 @@ def build_docker_image(
     environment_vars: Optional[Dict[str, str]] = None,
     use_local_requirements: bool = False,
     base_image: Optional[str] = None,
+    global_configuration: bool = True,
 ) -> None:
     """Builds a docker image.
 
@@ -229,6 +230,7 @@ def build_docker_image(
             in the environment of the current python processed will be
             installed in the docker image.
         base_image: The image to use as base for the docker image.
+        global_configuration: If `True`, the global configuration will be
     """
     config_path = os.path.join(build_context_path, CONTAINER_ZENML_CONFIG_DIR)
     try:
@@ -237,10 +239,11 @@ def build_docker_image(
         # active profile and the active stack configuration into the build
         # context, to have the active profile and active stack accessible from
         # within the container.
-        GlobalConfiguration().copy_active_configuration(
-            config_path,
-            load_config_path=f"/app/{CONTAINER_ZENML_CONFIG_DIR}",
-        )
+        if global_configuration:
+            GlobalConfiguration().copy_active_configuration(
+                config_path,
+                load_config_path=f"/app/{CONTAINER_ZENML_CONFIG_DIR}",
+            )
 
         if not requirements and use_local_requirements:
             local_requirements = get_current_environment_requirements()

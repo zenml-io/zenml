@@ -14,10 +14,10 @@
 
 from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
+    CustomDeployParamters,
     KServeDeployerStepConfig,
     TorchServeParamters,
     kserve_model_deployer_step,
-    CustomDeployParamters,
 )
 
 MODEL_NAME = "mnist"

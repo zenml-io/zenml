@@ -13,9 +13,11 @@
 #  permissions and limitations under the License.
 
 from typing import Any, Dict
+
 import torch
 import torchvision
 from torch.nn.functional import softmax
+
 
 def pre_process(tensor: torch.Tensor) -> dict:
     """Pre process the data
@@ -30,7 +32,8 @@ def pre_process(tensor: torch.Tensor) -> dict:
     processed_tensor = processed_tensor.unsqueeze(0)
     return processed_tensor.float()
 
-def custom_predict(model: Any ,request: Dict) -> Dict:
+
+def custom_predict(model: Any, request: Dict) -> Dict:
     """Predict the given request.
 
     Args:
@@ -39,7 +42,7 @@ def custom_predict(model: Any ,request: Dict) -> Dict:
 
     Returns:
         The prediction in a dictionary. e.g. {"predictions": []}
-    
+
     Raises:
         Exception: If the request is not a NumPy array.
     """
@@ -50,7 +53,6 @@ def custom_predict(model: Any ,request: Dict) -> Dict:
         except Exception as e:
             raise TypeError(f"The input instance is not a numpy array. {e}")
         processed_tensor = pre_process(tensor)
-        prediction =  softmax(model(processed_tensor))
+        prediction = softmax(model(processed_tensor))
         inputs.append(prediction)
     return {"predictions": inputs}
-    

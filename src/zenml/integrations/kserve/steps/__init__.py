@@ -14,8 +14,8 @@
 """Initialization for KServe steps."""
 
 from zenml.integrations.kserve.steps.kserve_deployer import (
+    CustomDeployParamters,
     KServeDeployerStepConfig,
     TorchServeParamters,
     kserve_model_deployer_step,
-    CustomDeployParamters,
 )

@@ -11,16 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
-import os
+"""Implements a custom model for the Kserve integration."""
 from pathlib import Path
 from typing import Any, Dict
+
 import click
 import kserve
-from ml_metadata.proto import metadata_store_pb2
 
 from zenml.logger import get_logger
-from zenml.utils import source_utils
 from zenml.utils.source_utils import import_class_by_path
 
 logger = get_logger(__name__)
@@ -29,13 +27,29 @@ ARTIFACT_FILE = "artifact.json"
 DEFAULT_MODEL_NAME = "model"
 DEFAULT_LOCAL_MODEL_DIR = "/tmp/model"
 
-class ZenMLCustomModel(kserve.Model):
+
+class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
+    """Custom model class for ZenML and Kserve.
+
+    Attributes:
+        name: The name of the model.
+        model_uri: The URI of the model.
+        predict_func: The predict function of the model.
+    """
+
     def __init__(
         self,
         model_name: str,
         model_uri: str,
         predict_func: str,
     ):
+        """Initializes a ZenMLCustomModel object.
+
+        Args:
+            model_name: The name of the model.
+            model_uri: The URI of the model.
+            predict_func: The predict function of the model.
+        """
         super().__init__(model_name)
         self.name = model_name
         self.model_uri = model_uri
@@ -44,56 +58,45 @@ class ZenMLCustomModel(kserve.Model):
         self.ready = False
 
     def load(self) -> bool:
+        """Load the model.
+
+        Returns:
+            True if the model was loaded successfully, False otherwise.
+
+        """
         model_file_dir = kserve.Storage.download(self.model_dir, self.name)
         try:
-            self.model = self._load_model_with_zenml_artifact(
-                model_file_dir
-            )
+            self.model = self._load_model_with_zenml_artifact(model_file_dir)
         except Exception as e:
             logger.error("Failed to load model: {}".format(e))
             return False
         self.ready = True
         return self.ready
 
-    def predict(self, request: Dict) -> Dict:
+    def predict(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """Predict the given request.
 
         Args:
             request: The request to predict in a dictionary. e.g. {"instances": []}
 
         Returns:
-            The prediction in a dictionary. e.g. {"predictions": []}
+            The prediction dictionary.
+
+        Raises:
+            Exception: If function could not be called.
+            NotImplementedError: If the model is not ready.
         """
         if self.predict_func is not None:
             try:
                 prediction = self.predict_func(request)
             except Exception as e:
                 raise Exception("Failed to predict: {}".format(e))
-            return prediction
+            if isinstance(prediction, dict):
+                return prediction
+            else:
+                raise Exception("Prediction is not a dictionary.")
         else:
             raise NotImplementedError("Predict function is not implemented")
-
-    def _load_model_with_zenml_artifact(self, model_file_dir: str) -> Any:
-        artifact_file = os.path.join(model_file_dir, ARTIFACT_FILE)
-        with open(artifact_file) as json_file:
-            artifact = json.load(json_file)
-        model_artifact = metadata_store_pb2.Artifact()
-        model_artifact.uri = model_file_dir
-        model_artifact.properties["datatype"].string_value = artifact[
-            "datatype"
-        ]
-        model_artifact.properties["materializer"].string_value = artifact[
-            "materializer"
-        ]
-        materializer_class = source_utils.load_source_path_class(
-            model_artifact.properties["materializer"].string_value
-        )
-        model_class = source_utils.load_source_path_class(
-            model_artifact.properties["datatype"].string_value
-        )
-        materialzer_object = materializer_class(model_artifact)
-        model = materialzer_object.handle_input(model_class,mode="inference")
-        return model
 
 
 @click.command()
@@ -119,15 +122,14 @@ class ZenMLCustomModel(kserve.Model):
     type=click.STRING,
     help="The path to the predict function.",
 )
-@click.option(
-    "--load_func",
-    required=False,
-    type=click.STRING,
-    help="The path to the load function.",
-)
-def main(
-    model_name: str, model_uri: str, predict_func: str
-)-> None:
+def main(model_name: str, model_uri: str, predict_func: str) -> None:
+    """Main function for the custom model.
+
+    Args:
+        model_name: The name of the model.
+        model_uri: The URI of the model.
+        predict_func: The path to the predict function.
+    """
     model = ZenMLCustomModel(model_name, model_uri, predict_func)
     model.load()
     kserve.ModelServer().start([model])

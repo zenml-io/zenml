@@ -28,6 +28,7 @@ from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentService,
 )
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseStepConfig,
@@ -35,7 +36,11 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils.source_utils import get_source_root_path, import_class_by_path, is_inside_repository
+from zenml.utils.source_utils import (
+    get_source_root_path,
+    import_class_by_path,
+    is_inside_repository,
+)
 
 logger = get_logger(__name__)
 
@@ -165,6 +170,7 @@ class TorchServeParamters(BaseModel):
                 )
         return v
 
+
 class CustomDeployParamters(BaseModel):
     """Custom model deployer step extra parameters.
 
@@ -190,10 +196,11 @@ class CustomDeployParamters(BaseModel):
         if not v:
             raise ValueError("Predict function path is required.")
         try:
-            import_class_by_path(os.path.join(get_source_root_path(),v))
+            import_class_by_path(os.path.join(get_source_root_path(), v))
         except AttributeError:
             raise ValueError("Predict function can't be found.")
         return v
+
 
 class KServeDeployerStepConfig(BaseStepConfig):
     """KServe model deployer step configuration.
@@ -288,18 +295,6 @@ def kserve_model_deployer_step(
             output_artifact_uri=context.get_output_artifact_uri(),
             config=config,
         )
-    elif config.service_config.predictor == "custom":
-        # import the prepare function from the step utils
-        from zenml.integrations.kserve.steps.kserve_step_utils import (
-            prepare_custom_service_config,
-        )
-
-        # prepare the service config
-        service_config = prepare_custom_service_config(
-            model_uri=model.uri,
-            output_artifact_uri=context.get_output_artifact_uri(),
-            config=config,
-        )
     else:
         # import the prepare function from the step utils
         from zenml.integrations.kserve.steps.kserve_step_utils import (
@@ -312,6 +307,132 @@ def kserve_model_deployer_step(
             output_artifact_uri=context.get_output_artifact_uri(),
             config=config,
         )
+    service = cast(
+        KServeDeploymentService,
+        model_deployer.deploy_model(
+            service_config, replace=True, timeout=config.timeout
+        ),
+    )
+
+    logger.info(
+        f"KServe deployment service started and reachable at:\n"
+        f"    {service.prediction_url}\n"
+        f"    With the hostname: {service.prediction_hostname}."
+    )
+
+    return service
+
+
+@step(enable_cache=False)
+def kserve_custom_model_deployer_step(
+    deploy_decision: bool,
+    config: KServeDeployerStepConfig,
+    context: StepContext,
+    model: ModelArtifact,
+) -> KServeDeploymentService:
+    """KServe custom model deployer pipeline step.
+
+    This step can be used in a pipeline to implement continuous
+    deployment for an ML model with KServe.
+
+    Args:
+        deploy_decision: whether to deploy the model or not
+        config: configuration for the deployer step
+        model: the model artifact to deploy
+        context: the step context
+
+    Returns:
+        KServe deployment service
+
+    Raises:
+        ValueError: if custom deployer is not defined
+    """
+    if not config.custom_deploy_paramters:
+        raise ValueError("Custom deploy paramters are required.")
+
+    model_deployer = KServeModelDeployer.get_active_model_deployer()
+
+    # get pipeline name, step name and run id
+    step_env = cast(StepEnvironment, Environment()[STEP_ENVIRONMENT_NAME])
+    pipeline_name = step_env.pipeline_name
+    pipeline_run_id = step_env.pipeline_run_id
+    step_name = step_env.step_name
+    pipeline_requirements = step_env.pipeline_requirements
+
+    # update the step configuration with the real pipeline runtime information
+    config.service_config.pipeline_name = pipeline_name
+    config.service_config.pipeline_run_id = pipeline_run_id
+    config.service_config.pipeline_step_name = step_name
+
+    # fetch existing services with same pipeline name, step name and
+    # model name
+    existing_services = model_deployer.find_model_server(
+        pipeline_name=pipeline_name,
+        pipeline_step_name=step_name,
+        model_name=config.service_config.model_name,
+    )
+    # even when the deploy decision is negative if an existing model server
+    # is not running for this pipeline/step, we still have to serve the
+    # current model, to ensure that a model server is available at all times
+    if not deploy_decision and existing_services:
+        logger.info(
+            f"Skipping model deployment because the model quality does not "
+            f"meet the criteria. Reusing the last model server deployed by step "
+            f"'{step_name}' and pipeline '{pipeline_name}' for model "
+            f"'{config.service_config.model_name}'..."
+        )
+        service = cast(KServeDeploymentService, existing_services[0])
+        # even when the deploy decision is negative, we still need to start
+        # the previous model server if it is no longer running, to ensure that
+        # a model server is available at all times
+        if not service.is_running:
+            service.start(timeout=config.timeout)
+        return service
+
+    # entrypoint for starting seldon microservice deployment for custom model
+    entrypoint_command = [
+        "python",
+        "-m",
+        "zenml.integrations.kserve.custom_model_deployer",
+        "--model_name",
+        config.service_config.model_name,
+        "--predict_func",
+        config.custom_deploy_paramters.predict_function,
+    ]
+
+    # invoke the KServe model deployer to create a new service
+    # or update an existing one that was previously deployed for the same
+    # model
+
+    # more information about stack ..
+    custom_docker_image_name = model_deployer.prepare_custom_deployment_image(
+        Repository().active_stack,
+        pipeline_name,
+        step_name,
+        pipeline_requirements,
+        entrypoint_command,
+    )
+
+    # import the prepare function from the step utils
+    from zenml.integrations.kserve.steps.kserve_step_utils import (
+        prepare_custom_service_config,
+    )
+
+    # prepare the service config
+    service_config = prepare_custom_service_config(
+        model_uri=model.uri,
+        output_artifact_uri=context.get_output_artifact_uri(),
+        config=config,
+    )
+
+    # Prepare container config for custom model deployment
+    service_config.containers = {
+        "name": service_config.model_name,
+        "image": custom_docker_image_name,
+        "command": entrypoint_command,
+        "storage_uri": service_config.model_uri,
+    }
+
     service = cast(
         KServeDeploymentService,
         model_deployer.deploy_model(

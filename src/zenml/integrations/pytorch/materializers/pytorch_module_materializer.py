@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the PyTorch Module materializer."""
-
 import os
 from typing import Any, Optional, Type
 
@@ -25,7 +24,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 
 DEFAULT_FILENAME = "entire_model.pt"
 CHECKPOINT_FILENAME = "checkpoint.pt"
-#DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class PyTorchModuleMaterializer(BaseMaterializer):
@@ -38,13 +37,16 @@ class PyTorchModuleMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (Module,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
-    def handle_input(self, data_type: Type[Any], mode: Optional[str] = "development") -> Module:
+    def handle_input(
+        self, data_type: Type[Any], mode: Optional[str] = "development"
+    ) -> Module:
         """Reads and returns a PyTorch model.
 
         Only loads the model, not the checkpoint.
 
         Args:
             data_type: The type of the model to load.
+            mode: The mode of the model to load.
 
         Returns:
             A loaded pytorch model.
@@ -59,10 +61,10 @@ class PyTorchModuleMaterializer(BaseMaterializer):
             with fileio.open(
                 os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "rb"
             ) as f:
-                model = torch.load(f)
-                model.load_state_dict(f)
-                return model.eval()
-
+                model = data_type()
+                model.load_state_dict(torch.load(f))  # type: ignore[no-untyped-call]  # noqa
+                model.eval()
+                return model
 
     def handle_return(self, model: Module) -> None:
         """Writes a PyTorch model, as a model and a checkpoint.

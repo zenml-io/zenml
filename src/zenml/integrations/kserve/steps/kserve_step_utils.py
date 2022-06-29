@@ -12,10 +12,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """This module contains the utility functions used by the KServe deployer step."""
+import json
 import os
 import tempfile
-from typing import List, Optional
+from typing import Any, List, Optional
 
+from ml_metadata.proto.metadata_store_pb2 import Artifact
 from model_archiver.model_packaging import package_model
 from model_archiver.model_packaging_utils import ModelExportUtils
 from pydantic import BaseModel
@@ -27,7 +29,10 @@ from zenml.integrations.kserve.steps.kserve_deployer import (
     KServeDeployerStepConfig,
 )
 from zenml.io import fileio
-from zenml.utils import io_utils
+from zenml.repository import Repository
+from zenml.utils import io_utils, source_utils
+
+ARTIFACT_FILE = "artifact.json"
 
 
 def prepare_service_config(
@@ -245,3 +250,86 @@ def generate_model_deployer_config(
         )
     f.close()
     return f.name
+
+
+def prepare_custom_service_config(
+    model_uri: str, output_artifact_uri: str, config: KServeDeployerStepConfig
+) -> KServeDeploymentConfig:
+    """Prepare the model files for model serving.
+
+    This function ensures that the model files are in the correct format
+    and file structure required by the KServe server implementation
+    used for model serving.
+
+    Args:
+        model_uri: the URI of the model artifact being served
+        output_artifact_uri: the URI of the output artifact
+        config: the KServe deployer step config
+
+    Returns:
+        The URL to the model is ready for serving.
+
+    Raises:
+        RuntimeError: if the model files cannot be prepared.
+    """
+    if config.custom_deploy_paramters is None:
+        raise RuntimeError("No custom deploy parameters provided")
+
+    served_model_uri = os.path.join(output_artifact_uri, "kserve")
+    fileio.makedirs(served_model_uri)
+
+    # TODO [ENG-773]: determine how to formalize how models are organized into
+    #   folders and sub-folders depending on the model type/format and the
+    #   KServe protocol used to serve the model.
+    stack = Repository().active_stack
+    served_model_uri = model_uri
+    artifact = stack.metadata_store.store.get_artifacts_by_uri(model_uri)
+    save_to_json_zenml_artifact(served_model_uri, artifact[0])
+
+    service_config = config.service_config.copy()
+    service_config.model_uri = served_model_uri
+    return service_config
+
+
+def save_to_json_zenml_artifact(
+    served_model_uri: str, artifact: Artifact
+) -> None:
+    """Save a zenml artifact to a json file.
+
+    Args:
+        served_model_uri: the URI of the model artifact being served
+        artifact: the artifact to save
+    """
+    data = {}
+    data["datatype"] = artifact.properties["datatype"].string_value
+    data["materializer"] = artifact.properties["materializer"].string_value
+    with fileio.open(os.path.join(served_model_uri, ARTIFACT_FILE), "rb") as f:
+        json.dump(data, f)
+
+
+def load_from_json_zenml_artifact(model_file_dir: str) -> Any:
+    """Load a zenml artifact from a json file.
+
+    Args:
+        model_file_dir: the directory where the model files are stored
+
+    Returns:
+        The model
+    """
+    with fileio.open(os.path.join(model_file_dir, ARTIFACT_FILE), "wb") as f:
+        artifact = json.load(f)
+    model_artifact = Artifact()
+    model_artifact.uri = model_file_dir
+    model_artifact.properties["datatype"].string_value = artifact["datatype"]
+    model_artifact.properties["materializer"].string_value = artifact[
+        "materializer"
+    ]
+    materializer_class = source_utils.load_source_path_class(
+        model_artifact.properties["materializer"].string_value
+    )
+    model_class = source_utils.load_source_path_class(
+        model_artifact.properties["datatype"].string_value
+    )
+    materialzer_object = materializer_class(model_artifact)
+    model = materialzer_object.handle_input(model_class, mode="inference")
+    return model

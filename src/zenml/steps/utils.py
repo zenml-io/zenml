@@ -58,11 +58,13 @@ from tfx.types import component_spec
 from tfx.types.channel import Channel
 from tfx.utils import json_utils
 
+import zenml
 from zenml.artifacts.base_artifact import BaseArtifact
 from zenml.exceptions import MissingStepParameterError, StepInterfaceError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.repository import Repository
 from zenml.steps.base_step_config import BaseStepConfig
 from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
@@ -449,6 +451,33 @@ class _FunctionExecutor(BaseExecutor):
                 f"{getattr(self, PARAM_STEP_NAME)}"
             )
 
+    def _collect_requirements(
+        self,
+    ) -> List[str]:
+        """Collects all requirements necessary to run a step.
+
+        Returns:
+            Alphabetically sorted list of pip requirements.
+        """
+        requirements = Repository().active_stack.requirements()
+
+        if self._context:
+            # Add pipeline requirements from the corresponding node context
+            for context in self._context.pipeline_node.contexts.contexts:
+                if context.type.name == "pipeline_requirements":
+                    pipeline_requirements = context.properties[
+                        "pipeline_requirements"
+                    ].field_value.string_value.split(" ")
+                    requirements.update(pipeline_requirements)
+                    break
+
+        # TODO [ENG-696]: Find a nice way to set this if the running version of
+        #  ZenML is not an official release (e.g. on a development branch)
+        # Add the current ZenML version as a requirement
+        requirements.add(f"zenml=={zenml.__version__}")
+
+        return sorted(requirements)
+
     def Do(
         self,
         input_dict: Dict[str, List[BaseArtifact]],
@@ -533,6 +562,7 @@ class _FunctionExecutor(BaseExecutor):
             pipeline_name=self._context.pipeline_info.id,
             pipeline_run_id=self._context.pipeline_run_id,
             step_name=getattr(self, PARAM_STEP_NAME),
+            pipeline_requirements=self._collect_requirements(),
         ):
             return_values = self._FUNCTION(**function_params)
 

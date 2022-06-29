@@ -66,6 +66,7 @@ class KServeDeploymentConfig(ServiceConfig):
     secret_name: Optional[str]
     predictor: str
     replicas: int = 1
+    containers: Optional[Dict[str, Any]]
     resources: Optional[Dict[str, Any]]
 
     @staticmethod
@@ -336,12 +337,30 @@ class KServeDeploymentService(BaseService):
 
         # All supported model specs seem to have the same fields
         # so we can use any one of them (see https://kserve.github.io/website/0.8/reference/api/#serving.kserve.io/v1beta1.PredictorExtensionSpec)
-        predictor_kwargs = {
-            self.config.predictor: V1beta1PredictorExtensionSpec(
-                storage_uri=self.config.model_uri,
-                resources=self.config.resources,
-            )
-        }
+        if self.config.containers is not None:
+            predictor_kwargs = {
+                "containers": [
+                    k8s_client.V1Container(
+                        name=self.config.containers.get("name"),
+                        image=self.config.containers.get("image"),
+                        command=self.config.containers.get("command"),
+                        args=self.config.containers.get("args"),
+                        env=[
+                            k8s_client.V1EnvVar(
+                                name="STORAGE_URI",
+                                value=self.config.containers.get("storage_uri"),
+                            )
+                        ],
+                    )
+                ]
+            }
+        else:
+            predictor_kwargs = {
+                self.config.predictor: V1beta1PredictorExtensionSpec(
+                    storage_uri=self.config.model_uri,
+                    resources=self.config.resources,
+                )
+            }
 
         isvc = V1beta1InferenceService(
             api_version=api_version,
