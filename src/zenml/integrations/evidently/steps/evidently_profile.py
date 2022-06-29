@@ -127,7 +127,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
         config: EvidentlyProfileConfig,
-        ignored_columns=Optional[List[str]],
+        ignored_columns=List[str]=None,
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str
     ):
