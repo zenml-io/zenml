@@ -43,7 +43,6 @@ class GcpIntegration(Integration):
     """Definition of Google Cloud Platform integration for ZenML."""
 
     NAME = GCP
-    REQUIREMENTS = ["gcsfs", "google-cloud-compute", "google-cloud-logging"]
     REQUIREMENTS = [
         "kfp",
         "gcsfs",
