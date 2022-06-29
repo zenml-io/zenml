@@ -12,12 +12,11 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 from zenml.integrations.label_studio.steps.label_studio_export_step import (
-    AnnotationInputArtifact,
-    AnnotationOutputArtifact,
-    AzureDatasetCreationConfig,
-    ImageClassificationInputArtifact,
-    LabelStudioDatasetCreationStep,
-    LabelStudioRecords,
+    IMAGE_CLASSIFICATION_LABEL_CONFIG,
+    LabelStudioDatasetSyncConfig,
+    get_labeled_data,
+    get_or_create_dataset,
+    sync_new_data_to_label_studio,
 )
 from zenml.integrations.label_studio.steps.label_studio_import_step import (
     LabelStudioImportStep,

@@ -1355,7 +1355,10 @@ def register_annotator_subcommands() -> None:
     annotator_group = cli.commands.get("annotator")
     if annotator_group:
 
-        @annotator_group.group(cls=TagGroup)
+        @annotator_group.group(
+            cls=TagGroup,
+            help="Commands for interacting with annotation datasets.",
+        )
         @click.pass_context
         def dataset(ctx: click.Context) -> None:
             """Do something"""
@@ -1366,7 +1369,7 @@ def register_annotator_subcommands() -> None:
             )
             if annotator_wrapper is None:
                 cli_utils.error(
-                    "No active secrets manager found. Please create a secrets manager "
+                    "No active annotator found. Please register an annotator "
                     "first and add it to your stack."
                 )
                 return
@@ -1374,11 +1377,18 @@ def register_annotator_subcommands() -> None:
             ctx.obj = annotator_wrapper.to_component()
 
         @dataset.command(
-            "list", context_settings={"ignore_unknown_options": True}
+            "list",
+            context_settings={"ignore_unknown_options": True},
+            help="List the available datasets.",
         )
         @click.pass_obj
         def dataset_list(annotator: "BaseAnnotator") -> None:
-            cli_utils.declare("Success")
+            """List the available datasets."""
+            dataset_names = [
+                dataset.get_params()["title"]
+                for dataset in annotator.get_datasets()
+            ]
+            cli_utils.declare(dataset_names)
 
         @dataset.command(
             "stats", context_settings={"ignore_unknown_options": True}
@@ -1389,7 +1399,28 @@ def register_annotator_subcommands() -> None:
         )
         @click.pass_obj
         def dataset_stats(annotator: "BaseAnnotator", name: str) -> None:
-            cli_utils.declare(f"Printing stats about your dataset '{name}'")
+            projects = annotator.get_datasets()
+            # TODO: make it impossible to create new datasets with same name
+            try:
+                project = list(
+                    filter(lambda x: name in x.get_params()["title"], projects)
+                )[0]
+            except IndexError:
+                cli_utils.error(
+                    f"Dataset {name} not found. Please use `zenml annotator "
+                    f"dataset list` to list all available datasets."
+                )
+            unlabeled_task_count = len(project.get_unlabeled_tasks())
+            labeled_task_count = len(project.get_labeled_tasks())
+            total_task_count = unlabeled_task_count + labeled_task_count
+            cli_utils.declare(
+                f"Annotation stats for '{name}' dataset:", bold=True
+            )
+            cli_utils.declare(f"Total annotation tasks: {total_task_count}")
+            cli_utils.declare(f"Labeled annotation tasks: {labeled_task_count}")
+            cli_utils.declare(
+                f"Unlabeled annotation tasks: {unlabeled_task_count}"
+            )
 
         @dataset.command(
             "delete", context_settings={"ignore_unknown_options": True}
@@ -1398,8 +1429,17 @@ def register_annotator_subcommands() -> None:
             "name",
             type=click.STRING,
         )
+        @click.option(
+            "--all",
+            "-a",
+            "all",
+            is_flag=True,
+            help="Use this flag to delete all datasets.",
+            type=click.BOOL,
+        )
         @click.pass_obj
         def dataset_delete(annotator: "BaseAnnotator", name: str) -> None:
+            # TODO: implement this once the new commands are released
             cli_utils.declare(f"Deleting your dataset '{name}'")
 
         @dataset.command(
@@ -1412,21 +1452,9 @@ def register_annotator_subcommands() -> None:
         @click.pass_obj
         def dataset_annotate(annotator: "BaseAnnotator", name: str) -> None:
             cli_utils.declare(
-                f"Launching annotation interface for your dataset '{name}'"
+                f"Launching the annotation interface for dataset '{name}'."
             )
-
-        @dataset.command(
-            "annotate", context_settings={"ignore_unknown_options": True}
-        )
-        @click.argument(
-            "name",
-            type=click.STRING,
-        )
-        @click.pass_obj
-        def dataset_annotate(annotator: "BaseAnnotator", name: str) -> None:
-            cli_utils.declare(
-                f"Launching annotation interface for your dataset '{name}'"
-            )
+            annotator.launch(url=annotator.get_annotation_url(name))
 
 
 def register_all_stack_component_cli_commands() -> None:

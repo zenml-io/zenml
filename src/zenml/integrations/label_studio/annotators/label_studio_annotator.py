@@ -26,6 +26,7 @@ from zenml.exceptions import ProvisioningError
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.integrations.label_studio.steps.label_studio_export_step import (
     AzureDatasetCreationConfig,
+    LabelStudioDatasetSyncConfig,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -54,6 +55,25 @@ class LabelStudioAnnotator(BaseAnnotator):
     def get_url(self) -> str:
         """Gets the URL of the annotation interface."""
         return f"http://localhost:{self.port}"
+
+    def get_annotation_url(self, name: str) -> str:
+        """Gets the URL of the annotation interface."""
+        project_id = self.get_id_from_name(name)
+        return f"{self.get_url()}/projects/{project_id}/"
+
+    def get_id_from_name(self, name: str) -> int:
+        """Gets the ID of the given dataset."""
+        ls = self._get_client()
+        projects = ls.get_projects()
+        try:
+            project = [
+                project
+                for project in projects
+                if project.get_params()["title"] == name
+            ][0]
+        except IndexError as e:
+            raise e(f"No project with name {name} found.") from e
+        return project.get_params()["id"]
 
     def get_datasets(self) -> List[str]:
         """Gets the datasets currently available for annotation."""
@@ -204,10 +224,10 @@ class LabelStudioAnnotator(BaseAnnotator):
                 daemon.stop_daemon(self._pid_file_path)
                 fileio.remove(self._pid_file_path)
 
-    def launch(self) -> None:
+    def launch(self, url: str) -> None:
         """Launches the annotation interface."""
         if self._connection_available():
-            webbrowser.open(self.get_url(), new=1, autoraise=True)
+            webbrowser.open(url, new=1, autoraise=True)
         else:
             logger.warning(
                 "Could not launch annotation interface"
@@ -286,26 +306,93 @@ class LabelStudioAnnotator(BaseAnnotator):
     ) -> int:
         """Registers a dataset for annotation."""
         ls = self._get_client()
-        project = ls.start_project(
+
+        if ls.get_project(self.get_id_from_name(config.dataset_name)):
+            ls.get_project
+
+        dataset = ls.start_project(
             title=config.dataset_name,
             label_config=config.label_config,
-            # sampling=config.project_sampling,
         )
 
+        return dataset
+
+    def sync_external_storage(
+        self,
+        config: LabelStudioDatasetSyncConfig,
+        dataset: Project,
+        azure_account_name: Optional[str],
+        azure_account_key: Optional[str],
+        google_application_credentials: Optional[str],
+        aws_access_key_id: Optional[str],
+        aws_secret_access_key: Optional[str],
+        aws_session_token: Optional[str],
+        region_name: Optional[str],
+        s3_endpoint: Optional[str],
+    ) -> None:
+        """Syncs the external storage for the given project."""
         if config.storage_type == "azure":
-            storage = project.connect_azure_import_storage(
-                container=config.container_name,
+            if not azure_account_name or not azure_account_key:
+                logger.warn(
+                    "Authentication credentials for Azure aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
+                )
+            storage = dataset.connect_azure_import_storage(
+                container=config.storage_name,
                 prefix=config.prefix,
                 regex_filter=config.regex_filter,
                 use_blob_urls=config.use_blob_urls,
                 presign=config.presign,
                 presign_ttl=config.presign_ttl,
-                title=config.dataset_name,
+                title=dataset.get_params()["title"],
                 description=config.description,
-                account_name=config.account_name,
-                account_key=config.account_key,
+                account_name=azure_account_name,
+                account_key=azure_account_key,
             )
-        # TODO: add GCP, S3 and LOCAL
+        elif config.storage_type == "gcs":
+            if not google_application_credentials:
+                logger.warn(
+                    "Authentication credentials for Google Cloud Storage aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
+                )
+            storage = dataset.connect_azure_import_storage(
+                bucket=config.storage_name,
+                prefix=config.prefix,
+                regex_filter=config.regex_filter,
+                use_blob_urls=config.use_blob_urls,
+                presign=config.presign,
+                presign_ttl=config.presign_ttl,
+                title=dataset.get_params()["title"],
+                description=config.description,
+                google_application_credentials=google_application_credentials,
+            )
+        elif config.storage_type == "aws":
+            if (
+                not aws_access_key_id
+                or not aws_secret_access_key
+                or not aws_session_token
+            ):
+                logger.warn(
+                    "Authentication credentials for AWS aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
+                )
+            storage = dataset.connect_azure_import_storage(
+                bucket=config.storage_name,
+                prefix=config.prefix,
+                regex_filter=config.regex_filter,
+                use_blob_urls=config.use_blob_urls,
+                presign=config.presign,
+                presign_ttl=config.presign_ttl,
+                title=dataset.get_params()["title"],
+                description=config.description,
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key,
+                aws_session_token=aws_session_token,
+                region_name=region_name,
+                s3_endpoint=s3_endpoint,
+            )
+        else:
+            raise ValueError(
+                f"Invalid storage type. '{config.storage_type}' is not supported by ZenML's Label Studio integration. Please choose between 'azure', 'gcs' and 'aws'."
+            )
 
+        ls = self._get_client()
         ls.sync_storage(storage_id=storage["id"], storage_type=storage["type"])
-        return project.get_params()["id"]
+        return
