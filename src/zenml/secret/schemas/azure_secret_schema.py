@@ -25,10 +25,14 @@ class AzureSecretSchema(BaseSecretSchema):
 
     TYPE: ClassVar[str] = AZURE_SECRET_SCHEMA_TYPE
 
-    account_name: Optional[str] = None
-    account_key: Optional[str] = None
-    sas_token: Optional[str] = None
-    connection_string: Optional[str] = None
-    client_id: Optional[str] = None
-    client_secret: Optional[str] = None
-    tenant_id: Optional[str] = None
+    # Azure key vault store doesn't permit the use of underscores
+    # for key names, so we use them without here but reconstitute
+    # them where they are used elsewhere for authentication.
+    # (e.g. in the artifact store)
+    accountname: Optional[str] = None
+    accountkey: Optional[str] = None
+    sastoken: Optional[str] = None
+    connectionstring: Optional[str] = None
+    clientid: Optional[str] = None
+    clientsecret: Optional[str] = None
+    tenantid: Optional[str] = None
