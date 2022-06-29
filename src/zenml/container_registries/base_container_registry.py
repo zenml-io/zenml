@@ -30,13 +30,9 @@ class BaseContainerRegistry(StackComponent, AuthenticationMixin):
 
     Attributes:
         uri: The URI of the container registry.
-        username: Username to authenticate with the container registry.
-        password: Password to authenticate with the container registry.
     """
 
     uri: str
-    username: Optional[str] = None
-    password: Optional[str] = None
 
     # Class Configuration
     TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
