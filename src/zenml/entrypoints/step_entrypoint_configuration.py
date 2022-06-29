@@ -50,20 +50,6 @@ INPUT_ARTIFACT_SOURCES_OPTION = "input_artifact_sources"
 MATERIALIZER_SOURCES_OPTION = "materializer_sources"
 
 
-def _b64_encode(input_: str) -> str:
-    """Returns a base 64 encoded string of the input string."""
-    json_bytes = input_.encode()
-    encoded_bytes = base64.b64encode(json_bytes)
-    return encoded_bytes.decode()
-
-
-def _b64_decode(input_: str) -> str:
-    """Returns a decoded string of the base 64 encoded input string."""
-    encoded_bytes = input_.encode()
-    decoded_bytes = base64.b64decode(encoded_bytes)
-    return decoded_bytes.decode()
-
-
 class StepEntrypointConfiguration(ABC):
     """Abstract base class for entrypoint configurations that run a single step.
 
