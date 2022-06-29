@@ -21,16 +21,24 @@ from zenml.steps import BaseStepConfig, StepContext, step
 
 logger = get_logger(__name__)
 
-
-IMAGE_CLASSIFICATION_LABEL_CONFIG = """
-    <View>
+# TODO: use this to dynamically generate the classification label config
+def generate_image_classification_label_config(labels: List[str]) -> str:
+    """Generates a Label Studio label config for image classification."""
+    label_config_start = """<View>
     <Image name="image" value="$image"/>
     <Choices name="choice" toName="image">
-        <Choice value="Mr Blupus"/>
-        <Choice value="Other" />
-    </Choices>
-    </View>
     """
+    label_config_choices = "".join(
+        f"<Choice value='{label}' />\n" for label in labels
+    )
+    label_config_end = "</Choices>\n</View>"
+
+    return label_config_start + label_config_choices + label_config_end
+
+
+IMAGE_CLASSIFICATION_LABEL_CONFIG = generate_image_classification_label_config(
+    ["Mr Blupus", "Other"]
+)
 
 
 class LabelStudioDatasetSyncConfig(BaseStepConfig):
