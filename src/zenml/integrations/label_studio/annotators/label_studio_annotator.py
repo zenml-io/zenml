@@ -25,7 +25,6 @@ from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.integrations.label_studio.steps.label_studio_export_step import (
-    AzureDatasetCreationConfig,
     LabelStudioDatasetSyncConfig,
 )
 from zenml.io import fileio
@@ -61,7 +60,7 @@ class LabelStudioAnnotator(BaseAnnotator):
         project_id = self.get_id_from_name(name)
         return f"{self.get_url()}/projects/{project_id}/"
 
-    def get_id_from_name(self, name: str) -> int:
+    def get_id_from_name(self, name: str) -> Optional[int]:
         """Gets the ID of the given dataset."""
         ls = self._get_client()
         projects = ls.get_projects()
@@ -71,8 +70,8 @@ class LabelStudioAnnotator(BaseAnnotator):
                 for project in projects
                 if project.get_params()["title"] == name
             ][0]
-        except IndexError as e:
-            raise e(f"No project with name {name} found.") from e
+        except IndexError:
+            return None
         return project.get_params()["id"]
 
     def get_datasets(self) -> List[str]:
@@ -302,18 +301,18 @@ class LabelStudioAnnotator(BaseAnnotator):
     def register_dataset_for_annotation(
         self,
         # data: List[str],
-        config: AzureDatasetCreationConfig,
+        config: LabelStudioDatasetSyncConfig,
     ) -> int:
         """Registers a dataset for annotation."""
         ls = self._get_client()
 
-        if ls.get_project(self.get_id_from_name(config.dataset_name)):
-            ls.get_project
-
-        dataset = ls.start_project(
-            title=config.dataset_name,
-            label_config=config.label_config,
-        )
+        if self.get_id_from_name(config.dataset_name):
+            dataset = ls.get_project(self.get_id_from_name(config.dataset_name))
+        else:
+            dataset = ls.start_project(
+                title=config.dataset_name,
+                label_config=config.label_config,
+            )
 
         return dataset
 
@@ -321,18 +320,10 @@ class LabelStudioAnnotator(BaseAnnotator):
         self,
         config: LabelStudioDatasetSyncConfig,
         dataset: Project,
-        azure_account_name: Optional[str],
-        azure_account_key: Optional[str],
-        google_application_credentials: Optional[str],
-        aws_access_key_id: Optional[str],
-        aws_secret_access_key: Optional[str],
-        aws_session_token: Optional[str],
-        region_name: Optional[str],
-        s3_endpoint: Optional[str],
     ) -> None:
         """Syncs the external storage for the given project."""
         if config.storage_type == "azure":
-            if not azure_account_name or not azure_account_key:
+            if not config.azure_account_name or not config.azure_account_key:
                 logger.warn(
                     "Authentication credentials for Azure aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
                 )
@@ -345,11 +336,11 @@ class LabelStudioAnnotator(BaseAnnotator):
                 presign_ttl=config.presign_ttl,
                 title=dataset.get_params()["title"],
                 description=config.description,
-                account_name=azure_account_name,
-                account_key=azure_account_key,
+                account_name=config.azure_account_name,
+                account_key=config.azure_account_key,
             )
         elif config.storage_type == "gcs":
-            if not google_application_credentials:
+            if not config.google_application_credentials:
                 logger.warn(
                     "Authentication credentials for Google Cloud Storage aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
                 )
@@ -362,13 +353,13 @@ class LabelStudioAnnotator(BaseAnnotator):
                 presign_ttl=config.presign_ttl,
                 title=dataset.get_params()["title"],
                 description=config.description,
-                google_application_credentials=google_application_credentials,
+                google_application_credentials=config.google_application_credentials,
             )
         elif config.storage_type == "aws":
             if (
-                not aws_access_key_id
-                or not aws_secret_access_key
-                or not aws_session_token
+                not config.aws_access_key_id
+                or not config.aws_secret_access_key
+                or not config.aws_session_token
             ):
                 logger.warn(
                     "Authentication credentials for AWS aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
@@ -382,11 +373,11 @@ class LabelStudioAnnotator(BaseAnnotator):
                 presign_ttl=config.presign_ttl,
                 title=dataset.get_params()["title"],
                 description=config.description,
-                aws_access_key_id=aws_access_key_id,
-                aws_secret_access_key=aws_secret_access_key,
-                aws_session_token=aws_session_token,
-                region_name=region_name,
-                s3_endpoint=s3_endpoint,
+                aws_access_key_id=config.aws_access_key_id,
+                aws_secret_access_key=config.aws_secret_access_key,
+                aws_session_token=config.aws_session_token,
+                region_name=config.region_name,
+                s3_endpoint=config.s3_endpoint,
             )
         else:
             raise ValueError(

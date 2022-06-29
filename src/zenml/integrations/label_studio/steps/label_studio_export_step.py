@@ -35,6 +35,7 @@ IMAGE_CLASSIFICATION_LABEL_CONFIG = """
 
 class LabelStudioDatasetSyncConfig(BaseStepConfig):
     label_config: str
+    dataset_name: str
     storage_type: str
     storage_name: str
 
@@ -44,6 +45,16 @@ class LabelStudioDatasetSyncConfig(BaseStepConfig):
     presign: Optional[bool] = True
     presign_ttl: Optional[int] = 1
     description: Optional[str] = ""
+
+    # credentials specific to the main cloud providers
+    azure_account_name: Optional[str]
+    azure_account_key: Optional[str]
+    google_application_credentials: Optional[str]
+    aws_access_key_id: Optional[str]
+    aws_secret_access_key: Optional[str]
+    aws_session_token: Optional[str]
+    region_name: Optional[str]
+    s3_endpoint: Optional[str]
 
 
 @step
@@ -96,7 +107,8 @@ def sync_new_data_to_label_studio(
     dataset = annotator.get_dataset(dataset_id)
     if annotator and annotator._connection_available():
         annotator.sync_external_storage(
-            config=LabelStudioDatasetSyncConfig, dataset=dataset
+            config=config,
+            dataset=dataset,
         )
     else:
         raise StackComponentInterfaceError("No active annotator.")
