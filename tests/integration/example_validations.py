@@ -256,3 +256,25 @@ def whylogs_example_validation(repository: Repository):
 
     for profile in profiles:
         assert isinstance(profile, DatasetProfile)
+
+
+def great_expectations_setup(repository: Repository) -> None:
+    """Adds a Great Expectations data validator component to the active stack."""
+    # install the GE integration so we can import the stack component
+    import subprocess
+
+    subprocess.check_call(
+        ["zenml", "integration", "install", "great_expectations", "-y"]
+    )
+
+    from zenml.integrations.great_expectations.data_validators import (
+        GreatExpectationsDataValidator,
+    )
+
+    components = repository.active_stack.components
+    components[
+        StackComponentType.DATA_VALIDATOR
+    ] = GreatExpectationsDataValidator(name="great_expectations")
+    stack = Stack.from_components(name="ge_stack", components=components)
+    repository.register_stack(stack)
+    repository.activate_stack(stack.name)

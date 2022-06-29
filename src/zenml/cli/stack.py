@@ -44,7 +44,11 @@ def stack() -> None:
     """Stacks to define various environments."""
 
 
-@stack.command("register", context_settings=dict(ignore_unknown_options=True))
+@stack.command(
+    "register",
+    context_settings=dict(ignore_unknown_options=True),
+    help="Register a stack with components.",
+)
 @click.argument("stack_name", type=str, required=True)
 @click.option(
     "-m",
@@ -135,6 +139,14 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-dv",
+    "--data_validator",
+    "data_validator_name",
+    help="Name of the data validator for this stack.",
+    type=str,
+    required=False,
+)
+@click.option(
     "--set",
     "set_stack",
     is_flag=True,
@@ -154,6 +166,7 @@ def register_stack(
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
     annotator_name: Optional[str] = None,
+    data_validator_name: Optional[str] = None,
     set_stack: bool = False,
 ) -> None:
     """Register a stack.
@@ -171,6 +184,7 @@ def register_stack(
         experiment_tracker_name: Name of the experiment tracker for this stack.
         alerter_name: Name of the alerter for this stack.
         annotator_name: Name of the annotator for this stack.
+        data_validator_name: Name of the data validator for this stack.
         set_stack: Immediately set this stack as active.
     """
     cli_utils.print_active_profile()
@@ -253,6 +267,14 @@ def register_stack(
                 name=annotator_name,
             )
 
+        if data_validator_name:
+            stack_components[
+                StackComponentType.DATA_VALIDATOR
+            ] = repo.get_stack_component(
+                StackComponentType.DATA_VALIDATOR,
+                name=data_validator_name,
+            )
+
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
@@ -263,7 +285,11 @@ def register_stack(
         set_active_stack(stack_name=stack_name)
 
 
-@stack.command("update", context_settings=dict(ignore_unknown_options=True))
+@stack.command(
+    "update",
+    context_settings=dict(ignore_unknown_options=True),
+    help="Update a stack with new components.",
+)
 @click.argument("stack_name", type=str, required=False)
 @click.option(
     "-m",
@@ -353,6 +379,14 @@ def register_stack(
     type=str,
     required=False,
 )
+@click.option(
+    "-dv",
+    "--data_validator",
+    "data_validator_name",
+    help="Name of the data validator for this stack.",
+    type=str,
+    required=False,
+)
 def update_stack(
     stack_name: Optional[str],
     metadata_store_name: Optional[str] = None,
@@ -366,6 +400,7 @@ def update_stack(
     experiment_tracker_name: Optional[str] = None,
     alerter_name: Optional[str] = None,
     annotator_name: Optional[str] = None,
+    data_validator_name: Optional[str] = None,
 ) -> None:
     """Update a stack.
 
@@ -384,6 +419,7 @@ def update_stack(
             stack.
         alerter_name: Name of the new alerter for this stack.
         annotator_name: Name of the new annotator for this stack.
+        data_validator_name: Name of the new data validator for this stack.
     """
     cli_utils.print_active_profile()
 
@@ -487,6 +523,14 @@ def update_stack(
                 name=annotator_name,
             )
 
+        if data_validator_name:
+            stack_components[
+                StackComponentType.DATA_VALIDATOR
+            ] = repo.get_stack_component(
+                StackComponentType.DATA_VALIDATOR,
+                name=data_validator_name,
+            )
+
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
@@ -495,7 +539,9 @@ def update_stack(
 
 
 @stack.command(
-    "remove-component", context_settings=dict(ignore_unknown_options=True)
+    "remove-component",
+    context_settings=dict(ignore_unknown_options=True),
+    help="Remove stack components from a stack.",
 )
 @click.argument("stack_name", type=str, required=False)
 @click.option(
@@ -562,6 +608,14 @@ def update_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-dv",
+    "--data_validator",
+    "data_validator_flag",
+    help="Include this to remove the data validator from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name: Optional[str],
     container_registry_flag: Optional[bool] = False,
@@ -572,6 +626,7 @@ def remove_stack_component(
     experiment_tracker_flag: Optional[bool] = False,
     alerter_flag: Optional[bool] = False,
     annotator_flag: Optional[bool] = False,
+    data_validator_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -586,6 +641,7 @@ def remove_stack_component(
         stack.
         alerter_flag: To remove the alerter from this stack.
         annotator_flag: To remove the annotator from this stack.
+        data_validator_flag: To remove the data validator from this stack.
     """
     cli_utils.print_active_profile()
 
@@ -628,6 +684,9 @@ def remove_stack_component(
         if annotator_flag:
             stack_components.pop(StackComponentType.ANNOTATOR, None)
 
+        if data_validator_flag:
+            stack_components.pop(StackComponentType.DATA_VALIDATOR, None)
+
         stack_ = Stack.from_components(
             name=stack_name, components=stack_components
         )
@@ -635,7 +694,7 @@ def remove_stack_component(
         cli_utils.declare(f"Stack `{stack_name}` successfully updated!")
 
 
-@stack.command("rename")
+@stack.command("rename", help="Rename a stack.")
 @click.argument("current_stack_name", type=str, required=True)
 @click.argument("new_stack_name", type=str, required=True)
 def rename_stack(
@@ -747,7 +806,7 @@ def describe_stack(stack_name: Optional[str]) -> None:
     )
 
 
-@stack.command("delete")
+@stack.command("delete", help="Delete a stack given its name.")
 @click.argument("stack_name", type=str)
 @click.option("--yes", "-y", is_flag=True, required=False)
 @click.option("--force", "-f", "old_force", is_flag=True, required=False)
@@ -800,7 +859,7 @@ def delete_stack(
     cli_utils.declare(f"Deleted stack '{stack_name}'.")
 
 
-@stack.command("set")
+@stack.command("set", help="Sets a stack as active.")
 @click.argument("stack_name", type=str)
 @click.option(
     "--global",
@@ -874,7 +933,9 @@ def up_stack() -> None:
         cli_utils.error(str(e))
 
 
-@stack.command("down")
+@stack.command(
+    "down", help="Suspends resources of the active stack deployment."
+)
 @click.option(
     "--yes",
     "-y",
@@ -943,7 +1004,7 @@ def _get_component_as_dict(
     return component_dict
 
 
-@stack.command("export")
+@stack.command("export", help="Exports a stack to a YAML file.")
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=False)
 def export_stack(stack_name: str, filename: Optional[str]) -> None:
@@ -1044,7 +1105,7 @@ def _import_stack_component(
     return component_name
 
 
-@stack.command("import")
+@stack.command("import", help="Import a stack from YAML.")
 @click.argument("stack_name", type=str, required=True)
 @click.argument("filename", type=str, required=False)
 @click.pass_context
@@ -1106,10 +1167,7 @@ def import_stack(
     ctx.invoke(register_stack, stack_name=stack_name, **component_names)
 
 
-@stack.command(
-    "copy",
-    help="SOURCE_STACK: The name of the stack to copy.\n\nTARGET_STACK: Name of the copied stack.",
-)
+@stack.command("copy", help="Copy a stack to a new stack name.")
 @click.argument("source_stack", type=str, required=True)
 @click.argument("target_stack", type=str, required=True)
 @click.option(
