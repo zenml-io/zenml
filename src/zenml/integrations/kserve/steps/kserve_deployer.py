@@ -35,7 +35,7 @@ from zenml.steps import (
     step,
 )
 from zenml.steps.step_context import StepContext
-from zenml.utils.source_utils import get_source_root_path, is_inside_repository
+from zenml.utils.source_utils import get_source_root_path, import_class_by_path, is_inside_repository
 
 logger = get_logger(__name__)
 
@@ -165,6 +165,35 @@ class TorchServeParamters(BaseModel):
                 )
         return v
 
+class CustomDeployParamters(BaseModel):
+    """Custom model deployer step extra parameters.
+
+    Attributes:
+        predict_function: Path to Python file containing predict function.
+    """
+
+    predict_function: str
+
+    @validator("predict_function")
+    def predict_function_validate(cls, v: str) -> str:
+        """Validate predict function.
+
+        Args:
+            v: predict function path
+
+        Returns:
+            predict function path
+
+        Raises:
+            ValueError: if predict function path is not valid
+        """
+        if not v:
+            raise ValueError("Predict function path is required.")
+        try:
+            import_class_by_path(os.path.join(get_source_root_path(),v))
+        except AttributeError:
+            raise ValueError("Predict function can't be found.")
+        return v
 
 class KServeDeployerStepConfig(BaseStepConfig):
     """KServe model deployer step configuration.
@@ -180,6 +209,7 @@ class KServeDeployerStepConfig(BaseStepConfig):
 
     service_config: KServeDeploymentConfig
     torch_serve_paramters: Optional[TorchServeParamters] = None
+    custom_deploy_paramters: Optional[CustomDeployParamters] = None
     timeout: int = DEFAULT_KSERVE_DEPLOYMENT_START_STOP_TIMEOUT
 
 
@@ -254,6 +284,18 @@ def kserve_model_deployer_step(
 
         # prepare the service config
         service_config = prepare_torch_service_config(
+            model_uri=model.uri,
+            output_artifact_uri=context.get_output_artifact_uri(),
+            config=config,
+        )
+    elif config.service_config.predictor == "custom":
+        # import the prepare function from the step utils
+        from zenml.integrations.kserve.steps.kserve_step_utils import (
+            prepare_custom_service_config,
+        )
+
+        # prepare the service config
+        service_config = prepare_custom_service_config(
             model_uri=model.uri,
             output_artifact_uri=context.get_output_artifact_uri(),
             config=config,
