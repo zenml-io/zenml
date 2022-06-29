@@ -114,7 +114,7 @@ def test_pydantic_object_to_metadata_context():
     with pytest.raises(TypeError):
         add_runtime_configuration_to_node(node3, {"k": obj2})
 
-    # use pydantics serialization magic
+    # use Pydantic's serialization magic
 
     obj4 = DateTimeAttributes(
         t=dt.datetime(2022, 10, 20, 16, 42, 5), d=dt.date(2012, 12, 20)

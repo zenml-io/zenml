@@ -12,7 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-"""
+"""Utility functions for Steps.
+
 The collection of utility functions/classes are inspired by their original
 implementation of the Tensorflow Extended team, which can be found here:
 
@@ -30,6 +31,7 @@ import json
 import sys
 import typing
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -43,6 +45,7 @@ from typing import (
     Set,
     Type,
     ValuesView,
+    cast,
 )
 
 import pydantic
@@ -65,6 +68,9 @@ from zenml.steps.step_context import StepContext
 from zenml.steps.step_environment import StepEnvironment
 from zenml.steps.step_output import Output
 from zenml.utils import source_utils
+
+if TYPE_CHECKING:
+    from zenml.steps.base_step import BaseStep
 
 logger = get_logger(__name__)
 
@@ -102,11 +108,23 @@ def resolve_type_annotation(obj: Any) -> Any:
 
     Example: if the input object is `typing.Dict`, this method will return the
     concrete class `dict`.
+
+    Args:
+        obj: The object to resolve.
+
+    Returns:
+        The non-generic class for generic aliases of the typing module.
     """
-    if isinstance(obj, typing._GenericAlias):  # type: ignore[attr-defined]
-        return obj.__origin__
+    from typing import _GenericAlias  # type: ignore[attr-defined]
+
+    if sys.version_info >= (3, 8):
+        return typing.get_origin(obj) or obj
     else:
-        return obj
+        # python 3.7
+        if isinstance(obj, _GenericAlias):
+            return obj.__origin__
+        else:
+            return obj
 
 
 def generate_component_spec_class(
@@ -209,6 +227,7 @@ def generate_component_class(
 
 class _PropertyDictWrapper(json_utils.Jsonable):
     """Helper class to wrap inputs/outputs from TFX nodes.
+
     Currently, this class is read-only (setting properties is not implemented).
     Internal class: no backwards compatibility guarantees.
     Code Credit: https://github.com/tensorflow/tfx/blob
@@ -230,17 +249,38 @@ class _PropertyDictWrapper(json_utils.Jsonable):
         self._compat_aliases = compat_aliases or {}
 
     def __iter__(self) -> Iterator[str]:
-        """Returns a generator that yields keys of the wrapped dictionary."""
+        """Returns a generator that yields keys of the wrapped dictionary.
+
+        Yields:
+            Keys of the wrapped dictionary.
+        """
         yield from self._data
 
     def __getitem__(self, key: str) -> Channel:
-        """Returns the dictionary value for the specified key."""
+        """Returns the dictionary value for the specified key.
+
+        Args:
+            key: The key to look up.
+
+        Returns:
+            The dictionary value for the specified key.
+        """
         if key in self._compat_aliases:
             key = self._compat_aliases[key]
         return self._data[key]
 
     def __getattr__(self, key: str) -> Channel:
-        """Returns the dictionary value for the specified key."""
+        """Returns the dictionary value for the specified key.
+
+        Args:
+            key: The key to look up.
+
+        Returns:
+            The dictionary value for the specified key.
+
+        Raises:
+            AttributeError: If the key is not found.
+        """
         if key in self._compat_aliases:
             key = self._compat_aliases[key]
         try:
@@ -249,23 +289,43 @@ class _PropertyDictWrapper(json_utils.Jsonable):
             raise AttributeError
 
     def __repr__(self) -> str:
-        """Returns the representation of the wrapped dictionary."""
+        """Returns the representation of the wrapped dictionary.
+
+        Returns:
+            The representation of the wrapped dictionary.
+        """
         return repr(self._data)
 
     def get_all(self) -> Dict[str, Channel]:
-        """Returns the wrapped dictionary."""
+        """Returns the wrapped dictionary.
+
+        Returns:
+            The wrapped dictionary.
+        """
         return self._data
 
     def keys(self) -> KeysView[str]:
-        """Returns the keys of the wrapped dictionary."""
+        """Returns the keys of the wrapped dictionary.
+
+        Returns:
+            The keys of the wrapped dictionary.
+        """
         return self._data.keys()
 
     def values(self) -> ValuesView[Channel]:
-        """Returns the values of the wrapped dictionary."""
+        """Returns the values of the wrapped dictionary.
+
+        Returns:
+            The values of the wrapped dictionary.
+        """
         return self._data.values()
 
     def items(self) -> ItemsView[str, Channel]:
-        """Returns the items of the wrapped dictionary."""
+        """Returns the items of the wrapped dictionary.
+
+        Returns:
+            The items of the wrapped dictionary.
+        """
         return self._data.items()
 
 
@@ -274,12 +334,16 @@ class _ZenMLSimpleComponent(_SimpleComponent):
 
     @property
     def outputs(self) -> _PropertyDictWrapper:  # type: ignore[override]
-        """Returns the wrapped spec outputs."""
+        """Returns the wrapped spec outputs.
+
+        Returns:
+            The wrapped spec outputs.
+        """
         return _PropertyDictWrapper(self.spec.outputs)
 
 
 class _FunctionExecutor(BaseExecutor):
-    """Base TFX Executor class which is compatible with ZenML steps"""
+    """Base TFX Executor class which is compatible with ZenML steps."""
 
     _FUNCTION = staticmethod(lambda: None)
     materializers: ClassVar[
@@ -298,9 +362,12 @@ class _FunctionExecutor(BaseExecutor):
         Returns:
             The right materializer based on the defaults or optionally the one
             set by the user.
+
+        Raises:
+            ValueError: If the materializer is not found.
         """
         if not self.materializers:
-            raise ValueError("Materializers are missing is not set!")
+            raise ValueError("Materializers are not set!")
 
         materializer_class = self.materializers[param_name]
         return materializer_class
@@ -308,8 +375,9 @@ class _FunctionExecutor(BaseExecutor):
     def resolve_input_artifact(
         self, artifact: BaseArtifact, data_type: Type[Any]
     ) -> Any:
-        """Resolves an input artifact, i.e., reading it from the Artifact Store
-        to a pythonic object.
+        """Resolves an input artifact.
+
+        This method reads it from the Artifact Store to a Pythonic object.
 
         Args:
             artifact: A TFX artifact type.
@@ -338,8 +406,10 @@ class _FunctionExecutor(BaseExecutor):
     def resolve_output_artifact(
         self, param_name: str, artifact: BaseArtifact, data: Any
     ) -> None:
-        """Resolves an output artifact, i.e., writing it to the Artifact Store.
-        Calls `handle_return(return_values)` of the selected materializer.
+        """Resolves an output artifact.
+
+        This writes it to the Artifact Store. Calls
+        `handle_return(return_values)` of the selected materializer.
 
         Args:
             param_name: Name of output param.
@@ -365,10 +435,10 @@ class _FunctionExecutor(BaseExecutor):
         Args:
             output_value: Value of output.
             specified_type: What the type of output should be as defined in the
-            signature.
+                signature.
 
         Raises:
-            ValueError if types do not match.
+            ValueError: if types do not match.
         """
         # TODO [ENG-160]: Include this check when we figure out the logic of
         #  slightly different subclasses.
@@ -385,12 +455,17 @@ class _FunctionExecutor(BaseExecutor):
         output_dict: Dict[str, List[BaseArtifact]],
         exec_properties: Dict[str, Any],
     ) -> None:
-        """Main block for the execution of the step
+        """Main block for the execution of the step.
 
         Args:
             input_dict: dictionary containing the input artifacts
             output_dict: dictionary containing the output artifacts
             exec_properties: dictionary containing the execution parameters
+
+        Raises:
+            MissingStepParameterError: if a required parameter is missing.
+            RuntimeError: if the step fails.
+            StepInterfaceError: if the step interface is not implemented.
         """
         step_name = getattr(self, PARAM_STEP_NAME)
 
@@ -519,3 +594,72 @@ class _FunctionExecutor(BaseExecutor):
         )
         with fileio.open(self._context.executor_output_uri, "wb") as f:
             f.write(executor_output.SerializeToString())
+
+
+def clone_step(step: Type["BaseStep"], step_name: str) -> Type["BaseStep"]:
+    """Returns a clone of the given step.
+
+    Call this function when you want to use several copies of the same step
+    in a pipeline.
+
+    Args:
+        step: the step to clone
+        step_name: name to use for the cloned step. This name will be used
+            to uniquely identify the cloned step in the Python module from
+            which this function is called.
+
+    Returns:
+        A clone of the given step.
+
+    Raises:
+        TypeError: if the given step is not a subclass of BaseStep.
+        ImportError: if the the calling Python module cannot be determined
+            or if the given step name cannot be used because the calling
+            Python module already contains a symbol with the same name.
+    """
+    from zenml.steps.base_step import BaseStep
+
+    if not issubclass(step, BaseStep):
+        raise TypeError(
+            f"The step source `{step}` is not a `{BaseStep}` subclass."
+        )
+
+    # get the python module from which this function is called
+    frm = inspect.stack()[1]
+    mod = inspect.getmodule(frm[0])
+
+    if not mod:
+        raise ImportError(
+            f"Cannot clone step `{step}` because the calling Python module "
+            f"cannot be determined."
+        )
+
+    if step_name in mod.__dict__:
+        raise ImportError(
+            f"The step name `{step_name}` cannot be used because the "
+            f"`{mod.__name__}` Python module already contains an identifier "
+            f"with the same name. Try using a different step name."
+        )
+
+    config = getattr(step, INSTANCE_CONFIGURATION, {}).copy()
+    # mark the step as being created by the functional API,
+    # otherwise the base class will try to use the class source code
+    # to compute the hash for the cache key (instead of the entrypoint
+    # source code)
+    config[PARAM_CREATED_BY_FUNCTIONAL_API] = True
+
+    step_clone = cast(
+        Type[BaseStep],
+        type(  # noqa
+            step_name,
+            (step,),
+            {
+                INSTANCE_CONFIGURATION: config,
+                "__module__": mod.__name__,
+                "__doc__": step.__doc__,
+            },
+        ),
+    )
+
+    mod.__dict__[step_name] = step_clone
+    return step_clone

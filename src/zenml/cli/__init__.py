@@ -11,9 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-ZenML CLI
-==================
+"""ZenML CLI.
 
 The ZenML CLI tool is usually downloaded and installed via PyPI and a
 ``pip install zenml`` command. Please see the Installation & Setup
@@ -46,6 +44,16 @@ can type something like this:
 
 This will give you information about how to register a metadata store.
 (See below for more on that).
+
+If you want to instead understand what the concept behind a group is, you 
+can use the `explain` sub-command. For example, to see more details behind 
+what a `metadata-store` is, you can type:
+
+```bash
+zenml metadata-store explain
+```
+
+This will give you an explanation of that concept in more detail.
 
 Beginning a Project
 -------------------
@@ -126,11 +134,11 @@ command, as follows:
 ```bash
 zenml example pull quickstart
 ```
-If you would like to force-redownload the examples, use the ``--force``
-or ``-f`` flag as in this example:
+If you would like to force-redownload the examples, use the ``--yes``
+or ``-y`` flag as in this example:
 
 ```bash
-zenml example pull --force
+zenml example pull --yes
 ```
 This will redownload all the examples afresh, using the same version of
 ZenML as you currently have installed. If for some reason you want to
@@ -138,7 +146,7 @@ download examples corresponding to a previous release of ZenML, use the
 ``--version`` or ``-v`` flag to specify, as in the following example:
 
 ```bash
-zenml example pull --force --version 0.3.8
+zenml example pull --yes --version 0.3.8
 ```
 If you wish to run the example, allowing the ZenML CLI to do the work of setting
 up whatever dependencies are required, use the ``run`` subcommand:
@@ -351,7 +359,7 @@ operator. If you wish to register a new step operator, do so with the
 `register` command:
 
 ```bash
-zenml step-operator register STEP_OPERATOR_NAME --type STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
+zenml step-operator register STEP_OPERATOR_NAME --flavor STEP_OPERATOR_FLAVOR [--STEP_OPERATOR_OPTIONS]
 ```
 
 If you want the name of the current step operator, use the `get` command:
@@ -407,21 +415,31 @@ that should be used. For example, an AWS secret has predefined keys of
 `aws_session_token`). If you do not have a specific secret type you wish to use,
 ZenML will use the `arbitrary` type to store your key-value pairs.
 
-To register a secret, use the `register` command:
+To register a secret, use the `register` command and pass the key-value pairs
+as command line arguments:
 
 ```bash
-zenml secret register SECRET_NAME
+zenml secret register SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
-If you wish to register a single secret non-interactively, you can
-pass in a key-value pair at the command line, as in the following example:
+Note that the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `register` command instead:
 
 ```shell
-zenml secret register SECRET_NAME -k KEY -v VALUE
+zenml secret register SECRET_NAME -i
 ```
 
-Note that the key and value will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `register` command instead.
+As an alternative to the interactive mode, also useful for values that
+are long or contain newline or special characters, you can also use the special
+`@` syntax to indicate to ZenML that the value needs to be read from a file:
+
+```bash
+zenml secret register SECRET_NAME --schema=aws \
+   --aws_access_key_id=1234567890 \
+   --aws_secret_access_key=abcdefghij \
+   --aws_session_token=@/path/to/token.txt
+```
+
 
 To list all the secrets available, use the `list` command:
 
@@ -438,18 +456,15 @@ zenml secret get SECRET_NAME
 To update a secret, use the `update` command:
 
 ```bash
-zenml secret update SECRET_NAME
+zenml secret update SECRET_NAME --key1=value1 --key2=value2 --key3=value3 ...
 ```
 
-If you wish to update a single secret non-interactively, you can
-pass in a key-value pair at the command line, as in the following example:
+Note that the keys and values will be preserved in your `bash_history` file, so
+you may prefer to use the interactive `update` command instead:
 
 ```shell
-zenml secret update SECRET_NAME -k KEY -v NEW_VALUE
+zenml secret update SECRET_NAME -i
 ```
-
-Note that the key and value will be preserved in your `bash_history` file, so
-you may prefer to use the interactive `update` command instead.
 
 Finally, to delete a secret, use the `delete` command:
 
@@ -463,7 +478,8 @@ Add a Feature Store to your Stack
 ZenML supports connecting to a Redis-backed Feast feature store as a stack
 component integration. To set up a feature store, use the following CLI command:
 
-```shell zenml feature-store register FEATURE_STORE_NAME --flavor=feast
+```shell
+zenml feature-store register FEATURE_STORE_NAME --flavor=feast
 --feast_repo=REPO_PATH --online_host HOST_NAME --online_port ONLINE_PORT_NUMBER
 ```
 
@@ -472,9 +488,6 @@ in your ZenML Stack.
 
 Interacting with Deployed Models
 --------------------------------
-
-Deployed models are
-
 
 If you want to simply see what models have been deployed within your stack, run
 the following command:
@@ -512,8 +525,10 @@ zenml served-models stop <UUID>
 
 If you want to completely remove a served model you can also irreversibly delete
  it using:
+
 ```bash
 zenml served-models delete <UUID>
+```
 
 Administering the Stack
 -----------------------
@@ -535,10 +550,18 @@ zenml stack register STACK_NAME \
        -a ARTIFACT_STORE_NAME \
        -o ORCHESTRATOR_NAME
 ```
+
 Each corresponding argument should be the name you passed in as an
 identifier for the artifact store, metadata store or orchestrator when
 you originally registered it. (If you want to use your secrets manager, you
 should pass its name in with the `-x` option flag.)
+
+If you want to immediately set this newly created stack as your active stack,
+simply pass along the `--set` flag.
+
+```bash
+zenml stack register STACK_NAME -m METADATA_STORE_NAME ... --set
+```
 
 To list the stacks that you have registered within your current ZenML
 project, type:
@@ -566,9 +589,20 @@ To see which stack is currently set as the default active stack, type:
 zenml stack get
 ```
 
-If you wish to transfer one of your stacks to another profile or even another
-machine, you can do so by exporting the stack configuration and then importing
-it again.
+If you want to copy a stack, run the following command:
+```shell
+zenml stack copy SOURCE_STACK_NAME TARGET_STACK_NAME
+```
+You can optionally specify profiles from which the stack should be copied 
+to and from:
+```shell
+zenml stack copy SOURCE_STACK_NAME TARGET_STACK_NAME \
+   [--from SOURCE_PROFILE_NAME] \
+   [--to TARGET_PROFILE_NAME]
+```
+
+If you wish to transfer one of your stacks to another machine, you can do so 
+by exporting the stack configuration and then importing it again.
 
 To export a stack to YAML, run the following command:
 
@@ -615,6 +649,18 @@ If you wish to rename your stack, use the following command:
 zenml stack rename STACK_NAME NEW_STACK_NAME
 ```
 
+If you want to copy a stack component, run the following command:
+```bash
+zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME
+```
+You can optionally specify profiles from which the component should be copied 
+to and from:
+```bash
+zenml STACK_COMPONENT copy SOURCE_COMPONENT_NAME TARGET_COMPONENT_NAME \
+   [--from SOURCE_PROFILE_NAME] \
+   [--to TARGET_PROFILE_NAME]
+```
+
 If you wish to update a specific stack component, use the following command,
 switching out "STACK_COMPONENT" for the component you wish to update (i.e.
 'orchestrator' or 'artifact-store' etc):
@@ -629,6 +675,15 @@ change the name of your stack component, use the following command:
 ```shell
 zenml STACK_COMPONENT rename STACK_COMPONENT_NAME NEW_STACK_COMPONENT_NAME
 ```
+
+If you wish to remove an attribute (or multiple attributes) from a stack
+component, use the following command:
+
+```shell
+zenml STACK_COMPONENT remove-attribute STACK_COMPONENT_NAME --ATTRIBUTE_NAME [--OTHER_ATTRIBUTE_NAME]
+```
+
+Note that you can only remove optional attributes.
 
 Managing users, teams, projects and roles
 -----------------------------------------
@@ -704,6 +759,49 @@ You can see a list of all current role assignments by running:
 ```bash
 zenml role assignment list
 ```
+
+Interacting with Model Deployers
+-----------------------------------------
+
+Model deployers are stack components responsible for online model serving.
+They are responsible for deploying models to a remote server. Model deployers
+also act as a registry for models that are served with ZenML. 
+
+If you wish to register a new model deployer, do so with the
+`register` command:
+
+```bash
+zenml model-deployer register MODEL_DEPLOYER_NAME --flavor=MODEL_DEPLOYER_FLAVOR [--OPTIONS]
+```
+
+If you wish to list the model-deployers that have already been registered
+within your ZenML project / repository, type:
+
+```bash
+zenml model-deployer list
+```
+
+If you wish to get more detailed information about a particular model deployer
+within your ZenML project / repository, type:
+
+```bash
+zenml model-deployer describe MODEL_DEPLOYER_NAME
+```
+
+If you wish to delete a particular model deployer, pass the name of the
+model deployers into the CLI with the following command:
+
+```bash
+zenml model-deployer delete MODEL_DEPLOYER_NAME
+```
+
+If you wish to retrieve logs corresponding to a particular model deployer, pass the name
+of the model deployer into the CLI with the following command:
+
+```bash
+zenml model-deployer logs MODEL_DEPLOYER_NAME
+```
+
 """
 
 from zenml.cli.base import *  # noqa
@@ -714,7 +812,7 @@ from zenml.cli.integration import *  # noqa
 from zenml.cli.pipeline import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.served_models import *  # noqa
-from zenml.cli.service import *  # noqa
+from zenml.cli.server import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.user_management import *  # noqa

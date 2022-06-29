@@ -11,10 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-Artifacts are the data that power your experimentation and model training. It is
-actually steps that produce artifacts, which are then stored in the artifact
-store. Artifacts are written in the signature of a step like so:
+"""Artifacts are the data that power your experimentation and model training.
+
+It is actually steps that produce artifacts, which are then stored in the
+artifact store. Artifacts are written in the signature of a step like so:
 
 ```python
     def my_step(first_artifact: int, second_artifact: torch.nn.Module -> int:
@@ -23,9 +23,9 @@ store. Artifacts are written in the signature of a step like so:
         return 1
 ```
 Artifacts can be serialized and deserialized (i.e. written and read from the
-Artifact Store) in various ways like ``TFRecords`` or saved model
-pickles, depending on what the step produces.The serialization and
-deserialization logic of artifacts is defined by the appropriate Materializer.
+Artifact Store) in various ways like ``TFRecords`` or saved model pickles,
+depending on what the step produces.The serialization and deserialization logic
+of artifacts is defined by the appropriate Materializer.
 """
 
 from zenml.artifacts.data_analysis_artifact import DataAnalysisArtifact

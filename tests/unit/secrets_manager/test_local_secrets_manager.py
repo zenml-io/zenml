@@ -20,8 +20,8 @@ from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
 from zenml.secrets_managers.local.local_secrets_manager import (
     LocalSecretsManager,
 )
+from zenml.secrets_managers.utils import decode_secret_dict
 from zenml.utils import yaml_utils
-from zenml.utils.secrets_manager_utils import decode_secret_dict
 
 
 @pytest.fixture()
@@ -29,7 +29,7 @@ def local_secrets_manager():
     """Fixture to yield a local secrets manager."""
     local_secrets_manager = LocalSecretsManager(name="")
     yield local_secrets_manager
-    local_secrets_manager.delete_all_secrets(force=True)
+    local_secrets_manager.delete_all_secrets()
 
 
 def test_local_secrets_manager_attributes(local_secrets_manager):

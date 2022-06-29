@@ -11,10 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""
-## Stack
+"""Initialization of the ZenML Stack.
 
-The stack is essentially all the configuration for the infrastructure of your 
+The stack is essentially all the configuration for the infrastructure of your
 MLOps platform.
 
 A stack is made up of multiple components. Some examples are:

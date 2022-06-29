@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization of the Dash integration."""
+
 from zenml.integrations.constants import DASH
 from zenml.integrations.integration import Integration
 
@@ -23,6 +25,7 @@ class DashIntegration(Integration):
         "dash>=2.0.0",
         "dash-cytoscape>=0.3.0",
         "dash-bootstrap-components>=1.0.1",
+        "jupyter-dash>=0.4.2",
     ]
 
 

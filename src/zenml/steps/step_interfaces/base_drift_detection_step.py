@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Base drift detection step."""
 
 from abc import abstractmethod
 from typing import Any
@@ -20,12 +21,11 @@ from zenml.steps import BaseStep, BaseStepConfig, StepContext
 
 
 class BaseDriftDetectionConfig(BaseStepConfig):
-    """Base class for drift detection step configurations"""
+    """Base class for drift detection step configurations."""
 
 
 class BaseDriftDetectionStep(BaseStep):
-    """Base step implementation for any drift detection step implementation
-    on ZenML"""
+    """Base step implementation for any drift detection step implementation."""
 
     @abstractmethod
     def entrypoint(  # type: ignore[override]
@@ -35,4 +35,14 @@ class BaseDriftDetectionStep(BaseStep):
         config: BaseDriftDetectionConfig,
         context: StepContext,
     ) -> Any:
-        """Base entrypoint for any drift detection implementation"""
+        """Base entrypoint for any drift detection implementation.
+
+        Args:
+            reference_dataset: The reference dataset.
+            comparison_dataset: The comparison dataset.
+            config: The configuration for the step.
+            context: The context for the step.
+
+        Returns:
+            The result of the drift detection.
+        """

@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the MLflow model deployer."""
+
 import os
 import shutil
 import uuid
@@ -29,22 +31,22 @@ from zenml.integrations.mlflow.services.mlflow_deployment import (
     MLFlowDeploymentConfig,
     MLFlowDeploymentService,
 )
-from zenml.io.utils import (
-    create_dir_recursive_if_not_exists,
-    get_global_config_directory,
-)
 from zenml.logger import get_logger
 from zenml.model_deployers.base_model_deployer import BaseModelDeployer
 from zenml.repository import Repository
 from zenml.services import ServiceRegistry
 from zenml.services.local.local_service import SERVICE_DAEMON_CONFIG_FILE_NAME
 from zenml.services.service import BaseService, ServiceConfig
+from zenml.utils.io_utils import (
+    create_dir_recursive_if_not_exists,
+    get_global_config_directory,
+)
 
 logger = get_logger(__name__)
 
 
 class MLFlowModelDeployer(BaseModelDeployer):
-    """MLflow implementation of the BaseModelDeployer
+    """MLflow implementation of the BaseModelDeployer.
 
     Attributes:
         service_path: the path where the local MLflow deployment service
@@ -56,10 +58,16 @@ class MLFlowModelDeployer(BaseModelDeployer):
     # Class Configuration
     FLAVOR: ClassVar[str] = MLFLOW_MODEL_DEPLOYER_FLAVOR
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def set_service_path(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Sets the service_path attribute value according to the component
-        UUID."""
+        """Sets the service_path attribute value according to the component UUID.
+
+        Args:
+            values: the dictionary of values to be validated.
+
+        Returns:
+            The validated dictionary of values.
+        """
         if values.get("service_path"):
             return values
 
@@ -71,8 +79,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
     @staticmethod
     def get_service_path(uuid: uuid.UUID) -> str:
-        """Get the path the path where the local MLflow deployment service
-        configuration, PID and log files are stored.
+        """Get the path where local MLflow service information is stored.
+
+        This includes the deployment service configuration, PID and log files are stored.
 
         Args:
             uuid: The UUID of the MLflow model deployer.
@@ -90,9 +99,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
     @property
     def local_path(self) -> str:
-        """
-        Returns the path to the root directory where all configurations for
-        MLflow deployment daemon processes are stored.
+        """Returns the path to the root directory.
+
+        This is where all configurations for MLflow deployment daemon processes are stored.
 
         Returns:
             The path to the local service root directory.
@@ -103,13 +112,14 @@ class MLFlowModelDeployer(BaseModelDeployer):
     def get_model_server_info(  # type: ignore[override]
         service_instance: "MLFlowDeploymentService",
     ) -> Dict[str, Optional[str]]:
-        """Return implementation specific information that might be relevant
-        to the user.
+        """Return implementation specific information relevant to the user.
 
         Args:
             service_instance: Instance of a SeldonDeploymentService
-        """
 
+        Returns:
+            A dictionary containing the information.
+        """
         return {
             "PREDICTION_URL": service_instance.endpoint.prediction_url,
             "MODEL_URI": service_instance.config.model_uri,
@@ -120,14 +130,16 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
     @staticmethod
     def get_active_model_deployer() -> "MLFlowModelDeployer":
-        """
-        Returns the MLFlowModelDeployer component of the active stack.
+        """Returns the MLFlowModelDeployer component of the active stack.
 
         Args:
             None
 
         Returns:
             The MLFlowModelDeployer component of the active stack.
+
+        Raises:
+            TypeError: If the active stack does not contain an MLFlowModelDeployer component.
         """
         model_deployer = Repository(  # type: ignore[call-arg]
             skip_repository_check=True
@@ -153,8 +165,9 @@ class MLFlowModelDeployer(BaseModelDeployer):
         replace: bool = False,
         timeout: int = DEFAULT_SERVICE_START_STOP_TIMEOUT,
     ) -> BaseService:
-        """Create a new MLflow deployment service or update an existing one to
-        serve the supplied model and deployment configuration.
+        """Create a new MLflow deployment service or update an existing one.
+
+        This should serve the supplied model and deployment configuration.
 
         This method has two modes of operation, depending on the `replace`
         argument value:
@@ -193,12 +206,6 @@ class MLFlowModelDeployer(BaseModelDeployer):
         Returns:
             The ZenML MLflow deployment service object that can be used to
             interact with the MLflow model server.
-
-        Raises:
-            RuntimeError: if `timeout` is set to a positive value that is
-                exceeded while waiting for the MLflow deployment server
-                to start, or if an operational failure is encountered before
-                it reaches a ready state.
         """
         config = cast(MLFlowDeploymentConfig, config)
         service = None
@@ -264,8 +271,17 @@ class MLFlowModelDeployer(BaseModelDeployer):
     def _create_new_service(
         self, timeout: int, config: MLFlowDeploymentConfig
     ) -> MLFlowDeploymentService:
-        """Creates a new MLFlowDeploymentService."""
+        """Creates a new MLFlowDeploymentService.
 
+        Args:
+            timeout: the timeout in seconds to wait for the MLflow server
+                to be provisioned and successfully started or updated.
+            config: the configuration of the model to be deployed with MLflow.
+
+        Returns:
+            The MLFlowDeploymentService object that can be used to interact
+            with the MLflow model server.
+        """
         # set the root runtime path with the stack component's UUID
         config.root_runtime_path = self.local_path
         # create a new service for the new model
@@ -285,15 +301,14 @@ class MLFlowModelDeployer(BaseModelDeployer):
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
     ) -> List[BaseService]:
-        """Method to find one or more model servers that match the
-        given criteria.
+        """Finds one or more model servers that match the given criteria.
 
         Args:
             running: If true, only running services will be returned.
             service_uuid: The UUID of the service that was originally used
                 to deploy the model.
             pipeline_name: Name of the pipeline that the deployed model was part
-            of.
+                of.
             pipeline_run_id: ID of the pipeline run which the deployed model
                 was part of.
             pipeline_step_name: The name of the pipeline model deployment step
@@ -306,8 +321,10 @@ class MLFlowModelDeployer(BaseModelDeployer):
         Returns:
             One or more Service objects representing model servers that match
             the input search criteria.
-        """
 
+        Raises:
+            TypeError: if any of the input arguments are of an invalid type.
+        """
         services = []
         config = MLFlowDeploymentConfig(
             model_name=model_name or "",
@@ -353,10 +370,11 @@ class MLFlowModelDeployer(BaseModelDeployer):
         existing_service: MLFlowDeploymentService,
         config: MLFlowDeploymentConfig,
     ) -> bool:
-        """Returns true if a service matches the input criteria. If any of
-        the values in the input criteria are None, they are ignored. This
-        allows listing services just by common pipeline names or step names,
-        etc.
+        """Returns true if a service matches the input criteria.
+
+        If any of the values in the input criteria are None, they are ignored.
+        This allows listing services just by common pipeline names or step
+        names, etc.
 
         Args:
             existing_service: The materialized Service instance derived from
@@ -364,8 +382,10 @@ class MLFlowModelDeployer(BaseModelDeployer):
             config: The MLFlowDeploymentConfig object passed to the
                 deploy_model function holding parameters of the new service
                 to be created.
-        """
 
+        Returns:
+            True if the service matches the input criteria.
+        """
         existing_service_config = existing_service.config
 
         # check if the existing service matches the input criteria
@@ -420,6 +440,7 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
         Args:
             uuid: UUID of the model server to start.
+            timeout: Timeout in seconds to wait for the service to start.
         """
         # get list of all services
         existing_services = self.find_model_server(service_uuid=uuid)
@@ -438,6 +459,8 @@ class MLFlowModelDeployer(BaseModelDeployer):
 
         Args:
             uuid: UUID of the model server to delete.
+            timeout: Timeout in seconds to wait for the service to stop.
+            force: If True, force the service to stop.
         """
         # get list of all services
         existing_services = self.find_model_server(service_uuid=uuid)

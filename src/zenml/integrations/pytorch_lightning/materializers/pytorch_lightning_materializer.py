@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the PyTorch Lightning Materializer."""
 
 import os
 from typing import Any, Type
@@ -24,13 +25,16 @@ CHECKPOINT_NAME = "final_checkpoint.ckpt"
 
 
 class PyTorchLightningMaterializer(BaseMaterializer):
-    """Materializer to read/write Pytorch models."""
+    """Materializer to read/write PyTorch models."""
 
     ASSOCIATED_TYPES = (Trainer,)
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> Trainer:
         """Reads and returns a PyTorch Lightning trainer.
+
+        Args:
+            data_type: The type of the trainer to load.
 
         Returns:
             A PyTorch Lightning trainer object.

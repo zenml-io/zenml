@@ -36,7 +36,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow wandb -f
+zenml integration install tensorflow wandb
 
 # pull example
 zenml example pull wandb_tracking
@@ -67,10 +67,8 @@ zenml stack register wandb_stack \
     -m default \
     -a default \
     -o default \
-    -e wandb_tracker
-    
-# Activate the newly created stack
-zenml stack set wandb_stack
+    -e wandb_tracker \
+    --set
 ```
 
 ### ▶ Run the project
@@ -122,6 +120,22 @@ def my_step(
     ...
 ```
 
+If you want to use this decorator with our class-based API, simply decorate your step class as follows:
+```python
+import wandb
+
+@enable_wandb(wandb.Settings(magic=True))
+class MyStep(BaseStep):
+    def entrypoint(
+        self,
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        model: tf.keras.Model,
+    ) -> float:
+        """Everything in this step is autologged"""
+        ...
+```
+
 Doing the above auto-magically logs all the data, metrics, and results within the step, no further action required!
 
 ### 🧽 Clean up
@@ -133,7 +147,5 @@ rm -rf zenml_examples
 
 # 📜 Learn more
 
-Our docs regarding the wandb integration can be found [here](TODO: Link to docs).
-
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
-check out our [docs](TODO: Link to docs)
+If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
+check out our [docs](https://docs.zenml.io/extending-zenml/experiment-tracker).

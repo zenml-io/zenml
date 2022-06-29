@@ -11,24 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility functions for the orchestrator."""
 
-import json
-import time
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, List, Optional
 
 import tfx.orchestration.pipeline as tfx_pipeline
-from tfx.orchestration.portable import data_types, launcher
+from tfx.orchestration.portable import data_types
 from tfx.proto.orchestration.pipeline_pb2 import PipelineNode
 
-from zenml.exceptions import DuplicateRunNameError
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.steps import BaseStep
-from zenml.steps.utils import (
-    INTERNAL_EXECUTION_PARAMETER_PREFIX,
-    PARAM_PIPELINE_PARAMETER_NAME,
-)
-from zenml.utils import string_utils
 
 if TYPE_CHECKING:
     from zenml.pipelines.base_pipeline import BasePipeline
@@ -40,129 +32,67 @@ logger = get_logger(__name__)
 def create_tfx_pipeline(
     zenml_pipeline: "BasePipeline", stack: "Stack"
 ) -> tfx_pipeline.Pipeline:
-    """Creates a tfx pipeline from a ZenML pipeline."""
+    """Creates a tfx pipeline from a ZenML pipeline.
+
+    Args:
+        zenml_pipeline: The ZenML pipeline.
+        stack: The stack.
+
+    Returns:
+        The tfx pipeline.
+    """
     # Connect the inputs/outputs of all steps in the pipeline
     zenml_pipeline.connect(**zenml_pipeline.steps)
 
     tfx_components = [step.component for step in zenml_pipeline.steps.values()]
 
     artifact_store = stack.artifact_store
-    metadata_store = stack.metadata_store
 
+    # We do not pass the metadata connection config here as it might not be
+    # accessible. Instead it is queried from the active stack right before a
+    # step is executed (see `BaseOrchestrator.run_step(...)`)
     return tfx_pipeline.Pipeline(
         pipeline_name=zenml_pipeline.name,
         components=tfx_components,  # type: ignore[arg-type]
         pipeline_root=artifact_store.path,
-        metadata_connection_config=metadata_store.get_tfx_metadata_config(),
         enable_cache=zenml_pipeline.enable_cache,
     )
 
 
-def get_cache_status(
-    execution_info: data_types.ExecutionInfo,
-) -> bool:
-    """Returns the caching status of a step.
+def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:
+    """Finds the matching step for a tfx pipeline node.
 
     Args:
-        execution_info: The execution info of a `tfx` step.
+        node: The tfx pipeline node.
+        steps: The list of steps.
+
+    Returns:
+        The matching step.
 
     Raises:
-        AttributeError: If the execution info is `None`.
-        KeyError: If no pipeline info is found in the `execution_info`.
-
-    Returns:
-        The caching status of a `tfx` step as a boolean value.
+        RuntimeError: If no matching step is found.
     """
-    if execution_info is None:
-        logger.warning("No execution info found when checking cache status.")
-        return False
-
-    status = False
-    repository = Repository()
-    # TODO [ENG-706]: Get the current running stack instead of just the active
-    #   stack
-    active_stack = repository.active_stack
-    if not active_stack:
-        raise RuntimeError(
-            "No active stack is configured for the repository. Run "
-            "`zenml stack set STACK_NAME` to update the active stack."
-        )
-
-    metadata_store = active_stack.metadata_store
-
-    step_name_param = (
-        INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
-    )
-    step_name = json.loads(execution_info.exec_properties[step_name_param])
-    if execution_info.pipeline_info:
-        pipeline_name = execution_info.pipeline_info.id
-    else:
-        raise KeyError(f"No pipeline info found for step `{step_name}`.")
-    pipeline_run_name = cast(str, execution_info.pipeline_run_id)
-    pipeline = metadata_store.get_pipeline(pipeline_name)
-    if pipeline is None:
-        logger.error(f"Pipeline {pipeline_name} not found in Metadata Store.")
-    else:
-        status = (
-            pipeline.get_run(pipeline_run_name).get_step(step_name).is_cached
-        )
-    return status
-
-
-def execute_step(
-    tfx_launcher: launcher.Launcher,
-) -> Optional[data_types.ExecutionInfo]:
-    """Executes a tfx component.
-
-    Args:
-        tfx_launcher: A tfx launcher to execute the component.
-
-    Returns:
-        Optional execution info returned by the launcher.
-    """
-    step_name_param = (
-        INTERNAL_EXECUTION_PARAMETER_PREFIX + PARAM_PIPELINE_PARAMETER_NAME
-    )
-    pipeline_step_name = tfx_launcher._pipeline_node.node_info.id
-    start_time = time.time()
-    logger.info(f"Step `{pipeline_step_name}` has started.")
-    try:
-        execution_info = tfx_launcher.launch()
-        if execution_info and get_cache_status(execution_info):
-            if execution_info.exec_properties:
-                step_name = json.loads(
-                    execution_info.exec_properties[step_name_param]
-                )
-                logger.info(
-                    f"Using cached version of `{pipeline_step_name}` "
-                    f"[`{step_name}`].",
-                )
-            else:
-                logger.error(
-                    f"No execution properties found for step "
-                    f"`{pipeline_step_name}`."
-                )
-    except RuntimeError as e:
-        if "execution has already succeeded" in str(e):
-            # Hacky workaround to catch the error that a pipeline run with
-            # this name already exists. Raise an error with a more descriptive
-            # message instead.
-            raise DuplicateRunNameError()
-        else:
-            raise
-
-    run_duration = time.time() - start_time
-    logger.info(
-        f"Step `{pipeline_step_name}` has finished in "
-        f"{string_utils.get_human_readable_time(run_duration)}."
-    )
-    return execution_info
-
-
-def get_step_for_node(node: PipelineNode, steps: List[BaseStep]) -> BaseStep:
-    """Finds the matching step for a tfx pipeline node."""
     step_name = node.node_info.id
     try:
         return next(step for step in steps if step.name == step_name)
     except StopIteration:
         raise RuntimeError(f"Unable to find step with name '{step_name}'.")
+
+
+def get_cache_status(
+    execution_info: Optional[data_types.ExecutionInfo],
+) -> bool:
+    """Returns whether a cached execution was used or not.
+
+    Args:
+        execution_info: The execution info.
+
+    Returns:
+        `True` if the execution was cached, `False` otherwise.
+    """
+    # An execution output URI is only provided if the step needs to be
+    # executed (= is not cached)
+    if execution_info and execution_info.execution_output_uri is None:
+        return True
+    else:
+        return False

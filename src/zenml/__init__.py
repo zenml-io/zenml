@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Initialization for ZenML."""
 
 import os
 
@@ -22,3 +23,12 @@ with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
 from zenml.logger import init_logging  # noqa
 
 init_logging()
+
+# Try to import the ZenServer here because it needs to be registered in the
+# service registry early on in order to be available for use in other modules.
+# If the ZenServer dependencies aren't installed, there is no need to register
+# it anywhere so we simply pass.
+try:
+    from zenml.zen_server.zen_server import ZenServer
+except ImportError:
+    pass

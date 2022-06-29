@@ -11,14 +11,17 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the TensorFlow Keras materializer."""
+
+import tempfile
 from typing import Any, Type
 
 from tensorflow import keras
 
 from zenml.artifacts import ModelArtifact
+from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
-
-DEFAULT_FILENAME = "model.hdf5"
+from zenml.utils import io_utils
 
 
 class KerasMaterializer(BaseMaterializer):
@@ -28,19 +31,42 @@ class KerasMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> keras.Model:
-        """Reads and returns a Keras model.
+        """Reads and returns a Keras model after copying it to temporary path.
+
+        Args:
+            data_type: The type of the data to read.
 
         Returns:
             A tf.keras.Model model.
         """
         super().handle_input(data_type)
-        return keras.models.load_model(self.artifact.uri)
+
+        # Create a temporary directory to store the model
+        temp_dir = tempfile.TemporaryDirectory()
+
+        # Copy from artifact store to temporary directory
+        io_utils.copy_dir(self.artifact.uri, temp_dir.name)
+
+        # Load the model from the temporary directory
+        model = keras.models.load_model(temp_dir.name)
+
+        # Cleanup and return
+        fileio.rmtree(temp_dir.name)
+
+        return model
 
     def handle_return(self, model: keras.Model) -> None:
-        """Writes a keras model.
+        """Writes a keras model to the artifact store.
 
         Args:
             model: A tf.keras.Model model.
         """
         super().handle_return(model)
-        model.save(self.artifact.uri)
+
+        # Create a temporary directory to store the model
+        temp_dir = tempfile.TemporaryDirectory()
+        model.save(temp_dir.name)
+        io_utils.copy_dir(temp_dir.name, self.artifact.uri)
+
+        # Remove the temporary directory
+        fileio.rmtree(temp_dir.name)

@@ -3,9 +3,9 @@
 set -Eeo pipefail
 
 pre_run () {
-  zenml integration install huggingface
+  zenml integration install huggingface tensorflow
 }
 
 pre_run_forced () {
-  zenml integration install huggingface -f
+  zenml integration install huggingface tensorflow -y
 }

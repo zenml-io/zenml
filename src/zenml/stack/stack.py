@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML Stack class."""
+
 import os
 import time
 import uuid
@@ -29,17 +31,18 @@ from typing import (
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import StackComponentType
 from zenml.exceptions import ProvisioningError, StackValidationError
-from zenml.io import utils
 from zenml.logger import get_logger
 from zenml.runtime_configuration import (
     RUN_NAME_OPTION_KEY,
     RuntimeConfiguration,
 )
-from zenml.utils import string_utils
+from zenml.utils import io_utils, string_utils
 
 if TYPE_CHECKING:
+    from zenml.alerter import BaseAlerter
     from zenml.artifact_stores import BaseArtifactStore
     from zenml.container_registries import BaseContainerRegistry
+    from zenml.data_validators import BaseDataValidator
     from zenml.experiment_trackers.base_experiment_tracker import (
         BaseExperimentTracker,
     )
@@ -79,11 +82,29 @@ class Stack:
         feature_store: Optional["BaseFeatureStore"] = None,
         model_deployer: Optional["BaseModelDeployer"] = None,
         experiment_tracker: Optional["BaseExperimentTracker"] = None,
+        alerter: Optional["BaseAlerter"] = None,
+        data_validator: Optional["BaseDataValidator"] = None,
     ):
         """Initializes and validates a stack instance.
 
+        # noqa: DAR402
+
+        Args:
+            name: Name of the stack.
+            orchestrator: Orchestrator component of the stack.
+            metadata_store: Metadata store component of the stack.
+            artifact_store: Artifact store component of the stack.
+            container_registry: Container registry component of the stack.
+            secrets_manager: Secrets manager component of the stack.
+            step_operator: Step operator component of the stack.
+            feature_store: Feature store component of the stack.
+            model_deployer: Model deployer component of the stack.
+            experiment_tracker: Experiment tracker component of the stack.
+            alerter: Alerter component of the stack.
+            data_validator: Data validator component of the stack.
+
         Raises:
-             StackValidationError: If the stack configuration is not valid.
+            StackValidationError: If the stack configuration is not valid.
         """
         self._name = name
         self._orchestrator = orchestrator
@@ -95,12 +116,16 @@ class Stack:
         self._feature_store = feature_store
         self._model_deployer = model_deployer
         self._experiment_tracker = experiment_tracker
+        self._alerter = alerter
+        self._data_validator = data_validator
 
     @classmethod
     def from_components(
         cls, name: str, components: Dict[StackComponentType, "StackComponent"]
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
+
+        # noqa: DAR402
 
         Args:
             name: The name of the stack.
@@ -113,8 +138,10 @@ class Stack:
             TypeError: If a required component is missing or a component
                 doesn't inherit from the expected base class.
         """
+        from zenml.alerter import BaseAlerter
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
+        from zenml.data_validators import BaseDataValidator
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.metadata_stores import BaseMetadataStore
@@ -126,7 +153,15 @@ class Stack:
         def _raise_type_error(
             component: Optional["StackComponent"], expected_class: Type[Any]
         ) -> NoReturn:
-            """Raises a TypeError that the component has an unexpected type."""
+            """Raises a TypeError that the component has an unexpected type.
+
+            Args:
+                component: The component that has an unexpected type.
+                expected_class: The expected type of the component.
+
+            Raises:
+                TypeError: If the component has an unexpected type.
+            """
             raise TypeError(
                 f"Unable to create stack: Wrong stack component type "
                 f"`{component.__class__.__name__}` (expected: subclass "
@@ -185,6 +220,16 @@ class Stack:
         ):
             _raise_type_error(experiment_tracker, BaseExperimentTracker)
 
+        alerter = components.get(StackComponentType.ALERTER)
+        if alerter is not None and not isinstance(alerter, BaseAlerter):
+            _raise_type_error(alerter, BaseAlerter)
+
+        data_validator = components.get(StackComponentType.DATA_VALIDATOR)
+        if data_validator is not None and not isinstance(
+            data_validator, BaseDataValidator
+        ):
+            _raise_type_error(data_validator, BaseDataValidator)
+
         return Stack(
             name=name,
             orchestrator=orchestrator,
@@ -196,11 +241,17 @@ class Stack:
             feature_store=feature_store,
             model_deployer=model_deployer,
             experiment_tracker=experiment_tracker,
+            alerter=alerter,
+            data_validator=data_validator,
         )
 
     @classmethod
     def default_local_stack(cls) -> "Stack":
-        """Creates a stack instance which is configured to run locally."""
+        """Creates a stack instance which is configured to run locally.
+
+        Returns:
+            A stack instance configured to run locally.
+        """
         from zenml.artifact_stores import LocalArtifactStore
         from zenml.metadata_stores import SQLiteMetadataStore
         from zenml.orchestrators import LocalOrchestrator
@@ -213,7 +264,7 @@ class Stack:
             "local_stores",
             str(artifact_store_uuid),
         )
-        utils.create_dir_recursive_if_not_exists(artifact_store_path)
+        io_utils.create_dir_recursive_if_not_exists(artifact_store_path)
         artifact_store = LocalArtifactStore(
             name="default",
             uuid=artifact_store_uuid,
@@ -234,7 +285,11 @@ class Stack:
 
     @property
     def components(self) -> Dict[StackComponentType, "StackComponent"]:
-        """All components of the stack."""
+        """All components of the stack.
+
+        Returns:
+            A dictionary of all components of the stack.
+        """
         return {
             component.TYPE: component
             for component in [
@@ -247,59 +302,120 @@ class Stack:
                 self.feature_store,
                 self.model_deployer,
                 self.experiment_tracker,
+                self.alerter,
+                self.data_validator,
             ]
             if component is not None
         }
 
     @property
     def name(self) -> str:
-        """The name of the stack."""
+        """The name of the stack.
+
+        Returns:
+            str: The name of the stack.
+        """
         return self._name
 
     @property
     def orchestrator(self) -> "BaseOrchestrator":
-        """The orchestrator of the stack."""
+        """The orchestrator of the stack.
+
+        Returns:
+            The orchestrator of the stack.
+        """
         return self._orchestrator
 
     @property
     def metadata_store(self) -> "BaseMetadataStore":
-        """The metadata store of the stack."""
+        """The metadata store of the stack.
+
+        Returns:
+            The metadata store of the stack.
+        """
         return self._metadata_store
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":
-        """The artifact store of the stack."""
+        """The artifact store of the stack.
+
+        Returns:
+            The artifact store of the stack.
+        """
         return self._artifact_store
 
     @property
     def container_registry(self) -> Optional["BaseContainerRegistry"]:
-        """The container registry of the stack."""
+        """The container registry of the stack.
+
+        Returns:
+            The container registry of the stack or None if the stack does not
+            have a container registry.
+        """
         return self._container_registry
 
     @property
     def secrets_manager(self) -> Optional["BaseSecretsManager"]:
-        """The secrets manager of the stack."""
+        """The secrets manager of the stack.
+
+        Returns:
+            The secrets manager of the stack.
+        """
         return self._secrets_manager
 
     @property
     def step_operator(self) -> Optional["BaseStepOperator"]:
-        """The step operator of the stack."""
+        """The step operator of the stack.
+
+        Returns:
+            The step operator of the stack.
+        """
         return self._step_operator
 
     @property
     def feature_store(self) -> Optional["BaseFeatureStore"]:
-        """The feature store of the stack."""
+        """The feature store of the stack.
+
+        Returns:
+            The feature store of the stack.
+        """
         return self._feature_store
 
     @property
     def model_deployer(self) -> Optional["BaseModelDeployer"]:
-        """The model deployer of the stack."""
+        """The model deployer of the stack.
+
+        Returns:
+            The model deployer of the stack.
+        """
         return self._model_deployer
 
     @property
     def experiment_tracker(self) -> Optional["BaseExperimentTracker"]:
-        """The experiment tracker of the stack."""
+        """The experiment tracker of the stack.
+
+        Returns:
+            The experiment tracker of the stack.
+        """
         return self._experiment_tracker
+
+    @property
+    def alerter(self) -> Optional["BaseAlerter"]:
+        """The alerter of the stack.
+
+        Returns:
+            The alerter of the stack.
+        """
+        return self._alerter
+
+    @property
+    def data_validator(self) -> Optional["BaseDataValidator"]:
+        """The data validator of the stack.
+
+        Returns:
+            The data validator of the stack.
+        """
+        return self._data_validator
 
     @property
     def runtime_options(self) -> Dict[str, Any]:
@@ -308,6 +424,9 @@ class Stack:
         This method combines the available runtime options for all components
         of this stack. See `StackComponent.runtime_options()` for
         more information.
+
+        Returns:
+            A dictionary of runtime options.
         """
         runtime_options: Dict[str, Any] = {}
         for component in self.components.values():
@@ -325,7 +444,11 @@ class Stack:
         return runtime_options
 
     def dict(self) -> Dict[str, str]:
-        """Converts the stack into a dictionary."""
+        """Converts the stack into a dictionary.
+
+        Returns:
+            A dictionary containing the stack components.
+        """
         component_dict = {
             component_type.value: component.json(sort_keys=True)
             for component_type, component in self.components.items()
@@ -345,6 +468,9 @@ class Stack:
         Args:
             exclude_components: Set of component types for which the
                 requirements should not be included in the output.
+
+        Returns:
+            Set of PyPI requirements.
         """
         exclude_components = exclude_components or set()
         requirements = [
@@ -360,17 +486,44 @@ class Stack:
         To check if a stack configuration is valid, the following criteria must
         be met:
         - all components must support the execution mode (either local or
-         remote execution) specified by the orchestrator of the stack
+            remote execution) specified by the orchestrator of the stack
         - the `StackValidator` of each stack component has to validate the
-         stack to make sure all the components are compatible with each other
-
-        Raises:
-             StackValidationError: If the stack configuration is not valid.
+            stack to make sure all the components are compatible with each other
         """
-
         for component in self.components.values():
             if component.validator:
                 component.validator.validate(stack=self)
+
+    def _register_pipeline_run(
+        self,
+        pipeline: "BasePipeline",
+        runtime_configuration: "RuntimeConfiguration",
+    ) -> None:
+        """Registers a pipeline run in the ZenStore.
+
+        Args:
+            pipeline: The pipeline that is being run.
+            runtime_configuration: The runtime configuration of the pipeline.
+        """
+        from zenml.repository import Repository
+        from zenml.zen_stores.models import StackWrapper
+        from zenml.zen_stores.models.pipeline_models import (
+            PipelineRunWrapper,
+            PipelineWrapper,
+        )
+
+        repo = Repository()
+        active_project = repo.active_project
+        pipeline_run_wrapper = PipelineRunWrapper(
+            name=runtime_configuration.run_name,
+            pipeline=PipelineWrapper.from_pipeline(pipeline),
+            stack=StackWrapper.from_stack(self),
+            runtime_configuration=runtime_configuration,
+            user_id=repo.active_user.id,
+            project_name=active_project.name if active_project else None,
+        )
+
+        Repository().zen_store.register_pipeline_run(pipeline_run_wrapper)
 
     def deploy_pipeline(
         self,
@@ -386,6 +539,9 @@ class Stack:
 
         Returns:
             The return value of the call to `orchestrator.run_pipeline(...)`.
+
+        Raises:
+            StackValidationError: If the stack configuration is not valid.
         """
         self.validate()
 
@@ -432,7 +588,11 @@ class Stack:
             )
             pipeline.enable_cache = runtime_configuration.get("enable_cache")
 
-        return_value = self.orchestrator.run_pipeline(
+        self._register_pipeline_run(
+            pipeline=pipeline, runtime_configuration=runtime_configuration
+        )
+
+        return_value = self.orchestrator.run(
             pipeline, stack=self, runtime_configuration=runtime_configuration
         )
 
@@ -465,25 +625,28 @@ class Stack:
 
     @property
     def is_provisioned(self) -> bool:
-        """If the stack provisioned resources to run locally."""
+        """If the stack provisioned resources to run locally.
+
+        Returns:
+            True if the stack provisioned resources to run locally.
+        """
         return all(
             component.is_provisioned for component in self.components.values()
         )
 
     @property
     def is_running(self) -> bool:
-        """If the stack is running locally."""
+        """If the stack is running locally.
+
+        Returns:
+            True if the stack is running locally, False otherwise.
+        """
         return all(
             component.is_running for component in self.components.values()
         )
 
     def provision(self) -> None:
-        """Provisions resources to run the stack locally.
-
-        Raises:
-            NotImplementedError: If any unprovisioned component does not
-                implement provisioning.
-        """
+        """Provisions resources to run the stack locally."""
         logger.info("Provisioning resources for stack '%s'.", self.name)
         for component in self.components.values():
             if not component.is_provisioned:
@@ -491,12 +654,7 @@ class Stack:
                 logger.info("Provisioned resources for %s.", component)
 
     def deprovision(self) -> None:
-        """Deprovisions all local resources of the stack.
-
-        Raises:
-            NotImplementedError: If any provisioned component does not
-                implement deprovisioning.
-        """
+        """Deprovisions all local resources of the stack."""
         logger.info("Deprovisioning resources for stack '%s'.", self.name)
         for component in self.components.values():
             if component.is_provisioned:

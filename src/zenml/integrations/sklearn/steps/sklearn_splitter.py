@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the sklearn splitter."""
+
 from typing import Dict
 
 import pandas as pd
@@ -24,14 +26,17 @@ from zenml.steps.step_interfaces.base_split_step import (
 
 
 class SklearnSplitterConfig(BaseSplitStepConfig):
-    """Config class for the sklearn splitter"""
+    """Config class for the sklearn splitter."""
 
     ratios: Dict[str, float]
 
 
 class SklearnSplitter(BaseSplitStep):
-    """A simple step implementation which utilizes sklearn to split a given
-    dataset into train, test and validation splits"""
+    """A simple sklearn splitter step implementation.
+
+    This uses sklearn to split a given dataset into train, test and validation
+    splits.
+    """
 
     def entrypoint(  # type: ignore[override]
         self,
@@ -40,13 +45,18 @@ class SklearnSplitter(BaseSplitStep):
     ) -> Output(  # type:ignore[valid-type]
         train=pd.DataFrame, test=pd.DataFrame, validation=pd.DataFrame
     ):
-        """Method which is responsible for the splitting logic
+        """Method which is responsible for the splitting logic.
 
         Args:
-            dataset: a pandas Dataframe which entire dataset
+            dataset: a pandas DataFrame which entire dataset
             config: the configuration for the step
+
         Returns:
-            three dataframes representing the splits
+            three DataFrames representing the splits
+
+        Raises:
+            KeyError: if the wrong configuration is used
+            ValueError: if the ratios are not valid
         """
         if (
             any(

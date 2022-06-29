@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Feast Feature Store for ZenML."""
 
 from typing import Any, ClassVar, Dict, List, Union
 
@@ -39,7 +40,7 @@ class FeastFeatureStore(BaseFeatureStore):
         """Validates the connection to the feature store.
 
         Raises:
-            RuntimeError: If the online component (Redis) is not available.
+            ConnectionError: If the online component (Redis) is not available.
         """
         client = redis.Redis(host=self.online_host, port=self.online_port)
         try:
@@ -59,7 +60,7 @@ class FeastFeatureStore(BaseFeatureStore):
         """Returns the historical features for training or batch scoring.
 
         Args:
-            entity_df: The entity dataframe or entity name.
+            entity_df: The entity DataFrame or entity name.
             features: The features to retrieve.
             full_feature_names: Whether to return the full feature names.
 
@@ -178,7 +179,7 @@ class FeastFeatureStore(BaseFeatureStore):
         Returns:
             The registry.
         """
-        fs = FeatureStore(repo_path=self.feast_repo)
+        fs: FeatureStore = FeatureStore(repo_path=self.feast_repo)
         return fs.registry
 
     def get_feast_version(self) -> str:

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the PyTorch DataLoader materializer."""
 
 import os
 from typing import Any, Type, cast
@@ -27,13 +28,16 @@ CHECKPOINT_FILENAME = "checkpoint.pt"
 
 
 class PyTorchDataLoaderMaterializer(BaseMaterializer):
-    """Materializer to read/write Pytorch dataloaders."""
+    """Materializer to read/write PyTorch dataloaders."""
 
     ASSOCIATED_TYPES = (DataLoader,)
     ASSOCIATED_ARTIFACT_TYPES = (DataArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> DataLoader[Any]:
         """Reads and returns a PyTorch dataloader.
+
+        Args:
+            data_type: The type of the dataloader to load.
 
         Returns:
             A loaded PyTorch dataloader.

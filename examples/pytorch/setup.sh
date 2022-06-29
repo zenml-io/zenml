@@ -9,5 +9,5 @@ pre_run () {
 
 pre_run_forced () {
   pip install torchvision
-  zenml integration install pytorch -f
+  zenml integration install pytorch -y
 }

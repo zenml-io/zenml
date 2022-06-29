@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Evidently visualizer."""
 
 import tempfile
 import webbrowser
@@ -31,10 +32,12 @@ class EvidentlyVisualizer(BaseStepVisualizer):
 
     @abstractmethod
     def visualize(self, object: StepView, *args: Any, **kwargs: Any) -> None:
-        """Method to visualize components
+        """Method to visualize components.
 
         Args:
             object: StepView fetched from run.get_step().
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
         """
         for artifact_view in object.outputs.values():
             # filter out anything but data analysis artifacts
@@ -46,12 +49,12 @@ class EvidentlyVisualizer(BaseStepVisualizer):
                 self.generate_facet(artifact)
 
     def generate_facet(self, html_: str) -> None:
-        """Generate a Facet Overview
+        """Generate a Facet Overview.
 
         Args:
             html_: HTML represented as a string.
         """
-        if Environment.in_notebook():
+        if Environment.in_notebook() or Environment.in_google_colab():
             from IPython.core.display import HTML, display
 
             display(HTML(html_))

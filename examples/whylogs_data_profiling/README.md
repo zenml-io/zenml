@@ -20,7 +20,7 @@ example:
 existing ZenML step with whylogs profiling capabilities.
 * a predefined `WhylogsProfilerStep` ZenML step class that can be
 instantiated and inserted into any pipeline to generate a whylogs profile
-out of a Pandas Dataframe and return the profile as a step output artifact.
+out of a Pandas DataFrame and return the profile as a step output artifact.
 Instantiating this type of step is simplified even further through the
 use of the `whylogs_profiler_step` function.
 
@@ -56,6 +56,27 @@ def data_loader(
     )
 
     return df, profile
+```
+
+If you want to use this decorator with our class-based API, simply decorate your step class as follows:
+```python
+from zenml.integrations.whylogs.whylogs_step_decorator import enable_whylogs
+from zenml.steps import Output, BaseStep
+
+@enable_whylogs
+class DataLoader(BaseStep):
+    def entrypoint(
+        self,
+        context: StepContext,
+    ) -> Output(data=pd.DataFrame, profile=DatasetProfile,):
+        ...
+
+        # leverage the whylogs sub-context to generate a whylogs profile
+        profile = context.whylogs.profile_dataframe(
+            df, dataset_name="input_data", tags={"datasetId": "model-14"}
+        )
+
+        return df, profile
 ```
 
 Additional whylogs profiling steps can also be created using the
@@ -125,12 +146,11 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install whylogs
-zenml integration install sklearn
+zenml integration install whylogs sklearn
 
 # pull example
-zenml example pull whylogs
-cd zenml_examples/whylogs
+zenml example pull whylogs_data_profiling
+cd zenml_examples/whylogs_data_profiling
 
 # Initialize ZenML repo
 zenml init
@@ -149,10 +169,3 @@ In order to clean up, delete the remaining ZenML references.
 ```shell
 rm -rf zenml_examples
 ```
-
-# 📜 Learn more
-
-Our docs regarding the whylogs integration can be found [here](TODO: Link to docs).
-
-If you want to learn more about visualizers in general or about how to build your own visualizers in zenml
-check out our [docs](TODO: Link to docs)

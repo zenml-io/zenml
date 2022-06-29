@@ -11,49 +11,49 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import json
+"""Repository implementation."""
+
 import os
 import random
 from abc import ABCMeta
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
 
 from zenml.config.base_config import BaseConfiguration
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.profile_config import ProfileConfiguration
-from zenml.constants import ENV_ZENML_REPOSITORY_PATH, REPOSITORY_DIRECTORY_NAME
+from zenml.constants import (
+    ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
+    ENV_ZENML_REPOSITORY_PATH,
+    REPOSITORY_DIRECTORY_NAME,
+    handle_bool_env_var,
+)
 from zenml.enums import StackComponentType, StoreType
 from zenml.environment import Environment
 from zenml.exceptions import (
     ForbiddenRepositoryAccessError,
     InitializationException,
 )
-from zenml.io import fileio, utils
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.post_execution import PipelineView
 from zenml.stack import Stack, StackComponent
-from zenml.utils import yaml_utils
-from zenml.utils.analytics_utils import AnalyticsEvent, track, track_event
-from zenml.zen_stores import (
-    BaseZenStore,
-    LocalZenStore,
-    RestZenStore,
-    SqlZenStore,
-)
-from zenml.zen_stores.models import (
-    ComponentWrapper,
-    StackWrapper,
-    User,
-    ZenStoreModel,
-)
+from zenml.utils import io_utils, yaml_utils
+from zenml.utils.analytics_utils import AnalyticsEvent, track
+from zenml.utils.filesync_model import FileSyncModel
+
+if TYPE_CHECKING:
+    from zenml.config.profile_config import ProfileConfiguration
+    from zenml.post_execution import PipelineView
+    from zenml.zen_stores import BaseZenStore
+    from zenml.zen_stores.models import Project, User, ZenStoreModel
 
 logger = get_logger(__name__)
 
 
-class RepositoryConfiguration(BaseModel):
+class RepositoryConfiguration(FileSyncModel):
     """Pydantic object used for serializing repository configuration options.
 
     Attributes:
@@ -63,6 +63,8 @@ class RepositoryConfiguration(BaseModel):
 
     active_profile_name: Optional[str]
     active_stack_name: Optional[str]
+    project_name: Optional[str] = None
+    project_id: Optional[UUID] = None
 
     class Config:
         """Pydantic configuration class."""
@@ -78,14 +80,26 @@ class RepositoryConfiguration(BaseModel):
 
 
 class LegacyRepositoryConfig(BaseModel):
+    """Pydantic object used for serializing legacy repository configuration options."""
+
     version: str
     active_stack_name: Optional[str]
     stacks: Dict[str, Dict[StackComponentType, Optional[str]]]
     stack_components: Dict[StackComponentType, Dict[str, str]]
 
-    def get_stack_data(self) -> ZenStoreModel:
-        """Extract stack data from Legacy Repository file."""
+    def get_stack_data(self, config_file: str) -> "ZenStoreModel":
+        """Extract stack data from Legacy Repository file.
+
+        Args:
+            config_file: Path to the repository config file.
+
+        Returns:
+            ZenStoreModel: ZenStoreModel object containing the stack data.
+        """
+        from zenml.zen_stores.models import ZenStoreModel
+
         return ZenStoreModel(
+            config_file=config_file,
             stacks={
                 name: {
                     component_type: value
@@ -112,7 +126,12 @@ class RepositoryMetaClass(ABCMeta):
     """
 
     def __init__(cls, *args: Any, **kwargs: Any) -> None:
-        """Initialize the Repository class."""
+        """Initialize the Repository class.
+
+        Args:
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         cls._global_repository: Optional["Repository"] = None
 
@@ -124,11 +143,17 @@ class RepositoryMetaClass(ABCMeta):
         Repository instance is created and returned immediately and without
         saving it as the global Repository singleton.
 
+        Args:
+            *args: Positional arguments.
+            **kwargs: Keyword arguments.
+
+        Returns:
+            Repository: The global Repository instance.
+
         Raises:
             ForbiddenRepositoryAccessError: If trying to create a `Repository`
                 instance while a ZenML step is being executed.
         """
-
         # `skip_repository_check` is a special kwarg that can be passed to
         # the Repository constructor to bypass the check that prevents the
         # Repository instance from being accessed from within pipeline steps.
@@ -162,7 +187,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def __init__(
         self,
         root: Optional[Path] = None,
-        profile: Optional[ProfileConfiguration] = None,
+        profile: Optional["ProfileConfiguration"] = None,
     ) -> None:
         """Initializes the global repository instance.
 
@@ -199,9 +224,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 initialized), the default global profile is used. Only used to
                 initialize new profiles internally.
         """
-
         self._root: Optional[Path] = None
-        self._profile: Optional[ProfileConfiguration] = None
+        self._profile: Optional["ProfileConfiguration"] = None
         self.__config: Optional[RepositoryConfiguration] = None
 
         # The repository constructor is called with a custom profile only when
@@ -254,15 +278,21 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 variable `ZENML_REPOSITORY_PATH` (if set) and by recursively
                 searching in the parent directories of the current working
                 directory.
-        """
 
-        self._root = self.find_repository(root, enable_warnings=True)
+        Raises:
+            RuntimeError: If no active configuration profile is found.
+        """
+        enable_warnings = handle_bool_env_var(
+            ENV_ZENML_ENABLE_REPO_INIT_WARNINGS, True
+        )
+        self._root = self.find_repository(root, enable_warnings=enable_warnings)
 
         global_cfg = GlobalConfiguration()
         new_profile = self._profile
 
         if not self._root:
-            logger.info("Running without an active repository root.")
+            if enable_warnings:
+                logger.info("Running without an active repository root.")
         else:
             logger.debug("Using repository root %s.", self._root)
             self.__config = self._load_config()
@@ -296,10 +326,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         self._sanitize_config()
 
     def _set_active_profile(
-        self, profile: ProfileConfiguration, new_profile: bool = False
+        self, profile: "ProfileConfiguration", new_profile: bool = False
     ) -> None:
-        """Set the supplied configuration profile as the active profile for
-        this repository.
+        """Set the supplied configuration profile as the active profile for this repository.
 
         This method initializes the repository store associated with the
         supplied profile and also initializes it with the default stack
@@ -311,7 +340,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 configuration belongs to a brand-new profile
         """
         self._profile = profile
-        self.zen_store: BaseZenStore = self.create_store(
+        self.zen_store: "BaseZenStore" = self.create_store(
             profile, skip_default_registrations=not new_profile
         )
 
@@ -339,8 +368,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Raises:
             RuntimeError: If the repository configuration doesn't contain a
-            valid active stack and a new active stack cannot be automatically
-            determined based on the active profile and available stacks.
+                valid active stack and a new active stack cannot be automatically
+                determined based on the active profile and available stacks.
         """
         if not self.__config:
             return
@@ -395,14 +424,11 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
             self.__config.active_stack_name = backup_stack_name
 
-        self._write_config()
-
     @staticmethod
     def _migrate_legacy_repository(
         config_file: str,
-    ) -> Optional[ProfileConfiguration]:
-        """Migrate a legacy repository configuration to the new format and
-        create a new Profile out of it.
+    ) -> Optional["ProfileConfiguration"]:
+        """Migrate a legacy repository configuration to the new format and create a new Profile out of it.
 
         Args:
             config_file: Path to the legacy repository configuration file.
@@ -446,30 +472,35 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             f"This warning will not be shown again for this Repository."
         )
 
-        stack_data = legacy_config.get_stack_data()
+        stack_data = legacy_config.get_stack_data(config_file=config_file)
+
+        from zenml.config.profile_config import ProfileConfiguration
+        from zenml.zen_stores import LocalZenStore
+
         store = LocalZenStore()
         store.initialize(url=config_path, store_data=stack_data)
-        store._write_store()
         profile = ProfileConfiguration(
             name=profile_name,
             store_url=store.url,
             active_stack=legacy_config.active_stack_name,
         )
 
-        new_config = RepositoryConfiguration(
+        # Calling this will dump the new configuration to disk
+        RepositoryConfiguration(
+            config_file=config_file,
             active_profile_name=profile.name,
             active_stack_name=legacy_config.active_stack_name,
         )
-        new_config_dict = json.loads(new_config.json())
-        yaml_utils.write_yaml(config_file, new_config_dict)
         GlobalConfiguration().add_or_update_profile(profile)
 
         return profile
 
     def _load_config(self) -> Optional[RepositoryConfiguration]:
-        """Loads the repository configuration from disk, if the repository has
-        an active root and the configuration file exists. If the configuration
-        file doesn't exist, an empty configuration is returned.
+        """Loads the repository configuration from disk.
+
+        This happens if the repository has an active root and the configuration
+        file exists. If the configuration file doesn't exist, an empty
+        configuration is returned.
 
         If a legacy repository configuration is found in the repository root,
         it is migrated to the new configuration format and a new profile is
@@ -483,7 +514,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             Loaded repository configuration or None if the repository does not
             have an active root.
         """
-
         config_path = self._config_path()
         if not config_path:
             return None
@@ -498,30 +528,26 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             # detect an old style repository configuration and migrate it to
             # the new format and create a profile out of it if necessary
             self._migrate_legacy_repository(config_path)
+        else:
+            logger.debug(
+                "No repository configuration file found, creating default "
+                "configuration."
+            )
 
-            config_dict = yaml_utils.read_yaml(config_path)
-            config = RepositoryConfiguration.parse_obj(config_dict)
-
-            return config
-
-        logger.debug(
-            "No repository configuration file found, creating default "
-            "configuration."
-        )
-        return RepositoryConfiguration()
-
-    def _write_config(self) -> None:
-        """Writes the repository configuration to disk, if the repository has
-        been initialized."""
-        config_path = self._config_path()
-        if not config_path or not self.__config:
-            return
-        config_dict = json.loads(self.__config.json())
-        yaml_utils.write_yaml(config_path, config_dict)
+        return RepositoryConfiguration(config_path)
 
     @staticmethod
-    def get_store_class(type: StoreType) -> Optional[Type[BaseZenStore]]:
-        """Returns the class of the given store type."""
+    def get_store_class(type: StoreType) -> Optional[Type["BaseZenStore"]]:
+        """Returns the class of the given store type.
+
+        Args:
+            type: The type of the store to get the class for.
+
+        Returns:
+            The class of the given store type or None if the type is unknown.
+        """
+        from zenml.zen_stores import LocalZenStore, RestZenStore, SqlZenStore
+
         return {
             StoreType.LOCAL: LocalZenStore,
             StoreType.SQL: SqlZenStore,
@@ -530,10 +556,12 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @staticmethod
     def create_store(
-        profile: ProfileConfiguration, skip_default_registrations: bool = False
-    ) -> BaseZenStore:
-        """Create the repository persistence back-end store from a configuration
-        profile.
+        profile: "ProfileConfiguration",
+        skip_default_registrations: bool = False,
+        track_analytics: bool = True,
+        skip_migration: bool = False,
+    ) -> "BaseZenStore":
+        """Create repository persistence back-end store from a configuration profile.
 
         If the configuration profile doesn't specify all necessary configuration
         options (e.g. the type or URL), a default configuration will be used.
@@ -543,9 +571,16 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 repository information.
             skip_default_registrations: If `True`, the creation of the default
                 stack and user in the store will be skipped.
+            track_analytics: Only send analytics if set to `True`.
+            skip_migration: If `True`, no store migration will be performed.
 
         Returns:
             The initialized repository store.
+
+        Raises:
+            RuntimeError: If the configuration is invalid.
+            ValueError: If the URL is invalid.
+
         """
         if not profile.store_type:
             raise RuntimeError(
@@ -566,12 +601,15 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         if profile.store_type == StoreType.REST:
             skip_default_registrations = True
+            skip_migration = True
 
         if store_class.is_valid_url(profile.store_url):
             store = store_class()
             store.initialize(
                 url=profile.store_url,
                 skip_default_registrations=skip_default_registrations,
+                track_analytics=track_analytics,
+                skip_migration=skip_migration,
             )
             return store
 
@@ -590,6 +628,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             root: The root directory where the repository should be created.
                 If None, the current working directory is used.
+
         Raises:
             InitializationException: If the root directory already contains a
                 ZenML repository.
@@ -602,7 +641,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
 
         config_directory = str(root / REPOSITORY_DIRECTORY_NAME)
-        utils.create_dir_recursive_if_not_exists(config_directory)
+        io_utils.create_dir_recursive_if_not_exists(config_directory)
         # Initialize the repository configuration at the custom path
         Repository(root=root)
 
@@ -666,7 +705,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             global_cfg.activate_profile(profile_name)
 
     @property
-    def active_profile(self) -> ProfileConfiguration:
+    def active_profile(self) -> "ProfileConfiguration":
         """Return the profile set as active for the repository.
 
         Returns:
@@ -692,29 +731,34 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Returns:
             The active profile name.
-
-        Raises:
-            RuntimeError: If no profile is set as active.
         """
         return self.active_profile.name
 
     @property
-    def active_user(self) -> User:
+    def active_user(self) -> "User":
         """The active user.
 
-        Raises:
-            KeyError: If no user exists for the active username.
+        Returns:
+            The active user.
         """
         return self.zen_store.get_user(self.active_user_name)
 
     @property
     def active_user_name(self) -> str:
-        """Name of the active user."""
+        """Get the active user name set in the profile.
+
+        Returns:
+            The name of the active user.
+        """
         return self.active_profile.active_user
 
     @property
     def stacks(self) -> List[Stack]:
-        """All stacks registered in this repository."""
+        """All stacks registered in this repository.
+
+        Returns:
+            A list of all stacks registered in this repository.
+        """
         return [s.to_stack() for s in self.zen_store.stacks]
 
     @property
@@ -730,6 +774,10 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Modifying the contents of the returned dictionary does not actually
         register/deregister stacks, use `repo.register_stack(...)` or
         `repo.deregister_stack(...)` instead.
+
+        Returns:
+            A dictionary containing the configuration of all stacks registered
+            in this repository.
         """
         return self.zen_store.stack_configurations
 
@@ -737,10 +785,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     def active_stack(self) -> Stack:
         """The active stack for this repository.
 
-        Raises:
-            RuntimeError: If no active stack name is configured.
-            KeyError: If no stack was found for the configured name or one
-                of the stack components is not registered.
+        Returns:
+            The active stack for this repository.
         """
         return self.get_stack(name=self.active_stack_name)
 
@@ -752,16 +798,19 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         repository does not have an active root, the active stack from the
         associated or global profile is used instead.
 
+        Returns:
+            The name of the active stack.
+
         Raises:
             RuntimeError: If no active stack name is set neither in the
-            repository configuration nor in the associated profile.
+                repository configuration nor in the associated profile.
         """
         stack_name = None
         if self.__config:
             stack_name = self.__config.active_stack_name
 
         if not stack_name:
-            stack_name = self.active_profile.active_stack
+            stack_name = self.active_profile.get_active_stack()
 
         if not stack_name:
             raise RuntimeError(
@@ -777,14 +826,10 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             name: Name of the stack to activate.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
         """
         self.zen_store.get_stack(name)  # raises KeyError
         if self.__config:
             self.__config.active_stack_name = name
-            self._write_config()
 
         # set the active stack globally in the active profile only if the
         # repository doesn't have a root configured (i.e. repository root hasn't
@@ -798,9 +843,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             name: The name of the stack to fetch.
 
-        Raises:
-            KeyError: If no stack exists for the given name or one of the
-                stacks components is not registered.
+        Returns:
+            The stack with the given name.
         """
         return self.zen_store.get_stack(name).to_stack()
 
@@ -812,17 +856,11 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             stack: The stack to register.
-
-        Raises:
-            StackExistsError: If a stack with the same name already exists.
-            StackComponentExistsError: If a component of the stack wasn't
-                registered and a different component with the same name
-                already exists.
         """
+        from zenml.zen_stores.models import StackWrapper
+
         stack.validate()
-        metadata = self.zen_store.register_stack(StackWrapper.from_stack(stack))
-        metadata["store_type"] = self.active_profile.store_type.value
-        track_event(AnalyticsEvent.REGISTERED_STACK, metadata=metadata)
+        self.zen_store.register_stack(StackWrapper.from_stack(stack))
 
     def update_stack(self, name: str, stack: Stack) -> None:
         """Updates a stack and its components.
@@ -830,17 +868,13 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             name: The original name of the stack.
             stack: The new stack to use as the updated version.
+        """
+        from zenml.zen_stores.models import StackWrapper
 
-        Raises:
-            KeyError: If no stack exists for the given name."""
         stack.validate()
-        metadata = self.zen_store.update_stack(
-            name, StackWrapper.from_stack(stack)
-        )
+        self.zen_store.update_stack(name, StackWrapper.from_stack(stack))
         if self.active_stack_name == name:
             self.activate_stack(stack.name)
-        metadata["store_type"] = self.active_profile.store_type.value
-        track_event(AnalyticsEvent.UPDATED_STACK, metadata=metadata)
 
     def deregister_stack(self, name: str) -> None:
         """Deregisters a stack.
@@ -877,27 +911,26 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             name: The original name of the stack component.
             component_type: The type of the component to update.
             component: The new component to update with.
+        """
+        from zenml.zen_stores.models import ComponentWrapper
 
-        Raises:
-            KeyError: If no such stack component exists."""
         self.zen_store.update_stack_component(
             name,
             component_type,
             ComponentWrapper.from_component(component),
         )
-        analytics_metadata = {
-            "type": component.TYPE.value,
-            "flavor": component.FLAVOR,
-        }
-        track_event(
-            AnalyticsEvent.UPDATED_STACK_COMPONENT,
-            metadata=analytics_metadata,
-        )
 
     def get_stack_components(
         self, component_type: StackComponentType
     ) -> List[StackComponent]:
-        """Fetches all registered stack components of the given type."""
+        """Fetches all registered stack components of the given type.
+
+        Args:
+            component_type: The type of the components to fetch.
+
+        Returns:
+            A list of all registered stack components of the given type.
+        """
         return [
             c.to_component()
             for c in self.zen_store.get_stack_components(component_type)
@@ -912,8 +945,8 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             component_type: The type of the component to fetch.
             name: The name of the component to fetch.
 
-        Raises:
-            KeyError: If no stack component exists for the given type and name.
+        Returns:
+            The registered stack component.
         """
         logger.debug(
             "Fetching stack component of type '%s' with name '%s'.",
@@ -933,25 +966,14 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
         Args:
             component: The component to register.
-
-        Raises:
-            StackComponentExistsError: If a stack component with the same type
-                and name already exists.
         """
+        from zenml.zen_stores.models import ComponentWrapper
+
         self.zen_store.register_stack_component(
             ComponentWrapper.from_component(component)
         )
         if component.post_registration_message:
             logger.info(component.post_registration_message)
-
-        analytics_metadata = {
-            "type": component.TYPE.value,
-            "flavor": component.FLAVOR,
-        }
-        track_event(
-            AnalyticsEvent.REGISTERED_STACK_COMPONENT,
-            metadata=analytics_metadata,
-        )
 
     def deregister_stack_component(
         self, component_type: StackComponentType, name: str
@@ -977,10 +999,60 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 name,
             )
 
+    def set_active_project(self, project: Optional["Project"] = None) -> None:
+        """Set the project for the local repository.
+
+        If no object is passed, this will unset the active project for this
+        repository.
+
+        Args:
+            project: The project to set as active.
+
+        Raises:
+            RuntimeError: if not in an initialized repository directory.
+        """
+        if not self.__config:
+            raise RuntimeError(
+                "Must be in a local ZenML repository to set an active project. "
+                "Make sure you are in the right directory, or first run "
+                "`zenml init` to initialize a ZenML repository."
+            )
+
+        if project:
+            self.__config.project_name = project.name
+            self.__config.project_id = project.id
+        else:
+            self.__config.project_name = None
+            self.__config.project_id = None
+
+    @property
+    def active_project(self) -> Optional["Project"]:
+        """Get the currently active project of the local repository.
+
+        Returns:
+            Project, if one is set that matches the id in the store.
+        """
+        if not self.__config:
+            return None
+
+        project_name = self.__config.project_name
+        if not project_name:
+            return None
+
+        project = self.zen_store.get_project(project_name)
+        if self.__config.project_id != project.id:
+            logger.warning(
+                "Local project id and store project id do not match. Treating "
+                "project as unset. Make sure this project was registered with "
+                f"this store under the name `{project_name}`."
+            )
+            return None
+        return project
+
     @track(event=AnalyticsEvent.GET_PIPELINES)
     def get_pipelines(
         self, stack_name: Optional[str] = None
-    ) -> List[PipelineView]:
+    ) -> List["PipelineView"]:
         """Fetches post-execution pipeline views.
 
         Args:
@@ -994,7 +1066,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Raises:
             RuntimeError: If no stack name is specified and no active stack name
                 is configured.
-            KeyError: If no stack with the given name exists.
         """
         stack_name = stack_name or self.active_stack_name
         if not stack_name:
@@ -1008,7 +1079,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     @track(event=AnalyticsEvent.GET_PIPELINE)
     def get_pipeline(
         self, pipeline_name: str, stack_name: Optional[str] = None
-    ) -> Optional[PipelineView]:
+    ) -> Optional["PipelineView"]:
         """Fetches a post-execution pipeline view.
 
         Args:
@@ -1024,7 +1095,6 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Raises:
             RuntimeError: If no stack name is specified and no active stack name
                 is configured.
-            KeyError: If no stack with the given name exists.
         """
         stack_name = stack_name or self.active_stack_name
         if not stack_name:
@@ -1037,7 +1107,14 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
 
     @staticmethod
     def is_repository_directory(path: Path) -> bool:
-        """Checks whether a ZenML repository exists at the given path."""
+        """Checks whether a ZenML repository exists at the given path.
+
+        Args:
+            path: The path to check.
+
+        Returns:
+            True if a ZenML repository exists at the given path, False otherwise.
+        """
         config_dir = path / REPOSITORY_DIRECTORY_NAME
         return fileio.isdir(str(config_dir))
 
@@ -1091,12 +1168,19 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             )
 
         def _find_repo_helper(path_: Path) -> Optional[Path]:
-            """Helper function to recursively search parent directories for a
-            ZenML repository."""
+            """Helper function to recursively search parent directories for a ZenML repository.
+
+            Args:
+                path_: The path to search.
+
+            Returns:
+                Absolute path to a ZenML repository directory or None if no
+                repository directory was found.
+            """
             if Repository.is_repository_directory(path_):
                 return path_
 
-            if not search_parent_directories or utils.is_root(str(path_)):
+            if not search_parent_directories or io_utils.is_root(str(path_)):
                 return None
 
             return _find_repo_helper(path_.parent)
@@ -1117,6 +1201,9 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
         Args:
             component_type: The type of the component to fetch.
             name: The name of the flavor to fetch.
+
+        Returns:
+            The registered flavor.
 
         Raises:
             KeyError: If no flavor exists for the given type and name.

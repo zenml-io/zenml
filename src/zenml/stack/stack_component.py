@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML Stack Component class."""
+
 import textwrap
 from abc import ABC
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, Optional, Set
@@ -44,7 +46,11 @@ class StackComponent(BaseModel, ABC):
 
     @property
     def log_file(self) -> Optional[str]:
-        """Optional path to a log file for the stack component."""
+        """Optional path to a log file for the stack component.
+
+        Returns:
+            Optional path to a log file for the stack component.
+        """
         # TODO [ENG-136]: Add support for multiple log files for a stack
         #  component. E.g. let each component return a generator that yields
         #  logs instead of specifying a single file path.
@@ -57,20 +63,26 @@ class StackComponent(BaseModel, ABC):
         The items of the dictionary should map option names (which can be used
         to configure the option in the `RuntimeConfiguration`) to default
         values for the option (or `None` if there is no default value).
+
+        Returns:
+            A dictionary of runtime options.
         """
         return {}
 
     @property
     def requirements(self) -> Set[str]:
-        """Set of PyPI requirements for the component."""
+        """Set of PyPI requirements for the component.
+
+        Returns:
+            A set of PyPI requirements for the component.
+        """
         from zenml.integrations.utils import get_requirements_for_module
 
         return set(get_requirements_for_module(self.__module__))
 
     @property
     def local_path(self) -> Optional[str]:
-        """Path to a local directory used by the component to store persistent
-        information.
+        """Path to a local directory used by the component to store persistent information.
 
         This property should only be implemented by components that need to
         store persistent information in a directory on the local machine and
@@ -83,7 +95,7 @@ class StackComponent(BaseModel, ABC):
         path:
 
         ```python
-        from zenml.io.utils import get_global_config_directory
+        from zenml.utils.io_utils import get_global_config_directory
         from zenml.constants import LOCAL_STORES_DIRECTORY_NAME
 
         ...
@@ -97,6 +109,10 @@ class StackComponent(BaseModel, ABC):
                 str(uuid),
             )
         ```
+
+        Returns:
+            A path to a local directory used by the component to store
+            persistent information.
         """
         return None
 
@@ -133,8 +149,11 @@ class StackComponent(BaseModel, ABC):
 
     @property
     def post_registration_message(self) -> Optional[str]:
-        """Optional message that will be printed after the stack component is
-        registered."""
+        """Optional message that will be printed after the stack component is registered.
+
+        Returns:
+            An optional message.
+        """
         return None
 
     @property
@@ -145,50 +164,89 @@ class StackComponent(BaseModel, ABC):
         component is initialized. Subclasses should override this property
         and return a `StackValidator` that makes sure they're not included in
         any stack that they're not compatible with.
+
+        Returns:
+            An optional `StackValidator` instance.
         """
         return None
 
     @property
     def is_provisioned(self) -> bool:
-        """If the component provisioned resources to run locally."""
+        """If the component provisioned resources to run.
+
+        Returns:
+            True if the component provisioned resources to run.
+        """
         return True
 
     @property
     def is_running(self) -> bool:
-        """If the component is running locally."""
+        """If the component is running.
+
+        Returns:
+            True if the component is running.
+        """
         return True
 
     @property
     def is_suspended(self) -> bool:
-        """If the component is suspended."""
+        """If the component is suspended.
+
+        Returns:
+            True if the component is suspended.
+        """
         return not self.is_running
 
     def provision(self) -> None:
-        """Provisions resources to run the component locally."""
+        """Provisions resources to run the component.
+
+        Raises:
+            NotImplementedError: If the component does not implement this
+                method.
+        """
         raise NotImplementedError(
-            f"Provisioning local resources not implemented for {self}."
+            f"Provisioning resources not implemented for {self}."
         )
 
     def deprovision(self) -> None:
-        """Deprovisions all local resources of the component."""
+        """Deprovisions all resources of the component.
+
+        Raises:
+            NotImplementedError: If the component does not implement this
+                method.
+        """
         raise NotImplementedError(
-            f"Deprovisioning local resource not implemented for {self}."
+            f"Deprovisioning resource not implemented for {self}."
         )
 
     def resume(self) -> None:
-        """Resumes the provisioned local resources of the component."""
+        """Resumes the provisioned resources of the component.
+
+        Raises:
+            NotImplementedError: If the component does not implement this
+                method.
+        """
         raise NotImplementedError(
             f"Resuming provisioned resources not implemented for {self}."
         )
 
     def suspend(self) -> None:
-        """Suspends the provisioned local resources of the component."""
+        """Suspends the provisioned resources of the component.
+
+        Raises:
+            NotImplementedError: If the component does not implement this
+                method.
+        """
         raise NotImplementedError(
             f"Suspending provisioned resources not implemented for {self}."
         )
 
     def __repr__(self) -> str:
-        """String representation of the stack component."""
+        """String representation of the stack component.
+
+        Returns:
+            A string representation of the stack component.
+        """
         attribute_representation = ", ".join(
             f"{key}={value}" for key, value in self.dict().items()
         )
@@ -198,11 +256,27 @@ class StackComponent(BaseModel, ABC):
         )
 
     def __str__(self) -> str:
-        """String representation of the stack component."""
+        """String representation of the stack component.
+
+        Returns:
+            A string representation of the stack component.
+        """
         return self.__repr__()
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def _ensure_stack_component_complete(cls, values: Dict[str, Any]) -> Any:
+        """Ensures that the stack component is complete.
+
+        Args:
+            values: The values of the stack component.
+
+        Returns:
+            The values of the stack component.
+
+        Raises:
+            StackComponentInterfaceError: If the stack component is not
+                implemented correctly.
+        """
         try:
             stack_component_type = getattr(cls, "TYPE")
             assert stack_component_type in StackComponentType
@@ -213,10 +287,11 @@ class StackComponent(BaseModel, ABC):
                     When you are working with any classes which subclass from
                     `zenml.stack.StackComponent` please make sure that your
                     class has a ClassVar named `TYPE` and its value is set to a
-                    `StackComponentType` from `from zenml.enums import StackComponentType`.
+                    `StackComponentType` from `from zenml.enums import
+                    StackComponentType`.
 
-                    In most of the cases, this is already done for you within the
-                    implementation of the base concept.
+                    In most of the cases, this is already done for you within
+                    the implementation of the base concept.
 
                     Example:
 

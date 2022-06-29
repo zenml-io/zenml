@@ -19,13 +19,11 @@ setup_stack () {
 }
 
 pre_run () {
-  zenml integration install tensorflow
-  zenml integration install mlflow
+  zenml integration install tensorflow mlflow
 }
 
 pre_run_forced () {
-  zenml integration install tensorflow -f
-  zenml integration install mlflow -f
+  zenml integration install tensorflow mlflow -y
 }
 
 post_run () {

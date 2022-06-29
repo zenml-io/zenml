@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML local secrets manager."""
+
 import os
 import uuid
 from pathlib import Path
@@ -20,17 +22,18 @@ from pydantic import root_validator
 
 from zenml.cli.utils import error
 from zenml.constants import LOCAL_SECRETS_FILENAME, LOCAL_STORES_DIRECTORY_NAME
+from zenml.exceptions import SecretExistsError
 from zenml.io.fileio import remove
-from zenml.io.utils import (
-    create_file_if_not_exists,
-    get_global_config_directory,
-)
 from zenml.logger import get_logger
 from zenml.secret import SecretSchemaClassRegistry
 from zenml.secret.base_secret import BaseSecretSchema
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
+from zenml.secrets_managers.utils import decode_secret_dict, encode_secret
 from zenml.utils import yaml_utils
-from zenml.utils.secrets_manager_utils import decode_secret_dict, encode_secret
+from zenml.utils.io_utils import (
+    create_file_if_not_exists,
+    get_global_config_directory,
+)
 
 logger = get_logger(__name__)
 
@@ -43,10 +46,16 @@ class LocalSecretsManager(BaseSecretsManager):
     # Class configuration
     FLAVOR: ClassVar[str] = "local"
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def set_secrets_file(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        """Sets the secrets_file attribute value according to the component
-        UUID."""
+        """Sets the secrets_file attribute value according to the component UUID.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+        """
         if values.get("secrets_file"):
             return values
 
@@ -64,7 +73,8 @@ class LocalSecretsManager(BaseSecretsManager):
             uuid: The UUID of the secret store.
 
         Returns:
-            The path to the secret store."""
+            The path to the secret store.
+        """
         return os.path.join(
             get_global_config_directory(),
             LOCAL_STORES_DIRECTORY_NAME,
@@ -74,11 +84,15 @@ class LocalSecretsManager(BaseSecretsManager):
 
     @property
     def local_path(self) -> str:
-        """Path to the local directory where the secrets are stored."""
+        """Path to the local directory where the secrets are stored.
+
+        Returns:
+            The path to the local directory where the secrets are stored.
+        """
         return str(Path(self.secrets_file).parent)
 
     def _create_secrets_file__if_not_exists(self) -> None:
-        """Makes sure the secrets yaml file exists"""
+        """Makes sure the secrets yaml file exists."""
         create_file_if_not_exists(self.secrets_file)
 
     def _verify_secret_key_exists(self, secret_name: str) -> bool:
@@ -88,7 +102,8 @@ class LocalSecretsManager(BaseSecretsManager):
             secret_name: The name of the secret key.
 
         Returns:
-            True if the secret key exists, False otherwise."""
+            True if the secret key exists, False otherwise.
+        """
         self._create_secrets_file__if_not_exists()
         secrets_store_items = yaml_utils.read_yaml(self.secrets_file)
         try:
@@ -97,6 +112,11 @@ class LocalSecretsManager(BaseSecretsManager):
             return False
 
     def _get_all_secrets(self) -> Dict[str, Dict[str, str]]:
+        """Gets all secrets.
+
+        Returns:
+            A dictionary containing all secrets.
+        """
         self._create_secrets_file__if_not_exists()
         return yaml_utils.read_yaml(self.secrets_file) or {}
 
@@ -107,11 +127,12 @@ class LocalSecretsManager(BaseSecretsManager):
             secret: The secret to register.
 
         Raises:
-            KeyError: If the secret already exists."""
+            SecretExistsError: If the secret already exists.
+        """
         self._create_secrets_file__if_not_exists()
 
         if self._verify_secret_key_exists(secret_name=secret.name):
-            raise KeyError(f"Secret `{secret.name}` already exists.")
+            raise SecretExistsError(f"Secret `{secret.name}` already exists.")
         encoded_secret = encode_secret(secret)
 
         secrets_store_items = self._get_all_secrets()
@@ -128,7 +149,8 @@ class LocalSecretsManager(BaseSecretsManager):
             The secret.
 
         Raises:
-            KeyError: If the secret does not exist."""
+            KeyError: If the secret does not exist.
+        """
         self._create_secrets_file__if_not_exists()
 
         secret_store_items = self._get_all_secrets()
@@ -148,7 +170,8 @@ class LocalSecretsManager(BaseSecretsManager):
         """Get all secret keys.
 
         Returns:
-            A list of all secret keys."""
+            A list of all secret keys.
+        """
         self._create_secrets_file__if_not_exists()
 
         secrets_store_items = self._get_all_secrets()
@@ -161,7 +184,8 @@ class LocalSecretsManager(BaseSecretsManager):
             secret: The secret to update.
 
         Raises:
-            KeyError: If the secret does not exist."""
+            KeyError: If the secret does not exist.
+        """
         self._create_secrets_file__if_not_exists()
 
         if not self._verify_secret_key_exists(secret_name=secret.name):
@@ -179,7 +203,8 @@ class LocalSecretsManager(BaseSecretsManager):
             secret_name: The name of the secret to delete.
 
         Raises:
-            KeyError: If the secret does not exist."""
+            KeyError: If the secret does not exist.
+        """
         self._create_secrets_file__if_not_exists()
 
         if not self._verify_secret_key_exists(secret_name=secret_name):
@@ -192,19 +217,7 @@ class LocalSecretsManager(BaseSecretsManager):
         except KeyError:
             error(f"Secret {secret_name} does not exist.")
 
-    def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete all existing secrets.
-
-        Args:
-            force: If True, delete all secrets.
-
-        Raises:
-            ValueError: If force is False."""
+    def delete_all_secrets(self) -> None:
+        """Delete all existing secrets."""
         self._create_secrets_file__if_not_exists()
-
-        if not force:
-            raise ValueError(
-                "This operation will delete all secrets. "
-                "To confirm, please pass `--force`."
-            )
         remove(self.secrets_file)

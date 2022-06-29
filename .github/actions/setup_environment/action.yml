@@ -35,6 +35,12 @@ runs:
       id: date
       run: echo "::set-output name=date::$(date +'calendar-week-%W')"
 
+    - name: Write cache version
+      shell: bash
+      run: echo $CACHE_VERSION >> cache_version
+      env:
+        CACHE_VERSION : ${{inputs.cache_version}}
+
     - name: Load cached venv
       id: cached-poetry-dependencies
       uses: actions/cache@v2.1.6
@@ -46,9 +52,9 @@ runs:
         # pyproject.toml, the current calendar week and the cache version.
         # Providing a different value for the cache version enables manual
         # invalidation of the cache in case it is in some erroneous state.
-        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}-${{ inputs.cache_version }}
+        key: venv-${{ runner.os }}-python-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ steps.date.outputs.date }}-${{ hashFiles('cache_version') }}
 
     - name: Install Project
       shell: bash
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install
+      run: poetry install --extras server

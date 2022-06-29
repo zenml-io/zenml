@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Custom definition of a Step Executor Operator which can be passed into the Step Operator."""
+
 import json
 import os
 import sys
@@ -47,7 +49,12 @@ logger = get_logger(__name__)
 def _write_execution_info(
     execution_info: data_types.ExecutionInfo, path: str
 ) -> None:
-    """Writes execution information to a given path."""
+    """Writes execution information to a given path.
+
+    Args:
+        execution_info: Execution information to write.
+        path: Path to write the execution information to.
+    """
     execution_info_bytes = execution_info.to_proto().SerializeToString()
 
     with fileio.open(path, "wb") as f:
@@ -60,6 +67,9 @@ def _read_executor_output(
     output_path: str,
 ) -> execution_result_pb2.ExecutorOutput:
     """Reads executor output from the given path.
+
+    Args:
+        output_path: Path to read the executor output from.
 
     Returns:
         Executor output object.
@@ -161,6 +171,9 @@ class StepExecutorOperator(BaseExecutorOperator):
 
         Returns:
             The step operator to run a step.
+
+        Raises:
+            RuntimeError: If no active step operator is found.
         """
         step_operator = stack.step_operator
 

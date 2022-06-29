@@ -11,11 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the AWS Secrets Manager integration."""
+
 import json
 from typing import Any, ClassVar, Dict, List
 
 import boto3
 
+from zenml.exceptions import SecretExistsError
 from zenml.integrations.aws import AWS_SECRET_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
@@ -29,9 +32,10 @@ ZENML_SCHEMA_NAME = "zenml_schema_name"
 
 
 def jsonify_secret_contents(secret: BaseSecretSchema) -> str:
-    """Adds the secret type to the secret contents to persist the schema
-    type in the secrets backend, so that the correct SecretSchema can be
-    retrieved when the secret is queried from the backend.
+    """Adds the secret type to the secret contents.
+
+    This persists the schema type in the secrets backend, so that the correct
+    SecretSchema can be retrieved when the secret is queried from the backend.
 
     Args:
         secret: should be a subclass of the BaseSecretSchema class
@@ -56,6 +60,11 @@ class AWSSecretsManager(BaseSecretsManager):
 
     @classmethod
     def _ensure_client_connected(cls, region_name: str) -> None:
+        """Ensure that the client is connected to the AWS secrets manager.
+
+        Args:
+            region_name: the AWS region name
+        """
         if cls.CLIENT is None:
             # Create a Secrets Manager client
             session = boto3.session.Session()
@@ -67,11 +76,21 @@ class AWSSecretsManager(BaseSecretsManager):
         """Registers a new secret.
 
         Args:
-            secret: the secret to register"""
+            secret: the secret to register
+
+        Raises:
+            SecretExistsError: if the secret already exists
+        """
         self._ensure_client_connected(self.region_name)
         secret_value = jsonify_secret_contents(secret)
 
+        if secret.name in self.get_all_secret_keys():
+            raise SecretExistsError(
+                f"A Secret with the name {secret.name} already exists"
+            )
+
         kwargs = {"Name": secret.name, "SecretString": secret_value}
+
         self.CLIENT.create_secret(**kwargs)
 
     def get_secret(self, secret_name: str) -> BaseSecretSchema:
@@ -84,7 +103,8 @@ class AWSSecretsManager(BaseSecretsManager):
             The secret.
 
         Raises:
-            RuntimeError: if the secret does not exist"""
+            RuntimeError: if the secret does not exist
+        """
         self._ensure_client_connected(self.region_name)
         get_secret_value_response = self.CLIENT.get_secret_value(
             SecretId=secret_name
@@ -107,7 +127,8 @@ class AWSSecretsManager(BaseSecretsManager):
         """Get all secret keys.
 
         Returns:
-            A list of all secret keys."""
+            A list of all secret keys
+        """
         self._ensure_client_connected(self.region_name)
 
         # TODO [ENG-720]: Deal with pagination in the aws secret manager when
@@ -120,7 +141,8 @@ class AWSSecretsManager(BaseSecretsManager):
         """Update an existing secret.
 
         Args:
-            secret: the secret to update"""
+            secret: the secret to update
+        """
         self._ensure_client_connected(self.region_name)
 
         secret_value = jsonify_secret_contents(secret)
@@ -133,19 +155,21 @@ class AWSSecretsManager(BaseSecretsManager):
         """Delete an existing secret.
 
         Args:
-            secret_name: the name of the secret to delete"""
+            secret_name: the name of the secret to delete
+        """
         self._ensure_client_connected(self.region_name)
         self.CLIENT.delete_secret(
             SecretId=secret_name, ForceDeleteWithoutRecovery=False
         )
 
-    def delete_all_secrets(self, force: bool = False) -> None:
+    def delete_all_secrets(self) -> None:
         """Delete all existing secrets.
 
-        Args:
-            force: whether to force delete all secrets"""
+        This method will force delete all your secrets. You will not be able to
+        recover them once this method is called.
+        """
         self._ensure_client_connected(self.region_name)
         for secret_name in self.get_all_secret_keys():
             self.CLIENT.delete_secret(
-                SecretId=secret_name, ForceDeleteWithoutRecovery=force
+                SecretId=secret_name, ForceDeleteWithoutRecovery=True
             )

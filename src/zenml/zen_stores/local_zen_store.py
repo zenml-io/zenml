@@ -11,19 +11,31 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Local Zen Store implementation."""
+
 import base64
-import json
+import itertools
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union, overload
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    overload,
+)
 from uuid import UUID
 
 from zenml.enums import StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, StackComponentExistsError
-from zenml.io import fileio, utils
+from zenml.io import fileio
 from zenml.logger import get_logger
-from zenml.utils import yaml_utils
+from zenml.utils import io_utils
 from zenml.zen_stores import BaseZenStore
 from zenml.zen_stores.models import (
     ComponentWrapper,
@@ -34,31 +46,34 @@ from zenml.zen_stores.models import (
     Team,
     User,
     ZenStoreModel,
+    ZenStorePipelineModel,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 logger = get_logger(__name__)
 
-E = TypeVar("E", bound=Union[User, Team, Project, Role, FlavorWrapper])
+E = TypeVar(
+    "E",
+    bound=Union[User, Team, Project, Role, FlavorWrapper, PipelineRunWrapper],
+)
 
 
 @overload
 def _get_unique_entity(
-    entity_name: str, collection: List[E], ensure_exists: bool = True
+    entity_name: str, collection: Sequence[E], ensure_exists: bool = True
 ) -> E:
-    """Type annotations in case of `ensure_exists=True`."""
     ...
 
 
 @overload
 def _get_unique_entity(
-    entity_name: str, collection: List[E], ensure_exists: bool = False
+    entity_name: str, collection: Sequence[E], ensure_exists: bool = False
 ) -> Optional[E]:
-    """Type annotations in case of `ensure_exists=False`."""
     ...
 
 
 def _get_unique_entity(
-    entity_name: str, collection: List[E], ensure_exists: bool = True
+    entity_name: str, collection: Sequence[E], ensure_exists: bool = True
 ) -> Optional[E]:
     """Gets an entity with a specific name from a collection.
 
@@ -92,6 +107,8 @@ def _get_unique_entity(
 
 
 class LocalZenStore(BaseZenStore):
+    """Local Zen Store implementation."""
+
     def initialize(
         self,
         url: str,
@@ -111,23 +128,25 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The initialized ZenStore instance.
+
+        Raises:
+            ValueError: If the given URL is invalid.
         """
         if not self.is_valid_url(url):
             raise ValueError(f"Invalid URL for local store: {url}")
 
         self._root = self.get_path_from_url(url)
         self._url = f"file://{self._root}"
-        utils.create_dir_recursive_if_not_exists(str(self._root))
+        io_utils.create_dir_recursive_if_not_exists(str(self._root))
 
         if store_data is not None:
             self.__store = store_data
-            self._write_store()
-        elif fileio.exists(self._store_path()):
-            config_dict = yaml_utils.read_yaml(self._store_path())
-            self.__store = ZenStoreModel.parse_obj(config_dict)
         else:
-            self.__store = ZenStoreModel.empty_store()
-            self._write_store()
+            self.__store = ZenStoreModel(str(self.root / "stacks.yaml"))
+
+        self.__pipeline_store = ZenStorePipelineModel(
+            str(self.root / "pipeline_runs.yaml")
+        )
 
         super().initialize(url, *args, **kwargs)
         return self
@@ -136,12 +155,20 @@ class LocalZenStore(BaseZenStore):
 
     @property
     def type(self) -> StoreType:
-        """The type of zen store."""
+        """The type of zen store.
+
+        Returns:
+            The type of zen store.
+        """
         return StoreType.LOCAL
 
     @property
     def url(self) -> str:
-        """URL of the repository."""
+        """URL of the repository.
+
+        Returns:
+            The URL of the repository.
+        """
         return self._url
 
     # Static methods:
@@ -155,6 +182,9 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The path from the URL.
+
+        Raises:
+            ValueError: If the URL is invalid.
         """
         if not LocalZenStore.is_valid_url(url):
             raise ValueError(f"Invalid URL for local store: {url}")
@@ -163,18 +193,36 @@ class LocalZenStore(BaseZenStore):
 
     @staticmethod
     def get_local_url(path: str) -> str:
-        """Get a local URL for a given local path."""
+        """Get a local URL for a given local path.
+
+        Args:
+            path: The path to get the local URL for.
+
+        Returns:
+            The local URL for the path.
+        """
         return f"file://{path}"
 
     @staticmethod
     def is_valid_url(url: str) -> bool:
-        """Check if the given url is a valid local path."""
+        """Check if the given url is a valid local path.
+
+        Args:
+            url: The url to check.
+
+        Returns:
+            `True` if the url is a valid local url or path.
+        """
         scheme = re.search("^([a-z0-9]+://)", url)
         return not scheme or scheme.group() == "file://"
 
     @property
-    def is_empty(self) -> bool:
-        """Check if the zen store is empty."""
+    def stacks_empty(self) -> bool:
+        """Check if the zen store is empty.
+
+        Returns:
+            `True` if the zen store is empty.
+        """
         return len(self.__store.stacks) == 0
 
     def get_stack_configuration(
@@ -209,7 +257,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.stacks.copy()
 
-    def register_stack_component(
+    def _register_stack_component(
         self,
         component: ComponentWrapper,
     ) -> None:
@@ -234,24 +282,24 @@ class LocalZenStore(BaseZenStore):
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
-        utils.create_dir_recursive_if_not_exists(
+        io_utils.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
         )
-        utils.write_file_contents_as_string(
+        io_utils.write_file_contents_as_string(
             component_config_path,
             base64.b64decode(component.config).decode(),
         )
 
         # add the component to the zen store dict and write it to disk
         components[component.name] = component.flavor
-        self._write_store()
+        self.__store.write_config()
         logger.info(
             "Registered stack component with type '%s' and name '%s'.",
             component.type,
             component.name,
         )
 
-    def update_stack_component(
+    def _update_stack_component(
         self,
         name: str,
         component_type: StackComponentType,
@@ -264,8 +312,13 @@ class LocalZenStore(BaseZenStore):
             component_type: The type of the stack component to update.
             component: The new component to update with.
 
+        Returns:
+            The updated stack component.
+
         Raises:
             KeyError: If no stack component exists with the given name.
+            StackComponentExistsError: If a stack component with the same type
+                and name already exists.
         """
         components = self.__store.stack_components[component_type]
         if name not in components:
@@ -283,10 +336,10 @@ class LocalZenStore(BaseZenStore):
         component_config_path = self._get_stack_component_config_path(
             component_type=component.type, name=component.name
         )
-        utils.create_dir_recursive_if_not_exists(
+        io_utils.create_dir_recursive_if_not_exists(
             os.path.dirname(component_config_path)
         )
-        utils.write_file_contents_as_string(
+        io_utils.write_file_contents_as_string(
             component_config_path,
             base64.b64decode(component.config).decode(),
         )
@@ -300,7 +353,7 @@ class LocalZenStore(BaseZenStore):
             for component_type, component_name in conf.items():
                 if component_name == name and component_type == component.type:
                     conf[component_type] = component.name
-        self._write_store()
+        self.__store.write_config()
 
         logger.info(
             "Updated stack component with type '%s' and name '%s'.",
@@ -309,17 +362,14 @@ class LocalZenStore(BaseZenStore):
         )
         return {component.type.value: component.flavor}
 
-    def deregister_stack(self, name: str) -> None:
+    def _deregister_stack(self, name: str) -> None:
         """Remove a stack from storage.
 
         Args:
             name: The name of the stack to be deleted.
-
-        Raises:
-            KeyError: If no stack exists for the given name.
         """
         del self.__store.stacks[name]
-        self._write_store()
+        self.__store.write_config()
 
     # Private interface implementations:
 
@@ -335,7 +385,7 @@ class LocalZenStore(BaseZenStore):
             stack_configuration: Dict[StackComponentType, str] to persist.
         """
         self.__store.stacks[name] = stack_configuration
-        self._write_store()
+        self.__store.write_config()
 
     def _get_component_flavor_and_config(
         self, component_type: StackComponentType, name: str
@@ -367,14 +417,23 @@ class LocalZenStore(BaseZenStore):
         )
         flavor = components[name]
         config = base64.b64encode(
-            utils.read_file_contents_as_string(component_config_path).encode()
+            io_utils.read_file_contents_as_string(
+                component_config_path
+            ).encode()
         )
         return flavor, config
 
     def _get_stack_component_names(
         self, component_type: StackComponentType
     ) -> List[str]:
-        """Get names of all registered stack components of a given type."""
+        """Get names of all registered stack components of a given type.
+
+        Args:
+            component_type: The type of the stack components to fetch.
+
+        Returns:
+            List of names of all registered stack components of the given type.
+        """
         return list(self.__store.stack_components[component_type])
 
     def _delete_stack_component(
@@ -385,9 +444,6 @@ class LocalZenStore(BaseZenStore):
         Args:
             component_type: The type of component to delete.
             name: Then name of the component to delete.
-
-        Raises:
-            KeyError: If no component exists for given type and name.
         """
         component_config_path = self._get_stack_component_config_path(
             component_type=component_type, name=name
@@ -398,7 +454,7 @@ class LocalZenStore(BaseZenStore):
 
         components = self.__store.stack_components[component_type]
         del components[name]
-        self._write_store()
+        self.__store.write_config()
 
     # User, project and role management
 
@@ -411,21 +467,18 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.users
 
-    def get_user(self, user_name: str) -> User:
-        """Gets a specific user.
+    def _get_user(self, user_name: str) -> User:
+        """Get a specific user by name.
 
         Args:
             user_name: Name of the user to get.
 
         Returns:
-            The requested user.
-
-        Raises:
-            KeyError: If no user with the given name exists.
+            The requested user, if it was found.
         """
         return _get_unique_entity(user_name, collection=self.__store.users)
 
-    def create_user(self, user_name: str) -> User:
+    def _create_user(self, user_name: str) -> User:
         """Creates a new user.
 
         Args:
@@ -446,17 +499,14 @@ class LocalZenStore(BaseZenStore):
 
         user = User(name=user_name)
         self.__store.users.append(user)
-        self._write_store()
+        self.__store.write_config()
         return user
 
-    def delete_user(self, user_name: str) -> None:
+    def _delete_user(self, user_name: str) -> None:
         """Deletes a user.
 
         Args:
             user_name: Name of the user to delete.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         user = _get_unique_entity(user_name, collection=self.__store.users)
         self.__store.users.remove(user)
@@ -468,7 +518,7 @@ class LocalZenStore(BaseZenStore):
             for assignment in self.__store.role_assignments
             if assignment.user_id != user.id
         ]
-        self._write_store()
+        self.__store.write_config()
         logger.info("Deleted user %s.", user)
 
     @property
@@ -480,7 +530,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.teams
 
-    def get_team(self, team_name: str) -> Team:
+    def _get_team(self, team_name: str) -> Team:
         """Gets a specific team.
 
         Args:
@@ -488,20 +538,17 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The requested team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         return _get_unique_entity(team_name, collection=self.__store.teams)
 
-    def create_team(self, team_name: str) -> Team:
+    def _create_team(self, team_name: str) -> Team:
         """Creates a new team.
 
         Args:
             team_name: Unique team name.
 
         Returns:
-             The newly created team.
+            The newly created team.
 
         Raises:
             EntityExistsError: If a team with the given name already exists.
@@ -515,17 +562,14 @@ class LocalZenStore(BaseZenStore):
 
         team = Team(name=team_name)
         self.__store.teams.append(team)
-        self._write_store()
+        self.__store.write_config()
         return team
 
-    def delete_team(self, team_name: str) -> None:
+    def _delete_team(self, team_name: str) -> None:
         """Deletes a team.
 
         Args:
             team_name: Name of the team to delete.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         team = _get_unique_entity(team_name, collection=self.__store.teams)
         self.__store.teams.remove(team)
@@ -535,7 +579,7 @@ class LocalZenStore(BaseZenStore):
             for assignment in self.__store.role_assignments
             if assignment.team_id != team.id
         ]
-        self._write_store()
+        self.__store.write_config()
         logger.info("Deleted team %s.", team)
 
     def add_user_to_team(self, team_name: str, user_name: str) -> None:
@@ -544,14 +588,11 @@ class LocalZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
         """
         team = _get_unique_entity(team_name, self.__store.teams)
         user = _get_unique_entity(user_name, self.__store.users)
         self.__store.team_assignments[team.name].add(user.name)
-        self._write_store()
+        self.__store.write_config()
 
     def remove_user_from_team(self, team_name: str, user_name: str) -> None:
         """Removes a user from a team.
@@ -559,14 +600,11 @@ class LocalZenStore(BaseZenStore):
         Args:
             team_name: Name of the team.
             user_name: Name of the user.
-
-        Raises:
-            KeyError: If no user and team with the given names exists.
         """
         team = _get_unique_entity(team_name, self.__store.teams)
         user = _get_unique_entity(user_name, self.__store.users)
         self.__store.team_assignments[team.name].remove(user.name)
-        self._write_store()
+        self.__store.write_config()
 
     @property
     def projects(self) -> List[Project]:
@@ -577,23 +615,20 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.projects
 
-    def get_project(self, project_name: str) -> Project:
-        """Gets a specific project.
+    def _get_project(self, project_name: str) -> Project:
+        """Get an existing project by name.
 
         Args:
             project_name: Name of the project to get.
 
         Returns:
-            The requested project.
-
-        Raises:
-            KeyError: If no project with the given name exists.
+            The requested project if one was found.
         """
         return _get_unique_entity(
             project_name, collection=self.__store.projects
         )
 
-    def create_project(
+    def _create_project(
         self, project_name: str, description: Optional[str] = None
     ) -> Project:
         """Creates a new project.
@@ -603,7 +638,7 @@ class LocalZenStore(BaseZenStore):
             description: Optional project description.
 
         Returns:
-             The newly created project.
+            The newly created project.
 
         Raises:
             EntityExistsError: If a project with the given name already exists.
@@ -617,17 +652,14 @@ class LocalZenStore(BaseZenStore):
 
         project = Project(name=project_name, description=description)
         self.__store.projects.append(project)
-        self._write_store()
+        self.__store.write_config()
         return project
 
-    def delete_project(self, project_name: str) -> None:
+    def _delete_project(self, project_name: str) -> None:
         """Deletes a project.
 
         Args:
             project_name: Name of the project to delete.
-
-        Raises:
-            KeyError: If no project with the given name exists.
         """
         project = _get_unique_entity(
             project_name, collection=self.__store.projects
@@ -639,7 +671,7 @@ class LocalZenStore(BaseZenStore):
             if assignment.project_id != project.id
         ]
 
-        self._write_store()
+        self.__store.write_config()
         logger.info("Deleted project %s.", project)
 
     @property
@@ -660,7 +692,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.role_assignments
 
-    def get_role(self, role_name: str) -> Role:
+    def _get_role(self, role_name: str) -> Role:
         """Gets a specific role.
 
         Args:
@@ -668,20 +700,17 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             The requested role.
-
-        Raises:
-            KeyError: If no role with the given name exists.
         """
         return _get_unique_entity(role_name, collection=self.__store.roles)
 
-    def create_role(self, role_name: str) -> Role:
+    def _create_role(self, role_name: str) -> Role:
         """Creates a new role.
 
         Args:
             role_name: Unique role name.
 
         Returns:
-             The newly created role.
+            The newly created role.
 
         Raises:
             EntityExistsError: If a role with the given name already exists.
@@ -695,17 +724,14 @@ class LocalZenStore(BaseZenStore):
 
         role = Role(name=role_name)
         self.__store.roles.append(role)
-        self._write_store()
+        self.__store.write_config()
         return role
 
-    def delete_role(self, role_name: str) -> None:
+    def _delete_role(self, role_name: str) -> None:
         """Deletes a role.
 
         Args:
             role_name: Name of the role to delete.
-
-        Raises:
-            KeyError: If no role with the given name exists.
         """
         role = _get_unique_entity(role_name, collection=self.__store.roles)
         self.__store.roles.remove(role)
@@ -715,7 +741,7 @@ class LocalZenStore(BaseZenStore):
             if assignment.role_id != role.id
         ]
 
-        self._write_store()
+        self.__store.write_config()
         logger.info("Deleted role %s.", role)
 
     def assign_role(
@@ -733,9 +759,6 @@ class LocalZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
         """
         role = _get_unique_entity(role_name, collection=self.__store.roles)
         project_id: Optional[UUID] = None
@@ -756,7 +779,7 @@ class LocalZenStore(BaseZenStore):
             )
 
         self.__store.role_assignments.append(assignment)
-        self._write_store()
+        self.__store.write_config()
 
     def revoke_role(
         self,
@@ -773,9 +796,6 @@ class LocalZenStore(BaseZenStore):
             project_name: Optional project name.
             is_user: Boolean indicating whether the given `entity_name` refers
                 to a user.
-
-        Raises:
-            KeyError: If no role, entity or project with the given names exists.
         """
         role = _get_unique_entity(role_name, collection=self.__store.roles)
 
@@ -803,7 +823,7 @@ class LocalZenStore(BaseZenStore):
             self.__store.role_assignments.remove(
                 assignments[0]
             )  # there should only be one
-            self._write_store()
+            self.__store.write_config()
 
     def get_users_for_team(self, team_name: str) -> List[User]:
         """Fetches all users of a team.
@@ -813,9 +833,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of users that are part of the team.
-
-        Raises:
-            KeyError: If no team with the given name exists.
         """
         team = _get_unique_entity(team_name, collection=self.__store.teams)
         user_names = self.__store.team_assignments[team.name]
@@ -829,9 +846,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of teams that the user is part of.
-
-        Raises:
-            KeyError: If no user with the given name exists.
         """
         user = _get_unique_entity(user_name, collection=self.__store.users)
         team_names = [
@@ -858,9 +872,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of role assignments for this user.
-
-        Raises:
-            KeyError: If no user or project with the given names exists.
         """
         user = _get_unique_entity(user_name, collection=self.__store.users)
         project_id = (
@@ -895,9 +906,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             List of role assignments for this team.
-
-        Raises:
-            KeyError: If no team or project with the given names exists.
         """
         team = _get_unique_entity(team_name, collection=self.__store.teams)
         project_id = (
@@ -911,6 +919,99 @@ class LocalZenStore(BaseZenStore):
             team_id=team.id, project_id=project_id
         )
 
+    # Pipelines and pipeline runs
+
+    def get_pipeline_run(
+        self,
+        pipeline_name: str,
+        run_name: str,
+        project_name: Optional[str] = None,
+    ) -> PipelineRunWrapper:
+        """Gets a pipeline run.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get the run.
+            run_name: Name of the pipeline run to get.
+            project_name: Optional name of the project from which to get the
+                pipeline run.
+
+        Returns:
+            Pipeline run.
+
+        Raises:
+            KeyError: If no pipeline run (or project) with the given name
+                exists.
+        """
+        runs = self.__pipeline_store.pipeline_runs[pipeline_name]
+
+        for run in runs:
+            if run.name != run_name:
+                continue
+            if project_name and run.project_name != project_name:
+                continue
+
+            return run
+
+        project_message = (
+            f" in project {project_name}." if project_name else "."
+        )
+        raise KeyError(
+            f"No pipeline run '{run_name}' found for pipeline "
+            f"'{pipeline_name}'{project_message}"
+        )
+
+    def get_pipeline_runs(
+        self, pipeline_name: str, project_name: Optional[str] = None
+    ) -> List[PipelineRunWrapper]:
+        """Gets pipeline runs.
+
+        Args:
+            pipeline_name: Name of the pipeline for which to get runs.
+            project_name: Optional name of the project from which to get the
+                pipeline runs.
+
+        Returns:
+            List of pipeline runs.
+        """
+        runs = self.__pipeline_store.pipeline_runs[pipeline_name]
+        if project_name:
+            runs = [run for run in runs if run.project_name == project_name]
+
+        return runs
+
+    def register_pipeline_run(
+        self,
+        pipeline_run: PipelineRunWrapper,
+    ) -> None:
+        """Registers a pipeline run.
+
+        Args:
+            pipeline_run: The pipeline run to register.
+
+        Raises:
+            EntityExistsError: If a pipeline run with the same name already
+                exists.
+        """
+        all_runs = list(
+            itertools.chain.from_iterable(
+                self.__pipeline_store.pipeline_runs.values()
+            )
+        )
+        if _get_unique_entity(
+            entity_name=pipeline_run.name,
+            collection=all_runs,
+            ensure_exists=False,
+        ):
+            raise EntityExistsError(
+                f"Pipeline run with name '{pipeline_run.name}' already exists. "
+                "Please make sure your pipeline run names are unique."
+            )
+
+        self.__pipeline_store.pipeline_runs[pipeline_run.pipeline.name].append(
+            pipeline_run
+        )
+        self.__pipeline_store.write_config()
+
     # Handling stack component flavors
 
     @property
@@ -922,7 +1023,7 @@ class LocalZenStore(BaseZenStore):
         """
         return self.__store.stack_component_flavors
 
-    def create_flavor(
+    def _create_flavor(
         self,
         source: str,
         name: str,
@@ -936,13 +1037,12 @@ class LocalZenStore(BaseZenStore):
             stack_component_type: the corresponding StackComponentType.
 
         Returns:
-             The newly created flavor.
+            The newly created flavor.
 
         Raises:
             EntityExistsError: If a flavor with the given name and type
                 already exists.
         """
-
         if _get_unique_entity(
             name,
             collection=self.get_flavors_by_type(stack_component_type),
@@ -960,7 +1060,7 @@ class LocalZenStore(BaseZenStore):
         )
 
         self.__store.stack_component_flavors.append(flavor)
-        self._write_store()
+        self.__store.write_config()
 
         return flavor
 
@@ -994,10 +1094,6 @@ class LocalZenStore(BaseZenStore):
 
         Returns:
             Flavor instance if it exists
-
-        Raises:
-            KeyError: If no flavor exists with the given name and type
-                or there are more than one instances
         """
         matches = self.get_flavors_by_type(component_type)
         return _get_unique_entity(
@@ -1010,7 +1106,14 @@ class LocalZenStore(BaseZenStore):
 
     @property
     def root(self) -> Path:
-        """The root directory of the zen store."""
+        """The root directory of the zen store.
+
+        Returns:
+            The root directory of the zen store.
+
+        Raises:
+            RuntimeError: If the local ZenStore has not been initialized.
+        """
         if not self._root:
             raise RuntimeError(
                 "Local zen store has not been initialized. Call `initialize` "
@@ -1021,18 +1124,17 @@ class LocalZenStore(BaseZenStore):
     def _get_stack_component_config_path(
         self, component_type: StackComponentType, name: str
     ) -> str:
-        """Path to the configuration file of a stack component."""
+        """Path to the configuration file of a stack component.
+
+        Args:
+            component_type: The type of the stack component.
+            name: The name of the stack component.
+
+        Returns:
+            The path to the configuration file of the stack component.
+        """
         path = self.root / component_type.plural / f"{name}.yaml"
         return str(path)
-
-    def _store_path(self) -> str:
-        """Path to the zen store yaml file."""
-        return str(self.root / "stacks.yaml")
-
-    def _write_store(self) -> None:
-        """Writes the zen store yaml file."""
-        config_dict = json.loads(self.__store.json())
-        yaml_utils.write_yaml(self._store_path(), config_dict)
 
     def _get_role_assignments(
         self,

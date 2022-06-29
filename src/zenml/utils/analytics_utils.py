@@ -11,20 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Analytics code for ZenML"""
+"""Analytics code for ZenML."""
 
 from enum import Enum
 from typing import Any, Callable, Dict, Optional, Union
 
 from zenml import __version__
 from zenml.constants import IS_DEBUG_ENV, SEGMENT_KEY_DEV, SEGMENT_KEY_PROD
-from zenml.environment import Environment
+from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class AnalyticsEvent(str, Enum):
+    """Enum of events to track in segment."""
+
     # Pipelines
     RUN_PIPELINE = "Pipeline run"
     GET_PIPELINES = "Pipelines fetched"
@@ -39,11 +41,16 @@ class AnalyticsEvent(str, Enum):
     # Components
     REGISTERED_STACK_COMPONENT = "Stack component registered"
     UPDATED_STACK_COMPONENT = "Stack component updated"
+    COPIED_STACK_COMPONENT = "Stack component copied"
 
     # Stack
     REGISTERED_STACK = "Stack registered"
+    REGISTERED_DEFAULT_STACK = "Default stack registered"
     SET_STACK = "Stack set"
     UPDATED_STACK = "Stack updated"
+    COPIED_STACK = "Stack copied"
+    IMPORT_STACK = "Stack imported"
+    EXPORT_STACK = "Stack exported"
 
     # Analytics opt in and out
     OPT_IN_ANALYTICS = "Analytics opt-in"
@@ -56,6 +63,26 @@ class AnalyticsEvent(str, Enum):
 
     # Integrations
     INSTALL_INTEGRATION = "Integration installed"
+
+    # Users
+    CREATED_USER = "User created"
+    CREATED_DEFAULT_USER = "Default user created"
+    DELETED_USER = "User deleted"
+
+    # Teams
+    CREATED_TEAM = "Team created"
+    DELETED_TEAM = "Team deleted"
+
+    # Projects
+    CREATED_PROJECT = "Project created"
+    DELETED_PROJECT = "Project deleted"
+
+    # Role
+    CREATED_ROLE = "Role created"
+    DELETED_ROLE = "Role deleted"
+
+    # Flavor
+    CREATED_FLAVOR = "Flavor created"
 
     # Test event
     EVENT_TEST = "Test event"
@@ -73,33 +100,27 @@ def get_segment_key() -> str:
         return SEGMENT_KEY_PROD
 
 
-def get_environment() -> str:
-    """Returns a string representing the execution environment of the pipeline.
-    Currently, one of `docker`, `paperspace`, 'colab', or `native`"""
-    if Environment.in_docker():
-        return "docker"
-    elif Environment.in_google_colab():
-        return "colab"
-    elif Environment.in_paperspace_gradient():
-        return "paperspace"
-    elif Environment.in_notebook():
-        return "notebook"
-    else:
-        return "native"
-
-
 def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
-    """Attach metadata to user directly
+    """Attach metadata to user directly.
 
     Args:
-        metadata: Dict of metadata to attach to the user.
+        user_metadata: Dict of metadata to attach to the user.
+
+    Returns:
+        True if event is sent successfully, False is not.
     """
     # TODO [ENG-857]: The identify_user function shares a lot of setup with
     #  track_event() - this duplicated code could be given its own function
     try:
-        import analytics
-
         from zenml.config.global_config import GlobalConfiguration
+
+        gc = GlobalConfiguration()
+
+        # That means user opted out of analytics
+        if not gc.analytics_opt_in:
+            return False
+
+        import analytics
 
         if analytics.write_key is None:
             analytics.write_key = get_segment_key()
@@ -110,8 +131,6 @@ def identify_user(user_metadata: Optional[Dict[str, Any]] = None) -> bool:
 
         # Set this to 1 to avoid backoff loop
         analytics.max_retries = 1
-
-        gc = GlobalConfiguration()
 
         logger.debug(
             f"Attempting to attach metadata to: User: {gc.user_id}, "
@@ -134,8 +153,7 @@ def track_event(
     event: Union[str, AnalyticsEvent],
     metadata: Optional[Dict[str, Any]] = None,
 ) -> bool:
-    """
-    Track segment event if user opted-in.
+    """Track segment event if user opted-in.
 
     Args:
         event: Name of event to track in segment.
@@ -204,16 +222,39 @@ def parametrized(
     dec: Callable[..., Callable[..., Any]]
 ) -> Callable[..., Callable[[Callable[..., Any]], Callable[..., Any]]]:
     """This is a meta-decorator, that is, a decorator for decorators.
+
     As a decorator is a function, it actually works as a regular decorator
-    with arguments:"""
+    with arguments.
+
+    Args:
+        dec: Decorator to be applied to the function.
+
+    Returns:
+        Decorator that applies the given decorator to the function.
+    """
 
     def layer(
         *args: Any, **kwargs: Any
     ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-        """Internal layer"""
+        """Internal layer.
+
+        Args:
+            *args: Arguments to be passed to the decorator.
+            **kwargs: Keyword arguments to be passed to the decorator.
+
+        Returns:
+            Decorator that applies the given decorator to the function.
+        """
 
         def repl(f: Callable[..., Any]) -> Callable[..., Any]:
-            """Internal repl"""
+            """Internal REPL.
+
+            Args:
+                f: Function to be decorated.
+
+            Returns:
+                Decorated function.
+            """
             return dec(f, *args, **kwargs)
 
         return repl
@@ -231,6 +272,9 @@ def track(
     Args:
         func: Function that is decorated.
         event: Event string to stamp with.
+
+    Returns:
+        Decorated function.
     """
     # Need to redefine the name for the event here in order for mypy
     # to recognize it's not an optional string anymore
@@ -239,7 +283,15 @@ def track(
     metadata: Dict[str, Any] = {}
 
     def inner_func(*args: Any, **kwargs: Any) -> Any:
-        """Inner decorator function."""
+        """Inner decorator function.
+
+        Args:
+            *args: Arguments to be passed to the function.
+            **kwargs: Keyword arguments to be passed to the function.
+
+        Returns:
+            Result of the function.
+        """
         track_event(event_name, metadata=metadata)
         result = func(*args, **kwargs)
         return result

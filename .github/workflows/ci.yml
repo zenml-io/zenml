@@ -4,13 +4,11 @@ on:
   workflow_dispatch:
   workflow_call:
   push:
-    branches: ['main', 'develop']
-    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
+    branches: ["main", "develop"]
+    paths-ignore: ["docs/**", "docker/**", "*", "!pyproject.toml", "**.md"]
   pull_request:
-    types: [opened, synchronize]
-    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml']
-  issue_comment:
-    types: [created]
+    types: [opened, synchronize, ready_for_review]
+    paths-ignore: ['docs/**', 'docker/**', '*', '!pyproject.toml', '**.md']
 
 concurrency:
   # New commit on branch cancels running workflows of the same branch
@@ -19,19 +17,24 @@ concurrency:
 
 jobs:
   poetry-install:
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/poetry-install.yml
+    secrets: inherit
 
   lint-code:
     needs: poetry-install
     uses: ./.github/workflows/lint.yml
+    secrets: inherit
 
   unit-test:
     needs: poetry-install
     uses: ./.github/workflows/unit-test.yml
+    secrets: inherit
 
   integration-test:
     needs: poetry-install
     uses: ./.github/workflows/integration-test.yml
+    secrets: inherit
 
   check_comments:
     runs-on: ubuntu-latest
@@ -42,16 +45,19 @@ jobs:
       - uses: khan/pull-request-comment-trigger@master
         id: check
         with:
-          trigger: 'LTKF!'
+          trigger: "LTKF!"
           reaction: rocket
         env:
-          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-      - run: 'echo Found LTKF! in the comments!'
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      - run: "echo Found LTKF! in the comments!"
         if: steps.check.outputs.triggered == 'true'
-
 
   kubeflow-tests:
     needs: [poetry-install, check_comments]
     # Run this one automatically if 'LTKF! is in the PR comments
     if: ${{ needs.check_comments.outputs.kf_trigger == 'true' }}
     uses: ./.github/workflows/kubeflow.yml
+    secrets: inherit
+
+  spell-check:
+    uses: ./.github/workflows/spellcheck.yml

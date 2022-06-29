@@ -11,8 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Functionality to interact with models served by ZenML."""
+
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import click
 
@@ -26,8 +28,10 @@ from zenml.cli.utils import (
 )
 from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
-from zenml.model_deployers import BaseModelDeployer
 from zenml.repository import Repository
+
+if TYPE_CHECKING:
+    from zenml.model_deployers import BaseModelDeployer
 
 
 @cli.group(
@@ -36,20 +40,29 @@ from zenml.repository import Repository
 )
 @click.pass_context
 def served_models(ctx: click.Context) -> None:
-    """List and manage served models with the active model
-    deployer.
+    """List and manage served models with the active model deployer.
+
+    Args:
+        ctx: The click context.
     """
-    ctx.obj = Repository().active_stack.components.get(
-        StackComponentType.MODEL_DEPLOYER, None
+    repo = Repository()
+    active_stack = repo.zen_store.get_stack(name=repo.active_stack_name)
+    model_deployer_wrapper = active_stack.get_component_wrapper(
+        StackComponentType.MODEL_DEPLOYER
     )
-    if ctx.obj is None:
+    if model_deployer_wrapper is None:
         error(
             "No active model deployer found. Please add a model_deployer to "
             "your stack."
         )
+        return
+    ctx.obj = model_deployer_wrapper.to_component()
 
 
-@served_models.command("list")
+@served_models.command(
+    "list",
+    help="Get a list of all served models within the model-deployer stack component.",
+)
 @click.option(
     "--pipeline",
     "-p",
@@ -95,8 +108,18 @@ def list_models(
     model: Optional[str],
     running: bool,
 ) -> None:
-    """Get a list of all served models within the model-deployer stack
-    component.
+    """Get a list of all served models within the model-deployer stack component.
+
+    Args:
+        model_deployer: The model-deployer stack component.
+        pipeline: Show only served models that were deployed by the indicated
+            pipeline.
+        step: Show only served models that were deployed by the indicated
+            pipeline step.
+        pipeline_run: Show only served models that were deployed by the
+            indicated pipeline run.
+        model: Show only served model versions for the given model name.
+        running: Show only model servers that are currently running.
     """
     services = model_deployer.find_model_server(
         running=running,
@@ -114,14 +137,18 @@ def list_models(
         warning("No served models found.")
 
 
-@served_models.command("describe")
+@served_models.command("describe", help="Describe a specified served model.")
 @click.argument("served_model_uuid", type=click.STRING)
 @click.pass_obj
 def describe_model(
     model_deployer: "BaseModelDeployer", served_model_uuid: str
 ) -> None:
-    """Describe a specified served model."""
+    """Describe a specified served model.
 
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+    """
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -132,13 +159,20 @@ def describe_model(
     return
 
 
-@served_models.command("get-url")
+@served_models.command(
+    "get-url", help="Return the prediction URL to a specified model server."
+)
 @click.argument("served_model_uuid", type=click.STRING)
 @click.pass_obj
 def get_url(
     model_deployer: "BaseModelDeployer", served_model_uuid: str
 ) -> None:
-    """Return the prediction URL to a specified model server."""
+    """Return the prediction URL to a specified model server.
+
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+    """
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -159,7 +193,7 @@ def get_url(
     return
 
 
-@served_models.command("start")
+@served_models.command("start", help="Start a specified model server.")
 @click.argument("served_model_uuid", type=click.STRING)
 @click.option(
     "--timeout",
@@ -174,8 +208,13 @@ def get_url(
 def start_model_service(
     model_deployer: "BaseModelDeployer", served_model_uuid: str, timeout: int
 ) -> None:
-    """Start a specified model server."""
+    """Start a specified model server.
 
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+        timeout: Time in seconds to wait for the model to start.
+    """
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -190,7 +229,7 @@ def start_model_service(
     return
 
 
-@served_models.command("stop")
+@served_models.command("stop", help="Stop a specified model server.")
 @click.argument("served_model_uuid", type=click.STRING)
 @click.option(
     "--timeout",
@@ -202,11 +241,22 @@ def start_model_service(
     "become inactive (default: 300s).",
 )
 @click.option(
-    "--force",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the model server to stop. This will bypass any graceful "
     "shutdown processes and try to force the model server to stop immediately, "
     "if possible.",
+)
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the model server to stop. This will bypass any graceful "
+    "shutdown processes and try to force the model server to stop immediately, "
+    "if possible. Use `-y/--yes` instead.",
 )
 @click.pass_obj
 def stop_model_service(
@@ -214,9 +264,22 @@ def stop_model_service(
     served_model_uuid: str,
     timeout: int,
     force: bool,
+    old_force: bool,
 ) -> None:
-    """Stop a specified model server."""
+    """Stop a specified model server.
 
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+        timeout: Time in seconds to wait for the model to stop.
+        force: Force the model server to stop.
+        old_force: DEPRECATED: Force the model server to stop.
+    """
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -231,7 +294,7 @@ def stop_model_service(
     return
 
 
-@served_models.command("delete")
+@served_models.command("delete", help="Delete a specified model server.")
 @click.argument("served_model_uuid", type=click.STRING)
 @click.option(
     "--timeout",
@@ -243,11 +306,22 @@ def stop_model_service(
     "waiting for it to release all allocated resources.",
 )
 @click.option(
-    "--force",
+    "--yes",
+    "-y",
+    "force",
     is_flag=True,
     help="Force the model server to stop and delete. This will bypass any "
     "graceful shutdown processes and try to force the model server to stop and "
     "delete immediately, if possible.",
+)
+@click.option(
+    "--force",
+    "-f",
+    "old_force",
+    is_flag=True,
+    help="DEPRECATED: Force the model server to stop and delete. This will bypass any "
+    "graceful shutdown processes and try to force the model server to stop and "
+    "delete immediately, if possible. Use `-y/--yes` instead.",
 )
 @click.pass_obj
 def delete_model_service(
@@ -255,9 +329,22 @@ def delete_model_service(
     served_model_uuid: str,
     timeout: int,
     force: bool,
+    old_force: bool,
 ) -> None:
-    """Delete a specified model server."""
+    """Delete a specified model server.
 
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+        timeout: Time in seconds to wait for the model to be deleted.
+        force: Force the model server to stop and delete.
+        old_force: DEPRECATED: Force the model server to stop and delete.
+    """
+    if old_force:
+        force = old_force
+        warning(
+            "The `--force` flag will soon be deprecated. Use `--yes` or `-y` instead."
+        )
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )
@@ -272,7 +359,7 @@ def delete_model_service(
     return
 
 
-@served_models.command("logs")
+@served_models.command("logs", help="Show the logs for a model server.")
 @click.argument("served_model_uuid", type=click.STRING)
 @click.option(
     "--follow",
@@ -301,8 +388,15 @@ def get_model_service_logs(
     tail: Optional[int],
     raw: bool,
 ) -> None:
-    """Display the logs for a model server."""
+    """Display the logs for a model server.
 
+    Args:
+        model_deployer: The model-deployer stack component.
+        served_model_uuid: The UUID of the served model.
+        follow: Continue to output new log data as it becomes available.
+        tail: Only show the last NUM lines of log output.
+        raw: Show raw log contents (don't pretty-print logs).
+    """
     served_models = model_deployer.find_model_server(
         service_uuid=uuid.UUID(served_model_uuid)
     )

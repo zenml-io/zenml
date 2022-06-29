@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Seldon client for ZenML."""
 
 import base64
 import json
@@ -177,7 +178,6 @@ class SeldonDeploymentStatusCondition(BaseModel):
     """The Kubernetes status condition entry for a Seldon Deployment.
 
     Attributes:
-
         type: Type of runtime condition.
         status: Status of the condition.
         reason: Brief CamelCase string containing reason for the condition's
@@ -247,6 +247,11 @@ class SeldonDeployment(BaseModel):
     status: Optional[SeldonDeploymentStatus]
 
     def __str__(self) -> str:
+        """Returns a string representation of the Seldon Deployment.
+
+        Returns:
+            A string representation of the Seldon Deployment.
+        """
         return json.dumps(self.dict(exclude_none=True), indent=4)
 
     @classmethod
@@ -279,7 +284,6 @@ class SeldonDeployment(BaseModel):
             A minimal SeldonDeployment object built from the provided
             parameters.
         """
-
         if not name:
             name = f"zenml-{time.time()}"
 
@@ -389,8 +393,7 @@ class SeldonDeployment(BaseModel):
         return None
 
     def get_pending_message(self) -> Optional[str]:
-        """Get a message describing the pending conditions of the Seldon
-        Deployment.
+        """Get a message describing the pending conditions of the Seldon Deployment.
 
         Returns:
             A message describing the pending condition of the Seldon
@@ -421,21 +424,20 @@ class SeldonClientError(Exception):
 
 
 class SeldonClientTimeout(SeldonClientError):
-    """Raised when the Seldon client timed out while waiting for a resource
-    to reach the expected status."""
+    """Raised when the Seldon client timed out while waiting for a resource to reach the expected status."""
 
 
 class SeldonDeploymentExistsError(SeldonClientError):
-    """Raised when a SeldonDeployment resource cannot be created because a
-    resource with the same name already exists."""
+    """Raised when a SeldonDeployment resource cannot be created because a resource with the same name already exists."""
 
 
 class SeldonDeploymentNotFoundError(SeldonClientError):
-    """Raised when a particular SeldonDeployment resource is not found or is
-    not managed by ZenML."""
+    """Raised when a particular SeldonDeployment resource is not found or is not managed by ZenML."""
 
 
 class SeldonClient:
+    """A client for interacting with Seldon Deployments."""
+
     def __init__(self, context: Optional[str], namespace: Optional[str]):
         """Initialize a Seldon Core client.
 
@@ -448,7 +450,11 @@ class SeldonClient:
         self._initialize_k8s_clients()
 
     def _initialize_k8s_clients(self) -> None:
-        """Initialize the Kubernetes clients."""
+        """Initialize the Kubernetes clients.
+
+        Raises:
+            SeldonClientError: if Kubernetes configuration could not be loaded
+        """
         try:
             k8s_config.load_incluster_config()
             if not self._namespace:
@@ -478,7 +484,11 @@ class SeldonClient:
     def sanitize_labels(labels: Dict[str, str]) -> None:
         """Update the label values to be valid Kubernetes labels.
 
-        See: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+        See:
+        https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+
+        Args:
+            labels: the labels to sanitize.
         """
         for key, value in labels.items():
             # Kubernetes labels must be alphanumeric, no longer than
@@ -494,6 +504,9 @@ class SeldonClient:
 
         Returns:
             The Kubernetes namespace in use by the client.
+
+        Raises:
+            RuntimeError: if the namespace has not been configured.
         """
         if not self._namespace:
             # shouldn't happen if the client is initialized, but we need to
@@ -522,8 +535,6 @@ class SeldonClient:
         Raises:
             SeldonDeploymentExistsError: if a deployment with the same name
                 already exists.
-            SeldonDeploymentNotFoundError: if the newly created deployment
-                resource cannot be found.
             SeldonClientError: if an unknown error occurs during the creation of
                 the deployment.
         """
@@ -585,8 +596,6 @@ class SeldonClient:
                 return and no exception will be raised.
 
         Raises:
-            SeldonDeploymentNotFoundError: if the deployment resource cannot be
-                found or is not managed by ZenML.
             SeldonClientError: if an unknown error occurs during the deployment
                 removal.
         """
@@ -645,8 +654,6 @@ class SeldonClient:
             the updated Seldon Core deployment resource with updated status.
 
         Raises:
-            SeldonDeploymentNotFoundError: if deployment resource with the given
-                name cannot be found.
             SeldonClientError: if an unknown error occurs while updating the
                 deployment.
         """
@@ -707,7 +714,6 @@ class SeldonClient:
             SeldonClientError: if an unknown error occurs while fetching
                 the deployment.
         """
-
         try:
             logger.debug(f"Retrieving SeldonDeployment resource: {name}")
 
@@ -759,8 +765,7 @@ class SeldonClient:
         labels: Optional[Dict[str, str]] = None,
         fields: Optional[Dict[str, str]] = None,
     ) -> List[SeldonDeployment]:
-        """Find all ZenML managed Seldon Core deployment resources that match
-        the given criteria.
+        """Find all ZenML-managed Seldon Core deployment resources matching the given criteria.
 
         Args:
             name: optional name of the deployment resource to find.
@@ -843,7 +848,10 @@ class SeldonClient:
             tail: only retrieve the last NUM lines of log output.
 
         Returns:
-            A generator that can be acccessed to get the service logs.
+            A generator that can be accessed to get the service logs.
+
+        Yields:
+            The next log line.
 
         Raises:
             SeldonClientError: if an unknown error occurs while fetching
@@ -920,8 +928,9 @@ class SeldonClient:
         name: str,
         secret: BaseSecretSchema,
     ) -> None:
-        """Create or update a Kubernetes Secret resource with the information
-        contained in a ZenML secret.
+        """Create or update a Kubernetes Secret resource.
+
+        Uses the information contained in a ZenML secret.
 
         Args:
             name: the name of the Secret resource to create.
@@ -931,6 +940,7 @@ class SeldonClient:
         Raises:
             SeldonClientError: if an unknown error occurs during the creation of
                 the secret.
+            k8s_client.rest.ApiException: unexpected error.
         """
         try:
             logger.debug(f"Creating Secret resource: {name}")
@@ -989,6 +999,7 @@ class SeldonClient:
 
         Args:
             name: the name of the Kubernetes Secret resource to delete.
+
         Raises:
             SeldonClientError: if an unknown error occurs during the removal
                 of the secret.

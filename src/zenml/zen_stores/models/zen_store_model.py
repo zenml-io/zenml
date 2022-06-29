@@ -11,13 +11,15 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Zen Store model."""
 
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Set
 
-from pydantic import BaseModel, validator
+from pydantic import Field, validator
 
 from zenml.enums import StackComponentType
+from zenml.utils.filesync_model import FileSyncModel
 from zenml.zen_stores.models import (
     FlavorWrapper,
     Project,
@@ -26,9 +28,47 @@ from zenml.zen_stores.models import (
     Team,
     User,
 )
+from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 
-class ZenStoreModel(BaseModel):
+class ZenStorePipelineModel(FileSyncModel):
+    """Pydantic object used for serializing ZenStore pipelines and runs.
+
+    Attributes:
+        pipeline_runs: Maps pipeline names to runs of that pipeline.
+    """
+
+    pipeline_runs: DefaultDict[str, List[PipelineRunWrapper]] = Field(
+        default=defaultdict(list)
+    )
+
+    @validator("pipeline_runs")
+    def _construct_pipeline_runs_defaultdict(
+        cls, pipeline_runs: Dict[str, List[PipelineRunWrapper]]
+    ) -> DefaultDict[str, List[PipelineRunWrapper]]:
+        """Ensures that `pipeline_runs` is a defaultdict.
+
+        This is so runs of a new pipeline can be added without issues.
+
+        Args:
+            pipeline_runs: the dictionary of pipeline runs.
+
+        Returns:
+            The defaultdict of pipeline runs
+        """
+        return defaultdict(list, pipeline_runs)
+
+    class Config:
+        """Pydantic configuration class."""
+
+        # Validate attributes when assigning them. We need to set this in order
+        # to have a mix of mutable and immutable attributes
+        validate_assignment = True
+        # Ignore extra attributes from configs of previous ZenML versions
+        extra = "ignore"
+
+
+class ZenStoreModel(FileSyncModel):
     """Pydantic object used for serializing a ZenStore.
 
     Attributes:
@@ -48,36 +88,54 @@ class ZenStoreModel(BaseModel):
             the team.
     """
 
-    stacks: Dict[str, Dict[StackComponentType, str]]
-    stack_components: DefaultDict[StackComponentType, Dict[str, str]]
-    stack_component_flavors: List[FlavorWrapper] = []
-    users: List[User] = []
-    teams: List[Team] = []
-    projects: List[Project] = []
-    roles: List[Role] = []
-    role_assignments: List[RoleAssignment] = []
-    team_assignments: DefaultDict[str, Set[str]] = defaultdict(set)
+    stacks: Dict[str, Dict[StackComponentType, str]] = Field(
+        default_factory=dict
+    )
+    stack_components: DefaultDict[StackComponentType, Dict[str, str]] = Field(
+        default=defaultdict(dict)
+    )
+    stack_component_flavors: List[FlavorWrapper] = Field(default_factory=list)
+    users: List[User] = Field(default_factory=list)
+    teams: List[Team] = Field(default_factory=list)
+    projects: List[Project] = Field(default_factory=list)
+    roles: List[Role] = Field(default_factory=list)
+    role_assignments: List[RoleAssignment] = Field(default_factory=list)
+    team_assignments: DefaultDict[str, Set[str]] = Field(
+        default=defaultdict(set)
+    )
 
     @validator("stack_components")
     def _construct_stack_components_defaultdict(
         cls, stack_components: Dict[StackComponentType, Dict[str, str]]
     ) -> DefaultDict[StackComponentType, Dict[str, str]]:
-        """Ensures that `stack_components` is a defaultdict so stack
-        components of a new component type can be added without issues."""
+        """Ensures that `stack_components` is a defaultdict.
+
+        This is so stack components of a new component type can be added without
+        issues.
+
+        Args:
+            stack_components: the dictionary of stack components
+
+        Returns:
+            Stack components dictionary.
+        """
         return defaultdict(dict, stack_components)
 
     @validator("team_assignments")
     def _construct_team_assignments_defaultdict(
         cls, team_assignments: Dict[str, Set[str]]
     ) -> DefaultDict[str, Set[str]]:
-        """Ensures that `team_assignments` is a defaultdict so users
-        of a new teams can be added without issues."""
-        return defaultdict(set, team_assignments)
+        """Ensures that `team_assignments` is a defaultdict.
 
-    @classmethod
-    def empty_store(cls) -> "ZenStoreModel":
-        """Initialize a new empty zen store with current zen version."""
-        return cls(stacks={}, stack_components={})
+        This is so users of a new teams can be added without issues.
+
+        Args:
+            team_assignments: the dictionary of team assignments.
+
+        Returns:
+            Team assignments dictionary.
+        """
+        return defaultdict(set, team_assignments)
 
     class Config:
         """Pydantic configuration class."""

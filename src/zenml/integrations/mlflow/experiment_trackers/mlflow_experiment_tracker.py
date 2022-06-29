@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the MLflow experiment tracker for ZenML."""
+
 import os
 from typing import Any, ClassVar, Dict, Optional
 
@@ -86,7 +88,17 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
     def _ensure_valid_tracking_uri(
         cls, tracking_uri: Optional[str] = None
     ) -> Optional[str]:
-        """Ensures that the tracking uri is a valid mlflow tracking uri."""
+        """Ensures that the tracking uri is a valid mlflow tracking uri.
+
+        Args:
+            tracking_uri: The tracking uri to validate.
+
+        Returns:
+            The tracking uri if it is valid.
+
+        Raises:
+            ValueError: If the tracking uri is not valid.
+        """
         if tracking_uri:
             valid_schemes = DATABASE_ENGINES + ["http", "https", "file"]
             if not any(
@@ -100,12 +112,23 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 )
         return tracking_uri
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def _ensure_authentication_if_necessary(
         cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Ensures that credentials or a token for authentication exist when
-        running MLflow tracking with a remote backend."""
+        """Ensures that credentials or a token for authentication exist.
+
+        We make this check when running MLflow tracking with a remote backend.
+
+        Args:
+            values: The values to validate.
+
+        Returns:
+            The validated values.
+
+        Raises:
+            ValueError: If neither credentials nor a token are provided.
+        """
         tracking_uri = values.get("tracking_uri")
 
         if tracking_uri and cls.is_remote_tracking_uri(tracking_uri):
@@ -133,7 +156,14 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     @staticmethod
     def is_remote_tracking_uri(tracking_uri: str) -> bool:
-        """Checks whether the given tracking uri is remote or not."""
+        """Checks whether the given tracking uri is remote or not.
+
+        Args:
+            tracking_uri: The tracking uri to check.
+
+        Returns:
+            `True` if the tracking uri is remote, `False` otherwise.
+        """
         return any(
             tracking_uri.startswith(prefix)
             for prefix in ["http://", "https://"]
@@ -141,8 +171,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     @staticmethod
     def _local_mlflow_backend() -> str:
-        """Returns the local MLflow backend inside the ZenML artifact
-        repository directory
+        """Gets the local MLflow backend inside the ZenML artifact repository directory.
 
         Returns:
             The MLflow tracking URI for the local MLflow backend.
@@ -155,7 +184,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         return "file:" + local_mlflow_backend_uri
 
     def get_tracking_uri(self) -> str:
-        """Returns the configured tracking URI or a local fallback."""
+        """Returns the configured tracking URI or a local fallback.
+
+        Returns:
+            The tracking URI.
+        """
         return self.tracking_uri or self._local_mlflow_backend()
 
     def configure_mlflow(self) -> None:
@@ -182,8 +215,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     @property
     def validator(self) -> Optional["StackValidator"]:
-        """Validates that the stack has a `LocalArtifactStore` if no tracking
-        uri was specified."""
+        """Checks the stack has a `LocalArtifactStore` if no tracking uri was specified.
+
+        Returns:
+            An optional `StackValidator`.
+        """
         if self.tracking_uri:
             # user specified a tracking uri, do nothing
             return None
@@ -201,7 +237,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     @property
     def active_experiment(self) -> Optional[Experiment]:
-        """Returns the currently active MLflow experiment."""
+        """Returns the currently active MLflow experiment.
+
+        Returns:
+            The active experiment or `None` if no experiment is active.
+        """
         step_env = Environment().step_environment
 
         if not step_env:
@@ -213,7 +253,11 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
 
     @property
     def active_run(self) -> Optional[mlflow.ActiveRun]:
-        """Returns the currently active MLflow run."""
+        """Returns the currently active MLflow run.
+
+        Returns:
+            The active MLflow run.
+        """
         step_env = Environment().step_environment
 
         if not self.active_experiment or not step_env:

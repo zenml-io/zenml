@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utilities for the local orchestrator to help with contexts."""
+
 import json
 import logging
 import uuid
@@ -34,8 +36,7 @@ def add_context_to_node(
     name: str,
     properties: Dict[str, str],
 ) -> None:
-    """
-    Add a new context to a TFX protobuf pipeline node.
+    """Adds a new context to a TFX protobuf pipeline node.
 
     Args:
         pipeline_node: A tfx protobuf pipeline node
@@ -58,10 +59,26 @@ def add_context_to_node(
 def serialize_pydantic_object(
     obj: BaseModel, *, skip_errors: bool = False
 ) -> Dict[str, str]:
-    """Convert a pydantic object to a dict of strings"""
+    """Convert a pydantic object to a dict of strings.
+
+    Args:
+        obj: a pydantic object.
+        skip_errors: if True, ignore errors when serializing the object.
+
+    Returns:
+        a dictionary of strings.
+    """
 
     class PydanticEncoder(json.JSONEncoder):
         def default(self, o: Any) -> Any:
+            """Default encoding for pydantic objects.
+
+            Args:
+                o: the object to encode.
+
+            Returns:
+                the encoded object.
+            """
             try:
                 return cast(Callable[[Any], str], obj.__json_encoder__)(o)
             except TypeError:
@@ -70,7 +87,17 @@ def serialize_pydantic_object(
     def _inner_generator(
         dictionary: Dict[str, Any]
     ) -> Iterator[Tuple[str, str]]:
-        """Itemwise serialize each element in a dictionary."""
+        """Itemwise serialize each element in a dictionary.
+
+        Args:
+            dictionary: a dictionary.
+
+        Yields:
+            a tuple of (key, value).
+
+        Raises:
+            TypeError: if the value is not JSON serializable
+        """
         for key, item in dictionary.items():
             try:
                 yield key, json.dumps(item, cls=PydanticEncoder)
@@ -95,8 +122,7 @@ def add_runtime_configuration_to_node(
     pipeline_node: "pipeline_pb2.PipelineNode",
     runtime_config: RuntimeConfiguration,
 ) -> None:
-    """
-    Add the runtime configuration of a pipeline run to a protobuf pipeline node.
+    """Add the runtime configuration of a pipeline run to a protobuf pipeline node.
 
     Args:
         pipeline_node: a tfx protobuf pipeline node
@@ -108,7 +134,14 @@ def add_runtime_configuration_to_node(
 
     # Determine the name of the context
     def _name(obj: "BaseModel") -> str:
-        """Compute a unique context name for a pydantic BaseModel."""
+        """Compute a unique context name for a pydantic BaseModel.
+
+        Args:
+            obj: a pydantic BaseModel
+
+        Returns:
+            a unique context name
+        """
         try:
             return str(hash(obj.json(sort_keys=True)))
         except TypeError as e:

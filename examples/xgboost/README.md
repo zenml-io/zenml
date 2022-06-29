@@ -35,7 +35,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install xgboost -f
+zenml integration install xgboost
 
 # pull example
 zenml example pull xgboost

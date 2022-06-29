@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML Service class."""
 
 import time
 from abc import abstractmethod
@@ -53,8 +54,7 @@ class ServiceConfig(BaseTypedModel):
 
 
 class BaseServiceMeta(BaseTypedModelMeta):
-    """Metaclass responsible for registering different BaseService
-    subclasses.
+    """Metaclass responsible for registering different BaseService subclasses.
 
     This metaclass has two main responsibilities:
     1. register all BaseService types in the service registry. This is relevant
@@ -69,8 +69,19 @@ class BaseServiceMeta(BaseTypedModelMeta):
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BaseServiceMeta":
-        """Creates a BaseService class and registers it in
-        the `ServiceRegistry`."""
+        """Creates a BaseService class and registers it in the `ServiceRegistry`.
+
+        Args:
+            name: name of the class.
+            bases: tuple of base classes.
+            dct: dictionary of class attributes.
+
+        Returns:
+            the created BaseServiceMeta class.
+
+        Raises:
+            TypeError: if the 'service_type' reserved attribute name is used.
+        """
         service_type = dct.get("SERVICE_TYPE", None)
 
         # register only classes of concrete service implementations
@@ -96,7 +107,19 @@ class BaseServiceMeta(BaseTypedModelMeta):
         return cls
 
     def __call__(cls, *args: Any, **kwargs: Any) -> "BaseServiceMeta":
-        """Validate the creation of a service."""
+        """Validate the creation of a service.
+
+        Args:
+            *args: positional arguments.
+            **kwargs: keyword arguments.
+
+        Returns:
+            the created BaseServiceMeta class.
+
+        Raises:
+            AttributeError: if the service UUID is untyped.
+            ValueError: if the service UUID is not a UUID type.
+        """
         if not getattr(cls, "SERVICE_TYPE", None):
             raise AttributeError(
                 f"Untyped service instances are not allowed. Please set the "
@@ -128,7 +151,7 @@ class BaseServiceMeta(BaseTypedModelMeta):
 
 
 class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
-    """Base service class
+    """Base service class.
 
     This class implements generic functionality concerning the life-cycle
     management and tracking of an external service (e.g. process, container,
@@ -157,6 +180,11 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         self,
         **attrs: Any,
     ) -> None:
+        """Initialize the service instance.
+
+        Args:
+            **attrs: keyword arguments.
+        """
         super().__init__(**attrs)
         self.config.name = self.config.name or self.__class__.__name__
 
@@ -188,11 +216,13 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             tail: only retrieve the last NUM lines of log output.
 
         Returns:
-            A generator that can be acccessed to get the service logs.
+            A generator that can be accessed to get the service logs.
         """
 
     def update_status(self) -> None:
-        """Check the current operational state of the external service
+        """Update the service of the service.
+
+        Check the current operational state of the external service
         and update the local operational status information to reflect it.
 
         This method should be overridden by subclasses that implement
@@ -219,8 +249,12 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             self.endpoint.update_status()
 
     def get_service_status_message(self) -> str:
-        """Get a message providing information about the current operational
-        state of the service."""
+        """Get a service status message.
+
+        Returns:
+            A message providing information about the current operational
+            state of the service.
+        """
         return (
             f"  Administrative state: `{self.admin_state.value}`\n"
             f"  Operational state: `{self.status.state.value}`\n"
@@ -228,13 +262,15 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         )
 
     def poll_service_status(self, timeout: int = 0) -> bool:
-        """Poll the external service status until the service operational
-        state matches the administrative state, the service enters a failed
-        state, or the timeout is reached.
+        """Polls the external service status.
+
+        It does this until the service operational state matches the
+        administrative state, the service enters a failed state, or the timeout
+        is reached.
 
         Args:
             timeout: maximum time to wait for the service operational state
-            to match the administrative state, in seconds
+                to match the administrative state, in seconds
 
         Returns:
             True if the service operational state matches the administrative
@@ -305,13 +341,26 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
         return self.status.state == ServiceState.ERROR
 
     def provision(self) -> None:
-        """Provisions resources to run the service."""
+        """Provisions resources to run the service.
+
+        Raises:
+            NotImplementedError: if the service does not implement provisioning functionality
+        """
         raise NotImplementedError(
             f"Provisioning resources not implemented for {self}."
         )
 
     def deprovision(self, force: bool = False) -> None:
-        """Deprovisions all resources used by the service."""
+        """Deprovisions all resources used by the service.
+
+        Args:
+            force: if True, the service will be deprovisioned even if it is
+                in a failed state.
+
+        Raises:
+            NotImplementedError: if the service does not implement
+                deprovisioning functionality.
+        """
         raise NotImplementedError(
             f"Deprovisioning resources not implemented for {self}."
         )
@@ -352,6 +401,8 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
             timeout: amount of time to wait for the service to shutdown.
                 If set to 0, the method will return immediately after checking
                 the service status.
+            force: if True, the service will be stopped even if it is not
+                currently running.
 
         Raises:
             RuntimeError: if the service cannot be stopped
@@ -369,11 +420,19 @@ class BaseService(BaseTypedModel, metaclass=BaseServiceMeta):
                     )
 
     def __repr__(self) -> str:
-        """String representation of the service."""
+        """String representation of the service.
+
+        Returns:
+            A string representation of the service.
+        """
         return f"{self.__class__.__qualname__}[{self.uuid}] (type: {self.SERVICE_TYPE.type}, flavor: {self.SERVICE_TYPE.flavor})"
 
     def __str__(self) -> str:
-        """String representation of the service."""
+        """String representation of the service.
+
+        Returns:
+            A string representation of the service.
+        """
         return self.__repr__()
 
     class Config:

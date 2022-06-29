@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Huggingface PyTorch model materializer."""
 
 import importlib
 import os
@@ -20,8 +21,8 @@ from typing import Any, Type
 from transformers import AutoConfig, PreTrainedModel
 
 from zenml.artifacts import ModelArtifact
-from zenml.io import utils as fileio_utils
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils import io_utils
 
 DEFAULT_PT_MODEL_DIR = "hf_pt_model"
 
@@ -33,7 +34,14 @@ class HFPTModelMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> PreTrainedModel:
-        """Reads HFModel"""
+        """Reads HFModel.
+
+        Args:
+            data_type: The type of the model to read.
+
+        Returns:
+            The model read from the specified dir.
+        """
         super().handle_input(data_type)
 
         config = AutoConfig.from_pretrained(
@@ -49,13 +57,14 @@ class HFPTModelMaterializer(BaseMaterializer):
 
     def handle_return(self, model: Type[Any]) -> None:
         """Writes a Model to the specified dir.
+
         Args:
-            PreTrainedModel: The Torch Model to write.
+            model: The Torch Model to write.
         """
         super().handle_return(model)
         temp_dir = TemporaryDirectory()
         model.save_pretrained(temp_dir.name)
-        fileio_utils.copy_dir(
+        io_utils.copy_dir(
             temp_dir.name,
             os.path.join(self.artifact.uri, DEFAULT_PT_MODEL_DIR),
         )

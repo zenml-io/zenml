@@ -11,11 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the ZenML SecretSchema Class Registry."""
+
 from typing import ClassVar, Dict, Type, TypeVar
 
 from zenml.logger import get_logger
+from zenml.metadata_stores.mysql_secret_schema import MYSQLSecretSchema
 from zenml.secret import BaseSecretSchema
 from zenml.secret.arbitrary_secret_schema import ArbitrarySecretSchema
+from zenml.secret.schemas import (
+    AWSSecretSchema,
+    AzureSecretSchema,
+    BasicAuthSecretSchema,
+    GCPSecretSchema,
+)
 
 logger = get_logger(__name__)
 
@@ -88,7 +97,7 @@ class SecretSchemaClassRegistry:
             except KeyError:
                 raise KeyError(
                     f"No SecretSchema class found for schema flavor "
-                    f"{secret_schema}. Registered flavors are: "
+                    f"`{secret_schema}`. Registered flavors are: "
                     f"{set(available_schemas)}. If your secret schema "
                     f"class is part of a ZenML integration, make "
                     f"sure the corresponding integration is installed by "
@@ -113,3 +122,8 @@ def register_secret_schema_class(cls: Type[C]) -> Type[C]:
 
 
 SecretSchemaClassRegistry.register_class(ArbitrarySecretSchema)
+SecretSchemaClassRegistry.register_class(AWSSecretSchema)
+SecretSchemaClassRegistry.register_class(AzureSecretSchema)
+SecretSchemaClassRegistry.register_class(BasicAuthSecretSchema)
+SecretSchemaClassRegistry.register_class(GCPSecretSchema)
+SecretSchemaClassRegistry.register_class(MYSQLSecretSchema)

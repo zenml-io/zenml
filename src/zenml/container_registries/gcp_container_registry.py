@@ -11,23 +11,18 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a GCP Container Registry class."""
+
 from typing import ClassVar
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
-from zenml.enums import ContainerRegistryFlavor, StackComponentType
+from zenml.enums import ContainerRegistryFlavor
 
 
 class GCPContainerRegistry(BaseContainerRegistry):
-    """Class for GCP Container Registry.
-
-    Attributes:
-        uri: The URI of the container registry.
-    """
-
-    uri: str
+    """Class for GCP Container Registry."""
 
     # Class Configuration
-    TYPE: ClassVar[StackComponentType] = StackComponentType.CONTAINER_REGISTRY
-    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GCP
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GCP.value

@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a ZenML service endpoint."""
 
 from typing import Any, Optional, Tuple
 
@@ -48,12 +49,12 @@ class ServiceEndpointConfig(BaseTypedModel):
 
 
 class ServiceEndpointStatus(ServiceStatus):
-    """Status information describing the operational state of a service
-    endpoint (e.g. a HTTP/HTTPS API or generic TCP endpoint exposed by a
-    service).
+    """Status information describing the operational state of a service endpoint.
 
-    Concrete service classes should extend this class and add additional
-    attributes that make up the operational state of the service endpoint.
+    For example, this could be a HTTP/HTTPS API or generic TCP endpoint exposed
+    by a service. Concrete service classes should extend this class and add
+    additional attributes that make up the operational state of the service
+    endpoint.
 
     Attributes:
         protocol: the TCP protocol used by the service endpoint
@@ -82,7 +83,7 @@ class ServiceEndpointStatus(ServiceStatus):
 
 
 class BaseServiceEndpoint(BaseTypedModel):
-    """Base service class
+    """Base service class.
 
     This class implements generic functionality concerning the life-cycle
     management and tracking of an external service endpoint (e.g. a HTTP/HTTPS
@@ -106,12 +107,17 @@ class BaseServiceEndpoint(BaseTypedModel):
         *args: Any,
         **kwargs: Any,
     ) -> None:
+        """Initialize the service endpoint.
+
+        Args:
+            *args: positional arguments.
+            **kwargs: keyword arguments.
+        """
         super().__init__(*args, **kwargs)
         self.config.name = self.config.name or self.__class__.__name__
 
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the external
-        service endpoint.
+        """Check the the current operational state of the external service endpoint.
 
         Returns:
             The operational state of the external service endpoint and a
@@ -126,9 +132,9 @@ class BaseServiceEndpoint(BaseTypedModel):
         return self.monitor.check_endpoint_status(self)
 
     def update_status(self) -> None:
-        """Check the the current operational state of the external service
-        endpoint and update the local operational status information
-        accordingly.
+        """Check the the current operational state of the external service endpoint.
+
+        It updates the local operational status information accordingly.
         """
         logger.debug(
             "Running health check for service endpoint '%s' ...",
@@ -144,11 +150,11 @@ class BaseServiceEndpoint(BaseTypedModel):
         self.status.update_state(state, err)
 
     def is_active(self) -> bool:
-        """Check if the service endpoint is active (i.e. is responsive and can
-        receive requests).
+        """Check if the service endpoint is active.
 
-        This method will use the configured health monitor to actively check the
-        endpoint status and will return the result.
+        This means that it is responsive and can receive requests). This method
+        will use the configured health monitor to actively check the endpoint
+        status and will return the result.
 
         Returns:
             True if the service endpoint is active, otherwise False.
@@ -157,10 +163,10 @@ class BaseServiceEndpoint(BaseTypedModel):
         return self.status.state == ServiceState.ACTIVE
 
     def is_inactive(self) -> bool:
-        """Check if the service endpoint is inactive (i.e. is not responsive and
-        cannot receive requests).
+        """Check if the service endpoint is inactive.
 
-        This method will use the configured health monitor to actively check the
+        This means that it is unresponsive and cannot receive requests. This
+        method will use the configured health monitor to actively check the
         endpoint status and will return the result.
 
         Returns:

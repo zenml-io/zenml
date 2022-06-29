@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility classes for adding type information to Pydantic models."""
+
 import json
 from typing import Any, Dict, Tuple, Type, cast
 
@@ -27,8 +29,23 @@ class BaseTypedModelMeta(ModelMetaclass):
     def __new__(
         mcs, name: str, bases: Tuple[Type[Any], ...], dct: Dict[str, Any]
     ) -> "BaseTypedModelMeta":
-        """Creates a pydantic BaseModel class that includes a hidden attribute that
-        reflects the full class identifier."""
+        """Creates a Pydantic BaseModel class.
+
+        This includes a hidden attribute that reflects the full class
+        identifier.
+
+        Args:
+            name: The name of the class.
+            bases: The base classes of the class.
+            dct: The class dictionary.
+
+        Returns:
+            A Pydantic BaseModel class that includes a hidden attribute that
+            reflects the full class identifier.
+
+        Raises:
+            TypeError: If the class is not a Pydantic BaseModel class.
+        """
         if "type" in dct:
             raise TypeError(
                 "`type` is a reserved attribute name for BaseTypedModel "
@@ -87,14 +104,16 @@ class BaseTypedModel(BaseModel, metaclass=BaseTypedModelMeta):
         cls,
         model_dict: Dict[str, Any],
     ) -> "BaseTypedModel":
-        """Instantiate a Pydantic model from a serialized JSON-able dict
-        representation.
+        """Instantiate a Pydantic model from a serialized JSON-able dict representation.
 
         Args:
             model_dict: the model attributes serialized as JSON-able dict.
 
         Returns:
             A BaseTypedModel created from the serialized representation.
+
+        Raises:
+            RuntimeError: if the model_dict contains an invalid type.
         """
         model_type = model_dict.get("type")
         if not model_type:

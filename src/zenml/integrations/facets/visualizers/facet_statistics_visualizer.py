@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Facet Statistics Visualizer."""
 
 import base64
 import os
@@ -25,10 +26,10 @@ from facets_overview.generic_feature_statistics_generator import (
 )
 from IPython.core.display import HTML, display
 
-import zenml.io.utils
 from zenml.environment import Environment
 from zenml.logger import get_logger
 from zenml.post_execution import StepView
+from zenml.utils import io_utils
 from zenml.visualizers import BaseStepVisualizer
 
 logger = get_logger(__name__)
@@ -41,11 +42,13 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
     def visualize(
         self, object: StepView, magic: bool = False, *args: Any, **kwargs: Any
     ) -> None:
-        """Method to visualize components
+        """Method to visualize components.
 
         Args:
             object: StepView fetched from run.get_step().
             magic: Whether to render in a Jupyter notebook or not.
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
         """
         datasets = []
         for output_name, artifact_view in object.outputs.items():
@@ -53,7 +56,7 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
             if type(df) is not pd.DataFrame:
                 logger.warning(
                     "`%s` is not a pd.DataFrame. You can only visualize "
-                    "statistics of steps that output pandas dataframes. "
+                    "statistics of steps that output pandas DataFrames. "
                     "Skipping this output.." % output_name
                 )
             else:
@@ -65,7 +68,7 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
         """Generates html for facet.
 
         Args:
-            datasets: List of dicts of dataframes to be visualized as stats.
+            datasets: List of dicts of DataFrames to be visualized as stats.
 
         Returns:
             HTML template with proto string embedded.
@@ -79,27 +82,30 @@ class FacetStatisticsVisualizer(BaseStepVisualizer):
             os.path.abspath(os.path.dirname(__file__)),
             "stats.html",
         )
-        html_template = zenml.io.utils.read_file_contents_as_string(template)
+        html_template = io_utils.read_file_contents_as_string(template)
 
         html_ = html_template.replace("protostr", protostr)
         return html_
 
     def generate_facet(self, html_: str, magic: bool = False) -> None:
-        """Generate a Facet Overview
+        """Generate a Facet Overview.
 
         Args:
             html_: HTML represented as a string.
             magic: Whether to magically materialize facet in a notebook.
+
+        Raises:
+            EnvironmentError: If magic is True and not in a notebook.
         """
         if magic:
-            if not Environment.in_notebook():
+            if not Environment.in_notebook() or Environment.in_google_colab():
                 raise EnvironmentError(
                     "The magic functions are only usable in a Jupyter notebook."
                 )
             display(HTML(html_))
         else:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as f:
-                zenml.io.utils.write_file_contents_as_string(f.name, html_)
+                io_utils.write_file_contents_as_string(f.name, html_)
                 url = f"file:///{f.name}"
                 logger.info("Opening %s in a new browser.." % f.name)
                 webbrowser.open(url, new=2)

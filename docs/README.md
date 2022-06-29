@@ -2,7 +2,7 @@
 
 ## General documentation
 
-We write our [documentation](https://docs.zenml.io/) in Markdown files and use [Gitbook](https://www.gitbook.com/) to build it.
+We write our [documentation](https://docs.zenml.io/) in Markdown files and use [GitBook](https://www.gitbook.com/) to build it.
 The documentation source files can be found in this repository at `docs/book`
 
 * You can edit the docs by simply editing the markdown files. Once the changes
@@ -25,7 +25,7 @@ To build them locally follow these steps:
 * Install ZenML and all dependencies
 ```python
 poetry install
-poetry run zenml integration install -f
+poetry run zenml integration install -y
 poetry run pip install click~=8.0.3 typing-extensions~=3.10.0.2
 ```
 * Run `poetry run bash scripts/serve_api_docs.sh` from the repository root - 

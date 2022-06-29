@@ -11,18 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Utility functions for the CLI."""
+
 import base64
 import datetime
+import os
 import subprocess
 import sys
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     List,
+    NoReturn,
     Optional,
     Sequence,
     Tuple,
+    Type,
+    TypeVar,
     Union,
 )
 
@@ -31,88 +38,102 @@ import yaml
 from dateutil import tz
 from pydantic import BaseModel
 from rich import box, table
+from rich.markup import escape
+from rich.prompt import Confirm
+from rich.style import Style
 from rich.text import Text
 
-from zenml.config.profile_config import ProfileConfiguration
-from zenml.console import console
+from zenml.console import console, zenml_style_defaults
 from zenml.constants import IS_DEBUG_ENV
-from zenml.enums import StackComponentType
 from zenml.logger import get_logger
-from zenml.model_deployers import BaseModelDeployer
-from zenml.repository import Repository
-from zenml.secret import BaseSecretSchema
-from zenml.services import BaseService
-from zenml.services.service_status import ServiceState
-from zenml.stack import StackComponent
-from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
-from zenml.zen_stores.models.flavor_wrapper import validate_flavor_source
 
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from zenml.integrations.integration import IntegrationMeta
+    from zenml.config.profile_config import ProfileConfiguration
+    from zenml.enums import StackComponentType
+    from zenml.integrations.integration import Integration
+    from zenml.model_deployers import BaseModelDeployer
+    from zenml.secret import BaseSecretSchema
+    from zenml.services import BaseService
+    from zenml.zen_stores.models import ComponentWrapper, FlavorWrapper
 
 
 def title(text: str) -> None:
     """Echo a title formatted string on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
     """
-    console.print(text.upper(), style="title")
+    console.print(text.upper(), style=zenml_style_defaults["title"])
 
 
 def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
     """Echo a confirmation string on the CLI.
 
     Args:
-      text: Input text string.
-      *args: Args to be passed to click.confirm().
-      **kwargs: Kwargs to be passed to click.confirm().
+        text: Input text string.
+        *args: Args to be passed to click.confirm().
+        **kwargs: Kwargs to be passed to click.confirm().
 
     Returns:
         Boolean based on user response.
     """
-    # return Confirm.ask(text, console=console)
-    return click.confirm(click.style(text, fg="yellow"), *args, **kwargs)
+    return Confirm.ask(text, console=console)
 
 
-def declare(text: Union[str, Text]) -> None:
+def declare(
+    text: Union[str, Text],
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
+) -> None:
     """Echo a declaration on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
     """
-    console.print(text, style="info")
+    base_style = zenml_style_defaults["info"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
+    console.print(text, style=style)
 
 
-def error(text: str) -> None:
+def error(text: str) -> NoReturn:
     """Echo an error string on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
 
     Raises:
-        click.ClickException: when called.
+        ClickException: when called.
     """
     raise click.ClickException(message=click.style(text, fg="red", bold=True))
-    # console.print(text, style="error")
 
 
-def warning(text: str) -> None:
+def warning(
+    text: str,
+    bold: Optional[bool] = None,
+    italic: Optional[bool] = None,
+) -> None:
     """Echo a warning string on the CLI.
 
     Args:
-      text: Input text string.
+        text: Input text string.
+        bold: Optional boolean to bold the text.
+        italic: Optional boolean to italicize the text.
     """
-    console.print(text, style="warning")
+    base_style = zenml_style_defaults["warning"]
+    style = Style.chain(base_style, Style(bold=bold, italic=italic))
+    console.print(text, style=style)
 
 
 def pretty_print(obj: Any) -> None:
     """Pretty print an object on the CLI using `rich.print`.
 
     Args:
-      obj: Any object with a __str__ method defined.
+        obj: Any object with a __str__ method defined.
+
     # TODO: [LOW] check whether this needs to be converted to a string first
     # TODO: [LOW] use rich prettyprint for this instead
     """
@@ -120,62 +141,120 @@ def pretty_print(obj: Any) -> None:
 
 
 def print_table(obj: List[Dict[str, Any]], **columns: table.Column) -> None:
-    """Prints the list of dicts in a table format. The input object should be a
-    List of Dicts. Each item in that list represent a line in the Table. Each
-    dict should have the same keys. The keys of the dict will be used as
-    headers of the resulting table.
+    """Prints the list of dicts in a table format.
+
+    The input object should be a List of Dicts. Each item in that list represent
+    a line in the Table. Each dict should have the same keys. The keys of the
+    dict will be used as headers of the resulting table.
 
     Args:
-      obj: A List containing dictionaries.
-      columns: Optional column configurations to be used in the table.
+        obj: A List containing dictionaries.
+        columns: Optional column configurations to be used in the table.
     """
     column_keys = {key: None for dict_ in obj for key in dict_}
     column_names = [columns.get(key, key.upper()) for key in column_keys]
-    rich_table = table.Table(*column_names, box=box.HEAVY_EDGE)
-
+    rich_table = table.Table(box=box.HEAVY_EDGE, show_lines=True)
+    for col_name in column_names:
+        if isinstance(col_name, str):
+            rich_table.add_column(str(col_name), overflow="fold")
+        else:
+            rich_table.add_column(str(col_name.header).upper(), overflow="fold")
     for dict_ in obj:
-        values = [dict_.get(key) for key in column_keys]
+        values = []
+        for key in column_keys:
+            if key is None:
+                values.append(None)
+            else:
+                value = str(dict_.get(key) or " ")
+                # escape text when square brackets are used
+                if "[" in value:
+                    value = escape(value)
+                values.append(value)
         rich_table.add_row(*values)
-
     if len(rich_table.columns) > 1:
         rich_table.columns[0].justify = "center"
     console.print(rich_table)
 
 
-def print_pydantic_models(models: Sequence[BaseModel]) -> None:
+M = TypeVar("M", bound=BaseModel)
+
+
+def print_pydantic_models(
+    models: Sequence[M],
+    columns: Optional[Sequence[str]] = None,
+    exclude_columns: Sequence[str] = (),
+    is_active: Optional[Callable[[M], bool]] = None,
+) -> None:
     """Prints the list of Pydantic models in a table.
 
     Args:
-        models: List of pydantic models that will be represented as a row in
+        models: List of Pydantic models that will be represented as a row in
             the table.
+        columns: Optionally specify subset and order of columns to display.
+        exclude_columns: Optionally specify columns to exclude. (Note: `columns`
+            takes precedence over `exclude_columns`.)
+        is_active: Optional function that marks as row as active.
+
     """
-    model_dicts = [
-        {key: str(value) for key, value in model.dict().items()}
-        for model in models
-    ]
-    print_table(model_dicts)
+
+    def __dictify(model: M) -> Dict[str, str]:
+        """Helper function to map over the list to turn Models into dicts.
+
+        Args:
+            model: Pydantic model.
+
+        Returns:
+            Dict of model attributes.
+        """
+        items = (
+            {
+                key: str(value)
+                for key, value in model.dict().items()
+                if key not in exclude_columns
+            }
+            if columns is None
+            else {key: str(model.dict()[key]) for key in columns}
+        )
+        # prepend an active marker if a function to mark active was passed
+        return (
+            dict(active=":point_right:" if is_active(model) else "", **items)
+            if is_active is not None
+            else items
+        )
+
+    print_table([__dictify(model) for model in models])
 
 
 def format_integration_list(
-    integrations: List[Tuple[str, "IntegrationMeta"]]
+    integrations: List[Tuple[str, Type["Integration"]]]
 ) -> List[Dict[str, str]]:
-    """Formats a list of integrations into a List of Dicts. This list of dicts
-    can then be printed in a table style using cli_utils.print_table."""
+    """Formats a list of integrations into a List of Dicts.
+
+    This list of dicts can then be printed in a table style using
+    cli_utils.print_table.
+
+    Args:
+        integrations: List of tuples containing the name of the integration and
+            the integration metadata.
+
+    Returns:
+        List of Dicts containing the name of the integration and the integration
+    """
     list_of_dicts = []
     for name, integration_impl in integrations:
-        is_installed = integration_impl.check_installation()  # type: ignore[attr-defined]
+        is_installed = integration_impl.check_installation()
         list_of_dicts.append(
             {
-                "INSTALLED": ":white_check_mark:" if is_installed else "",
+                "INSTALLED": ":white_check_mark:" if is_installed else ":x:",
                 "INTEGRATION": name,
-                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),  # type: ignore[attr-defined]
+                "REQUIRED_PACKAGES": ", ".join(integration_impl.REQUIREMENTS),
             }
         )
     return list_of_dicts
 
 
 def print_stack_component_list(
-    components: List[ComponentWrapper],
+    components: List["ComponentWrapper"],
     active_component_name: Optional[str] = None,
 ) -> None:
     """Prints a table with configuration options for a list of stack components.
@@ -208,9 +287,15 @@ def print_stack_component_list(
 
 
 def print_stack_configuration(
-    config: Dict[StackComponentType, str], active: bool, stack_name: str
+    config: Dict["StackComponentType", str], active: bool, stack_name: str
 ) -> None:
-    """Prints the configuration options of a stack."""
+    """Prints the configuration options of a stack.
+
+    Args:
+        config: Configuration options of the stack.
+        active: Whether the stack is active.
+        stack_name: Name of the stack.
+    """
     stack_caption = f"'{stack_name}' stack"
     if active:
         stack_caption += " (ACTIVE)"
@@ -220,8 +305,8 @@ def print_stack_configuration(
         caption=stack_caption,
         show_lines=True,
     )
-    rich_table.add_column("COMPONENT_TYPE")
-    rich_table.add_column("COMPONENT_NAME")
+    rich_table.add_column("COMPONENT_TYPE", overflow="fold")
+    rich_table.add_column("COMPONENT_NAME", overflow="fold")
     for component_type, name in config.items():
         rich_table.add_row(component_type.value, name)
 
@@ -234,11 +319,17 @@ def print_stack_configuration(
 
 
 def print_flavor_list(
-    flavors: List[FlavorWrapper],
-    component_type: StackComponentType,
+    flavors: List["FlavorWrapper"],
+    component_type: "StackComponentType",
 ) -> None:
-    """Prints the list of flavors."""
+    """Prints the list of flavors.
+
+    Args:
+        flavors: List of flavors to print.
+        component_type: Type of component the flavors belong to.
+    """
     from zenml.integrations.registry import integration_registry
+    from zenml.utils.source_utils import validate_flavor_source
 
     flavor_table = []
     for f in flavors:
@@ -285,10 +376,16 @@ def print_flavor_list(
 
 
 def print_stack_component_configuration(
-    component: StackComponent, display_name: str, active_status: bool
+    component: "ComponentWrapper", display_name: str, active_status: bool
 ) -> None:
-    """Prints the configuration options of a stack component."""
-    title = f"{component.TYPE.value.upper()} Component Configuration"
+    """Prints the configuration options of a stack component.
+
+    Args:
+        component: The stack component to print.
+        display_name: The name of the stack component.
+        active_status: Whether the stack component is active.
+    """
+    title = f"{component.type.value.upper()} Component Configuration"
     if active_status:
         title += " (ACTIVE)"
     rich_table = table.Table(
@@ -297,21 +394,30 @@ def print_stack_component_configuration(
         show_lines=True,
     )
     rich_table.add_column("COMPONENT_PROPERTY")
-    rich_table.add_column("VALUE")
-    items = component.dict().items()
-    for item in items:
-        rich_table.add_row(*[str(elem) for elem in item])
+    rich_table.add_column("VALUE", overflow="fold")
 
-    # capitalize entries in first column
-    rich_table.columns[0]._cells = [
-        component.upper()  # type: ignore[union-attr]
-        for component in rich_table.columns[0]._cells
-    ]
+    component_dict = component.dict()
+    component_dict.pop("config")
+    component_dict.update(
+        yaml.safe_load(base64.b64decode(component.config).decode())
+    )
+    items = component_dict.items()
+    for item in items:
+        elements = []
+        for idx, elem in enumerate(item):
+            if idx == 0:
+                elements.append(f"{elem.upper()}")
+            else:
+                elements.append(str(elem))
+        rich_table.add_row(*elements)
+
     console.print(rich_table)
 
 
 def print_active_profile() -> None:
     """Print active profile."""
+    from zenml.repository import Repository
+
     repo = Repository()
     scope = "local" if repo.root else "global"
     declare(
@@ -321,12 +427,14 @@ def print_active_profile() -> None:
 
 def print_active_stack() -> None:
     """Print active stack."""
+    from zenml.repository import Repository
+
     repo = Repository()
     declare(f"Running with active stack: '{repo.active_stack_name}'")
 
 
 def print_profile(
-    profile: ProfileConfiguration,
+    profile: "ProfileConfiguration",
     active: bool,
 ) -> None:
     """Prints the configuration options of a profile.
@@ -345,16 +453,17 @@ def print_profile(
         show_lines=True,
     )
     rich_table.add_column("PROPERTY")
-    rich_table.add_column("VALUE")
+    rich_table.add_column("VALUE", overflow="fold")
     items = profile.dict().items()
     for item in items:
-        rich_table.add_row(*[str(elem) for elem in item])
+        elements = []
+        for idx, elem in enumerate(item):
+            if idx == 0:
+                elements.append(f"{elem.upper()}")
+            else:
+                elements.append(elem)
+        rich_table.add_row(*elements)
 
-    # capitalize entries in first column
-    rich_table.columns[0]._cells = [
-        component.upper()  # type: ignore[union-attr]
-        for component in rich_table.columns[0]._cells
-    ]
     console.print(rich_table)
 
 
@@ -364,8 +473,8 @@ def format_date(
     """Format a date into a string.
 
     Args:
-      dt: Datetime object to be formatted.
-      format: The format in string you want the datetime formatted to.
+        dt: Datetime object to be formatted.
+        format: The format in string you want the datetime formatted to.
 
     Returns:
         Formatted string according to specification.
@@ -385,11 +494,66 @@ def format_date(
     return dt.strftime(format)
 
 
-def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
+MAX_ARGUMENT_VALUE_SIZE = 10240
+
+
+def expand_argument_value_from_file(name: str, value: str) -> str:
+    """Expands the value of an argument pointing to a file into the contents of that file.
+
+    Args:
+        name: Name of the argument. Used solely for logging purposes.
+        value: The value of the argument. This is to be interpreted as a
+            filename if it begins with a `@` character.
+
+    Returns:
+        The argument value expanded into the contents of the file, if the
+        argument value begins with a `@` character. Otherwise, the argument
+        value is returned unchanged.
+
+    Raises:
+        ValueError: If the argument value points to a file that doesn't exist,
+            that cannot be read, or is too long(i.e. exceeds
+            `MAX_ARGUMENT_VALUE_SIZE` bytes).
+    """
+    if value.startswith("@@"):
+        return value[1:]
+    if not value.startswith("@"):
+        return value
+    filename = os.path.abspath(value[1:])
+    logger.info(
+        f"Expanding argument value `{name}` to contents of file `{filename}`."
+    )
+    if not os.path.isfile(filename):
+        raise ValueError(
+            f"Could not load argument '{name}' value: file "
+            f"'{filename}' does not exist or is not readable."
+        )
+    try:
+        if os.path.getsize(filename) > MAX_ARGUMENT_VALUE_SIZE:
+            raise ValueError(
+                f"Could not load argument '{name}' value: file "
+                f"'{filename}' is too large (max size is "
+                f"{MAX_ARGUMENT_VALUE_SIZE} bytes)."
+            )
+
+        with open(filename, "r") as f:
+            return f.read()
+    except OSError as e:
+        raise ValueError(
+            f"Could not load argument '{name}' value: file "
+            f"'{filename}' could not be accessed: {str(e)}"
+        )
+
+
+def parse_unknown_options(
+    args: List[str], expand_args: bool = False
+) -> Dict[str, Any]:
     """Parse unknown options from the CLI.
 
     Args:
-      args: A list of strings from the CLI.
+        args: A list of strings from the CLI.
+        expand_args: Whether to expand argument values into the contents of the
+            files they may be pointing at using the special `@` character.
 
     Returns:
         Dict of parsed args.
@@ -401,20 +565,47 @@ def parse_unknown_options(args: List[str]) -> Dict[str, Any]:
     )
 
     assert all(a.startswith("--") for a in args), warning_message
-    assert all(len(a.split("=")) == 2 for a in args), warning_message
+    assert all("=" in a for a in args), warning_message
 
-    p_args = [a.lstrip("--").split("=") for a in args]
+    args_dict = dict(a[2:].split("=", maxsplit=1) for a in args)
+    assert all(k.isidentifier() for k in args_dict), warning_message
 
-    assert all(k.isidentifier() for k, _ in p_args), warning_message
+    if expand_args:
+        args_dict = {
+            k: expand_argument_value_from_file(k, v)
+            for k, v in args_dict.items()
+        }
 
-    r_args = {k: v for k, v in p_args}
-    assert len(p_args) == len(r_args), "Replicated arguments!"
+    return args_dict
 
-    return r_args
+
+def parse_unknown_component_attributes(args: List[str]) -> List[str]:
+    """Parse unknown options from the CLI.
+
+    Args:
+        args: A list of strings from the CLI.
+
+    Returns:
+        List of parsed args.
+    """
+    warning_message = (
+        "Please provide args with a proper "
+        "identifier as the key and the following structure: "
+        "--custom_attribute"
+    )
+
+    assert all(a.startswith("--") for a in args), warning_message
+    p_args = [a.lstrip("-") for a in args]
+    assert all(v.isidentifier() for v in p_args), warning_message
+    return p_args
 
 
 def install_packages(packages: List[str]) -> None:
-    """Installs pypi packages into the current environment with pip"""
+    """Installs pypi packages into the current environment with pip.
+
+    Args:
+        packages: List of packages to install.
+    """
     command = [sys.executable, "-m", "pip", "install"] + packages
 
     if not IS_DEBUG_ENV:
@@ -427,7 +618,11 @@ def install_packages(packages: List[str]) -> None:
 
 
 def uninstall_package(package: str) -> None:
-    """Uninstalls pypi package from the current environment with pip"""
+    """Uninstalls pypi package from the current environment with pip.
+
+    Args:
+        package: The package to uninstall.
+    """
     subprocess.check_call(
         [
             sys.executable,
@@ -442,9 +637,9 @@ def uninstall_package(package: str) -> None:
 
 
 def pretty_print_secret(
-    secret: BaseSecretSchema, hide_secret: bool = True
+    secret: "BaseSecretSchema", hide_secret: bool = True
 ) -> None:
-    """Given a secret set print all key value pairs associated with the secret
+    """Given a secret set, print all key-value pairs associated with the secret.
 
     Args:
         secret: Secret of type BaseSecretSchema
@@ -461,7 +656,6 @@ def pretty_print_secret(
 
     stack_dicts = [
         {
-            "SECRET_NAME": secret.name,
             "SECRET_KEY": key,
             "SECRET_VALUE": get_secret_value(value),
         }
@@ -481,7 +675,7 @@ def print_secrets(secrets: List[str]) -> None:
         title="Secrets",
         show_lines=True,
     )
-    rich_table.add_column("SECRET_NAME")
+    rich_table.add_column("SECRET_NAME", overflow="fold")
     secrets.sort()
     for item in secrets:
         rich_table.add_row(item)
@@ -489,7 +683,7 @@ def print_secrets(secrets: List[str]) -> None:
     console.print(rich_table)
 
 
-def get_service_status_emoji(service: BaseService) -> str:
+def get_service_status_emoji(service: "BaseService") -> str:
     """Get the rich emoji representing the operational status of a Service.
 
     Args:
@@ -498,6 +692,8 @@ def get_service_status_emoji(service: BaseService) -> str:
     Returns:
         String representing the emoji.
     """
+    from zenml.services.service_status import ServiceState
+
     if service.status.state == ServiceState.ACTIVE:
         return ":white_check_mark:"
     if service.status.state == ServiceState.INACTIVE:
@@ -508,10 +704,9 @@ def get_service_status_emoji(service: BaseService) -> str:
 
 
 def pretty_print_model_deployer(
-    model_services: List[BaseService], model_deployer: BaseModelDeployer
+    model_services: List["BaseService"], model_deployer: "BaseModelDeployer"
 ) -> None:
-    """Given a list of served_models print all key value pairs associated with
-    the secret
+    """Given a list of served_models, print all key-value pairs associated with the secret.
 
     Args:
         model_services: list of model deployment services
@@ -520,24 +715,26 @@ def pretty_print_model_deployer(
     model_service_dicts = []
     for model_service in model_services:
         served_model_info = model_deployer.get_model_server_info(model_service)
-
+        dict_uuid = str(model_service.uuid)
+        dict_pl_name = model_service.config.pipeline_name
+        dict_pl_stp_name = model_service.config.pipeline_step_name
+        dict_model_name = served_model_info.get("MODEL_NAME", "")
         model_service_dicts.append(
             {
                 "STATUS": get_service_status_emoji(model_service),
-                "UUID": str(model_service.uuid),
-                "PIPELINE_NAME": model_service.config.pipeline_name,
-                "PIPELINE_STEP_NAME": model_service.config.pipeline_step_name,
-                "MODEL_NAME": served_model_info.get("MODEL_NAME", ""),
+                "UUID": dict_uuid,
+                "PIPELINE_NAME": dict_pl_name,
+                "PIPELINE_STEP_NAME": dict_pl_stp_name,
+                "MODEL_NAME": dict_model_name,
             }
         )
-
     print_table(
         model_service_dicts, UUID=table.Column(header="UUID", min_width=36)
     )
 
 
 def print_served_model_configuration(
-    model_service: BaseService, model_deployer: BaseModelDeployer
+    model_service: "BaseService", model_deployer: "BaseModelDeployer"
 ) -> None:
     """Prints the configuration of a model_service.
 
@@ -552,8 +749,8 @@ def print_served_model_configuration(
         title=title,
         show_lines=True,
     )
-    rich_table.add_column("MODEL SERVICE PROPERTY")
-    rich_table.add_column("VALUE")
+    rich_table.add_column("MODEL SERVICE PROPERTY", overflow="fold")
+    rich_table.add_column("VALUE", overflow="fold")
 
     # Get implementation specific info
     served_model_info = model_deployer.get_model_server_info(model_service)

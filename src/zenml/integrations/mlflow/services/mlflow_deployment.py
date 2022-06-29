@@ -1,8 +1,24 @@
+#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Implementation of the MLflow deployment functionality."""
+
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import numpy as np
 import requests
 from mlflow.pyfunc.backend import PyFuncBackend  # type: ignore [import]
+from mlflow.version import VERSION as MLFLOW_VERSION  # type: ignore [import]
 
 from zenml.logger import get_logger
 from zenml.services import (
@@ -51,6 +67,11 @@ class MLFlowDeploymentEndpoint(LocalDaemonServiceEndpoint):
 
     @property
     def prediction_url(self) -> Optional[str]:
+        """Gets the prediction URL for the endpoint.
+
+        Returns:
+            the prediction URL for the endpoint
+        """
         uri = self.status.uri
         if not uri:
             return None
@@ -76,8 +97,7 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
 
 
 class MLFlowDeploymentService(LocalDaemonService):
-    """MLFlow deployment service that can be used to start a local prediction
-    server for MLflow models.
+    """MLflow deployment service used to start a local prediction server for MLflow models.
 
     Attributes:
         SERVICE_TYPE: a service type descriptor with information describing
@@ -101,6 +121,12 @@ class MLFlowDeploymentService(LocalDaemonService):
         config: Union[MLFlowDeploymentConfig, Dict[str, Any]],
         **attrs: Any,
     ) -> None:
+        """Initialize the MLflow deployment service.
+
+        Args:
+            config: service configuration
+            attrs: additional attributes to set on the service
+        """
         # ensure that the endpoint is created before the service is initialized
         # TODO [ENG-700]: implement a service factory or builder for MLflow
         #   deployment services
@@ -133,6 +159,7 @@ class MLFlowDeploymentService(LocalDaemonService):
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
+        """Start the service."""
         logger.info(
             "Starting MLflow prediction service as blocking "
             "process... press CTRL+C once to stop it."
@@ -141,6 +168,12 @@ class MLFlowDeploymentService(LocalDaemonService):
         self.endpoint.prepare_for_start()
 
         try:
+            serve_kwargs: Dict[str, Any] = {}
+            # MLflow version 1.26 introduces an additional mandatory
+            # `timeout` argument to the `PyFuncBackend.serve` function
+            if int(MLFLOW_VERSION.split(".")[1]) >= 26:
+                serve_kwargs["timeout"] = None
+
             backend = PyFuncBackend(
                 config={},
                 no_conda=True,
@@ -152,6 +185,7 @@ class MLFlowDeploymentService(LocalDaemonService):
                 port=self.endpoint.status.port,
                 host="localhost",
                 enable_mlserver=self.config.mlserver,
+                **serve_kwargs,
             )
         except KeyboardInterrupt:
             logger.info(
@@ -178,6 +212,10 @@ class MLFlowDeploymentService(LocalDaemonService):
 
         Returns:
             A numpy array representing the prediction returned by the service.
+
+        Raises:
+            Exception: if the service is not running
+            ValueError: if the prediction endpoint is unknown.
         """
         if not self.is_running:
             raise Exception(

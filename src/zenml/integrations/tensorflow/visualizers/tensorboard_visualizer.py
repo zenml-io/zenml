@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of a TensorFlow visualizer step."""
 
 import os
 import sys
@@ -45,11 +46,16 @@ class TensorboardVisualizer(BaseStepVisualizer):
     def find_running_tensorboard_server(
         cls, logdir: str
     ) -> Optional[TensorBoardInfo]:
-        """Find a local Tensorboard server instance running for the supplied
-        logdir location and return its TCP port.
+        """Find a local TensorBoard server instance.
+
+        Finds when it is running for the supplied logdir location and return its
+        TCP port.
+
+        Args:
+            logdir: The logdir location where the TensorBoard server is running.
 
         Returns:
-            The TensorBoardInfo describing the running Tensorboard server or
+            The TensorBoardInfo describing the running TensorBoard server or
             None if no server is running for the supplied logdir location.
         """
         for server in get_all():
@@ -64,24 +70,28 @@ class TensorboardVisualizer(BaseStepVisualizer):
     def visualize(
         self,
         object: StepView,
-        *args: Any,
         height: int = 800,
+        *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Start a Tensorboard server to visualize all models logged as
-        artifacts by the indicated step. The server will monitor and display
-        all the models logged by past and future step runs.
+        """Start a TensorBoard server.
+
+        Allows for the visualization of all models logged as artifacts by the
+        indicated step. The server will monitor and display all the models
+        logged by past and future step runs.
 
         Args:
             object: StepView fetched from run.get_step().
             height: Height of the generated visualization.
+            *args: Additional arguments.
+            **kwargs: Additional keyword arguments.
         """
         for _, artifact_view in object.outputs.items():
             # filter out anything but model artifacts
             if artifact_view.type == ModelArtifact.TYPE_NAME:
                 logdir = os.path.dirname(artifact_view.uri)
 
-                # first check if a Tensorboard server is already running for
+                # first check if a TensorBoard server is already running for
                 # the same logdir location and use that one
                 running_server = self.find_running_tensorboard_server(logdir)
                 if running_server:
@@ -94,10 +104,10 @@ class TensorboardVisualizer(BaseStepVisualizer):
                         "You can run:\n"
                         f"[italic green]    tensorboard --logdir {logdir}"
                         "[/italic green]\n"
-                        "...to visualize the Tensorboard logs for your trained model."
+                        "...to visualize the TensorBoard logs for your trained model."
                     )
                 else:
-                    # start a new Tensorboard server
+                    # start a new TensorBoard server
                     service = TensorboardService(
                         TensorboardServiceConfig(
                             logdir=logdir,
@@ -115,13 +125,12 @@ class TensorboardVisualizer(BaseStepVisualizer):
         port: int,
         height: int,
     ) -> None:
-        """Generate a visualization of a Tensorboard.
+        """Generate a visualization of a TensorBoard.
 
         Args:
-            port: the TCP port where the Tensorboard server is listening for
+            port: the TCP port where the TensorBoard server is listening for
                 requests.
             height: Height of the generated visualization.
-            logdir: The logdir location for the Tensorboard server.
         """
         if Environment.in_notebook():
 
@@ -131,14 +140,14 @@ class TensorboardVisualizer(BaseStepVisualizer):
         print(
             "You can visit:\n"
             f"[italic green]    http://localhost:{port}/[/italic green]\n"
-            "...to visualize the Tensorboard logs for your trained model."
+            "...to visualize the TensorBoard logs for your trained model."
         )
 
     def stop(
         self,
         object: StepView,
     ) -> None:
-        """Stop the Tensorboard server previously started for a pipeline step.
+        """Stop the TensorBoard server previously started for a pipeline step.
 
         Args:
             object: StepView fetched from run.get_step().
@@ -148,7 +157,7 @@ class TensorboardVisualizer(BaseStepVisualizer):
             if artifact_view.type == ModelArtifact.TYPE_NAME:
                 logdir = os.path.dirname(artifact_view.uri)
 
-                # first check if a Tensorboard server is already running for
+                # first check if a TensorBoard server is already running for
                 # the same logdir location and use that one
                 running_server = self.find_running_tensorboard_server(logdir)
                 if not running_server:
@@ -179,6 +188,9 @@ def get_step(pipeline_name: str, step_name: str) -> StepView:
 
     Returns:
         The StepView for the specified pipeline and step name.
+
+    Raises:
+        RuntimeError: If the step is not found.
     """
     repo = Repository()
     pipeline = repo.get_pipeline(pipeline_name)
@@ -196,9 +208,11 @@ def get_step(pipeline_name: str, step_name: str) -> StepView:
 
 
 def visualize_tensorboard(pipeline_name: str, step_name: str) -> None:
-    """Start a Tensorboard server to visualize all models logged as output by
-    the named pipeline step. The server will monitor and display all the models
-    logged by past and future step runs.
+    """Start a TensorBoard server.
+
+    Allows for the visualization of all models logged as output by the named
+    pipeline step. The server will monitor and display all the models logged by
+    past and future step runs.
 
     Args:
         pipeline_name: the name of the pipeline
@@ -209,7 +223,7 @@ def visualize_tensorboard(pipeline_name: str, step_name: str) -> None:
 
 
 def stop_tensorboard_server(pipeline_name: str, step_name: str) -> None:
-    """Stop the Tensorboard server previously started for a pipeline step.
+    """Stop the TensorBoard server previously started for a pipeline step.
 
     Args:
         pipeline_name: the name of the pipeline

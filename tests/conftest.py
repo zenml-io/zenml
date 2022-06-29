@@ -78,9 +78,25 @@ def base_repo(
     repo.original_cwd = orig_cwd
     yield repo
 
-    # clean up
+    # remove all traces, and change working directory back to base path
     os.chdir(orig_cwd)
-    shutil.rmtree(tmp_path)
+    if sys.platform == "win32":
+        try:
+            shutil.rmtree(tmp_path)
+        except PermissionError:
+            # Windows does not have the concept of unlinking a file and deleting
+            #  once all processes that are accessing the resource are done
+            #  instead windows tries to delete immediately and fails with a
+            #  PermissionError: [WinError 32] The process cannot access the
+            #  file because it is being used by another process
+            logging.debug(
+                "Skipping deletion of temp dir at teardown, due to "
+                "Windows Permission error"
+            )
+            # TODO[HIGH]: Implement fixture cleanup for Windows where shutil.rmtree
+            #  fails on files that are in use on python 3.7 and 3.8
+    else:
+        shutil.rmtree(tmp_path)
 
     # reset the global configuration and the repository
     GlobalConfiguration._reset_instance()
@@ -139,7 +155,7 @@ def clean_repo(
         tmp_path_factory: Pytest TempPathFactory in order to create a new
                           temporary directory
         mocker: Pytest mocker to patch away the
-                zenml.io.utils.get_global_config_directory
+                zenml.utils.io_utils.get_global_config_directory
         base_repo: Fixture that returns the base_repo that all tests use
     """
     orig_cwd = os.getcwd()
@@ -172,24 +188,28 @@ def clean_repo(
 
     # monkey patch base repo cwd for later user and yield
     repo.original_cwd = base_repo.original_cwd
+
     yield repo
 
     # remove all traces, and change working directory back to base path
     os.chdir(orig_cwd)
-    try:
+    if sys.platform == "win32":
+        try:
+            shutil.rmtree(tmp_path)
+        except PermissionError:
+            # Windows does not have the concept of unlinking a file and deleting
+            #  once all processes that are accessing the resource are done
+            #  instead windows tries to delete immediately and fails with a
+            #  PermissionError: [WinError 32] The process cannot access the
+            #  file because it is being used by another process
+            logging.debug(
+                "Skipping deletion of temp dir at teardown, due to "
+                "Windows Permission error"
+            )
+            # TODO[HIGH]: Implement fixture cleanup for Windows where shutil.rmtree
+            #  fails on files that are in use on python 3.7 and 3.8
+    else:
         shutil.rmtree(tmp_path)
-    except PermissionError:
-        # Windows does not have the concept of unlinking a file and deleting
-        #  once all processes that are accessing the resource are done
-        #  instead windows tries to delete immediately and fails with a
-        #  PermissionError: [WinError 32] The process cannot access the
-        #  file because it is being used by another process
-        logging.debug(
-            "Skipping deletion of temp dir at teardown, due to "
-            "Windows Permission error"
-        )
-        # Todo[HIGH]: Implement fixture cleanup for Windows where shutil.rmtree
-        #  fails on files that are in use on python 3.7
 
     # restore the global configuration path
     os.environ["ZENML_CONFIG_PATH"] = orig_config_path
@@ -200,11 +220,48 @@ def clean_repo(
 
 
 @pytest.fixture
+def files_dir(request: pytest.FixtureRequest, tmp_path: Path) -> Path:
+    """Fixture that will search for a folder with the same name as the test
+    file and move it into the temp path of the test.
+
+    |dir
+    |--test_functionality
+    |--|--test_specific_method
+    |--test_functionality.py#test_specific_method
+
+    In this case if the `test_specific_method()` function inside the
+    `test_functionality.py` has this fixture, the
+    `test_functionality/test_specific_method` file is copied into the tmp_path.
+    The path is passed into the test_specific_method(datadir: str) as string.
+
+    TO use this, ensure the filename (minus '.py') corresponds to the outer
+    directory name. And the inner directory corresponds to the test methods
+    name.
+
+    Returns:
+        tmp_path at which to find the files.
+    """
+    filename = Path(request.module.__file__)
+    test_dir = filename.with_suffix("")
+
+    test_name = request.function.__name__
+
+    tmp_path = tmp_path / test_name
+
+    if os.path.isdir(test_dir):
+        test_function_dir = test_dir / test_name
+        if os.path.isdir(test_function_dir):
+            shutil.copytree(test_function_dir, tmp_path)
+
+    return tmp_path
+
+
+@pytest.fixture
 def empty_step():
     """Pytest fixture that returns an empty (no input, no output) step."""
 
     @step
-    def _empty_step():
+    def _empty_step() -> None:
         pass
 
     return _empty_step
@@ -221,7 +278,7 @@ def generate_empty_steps():
         for i in range(count):
 
             @step(name=f"step_{i}")
-            def _step_function():
+            def _step_function() -> None:
                 pass
 
             output.append(_step_function)
@@ -268,7 +325,7 @@ def int_step_output():
 @pytest.fixture
 def step_with_two_int_inputs():
     @step
-    def _step(input_1: int, input_2: int):
+    def _step(input_1: int, input_2: int) -> None:
         pass
 
     return _step

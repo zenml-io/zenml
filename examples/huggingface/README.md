@@ -120,10 +120,11 @@ zenml example run huggingface
 pip install zenml
 
 # install ZenML integrations
-zenml integration install tensorflow huggingface -f
+zenml integration install tensorflow huggingface
 
 # pull example
-cd zenml/examples/huggingface
+zenml example pull huggingface
+cd zenml_examples/huggingface
 
 # initialize
 zenml init
@@ -135,12 +136,12 @@ Now we're ready. Execute one of the below lines to run the respective nlp tasks.
 
 ```shell
 # sequence-classification
-python run_pipeline.py --nlp_task=sequence-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=imdb --text_column=text --label_column=label
+python run.py --nlp_task=sequence-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=imdb --text_column=text --label_column=label
 ```
 
 ```shell
 # token-classification
-python run_pipeline.py --nlp_task=token-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=conll2003 --text_column=tokens --label_column=ner_tags
+python run.py --nlp_task=token-classification --pretrained_model=distilbert-base-uncased --epochs=1 --batch_size=16 --dataset_name=conll2003 --text_column=tokens --label_column=ner_tags
 ```
 
 By default, these will run on a very small subset of their datasets in order to quickly see the complete pipeline in 

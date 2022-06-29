@@ -11,6 +11,8 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the whylogs step context extension."""
+
 import datetime
 from typing import Dict, Optional
 
@@ -22,8 +24,10 @@ from zenml.steps.step_context import StepContext
 
 
 class WhylogsContext:
-    """This is a step context extension that can be used to facilitate whylogs
-    data logging and profiling inside a step function.
+    """A step context extension for whylogs.
+
+    This can be used to facilitate whylogs data logging and profiling inside a
+    step function.
 
     It acts as a wrapper built around the whylogs API that transparently
     incorporates ZenML specific information into the generated whylogs dataset

@@ -11,5 +11,11 @@ flake8 $SRC
 autoflake --remove-all-unused-imports --recursive --remove-unused-variables --in-place $SRC --exclude=__init__.py --check
 isort $SRC scripts --check-only
 black $SRC  --check
+
+# check for docstrings
 interrogate $SRC_NO_TESTS -c pyproject.toml
+pydocstyle $SRC_NO_TESTS -e --count --convention=google --add-ignore=D403
+darglint -v 2 $SRC_NO_TESTS
+
+# check type annotations
 mypy $SRC_NO_TESTS

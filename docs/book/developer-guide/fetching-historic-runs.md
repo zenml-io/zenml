@@ -3,7 +3,8 @@ description: Interact with Past Runs inside a Step
 ---
 
 # Fetching historic runs
-### The need to fetch historic runs
+
+## The need to fetch historic runs
 
 Sometimes, it is necessary to fetch information from previous runs in order to make a decision within a currently 
 executing step. Examples of this:
@@ -12,10 +13,10 @@ executing step. Examples of this:
 * Fetching a model out of a list of trained models.
 * Fetching the latest model produced by a different pipeline to run an inference on.
 
-### Utilizing `StepContext`
+## Utilizing `StepContext`
 
 ZenML allows users to fetch historical parameters and artifacts using the `StepContext` 
-[fixture](step-fixtures.md).
+[fixture](./step-fixtures.md).
 
 As an example, see this step that uses the `StepContext` to query the metadata store while running a step.
 We use this to evaluate all models of past training pipeline runs and store the current best model. 

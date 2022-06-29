@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the LightGBM booster materializer."""
 
 import os
 import tempfile
@@ -32,7 +33,14 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(self, data_type: Type[Any]) -> lgb.Booster:
-        """Reads a lightgbm Booster model from a serialized JSON file."""
+        """Reads a lightgbm Booster model from a serialized JSON file.
+
+        Args:
+            data_type: A lightgbm Booster type.
+
+        Returns:
+            A lightgbm Booster object.
+        """
         super().handle_input(data_type)
         filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
 
@@ -60,8 +68,12 @@ class LightGBMBoosterMaterializer(BaseMaterializer):
 
         # Make a temporary phantom artifact
         with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".txt", delete=True
+            mode="w", suffix=".txt", delete=False
         ) as f:
             booster.save_model(f.name)
             # Copy it into artifact store
             fileio.copy(f.name, filepath)
+
+        # Close and remove the temporary file
+        f.close()
+        fileio.remove(f.name)

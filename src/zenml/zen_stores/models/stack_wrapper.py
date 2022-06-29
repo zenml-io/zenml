@@ -11,10 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import List
+"""Stack wrapper implementation."""
+
+from typing import List, Optional
 
 from pydantic import BaseModel
 
+from zenml.enums import StackComponentType
 from zenml.stack import Stack
 from zenml.zen_stores.models import ComponentWrapper
 
@@ -31,6 +34,9 @@ class StackWrapper(BaseModel):
 
         Args:
             stack: the instance of a Stack
+
+        Returns:
+            a StackWrapper
         """
         return cls(
             name=stack.name,
@@ -41,7 +47,11 @@ class StackWrapper(BaseModel):
         )
 
     def to_stack(self) -> Stack:
-        """Creates the corresponding Stack instance from the wrapper."""
+        """Creates the corresponding Stack instance from the wrapper.
+
+        Returns:
+            the corresponding Stack instance
+        """
         stack_components = {}
         for component_wrapper in self.components:
             component_type = component_wrapper.type
@@ -51,3 +61,20 @@ class StackWrapper(BaseModel):
         return Stack.from_components(
             name=self.name, components=stack_components
         )
+
+    def get_component_wrapper(
+        self, component_type: StackComponentType
+    ) -> Optional[ComponentWrapper]:
+        """Returns the component of the given type.
+
+        Args:
+            component_type: the type of the component to return
+
+        Returns:
+            the component of the given type or None if not found
+        """
+        for component_wrapper in self.components:
+            if component_wrapper.type == component_type:
+                return component_wrapper
+
+        return None

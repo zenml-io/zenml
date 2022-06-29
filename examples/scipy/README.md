@@ -39,7 +39,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install scipy
+zenml integration install sklearn
 
 # pull example
 zenml example pull scipy

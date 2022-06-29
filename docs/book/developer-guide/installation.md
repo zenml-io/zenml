@@ -10,7 +10,7 @@ description: How to install ZenML
 Your first step is to install **ZenML**, which comes bundled as a good old `pip` package.
 
 {% hint style="warning" %}
-Please note that we only support Python >= 3.7 <3.9, so please adjust your Python environment accordingly.
+Please note that we only support Python >= 3.7 <3.10, so please adjust your Python environment accordingly.
 {% endhint %}
 
 ## Virtual Environment
@@ -36,6 +36,16 @@ pip install git+https://github.com/zenml-io/zenml.git@develop --upgrade
 
 Once the installation is completed, you can check whether the installation was successful through:
 
+### Known installation issues for M1 Mac Users
+
+If you have a M1 Mac machine and you are encountering an error while trying to install ZenML, 
+please try to setup `brew` and `pyenv` with Rosetta 2 and then install ZenML. The issue arises because some of the dependencies 
+aren’t fully compatible with the vanilla ARM64 Architecture. The following links may be helpful (Thank you Reid Falconer!):
+
+- [Pyenv with Apple Silicon](http://sixty-north.com/blog/pyenv-apple-silicon.html)
+- [Install Python Under Rosetta 2](https://medium.com/thinknum/how-to-install-python-under-rosetta-2-f98c0865e012)
+
+
 ## Bash
 
 ```bash
@@ -59,36 +69,3 @@ If you would like to learn more about the current release, please visit our
 ```
 docker run -it zenmldocker/zenml /bin/bash
 ```
-
-## Enabling auto-completion on the CLI
-
-
-{% hint style="warning" %}
-The following commands will only work if you have zenml installed in your global python env. If you are using 
-virtual environments, you'll have to manually export the environment variable whenever you are using that env.
-{% endhint %}
-
-{% tabs %}
-{% tab title="Bash" %}
-For Bash, add this to `~/.bashrc`:
-```bash
-eval "$(_ZENML_COMPLETE=source_bash zenml)"
-```
-{% endtab %}
-
-{% tab title="Zsh" %}
-For Zsh, add this to `~/.zshrc`:
-
-```bash
-eval "$(_ZENML_COMPLETE=source_zsh zenml)"
-```
-{% endtab %}
-
-{% tab title="Fish" %}
-For Fish, add this to `~/.config/fish/completions/foo-bar.fish`:
-
-```bash
-eval (env _ZENML_COMPLETE=source_fish zenml)
-```
-{% endtab %}
-{% endtabs %}

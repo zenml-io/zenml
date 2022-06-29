@@ -36,7 +36,7 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install neural_prophet -f
+zenml integration install neural_prophet
 
 # pull example
 zenml example pull neural_prophet

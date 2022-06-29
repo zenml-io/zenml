@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the TensorBoard service."""
 
 from typing import Any, Dict, Union
 
@@ -33,10 +34,10 @@ logger = get_logger(__name__)
 
 
 class TensorboardServiceConfig(LocalDaemonServiceConfig):
-    """Tensorboard service configuration.
+    """TensorBoard service configuration.
 
     Attributes:
-        logdir: location of Tensorboard log files.
+        logdir: location of TensorBoard log files.
         max_reload_threads: the max number of threads that TensorBoard can use
             to reload runs. Each thread reloads one run at a time.
         reload_interval: how often the backend should load more data, in
@@ -49,12 +50,13 @@ class TensorboardServiceConfig(LocalDaemonServiceConfig):
 
 
 class TensorboardService(LocalDaemonService):
-    """Tensorboard service that can be used to start a local Tensorboard server
-    for one or more models.
+    """TensorBoard service.
+
+    This can be used to start a local TensorBoard server for one or more models.
 
     Attributes:
         SERVICE_TYPE: a service type descriptor with information describing
-            the Tensorboard service class
+            the TensorBoard service class
         config: service configuration
         endpoint: optional service endpoint
     """
@@ -63,7 +65,7 @@ class TensorboardService(LocalDaemonService):
         name="tensorboard",
         type="visualization",
         flavor="tensorboard",
-        description="Tensorboard visualization service",
+        description="TensorBoard visualization service",
     )
 
     config: TensorboardServiceConfig
@@ -74,8 +76,14 @@ class TensorboardService(LocalDaemonService):
         config: Union[TensorboardServiceConfig, Dict[str, Any]],
         **attrs: Any,
     ) -> None:
+        """Initialization for TensorBoard service.
+
+        Args:
+            config: service configuration
+            **attrs: additional attributes
+        """
         # ensure that the endpoint is created before the service is initialized
-        # TODO [ENG-697]: implement a service factory or builder for Tensorboard
+        # TODO [ENG-697]: implement a service factory or builder for TensorBoard
         #   deployment services
         if (
             isinstance(config, TensorboardServiceConfig)
@@ -96,8 +104,9 @@ class TensorboardService(LocalDaemonService):
         super().__init__(config=config, **attrs)
 
     def run(self) -> None:
+        """Initialize and run the TensorBoard server."""
         logger.info(
-            "Starting Tensorboard service as blocking "
+            "Starting TensorBoard service as blocking "
             "process... press CTRL+C once to stop it."
         )
 
@@ -118,5 +127,5 @@ class TensorboardService(LocalDaemonService):
             tensorboard.main()
         except KeyboardInterrupt:
             logger.info(
-                "Tensorboard service stopped. Resuming normal execution."
+                "TensorBoard service stopped. Resuming normal execution."
             )

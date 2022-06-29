@@ -18,7 +18,7 @@ from typing import Generator
 import pytest
 from pytest_mock import MockerFixture
 
-from zenml.container_registries import BaseContainerRegistry
+from zenml.container_registries import DefaultContainerRegistry
 from zenml.repository import Repository
 from zenml.stack import Stack
 
@@ -48,7 +48,7 @@ def shared_kubeflow_profile(
     """
     from zenml.integrations.kubeflow.orchestrators import KubeflowOrchestrator
 
-    # Patch the ui daemon as forking doesn't work well with pytest
+    # Patch the UI daemon as forking doesn't work well with pytest
     module_mocker.patch(
         "zenml.integrations.kubeflow.orchestrators.local_deployment_utils.start_kfp_ui_daemon"
     )
@@ -65,7 +65,7 @@ def shared_kubeflow_profile(
     artifact_store = base_profile.active_stack.artifact_store.copy(
         update={"name": "local_kubeflow_artifact_store"}
     )
-    container_registry = BaseContainerRegistry(
+    container_registry = DefaultContainerRegistry(
         name="local_registry", uri="localhost:5000"
     )
     kubeflow_stack = Stack(

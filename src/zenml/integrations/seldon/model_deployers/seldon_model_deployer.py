@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the Seldon Model Deployer."""
 
 import re
 from datetime import datetime
@@ -73,13 +74,14 @@ class SeldonModelDeployer(BaseModelDeployer):
     def get_model_server_info(  # type: ignore[override]
         service_instance: "SeldonDeploymentService",
     ) -> Dict[str, Optional[str]]:
-        """ "Return implementation specific information that might be relevant
-        to the user.
+        """Return implementation specific information that might be relevant to the user.
 
         Args:
             service_instance: Instance of a SeldonDeploymentService
-        """
 
+        Returns:
+            Model server information.
+        """
         return {
             "PREDICTION_URL": service_instance.prediction_url,
             "MODEL_URI": service_instance.config.model_uri,
@@ -93,6 +95,7 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         Returns:
             The Seldon Core model deployer registered in the active stack.
+
         Raises:
             TypeError: if the Seldon Core model deployer is not available.
         """
@@ -121,10 +124,6 @@ class SeldonModelDeployer(BaseModelDeployer):
 
         Returns:
             The Seldon Core client.
-
-        Raises:
-            SeldonClientError: if the Kubernetes client configuration cannot be
-                found.
         """
         if not self._client:
             self._client = SeldonClient(
@@ -155,15 +154,16 @@ class SeldonModelDeployer(BaseModelDeployer):
         )
 
     def _create_or_update_kubernetes_secret(self) -> Optional[str]:
-        """Create or update a Kubernetes secret with the information stored in
-        the ZenML secret configured for the model deployer.
+        """Create or update a Kubernetes secret.
+
+        Uses the information stored in the ZenML secret configured for the model deployer.
 
         Returns:
             The name of the Kubernetes secret that was created or updated, or
             None if no secret was configured.
 
         Raises:
-            SeldonClientError: if the secret cannot be created or updated.
+            RuntimeError: if the secret cannot be created or updated.
         """
         # if a ZenML secret was configured in the model deployer,
         # create a Kubernetes secret as a means to pass this information
@@ -201,11 +201,9 @@ class SeldonModelDeployer(BaseModelDeployer):
         return self.kubernetes_secret_name
 
     def _delete_kubernetes_secret(self) -> None:
-        """Delete the Kubernetes secret associated with this model deployer
-        if no Seldon Core deployments are using it.
+        """Delete the Kubernetes secret associated with this model deployer.
 
-        Raises:
-            SeldonClientError: if the secret cannot be deleted.
+        Do this if no Seldon Core deployments are using it.
         """
         if self.kubernetes_secret_name:
 
@@ -224,8 +222,11 @@ class SeldonModelDeployer(BaseModelDeployer):
         replace: bool = False,
         timeout: int = DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BaseService:
-        """Create a new Seldon Core deployment or update an existing one to
-        serve the supplied model and deployment configuration.
+        """Create a new Seldon Core deployment or update an existing one.
+
+        # noqa: DAR402
+
+        This should serve the supplied model and deployment configuration.
 
         This method has two modes of operation, depending on the `replace`
         argument value:
@@ -334,8 +335,7 @@ class SeldonModelDeployer(BaseModelDeployer):
         model_uri: Optional[str] = None,
         model_type: Optional[str] = None,
     ) -> List[BaseService]:
-        """Find one or more Seldon Core model services that match th given
-        criteria.
+        """Find one or more Seldon Core model services that match the given criteria.
 
         The Seldon Core deployment services that meet the search criteria are
         returned sorted in descending order of their creation time (i.e. more
@@ -414,6 +414,10 @@ class SeldonModelDeployer(BaseModelDeployer):
             uuid: UUID of the model server to stop.
             timeout: timeout in seconds to wait for the service to stop.
             force: if True, force the service to stop.
+
+        Raises:
+            NotImplementedError: stopping Seldon Core model servers is not
+                supported.
         """
         raise NotImplementedError(
             "Stopping Seldon Core model servers is not implemented. Try "
@@ -433,6 +437,10 @@ class SeldonModelDeployer(BaseModelDeployer):
                 active. . If set to 0, the method will return immediately after
                 provisioning the service, without waiting for it to become
                 active.
+
+        Raises:
+            NotImplementedError: since we don't support starting Seldon Core
+                model servers
         """
         raise NotImplementedError(
             "Starting Seldon Core model servers is not implemented"
