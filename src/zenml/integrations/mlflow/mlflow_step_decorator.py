@@ -15,7 +15,7 @@
 
 import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
-
+import mlflow
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
@@ -51,6 +51,7 @@ def enable_mlflow() -> Callable[[S], S]:
 
 def enable_mlflow(
     _step: Optional[S] = None,
+    nested: Optional[bool] = False
 ) -> Union[S, Callable[[S], S]]:
     """Decorator to enable mlflow for a step function.
 
@@ -95,9 +96,10 @@ def enable_mlflow(
 
     Args:
         _step: The decorated step class.
+        nested: Enable to have nested run during mlflow logging
 
     Returns:
-        The inner decorator which enhaces the input step class with mlflow
+        The inner decorator which enhances the input step class with mlflow
         tracking functionality
     """
 
@@ -112,7 +114,7 @@ def enable_mlflow(
                 "`step` decorated function or a BaseStep subclass."
             )
         source_fn = getattr(_step, STEP_INNER_FUNC_NAME)
-        new_entrypoint = mlflow_step_entrypoint()(source_fn)
+        new_entrypoint = mlflow_step_entrypoint(nested=nested)(source_fn)
         if _step._created_by_functional_api():
             # If the step was created by the functional API, the old entrypoint
             # was a static method -> make sure the new one is as well
@@ -127,7 +129,7 @@ def enable_mlflow(
         return inner_decorator(_step)
 
 
-def mlflow_step_entrypoint() -> Callable[[F], F]:
+def mlflow_step_entrypoint(nested=False) -> Callable[[F], F]:
     """Decorator for a step entrypoint to enable mlflow.
 
     Returns:
@@ -159,7 +161,11 @@ def mlflow_step_entrypoint() -> Callable[[F], F]:
                 raise RuntimeError("No active mlflow run configured.")
 
             with active_run:
-                return func(*args, **kwargs)
+                if nested:
+                    with mlflow.start_run(nested=True, run_name=func.__name__):
+                        return func(*args, **kwargs)
+                else:
+                    return func(*args, **kwargs)
 
         return cast(F, wrapper)
 
