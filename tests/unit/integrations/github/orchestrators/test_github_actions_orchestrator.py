@@ -11,99 +11,55 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
 from contextlib import ExitStack as does_not_raise
+from typing import ClassVar
 
 import pytest
 
-from zenml.container_registries import DefaultContainerRegistry
-from zenml.enums import StackComponentType
-from zenml.exceptions import StackValidationError
-from zenml.integrations.gcp.artifact_stores import GCPArtifactStore
-from zenml.integrations.github.orchestrators import GitHubActionsOrchestrator
-from zenml.metadata_stores import MySQLMetadataStore, SQLiteMetadataStore
-from zenml.stack import Stack
+from zenml.container_registries import BaseContainerRegistry
 
 
-def test_github_actions_orchestrator_attributes() -> None:
-    """Tests that the basic attributes of the GitHub actions orchestrator are
-    set correctly."""
-    orchestrator = GitHubActionsOrchestrator(name="")
-    assert orchestrator.TYPE == StackComponentType.ORCHESTRATOR
-    assert orchestrator.FLAVOR == "github"
+class StubContainerRegistry(BaseContainerRegistry):
+    """Class to test the abstract BaseContainerRegistry."""
+
+    FLAVOR: ClassVar[str] = "test"
 
 
-def test_github_actions_orchestrator_stack_validation() -> None:
-    """Tests the GitHub actions orchestrator stack validation."""
-    orchestrator = GitHubActionsOrchestrator(name="")
+def test_base_container_registry_removes_trailing_slashes():
+    """Tests that the base container registry removes trailing slashes from
+    the URI.
+    """
+    assert StubContainerRegistry(name="", uri="test/").uri == "test"
 
-    local_metadata_store = SQLiteMetadataStore(name="", uri="metadata.db")
-    remote_metadata_store = MySQLMetadataStore(
-        name="",
-        username="",
-        password="",
-        host="",
-        port=0,
-        database="",
+
+def test_base_container_registry_requires_authentication_if_secret_provided():
+    """Tests that the base container registry requires authentication if a
+    secret name is provided.
+    """
+    assert (
+        StubContainerRegistry(name="", uri="").requires_authentication is False
+    )
+    assert (
+        StubContainerRegistry(
+            name="", uri="", authentication_secret="secret"
+        ).requires_authentication
+        is True
     )
 
-    local_container_registry = DefaultContainerRegistry(
-        name="", uri="localhost:5000"
-    )
-    container_registry_that_requires_authentication = DefaultContainerRegistry(
-        name="", uri="localhost:5000", authentication_secret="some_secret"
-    )
-    remote_container_registry = DefaultContainerRegistry(
-        name="", uri="gcr.io/my-project"
-    )
 
-    remote_artifact_store = GCPArtifactStore(name="", path="gs://bucket")
+def test_base_container_registry_local_property():
+    """Tests the base container registry `is_local` property."""
+    assert StubContainerRegistry(name="", uri="localhost:8000").is_local is True
+    assert StubContainerRegistry(name="", uri="gcr.io").is_local is False
 
+
+def test_base_container_registry_prevents_push_if_uri_does_not_match(mocker):
+    """Tests the base container registry push only works if the URI matches."""
+    mocker.patch("zenml.utils.docker_utils.push_docker_image")
+
+    registry = StubContainerRegistry(name="", uri="some_uri")
     with does_not_raise():
-        # Stack with container registry and only remote components
-        Stack(
-            name="",
-            orchestrator=orchestrator,
-            metadata_store=remote_metadata_store,
-            artifact_store=remote_artifact_store,
-            container_registry=remote_container_registry,
-        ).validate()
+        registry.push_image("some_uri/image_name")
 
-    with pytest.raises(StackValidationError):
-        # Stack without container registry
-        Stack(
-            name="",
-            orchestrator=orchestrator,
-            metadata_store=remote_metadata_store,
-            artifact_store=remote_artifact_store,
-        ).validate()
-
-    with pytest.raises(StackValidationError):
-        # Stack with local container registry
-        Stack(
-            name="",
-            orchestrator=orchestrator,
-            metadata_store=remote_metadata_store,
-            artifact_store=remote_artifact_store,
-            container_registry=local_container_registry,
-        ).validate()
-
-    with pytest.raises(StackValidationError):
-        # Stack with container registry that requires authentication
-        Stack(
-            name="",
-            orchestrator=orchestrator,
-            metadata_store=remote_metadata_store,
-            artifact_store=remote_artifact_store,
-            container_registry=container_registry_that_requires_authentication,
-        ).validate()
-
-    with pytest.raises(StackValidationError):
-        # Stack with local components
-        Stack(
-            name="",
-            orchestrator=orchestrator,
-            metadata_store=local_metadata_store,
-            artifact_store=remote_artifact_store,
-            container_registry=remote_container_registry,
-        ).validate()
+    with pytest.raises(ValueError):
+        registry.push_image("wrong_uri/image_name")
