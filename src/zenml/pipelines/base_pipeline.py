@@ -594,3 +594,11 @@ class BasePipeline(metaclass=BasePipelineMeta):
                             parameter, step_name, previous_value, value
                         )
                     )
+
+    def get_runs(self):
+        """Get all past runs from the associated PipelineView"""
+        return Repository().get_pipeline(self).runs
+
+    def get_run(self, run_name: str):
+        """Get a specific past run from the associated PipelineView"""
+        return Repository().get_pipeline(self).get_run(run_name)

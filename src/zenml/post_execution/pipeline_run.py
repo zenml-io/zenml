@@ -14,19 +14,20 @@
 """Implementation of the post-execution pipeline run class."""
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
 from ml_metadata import proto
 
 import zenml.steps.base_step
 from zenml.enums import ExecutionStatus
-from zenml.logger import get_logger
+from zenml.logger import get_apidocs_link, get_logger
 from zenml.post_execution.step import StepView
 from zenml.runtime_configuration import RuntimeConfiguration
 from zenml.zen_stores.models.pipeline_models import PipelineRunWrapper
 
 if TYPE_CHECKING:
     from zenml.metadata_stores import BaseMetadataStore
+    from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
 
@@ -159,15 +160,25 @@ class PipelineRunView:
 
     def get_step(
         self,
-        step: Optional["BaseStep"] = None,
-        step_name: Optional[str] = "",
+        step: Optional[Union["BaseStep", Type["BaseStep"], str]] = None,
         **kwargs: Any,
     ) -> StepView:
         """Returns a step for the given name.
 
+        Use it in one of these ways:
+        ```python
+        # Get the step by name
+        pipeline_run_view.get_step("first_step")
+
+        # Get the step by supplying the original step class
+        pipeline_run_view.get_step(first_step)
+
+        # Get the step by supplying an instance of the original step class
+        pipeline_run_view.get_step(first_step())
+        ```
+
         Args:
             step: Class or class instance of the step
-            step_name: Name of the step.
             name: DEPRECATED: The name of the step to return.
 
         Returns:
@@ -177,29 +188,40 @@ class PipelineRunView:
             KeyError: If there is no step with the given name.
         """
         self._ensure_steps_fetched()
-        if step and step_name:
-            raise TypeError(
-                "'step' and 'step_name' both set for the"
-                "get_step() method. This is not supported. "
-                "Please set either the 'step' or the "
-                "'step_name' parameter."
-            )
-        elif step:
-            if isinstance(step, zenml.steps.base_step.BaseStepMeta):
-                step_name = step.__name__
-            elif isinstance(step, zenml.steps.base_step.BaseStep):
-                step_name = step.name
-        elif "name" in kwargs and not step_name:
+        if isinstance(step, str):
+            step_name = step
+        elif isinstance(step, zenml.steps.base_step.BaseStep):
+            step_name = step.name
+        elif isinstance(step, type) and issubclass(
+            step, zenml.steps.base_step.BaseStep
+        ):
+            step_name = step.__name__
+        elif "name" in kwargs and isinstance(kwargs.get("name"), str):
             logger.warning(
                 "Using 'name' to get a step from "
                 "'PipelineRunView.get_step()' is deprecated and "
                 "will be removed in the future. Instead please "
-                "use 'step' (a step class or instance) or "
-                "'step_name' to access a step from your past"
-                " pipeline runs."
+                "use 'step' to access a step from your past "
+                "pipeline runs. Learn more in our API docs: %s",
+                get_apidocs_link(
+                    "zenml.post_execution.pipeline_run."
+                    "PipelineRunView.get_step"
+                ),
             )
 
             step_name = kwargs.pop("name")
+        else:
+            raise RuntimeError(
+                "No step specified to get from "
+                "`PipelineRunView`. Please set a `step` "
+                "within the `get_step()` method. Learn more in"
+                " our API docs: %s",
+                get_apidocs_link(
+                    "zenml.post_execution"
+                    ".pipeline_run.PipelineRunView"
+                    ".get_step"
+                ),
+            )
         try:
             return self._steps[step_name]
         except KeyError:

@@ -18,7 +18,7 @@ import random
 from abc import ABCMeta
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
 from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
@@ -39,7 +39,7 @@ from zenml.exceptions import (
     InitializationException,
 )
 from zenml.io import fileio
-from zenml.logger import get_logger
+from zenml.logger import get_apidocs_link, get_logger
 from zenml.stack import Stack, StackComponent
 from zenml.utils import io_utils, yaml_utils
 from zenml.utils.analytics_utils import AnalyticsEvent, track
@@ -47,6 +47,7 @@ from zenml.utils.filesync_model import FileSyncModel
 
 if TYPE_CHECKING:
     from zenml.config.profile_config import ProfileConfiguration
+    from zenml.pipelines import BasePipeline
     from zenml.post_execution import PipelineView
     from zenml.zen_stores import BaseZenStore
     from zenml.zen_stores.models import Project, User, ZenStoreModel
@@ -1086,15 +1087,32 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
     @track(event=AnalyticsEvent.GET_PIPELINE)
     def get_pipeline(
         self,
-        pipeline: Optional["BasePipeline"] = None,
-        pipeline_name: Optional[str] = "",
+        pipeline: Optional[
+            Union["BasePipeline", Type["BasePipeline"], str]
+        ] = None,
         stack_name: Optional[str] = None,
+        **kwargs: Any,
     ) -> Optional["PipelineView"]:
         """Fetches a post-execution pipeline view.
 
+        Use it in one of these ways:
+        ```python
+        # Get the pipeline by name
+        Repository().get_pipeline("first_pipeline")
+
+        # Get the step by supplying the original pipeline class
+        Repository().get_step(first_pipeline)
+
+        # Get the step by supplying an instance of the original pipeline class
+        Repository().get_step(first_pipeline())
+        ```
+
+        If the specified pipeline does not (yet) exist within the repository,
+        `None` will be returned.
+
         Args:
             pipeline: Class or class instance of the pipeline
-            pipeline_name: Name of the pipeline.
+            pipeline_name: DEPRECATED: Name of the pipeline.
             stack_name: If specified, pipelines in the metadata store of the
                 given stack are returned. Otherwise, pipelines in the metadata
                 store of the currently active stack are returned.
@@ -1107,27 +1125,37 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
             RuntimeError: If no stack name is specified and no active stack name
                 is configured.
         """
-        if pipeline and pipeline_name:
-            raise TypeError(
-                "'pipeline' and 'pipeline_name' both set for the"
-                "get_pipeline() method. This is not supported. "
-                "Please set either the 'pipeline' or the "
-                "'pipeline_name' parameter."
+        if isinstance(pipeline, str):
+            pipeline_name = pipeline
+        elif isinstance(pipeline, zenml.pipelines.base_pipeline.BasePipeline):
+            pipeline_name = pipeline.name
+        elif isinstance(pipeline, type) and issubclass(
+            pipeline, zenml.pipelines.base_pipeline.BasePipeline
+        ):
+            pipeline_name = pipeline.__name__
+        elif "pipeline_name" in kwargs and isinstance(
+            kwargs.get("pipeline_name"), str
+        ):
+            logger.warning(
+                "Using 'pipeline_name' to get a pipeline from "
+                "'Repository().get_pipeline()' is deprecated and "
+                "will be removed in the future. Instead please "
+                "use 'pipeline' to access a pipeline in your Repository based "
+                "on the name of the pipeline or even the class or instance "
+                "of the pipeline. Learn more in our API docs: %s",
+                get_apidocs_link("zenml.repository.Repository.get_pipeline"),
             )
-        elif pipeline:
-            if isinstance(
-                pipeline, zenml.pipelines.base_pipeline.BasePipelineMeta
-            ):
-                pipeline_name = pipeline.__name__
-            elif isinstance(
-                pipeline, zenml.pipelines.base_pipeline.BasePipeline
-            ):
-                pipeline_name = pipeline.name
-        elif not pipeline_name:
-            raise TypeError(
-                "get_pipeline() missing a required argument:"
-                " 'pipeline' or 'pipeline_name' need to be set."
+
+            pipeline_name = kwargs.pop("pipeline_name")
+        else:
+            raise RuntimeError(
+                "No pipeline specified to get from "
+                "`Repository()`. Please set a `pipeline` "
+                "within the `get_pipeline()` method. Learn more "
+                "in our API docs: %s",
+                get_apidocs_link("zenml.repository.Repository" ".get_pipeline"),
             )
+
         stack_name = stack_name or self.active_stack_name
         if not stack_name:
             raise RuntimeError(
@@ -1135,6 +1163,7 @@ class Repository(BaseConfiguration, metaclass=RepositoryMetaClass):
                 "`zenml stack set STACK_NAME` to update the active stack."
             )
         metadata_store = self.get_stack(stack_name).metadata_store
+
         return metadata_store.get_pipeline(pipeline_name)
 
     @staticmethod
