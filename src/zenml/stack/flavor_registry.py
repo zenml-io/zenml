@@ -46,6 +46,7 @@ class FlavorRegistry:
             DefaultContainerRegistry,
             DockerHubContainerRegistry,
             GCPContainerRegistry,
+            GitHubContainerRegistry
             GitLabContainerRegistry,
         )
         from zenml.metadata_stores import (
