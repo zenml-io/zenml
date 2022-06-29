@@ -11,17 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Implementation of the GitHub Container Registry."""
+
 from typing import ClassVar
 
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
 )
-from zenml.integrations.github import GITHUB_CONTAINER_REGISTRY_FLAVOR
+from zenml.enums import ContainerRegistryFlavor
 
 
 class GitHubContainerRegistry(BaseContainerRegistry):
     """Class for GitHub Container Registry.
-
+    
     Attributes:
         automatic_token_authentication: If `True`, use automatic token
             authentication (https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow)
@@ -32,4 +34,4 @@ class GitHubContainerRegistry(BaseContainerRegistry):
     automatic_token_authentication: bool = False
 
     # Class Configuration
-    FLAVOR: ClassVar[str] = GITHUB_CONTAINER_REGISTRY_FLAVOR
+    FLAVOR: ClassVar[str] = ContainerRegistryFlavor.GITHUB

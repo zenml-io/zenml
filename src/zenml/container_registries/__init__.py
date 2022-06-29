@@ -40,6 +40,9 @@ from zenml.container_registries.dockerhub_container_registry import (
 from zenml.container_registries.gcp_container_registry import (
     GCPContainerRegistry,
 )
+from zenml.container_registries.github_container_registry import (
+    GitHubContainerRegistry,
+)
 from zenml.container_registries.gitlab_container_registry import (
     GitLabContainerRegistry,
 )
