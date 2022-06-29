@@ -22,6 +22,11 @@ from zenml.exceptions import SecretExistsError
 from zenml.integrations.azure import AZURE_SECRETS_MANAGER_FLAVOR
 from zenml.logger import get_logger
 from zenml.secret.base_secret import BaseSecretSchema
+from zenml.secret.schemas.azure_secret_schema import (
+    AZURE_SCHEMA_ADD_UNDERSCORE_MAPPING,
+    AZURE_SCHEMA_REMOVE_UNDERSCORE_MAPPING,
+    AzureSecretSchema,
+)
 from zenml.secret.secret_schema_class_registry import SecretSchemaClassRegistry
 from zenml.secrets_managers.base_secrets_manager import BaseSecretsManager
 
@@ -43,7 +48,18 @@ def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict[str, str]:
     Returns:
         A dictionary with the secret keys prepended with the group name
     """
-    return {f"{secret.name}-{k}": v for k, v in secret.content.items()}
+    if not isinstance(secret, AzureSecretSchema):
+        return {f"{secret.name}-{k}": v for k, v in secret.content.items()}
+
+    transformed_values = {}
+    for k, v in secret.content.items():
+        if k in AZURE_SCHEMA_REMOVE_UNDERSCORE_MAPPING:
+            transformed_values[
+                f"{secret.name}-{AZURE_SCHEMA_REMOVE_UNDERSCORE_MAPPING[k]}"
+            ] = v
+        else:
+            transformed_values[f"{secret.name}-{k}"] = v
+    return transformed_values
 
 
 def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
@@ -59,14 +75,17 @@ def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
     Raises:
         RuntimeError: If the group name is not found in the key name
     """
-    if combined_key_name.startswith(f"{group_name}-"):
-        return combined_key_name[len(f"{group_name}-") :]
-    else:
+    if not combined_key_name.startswith(f"{group_name}-"):
         raise RuntimeError(
             f"Key-name `{combined_key_name}` does not have the "
             f"prefix `{group_name}`. Key could not be "
             f"extracted."
         )
+
+    stripped_name = combined_key_name[len(f"{group_name}-") :]
+    if stripped_name in AZURE_SCHEMA_ADD_UNDERSCORE_MAPPING:
+        stripped_name = AZURE_SCHEMA_ADD_UNDERSCORE_MAPPING[stripped_name]
+    return stripped_name
 
 
 class AzureSecretsManager(BaseSecretsManager):

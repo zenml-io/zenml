@@ -60,9 +60,6 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
             )
             credentials = secret.content if secret else {}
 
-            # at this point convert the key names into key names
-            # using underscores.
-
             self._filesystem = adlfs.AzureBlobFileSystem(
                 **credentials,
                 anon=False,

@@ -19,20 +19,36 @@ from zenml.secret.base_secret import BaseSecretSchema
 
 AZURE_SECRET_SCHEMA_TYPE = "azure"
 
+AZURE_SCHEMA_REMOVE_UNDERSCORE_MAPPING = {
+    "account_name": "accountname",
+    "account_key": "accountkey",
+    "sas_token": "sastoken",
+    "connection_string": "connectionstring",
+    "client_id": "clientid",
+    "client_secret": "clientsecret",
+    "tenant_id": "tenantid",
+}
+
+AZURE_SCHEMA_ADD_UNDERSCORE_MAPPING = {
+    "accountname": "account_name",
+    "accountkey": "account_key",
+    "sastoken": "sas_token",
+    "connectionstring": "connection_string",
+    "clientid": "client_id",
+    "clientsecret": "client_secret",
+    "tenantid": "tenant_id",
+}
+
 
 class AzureSecretSchema(BaseSecretSchema):
     """Azure Authentication Secret Schema definition."""
 
     TYPE: ClassVar[str] = AZURE_SECRET_SCHEMA_TYPE
 
-    # Azure key vault store doesn't permit the use of underscores
-    # for key names, so we use them without here but reconstitute
-    # them where they are used elsewhere for authentication.
-    # (e.g. in the artifact store)
-    accountname: Optional[str] = None
-    accountkey: Optional[str] = None
-    sastoken: Optional[str] = None
-    connectionstring: Optional[str] = None
-    clientid: Optional[str] = None
-    clientsecret: Optional[str] = None
-    tenantid: Optional[str] = None
+    account_name: Optional[str] = None
+    account_key: Optional[str] = None
+    sas_token: Optional[str] = None
+    connection_string: Optional[str] = None
+    client_id: Optional[str] = None
+    client_secret: Optional[str] = None
+    tenant_id: Optional[str] = None
