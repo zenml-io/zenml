@@ -157,14 +157,16 @@ def mlflow_step_entrypoint(nested=False) -> Callable[[F], F]:
                 raise get_missing_mlflow_experiment_tracker_error()
 
             active_run = experiment_tracker.active_run
+
             if not active_run:
                 raise RuntimeError("No active mlflow run configured.")
-
-            with active_run:
-                if nested:
-                    with mlflow.start_run(nested=True, run_name=func.__name__):
+            if nested:
+                active_nested_run = experiment_tracker.active_nested_run
+                with active_run:
+                    with active_nested_run:
                         return func(*args, **kwargs)
-                else:
+            else:
+                with active_run:
                     return func(*args, **kwargs)
 
         return cast(F, wrapper)
