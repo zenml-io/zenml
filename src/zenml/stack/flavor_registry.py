@@ -64,6 +64,7 @@ class FlavorRegistry:
             AzureContainerRegistry,
             DockerHubContainerRegistry,
             GCPContainerRegistry,
+            GitHubContainerRegistry
             GitLabContainerRegistry,
             LocalSecretsManager,
         ]
