@@ -18,9 +18,9 @@ from zenml.enums import StackComponentType
 from zenml.metadata_stores import BaseMetadataStore
 from zenml.orchestrators import BaseOrchestrator
 from zenml.stack import Stack, StackComponent, StackValidator
-
+from uuid import uuid4
 MOCK_FLAVOR = "mock_flavor"
-
+MOCK_UUID = uuid4()
 
 @pytest.fixture
 def stack_with_mock_components(mocker):
@@ -29,16 +29,19 @@ def stack_with_mock_components(mocker):
         spec=BaseOrchestrator,
         type=StackComponentType.ORCHESTRATOR,
         flavor=MOCK_FLAVOR,
+        uuid=MOCK_UUID,
     )
     metadata_store = mocker.Mock(
         spec=BaseMetadataStore,
         type=StackComponentType.METADATA_STORE,
         flavor=MOCK_FLAVOR,
+        uuid=MOCK_UUID,
     )
     artifact_store = mocker.Mock(
         spec=BaseArtifactStore,
         type=StackComponentType.ARTIFACT_STORE,
         flavor=MOCK_FLAVOR,
+        uuid=MOCK_UUID,
     )
 
     return Stack(
