@@ -127,7 +127,7 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
         reference_dataset: pd.DataFrame,
         comparison_dataset: pd.DataFrame,
         config: EvidentlyProfileConfig,
-        ignored_columns=List[str]=None,
+        ignored_columns: List[str] = None,
     ) -> Output(  # type:ignore[valid-type]
         profile=dict, dashboard=str
     ):
@@ -147,6 +147,28 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
               generated for the data drift
         """
         if ignored_columns is not None:
+            if not (isinstance(ignored_columns, list)):
+                raise ValueError(
+                    f"Expects a list of features but got type {type(ignored_columns)}"
+                )
+
+            if len(ignored_columns) == 0:
+                raise ValueError(
+                    "Expects a list of features or None but got empty list"
+                )
+
+            if sorted(set(ignored_columns)) != sorted(ignored_columns):
+                raise ValueError("Duplicate features found")
+
+            if not (
+                set(ignored_columns).issubset(set(reference_dataset.columns))
+            ) or not (
+                set(ignored_columns).issubset(set(comparison_dataset.columns))
+            ):
+                raise ValueError(
+                    "Feature not found in reference/comparison datasets"
+                )
+
             reference_dataset = reference_dataset.drop(
                 labels=ignored_columns, axis=1
             )
