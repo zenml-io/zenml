@@ -69,7 +69,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
                 load_from_json_zenml_artifact,
             )
 
-            self.model = load_from_json_zenml_artifact(self.model_dir)
+            self.model = load_from_json_zenml_artifact(self.model_uri)
         except Exception as e:
             logger.error("Failed to load model: {}".format(e))
             return False
@@ -104,17 +104,16 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
 
 @click.command()
 @click.option(
-    "--model_name",
-    default=DEFAULT_MODEL_NAME,
-    required=True,
+    "--model_uri",
+    default=DEFAULT_LOCAL_MODEL_DIR,
     type=click.Path(
         exists=True, file_okay=False, dir_okay=True, path_type=Path
     ),
     help="The directory where the model is stored locally.",
 )
 @click.option(
-    "--model_dir",
-    default=DEFAULT_LOCAL_MODEL_DIR,
+    "--model_name",
+    default=DEFAULT_MODEL_NAME,
     required=True,
     type=click.STRING,
     help="The name of the model to deploy.",

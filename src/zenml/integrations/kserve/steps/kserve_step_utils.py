@@ -318,7 +318,7 @@ def save_to_json_zenml_artifact(
     ) as f:
         json.dump(data, f)
         # Copy it into artifact store
-        fileio.copy(f.name, os.path.join(served_model_uri, ARTIFACT_FILE))
+    fileio.copy(f.name, os.path.join(served_model_uri, ARTIFACT_FILE))
 
 
 def load_from_json_zenml_artifact(model_file_dir: str) -> Any:
