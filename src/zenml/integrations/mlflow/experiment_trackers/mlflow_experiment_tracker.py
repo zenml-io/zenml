@@ -277,11 +277,10 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         run_id = runs[0].info.run_id if runs else None
 
         current_active_run = mlflow.active_run()
-        if not(current_active_run and current_active_run.info.run_id == run_id):
+        if not (current_active_run and current_active_run.info.run_id == run_id):
             current_active_run = None
-                    
-        return current_active_run, experiment_id, run_id
 
+        return current_active_run, experiment_id, run_id
 
     @property
     def active_run(self) -> Optional[mlflow.ActiveRun]:
