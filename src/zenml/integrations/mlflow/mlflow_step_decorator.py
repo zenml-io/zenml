@@ -36,9 +36,7 @@ S = TypeVar("S", bound=Type[BaseStep])
 
 
 @overload
-def enable_mlflow(
-        _step: S,
-) -> S:
+def enable_mlflow(_step: S, ) -> S:
     ...
 
 
