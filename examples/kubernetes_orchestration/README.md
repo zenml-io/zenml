@@ -161,7 +161,7 @@ in your terminal:
 
 ![zenml stack up output](assets/zenml_stack_up_output.png)
 
-## :computer: Run Pipeline Locally
+## :computer: Run Pipeline
 Now that our stack is set up, all of our ML code will automatically be executed
 on the Kubernetes cluster in the cloud. Let's run the example pipeline:
 
@@ -226,6 +226,7 @@ How to do this depends on which cloud provider you were using to run this
 example.
 
 If you have used our Terraform script to spin up the resources, simply run
-```
+
+```bash
 terraform destroy
 ```
