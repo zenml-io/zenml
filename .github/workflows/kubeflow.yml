@@ -24,6 +24,22 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      # Workaround from FuseML (https://github.com/fuseml/fuseml/blob/main/.github/workflows/ci.yml)
+      # as the TF images are too large for the GH action runner disk
+      - name: Free disk space
+        shell: bash
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          echo "Available storage:"
+          df -h
+          echo
+          echo -n "  Removing: .NET (frees ~22GB)"
+          sudo rm -rf /usr/share/dotnet
+          echo "... done"
+          echo
+          echo "Available storage:"
+          df -h
+
       - name: Install Linux System Dependencies
         if: runner.os=='Linux'
         run: sudo apt install graphviz
