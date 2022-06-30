@@ -56,5 +56,5 @@ def custom_predict(model: Any, request: Dict) -> Dict:
             raise TypeError(f"The input instance is not a numpy array. {e}")
         processed_tensor = pre_process(tensor)
         prediction = softmax(model(processed_tensor))
-        inputs.append(prediction)
+        inputs.append(prediction.tolist())
     return {"predictions": inputs}
