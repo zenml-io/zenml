@@ -877,6 +877,7 @@ sys
 syspath
 tensorboard
 tensorflow
+terraform
 tf
 tfx
 thinknum
