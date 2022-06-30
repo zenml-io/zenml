@@ -46,6 +46,7 @@ MLFLOW_TRACKING_PASSWORD = os.getenv("TEST_MLFLOW_TRACKING_PASSWORD")
 SLACK_TOKEN = os.getenv("TEST_SLACK_TOKEN")
 SLACK_CHANNEL_ID = os.getenv("TEST_SLACK_CHANNEL_ID")
 
+
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
     for item in os.listdir(example_dir):
         if item == ".zen":
@@ -111,22 +112,23 @@ EXAMPLES = [
                 tracking_uri=MLFLOW_TRACKING_URI,
                 tracking_username="testusr",
                 tracking_password="testpwd",
+                tracking_insecure_tls=True
             )
         ],
         validation_function=mlflow_tracking_example_validation,
     ),
-    ExampleConfiguration(
-        name="slack_alert",
-        pipeline_path="pipelines/post_pipeline.py",
-        pipeline_name="post_pipeline",
-        runs_on_windows=True,
-        required_stack_components=[
-            SlackAlerter(
-                name="test_slack_alerter",
-                slack_token=SLACK_TOKEN,
-                default_slack_channel_id=SLACK_CHANNEL_ID)
-        ],
-        step_count=5),
+    # ExampleConfiguration(
+    #     name="slack_alert",
+    #     pipeline_path="pipelines/post_pipeline.py",
+    #     pipeline_name="post_pipeline",
+    #     runs_on_windows=True,
+    #     required_stack_components=[
+    #         SlackAlerter(
+    #             name="test_slack_alerter",
+    #             slack_token=SLACK_TOKEN,
+    #             default_slack_channel_id=SLACK_CHANNEL_ID)
+    #     ],
+    #     step_count=5),
     # ExampleConfiguration(
     #     name="lightgbm",
     #     pipeline_path="pipelines/lgbm_pipeline/lgbm_pipeline.py",
@@ -165,11 +167,11 @@ EXAMPLES = [
     [pytest.param(example, id=example.name) for example in EXAMPLES],
 )
 def test_run_example(
-    example_configuration: ExampleConfiguration,
-    tmp_path_factory: pytest.TempPathFactory,
-    repo_fixture_name: str,
-    request: pytest.FixtureRequest,
-    virtualenv: str,
+        example_configuration: ExampleConfiguration,
+        tmp_path_factory: pytest.TempPathFactory,
+        repo_fixture_name: str,
+        request: pytest.FixtureRequest,
+        virtualenv: str,
 ) -> None:
     """Runs the given examples and validates they ran correctly.
 
@@ -185,8 +187,8 @@ def test_run_example(
                     empty string.
     """
     if (
-        not example_configuration.runs_on_windows
-        and platform.system() == "Windows"
+            not example_configuration.runs_on_windows
+            and platform.system() == "Windows"
     ):
         logging.info(
             f"Skipping example {example_configuration.name} on windows."
