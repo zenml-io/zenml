@@ -62,9 +62,7 @@ def prepare_data_for_saving(secret: BaseSecretSchema) -> Dict[str, str]:
     return transformed_values
 
 
-def transform_saved_secret_data(
-    combined_key_name: str, group_name: str
-) -> str:
+def transform_saved_secret_data(combined_key_name: str, group_name: str) -> str:
     """Removes the secret group name from the secret key.
 
     Args:
