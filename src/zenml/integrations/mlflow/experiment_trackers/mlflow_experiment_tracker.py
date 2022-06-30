@@ -14,7 +14,7 @@
 """Implementation of the MLflow experiment tracker for ZenML."""
 
 import os
-from typing import Any, ClassVar, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional, Tuple
 
 import mlflow  # type: ignore[import]
 from mlflow.entities import Experiment  # type: ignore[import]
@@ -251,6 +251,38 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         mlflow.set_experiment(experiment_name=step_env.pipeline_name)
         return mlflow.get_experiment_by_name(step_env.pipeline_name)
 
+    def _find_active_run(
+        self
+    ) -> Tuple[Optional[mlflow.ActiveRun], Optional[str], Optional[str]]:
+        """Find the currently active MLflow run.
+
+        Returns:
+            The active MLflow run, the experiment id and the run id
+        """
+        step_env = Environment().step_environment
+
+        if not self.active_experiment or not step_env:
+            return None, None, None
+
+        experiment_id = self.active_experiment.experiment_id
+
+        # TODO [ENG-458]: find a solution to avoid race-conditions while
+        #  creating the same MLflow run from parallel steps
+        runs = mlflow.search_runs(
+            experiment_ids=[experiment_id],
+            filter_string=f'tags.mlflow.runName = "{step_env.pipeline_run_id}"',
+            output_format="list",
+        )
+
+        run_id = runs[0].info.run_id if runs else None
+
+        current_active_run = mlflow.active_run()
+        if not(current_active_run and current_active_run.info.run_id == run_id):
+            current_active_run = None
+                    
+        return current_active_run, experiment_id, run_id
+
+
     @property
     def active_run(self) -> Optional[mlflow.ActiveRun]:
         """Returns the currently active MLflow run.
@@ -259,59 +291,26 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             The active MLflow run.
         """
         step_env = Environment().step_environment
-
-        if not self.active_experiment or not step_env:
-            return None
-
-        experiment_id = self.active_experiment.experiment_id
-
-        # TODO [ENG-458]: find a solution to avoid race-conditions while
-        #  creating the same MLflow run from parallel steps
-        runs = mlflow.search_runs(
-            experiment_ids=[experiment_id],
-            filter_string=f'tags.mlflow.runName = "{step_env.pipeline_run_id}"',
-            output_format="list",
-        )
-
-        run_id = runs[0].info.run_id if runs else None
-
-        current_active_run = mlflow.active_run()
-        if current_active_run and current_active_run.info.run_id == run_id:
+        current_active_run, experiment_id, run_id = self._find_active_run()
+        if current_active_run:
             return current_active_run
-
-        return mlflow.start_run(
-            run_id=run_id,
-            run_name=step_env.pipeline_run_id,
-            experiment_id=experiment_id,
-        )
+        else:
+            return mlflow.start_run(
+                run_id=run_id,
+                run_name=step_env.pipeline_run_id,
+                experiment_id=experiment_id,
+            )
 
     @property
     def active_nested_run(self) -> Optional[mlflow.ActiveRun]:
-        """Returns the currently active MLflow run.
+        """Returns a nested run in the currently active MLflow run.
 
         Returns:
-            The active MLflow run.
+            The nested MLflow run.
         """
         step_env = Environment().step_environment
-
-        if not self.active_experiment or not step_env:
-            return None
-
-        experiment_id = self.active_experiment.experiment_id
-
-        # TODO [ENG-458]: find a solution to avoid race-conditions while
-        #  creating the same MLflow run from parallel steps
-        runs = mlflow.search_runs(
-            experiment_ids=[experiment_id],
-            filter_string=f'tags.mlflow.runName = "{step_env.pipeline_run_id}"',
-            output_format="list",
-        )
-
-        run_id = runs[0].info.run_id if runs else None
-
-        current_active_run = mlflow.active_run()
-        if current_active_run and current_active_run.info.run_id == run_id:
-
+        current_active_run, _, _ = self._find_active_run()
+        if current_active_run:
             return mlflow.start_run(
                 run_name=step_env.step_name,
                 nested=True
