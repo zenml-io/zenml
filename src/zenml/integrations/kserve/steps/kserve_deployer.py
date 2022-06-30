@@ -392,7 +392,7 @@ def kserve_custom_model_deployer_step(
     entrypoint_command = [
         "python",
         "-m",
-        "zenml.integrations.kserve.custom_model_deployer",
+        "zenml.integrations.kserve.custom_deployer.zenml_custom_model",
         "--model_name",
         config.service_config.model_name,
         "--predict_func",
@@ -422,6 +422,7 @@ def kserve_custom_model_deployer_step(
         model_uri=model.uri,
         output_artifact_uri=context.get_output_artifact_uri(),
         config=config,
+        context=context,
     )
 
     # Prepare container config for custom model deployment

@@ -22,6 +22,7 @@ from model_archiver.model_packaging import package_model
 from model_archiver.model_packaging_utils import ModelExportUtils
 from pydantic import BaseModel
 
+from zenml.exceptions import DoesNotExistException
 from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentConfig,
 )
@@ -29,7 +30,7 @@ from zenml.integrations.kserve.steps.kserve_deployer import (
     KServeDeployerStepConfig,
 )
 from zenml.io import fileio
-from zenml.repository import Repository
+from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils, source_utils
 
 ARTIFACT_FILE = "artifact.json"
@@ -253,7 +254,10 @@ def generate_model_deployer_config(
 
 
 def prepare_custom_service_config(
-    model_uri: str, output_artifact_uri: str, config: KServeDeployerStepConfig
+    model_uri: str,
+    output_artifact_uri: str,
+    config: KServeDeployerStepConfig,
+    context: StepContext,
 ) -> KServeDeploymentConfig:
     """Prepare the model files for model serving.
 
@@ -265,24 +269,30 @@ def prepare_custom_service_config(
         model_uri: the URI of the model artifact being served
         output_artifact_uri: the URI of the output artifact
         config: the KServe deployer step config
+        context: the step context
 
     Returns:
         The URL to the model is ready for serving.
 
     Raises:
         RuntimeError: if the model files cannot be prepared.
+        DoesNotExistException: if the active stack is not available.
     """
     if config.custom_deploy_paramters is None:
         raise RuntimeError("No custom deploy parameters provided")
 
     served_model_uri = os.path.join(output_artifact_uri, "kserve")
     fileio.makedirs(served_model_uri)
-
+    io_utils.copy_dir(model_uri, served_model_uri)
     # TODO [ENG-773]: determine how to formalize how models are organized into
     #   folders and sub-folders depending on the model type/format and the
     #   KServe protocol used to serve the model.
-    stack = Repository().active_stack
-    served_model_uri = model_uri
+    if not context.stack:
+        raise DoesNotExistException(
+            "No active stack is available. "
+            "Please make sure that you have registered and set a stack."
+        )
+    stack = context.stack
     artifact = stack.metadata_store.store.get_artifacts_by_uri(model_uri)
     save_to_json_zenml_artifact(served_model_uri, artifact[0])
 
@@ -303,8 +313,12 @@ def save_to_json_zenml_artifact(
     data = {}
     data["datatype"] = artifact.properties["datatype"].string_value
     data["materializer"] = artifact.properties["materializer"].string_value
-    with fileio.open(os.path.join(served_model_uri, ARTIFACT_FILE), "rb") as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".json", delete=False
+    ) as f:
         json.dump(data, f)
+        # Copy it into artifact store
+        fileio.copy(f.name, os.path.join(served_model_uri, ARTIFACT_FILE))
 
 
 def load_from_json_zenml_artifact(model_file_dir: str) -> Any:
@@ -316,7 +330,7 @@ def load_from_json_zenml_artifact(model_file_dir: str) -> Any:
     Returns:
         The model
     """
-    with fileio.open(os.path.join(model_file_dir, ARTIFACT_FILE), "wb") as f:
+    with fileio.open(os.path.join(model_file_dir, ARTIFACT_FILE), "r") as f:
         artifact = json.load(f)
     model_artifact = Artifact()
     model_artifact.uri = model_file_dir

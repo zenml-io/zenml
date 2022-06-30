@@ -230,7 +230,7 @@ def build_docker_image(
             in the environment of the current python processed will be
             installed in the docker image.
         base_image: The image to use as base for the docker image.
-        global_configuration: If `True`, the global configuration will be
+        global_configuration: If `True`, the global configuration will be used
     """
     config_path = os.path.join(build_context_path, CONTAINER_ZENML_CONFIG_DIR)
     try:
@@ -298,7 +298,8 @@ def build_docker_image(
         _process_stream(output_stream)
     finally:
         # Clean up the temporary build files
-        fileio.rmtree(config_path)
+        if global_configuration:
+            fileio.rmtree(config_path)
 
     logger.info("Finished building docker image.")
 
