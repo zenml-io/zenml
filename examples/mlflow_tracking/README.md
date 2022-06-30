@@ -120,6 +120,12 @@ Now we're ready. Execute:
 python run.py
 ```
 
+Alternatively, if you want to run based on the config.yaml you can run with:
+
+```bash
+zenml pipeline run pipelines/training_pipeline/training_pipeline.py -c config.yaml
+```
+
 ### 🔮 See results
 Now we just need to start the mlflow UI to have a look at our two pipeline runs.
 To do this we need to run:
