@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 
 ARTIFACT_FILE = "artifact.json"
 DEFAULT_MODEL_NAME = "model"
-DEFAULT_LOCAL_MODEL_DIR = "/tmp/model"
+DEFAULT_LOCAL_MODEL_DIR = "/mnt/models"
 
 
 class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
@@ -64,9 +64,12 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
             True if the model was loaded successfully, False otherwise.
 
         """
-        model_file_dir = kserve.Storage.download(self.model_dir, self.name)
         try:
-            self.model = self._load_model_with_zenml_artifact(model_file_dir)
+            from zenml.integrations.kserve.steps.kserve_step_utils import (
+                load_from_json_zenml_artifact,
+            )
+
+            self.model = load_from_json_zenml_artifact(self.model_dir)
         except Exception as e:
             logger.error("Failed to load model: {}".format(e))
             return False
@@ -102,7 +105,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
 @click.command()
 @click.option(
     "--model_name",
-    default=DEFAULT_LOCAL_MODEL_DIR,
+    default=DEFAULT_MODEL_NAME,
     required=True,
     type=click.Path(
         exists=True, file_okay=False, dir_okay=True, path_type=Path
@@ -111,7 +114,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
 )
 @click.option(
     "--model_dir",
-    default=DEFAULT_MODEL_NAME,
+    default=DEFAULT_LOCAL_MODEL_DIR,
     required=True,
     type=click.STRING,
     help="The name of the model to deploy.",
