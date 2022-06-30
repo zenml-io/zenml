@@ -34,7 +34,7 @@ from steps.pytorch_steps import (
     pytorch_inference_processor,
     pytorch_trainer,
 )
-from steps.pytorch_steps.pytorch_model_deployer import pytorch_model_deployer
+from steps.pytorch_steps.pytorch_model_deployer import custom_model_deployer
 
 from zenml.integrations.kserve.model_deployers import KServeModelDeployer
 from zenml.integrations.kserve.services import KServeDeploymentService
@@ -49,7 +49,7 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
     "--config",
     "-c",
     type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
-    default="deploy_and_predict",
+    default="deploy",
     help="Optionally you can choose to only run the deployment "
     "pipeline to train and deploy a model (`deploy`), or to "
     "only run a prediction against the deployed model "
@@ -122,7 +122,7 @@ def main(
                     min_accuracy=min_accuracy,
                 )
             ),
-            deployer=pytorch_model_deployer,
+            deployer=custom_model_deployer,
         ).run()
 
     img_url: str = "https://raw.githubusercontent.com/kserve/kserve/master/docs/samples/v1beta1/torchserve/v1/imgconv/1.png"

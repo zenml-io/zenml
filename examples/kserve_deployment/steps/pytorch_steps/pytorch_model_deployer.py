@@ -16,12 +16,12 @@ from zenml.integrations.kserve.services import KServeDeploymentConfig
 from zenml.integrations.kserve.steps import (
     CustomDeployParamters,
     KServeDeployerStepConfig,
-    TorchServeParamters,
-    kserve_model_deployer_step,
+    kserve_custom_model_deployer_step,
 )
 
 MODEL_NAME = "mnist"
 
+"""
 pytorch_model_deployer = kserve_model_deployer_step(
     config=KServeDeployerStepConfig(
         service_config=KServeDeploymentConfig(
@@ -37,8 +37,8 @@ pytorch_model_deployer = kserve_model_deployer_step(
         ),
     )
 )
-
-custom_model_deployer = kserve_model_deployer_step(
+"""
+custom_model_deployer = kserve_custom_model_deployer_step(
     config=KServeDeployerStepConfig(
         service_config=KServeDeploymentConfig(
             model_name=MODEL_NAME,

@@ -28,7 +28,6 @@ from zenml.integrations.kserve.services.kserve_deployment import (
     KServeDeploymentService,
 )
 from zenml.logger import get_logger
-from zenml.repository import Repository
 from zenml.steps import (
     STEP_ENVIRONMENT_NAME,
     BaseStepConfig,
@@ -196,7 +195,7 @@ class CustomDeployParamters(BaseModel):
         if not v:
             raise ValueError("Predict function path is required.")
         try:
-            import_class_by_path(os.path.join(get_source_root_path(), v))
+            import_class_by_path(v)
         except AttributeError:
             raise ValueError("Predict function can't be found.")
         return v
@@ -406,7 +405,7 @@ def kserve_custom_model_deployer_step(
 
     # more information about stack ..
     custom_docker_image_name = model_deployer.prepare_custom_deployment_image(
-        Repository().active_stack,
+        context.stack,
         pipeline_name,
         step_name,
         pipeline_requirements,
