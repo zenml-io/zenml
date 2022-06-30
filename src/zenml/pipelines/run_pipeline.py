@@ -127,7 +127,7 @@ def run_pipeline(python_file: str, config_path: str) -> None:
                 }
             else:
                 raise PipelineConfigurationError(
-                    f"Only `str` and `dict` values are allowed for "
+                    f"Only `dict` values are allowed for "
                     f"'materializers' attribute of a step configuration. "
                     f"You tried to pass in `{materializers_config}` (type: "
                     f"`{type(materializers_config).__name__}`)."

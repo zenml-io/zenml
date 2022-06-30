@@ -60,7 +60,7 @@ Alternatively, if you want to run based on the config.yaml you can run with:
 zenml pipeline run pipelines/neural_prophet_pipeline/neural_prophet_pipeline.py -c config.yaml
 ```
 
-After running the pipeline, you may inspect the accompanying notebook to visalize results:
+After running the pipeline, you may inspect the accompanying notebook to visualize results:
 
 ```shell
 jupyter notebook
