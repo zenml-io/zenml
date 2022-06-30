@@ -25,6 +25,7 @@ from zenml.annotators.base_annotator import BaseAnnotator
 from zenml.exceptions import ProvisioningError
 from zenml.integrations.label_studio import LABEL_STUDIO_ANNOTATOR_FLAVOR
 from zenml.integrations.label_studio.steps.label_studio_export_step import (
+    LabelStudioDatasetRegistrationConfig,
     LabelStudioDatasetSyncConfig,
 )
 from zenml.io import fileio
@@ -301,7 +302,7 @@ class LabelStudioAnnotator(BaseAnnotator):
     def register_dataset_for_annotation(
         self,
         # data: List[str],
-        config: LabelStudioDatasetSyncConfig,
+        config: LabelStudioDatasetRegistrationConfig,
     ) -> int:
         """Registers a dataset for annotation."""
         ls = self._get_client()
@@ -318,6 +319,7 @@ class LabelStudioAnnotator(BaseAnnotator):
 
     def sync_external_storage(
         self,
+        uri: str,
         config: LabelStudioDatasetSyncConfig,
         dataset: Project,
     ) -> None:
@@ -328,7 +330,7 @@ class LabelStudioAnnotator(BaseAnnotator):
                     "Authentication credentials for Azure aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
                 )
             storage = dataset.connect_azure_import_storage(
-                container=config.storage_name,
+                container=uri,
                 prefix=config.prefix,
                 regex_filter=config.regex_filter,
                 use_blob_urls=config.use_blob_urls,
@@ -344,8 +346,8 @@ class LabelStudioAnnotator(BaseAnnotator):
                 logger.warn(
                     "Authentication credentials for Google Cloud Storage aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
                 )
-            storage = dataset.connect_azure_import_storage(
-                bucket=config.storage_name,
+            storage = dataset.connect_google_import_storage(
+                bucket=uri,
                 prefix=config.prefix,
                 regex_filter=config.regex_filter,
                 use_blob_urls=config.use_blob_urls,
@@ -355,7 +357,7 @@ class LabelStudioAnnotator(BaseAnnotator):
                 description=config.description,
                 google_application_credentials=config.google_application_credentials,
             )
-        elif config.storage_type == "aws":
+        elif config.storage_type == "s3":
             if (
                 not config.aws_access_key_id
                 or not config.aws_secret_access_key
@@ -364,8 +366,8 @@ class LabelStudioAnnotator(BaseAnnotator):
                 logger.warn(
                     "Authentication credentials for AWS aren't fully provided. Please update the storage synchronization settings in the Label Studio web UI as per your needs."
                 )
-            storage = dataset.connect_azure_import_storage(
-                bucket=config.storage_name,
+            storage = dataset.connect_s3_import_storage(
+                bucket=uri,
                 prefix=config.prefix,
                 regex_filter=config.regex_filter,
                 use_blob_urls=config.use_blob_urls,

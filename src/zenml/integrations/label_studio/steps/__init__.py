@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 from zenml.integrations.label_studio.steps.label_studio_export_step import (
     IMAGE_CLASSIFICATION_LABEL_CONFIG,
+    LabelStudioDatasetRegistrationConfig,
     LabelStudioDatasetSyncConfig,
     get_labeled_data,
     get_or_create_dataset,

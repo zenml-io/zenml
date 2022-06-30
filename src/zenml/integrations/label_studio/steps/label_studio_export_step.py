@@ -12,8 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
-from typing import List, Optional
+import os
+from typing import List, Optional, Tuple
 
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
@@ -37,18 +37,20 @@ def generate_image_classification_label_config(labels: List[str]) -> str:
 
 
 IMAGE_CLASSIFICATION_LABEL_CONFIG = generate_image_classification_label_config(
-    ["Mr Blupus", "Other"]
+    ["cat", "dog"]
 )
 
 
-class LabelStudioDatasetSyncConfig(BaseStepConfig):
+class LabelStudioDatasetRegistrationConfig(BaseStepConfig):
     label_config: str
     dataset_name: str
+
+
+class LabelStudioDatasetSyncConfig(BaseStepConfig):
     storage_type: str
-    storage_name: str
 
     prefix: Optional[str] = None
-    regex_filter: Optional[str] = "*.*"
+    regex_filter: Optional[str] = ".*"
     use_blob_urls: Optional[bool] = True
     presign: Optional[bool] = True
     presign_ttl: Optional[int] = 1
@@ -67,7 +69,7 @@ class LabelStudioDatasetSyncConfig(BaseStepConfig):
 
 @step
 def get_or_create_dataset(
-    config: LabelStudioDatasetSyncConfig,
+    config: LabelStudioDatasetRegistrationConfig,
     context: StepContext,
 ) -> int:
     """Gets preexisting dataset or creates a new one."""
@@ -83,9 +85,8 @@ def get_or_create_dataset(
         and annotator._connection_available()
     ):
         registered_dataset = annotator.register_dataset_for_annotation(config)
-    elif annotator and annotator._connection_available():
-        registered_dataset = preexisting_dataset_list[0]
-        annotator.sync_external_storage(config, registered_dataset)
+    elif preexisting_dataset_list:
+        return preexisting_dataset_list[0].get_params()["id"]
     else:
         raise StackComponentInterfaceError("No active annotator.")
 
@@ -95,6 +96,7 @@ def get_or_create_dataset(
 @step
 def get_labeled_data(dataset_id: int, context: StepContext) -> List:
     """Gets labeled data from the dataset."""
+    # TODO: have this check for new data *since the last time this step ran*
     annotator = context.stack.annotator
     if annotator and annotator._connection_available():
         dataset = annotator.get_dataset(dataset_id)
@@ -103,7 +105,14 @@ def get_labeled_data(dataset_id: int, context: StepContext) -> List:
         raise StackComponentInterfaceError("No active annotator.")
 
 
-@step
+def get_azure_credentials() -> Tuple[str]:
+    # TODO: add other ways to get credentials
+    account_key = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
+    account_name = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
+    return account_name, account_key
+
+
+@step(enable_cache=False)
 def sync_new_data_to_label_studio(
     uri: str,
     dataset_id: int,
@@ -113,8 +122,16 @@ def sync_new_data_to_label_studio(
     """Syncs new data to Label Studio."""
     annotator = context.stack.annotator
     dataset = annotator.get_dataset(dataset_id)
+    artifact_store = context.stack.artifact_store
+    if uri.startswith(artifact_store.path):
+        if config.storage_type == "azure":
+            account_name, account_key = get_azure_credentials()
+            config.azure_account_name = account_name
+            config.azure_account_key = account_key
+
     if annotator and annotator._connection_available():
         annotator.sync_external_storage(
+            uri=uri,
             config=config,
             dataset=dataset,
         )
