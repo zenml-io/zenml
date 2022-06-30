@@ -14,6 +14,7 @@
 
 import os
 from typing import List, Optional, Tuple
+from urllib.parse import urlparse
 
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
@@ -128,10 +129,11 @@ def sync_new_data_to_label_studio(
             account_name, account_key = get_azure_credentials()
             config.azure_account_name = account_name
             config.azure_account_key = account_key
+            base_uri = urlparse(uri).netloc
 
     if annotator and annotator._connection_available():
         annotator.sync_external_storage(
-            uri=uri,
+            uri=base_uri,
             config=config,
             dataset=dataset,
         )
