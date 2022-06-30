@@ -117,6 +117,22 @@ EXAMPLES = [
         step_count=3,
     ),
     ExampleConfiguration(
+        name="huggingface",
+        pipeline_path="pipelines/sequence_classifier_pipeline/"
+                      "sequence_classifier_pipeline.py",
+        pipeline_name="seq_classifier_train_eval_pipeline",
+        runs_on_windows=True,
+        step_count=5,
+    ),
+    ExampleConfiguration(
+        name="huggingface",
+        pipeline_path="pipelines/token_classifier_pipeline/"
+                      "token_classifier_pipeline.py",
+        pipeline_name="token_classifier_train_eval_pipeline",
+        runs_on_windows=True,
+        step_count=5,
+    ),
+    ExampleConfiguration(
         name="lightgbm",
         pipeline_path="pipelines/lgbm_pipeline/lgbm_pipeline.py",
         pipeline_name="lgbm_pipeline",
@@ -139,14 +155,14 @@ EXAMPLES = [
         ],
         validation_function=mlflow_tracking_example_validation,
     ),
-    ExampleConfiguration(
-        name="neural_prophet",
-        pipeline_path="pipelines/neural_prophet_pipeline/"
-                      "neural_prophet_pipeline.py",
-        pipeline_name="neural_prophet_pipeline",
-        runs_on_windows=False,
-        step_count=3,
-    ),
+    # ExampleConfiguration(
+    #     name="neural_prophet",
+    #     pipeline_path="pipelines/neural_prophet_pipeline/"
+    #                   "neural_prophet_pipeline.py",
+    #     pipeline_name="neural_prophet_pipeline",
+    #     runs_on_windows=False,
+    #     step_count=3,
+    # ),
     ExampleConfiguration(
         name="scipy",
         pipeline_path="pipelines/scipy_example_pipeline/"

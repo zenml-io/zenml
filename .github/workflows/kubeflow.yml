@@ -61,7 +61,7 @@ jobs:
         run: |
           source $VENV
           zenml integration install s3 kubeflow \
-            evidently facets mlflow tensorflow sklearn xgboost lightgbm slack -f
+            evidently facets huggingface mlflow tensorflow sklearn xgboost lightgbm slack -f
 
       - name: Setup tmate session
         if: ${{ github.event.inputs.tags }}
