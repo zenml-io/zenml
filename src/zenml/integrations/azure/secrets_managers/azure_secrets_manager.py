@@ -16,7 +16,7 @@
 from typing import Any, ClassVar, Dict, List
 
 from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient  # type: ignore[import]
+from azure.keyvault.secrets import SecretClient
 
 from zenml.exceptions import SecretExistsError
 from zenml.integrations.azure import AZURE_SECRETS_MANAGER_FLAVOR
@@ -231,12 +231,8 @@ class AzureSecretsManager(BaseSecretsManager):
             if tags and tags.get(ZENML_GROUP_KEY) == secret_name:
                 self.CLIENT.begin_delete_secret(secret_property.name).result()
 
-    def delete_all_secrets(self, force: bool = False) -> None:
-        """Delete all existing secrets.
-
-        Args:
-            force: whether to force delete all secrets
-        """
+    def delete_all_secrets(self) -> None:
+        """Delete all existing secrets."""
         self._ensure_client_connected(self.key_vault_name)
 
         # List all secrets.

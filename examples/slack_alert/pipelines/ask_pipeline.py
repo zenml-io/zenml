@@ -16,7 +16,9 @@ from zenml.pipelines import pipeline
 
 
 @pipeline(enable_cache=False)
-def ask_pipeline(data_loader, trainer, evaluator, formatter, alerter, deployer):
+def slack_ask_pipeline(
+    data_loader, trainer, evaluator, formatter, alerter, deployer
+):
     """Train and evaluate a model and asks user in Slack whether to deploy."""
     X_train, X_test, y_train, y_test = data_loader()
     model = trainer(X_train=X_train, y_train=y_train)

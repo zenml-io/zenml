@@ -11,12 +11,22 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-
-import classify_sequence
-import classify_token
 import click
-from classify_sequence import SequenceClassificationConfig
-from classify_token import TokenClassificationConfig
+from pipelines import (
+    seq_classifier_train_eval_pipeline,
+    token_classifier_train_eval_pipeline,
+)
+from steps import (
+    data_importer,
+    load_tokenizer,
+    sequence_classifier_tokenization,
+    sequence_evaluator,
+    sequence_trainer,
+    token_classification_tokenization,
+    token_evaluator,
+    token_trainer,
+)
+from steps.configuration import HuggingfaceConfig
 
 
 @click.command()
@@ -94,49 +104,42 @@ def main(
 ):
     if nlp_task == "token-classification":
         # Run Pipeline
-        token_classification_config = TokenClassificationConfig(
+        token_classification_config = HuggingfaceConfig(
+            label_all_tokens=True,
             pretrained_model=pretrained_model,
             epochs=epochs,
             batch_size=batch_size,
             dummy_run=not full_set,
             **kwargs,
         )
-        pipeline = classify_token.token_classifier_train_eval_pipeline(
-            importer=classify_token.data_importer(token_classification_config),
-            load_tokenizer=classify_token.load_tokenizer(
+        pipeline = token_classifier_train_eval_pipeline(
+            importer=data_importer(token_classification_config),
+            load_tokenizer=load_tokenizer(token_classification_config),
+            tokenization=token_classification_tokenization(
                 token_classification_config
             ),
-            tokenization=classify_token.tokenization(
-                token_classification_config
-            ),
-            trainer=classify_token.trainer(token_classification_config),
-            evaluator=classify_token.evaluator(token_classification_config),
+            trainer=token_trainer(token_classification_config),
+            evaluator=token_evaluator(token_classification_config),
         )
         pipeline.run()
 
     elif nlp_task == "sequence-classification":
         # Run Pipeline
-        sequence_classification_config = SequenceClassificationConfig(
+        sequence_classification_config = HuggingfaceConfig(
             pretrained_model=pretrained_model,
             epochs=epochs,
             batch_size=batch_size,
             dummy_run=not full_set,
             **kwargs,
         )
-        pipeline = classify_sequence.seq_classifier_train_eval_pipeline(
-            importer=classify_sequence.data_importer(
+        pipeline = seq_classifier_train_eval_pipeline(
+            importer=data_importer(sequence_classification_config),
+            load_tokenizer=load_tokenizer(sequence_classification_config),
+            tokenization=sequence_classifier_tokenization(
                 sequence_classification_config
             ),
-            load_tokenizer=classify_sequence.load_tokenizer(
-                sequence_classification_config
-            ),
-            tokenization=classify_sequence.tokenization(
-                sequence_classification_config
-            ),
-            trainer=classify_sequence.trainer(sequence_classification_config),
-            evaluator=classify_sequence.evaluator(
-                sequence_classification_config
-            ),
+            trainer=sequence_trainer(sequence_classification_config),
+            evaluator=sequence_evaluator(sequence_classification_config),
         )
         pipeline.run()
 

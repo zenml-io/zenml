@@ -10,9 +10,9 @@ steps:
       name: data_splitter
   drift_detector:
     source:
-      file: steps/drift_analyzer/drift_analyzer_step
-      name: analyze_drift
-  drift_analyzer:
-    source:
       file: steps/drift_detector/drift_detector_step
       name: drift_detector
+  drift_analyzer:
+    source:
+      file: steps/drift_analyzer/drift_analyzer_step
+      name: analyze_drift

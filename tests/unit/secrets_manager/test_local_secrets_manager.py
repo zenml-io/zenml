@@ -29,7 +29,7 @@ def local_secrets_manager():
     """Fixture to yield a local secrets manager."""
     local_secrets_manager = LocalSecretsManager(name="")
     yield local_secrets_manager
-    local_secrets_manager.delete_all_secrets(force=True)
+    local_secrets_manager.delete_all_secrets()
 
 
 def test_local_secrets_manager_attributes(local_secrets_manager):

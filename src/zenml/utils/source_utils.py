@@ -41,7 +41,7 @@ from types import (
     ModuleType,
     TracebackType,
 )
-from typing import Any, Callable, Iterator, Optional, Type, Union
+from typing import Any, Callable, Iterator, List, Optional, Type, Union
 
 from zenml import __version__
 from zenml.constants import APP_NAME
@@ -483,22 +483,24 @@ def import_class_by_path(class_path: str) -> Type[Any]:
 
 
 @contextmanager
-def prepend_python_path(path: str) -> Iterator[None]:
+def prepend_python_path(paths: List[str]) -> Iterator[None]:
     """Simple context manager to help import module within the repo.
 
     Args:
-        path: str, path to prepend to sys.path
+        paths: paths to prepend to sys.path
 
     Yields:
         None
     """
     try:
         # Entering the with statement
-        sys.path.insert(0, path)
+        for path in paths:
+            sys.path.insert(0, path)
         yield
     finally:
         # Exiting the with statement
-        sys.path.remove(path)
+        for path in paths:
+            sys.path.remove(path)
 
 
 def load_source_path_class(
@@ -523,7 +525,7 @@ def load_source_path_class(
         source = source.split("@")[0]
 
     if import_path is not None:
-        with prepend_python_path(import_path):
+        with prepend_python_path([import_path]):
             logger.debug(
                 f"Loading class {source} with import path {import_path}"
             )
@@ -556,11 +558,11 @@ def import_python_file(file_path: str, zen_root: str) -> types.ModuleType:
 
     if module_name in sys.modules:
         del sys.modules[module_name]
-        with prepend_python_path(zen_root):
+        with prepend_python_path([zen_root]):
             module = importlib.import_module(module_name)
         return module
     else:
-        with prepend_python_path(zen_root):
+        with prepend_python_path([zen_root]):
             module = importlib.import_module(module_name)
         return module
 
@@ -568,7 +570,7 @@ def import_python_file(file_path: str, zen_root: str) -> types.ModuleType:
 def validate_flavor_source(
     source: str, component_type: StackComponentType
 ) -> Type[StackComponent]:
-    """Utility function to import a StackComponent class from a given source and validate its type.
+    """Import a StackComponent class from a given source and validate its type.
 
     Args:
         source: source path of the implementation

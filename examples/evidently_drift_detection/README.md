@@ -95,6 +95,12 @@ Now we're ready. Execute:
 python run.py
 ```
 
+Alternatively, if you want to run based on the config.yaml you can run with:
+
+```bash
+zenml pipeline run pipelines/drift_detection_pipeline/drift_detection_pipeline.py -c config.yaml
+```
+
 ### 🧽 Clean up
 In order to clean up, delete the remaining ZenML references.
 

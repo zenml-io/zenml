@@ -68,7 +68,7 @@ def test_prepend_python_path():
     path_element = "definitely_not_part_of_pythonpath"
 
     assert path_element not in sys.path
-    with source_utils.prepend_python_path(path_element):
+    with source_utils.prepend_python_path([path_element]):
         assert sys.path[0] == path_element
 
     assert path_element not in sys.path
@@ -109,13 +109,14 @@ def test_import_python_file_for_first_time(clean_repo, mocker, files_dir: Path):
     SOME_FUNC = "some_func"
 
     os.chdir(str(files_dir))
-
-    Repository.initialize()
     clean_repo.activate_root()
+    Repository.initialize()
 
     mocker.patch.object(sys, "path", [])
 
-    module = source_utils.import_python_file(SOME_MODULE_FILENAME)
+    module = source_utils.import_python_file(
+        SOME_MODULE_FILENAME, zen_root=str(files_dir)
+    )
 
     # Assert that attr could be fetched from module
     assert isinstance(getattr(module, SOME_FUNC), Callable)
@@ -142,17 +143,22 @@ def test_import_python_file_when_already_loaded(
 
     os.chdir(str(files_dir))
     clean_repo.activate_root()
+    Repository.initialize(root=files_dir)
 
     mocker.patch.object(sys, "path", [])
 
-    source_utils.import_python_file(str(SOME_MODULE_FILENAME))
+    source_utils.import_python_file(
+        str(SOME_MODULE_FILENAME), zen_root=str(files_dir)
+    )
 
     # Assert that module has been loaded into sys.module
     assert SOME_MODULE in sys.modules
 
     # Load module again, to cover alternative behavior of the
     #  import_python_file, where the module is loaded already
-    module = source_utils.import_python_file(str(SOME_MODULE_FILENAME))
+    module = source_utils.import_python_file(
+        str(SOME_MODULE_FILENAME), zen_root=str(files_dir)
+    )
 
     # Assert that attr could be fetched from the module returned by the func
     assert isinstance(getattr(module, SOME_FUNC), Callable)
@@ -176,6 +182,7 @@ def test_import_python_file(clean_repo, mocker, files_dir: Path):
 
     os.chdir(str(files_dir))
     clean_repo.activate_root()
+    Repository.initialize(root=files_dir)
 
     main_python_file = files_dir / MAIN_MODULE_FILENAME
     some_python_file = files_dir / SOME_MODULE_FILENAME
@@ -185,12 +192,16 @@ def test_import_python_file(clean_repo, mocker, files_dir: Path):
 
     mocker.patch.object(sys, "path", [])
 
-    source_utils.import_python_file(str(main_python_file))
+    source_utils.import_python_file(
+        str(main_python_file), zen_root=str(files_dir)
+    )
 
     # Assert that module has been loaded into sys.module
     assert MAIN_MODULE in sys.modules
 
-    module = source_utils.import_python_file(str(some_python_file))
+    module = source_utils.import_python_file(
+        str(some_python_file), zen_root=str(files_dir)
+    )
 
     # Assert that attr could be fetched from the module returned by the func
     assert isinstance(getattr(module, OTHER_FUNC), Callable)
