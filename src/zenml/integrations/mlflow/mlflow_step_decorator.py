@@ -58,8 +58,10 @@ def enable_mlflow(
     Apply this decorator to a ZenML pipeline step to enable MLflow experiment
     tracking. The MLflow tracking configuration (tracking URI, experiment name,
     run name) will be automatically configured before the step code is executed,
-    so the step can simply use the `mlflow` module to log metrics and artifacts,
-    like so:
+    so the step can simply use the `mlflow` module to log metrics and artifacts.
+    
+    The simple usage will log metrics into a run created for the pipeline, like 
+    so:
 
     ```python
     @enable_mlflow
@@ -73,7 +75,23 @@ def enable_mlflow(
         mlflow.log_metric("val_accuracy", test_acc)
         return test_acc
     ```
+    You can also log parameters, metrics and artifacts into nested runs, which 
+    will be children of the pipeline run. You only need to add the parameter 
+    `nested=True` to the decorator, like so:
 
+    ```python
+    @enable_mlflow(nested=True)
+    @step
+    def tf_evaluator(
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        model: tf.keras.Model,
+    ) -> float:
+        _, test_acc = model.evaluate(x_test, y_test, verbose=2)
+        mlflow.log_param("some_param", 2)  
+        mlflow.log_metric("val_accuracy", test_acc)
+        return test_acc
+    ```
     You can also use this decorator with our class-based API like so:
 
     ```
@@ -96,7 +114,9 @@ def enable_mlflow(
 
     Args:
         _step: The decorated step class.
-        nested: Enable to have nested run during mlflow logging
+        nested: Controls whether to create a run as a child of pipeline run. 
+            All the the mlflow logging functions using during a step with 
+            `nested=True` will be logged into the child run.
 
     Returns:
         The inner decorator which enhances the input step class with mlflow
