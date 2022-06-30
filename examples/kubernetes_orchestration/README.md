@@ -154,7 +154,9 @@ Next, provision and start the metadata store with the following command:
 zenml stack up
 ```
 
-If everything went well, you should see logs messages similar to the following
+This will also create a connection from your local machine to the metadata
+store so that you can access it locally.
+If everything went well, you should see log messages similar to the following
 in your terminal:
 
 ![zenml stack up output](assets/zenml_stack_up_output.png)
