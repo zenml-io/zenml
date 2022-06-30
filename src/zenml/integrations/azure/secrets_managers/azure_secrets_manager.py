@@ -36,7 +36,7 @@ ZENML_SCHEMA_NAME = "zenml-schema-name"
 ZENML_GROUP_KEY = "zenml-group-key"
 
 
-def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict[str, str]:
+def prepare_data_for_saving(secret: BaseSecretSchema) -> Dict[str, str]:
     """Adds the secret group name to the keys of each secret key-value pair.
 
     This allows using the same key across multiple
@@ -62,7 +62,9 @@ def prepend_group_name_to_keys(secret: BaseSecretSchema) -> Dict[str, str]:
     return transformed_values
 
 
-def remove_group_name_from_key(combined_key_name: str, group_name: str) -> str:
+def transform_saved_secret_data(
+    combined_key_name: str, group_name: str
+) -> str:
     """Removes the secret group name from the secret key.
 
     Args:
@@ -134,7 +136,7 @@ class AzureSecretsManager(BaseSecretsManager):
                 f"A Secret with the name '{secret.name}' already exists."
             )
 
-        adjusted_content = prepend_group_name_to_keys(secret)
+        adjusted_content = prepare_data_for_saving(secret)
 
         for k, v in adjusted_content.items():
             # Create the secret, this only creates an empty secret with the
@@ -173,7 +175,7 @@ class AzureSecretsManager(BaseSecretsManager):
             response = self.CLIENT.get_secret(secret_property.name)
             tags = response.properties.tags
             if tags and tags.get(ZENML_GROUP_KEY) == secret_name:
-                secret_key = remove_group_name_from_key(
+                secret_key = transform_saved_secret_data(
                     combined_key_name=response.name, group_name=secret_name
                 )
                 if secret_key == "name":
@@ -218,7 +220,7 @@ class AzureSecretsManager(BaseSecretsManager):
         """
         self._ensure_client_connected(self.key_vault_name)
 
-        adjusted_content = prepend_group_name_to_keys(secret)
+        adjusted_content = prepare_data_for_saving(secret)
 
         for k, v in adjusted_content.items():
             self.CLIENT.set_secret(k, v)
