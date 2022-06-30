@@ -213,7 +213,7 @@ register your secrets manager in the following way:
 
 ```shell
 zenml integration install aws
-zenml secrets-manager register AWS_SECRETS_MANAGER_NAME --flavor aws
+zenml secrets-manager register AWS_SECRETS_MANAGER_NAME --flavor=aws
 ```
 
 If you are using the [ZenML Kubeflow
