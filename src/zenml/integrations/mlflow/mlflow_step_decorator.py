@@ -15,7 +15,6 @@
 
 import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
-import mlflow
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
@@ -29,7 +28,6 @@ from zenml.steps.utils import STEP_INNER_FUNC_NAME
 
 logger = get_logger(__name__)
 
-
 # step entrypoint type
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -39,7 +37,7 @@ S = TypeVar("S", bound=Type[BaseStep])
 
 @overload
 def enable_mlflow(
-    _step: S,
+        _step: S,
 ) -> S:
     ...
 
@@ -50,8 +48,8 @@ def enable_mlflow() -> Callable[[S], S]:
 
 
 def enable_mlflow(
-    _step: Optional[S] = None,
-    nested: Optional[bool] = False
+        _step: Optional[S] = None,
+        nested: Optional[bool] = False
 ) -> Union[S, Callable[[S], S]]:
     """Decorator to enable mlflow for a step function.
 
