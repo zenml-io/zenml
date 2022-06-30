@@ -142,7 +142,7 @@ def _sanitize_paths(_func: Callable[..., Any]) -> Callable[..., Any]:
         Returns:
             Output of the input function called with sanitized paths.
         """
-        args = [_sanitize_potential_path(arg) for arg in args]
+        args = tuple(_sanitize_potential_path(arg) for arg in args)
         kwargs = {
             key: _sanitize_potential_path(value)
             for key, value in kwargs.items()
