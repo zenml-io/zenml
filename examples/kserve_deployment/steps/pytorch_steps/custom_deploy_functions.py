@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import json
 from typing import Any, Dict
 
 import numpy as np
@@ -49,7 +48,7 @@ def custom_predict(model: Any, request: Dict) -> Dict:
         Exception: If the request is not a NumPy array.
     """
     inputs = []
-    for instance in json.loads(request["instances"]):
+    for instance in request["instances"]:
         instance = np.array(instance)
         try:
             tensor = torch.from_numpy(instance).view(-1, 28, 28)
