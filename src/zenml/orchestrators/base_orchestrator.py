@@ -73,6 +73,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+
 ### TFX PATCH
 # The following code patches a function in tfx which leads to an OSError on
 # Windows.
