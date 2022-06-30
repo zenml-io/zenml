@@ -350,5 +350,5 @@ def load_from_json_zenml_artifact(model_file_dir: str) -> Any:
     )
     materialzer_object = materializer_class(model_artifact)
     model = materialzer_object.handle_input(model_class, mode="inference")
-    logger.DEBUG(f"model loaded successfully :\n{model}")
+    logger.debug(f"model loaded successfully :\n{model}")
     return model

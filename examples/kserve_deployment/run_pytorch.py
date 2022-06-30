@@ -49,7 +49,7 @@ DEPLOY_AND_PREDICT = "deploy_and_predict"
     "--config",
     "-c",
     type=click.Choice([DEPLOY, PREDICT, DEPLOY_AND_PREDICT]),
-    default="deploy",
+    default="deploy_and_predict",
     help="Optionally you can choose to only run the deployment "
     "pipeline to train and deploy a model (`deploy`), or to "
     "only run a prediction against the deployed model "
@@ -101,7 +101,7 @@ def main(
 
     model_name = "mnist"
     deployment_pipeline_name = "pytorch_training_deployment_pipeline"
-    deployer_step_name = "kserve_model_deployer_step"
+    deployer_step_name = "kserve_custom_model_deployer_step"
 
     model_deployer = KServeModelDeployer.get_active_model_deployer()
 

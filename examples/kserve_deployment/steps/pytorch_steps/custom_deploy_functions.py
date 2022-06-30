@@ -12,8 +12,10 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 from typing import Any, Dict
 
+import numpy as np
 import torch
 import torchvision
 from torch.nn.functional import softmax
@@ -47,7 +49,8 @@ def custom_predict(model: Any, request: Dict) -> Dict:
         Exception: If the request is not a NumPy array.
     """
     inputs = []
-    for instance in request["instances"]:
+    for instance in json.loads(request["instances"]):
+        instance = np.array(instance)
         try:
             tensor = torch.from_numpy(instance).view(-1, 28, 28)
         except Exception as e:
