@@ -19,7 +19,7 @@ if [ -n "$1" ]; then
 else
     coverage run -m pytest tests/unit --color=yes -vv
     coverage run -m pytest tests/unit --store-type=sql --color=yes -vv
-    coverage run -m pytest tests/integration --use-virtualenv --color=yes -vv
+#    coverage run -m pytest tests/integration --use-virtualenv --color=yes -vv
 fi
 coverage combine
 coverage report --show-missing
