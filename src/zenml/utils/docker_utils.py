@@ -15,6 +15,7 @@
 
 import json
 import os
+from pathlib import PurePosixPath
 from typing import AbstractSet, Any, Dict, Iterable, List, Optional, cast
 
 import pkg_resources
@@ -237,9 +238,9 @@ def build_docker_image(
         # active profile and the active stack configuration into the build
         # context, to have the active profile and active stack accessible from
         # within the container.
+        load_config_path = PurePosixPath(f"/app/{CONTAINER_ZENML_CONFIG_DIR}")
         GlobalConfiguration().copy_active_configuration(
-            config_path,
-            load_config_path=f"/app/{CONTAINER_ZENML_CONFIG_DIR}",
+            config_path, load_config_path=load_config_path
         )
 
         if not requirements and use_local_requirements:
