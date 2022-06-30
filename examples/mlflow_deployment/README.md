@@ -321,4 +321,4 @@ Our docs regarding the MLflow deployment integration can be found [here](https:/
 
 If you want to learn more about deployment in ZenML in general or about how to 
 build your own deployer steps in ZenML check out our 
-[docs](https://docs.zenml.io/extending-zenml/model-deployer).
+[docs](https://docs.zenml.io/extending-zenml/model-deployers).
