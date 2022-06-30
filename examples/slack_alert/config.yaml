@@ -1,4 +1,4 @@
-name: post_pipeline
+name: slack_post_pipeline
 steps:
   data_loader:
     source:
@@ -18,5 +18,5 @@ steps:
       name: test_acc_post_formatter
   alerter:
     source:
-      file: steps/alerter_steps
-      name: alerter_post_step
+      file: steps
+      name: slack_alerter_post_step
