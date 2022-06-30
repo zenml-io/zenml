@@ -152,4 +152,4 @@ costs for storage of artifacts, containers, metadata or secrets.
 
 If you want to learn more about orchestrators in general or about how to build
 your own orchestrators in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/orchestrator).
+check out our [docs](https://docs.zenml.io/extending-zenml/orchestrators).
