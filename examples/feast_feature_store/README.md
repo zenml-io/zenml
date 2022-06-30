@@ -150,4 +150,4 @@ Our docs regarding the Feast feature store integration can be
 found [here](https://docs.zenml.io/advanced-guide/feature-store).
 
 If you want to learn more about feature stores in general or about how to build your own feature store in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/feature-store).
+check out our [docs](https://docs.zenml.io/extending-zenml/feature-stores).
