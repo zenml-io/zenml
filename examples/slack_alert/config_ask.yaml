@@ -1,4 +1,4 @@
-name: ask_pipeline
+name: slack_ask_pipeline
 steps:
   data_loader:
     source:
@@ -18,8 +18,8 @@ steps:
       name: test_acc_ask_formatter
   alerter:
     source:
-      file: steps/alerter_steps
-      name: alerter_ask_step
+      file: steps
+      name: slack_alerter_ask_step
   deployer:
     source:
       file: steps/deployer

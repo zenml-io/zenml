@@ -16,6 +16,12 @@ from .deployer import model_deployer
 from .evaluator import evaluator
 from .formatter import test_acc_ask_formatter, test_acc_post_formatter
 from .trainer import svc_trainer, svc_trainer_mlflow
+from zenml.integrations.slack.steps.slack_alerter_post_step import (
+    slack_alerter_post_step
+)
+from zenml.integrations.slack.steps.slack_alerter_ask_step import (
+    slack_alerter_ask_step,
+)
 
 __all__ = [
     "model_deployer",
@@ -25,4 +31,6 @@ __all__ = [
     "test_acc_ask_formatter",
     "test_acc_post_formatter",
     "svc_trainer_mlflow",
+    "slack_alerter_post_step",
+    "slack_alerter_ask_step"
 ]
