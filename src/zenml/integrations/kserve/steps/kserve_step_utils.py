@@ -30,8 +30,12 @@ from zenml.integrations.kserve.steps.kserve_deployer import (
     KServeDeployerStepConfig,
 )
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.steps.step_context import StepContext
 from zenml.utils import io_utils, source_utils
+
+logger = get_logger(__name__)
+
 
 ARTIFACT_FILE = "artifact.json"
 
@@ -346,4 +350,5 @@ def load_from_json_zenml_artifact(model_file_dir: str) -> Any:
     )
     materialzer_object = materializer_class(model_artifact)
     model = materialzer_object.handle_input(model_class, mode="inference")
+    logger.DEBUG(f"model loaded successfully :\n{model}")
     return model

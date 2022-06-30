@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implements a custom model for the Kserve integration."""
-from pathlib import Path
 from typing import Any, Dict
 
 import click
@@ -106,9 +105,7 @@ class ZenMLCustomModel(kserve.Model):  # type: ignore[misc]
 @click.option(
     "--model_uri",
     default=DEFAULT_LOCAL_MODEL_DIR,
-    type=click.Path(
-        exists=True, file_okay=False, dir_okay=True, path_type=Path
-    ),
+    type=click.STRING,
     help="The directory where the model is stored locally.",
 )
 @click.option(
