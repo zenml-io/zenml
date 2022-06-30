@@ -148,4 +148,4 @@ rm -rf zenml_examples
 # 📜 Learn more
 
 If you want to learn more about experiment trackers in general or about how to build your own experiment trackers in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/experiment-tracker).
+check out our [docs](https://docs.zenml.io/extending-zenml/experiment-trackers).
