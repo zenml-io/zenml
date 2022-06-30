@@ -15,6 +15,7 @@
 
 import functools
 from typing import Any, Callable, Optional, Type, TypeVar, Union, cast, overload
+
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
     MLFlowExperimentTracker,
 )
@@ -28,6 +29,7 @@ from zenml.steps.utils import STEP_INNER_FUNC_NAME
 
 logger = get_logger(__name__)
 
+
 # step entrypoint type
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -36,7 +38,9 @@ S = TypeVar("S", bound=Type[BaseStep])
 
 
 @overload
-def enable_mlflow(_step: S, ) -> S:
+def enable_mlflow(
+    _step: S,
+) -> S:
     ...
 
 
@@ -46,8 +50,8 @@ def enable_mlflow() -> Callable[[S], S]:
 
 
 def enable_mlflow(
-        _step: Optional[S] = None,
-        nested: Optional[bool] = False
+    _step: Optional[S] = None,
+    nested: Optional[bool] = False
 ) -> Union[S, Callable[[S], S]]:
     """Decorator to enable mlflow for a step function.
 
@@ -152,10 +156,11 @@ def mlflow_step_entrypoint(nested=False) -> Callable[[F], F]:
             if not isinstance(experiment_tracker, MLFlowExperimentTracker):
                 raise get_missing_mlflow_experiment_tracker_error()
 
+            # Check if there is an active run to nest the run
             active_run = experiment_tracker.active_run
-
             if not active_run:
                 raise RuntimeError("No active mlflow run configured.")
+
             if nested:
                 active_nested_run = experiment_tracker.active_nested_run
                 with active_run:
