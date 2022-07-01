@@ -22,7 +22,7 @@ models in production.
 ## 🗺 Overview
 
 The example uses the
-[Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset to
+[MNIST-digits](https://keras.io/api/datasets/mnist/) dataset to
 train a classifier using either [Tensorflow (Keras)](https://www.tensorflow.org/)
 or [scikit-learn](https://scikit-learn.org/stable/). Different
 hyperparameter values (e.g. the number of epochs and learning rate for the Keras
@@ -613,4 +613,4 @@ rm -rf zenml_examples
 Our docs regarding the seldon deployment integration can be found [here](https://docs.zenml.io/advanced-guide/continuous-training-and-deployment).
 
 If you want to learn more about deployment in ZenML in general or about how to build your own deployer steps in ZenML
-check out our [docs](https://docs.zenml.io/extending-zenml/model-deployer).
+check out our [docs](https://docs.zenml.io/extending-zenml/model-deployers).

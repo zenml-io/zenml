@@ -17,7 +17,7 @@ continuous model deployment with minimal effort.
 ## 🗺 Overview
 
 The example uses the
-[Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset to
+[MNIST-digits](https://keras.io/api/datasets/mnist/) dataset to
 train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/) using different
 hyperparameter values (epochs and learning rate) that can also be supplied as command line
 arguments.
@@ -321,4 +321,4 @@ Our docs regarding the MLflow deployment integration can be found [here](https:/
 
 If you want to learn more about deployment in ZenML in general or about how to 
 build your own deployer steps in ZenML check out our 
-[docs](https://docs.zenml.io/extending-zenml/model-deployer).
+[docs](https://docs.zenml.io/extending-zenml/model-deployers).
