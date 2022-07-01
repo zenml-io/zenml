@@ -212,7 +212,7 @@ for detailed step-by-step instructions.
 [Examples README](examples/README.md) 
 to find out what to do.
 3. All integrations deserve to be documented. Make sure to pay a visit to the
-[Integrations Page](docs/book/advanced-guide/integrations/integrations.md)
+[Integrations Page](https://docs.zenml.io/advanced-guide/integrations)
 in the docs and add the integration. 
 
 ## 🆘 Getting Help
