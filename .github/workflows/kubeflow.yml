@@ -28,7 +28,6 @@ jobs:
       # as the TF images are too large for the GH action runner disk
       - name: Free disk space
         shell: bash
-        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           echo "Available storage:"
           df -h
