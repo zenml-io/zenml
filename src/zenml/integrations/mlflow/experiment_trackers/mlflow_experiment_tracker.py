@@ -252,7 +252,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         return mlflow.get_experiment_by_name(step_env.pipeline_name)
 
     def _find_active_run(
-        self
+        self,
     ) -> Tuple[Optional[mlflow.ActiveRun], Optional[str], Optional[str]]:
         """Find the currently active MLflow run.
 
@@ -277,7 +277,9 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         run_id = runs[0].info.run_id if runs else None
 
         current_active_run = mlflow.active_run()
-        if not (current_active_run and current_active_run.info.run_id == run_id):
+        if not (
+            current_active_run and current_active_run.info.run_id == run_id
+        ):
             current_active_run = None
 
         return current_active_run, experiment_id, run_id
@@ -310,7 +312,4 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         step_env = Environment().step_environment
         current_active_run, _, _ = self._find_active_run()
         if current_active_run:
-            return mlflow.start_run(
-                run_name=step_env.step_name,
-                nested=True
-            )
+            return mlflow.start_run(run_name=step_env.step_name, nested=True)

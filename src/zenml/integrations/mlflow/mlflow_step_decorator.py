@@ -50,8 +50,7 @@ def enable_mlflow() -> Callable[[S], S]:
 
 
 def enable_mlflow(
-    _step: Optional[S] = None,
-    nested: Optional[bool] = False
+    _step: Optional[S] = None, nested: Optional[bool] = False
 ) -> Union[S, Callable[[S], S]]:
     """Decorator to enable mlflow for a step function.
 
@@ -59,8 +58,8 @@ def enable_mlflow(
     tracking. The MLflow tracking configuration (tracking URI, experiment name,
     run name) will be automatically configured before the step code is executed,
     so the step can simply use the `mlflow` module to log metrics and artifacts.
-    
-    The simple usage will log metrics into a run created for the pipeline, like 
+
+    The simple usage will log metrics into a run created for the pipeline, like
     so:
 
     ```python
@@ -75,8 +74,8 @@ def enable_mlflow(
         mlflow.log_metric("val_accuracy", test_acc)
         return test_acc
     ```
-    You can also log parameters, metrics and artifacts into nested runs, which 
-    will be children of the pipeline run. You only need to add the parameter 
+    You can also log parameters, metrics and artifacts into nested runs, which
+    will be children of the pipeline run. You only need to add the parameter
     `nested=True` to the decorator, like so:
 
     ```python
@@ -88,7 +87,7 @@ def enable_mlflow(
         model: tf.keras.Model,
     ) -> float:
         _, test_acc = model.evaluate(x_test, y_test, verbose=2)
-        mlflow.log_param("some_param", 2)  
+        mlflow.log_param("some_param", 2)
         mlflow.log_metric("val_accuracy", test_acc)
         return test_acc
     ```
@@ -114,8 +113,8 @@ def enable_mlflow(
 
     Args:
         _step: The decorated step class.
-        nested: Controls whether to create a run as a child of pipeline run. 
-            All the the mlflow logging functions using during a step with 
+        nested: Controls whether to create a run as a child of pipeline run.
+            All the the mlflow logging functions using during a step with
             `nested=True` will be logged into the child run.
 
     Returns:
