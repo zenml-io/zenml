@@ -22,7 +22,7 @@ models in production.
 ## 🗺 Overview
 
 The example uses the
-[Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset to
+[MNIST-digits](https://keras.io/api/datasets/mnist/) dataset to
 train a classifier using either [Tensorflow (Keras)](https://www.tensorflow.org/)
 or [scikit-learn](https://scikit-learn.org/stable/). Different
 hyperparameter values (e.g. the number of epochs and learning rate for the Keras
