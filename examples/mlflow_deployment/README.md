@@ -17,7 +17,7 @@ continuous model deployment with minimal effort.
 ## 🗺 Overview
 
 The example uses the
-[Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset to
+[MNIST-digits](https://keras.io/api/datasets/mnist/) dataset to
 train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/) using different
 hyperparameter values (epochs and learning rate) that can also be supplied as command line
 arguments.
