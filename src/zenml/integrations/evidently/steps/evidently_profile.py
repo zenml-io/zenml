@@ -140,6 +140,11 @@ class EvidentlyProfileStep(BaseDriftDetectionStep):
             config: the configuration for the step
             ignored_columns: columns to ignore while drift detection
 
+        Raises:
+            ValueError: If ignore cols is of incorrect type or emptylist
+                or has duplicate features or if one or more features is not found
+                in either reference/comparison datasets
+
         Returns:
             profile: dictionary report extracted from an Evidently Profile
               generated for the data drift

@@ -12,17 +12,14 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from nis import match
 import pandas as pd
 import pytest
+
 from zenml.integrations.evidently.steps.evidently_profile import (
+    ColumnMapping,
     EvidentlyProfileConfig,
-)
-from zenml.integrations.evidently.steps.evidently_profile import (
     EvidentlyProfileStep,
 )
-from evidently.pipeline.column_mapping import ColumnMapping
-
 
 ref = pd.DataFrame()
 ref["target"] = ["A", "B", "B", "C", "A"]
