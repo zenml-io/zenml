@@ -402,7 +402,7 @@ def kserve_custom_model_deployer_step(
     # invoke the KServe model deployer to create a new service
     # or update an existing one that was previously deployed for the same
     # model
-
+    assert context.stack is not None
     # more information about stack ..
     custom_docker_image_name = model_deployer.prepare_custom_deployment_image(
         context.stack,

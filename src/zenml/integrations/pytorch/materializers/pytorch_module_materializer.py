@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the PyTorch Module materializer."""
 import os
-from typing import Any, Optional, Type
+from typing import Any, Type
 
 import torch
 from torch.nn import Module  # type: ignore[attr-defined]
@@ -38,7 +38,8 @@ class PyTorchModuleMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPES = (ModelArtifact,)
 
     def handle_input(
-        self, data_type: Type[Any], mode: Optional[str] = "development"
+        self,
+        data_type: Type[Any],
     ) -> Module:
         """Reads and returns a PyTorch model.
 
@@ -46,25 +47,15 @@ class PyTorchModuleMaterializer(BaseMaterializer):
 
         Args:
             data_type: The type of the model to load.
-            mode: The mode of the model to load.
 
         Returns:
             A loaded pytorch model.
         """
         super().handle_input(data_type)
-        if mode == "development":
-            with fileio.open(
-                os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
-            ) as f:
-                return torch.load(f)  # type: ignore[no-untyped-call]  # noqa
-        elif mode == "inference":
-            with fileio.open(
-                os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "rb"
-            ) as f:
-                model = data_type()
-                model.load_state_dict(torch.load(f))  # type: ignore[no-untyped-call]  # noqa
-                model.eval()
-                return model
+        with fileio.open(
+            os.path.join(self.artifact.uri, DEFAULT_FILENAME), "rb"
+        ) as f:
+            return torch.load(f)  # type: ignore[no-untyped-call]  # noqa
 
     def handle_return(self, model: Module) -> None:
         """Writes a PyTorch model, as a model and a checkpoint.
@@ -80,11 +71,3 @@ class PyTorchModuleMaterializer(BaseMaterializer):
             os.path.join(self.artifact.uri, DEFAULT_FILENAME), "wb"
         ) as f:
             torch.save(model, f)
-
-        # Also save model checkpoint to artifact directory,
-        # This is the default behavior for loading model in production phase (inference)
-        if isinstance(model, Module):
-            with fileio.open(
-                os.path.join(self.artifact.uri, CHECKPOINT_FILENAME), "wb"
-            ) as f:
-                torch.save(model.state_dict(), f)

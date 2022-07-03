@@ -332,7 +332,7 @@ def load_from_json_zenml_artifact(model_file_dir: str) -> Any:
         model_file_dir: the directory where the model files are stored
 
     Returns:
-        The model
+        The ML model loaded into a Python object
     """
     with fileio.open(os.path.join(model_file_dir, ARTIFACT_FILE), "r") as f:
         artifact = json.load(f)
@@ -349,6 +349,16 @@ def load_from_json_zenml_artifact(model_file_dir: str) -> Any:
         model_artifact.properties["datatype"].string_value
     )
     materialzer_object = materializer_class(model_artifact)
-    model = materialzer_object.handle_input(model_class, mode="inference")
+    model = materialzer_object.handle_input(model_class)
+    try:
+        import torch.nn as nn  # type: ignore[import]
+
+        if issubclass(model_class, nn.Module):
+            inference_model = model_class()
+            inference_model.load_state_dict(model)
+            inference_model.eval()
+            model = inference_model
+    except ImportError:
+        pass
     logger.debug(f"model loaded successfully :\n{model}")
     return model
