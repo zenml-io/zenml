@@ -351,13 +351,10 @@ def load_from_json_zenml_artifact(model_file_dir: str) -> Any:
     materialzer_object = materializer_class(model_artifact)
     model = materialzer_object.handle_input(model_class)
     try:
-        import torch.nn as nn  # type: ignore[import]
+        import torch.nn as nn
 
-        if issubclass(model_class, nn.Module):
-            inference_model = model_class()
-            inference_model.load_state_dict(model)
-            inference_model.eval()
-            model = inference_model
+        if issubclass(model_class, nn.Module):  # type: ignore
+            model.eval()
     except ImportError:
         pass
     logger.debug(f"model loaded successfully :\n{model}")

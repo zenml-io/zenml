@@ -402,15 +402,22 @@ def kserve_custom_model_deployer_step(
     # invoke the KServe model deployer to create a new service
     # or update an existing one that was previously deployed for the same
     # model
+
     assert context.stack is not None
-    # more information about stack ..
-    custom_docker_image_name = model_deployer.prepare_custom_deployment_image(
-        context.stack,
-        pipeline_name,
-        step_name,
-        pipeline_requirements,
-        entrypoint_command,
-    )
+
+    if context.stack.orchestrator.FLAVOR == "local":
+        # more information about stack ..
+        custom_docker_image_name = (
+            model_deployer.prepare_custom_deployment_image(
+                context.stack,
+                pipeline_name,
+                step_name,
+                pipeline_requirements,
+                entrypoint_command,
+            )
+        )
+    else:
+        custom_docker_image_name = context.stack.runtime_options["docker_image"]
 
     # import the prepare function from the step utils
     from zenml.integrations.kserve.steps.kserve_step_utils import (
