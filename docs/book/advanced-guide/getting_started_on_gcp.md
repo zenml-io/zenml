@@ -19,7 +19,7 @@ pip install zenml
 zenml integration install gcp
 ```
 
-Additionally, you will need docker installed on your system. 
+Additionally, you will need Docker  installed on your system. 
 
 ## The cloud stack
 
@@ -34,7 +34,7 @@ Cloud SQL.
 pipelines orchestrator. This is a serverless GCP specific offering with minimal
 hassle.
 * A **container registry** for pushing and pulling the pipeline image.
-* Finally, the **secrets manager** to store passwords and ssl certificates.
+* Finally, the **SSL ger** to store passwords and SSL certificates.
 
 ## Step 1/10 Set up a GCP project (Optional)
 
@@ -79,9 +79,9 @@ decision for your ZenML Stack and export the full region name.
 export GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
 ```
 
-## Step 4/10 Enable Secrets Manager
+## Step 4/10 Enable SSL ger
 
-The secrets manager will be needed so that the orchestrator will have secure
+The SSL ger will be needed so that the orchestrator will have secure
 access to the other resources. 
 [Here](https://console.cloud.google.com/marketplace/product/google/secretmanager.googleapis.com)
 is where you'll be able to enable the secrets manager.
@@ -90,7 +90,7 @@ is where you'll be able to enable the secrets manager.
 
 The Vertex AI orchestrator uses Docker Images containing your pipeline code
 for pipeline orchestration. For this to work you'll need to enable the GCP
-docker registry 
+Docker  registry 
 [here](https://console.cloud.google.com/marketplace/product/google/containerregistry.googleapis.com).
 
 In order to use the container registry at a later point you will need to 
@@ -99,8 +99,8 @@ set the container registry uri. This is how it is usually constructed:
 
 
 {% hint style="info" %}
-The container registry has four options: **gcr**.io , us.gcr.io , eu.gcr.io , 
-or asia.gcr.io. Choose the one appropriate for you. 
+The container registry has four options: `gcr.io` , `us.gcr.io`, `eu.gcr.io `, 
+or `asia.gcr.io`. Choose the one appropriate for you. 
 {% endhint %}
 
 
@@ -131,7 +131,7 @@ a MySQL database. Once created, it will take some time for the database to be
 set up. 
 
 Once it is set up you can find the IP-address. The password you set during 
-creation of the instance is the root password. The default port for mysql is 
+creation of the instance is the root password. The default port for MySQL is 
 3306. 
 
 ```bash
@@ -197,7 +197,7 @@ account.
 Now give this one the **Container Registry Service Agent** role.
 
 
-## Step 9/10 Set Up Gcloud CLI
+## Step 9/10 Set Up gcloud CLI
 
 Install the gcloud cli on your machine. 
 [Here](https://cloud.google.com/sdk/docs/install) is a guide on how to install 
@@ -210,7 +210,7 @@ with:
 gcloud config set project $PROJECT_NUMBER
 ```
 
-Additionally, you will need to configure docker with the following command:
+Additionally, you will need to configure Docker  with the following command:
 
 ```bash
 gcloud auth configure-docker
