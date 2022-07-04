@@ -187,9 +187,9 @@ def mlflow_step_entrypoint(nested: Optional[bool] = False) -> Callable[[F], F]:
 
             if nested:
                 active_nested_run = experiment_tracker.active_nested_run
-                # At this point active_nested_run can never be `None` as this 
-                # would mean that there is not parent active_run, in which case 
-                # the previous runtime error would have been raised. The following 
+                # At this point active_nested_run can never be `None` as this
+                # would mean that there is not parent active_run, in which case
+                # the previous runtime error would have been raised. The following
                 # test is to avoid pylint errors
                 if not active_nested_run:
                     raise RuntimeError(
