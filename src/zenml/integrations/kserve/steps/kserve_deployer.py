@@ -404,7 +404,6 @@ def kserve_custom_model_deployer_step(
     # model
 
     assert context.stack is not None
-
     if context.stack.orchestrator.FLAVOR == "local":
         # more information about stack ..
         custom_docker_image_name = (
@@ -417,7 +416,16 @@ def kserve_custom_model_deployer_step(
             )
         )
     else:
-        custom_docker_image_name = context.stack.runtime_options["docker_image"]
+        base_image_name = (
+            f"zenml-{context.stack.orchestrator.FLAVOR}:{pipeline_name}"
+        )
+        container_registry = context.stack.container_registry
+
+        if container_registry:
+            registry_uri = container_registry.uri.rstrip("/")
+            custom_docker_image_name = f"{registry_uri}/{base_image_name}"
+        else:
+            custom_docker_image_name = base_image_name
 
     # import the prepare function from the step utils
     from zenml.integrations.kserve.steps.kserve_step_utils import (
