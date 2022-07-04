@@ -16,8 +16,6 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from rich import print
-
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.logger import get_logger
 from zenml.steps import BaseStepConfig, StepContext, step
@@ -150,6 +148,26 @@ def switch_local_urls_for_cloud_urls(
     return predictions
 
 
+def convert_pred_filenames_to_task_ids(
+    preds: List[Dict[str, Any]], tasks: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """Converts a list of predictions from local file references to task id."""
+    filename_id_mapping = {
+        os.path.basename(urlparse(task["data"]["image"]).path): task["id"]
+        for task in tasks
+    }
+
+    return [
+        {
+            "task": int(
+                filename_id_mapping[os.path.basename(pred["filename"])]
+            ),
+            "result": pred["result"],
+        }
+        for pred in preds
+    ]
+
+
 @step(enable_cache=False)
 def sync_new_data_to_label_studio(
     uri: str,
@@ -167,6 +185,7 @@ def sync_new_data_to_label_studio(
             account_name, account_key = get_azure_credentials()
             config.azure_account_name = account_name
             config.azure_account_key = account_key
+            config.prefix = urlparse(uri).path
             base_uri = urlparse(uri).netloc
 
     tasks_before_sync = dataset.tasks
@@ -183,11 +202,9 @@ def sync_new_data_to_label_studio(
                 tasks_before_sync, tasks_after_sync
             )
 
-            predictions_with_cloud_urls = switch_local_urls_for_cloud_urls(
+            preds_with_task_ids = convert_pred_filenames_to_task_ids(
                 predictions, newly_synced_tasks
             )
-            print(newly_synced_tasks)
-            print(predictions_with_cloud_urls)
-            dataset.create_predictions(predictions_with_cloud_urls)
+            dataset.create_predictions(preds_with_task_ids)
     else:
         raise StackComponentInterfaceError("No active annotator.")
