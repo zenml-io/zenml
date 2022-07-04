@@ -2,8 +2,7 @@
 
 This guide will take you from the default local stack to a basic cloud 
 stack in no time. This should help you get started with running your machine 
-learning pipeline in production.
-
+learning pipeline in production. 
 
 {% hint style="info" %}
 This guide represents **one** of many ways to create a cloud stack on GCP. 
@@ -54,7 +53,7 @@ resources, so let's export it. You'll most probably find it right
 [here](https://console.cloud.google.com/welcome).
 
 ```bash
-export PROJECT_NUMBER=492014921912
+export PROJECT_NUMBER=<PROJECT_NUMBER> # for example '492014921912'
 ```
 
 ## Step 2/10 Enable billing
@@ -77,7 +76,7 @@ Vertex AI is available. At this point it might make sense to make this
 decision for your ZenML Stack and export the full region name.
 
 ```shell
-export GCP_LOCATION=europe-west3
+export GCP_LOCATION=<GCP_LOCATION> # for example 'europe-west3'
 ```
 
 ## Step 4/10 Enable Secrets Manager
@@ -106,7 +105,7 @@ or asia.gcr.io. Choose the one appropriate for you.
 
 
 ```bash
-export CONTAINER_REGISTRY_URI=eu.gcr.io/zenml-project
+export CONTAINER_REGISTRY_URI=<CONTAINER_REGISTRY_URI> # for example 'eu.gcr.io/zenml-project'
 ```
 
 ## Step 6/10 Set up Cloud Storage as Artifact Store
@@ -119,7 +118,7 @@ gsutil URI which you will need at a later point. Its usually going to look like
 this: `gs://<bucket-name>`
 
 ```bash
-export GSUTIL_URI=gs://zenml_vertex_storage
+export GSUTIL_URI=<GSUTIL_URI> # for example 'gs://zenml_vertex_storage'
 ```
 
 ## Step 7/10 Set up a Cloud SQL instance as Metadata Store
@@ -136,10 +135,10 @@ creation of the instance is the root password. The default port for mysql is
 3306. 
 
 ```bash
-export DB_HOST_IP=35.137.24.15
-export DB_PORT=3306
-export DB_USER=root
-export DB_PWD=secure_root_pwd
+export DB_HOST_IP=<DB_HOST_IP> # for example '35.137.24.15'
+export DB_PORT=<DB_PORT> # usually by default '3306'
+export DB_USER=<DB_USER> # 'root' if you don't set up a separate user
+export DB_PWD=<DB_PWD> # for example 'secure_root_pwd'
 ```
 
 Time to set up the connections to our database. To do this you'll need to go 
@@ -155,16 +154,16 @@ database.
 Now **Create Client Certificate** and download all three files. Export the paths 
 to these three files as follows with a leading **@**.
 ```bash
-export SSL_CA=@/home/zen/Downloads/server-ca.pem
-export SSL_CERT=@/home/zen/Downloads/client-cert.pem
-export SSL_KEY=@/home/zen/Downloads/client-key.pem
+export SSL_CA=@<SSL_CA> # for example @/home/zen/Downloads/server-ca.pem
+export SSL_CERT=@<SSL_CERT> # for example @/home/zen/Downloads/client-cert.pem
+export SSL_KEY=@<SSL_KEY> # for example @/home/zen/Downloads/client-key.pem
 ```
 
 Finally, head on over to the `Databases` submenu and create your database and
 export its name. 
 
 ```bash
-export DB_NAME=zenml_db
+export DB_NAME=<DB_NAME> # for example zenml_db
 ```
 
 ## Step 8/10 - Create a Service Account
@@ -185,7 +184,7 @@ Also give your user access to the service account. This is the service account
 that will be used by the Vertex AI compute engine.
 
 ```bash
-export SERVICE_ACCOUNT=zenml-vertex-sa@zenml-project.iam.gserviceaccount.com
+export SERVICE_ACCOUNT=<SERVICE_ACCOUNT> # for example zenml-vertex-sa@zenml-project.iam.gserviceaccount.com
 ```
 
 On top of this we will also need to give permissions to the service account
@@ -279,8 +278,16 @@ cd zenml_examples/vertex_ai_orchestration/
 python run.py
 ```
 
-At the end of the logs you should be seeing a link to the Vertex AI dashboard.
+At the end of the logs you should be seeing a link to the Vertex AI dashboard. 
+It should look something like this:
 
-![](../assets/VertexAiRun.png)
+![Finished Run](../assets/VertexAiRun.png)
 
 
+## Conclusion
+
+Within this guide you have set up and used a stack on GCP using the Vertex AI
+orchestrator. For more guides on different cloud set-ups, check out the 
+[Kubeflow](https://docs.zenml.io/advanced-guide/execute-pipelines-in-cloud) and 
+[Kubernetes](https://blog.zenml.io/k8s-orchestrator/) orchestrators 
+respectively and find out if these are a better fit for you.
