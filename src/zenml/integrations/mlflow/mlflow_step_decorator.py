@@ -148,8 +148,13 @@ def enable_mlflow(
         return inner_decorator(_step)
 
 
-def mlflow_step_entrypoint(nested=False) -> Callable[[F], F]:
+def mlflow_step_entrypoint(nested: Optional[bool] = False) -> Callable[[F], F]:
     """Decorator for a step entrypoint to enable mlflow.
+
+    Args:
+        nested: Controls whether to create a run as a child of pipeline run.
+            All the the mlflow logging functions using during a step with
+            `nested=True` will be logged into the child run.
 
     Returns:
         the input function enhanced with mlflow profiling functionality
