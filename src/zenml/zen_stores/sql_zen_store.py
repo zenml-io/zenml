@@ -86,7 +86,7 @@ class ZenStack(SQLModel, table=True):
 class ZenStackComponent(SQLModel, table=True):
     """SQL Model for stack components."""
 
-    id: int = Field(primary_key=True)
+    id: UUID = Field(primary_key=True)
     component_type: StackComponentType
     name: str
     component_flavor: str
