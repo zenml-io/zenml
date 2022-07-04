@@ -1,0 +1,26 @@
+name: slack_ask_pipeline
+steps:
+  data_loader:
+    source:
+      file: steps/data_loader
+      name: data_loader
+  trainer:
+    source:
+      file: steps/trainer
+      name: svc_trainer_mlflow
+  evaluator:
+    source:
+      file: steps/evaluator
+      name: evaluator
+  formatter:
+    source:
+      file: steps/formatter
+      name: test_acc_ask_formatter
+  alerter:
+    source:
+      file: steps
+      name: slack_alerter_ask_step
+  deployer:
+    source:
+      file: steps/deployer
+      name: mlflow_model_deployer_step

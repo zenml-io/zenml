@@ -1,0 +1,6 @@
+name: secret_loading_pipeline
+steps:
+  secret_loader:
+    source:
+      file: steps/secret_loader/secret_loader_step
+      name: secret_loader
