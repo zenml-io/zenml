@@ -15,8 +15,9 @@
 import tempfile
 import webbrowser
 from abc import abstractmethod
-from typing import Any
+from typing import Any, Union
 
+from deepchecks.core.check_result import CheckResult
 from deepchecks.core.suite import SuiteResult
 
 from zenml.artifacts import DataAnalysisArtifact
@@ -44,30 +45,24 @@ class DeepchecksVisualizer(BaseStepVisualizer):
                 artifact = artifact_view.read()
                 self.generate_report(artifact)
 
-    def generate_report(self, result: SuiteResult) -> None:
+    def generate_report(self, result: Union[CheckResult, SuiteResult]) -> None:
         """Generate a Deepchecks Report.
 
         Args:
             result: A SuiteResult.
         """
         print(result)
-        with tempfile.NamedTemporaryFile(
-            mode="w", delete=False, suffix=".html", encoding="utf-8"
-        ) as f:
-            result.save_as_html(f)
-            file_name = f.name
-
-        with open(file_name, "r") as same_f:
-            html_ = same_f.read()
 
         if Environment.in_notebook():
-            from IPython.core.display import HTML, display
-
-            display(HTML(html_))
+            result.show()
         else:
             logger.warning(
                 "The magic functions are only usable in a Jupyter notebook."
             )
-            url = f"file:///{f.name}"
+            with tempfile.NamedTemporaryFile(
+                mode="w", delete=False, suffix=".html", encoding="utf-8"
+            ) as f:
+                result.save_as_html(f)
+                url = f"file:///{f.name}"
             logger.info("Opening %s in a new browser.." % f.name)
             webbrowser.open(url, new=2)

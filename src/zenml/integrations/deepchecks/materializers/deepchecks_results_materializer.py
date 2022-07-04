@@ -30,59 +30,53 @@ herein with full credit to them.
 
 import os
 import tempfile
-from typing import Any, Type
+from typing import Any, Type, Union
 
 from deepchecks.core.suite import SuiteResult
+from deepchecks.core.check_result import CheckResult
 
 from zenml.artifacts import DataAnalysisArtifact
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils import io_utils
 
-DEFAULT_FILENAME = "results.json"
+RESULTS_FILENAME = "results.json"
 
 
 class DeepchecksResultMaterializer(BaseMaterializer):
-    """Materializer to read data to and from SuiteResult objects."""
+    """Materializer to read data to and from CheckResult and SuiteResult objects."""
 
-    ASSOCIATED_TYPES = (SuiteResult,)
+    ASSOCIATED_TYPES = (
+        CheckResult,
+        SuiteResult,
+    )
     ASSOCIATED_ARTIFACT_TYPES = (DataAnalysisArtifact,)
 
-    def handle_input(self, data_type: Type[Any]) -> SuiteResult:
+    def handle_input(
+        self, data_type: Type[Any]
+    ) -> Union[CheckResult, SuiteResult]:
         """Reads a deepchecks result from a serialized JSON file."""
         super().handle_input(data_type)
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
-        # Create a temporary folder
-        temp_dir = tempfile.mkdtemp(prefix="zenml-temp-")
-        temp_file = os.path.join(str(temp_dir), DEFAULT_FILENAME)
+        filepath = os.path.join(self.artifact.uri, RESULTS_FILENAME)
 
-        # Copy from artifact store to temporary file
-        fileio.copy(filepath, temp_file)
-
-        # Make a temporary phantom artifact
-        with open(temp_file, "r") as f:
-            json_res = f.read()
+        json_res = io_utils.read_file_contents_as_string(filepath)
+        if data_type == SuiteResult:
             res = SuiteResult.from_json(json_res)
-
-        # Cleanup and return
-        fileio.rmtree(temp_dir)
+        elif data_type == CheckResult:
+            res = CheckResult.from_json(json_res)
+        else:
+            raise RuntimeError(f"Unknown data type: {data_type}")
         return res
 
-    def handle_return(self, result: SuiteResult) -> None:
-        """Creates a JSON serialization for a SuiteResult.
+    def handle_return(self, result: Union[CheckResult, SuiteResult]) -> None:
+        """Creates a JSON serialization for a CheckResult or SuiteResult.
 
         Args:
-            result: A deepchecks.SuiteResult.
+            result: A Deepchecks CheckResult or SuiteResult.
         """
         super().handle_return(result)
 
-        filepath = os.path.join(self.artifact.uri, DEFAULT_FILENAME)
+        filepath = os.path.join(self.artifact.uri, RESULTS_FILENAME)
 
-        serialized_json = result.to_json(False)
-
-        # Make a temporary phantom artifact
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=True
-        ) as f:
-            f.write(serialized_json)
-            # Copy it into artifact store
-            fileio.copy(f.name, filepath)
+        serialized_json = result.to_json(True)
+        io_utils.write_file_contents_as_string(filepath, serialized_json)

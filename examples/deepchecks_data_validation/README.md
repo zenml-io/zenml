@@ -53,12 +53,11 @@ In order to run this example, you need to install and initialize ZenML:
 pip install zenml
 
 # install ZenML integrations
-zenml integration install deepchecks
-zenml integration install sklearn
+zenml integration install deepchecks sklearn
 
 # pull example
-zenml example pull drift_detection
-cd zenml_examples/drift_detection
+zenml example pull deepchecks_data_validation
+cd zenml_examples/deepchecks_data_validation
 
 # Initialize ZenML repo
 zenml init

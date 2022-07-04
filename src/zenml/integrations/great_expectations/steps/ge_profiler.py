@@ -17,19 +17,10 @@ from typing import Any, Dict, Optional
 
 import pandas as pd
 from great_expectations.core import ExpectationSuite  # type: ignore[import]
-from great_expectations.data_context.types.resource_identifiers import (  # type: ignore[import]
-    ExpectationSuiteIdentifier,
-)
-from great_expectations.profile.user_configurable_profiler import (  # type: ignore[import]
-    UserConfigurableProfiler,
-)
 from pydantic import Field
 
 from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
     GreatExpectationsDataValidator,
-)
-from zenml.integrations.great_expectations.steps.utils import (
-    create_batch_request,
 )
 from zenml.logger import get_logger
 from zenml.steps import BaseStep, BaseStepConfig
@@ -76,51 +67,14 @@ class GreatExpectationsProfilerStep(BaseStep):
         Returns:
             The generated Great Expectations suite.
         """
-        context = GreatExpectationsDataValidator.get_data_context()
-
-        suite_exists = False
-        if context.expectations_store.has_key(  # noqa
-            ExpectationSuiteIdentifier(config.expectation_suite_name)
-        ):
-            suite_exists = True
-            suite = context.get_expectation_suite(config.expectation_suite_name)
-            if not config.overwrite_existing_suite:
-                logger.info(
-                    f"Expectation Suite `{config.expectation_suite_name}` "
-                    f"already exists and `overwrite_existing_suite` is not set "
-                    f"in the step configuration. Skipping re-running the "
-                    f"profiler."
-                )
-                return suite
-
-        batch_request = create_batch_request(
-            context, dataset, config.data_asset_name
+        data_validator = (
+            GreatExpectationsDataValidator.get_active_data_validator()
         )
 
-        try:
-            if suite_exists:
-                validator = context.get_validator(
-                    batch_request=batch_request,
-                    expectation_suite_name=config.expectation_suite_name,
-                )
-            else:
-                validator = context.get_validator(
-                    batch_request=batch_request,
-                    create_expectation_suite_with_name=config.expectation_suite_name,
-                )
-
-            profiler = UserConfigurableProfiler(
-                profile_dataset=validator, **config.profiler_kwargs
-            )
-
-            suite = profiler.build_suite()
-            context.save_expectation_suite(
-                expectation_suite=suite,
-                expectation_suite_name=config.expectation_suite_name,
-            )
-
-            context.build_data_docs()
-        finally:
-            context.delete_datasource(batch_request.datasource_name)
-
-        return suite
+        return data_validator.data_profiling(
+            dataset,
+            config.expectation_suite_name,
+            config.data_asset_name,
+            config.profiler_kwargs,
+            config.overwrite_existing_suite,
+        )

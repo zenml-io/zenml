@@ -14,6 +14,8 @@
 """Utils for strings."""
 
 import base64
+import random
+import string
 
 
 def get_human_readable_time(seconds: float) -> str:
@@ -87,3 +89,15 @@ def b64_decode(input_: str) -> str:
     encoded_bytes = input_.encode()
     decoded_bytes = base64.b64decode(encoded_bytes)
     return decoded_bytes.decode()
+
+
+def random_str(length: int) -> str:
+    """Generate a random human readable string of given length.
+
+    Args:
+        length: Length of string
+
+    Returns:
+        Random human-readable string.
+    """
+    return "".join(random.choices(string.ascii_letters, k=length))
