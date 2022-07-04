@@ -19,8 +19,9 @@ from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.integrations.spark import SPARK_KUBERNETES_STEP_OPERATOR
 from zenml.io.fileio import copy
 from zenml.logger import get_logger
+from zenml.repository import Repository
 from zenml.step_operators import BaseStepOperator, entrypoint
-from zenml.utils.docker_utils import build_docker_image
+from zenml.utils.docker_utils import build_docker_image, get_image_digest
 from zenml.utils.io_utils import write_file_contents_as_string
 from zenml.utils.source_utils import get_source_root_path
 
@@ -93,15 +94,16 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         pipeline_name,
         requirements,
     ):
-        """Create the proper image to use for spark on k8s."""
-        base_image = "spark-py:pypyspark"
-        image_name = f"zenml-k8s:{pipeline_name}"
+        repo = Repository()
+        container_registry = repo.active_stack.container_registry
+        if not container_registry:
+            raise RuntimeError("Missing container registry")
+        registry_uri = container_registry.uri.rstrip("/")
+        image_name = f"{registry_uri}/zenml-spark:{pipeline_name}"
 
-        self.configuration_properties.extend(
-            [
-                f"spark.kubernetes.container.image={image_name}",
-            ]
-        )
+        """Create the proper image to use for spark on k8s."""
+        base_image = f"{registry_uri}/pyspark-base:1.0"
+
         dockerfile_content = generate_dockerfile_contents(
             base_image=base_image, requirements=requirements
         )
@@ -121,6 +123,9 @@ class KubernetesSparkStepOperator(BaseStepOperator):
             requirements=requirements,
         )
 
+        container_registry.push_image(image_name)
+        return get_image_digest(image_name) or image_name
+
     def _create_base_command(self):
         """Create the base command for spark-submit."""
         command = [
@@ -132,13 +137,13 @@ class KubernetesSparkStepOperator(BaseStepOperator):
         ]
         return command
 
-    def _create_configurations(self):
+    def _create_configurations(self, image_name: str):
         """Build the configuration parameters for the spark-submit command."""
         configurations = [
             "--conf",
             "spark.kubernetes.namespace=default",
             "--conf",
-            "spark.kubernetes.authenticate.driver.serviceAccountName=spark",
+            f"spark.kubernetes.container.image={image_name}",
         ]
 
         for o in self.configuration_properties:
@@ -172,13 +177,13 @@ class KubernetesSparkStepOperator(BaseStepOperator):
     ) -> None:
         """Launch the spark job with spark-submit."""
         # Build the docker image to use for spark on Kubernetes
-        self._build_docker_image(pipeline_name, requirements)
+        image_name = self._build_docker_image(pipeline_name, requirements)
 
         # Base command
         base_command = self._create_base_command()
 
         # Add configurations
-        configurations = self._create_configurations()
+        configurations = self._create_configurations(image_name=image_name)
         base_command.extend(configurations)
 
         # Add the spark app

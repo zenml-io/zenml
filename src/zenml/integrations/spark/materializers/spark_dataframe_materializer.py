@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
 from typing import Any, Type
 
 from pyspark.sql import DataFrame, SparkSession
@@ -39,4 +40,7 @@ class SparkDataFrameMaterializer(BaseMaterializer):
             df: A spark dataframe object.
         """
         super().handle_return(df)
-        df.write.save(self.artifact.uri, format="parquet")
+        df.write.save(
+            os.path.join(self.artifact.uri, 'data.parquet'),
+            format="parquet"
+        )
