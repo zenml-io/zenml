@@ -9,7 +9,7 @@ This example showcases how easily mlflow tracking can be integrated into a ZenML
 of code.
 
 We'll be using the
-[Fashion-MNIST](https://github.com/zalandoresearch/fashion-mnist) dataset and
+[MNIST-digits](https://keras.io/api/datasets/mnist/) dataset and
 will train a classifier using [Tensorflow (Keras)](https://www.tensorflow.org/).
 We will run two experiments with different parameters (epochs and learning rate)
 and log these experiments into a local mlflow backend.
