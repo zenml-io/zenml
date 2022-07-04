@@ -315,7 +315,7 @@ zenml stack update default -x AZURE_SECRETS_MANAGER_NAME
 The Key Vault name refers to the name of your Key Vault as created within Azure.
 
 If you are using the [ZenML Kubeflow
-integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) for
+integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration) for
 your orchestrator, you can then access the keys and their corresponding values
 for all the secrets you imported in the pipeline definition (as mentioned
 above). The keys that you used when creating the secret will be capitalized when
@@ -365,7 +365,7 @@ zenml stack update default -x VAULT_SECRETS_MANAGER_NAME
 --mount_point refers to the path to your KV Secrets Engine - Version 2. 
 
 If you are using the [ZenML Kubeflow
-integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow) for
+integration](https://github.com/zenml-io/zenml/tree/main/examples/kubeflow_pipelines_orchestration) for
 your orchestrator, you can then access the keys and their corresponding values
 for all the secrets you imported in the pipeline definition (as mentioned
 above). The keys that you used when creating the secret will be capitalized when
