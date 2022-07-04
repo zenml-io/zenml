@@ -32,7 +32,7 @@ def tf_trainer(
     y_train: np.ndarray,
 ) -> tf.keras.Model:
     """Train a neural net from scratch to recognize MNIST digits
-    
+
     Returns:
         Our model or the learner
     """
