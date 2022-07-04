@@ -330,7 +330,6 @@ SVC
 Sagemaker
 Sagemaker's
 Sauron
-Sickit
 Scatch
 SchemaArtifact
 SciPy
@@ -1000,7 +999,7 @@ ServiceAccounts
 Standards
 TFServing
 apiGroup
-permession
+permission
 roleRef
 runtimes
 serviceaccounts

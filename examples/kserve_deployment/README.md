@@ -7,11 +7,11 @@ KServe uses a simple and pluggable production serving architecture for productio
 prediction, pre-/post-processing, monitoring and explainability.
 
 Following the model deployment story within ZenML, and to make it easier to deploy models with other serving tools, 
-we have created an Integration for KServe. But how does KServe differ from the already integrated [Seldon Core](../seldon_deployment/)?
-* __**Supported frameworks**__: Standards ML frameworks like TensorFlow, PyTorch, Scikit-learn, XGBoost, Keras, MXNet, etc... Are First-class citizens in KServe and can be fairly easily used
-while Seldon Core has support for the majority of these ML frameworks, it lacks support for: Pytorch even tho it could be still used using the custom deployment, but that's some extra work to handle.
+we have created an Integration for KServe. But how does KServe differ from the already-integrated [Seldon Core](../seldon_deployment/)?
+
+* __**Supported frameworks**__: Standard ML frameworks like TensorFlow, PyTorch, Scikit-learn, XGBoost, Keras, MXNet, etc... are first-class citizens in KServe and can be fairly easily used. While Seldon Core has support for the majority of these ML frameworks, it lacks support for Pytorch even though it could be still used using the custom deployment, albeit with some extra upfront work.
 * __**Custom Deployment**__: Both Seldon Core and KServe have support for custom deployment.
-However Seldon Core offers an extra inference graph that includes custom TRANSFORMER and ROUTER which can be used to build more powerful inference graphs.
+However Seldon Core offers an extra inference graph that includes custom [TRANSFORMER](https://docs.seldon.io/projects/seldon-core/en/latest/workflow/overview.html) and [ROUTER](https://docs.seldon.io/projects/seldon-core/en/latest/analytics/routers.html?highlight=routers#) which can be used to build more powerful inference graphs.
 * __**Autoscaling**__: KServe has more advanced autoscaling features than Seldon Core.
 With the Knative autoscaling, it is possible to scale up and down the number of replicas of the model deployment based on the number of requests received.
 * __**Predictions interfaces**__: Seldon Core and KServe have built-in support for HTTP-based protocols, However only Seldon Core has support for GRPC-based protocols. While it still can be configured for KServe it requires using manual, custom deployment.
@@ -233,13 +233,12 @@ EOF
 ```
 
 Use `curl` to send a test prediction API request to the server:
- a test prediction API request to the server:
 
 ```bash
 SERVICE_HOSTNAME=$(kubectl get inferenceservice sklearn-iris -n kserve-test -o jsonpath='{.status.url}' | cut -d "/" -f 3)
 curl -v -H "Host: ${SERVICE_HOSTNAME}" http://${INGRESS_HOST}:${INGRESS_PORT}/v1/models/sklearn-iris:predict -d @./iris-input.json
 ```
-echo 
+
 You should see something like this as the prediction response:
 
 ```json
@@ -317,14 +316,14 @@ namespace where the Kubeflow pipelines are running. You also have to update the 
 permissions granted by Kubeflow to the Kubernetes service account in the context
 of which Kubeflow pipelines are running to allow the ZenML workloads to create,
 update and delete KServe InferenceServices, Secrets and ServiceAccounts. 
-You can do so with the below command.
+You can do so with the following command.
 
 ```shell
 kubectl apply -n kserve-test -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: kubeflow-kserve-permession
+  name: kubeflow-kserve-permission
   namespace: kubeflow
   labels:
     app: zenml
@@ -341,7 +340,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: kubeflow-kserve-permession
+  name: kubeflow-kserve-permission
 subjects:
 - kind: ServiceAccount
   name: pipeline-runner
@@ -472,8 +471,7 @@ For more information about the TorchServe runtime, please refer to the [TorchSer
 The PyTorch Inference pipeline consists of the following steps:
 * pytorch_inference_processor - Load a digits image from URL (must be 28x28) and convert it to a byte array.
 * prediction_service_loader - Load the prediction service into KServeDeploymentService to perform the inference.
-* predictor - Perform the inference on the image using the built-in predict function of the prediction service.
-
+* predictor - Perform inference on the image using the built-in predict function of the prediction service.
 ### 🏃️ Run the code
 To run the PyTorch training/deployment pipeline:
 
