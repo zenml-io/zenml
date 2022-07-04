@@ -28,8 +28,12 @@ from zenml.integrations.feast import FeastIntegration  # noqa
 from zenml.integrations.gcp import GcpIntegration  # noqa
 from zenml.integrations.github import GitHubIntegration  # noqa
 from zenml.integrations.graphviz import GraphvizIntegration  # noqa
+from zenml.integrations.great_expectations import (  # noqa
+    GreatExpectationsIntegration,
+)
 from zenml.integrations.huggingface import HuggingfaceIntegration  # noqa
 from zenml.integrations.kubeflow import KubeflowIntegration  # noqa
+from zenml.integrations.kubernetes import KubernetesIntegration  # noqa
 from zenml.integrations.lightgbm import LightGBMIntegration  # noqa
 from zenml.integrations.mlflow import MlflowIntegration  # noqa
 from zenml.integrations.neural_prophet import NeuralProphetIntegration  # noqa
@@ -44,6 +48,7 @@ from zenml.integrations.seldon import SeldonIntegration  # noqa
 from zenml.integrations.sklearn import SklearnIntegration  # noqa
 from zenml.integrations.slack import SlackIntegration  # noqa
 from zenml.integrations.tensorflow import TensorflowIntegration  # noqa
+from zenml.integrations.vault import VaultSecretsManagerIntegration  # noqa
 from zenml.integrations.wandb import WandbIntegration  # noqa
 from zenml.integrations.whylogs import WhylogsIntegration  # noqa
 from zenml.integrations.xgboost import XgboostIntegration  # noqa

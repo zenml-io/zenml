@@ -497,7 +497,7 @@ def format_date(
 MAX_ARGUMENT_VALUE_SIZE = 10240
 
 
-def _expand_argument_value_from_file(name: str, value: str) -> str:
+def expand_argument_value_from_file(name: str, value: str) -> str:
     """Expands the value of an argument pointing to a file into the contents of that file.
 
     Args:
@@ -519,7 +519,7 @@ def _expand_argument_value_from_file(name: str, value: str) -> str:
         return value[1:]
     if not value.startswith("@"):
         return value
-    filename = value[1:]
+    filename = os.path.abspath(value[1:])
     logger.info(
         f"Expanding argument value `{name}` to contents of file `{filename}`."
     )
@@ -572,7 +572,7 @@ def parse_unknown_options(
 
     if expand_args:
         args_dict = {
-            k: _expand_argument_value_from_file(k, v)
+            k: expand_argument_value_from_file(k, v)
             for k, v in args_dict.items()
         }
 
