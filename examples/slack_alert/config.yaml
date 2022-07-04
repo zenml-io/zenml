@@ -1,0 +1,22 @@
+name: slack_post_pipeline
+steps:
+  data_loader:
+    source:
+      file: steps/data_loader
+      name: data_loader
+  trainer:
+    source:
+      file: steps/trainer
+      name: svc_trainer
+  evaluator:
+    source:
+      file: steps/evaluator
+      name: evaluator
+  formatter:
+    source:
+      file: steps/formatter
+      name: test_acc_post_formatter
+  alerter:
+    source:
+      file: steps
+      name: slack_alerter_post_step
