@@ -402,8 +402,9 @@ def kserve_custom_model_deployer_step(
     # verify the flavor of the orchestrator.
     # if the orchestrator is local, then we need to build a docker image with the repo
     # and requirements and push it to the container registry.
-    # if the orchestrator is remote, then we can use same image used to run the pipeline.
+    # if the orchestrator is remote, then we can use the same image used to run the pipeline.
     assert context.stack is not None
+    # TODO[medium]: find better way to create a docker image in case of local orchestrator
     if context.stack.orchestrator.FLAVOR == "local":
         # more information about stack ..
         custom_docker_image_name = (
